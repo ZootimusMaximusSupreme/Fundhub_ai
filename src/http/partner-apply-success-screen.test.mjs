@@ -39,7 +39,12 @@ const HTML = fs.readFileSync(PAGE, "utf8");
 const HANDLER_SRC = (() => {
   const start = HTML.indexOf("document.getElementById('pform').addEventListener('submit',");
   assert.notEqual(start, -1, "the apply form's submit handler moved — this test is now blind");
-  const end = HTML.lastIndexOf("</script>");
+  /* The FIRST closing tag after the handler, not the last one on the page.
+     lastIndexOf broke the moment a second <script> was appended below this
+     block (the Clarity tag), because the slice then carried `</script><script
+     src=...>` into new Function() and every test here died on `Unexpected
+     token '<'`. */
+  const end = HTML.indexOf("</script>", start);
   assert.ok(end > start, "could not find the end of the inline script");
   return HTML.slice(start, end);
 })();

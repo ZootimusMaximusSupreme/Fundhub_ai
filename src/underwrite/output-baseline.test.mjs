@@ -29,10 +29,14 @@
 //   2. black-report-client's monthsOpen() ages the AU account. Every openedDate
 //      in the fixture is null, so au_account.age is "" forever.
 //   3. The WeasyPrint printer stamps today's date into the PDF. That is why the
-//      byte/text pin below runs against the pdf-lib printer (engine: "node"),
-//      which leaves DATE blank, and the WeasyPrint path is pinned by its INPUT
-//      (the CLIENT dict) and its TEMPLATE (the generator script), not its output.
-//      See NOT LOCKED, below.
+//      byte/text pin below runs against the pdf-lib printer (engine: "node") and
+//      the WeasyPrint path is pinned by its INPUT (the CLIENT dict) and its
+//      TEMPLATE (the generator script), not its output. See NOT LOCKED, below.
+//   4. The pdf-lib printer used to leave the cover DATE blank, which is what made
+//      it clock-safe and is exactly the defect F50 recorded — every document the
+//      live site produced carried an empty date box. It now prints the day the
+//      credit file was pulled, so ENGINE_RESULT below carries a fixed `pulledAt`
+//      and the printed date is a property of the INPUT, not of the calendar.
 //
 // ─────────────────────────────────────────────────────────────────────────────
 // NOT LOCKED BY THIS FILE — stated so nobody mistakes green here for total cover
@@ -73,9 +77,11 @@ import { extractPdfText } from "../company-brain/pdf-text.mjs";
 
 // Never call live Claude from a unit test. Same guard as ./letter-pack.test.mjs.
 delete process.env.ANTHROPIC_API_KEY;
-// buildBlackReportClient copies BOOKING_URL straight into the client dict, so a
-// developer with it set locally would otherwise see a different digest than CI.
+// buildBlackReportClient resolves the booking link into the client dict, so a
+// developer with either of these set locally would otherwise see a different
+// digest than CI. With both gone the resolver returns its own fixed default.
 delete process.env.BOOKING_URL;
+delete process.env.SALES_MEET_BOOKING_URL;
 
 /* ─────────────── digest helpers ─────────────── */
 
@@ -111,6 +117,8 @@ const PERSONAL = Object.freeze({
 /** The shape a stored credit pull arrives in, trimmed to what these surfaces read. */
 const ENGINE_RESULT = Object.freeze({
   outcome: "FUNDING_PLUS_REPAIR",
+  // Fixed on purpose. See clock-stability note 4 above.
+  pulledAt: "2026-03-01T00:00:00.000Z",
   suggestions: ["Pay balances down."],
   consumerSignals: {
     scores: { median: 610, perBureau: { ex: 600, eq: 610, tu: 620 } },
@@ -168,22 +176,113 @@ const BUREAUS_NONE = Object.freeze({});
    Every value below was measured on 2026-08-28 on branch audit/baseline-wf,
    cut from origin/main at commit 4d6cf31b, on macOS with Node 26. */
 
+/* MOVED DELIBERATELY 2026-09-04, W10 — the deliverables rebuild (F43, F44, F45,
+   F46, F50). Three of the seven pins below were re-recorded on this branch; the
+   four scoring-engine pins did not move, which is the point: the funding numbers
+   are exactly what they were and only what is PRINTED changed.
+
+   blackReportClient / emptyBlackReportClient moved because the record gained the
+   fields the designed reference set needs and the live documents never had — the
+   cover date, a real booking link, the two lender buckets kept apart, the score
+   ladder, the engine's own costing-you and not-a-factor findings, and the
+   client's business entity — and because accounts that furnish to more than one
+   bureau now appear once instead of once per bureau.
+
+   The four printed documents moved for the same reason: they carry those
+   sections now. Page counts went 4/3/6/3 to 4/4/8/5.
+
+   MOVED AGAIN 2026-09-04, W10 ROUND 2 REPAIR — generatorScript only, and the
+   change is five comment lines plus `*_extra` on the three `for ... in
+   c["lenders"]` unpacks in fundhub_gen.py. lenderRow() now returns eleven
+   columns, not nine, and the Python read them positionally into exactly nine
+   names, so this printer raised ValueError and black-report-pdf.mjs silently
+   fell through to the Node printer. Nothing about the LAYOUT moved; the other
+   six pins are unchanged, which is the evidence.
+
+   MOVED AGAIN 2026-09-06, W10 ROUND 3 REPAIR — generatorScript ONLY, again, and
+   the other six pins are again unchanged. What moved in fundhub_gen.py is one
+   defect, in the seven places it was printed: a revolving card with NO REPORTED
+   CREDIT LIMIT had no 10% target, and every one of those seven sites fell back
+   to row[5], which is the empty string for exactly that card. Sentences ran off
+   the end ("Pay AMEX PLATINUM (NPSL) from $5,200 down to ") and two table cells
+   went blank where the Node printer has always printed "-". Two new helpers,
+   target_text() and paydown_sentence(), are now the only way a target reaches
+   the page, and hero_card() will not nominate a card it cannot state a target
+   for. No layout, no CSS, no section moved.
+
+   That the other six pins did NOT move is the evidence that the Node printer's
+   matching fix — the same defect at its one remaining site, the 6-month
+   checklist — changed no byte for a client whose cards all report a limit. It
+   only changes the document for the client who has one that does not.
+
+   MOVED AGAIN 2026-09-06, W10 ROUND 4 REPAIR — generatorScript ONLY for the
+   THIRD time, and the other six pins are unchanged for the third time. Two
+   defects moved in fundhub_gen.py:
+
+     F52. A TOTAL BUILT FROM UNKNOWNS IS UNKNOWN. The vendor engine sums
+     `effectiveLimit || 0`, so a file whose open cards report no limit gives a
+     total limit of 0 and a 10% target of 0. This printer's Month 1 line then
+     read "Total paydown to reach 10% utilization: $0." — telling a client who
+     owes $5,200 that he owes nothing — while the Node printer's version of the
+     same line printed his ENTIRE balance. black-report-client.mjs now leaves
+     that total null and every overall figure here asks util_totals_known()
+     first.
+
+     F45. THE LENDER SPLIT REACHED ONLY THE NODE PRINTER. The matcher answers in
+     two buckets and black-report-client.mjs:761-762 has carried both across
+     since 2026-09-04. This printer still read the flattened `lenders` list, so
+     every document it made said "No lenders are matched for immediate funding
+     right now" and showed all fifteen as locked, for a client with five open to
+     him today. lender_buckets() reads the two buckets and falls back to the flat
+     list for a client.json written before they existed.
+
+   blackReportClient did NOT move, which is the evidence that F52's mapper change
+   touches only a file where no open card reports a limit — the baseline fixture
+   has limits, so its record is byte-identical.
+
+   MOVED AGAIN 2026-09-06, W10 ROUND 3 VERIFIER REPAIR — generatorScript AND, for
+   the first time in this sequence, ALL FOUR Node PDF text shas. The four engine
+   pins and both client-dict pins are unchanged, which is the evidence that
+   nothing about what the mapper computes moved: only what the printers SAY.
+
+     WHY ALL FOUR PDFs AND NOT ONE. The closing page is the same page in all four
+     documents, and its opening sentence changed. It used to read "You have
+     clean bureaus ready for funding now." in the web pages and the WeasyPrint
+     printer — printed to EVERY client, including one whose every bureau this
+     system had just marked DIRTY — while this printer led on lenders instead, so
+     the same client's pack said two different things depending on which printer
+     made it. All three now run one order: the clean bureaus if the file shows
+     any, else the lenders already open today, else no claim about either. For
+     this baseline client the page now reads "You have clean bureaus ready for
+     funding now - Equifax, TransUnion.", which is what its own `bureaus` rows
+     say. Verified by extracting the text of all four PDFs on 2026-09-06.
+
+     ALSO IN THIS PRINTER, and not visible in this fixture's text: "You are
+     fundable at $0 right now" is no longer printed when the file gives no
+     pre-approval, and the lender list's "your utilization is -." no longer puts
+     a bare dash inside a sentence. This client has both figures, so its words
+     are unchanged by those two.
+
+     IN fundhub_gen.py: the $0-limit repair (a limit REPORTED as zero is a known
+     value, not a missing one, and has no 10% target), the same closing-page
+     sentence, and the removal of eleven hardcoded claims about accounts,
+     bureaus and history that the file may not carry. */
 const BASELINE = Object.freeze({
   engineMaxed:            "0581c1b9b5f713dc7958b5e3e1e961b0be245beac174814d9a04068e1a692d0a",
   engineMaxedSuggestions: "d06e816746ef7dddb015f77ebf605b9a7f30f15df1d233b8e47702f4577f2d19",
   engineScoreOnly:        "0fe3f24ebe0560a04fe24fdb14afc974e0725f3e96571ab12b34c5a7e8a589e7",
   engineNoBureaus:        "79f0c7c1d8eb1853e314681051005eeafd3b07550da2855ab9eb6bbffe8a8260",
-  blackReportClient:      "4a0f0fe651ddfa21bdb5c632ef7c80a9fd6778e1632aba56d7344657b9c75f0a",
-  emptyBlackReportClient: "feb8f216fb06c85d9dc0a95170fb71a167ee0963221ff24aef858f681b03009b",
-  generatorScript:        "9d0babe55544aa695cca8505a6a2d0af1370f50d01817c0f8e51af35ba62259d"
+  blackReportClient:      "d4ead7287903034f5100f0b80ff5e85925e514a34611164beb727bef969599a8",
+  emptyBlackReportClient: "21826d2ea2496e6674a8bb909de81d2aef49a277c3470c1f854094950fb2ca79",
+  generatorScript:        "0c427de4723017a5046c0dbe41863efa9199378ad99751d39ca050d825ad655e"
 });
 
 /** The four PDFs the in-process printer produces, and the words inside each. */
 const BASELINE_NODE_PDFS = Object.freeze([
-  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "2a263c90866720920345e355b02dac8991dab9ce746756585a334dbd44a88eb2" },
-  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 3, textSha: "8c6414699579bb25847d33bc6e44beec88339a9650e978c67c575ffe9de05c42" },
-  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 6, textSha: "5985d2dcfb4a563ee0fd55bc3d12ab9b66d4ff82e7f0188e919987c9e8a744fc" },
-  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 3, textSha: "c44be557e52ac6070fc9cd0eba4ce5560dcab012acd0a61e09ae4ae71a929cc8" }
+  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "b50624440e5469cfffe27e829e0c2afad3ac5c3965f8bfb8d8461a2543f6a091" },
+  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "43065fb2999aa7952ae423883df1f7478e5b88ea24e84ae42a5fdddd163bad42" },
+  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 8, textSha: "3279129eb17841fa3f1461b3731b789ca08bc4377b2caaab5ee3ec7354e6af35" },
+  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "d9b5579b74da266f79274034100d3cdfe5ffa0c6aafb8c529caabfcef84835f2" }
 ]);
 
 /** Every document a client receives, in order. [filename, type, bureau]. */
@@ -345,8 +444,18 @@ describe("baseline — the black report client record", () => {
     pinned(digest(empty), BASELINE.emptyBlackReportClient,
       "the blank record used when there is no credit pull");
     assert.equal(empty.applicant, "Client");
-    assert.equal(digest(empty), digest({ ...emptyBlackReportClient(), applicant: "Client" }),
-      "a blank pull must produce the blank record, with nothing filled in");
+    /* The booking link is the ONE field that does not come from a credit pull —
+       it is where the client books a call, and that is true before any pull
+       exists. Everything else on a blank record stays blank. */
+    assert.equal(digest(empty),
+      digest({ ...emptyBlackReportClient(), applicant: "Client", booking_url: empty.booking_url }),
+      "a blank pull must produce the blank record, with nothing but the booking link filled in");
+    assert.equal(empty.date, "", "no credit pull, no date");
+    assert.equal(empty.preapproval_now, null, "no credit pull, no funding number");
+    assert.deepEqual(empty.lenders_now, []);
+    assert.deepEqual(empty.costing_you, []);
+    assert.match(empty.booking_url, /^https?:\/\//,
+      "the booking link must be a real address, never a placeholder");
   });
 });
 
