@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "serena": {
+      "command": "/Users/chrisstanbridge/.local/bin/uvx",
+      "args": [
+        "--from", "git+https://github.com/oraios/serena",
+        "serena", "start-mcp-server",
+        "--context", "ide-assistant",
+        "--project", "/Users/chrisstanbridge/Developer/fundhub-platform"
+      ],
+      "env": {
+        "PATH": "/Users/chrisstanbridge/.local/bin:/usr/bin:/bin"
+      }
+    },
+    "playwright": {
+      "command": "/Users/chrisstanbridge/.nvm/versions/node/v22.23.2/bin/npx",
+      "args": ["@playwright/mcp@latest"],
+      "env": {
+        "PATH": "/Users/chrisstanbridge/.nvm/versions/node/v22.23.2/bin:/usr/bin:/bin"
+      }
+    }
+  }
+}
