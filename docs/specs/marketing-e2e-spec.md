@@ -244,6 +244,20 @@ left all quit around 0:48.*
 6. You press rewrite. **Only that part** is rewritten — the rest stays word for word. It
    goes through the checker before you see it.
 
+### Where the page actually is — confirmed live
+
+**`https://apply.fundhub.ai/watch`.** `apply.fundhub.ai/vsl` redirects there. It is a
+ClickFunnels page on a custom domain — the address was in a comment at
+`public/_headers:62` the whole time.
+
+I fetched the live page. Our player really is pasted in and running. **There is no
+tracking on it and no Clarity on it** — that is checked on the live page, not guessed
+from the repo.
+
+**One consequence for the build:** the measuring script has to be pasted into that page
+by hand inside ClickFunnels. It cannot be deployed from this repo. That is a manual step
+and it belongs on the checklist now, not discovered later.
+
 ### What is missing
 
 Everything in that list. None of it exists. Specifically: no tracking script, no beacon
@@ -264,11 +278,32 @@ moment in the video and a line in the script.
 - **A rewrite improving results is a hypothesis, not a fact.** The system can tell you
   where people leave. It cannot tell you the new words are better until you run them.
 
-### One more thing worth your attention
+### The hard problem — and it changes the best feature
 
-Your written rules say a VSL is 5–6 minutes and 700–900 words
-(`docs/ads/RULES.md:438-441`). **The video that is actually live is 3 minutes 27
-seconds.** One of the two is out of date. Only you can say which.
+Two measured numbers: the video is **207 seconds**. The Founder VSL script is **844
+words**. That is **244 words a minute**.
+
+Your rules assume **150** (`docs/ads/RULES.md:208-215`, which already admits nobody
+timed it). At 150, a 207-second video would hold 518 words. The real one holds 844.
+**The assumption is off by about 63%.**
+
+Why that matters: the obvious way to turn "they quit at 0:48" into "you were saying
+*this*" is to count words through the script. **That method would have pointed at the
+wrong paragraph every single time** — by more than half a minute on a three-minute
+video. You would have rewritten lines that were never the problem.
+
+**So the click-the-cliff-and-see-the-words feature ships switched off.** Version one
+shows you the moment and the whole script and says honestly that it is not pointing at
+an exact line. The fix is cheap and it is not code: **somebody watches one filmed ad
+with a stopwatch and writes down where each section starts.** One afternoon. After that
+the feature switches on properly, measured instead of assumed.
+
+### And this answers your rules question
+
+`docs/ads/RULES.md:438-441` says a VSL is 700–900 words **and** 5–6 minutes. At your
+real speaking rate those cannot both be true — 844 words comes out at 3:27, which is
+exactly the live video. **The word band looks right and the minute estimate looks
+wrong.** Only you can confirm which you meant.
 
 ### Done means
 
@@ -371,7 +406,11 @@ only the marketing ones — the repo now holds migration files up to 376.
 
 - **Were the five ad-number boxes ever created in ClickFunnels?** Two setup documents
   disagree. This one gates the entire CRO lane and takes two minutes to check.
-- **Your rules say a VSL is 5–6 minutes. The live one is 3:27.** Which is right?
+- **Your rules say a VSL is 5–6 minutes AND 700–900 words. Those disagree at your real
+  speaking rate.** The evidence says the word band is right and the minutes are wrong.
+  Confirm which you meant.
+- **Will you sit with a stopwatch through one filmed ad?** One afternoon, and it turns
+  the best VSL feature from "roughly here" into "exactly here". Nothing else unlocks it.
 - **Where does a click land — the video page, or straight to the application?** Open at
   `docs/ads/NEXT.md:45-46`. It changes the call to action in every ad.
 

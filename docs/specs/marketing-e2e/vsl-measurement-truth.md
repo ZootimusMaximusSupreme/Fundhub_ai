@@ -203,11 +203,85 @@ substitute for measuring the video — it is a different, useful thing.
 
 ## UNKNOWN — stated, not guessed
 
-- **Whether this ClickFunnels page is live and taking traffic.**
-  `docs/workflows/cf-vsl-watch-html-step1.html` is a file in our repo, and its name
-  says "step1". The video it points at is definitely live. Whether the page itself is
-  published, and at what address, cannot be told from inside this repo.
+- ~~Whether this ClickFunnels page is live and taking traffic.~~ **ANSWERED — see
+  "The live page" below.**
 - **Whether the VSL is also on a YouTube channel Chris owns.** No YouTube connection
   exists, so this cannot be checked. If it is, the YouTube numbers become useful as
   well — but for a different audience than the funnel's.
 - **How many people watch it today.** Nothing is counting. This is the point.
+
+---
+
+## The live page — found and confirmed, 2026-09-08
+
+**The VSL page is live at `https://apply.fundhub.ai/watch`.**
+
+`https://apply.fundhub.ai/vsl` redirects there and answers 200. The address was hiding
+in plain sight at `public/_headers:62`, in a comment: *"VSL on apply.fundhub.ai/vsl."*
+
+It is a **ClickFunnels page on a custom domain** — the response carries an
+`x-clickfunnels-version` header. So `apply.fundhub.ai` is ClickFunnels wearing a
+fundhub.ai coat.
+
+I fetched the live page and searched it. Three things came back, and all three matter:
+
+| Looked for | Found | What it means |
+|---|---|---|
+| `<video>`, `fh-vsl`, `vsl.mp4` | **yes** | Our HTML from `docs/workflows/cf-vsl-watch-html-step1.html` really is pasted in and running |
+| `timeupdate` or any tracking | **no** | **Confirmed live: nothing measures this video.** Not a guess from reading the repo — checked on the page itself |
+| `clarity` | **no** | Clarity is not on the VSL page at all, even if a project ID were pasted in |
+
+**This settles a disagreement.** This file originally said the page was on ClickFunnels
+(from its CSS) and `public/_headers:62` said `apply.fundhub.ai`. Both were right. It is
+one page: ClickFunnels, custom domain, live, carrying our player and no tracking.
+
+**Practical consequence:** the measuring script has to be pasted into that page inside
+ClickFunnels. It cannot be deployed from this repo. That is a manual step in the build,
+and it belongs on the checklist rather than being discovered later.
+
+---
+
+## A hard problem the plan has to survive: nobody knows how fast Chris talks
+
+This is the finding that most changes what can be built.
+
+Two numbers, both measured:
+
+- The video is **207.215 seconds** long — read from the file's own header.
+- The Founder VSL script in `docs/ads/CONTROLS.md` is **844 words** — counted.
+
+That is **244 words a minute.**
+
+The rules assume **150** (`docs/ads/RULES.md:208-215` — and that file already admits the
+number is a guess nobody has timed). At 150 words a minute, 207 seconds would hold about
+**518 words.** The real script holds 844.
+
+**The assumption is off by about 63%.**
+
+### Why this matters more than it sounds
+
+The best part of the plan was: *click the moment people quit, and see the words being
+said right then.* The obvious way to do that is to count words — "we are 40% through the
+video, so we are 40% through the script."
+
+**That method would have been wrong by more than half a minute on a three-minute video.**
+It would have pointed at the wrong paragraph, confidently, every single time. Chris would
+have rewritten lines that were never the problem.
+
+### What to do about it
+
+1. **Do not name the exact line from a word count.** Not yet.
+2. **Do show the moment and the whole script**, and say plainly why it is not pointing at
+   an exact line.
+3. **The real fix is cheap:** somebody watches one filmed ad with a stopwatch and writes
+   down where each section starts. One afternoon. After that the mapping is measured
+   rather than assumed, and the click-the-cliff feature can be switched on properly.
+4. Until then, treat 244 words a minute as the working number for **this speaker in this
+   video**, not as a general rule. One video is one data point.
+
+### It also raises a question for Chris
+
+`docs/ads/RULES.md:438-441` says a VSL is 700–900 words **and** 5–6 minutes. Those two
+cannot both be right at Chris's real speaking rate — 844 words comes out at 3:27, which
+is exactly what the live video is. So the word band looks correct and the minute
+estimate looks wrong. **Only Chris can say which one he meant.**
