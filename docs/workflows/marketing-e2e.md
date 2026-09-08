@@ -311,10 +311,61 @@ do not guess, do not change it.
 
 _Each lane appends: files read, files written, findings count, blockers._
 
-(pending)
+Phase 1 complete. All five lane sections written, fact-checked and patched. The
+readable summary is `docs/specs/marketing-e2e-spec.md`. Four ground-truth files sit
+alongside the lane sections in `docs/specs/marketing-e2e/`.
 
 ---
 
+# PHASE 2 — building. Live status.
+
+**The target, in one line:** make and measure. Scripts, ads, VSLs and landing page
+copy on demand — then track everything and feed it back.
+Full version: `docs/specs/marketing-e2e/THE-TARGET.md`.
+
+## Done
+
+| What | Commit | State |
+|---|---|---|
+| Phase 1 spec, five lanes, four ground-truth files | `67d38a42`, `f1446f3f` | done |
+| VSL live page found + the speaking-rate correction | `b97ac08a` | done |
+| Chris's eight decisions locked | `3c511a1c` | done |
+| ClickFunnels setup steps for Chris | `3342c1d4` | **waiting on Chris** |
+| Heartbeat investigation | `3342c1d4` | done — **it has never run** |
+| **Migration 377 — the label spine** | `ecb8d8ee` | written, **NOT executed anywhere** |
+
+## In flight
+
+| Unit | What it does | State |
+|---|---|---|
+| A | Read endpoint over the spine view | building |
+| B | Write path — a script and its labels; a rewrite makes a new version | building |
+| C | The `asset_id` link. **This is what turns the spine on.** | building |
+| D | Routes map + the flow diagram + changelog | waits for A, B, C |
+
+## The three honest limits right now
+
+1. **Nothing has been run against a database.** There is no Postgres, no Docker and no
+   Homebrew on this Mac, and GitHub CI is locked out. Every database test skips, and a
+   skipped test is not green. Migration 377's first real execution would be the
+   production deploy.
+2. **The spine reads EMPTY until `ads.asset_id` gets written.** That column has existed
+   since migration 046 and nothing has ever filled it. Unit C is about exactly this.
+   Empty is not broken, but it looks the same on a screen.
+3. **The live site is behind `main`.** Three endpoints return 404 there while routed
+   ones return 401. Nothing new works live until one deploy goes out.
+
+## Waiting on Chris
+
+- The five ClickFunnels boxes — **they do not exist**. Steps written at
+  `docs/clickfunnels/CHRIS-DO-THIS-FIRST.md`. Nothing downstream works without them.
+- Four keys: ClickFunnels (**and which workspace subdomain**), YouTube OAuth trio,
+  Clarity project ID, Meta ad account.
+- Has a text arrived around 7am each morning? One answer settles the heartbeat.
+- Optional: add "mechanism" as a sixth label? One line to add later, not a redesign.
+
 ## Open questions raised by lanes
 
-(pending)
+Recorded in each lane section under `## UNKNOWN`. The ones that change what gets built
+were put to Chris and answered on 2026-09-08 — see the locked decisions at the top of
+`docs/specs/marketing-e2e-spec.md`. Nothing is blocked on an unanswered question.
