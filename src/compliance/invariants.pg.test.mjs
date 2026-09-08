@@ -27,15 +27,18 @@ import { screen, clearRuleCache } from "./screen.mjs";
 const HAVE_DB = !!process.env.DATABASE_URL;
 const SLUG = "inv-test-";
 
-// Every table 045-050 created that carries partner_id. Kept as a literal rather
-// than derived, so ADDING a table to the module is a deliberate edit here too —
-// a derived list would silently accept a new table with no policy.
+// Every table 045-050 created that carries partner_id, plus every one added
+// since. Kept as a literal rather than derived, so ADDING a table to the module
+// is a deliberate edit here too — a derived list would silently accept a new
+// table with no policy.
 const MODULE_TABLES = [
   "brand_kits", "brand_kit_sources", "creative_assets", "generation_jobs",
   "generation_job_assets", "ad_platform_connections", "campaigns", "ad_sets", "ads",
   "ad_metrics_daily", "action_log", "spend_ceilings", "partner_module_settings",
   "partner_onboarding_tasks", "compliance_screenings", "social_channels", "social_posts",
-  "creative_usage_events"
+  "creative_usage_events",
+  // 377_marketing_label_spine.sql
+  "ad_scripts"
 ];
 
 describe("module invariants", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
@@ -328,6 +331,11 @@ describe("module invariants", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, ()
         `INSERT INTO social_posts (org_id, partner_id, channel_id, caption, offer_type)
          VALUES ($1,$2,$3,'hello','funding')`, [org, p, chan]);
 
+      // 377: one script, so the leak tests have a script to leak.
+      await tx.query(
+        `INSERT INTO ad_scripts (org_id, partner_id, body, angle_key)
+         VALUES ($1,$2,'HOOK: fixture.',NULL)`, [org, p]);
+
       await tx.query(
         `INSERT INTO creative_usage_events
            (org_id, partner_id, event_type, quantity, unit_cost_cents, rate_pct_applied,
@@ -351,6 +359,8 @@ describe("module invariants", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, ()
                        "compliance_screenings", "partner_onboarding_tasks", "spend_ceilings",
                        "action_log", "ad_metrics_daily", "ads", "ad_sets", "campaigns",
                        "generation_job_assets", "generation_jobs", "creative_assets",
+                       // ad_scripts after creative_assets: script_id is ON DELETE RESTRICT.
+                       "ad_scripts",
                        "brand_kit_sources", "brand_kits", "partner_module_settings",
                        "ad_platform_connections"]) {
         await tx.query(`DELETE FROM ${t} WHERE partner_id = ANY($1)`, [ids]);
