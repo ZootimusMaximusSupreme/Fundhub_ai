@@ -11,6 +11,52 @@ Detail behind every section lives in `docs/specs/marketing-e2e/`.
 
 ---
 
+# Decisions — locked by Chris, 2026-09-08. Do not re-open.
+
+1. **Ad numbering: both, plus the associations.** Our own number AND Meta's ad id.
+   One piece of copy can have many assets, and many ads. Store the links at every
+   step — `script → creatives → ads → Meta's id` — so the AI can reason across them.
+   The associations are the point, not the numbering.
+2. **Do not define "conversion".** Store every raw number the platforms give and name
+   none of them "the" conversion. A conversion means different things depending on
+   what is being tested. Chris reads the data, and the AI analyses it.
+3. **An ad click always lands on a VSL.** Never straight to the application.
+4. **The five ClickFunnels boxes do not exist.** Creating them is item one, before
+   anything else is built.
+5. **Chris's own ads get a house partner row.** Everything else in the database keeps
+   working unchanged.
+6. **No fixed VSL length.** It depends on the VSL. The writer takes a target per job.
+7. **No stopwatch exercise.** The ad platforms report watch time directly. Use that.
+8. **The goal is data and dashboards, plus an AI that reads them.** Not a system that
+   decides what a conversion is. Marketing numbers and staff numbers land in the same
+   place and get read together.
+
+---
+
+# The thing that changes the plan: the brain is already built
+
+Chris asked to tie marketing numbers to employee numbers, feed an AI, and get a
+dashboard and a report. **Most of that already exists in this repo and nobody is
+feeding it.**
+
+| Already built | Where | What it does |
+|---|---|---|
+| Cost per booked call | `src/ops/meta-marketing.mjs` | Computes it — and **refuses to invent a number when the sample is too small**. Returns `INSUFFICIENT` with "Do not invent a cost." |
+| Company KPIs | `src/dashboard/kpis.mjs` | Money chain, events, spend, over a chosen window. NULL means nothing happened, never a made-up sample |
+| The weekly report | `src/ops/weekly-brief.mjs:60-90` | **Already reads `analytics_connections`, `funnel_page_stats` and `video_watch_stats`** |
+| Staff and role numbers | `src/ops/role-unit-times.mjs`, `pods.mjs`, `measure-minutes.mjs`, `csuite-tasks.mjs` | The employee KPI side |
+| The pulse | `src/pulse/registry.mjs` | Under separate investigation |
+
+**So the AI ops brain is wired to read the marketing tables already.** The tables are
+empty, and the numbers that would fill them never get collected. That is the whole
+job — not building a brain, but feeding the one that exists.
+
+This also means the discipline Chris wants is already enforced in code: these modules
+refuse to show a number they cannot stand behind. Nothing new has to be built to make
+the AI honest.
+
+---
+
 # The one-paragraph answer
 
 You have far more built than you think, and almost none of it is connected. Four
