@@ -28,9 +28,41 @@ Blocker numbers are from `docs/workflows/fulfillment-walk-2026-09-05.md` §2.
 | # | What | Where |
 |---|---|---|
 | 1 | `push-payment.mjs` refuses unless an OPEN `payment_links` row exists, and the **only** thing that mints one is the closer deck's Send pay link button (`api/closer-deck.mjs:93`). One press per client, before the receipt | Closer deck, once per client |
-| — | **Identity: A or B.** The walk clients carry your own identity. A = real identity, no bureau pull. B = sandbox identity, real pull. Nothing proceeds without this | `fulfillment-walk-2026-09-05.md:101` |
+| — | ~~Identity: A or B~~ — **ANSWERED, owner-set 2026-09-08. Neither. C: fake identity, fake pull.** See below | settled |
 | — | `FANBASIS_CHECKOUT_API_KEY` comes back from Netlify as asterisks — stored `--secret`. Needed only to mint the pay link when seeding a **new** client. Read it off the Netlify UI, or re-set it | Netlify env |
 | — | `MIGRATION_DATABASE_URL` is masked the same way. Only matters if migrations are run by hand; the production deploy runs them itself | Netlify env |
+
+## Identity — owner-set 2026-09-08
+
+**No real credit is pulled. Ever, on any walk.** Fake identity, fake credit file.
+
+The 09-05 plan offered A (real identity, no pull) and B (sandbox identity, real
+pull). Chris chose neither: the file is **generated**, in the correct CRS
+structure, per bureau, with the correct negative items so Metro 2 has real
+violations to find.
+
+That is what `scripts/sim/push-credit.mjs` already does, and it is the only path
+that may be used to put a file on a walk client:
+
+* The payload is built in the vendor's own field names and stamped
+  `environment: "simulated"` and `simulated: true` (`push-credit.mjs:935-936`).
+  There is no outbound call to CRS anywhere in the script.
+* Per bureau, only the accounts that actually furnish to THAT bureau — not one
+  list copied three times. A real tri-merge is uneven, and the letter engine
+  reads these rows directly.
+* The damaged profiles carry what Metro 2 needs to catch: two collections with
+  month-by-month `adverseRatings`, a charge-off, a 30-day late, and the matching
+  score factors (`38 SERIOUS DELINQUENCY AND PUBLIC RECORD OR COLLECTION FILED`,
+  `10` balance-to-limit, `5` too many accounts with balances).
+* Personal information is built to exercise the floor: three reported name
+  variants, a current and a prior address, a date of birth on Equifax only
+  (matching the sandbox), and employers spelled two ways.
+
+**The one way to pull real credit by accident:** the three Pull buttons on the
+Client Control Panel. Per `fulfillment-walk-2026-09-05.md` §0.3, `CRS_API_HOST`
+points at production, `CRS_ALLOW_LIVE=1`, and those buttons send no simulate
+flag. One tap is a real request against a real file. The sim path is
+`push-credit.mjs` and nothing else — do not use the buttons on a walk client.
 
 ## Still unknown — needs a live look
 
