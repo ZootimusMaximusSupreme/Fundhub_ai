@@ -118,6 +118,25 @@ export default async function handler(req, res) {
     });
   }
 
+  /* WHICH SCRIPT THESE WORDS CAME FROM. Optional, and NULL when not given —
+     unknown has to stay unknown. But it is the middle link of the whole label
+     chain: script -> creative -> ad. Without it v_ad_label_spine (377) returns
+     NULL labels for every row and reads EMPTY rather than broken, which is the
+     harder failure to notice.
+
+     Shape-checked here rather than left to the foreign key, because a malformed
+     id reaches Postgres as a cast error and surfaces to the caller as a 500 with
+     nothing useful in it. The FK in 377 still decides whether the script really
+     exists; this only decides whether the value is worth sending. */
+  const scriptId = (body.spec && body.spec.scriptId) || body.script_id || null;
+  if (scriptId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(scriptId))) {
+    return res.status(400).json({
+      ok: false,
+      error: "script_id_invalid",
+      message: "script_id must be the id of a saved script, or left out entirely."
+    });
+  }
+
   try {
     const result = await withPartnerScope({ kind: "partner", partnerId }, async (tx) => {
       const org = (await tx.query(
@@ -136,14 +155,22 @@ export default async function handler(req, res) {
         ...requesterOf(principal),
         assetKind,
         idempotencyKey,
-        spec: body.spec
-          ? (body.spec.offerType ? body.spec : { ...body.spec, offerType })
-          : {
-              prompt: body.prompt || "",
-              formats: body.formats || ["1x1"],
-              variants: body.variants || 1,
-              offerType
-            }
+        /* scriptId rides in the spec rather than in its own column: generation_jobs
+           already carries a jsonb spec (045:295) and this file already folds
+           assetKind into it the same way, so the link needs no migration of its
+           own. Spread LAST and only when present, so a job without a script keeps
+           the exact shape it had before. */
+        spec: {
+          ...(body.spec
+            ? (body.spec.offerType ? body.spec : { ...body.spec, offerType })
+            : {
+                prompt: body.prompt || "",
+                formats: body.formats || ["1x1"],
+                variants: body.variants || 1,
+                offerType
+              }),
+          ...(scriptId ? { scriptId } : {})
+        }
       });
       return { ...out, orgId: org.org_id };
     });

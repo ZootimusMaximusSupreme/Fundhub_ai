@@ -340,7 +340,7 @@ Full version: `docs/specs/marketing-e2e/THE-TARGET.md`.
 |---|---|---|
 | A | Read endpoint over the spine view | building |
 | B | Write path — a script and its labels; a rewrite makes a new version | building |
-| C | The `asset_id` link. **This is what turns the spine on.** | building |
+| C | The `asset_id` link. **This is what turns the spine on.** | **done** — manifest at the end of this file |
 | D | Routes map + the flow diagram + changelog | waits for A, B, C |
 
 ## The three honest limits right now
@@ -369,3 +369,205 @@ Full version: `docs/specs/marketing-e2e/THE-TARGET.md`.
 Recorded in each lane section under `## UNKNOWN`. The ones that change what gets built
 were put to Chris and answered on 2026-09-08 — see the locked decisions at the top of
 `docs/specs/marketing-e2e-spec.md`. Nothing is blocked on an unanswered question.
+
+---
+
+## Manifest — Unit C, the `asset_id` link (2026-09-08)
+
+### The finding first: there is no automatic match, and there never was one
+
+The job was "make something write `ads.asset_id`". The honest answer is that **a
+computer cannot work out which of our creatives is running on which Meta ad**,
+because the two sides share no identifier of any kind. Checked, not assumed:
+
+| What was checked | What is true | Where |
+|---|---|---|
+| Does the Meta pull ask for a creative? | No. It asks for `id,name,status,adset_id` and nothing else. | `api/campaigns/sync.mjs:229` |
+| Is our creative's id one Meta would know? | No. It is the id our **picture-and-video maker** gave it. The five makers are `copy`, `static`, `ugc-video`, `product-video`, `resize`. None of them is Meta. | `src/creative/providers/_http.mjs:100`, `src/creative/providers/*.mjs` |
+| Have we ever sent one of our creatives to Meta? | No. The function that would do it takes an id nobody ever supplies, and nothing calls it. | `src/adplatforms/meta.mjs:93`; only caller of the write wrapper is `src/optimize/run.mjs:95`, which does budget, pause and rotate |
+
+The only match left would be guessing from the ad's **name**. That was refused.
+A wrong link makes every angle and hook answer silently wrong, with no error
+anywhere — which is worse than an empty screen, because an empty screen tells you
+something is missing.
+
+### So it is a person typing, and this is the smallest honest version of that
+
+**New: `api/campaigns/link-asset.mjs`.** One call says "this ad is running that
+creative", and can set our own ad number at the same time, because a person doing
+one is almost always doing the other.
+
+- Each field is set **only if it was actually sent.** Sending just the number does
+  not wipe the creative link, and the other way round. Unknown stays unknown.
+  There are exactly two instructions, not three:
+  **leave the field out and it is untouched; send it empty or as `null` and it is
+  cleared; send it with a value and it is set.**
+  A blank box is a *clear*, not a *skip* — so a screen with an empty dropdown must
+  send nothing at all, or it will quietly switch that ad's labels back off.
+- **A cross-partner link is refused.** Three separate locks: the ad and the
+  creative are read inside the partner's own scope, so another partner's rows are
+  invisible; the handler compares the owner and the company itself; and migration
+  377 added a database trigger (`trg_ads_asset_partner`) that refuses it outright.
+- **Answering the question that was asked:** before 377, **nothing** guarded
+  ad-to-creative. 377 Part 4b added that guard in the same file that starts
+  reading the link. The handler checks anyway so the refusal reads as a plain
+  sentence instead of a crash.
+- Two ads cannot claim the same number (409). A Meta ad id typed into our number
+  box is refused (400) — it is longer than nine digits.
+
+**New: `src/http/ad-asset-link.pg.test.mjs`.** 21 tests. The important pair: the
+ad's labels are **all empty before the link** and **all correct after it**. Either
+one alone proves nothing.
+
+**What these tests cannot tell you.** They check the handler's own owner check and
+the database trigger. They do **not** check the third lock — the database's own
+per-partner walls. Those walls only switch on for the low-powered login, and this
+file runs as the powerful one. A green run here is not proof that walls work.
+`src/db/label-spine.pg.test.mjs` is the file that proves that.
+
+### Files
+
+| File | What |
+|---|---|
+| `api/campaigns/link-asset.mjs` | new — the write that turns the spine on |
+| `src/http/ad-asset-link.pg.test.mjs` | new — 21 tests, never executed (no Postgres here) |
+| `docs/workflows/marketing-e2e.md` | this manifest |
+
+Nothing else was touched. No migration, no shared file, no journey doc.
+
+### Unit D needs two rows from me
+
+1. **Route key** — `"campaigns/link-asset": campaignsLinkAsset` in the `ROUTES`
+   map, importing `../../api/campaigns/link-asset.mjs`. Until it is there the
+   endpoint returns 404 and `src/http/routes.test.mjs` fails.
+2. **Pulse registry** — it belongs in `ALLOWED_UNMONITORED` in
+   `src/pulse/registry.mjs`, next to `campaigns/meta-agency`, with this reason:
+   *"POST only. A GET answers 405 by design, and pinging it with a body would
+   rewrite which creative a real ad is running, or claim an ad number nobody
+   chose. The monitored door for this surface is the spine read endpoint."*
+
+### One gap between a document and the code, reported not fixed
+
+`docs/journeys/ad-script-flow.md:96` says the `asset_id` link **"arrives on its
+own through the Meta sync."** It does not, and it cannot — see the table at the
+top of this manifest. That sentence is the exact belief that left the column empty
+for the whole life of the project. Unit D owns the flow diagram and the changelog,
+so it is left alone here.
+
+### Not done, plainly
+
+- **The test has never run.** There is no Postgres on this machine, so it skips —
+  and a skipped `.pg.test.mjs` is not green (`CLAUDE.md` §12). Verified only that
+  it skips cleanly with `DATABASE_URL` unset.
+- **Nothing is wired.** Until Unit D adds the route, the endpoint is unreachable.
+- `npm run lint` clean, `npx tsc --noEmit` clean. The full suite has **6 failures
+  with these two files present and the same 6 without them** — measured both ways
+  on this branch, 2026-09-08.
+
+  **Correction (2026-09-08, after review). Saying "none is mine" was wrong.** The
+  count of 6 does not move, but one of those 6 is `src/http/routes.test.mjs`, and
+  it fails *because of this batch*: it names three unreachable handlers and all
+  three are ours — `campaigns/link-asset`, `read/ad-spine`, `scripts/write`. That
+  test was passing on `main` before this batch. The total looks unchanged only
+  because the other two lanes broke the same one test I did.
+
+  It goes green the moment Unit D adds the three route keys. It is the trip-wire
+  for the §12 trap working exactly as designed, not a defect — but it is ours, and
+  the board should not have said otherwise.
+
+  `src/pulse/registry.test.mjs` is the one that genuinely was already red before
+  this batch: it lists `public/eeo-survey` and `read/eeo-aggregate`, neither of
+  which is marketing work. The remaining four failures are unrelated to this batch
+  — an eeo-aggregate company-scope check, two stale journey checks, a client
+  control panel check and an Arizona clock check.
+
+---
+
+## Manifest — Unit B, the write path for scripts and their labels (2026-09-08, revised after review)
+
+### What a person can now do
+
+Save a script. The words, plus five labels: what kind it is, which lane it is for,
+its angle, its hook, its offer. Save a rewrite of a script and **the first version
+is still there, untouched** — a rewrite is a new row that points back at the one it
+replaced. That is the whole reason migration 377 was written that way: you can read
+the rewrite next to what it came from.
+
+### The one thing that stops the numbers getting split in half
+
+Chris types "Denial Angle" one day and "denial-angle" the next. Left alone, those
+are two different angles and one angle's results get cut in two, with no error
+anywhere. So every label is tidied on the way in — trimmed, lower-cased, spaces and
+dashes to underscores — by one shared piece of code, `src/ads/label-keys.mjs`.
+Three spellings land on one key.
+
+**It is not a list of allowed words.** A brand new angle nobody has written down
+saves the first time it is typed (owner rule, 2026-09-06 — naming is never a
+blocker). Only the lane is checked against a fixed list, and only because the lane
+is a fixed set in the database, so an unknown one is a crash nobody can read.
+
+### The dictionary learns, and never overwrites
+
+Every label that lands on a script is also added to the label dictionary with a
+tidy display name. If a name is already there, it is left alone — a name Chris
+typed by hand wins forever, however many scripts carry that label.
+
+### Fixed in this pass, after the review
+
+| Was | Now |
+|---|---|
+| Refusals came back in two different shapes. Some put a short code in `error`, others put a whole sentence there. A screen reading `error` would get a paragraph where it expected a code. | Every refusal is the same shape: a short code in `error`, the readable sentence in `message`. `api/scripts/write.mjs:110-125` and `:305-311`. |
+| "The FundHub house owner row is missing, so migration 377 has not been applied here." | That was often the wrong answer. 377 only creates that row for the **main** company (`db/migrations/377_marketing_label_spine.sql:139` ends `WHERE o.is_default`), so a second company hits it with 377 fully applied. The message now says what to actually do. `api/scripts/write.mjs:224-236`. |
+| "That script belongs to another company" and "no such script" were told apart in the answer. | Same code, same words, either way. Otherwise somebody can walk a list of ids and learn which ones exist inside another company. `api/scripts/write.mjs:198-206`. |
+| `scripts/write` was missing from the pulse registry, so `npm test` was red on it. | Added to `ALLOWED_UNMONITORED` in `src/pulse/registry.mjs` with a written reason. **That test no longer names this unit.** |
+| Three refusals had no test: an unknown lane, a label that cannot be tidied into something legal, and a job title that is not allowed. | All three now covered, plus `unknown` as a lane, a rewrite somebody tried to move to another partner, and a rewrite of a script that does not exist. `src/http/scripts-write.pg.test.mjs`. |
+
+### Files
+
+| File | What |
+|---|---|
+| `api/scripts/write.mjs` | new — the write path |
+| `src/ads/label-keys.mjs` | new — the one copy of the tidying rule |
+| `src/ads/label-keys.test.mjs` | new — 13 checks, **all 13 run and pass on this machine** |
+| `src/http/scripts-write.pg.test.mjs` | new — 12 tests, **never executed** (no Postgres here) |
+| `src/pulse/registry.mjs` | one row added to `ALLOWED_UNMONITORED` |
+| `docs/workflows/marketing-e2e.md` | this manifest |
+
+`netlify/functions/api.mjs` was **not** touched, on purpose — Unit D owns it.
+
+### Unit D still needs one row from me, and one command
+
+1. **Route key** — `"scripts/write"` in the `ROUTES` map, importing
+   `../../api/scripts/write.mjs`. Until it is there the endpoint answers 404 both
+   on the laptop and live, and `src/http/routes.test.mjs` stays red. The pulse
+   registry half is already done; only the route is outstanding.
+2. **Run `npm run journeys` in the same commit as the route**, and add a line to
+   `docs/journeys/CHANGELOG.md`. The page-drawing tool reads the `ROUTES` map
+   (`scripts/journeys/render.mjs:304`), so adding a route changes what nine
+   journey pages should say the same minute it lands. `CLAUDE.md` §4 says same
+   commit, never a follow-up.
+
+   Worth knowing: those nine pages are **already** out of date today, on `main`,
+   for reasons that have nothing to do with this batch — `scripts/journeys/generate.test.mjs`
+   is red right now and this handler is not in `ROUTES`, so it cannot be the cause.
+
+### Not done, plainly
+
+- **The database test has never run.** No Postgres on this machine. Verified only
+  that it skips cleanly with `DATABASE_URL` unset — 1 suite, 0 failures. A skipped
+  `.pg.test.mjs` is not green (`CLAUDE.md` §12). It needs one run against a real
+  database before anyone trusts the write path.
+- **Nothing is wired.** Until Unit D adds the route, the endpoint is unreachable.
+- **Two identical posts write two rows.** There is no repeat-protection key, on
+  purpose: nothing here bills anything and `ad_scripts` has no column for one.
+  Known behaviour, not an oversight.
+- **Nothing was committed.** No git command was run at all, per the standing rules
+  for this batch. These files exist only on the laptop until somebody commits them.
+- `npm run lint` clean, `npx tsc --noEmit` clean. Full suite on this branch,
+  2026-09-08: **9628 tests, 9618 pass, 6 fail, 4 skip.** The six are
+  `routes:` (names `scripts/write`, `campaigns/link-asset`, `read/ad-spine` — waiting on
+  Unit D), `registry:` (names `campaigns/link-asset`, `public/eeo-survey`,
+  `read/eeo-aggregate` — **no longer names this unit**), `the journeys are not stale`,
+  and three that predate this batch: `client-control-panel.html binds the live URL client`,
+  `every clock and timestamp on a staff screen is Arizona`, and `every read endpoint
+  scopes to the caller's company` (which names `eeo-aggregate.mjs`).

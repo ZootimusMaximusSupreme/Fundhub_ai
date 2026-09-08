@@ -113,6 +113,8 @@ import readDealMath from "../../api/read/deal-math.mjs";
 import readCloserDeck from "../../api/read/closer-deck.mjs";
 import readAdAttribution from "../../api/read/ad-attribution.mjs";
 import readAdBooks from "../../api/read/ad-books.mjs";
+import readAdSpine from "../../api/read/ad-spine.mjs";
+import scriptsWrite from "../../api/scripts/write.mjs";
 import clickfunnelsConnect from "../../api/analytics/clickfunnels-connect.mjs";
 import clickfunnelsSync from "../../api/analytics/clickfunnels-sync.mjs";
 import readFunnelPages from "../../api/read/funnel-pages.mjs";
@@ -150,6 +152,7 @@ import campaignsActionLog from "../../api/campaigns/action-log.mjs";
 import campaignsSync from "../../api/campaigns/sync.mjs";
 import campaignsWrite from "../../api/campaigns/write.mjs";
 import campaignsMetaAgency from "../../api/campaigns/meta-agency.mjs";
+import campaignsLinkAsset from "../../api/campaigns/link-asset.mjs";
 import socialSchedule from "../../api/social/schedule.mjs";
 import socialPublish from "../../api/social/publish.mjs";
 import socialOauth from "../../api/social/oauth.mjs";
@@ -579,6 +582,18 @@ export const ROUTES = {
      this map exists to stop. */
   "read/ad-attribution": readAdAttribution,
   "read/ad-books": readAdBooks,
+  /* The label spine (377). One row per ad carrying the angle, hook, lane, offer
+     and script type it inherited from its creative and that creative's script,
+     read out of v_ad_label_spine. ?group_by=angle|hook|lane|offer|script_type
+     turns the same endpoint into the count Chris asks for. ROLE_SETS.STAFF, org
+     from the session. Routed with its two write halves below — a spine that can
+     be filled in and not read back is the same 404 this map exists to stop. */
+  "read/ad-spine": readAdSpine,
+  /* The way into ad_scripts. POST only, ROLE_SETS.STAFF. 377 created the table
+     and nothing in the tree could write a row to it, so every label the spine
+     reads had to start here. A rewrite is a NEW row pointing at its parent;
+     nothing is ever overwritten. */
+  "scripts/write": scriptsWrite,
   "read/funnel-pages": readFunnelPages,
   "read/video-stats": readVideoStats,
   "analytics/clickfunnels-connect": clickfunnelsConnect,
@@ -651,6 +666,14 @@ export const ROUTES = {
   "campaigns/sync": campaignsSync,
   "campaigns/write": campaignsWrite,
   "campaigns/meta-agency": campaignsMetaAgency,
+  /* The write that was missing. ads.asset_id has existed since 046:291 and no
+     code has ever filled it in, so v_ad_label_spine reads empty rather than
+     broken. This says which creative is running on an ad, and what our own ad
+     number for it is. A person picks the row: the Meta pull never asks for a
+     creative and the two sides share no identifier, so there is nothing to
+     match on automatically. Same door as its siblings — requirePrincipal
+     ["partner","staff"] inside withPartnerScope. */
+  "campaigns/link-asset": campaignsLinkAsset,
   "social/schedule": socialSchedule,
   "social/publish": socialPublish,
   "social/oauth": socialOauth,

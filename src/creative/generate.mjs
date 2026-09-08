@@ -217,8 +217,8 @@ async function storeAsset(tx, job, a, ctx) {
     `INSERT INTO creative_assets
        (org_id, partner_id, brand_kit_id, kind, format, provider, provider_asset_id,
         storage_key, copy_text, duration_sec, ai_generated, synthetic_performer,
-        compliance_state, created_by_agent_id, parent_asset_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'pending',$13,$14)
+        compliance_state, created_by_agent_id, parent_asset_id, script_id)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,'pending',$13,$14,$15)
      RETURNING *`,
     [job.org_id, job.partner_id, job.brand_kit_id, a.kind, a.format, a.provider,
      a.provider_asset_id,
@@ -233,7 +233,19 @@ async function storeAsset(tx, job, a, ctx) {
      // it is one nobody can act on.
      copyTextFor(a),
      a.duration_sec, a.ai_generated !== false, Boolean(a.synthetic_performer),
-     ctx.agentId || null, a.parent_asset_id || null]
+     ctx.agentId || null, a.parent_asset_id || null,
+     /* THE MIDDLE LINK OF THE LABEL CHAIN — script -> creative -> ad (377).
+        Carried on the job's spec, which is where api/creative/generate.mjs folds
+        it in, so no column was added to generation_jobs for it.
+
+        NULL when the caller did not name a script, and that must survive: an
+        asset with no script is a real thing, not a zero. The trigger added by
+        377 refuses a creative and a script owned by different partners, so a
+        wrong id fails loudly here rather than quietly mislabelling an ad later.
+
+        Until this column is filled, v_ad_label_spine returns NULL labels for
+        every row and the whole spine reads EMPTY rather than broken. */
+     (job.spec && job.spec.scriptId) || null]
   );
   const asset = rows[0];
 

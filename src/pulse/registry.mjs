@@ -20,6 +20,7 @@ export const ALLOWED_UNMONITORED = {
   "analytics/clickfunnels-sync": "POST only. A GET answers 405 by design, and pinging it with a body would trigger a real sync against ClickFunnels' API on a schedule nobody asked for, and updates last_synced_at/last_error whether or not anyone wanted a sync to run right then. The monitored door is read/funnel-pages.",
   "analytics/youtube-connect": "POST only, same reasoning as analytics/clickfunnels-connect — it exchanges a real OAuth refresh token with Google before saving, so a scheduled ping would spend a real Google API call. The monitored door is read/video-stats.",
   "analytics/youtube-sync": "POST only, same reasoning as analytics/clickfunnels-sync — it refreshes a real Google OAuth token and calls the YouTube Analytics API. The monitored door is read/video-stats.",
+  "scripts/write": "POST only, staff. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would file a junk ad script against the FundHub house partner and teach the label dictionary whatever words the pinger sent — every one of those rows then shows up in the ad spine as a real script nobody wrote. The monitored door for this surface is read/ad-spine, which reports the scripts and labels that actually landed.",
   "ops/weekly-brief": "POST only. A GET answers 405 by design, and pinging it with a body would generate a real brief every time — a real model call, a real write into Company Brain (brain_files/brain_chunks) — on whatever schedule the pulse runs, not the weekly cadence Chris actually wants. This is meant to be run when a person (or a job Chris explicitly schedules) asks for it, not pinged for uptime."
 };
 
@@ -56,6 +57,12 @@ const API_KEYS = [
   "campaigns/connections",
   "campaigns/detail",
   "campaigns/fatigue",
+  /* Says which creative is running on an ad, and what our own ad number for it
+     is (377). Monitored rather than excused, exactly like its sibling
+     campaigns/write directly below: the pulse only ever sends GET, this handler
+     answers a GET with 405, and isUp() counts 405 as up. So the ping proves the
+     route is reachable and writes nothing. */
+  "campaigns/link-asset",
   "campaigns/list",
   "campaigns/spend",
   "campaigns/sync",
@@ -191,6 +198,7 @@ const API_KEYS = [
   "push/subscribe",
   "read/ad-attribution",
   "read/ad-books",
+  "read/ad-spine",
   "read/affiliates",
   /* One affiliate's own referrals, payouts, rates and payout gates. Separate
      from read/affiliates above, which answers staff with roster-wide counts.
