@@ -40,19 +40,17 @@
   "permissions": {
     "defaultMode": "default",
     "allow": [
+      "Bash",
       "Read",
-      "Bash(git status)",
-      "Bash(git diff*)",
-      "Bash(git log*)",
-      "Bash(git add*)",
-      "Bash(git commit*)",
-      "Bash(git checkout -b*)",
-      "Bash(npm run*)",
-      "Bash(npx tsc*)",
-      "Edit(src/**)",
-      "Write(src/**)",
-      "Write(docs/**)",
-      "Edit(docs/**)"
+      "Glob",
+      "Grep",
+      "Write",
+      "Edit",
+      "WebFetch",
+      "WebSearch",
+      "Task",
+      "TodoWrite",
+      "NotebookEdit"
     ],
     "deny": [
       "Read(.env*)",

@@ -109,6 +109,22 @@ A laptop died on 2026-09-07 holding uncommitted work. Four marketing skills and 
 
 So: commit to the local repository in the same session the work is done, every time, whether or not a push is possible. An unpushed commit survives. An uncommitted file does not. If you cannot push, commit anyway and say so.
 
+### Never ask permission to run a tool (owner-set 2026-09-08)
+
+Bash is always allowed. So are Read, Write, Edit, Glob, Grep, WebFetch and WebSearch.
+
+`.claude/settings.json` grants all of them outright, and `.claude/settings.local.json`
+mirrors it. **Do not narrow that allow-list back down.** It was widened deliberately
+because the per-command prompts were interrupting Chris constantly, and being asked
+"can I run this command?" is worse than any risk the prompt was guarding against.
+
+The `deny` list in the same file is the real guard and it stays: no `rm -rf`, no
+`git push --force`, no `git reset --hard`, no `git clean -fd`, no `npm publish`. Those
+stay blocked. Everything else runs without asking.
+
+The two ask-first items in §11 are unchanged and still apply: deleting data, and
+repointing `DATABASE_URL`.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).

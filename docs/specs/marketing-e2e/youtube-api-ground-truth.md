@@ -10,6 +10,23 @@ records what YouTube is *willing to give*, so the gap between the two is visible
 
 ---
 
+> ## ⚠️ READ THIS FIRST — none of this applies to the current VSL
+>
+> This research was done before establishing where the VSL actually lives. **It does not
+> live on YouTube.** It is a 3 minute 27 second video file on our own server, played by
+> a plain `<video>` tag on a ClickFunnels page —
+> `docs/workflows/cf-vsl-watch-html-step1.html:118-119`, file at `public/funnel/vsl.mp4`.
+>
+> **YouTube will report nothing about it, ever.** See
+> `docs/specs/marketing-e2e/vsl-measurement-truth.md` for what actually applies, and for
+> the measurement approach that is both cheaper and better than everything below.
+>
+> Keep this file for two reasons: it documents what our existing YouTube integration
+> could pull and does not, and it is the reference if a VSL is ever published to a
+> YouTube channel. Do not plan the VSL work from it.
+
+---
+
 ## The short version
 
 **Yes. We can get the drop-off curve.** YouTube publishes a report that says what share
