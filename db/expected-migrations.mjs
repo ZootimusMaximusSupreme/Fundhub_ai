@@ -254,6 +254,12 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/364_hiring_rls_policies.sql",
   "migrations/365_lenders_bureaus_from_datapoints.sql",
   "migrations/366_creditor_bureau_map.sql",
+  "migrations/371_waypoint_nudges.sql",
+  "migrations/372_regulator_complaints.sql",
+  "migrations/373_regulator_complaint_insert_guard.sql",
+  "migrations/374_client_escalations.sql",
+  "migrations/375_waypoint_nudge_destination_cap.sql",
+  "migrations/376_checkout_expiry_and_escalation_fk.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",
@@ -276,7 +282,8 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/022_partner_welcome.sql",
   "seed/023_ds02_letters_portal_copy.sql",
   "seed/024_partner_welcome_password.sql",
-  "seed/025_creditor_bureau_map.sql"
+  "seed/025_creditor_bureau_map.sql",
+  "seed/026_waypoint_nudge_templates.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;
