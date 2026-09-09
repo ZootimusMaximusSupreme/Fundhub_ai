@@ -18,21 +18,16 @@
 // this endpoint aggregates across.
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
-import { ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
+import {
+  ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS, readDays
+} from "../../src/http/read-api.mjs";
 import { commandCenter } from "../../src/finance/command-center.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
-export const DEFAULT_DAYS = 30;
-export const MAX_DAYS = 365;
-
-export function readDays(raw) {
-  if (raw === undefined || raw === null || raw === "") return { days: DEFAULT_DAYS };
-  const n = Number(String(raw).trim());
-  if (!Number.isSafeInteger(n) || n < 1 || n > MAX_DAYS) {
-    return { error: `days must be a whole number between 1 and ${MAX_DAYS}` };
-  }
-  return { days: n };
-}
+/* ?days= used to be defined here, in a copy identical to the one in
+   api/read/ad-spine.mjs. It now lives once in src/http/read-api.mjs, next to the
+   other shared query-string helpers, so there is one answer to "what is a valid
+   window" instead of two that can drift apart (CLAUDE.md §8). */
 
 export function today(now = new Date()) {
   return now.toISOString().slice(0, 10);

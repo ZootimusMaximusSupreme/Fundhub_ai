@@ -13,7 +13,10 @@ import { withPartnerScope } from "../../src/partners/rls.mjs";
 import { resolvePartnerId } from "../../src/http/partner-read-api.mjs";
 import { decryptToken } from "../../src/adplatforms/tokens.mjs";
 import { callPlatform } from "../../src/adplatforms/_api.mjs";
-import { normalizeInsight } from "../../src/adplatforms/meta.mjs";
+import {
+  normalizeInsight,
+  VIDEO_INSIGHT_REQUEST_FIELDS
+} from "../../src/adplatforms/meta.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
 const API_VERSION = () => process.env.META_API_VERSION || "v21.0";
@@ -130,29 +133,58 @@ async function upsertAd(tx, { orgId, partnerId, connectionId, campaignId, adSetI
   return ins.rows[0];
 }
 
+/* storeInsights → { stored, errors }
+
+   THE SEVEN VIDEO COLUMNS PASS THROUGH AS NULL WHEN META DID NOT ANSWER. Never
+   0: a photo ad has no video numbers at all and a video nobody watched has real
+   zeros, and 378_ad_video_metrics.sql exists to keep those two facts apart. So
+   these nine parameters are `?? null` and the four money/count ones above them
+   keep their `?? 0`, because those columns are NOT NULL (046:440-448).
+
+   WHY THIS NOW RETURNS ITS ERRORS instead of only a count. The insert used to
+   end `.catch(() => null)`, which threw every failure away. That is a bad shape
+   to add columns to: on a database where migration 378 has not been applied yet
+   this insert fails with "column does not exist", and losing that sentence would
+   leave a sync that stores nothing and says nothing about why. The catch still
+   does not re-throw — the loop's behaviour is unchanged — but the reason now
+   travels back to the caller and into the response's errors list. */
 async function storeInsights(tx, { orgId, partnerId, adId, insights }) {
-  let n = 0;
+  let stored = 0;
+  const errors = [];
   for (const raw of insights || []) {
     const row = normalizeInsight(raw);
     const day = raw.date_start || raw.date || null;
     if (!day || !adId) continue;
     await tx.query(
       `INSERT INTO ad_metrics_daily (
-         org_id, partner_id, ad_id, date, spend_cents, impressions, clicks, ctr, roas
-       ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9)
+         org_id, partner_id, ad_id, date, spend_cents, impressions, clicks, ctr, roas,
+         video_3sec_watched, video_p25_watched, video_p50_watched, video_p75_watched,
+         video_p95_watched, video_p100_watched, video_thruplay_watched
+       ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        ON CONFLICT (ad_id, date) DO UPDATE SET
          spend_cents = EXCLUDED.spend_cents,
          impressions = EXCLUDED.impressions,
          clicks = EXCLUDED.clicks,
          ctr = EXCLUDED.ctr,
          roas = EXCLUDED.roas,
+         video_3sec_watched = EXCLUDED.video_3sec_watched,
+         video_p25_watched = EXCLUDED.video_p25_watched,
+         video_p50_watched = EXCLUDED.video_p50_watched,
+         video_p75_watched = EXCLUDED.video_p75_watched,
+         video_p95_watched = EXCLUDED.video_p95_watched,
+         video_p100_watched = EXCLUDED.video_p100_watched,
+         video_thruplay_watched = EXCLUDED.video_thruplay_watched,
          synced_at = now()`,
       [orgId, partnerId, adId, day, row.spend_cents ?? 0,
-       row.impressions ?? 0, row.clicks ?? 0, row.ctr ?? null, row.roas ?? null]
-    ).catch(() => null);
-    n += 1;
+       row.impressions ?? 0, row.clicks ?? 0, row.ctr ?? null, row.roas ?? null,
+       row.video_3sec_watched ?? null, row.video_p25_watched ?? null,
+       row.video_p50_watched ?? null, row.video_p75_watched ?? null,
+       row.video_p95_watched ?? null, row.video_p100_watched ?? null,
+       row.video_thruplay_watched ?? null]
+    ).catch((err) => { errors.push(String(err.message || err)); return null; });
+    stored += 1;
   }
-  return n;
+  return { stored, errors };
 }
 
 export default async function handler(req, res, deps = {}) {
@@ -238,8 +270,15 @@ export default async function handler(req, res, deps = {}) {
                 try {
                   const since = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10);
                   const until = new Date().toISOString().slice(0, 10);
+                  // The seven video fields are appended from one exported list
+                  // (src/adplatforms/meta.mjs) so what we ask Meta for and what
+                  // the parser knows how to read can never drift apart.
                   const params = new URLSearchParams({
-                    fields: "spend,impressions,clicks,ctr,actions,purchase_roas,date_start",
+                    fields: [
+                      "spend", "impressions", "clicks", "ctr", "actions",
+                      "purchase_roas", "date_start",
+                      ...VIDEO_INSIGHT_REQUEST_FIELDS
+                    ].join(","),
                     time_range: JSON.stringify({ since, until }),
                     time_increment: "1",
                     level: "ad"
@@ -253,9 +292,14 @@ export default async function handler(req, res, deps = {}) {
                     method: "GET",
                     ctx: deps
                   });
-                  stats.insights += await storeInsights(tx, {
+                  const written = await storeInsights(tx, {
                     orgId, partnerId, adId: ad.id, insights: ins?.data || []
                   });
+                  stats.insights += written.stored;
+                  // A write that failed used to disappear. Now it is reported.
+                  for (const error of written.errors) {
+                    stats.errors.push({ ad: arow.id, error });
+                  }
                 } catch (err) {
                   stats.errors.push({ ad: arow.id, error: String(err.message || err) });
                 }

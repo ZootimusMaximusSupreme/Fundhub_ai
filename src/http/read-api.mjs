@@ -94,6 +94,38 @@ export function unitFraction(raw) {
   return { present: true, value, valid: Number.isFinite(value) && value > 0 && value <= 1 };
 }
 
+/* ── ?days= — ONE definition, for every endpoint that takes a date window ────
+
+   A whole number of days in [1, MAX_DAYS], or the default. A malformed value is
+   REFUSED rather than coerced: "days=banana" quietly becoming 30 is how a screen
+   ends up showing a window nobody asked for.
+
+   THIS LIVES HERE BECAUSE IT WAS COPIED. api/read/finance-command.mjs and
+   api/read/ad-spine.mjs held byte-identical copies, which is the bug CLAUDE.md §8
+   names — two definitions of what a valid window is, and the next person to move
+   the ceiling moves only one of them. Both now import this one.
+
+   api/read/transactions.mjs and api/read/money-map.mjs still hold their own
+   copies. They are not in this lane's scope and their own tests import from them
+   directly; they are named here so the next person to touch either one knows
+   where the shared copy is.
+
+   DIGITS ONLY, which the copies were not. Number("1e2") is 100 and Number("0x1E")
+   is 30, and both slipped through Number.isSafeInteger. Neither is a thing a
+   person types into a URL on purpose, so both are now the caller's mistake. */
+export const DEFAULT_DAYS = 30;
+export const MAX_DAYS = 365;
+
+export function readDays(raw) {
+  if (raw === undefined || raw === null || raw === "") return { days: DEFAULT_DAYS };
+  const text = String(raw).trim();
+  const n = Number(text);
+  if (!/^[0-9]+$/.test(text) || !Number.isSafeInteger(n) || n < 1 || n > MAX_DAYS) {
+    return { error: `days must be a whole number between 1 and ${MAX_DAYS}` };
+  }
+  return { days: n };
+}
+
 /* pageParams — limit/offset from a query string, bounded. The unit's rule is
    "paginated above 200 rows", so 200 is the ceiling and a caller asking for more
    silently gets 200 rather than an error: a screen requesting 1000 should still

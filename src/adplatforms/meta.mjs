@@ -143,6 +143,91 @@ export async function fetchInsights(connection, { externalId, since, until }, ct
   return (res?.data || []).map(normalizeInsight);
 }
 
+/* THE SEVEN VIDEO FIELDS — where people stop watching an ad.
+
+   Meta reports the drop-off curve for free on the same insights call we already
+   make. The field names are Meta's; the column names are ours (378).
+
+   REQUEST_FIELDS is exported so the request and the parser can never drift
+   apart: the list a caller asks Meta for is literally the list this file knows
+   how to read. */
+export const VIDEO_INSIGHT_FIELDS = Object.freeze([
+  ["video_3sec_watched_actions",     "video_3sec_watched"],
+  ["video_p25_watched_actions",      "video_p25_watched"],
+  ["video_p50_watched_actions",      "video_p50_watched"],
+  ["video_p75_watched_actions",      "video_p75_watched"],
+  ["video_p95_watched_actions",      "video_p95_watched"],
+  ["video_p100_watched_actions",     "video_p100_watched"],
+  ["video_thruplay_watched_actions", "video_thruplay_watched"]
+]);
+
+/* The names to put in the insights request's `fields` parameter. */
+export const VIDEO_INSIGHT_REQUEST_FIELDS = Object.freeze(
+  VIDEO_INSIGHT_FIELDS.map(([metaField]) => metaField)
+);
+
+/* watchedActionCount — turn one of Meta's action arrays into one number, or
+   null.
+
+   THESE FIELDS ARE NOT NUMBERS. Meta answers each of them with a LIST of
+   objects, `[{ action_type: "video_view", value: "1234" }]`, and `value` is a
+   STRING. Reading `Number(row.video_p25_watched_actions)` gives NaN, which
+   stores as NULL and looks forever like "Meta has no data" — so the shape is
+   handled here, once, and unit-tested in meta-video.test.mjs.
+
+   NULL WHEN META DID NOT ANSWER, NEVER 0. A photo ad has no video fields at
+   all; a video ad nobody watched has real zeros. Those are different facts
+   (378's header) and this function keeps them apart: absent, empty or
+   unreadable → null; a number Meta actually sent → that number, zero included.
+
+   WHY THE LARGEST VALUE AND NOT THE SUM. With no breakdown requested the list
+   holds exactly one entry and every rule agrees. With a breakdown Meta returns
+   the parts AND their total in the same list, so adding them up counts the same
+   people twice — silently, with no error. Taking the largest is right in both
+   cases. `video_view` entries win over any other action_type, because that is
+   the row these fields are actually about. */
+export function watchedActionCount(field) {
+  if (field === null || field === undefined) return null;
+
+  // Defensive: if Meta ever hands one of these back as a plain number or a
+  // numeric string, use it rather than throwing the value away.
+  if (!Array.isArray(field)) {
+    const direct = countOrNull(field);
+    return direct;
+  }
+
+  let best = null;      // largest value seen on a video_view entry
+  let fallback = null;  // largest value seen on any other entry
+  for (const entry of field) {
+    if (!entry || typeof entry !== "object") continue;
+    const v = countOrNull(entry.value);
+    if (v === null) continue;
+    if (entry.action_type === "video_view") best = best === null ? v : Math.max(best, v);
+    else fallback = fallback === null ? v : Math.max(fallback, v);
+  }
+  return best !== null ? best : fallback;
+}
+
+/* countOrNull — a whole, non-negative count, or null. Empty string, null,
+   undefined, NaN, Infinity and negatives are all "no answer" rather than 0;
+   ad_metrics_daily_video_nonneg_ck (378) would refuse a negative anyway. */
+function countOrNull(raw) {
+  if (raw === null || raw === undefined || raw === "") return null;
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 0) return null;
+  return Math.trunc(n);
+}
+
+/* videoMetrics — every video field on one insights row, keyed by OUR column
+   names. Each key is always present; its value is a number or null. */
+export function videoMetrics(row = {}) {
+  const out = {};
+  for (const [metaField, column] of VIDEO_INSIGHT_FIELDS) {
+    out[column] = watchedActionCount(row[metaField]);
+  }
+  return out;
+}
+
 /* normalizeInsight — Meta returns money as decimal STRINGS in the account
    currency. Everything downstream is integer cents, so the conversion happens
    once, here. Doing it at each call site is how a rounding bug gets into the
@@ -160,7 +245,10 @@ export function normalizeInsight(row) {
     ctr: num(row.ctr),
     conversions,
     cpa_cents: conversions > 0 ? Math.round(toCents(row.spend) / conversions) : null,
-    roas: num(row.purchase_roas?.[0]?.value)
+    roas: num(row.purchase_roas?.[0]?.value),
+    // The seven video numbers. null when Meta did not report them — see
+    // videoMetrics above and 378_ad_video_metrics.sql.
+    ...videoMetrics(row)
   };
 }
 
@@ -236,6 +324,7 @@ export async function requestClientAdAccountAccess(
 
 export default {
   PLATFORM, createCampaign, createAdSet, createAd, updateBudget, pause, resume, fetchInsights,
+  watchedActionCount, videoMetrics, VIDEO_INSIGHT_FIELDS, VIDEO_INSIGHT_REQUEST_FIELDS,
   normalizeMetaBusinessId, normalizeMetaAdAccountId, pendingAdAccountPlaceholder,
   requestManagedBusiness, requestClientAdAccountAccess
 };
