@@ -163,6 +163,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .fos-catbar{height:6px;border-radius:3px;background:var(--soft);overflow:hidden}
 .fos-catbar i{display:block;height:100%;border-radius:3px}
 .fos-pill{display:inline-block;font-family:var(--mono);font-size:var(--fs-caption);letter-spacing:.09em;text-transform:uppercase;padding:2px 6px;border-radius:8px;background:#F5CE8F33;color:var(--warnd)}
+/* Finance OS suggestions — severity pills. The word (high/medium/low) is
+   inside the pill's own text, so the colour is a second signal, never the
+   only one (UI-STANDARDS §12.6). Same three status tokens paintBrand()
+   overwrites per tenant, so a white-label brand's own ramp still applies. */
+.fos-pill.sev-high{background:#F2A69B33;color:var(--alertd)}
+.fos-pill.sev-medium{background:#F5CE8F33;color:var(--warnd)}
+.fos-pill.sev-low{background:#A9C6E833;color:var(--infod)}
+.fos-sug .hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 
 /* funding capacity — the dark card */
 .fos-pre{background:var(--card);color:var(--cardtext);border-radius:10px;overflow:hidden;position:relative}
@@ -583,6 +591,51 @@ button,input,select,textarea{font:inherit;color:inherit}
     });
   }
 
+  /* apiGetSuggestions — NOT apiGet(). apiGet() discards the response body on
+     401/403 and reports a single generic "not signed in" sentence, because
+     for every other read on this page a 403 only ever means one thing. This
+     endpoint's 403 means one of two different, unrelated facts —
+     "you're not signed in right" vs "this client has no active finance-os
+     subscription" — and the body says which (entitled:false). Losing that
+     distinction would make a client who simply hasn't bought the add-on read
+     as an auth bug. Everything else mirrors apiGet()'s shape exactly, so
+     suggestionsPanel() can be written the same way every other panel here is. */
+  function apiGetSuggestions(clientId) {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    var started;
+    try {
+      started = fetch("/api/read/finance-os-suggestions?client_id=" + encodeURIComponent(clientId), {
+        headers: t ? { accept: "application/json", authorization: "Bearer " + t }
+                   : { accept: "application/json" }
+      });
+    } catch (e) {
+      return Promise.resolve({ ok: false, source: "offline", data: null, error: (e && e.message) || "fetch unavailable" });
+    }
+    return Promise.resolve(started).then(function (r) {
+      if (r.status === 404) {
+        return { ok: false, source: "offline", data: null, error: "/api/* not deployed" };
+      }
+      return r.json().then(function (d) {
+        if (r.status === 403 && d && d.entitled === false) {
+          return { ok: false, source: "not_entitled", data: null, error: d.reason || "not entitled" };
+        }
+        if (r.status === 401 || r.status === 403) {
+          return { ok: false, source: "unauthorized", data: null, error: "not signed in, or not allowed" };
+        }
+        if (r.status === 503 || (d && d.db === "down")) {
+          return { ok: false, source: "nodb", data: null, error: (d && d.message) || "The database is not reachable right now." };
+        }
+        if (!d || d.ok !== true) {
+          return { ok: false, source: "server", data: null, error: (d && d.message) || "Something went wrong. Try again in a moment." };
+        }
+        return { ok: true, source: "api", data: d, error: null };
+      }).catch(function () { return { ok: false, source: "offline", data: null, error: "response was not JSON" }; });
+    }).catch(function (e) {
+      return { ok: false, source: "offline", data: null, error: (e && e.message) || "network error" };
+    });
+  }
+
   /* One sentence a person can act on, per failure. Deliberately shorter than
      data.js explain(), because these land INSIDE a panel where the reader is
      already looking, not along the bottom edge of the page. */
@@ -921,6 +974,52 @@ button,input,select,textarea{font:inherit;color:inherit}
       rows || '<div class="fh-empty">Repeating charges show here once a connected account has some history.</div>');
   }
 
+  /* suggestionsPanel — the "little CFO" panel, owner-set 2026-09-09. Finance OS
+     is a paid monthly add-on: the panel's four real states are not entitled,
+     entitled with no pull yet, entitled with a pull and nothing to flag, and
+     entitled with real findings. UI-STANDARDS §6 requires all four and forbids
+     inventing a fifth that hides one of them behind another's wording — a
+     client who has not subscribed must never read the same sentence as one
+     whose pull genuinely found nothing to say. Content is never generated
+     here: api/read/finance-os-suggestions.mjs's costing_you and not_a_factor
+     are the exact mapping UnderwriteIQ's funding deliverables already use. */
+  function suggestionRow(item) {
+    var sev = String(item.severity || "").toLowerCase();
+    var pill = (sev === "high" || sev === "medium" || sev === "low")
+      ? '<span class="fos-pill sev-' + sev + '">' + esc(sev) + "</span>" : "";
+    var lines = (item.lines || []).filter(Boolean).map(esc).join(" ");
+    return '<div class="fos-sug"><div class="hd"><b>' + esc(item.title || "") + "</b>" + pill + "</div>" +
+      (lines ? '<div class="basis">' + lines + "</div>" : "") + "</div>";
+  }
+  function suggestionsPanel(res) {
+    if (!res.ok) {
+      if (res.source === "not_entitled") {
+        return emptyPanel("Optimize your accounts", "finance-os add-on",
+          "This client does not have an active Finance OS subscription. Optimization suggestions are part of that add-on and are not shown without one.");
+      }
+      return emptyPanel("Optimize your accounts", "finance-os add-on", whyWords(res, "this client's optimization suggestions"));
+    }
+    var d = res.data || {};
+    if (!d.hasPull) {
+      return emptyPanel("Optimize your accounts", "finance-os add-on",
+        "No credit check has run for this client yet this month. One is requested automatically — see Repeating charges below for what is already known.");
+    }
+    if (d.engineError) {
+      return emptyPanel("Optimize your accounts", "finance-os add-on",
+        "The most recent pull could not be read: " + d.engineError + ".");
+    }
+    var costing = (d.costingYou || []).map(suggestionRow).join("");
+    var notFactor = (d.notAFactor || []).map(suggestionRow).join("");
+    var body = costing || '<div class="fh-empty">Nothing on the most recent pull is costing this client money right now.</div>';
+    if (notFactor) {
+      // .sub is on the caption whitelist (UI-STANDARDS §12.7) — no new size rule
+      // needed, and no risk of it losing a specificity fight with .fos-ph h2's
+      // title-size rule the way reusing an <h2> here would have.
+      body += '<div class="fos-sug"><span class="sub">Checked, not a factor</span></div>' + notFactor;
+    }
+    return panel("Optimize your accounts", "finance-os add-on", body);
+  }
+
   /* ═══ 7. PAINT ════════════════════════════════════════════════════════════ */
   function paint(html) {
     var wrap = $("fosWrap");
@@ -969,14 +1068,19 @@ button,input,select,textarea{font:inherit;color:inherit}
       apiGet("/api/read/finance-os?client_id=" + q),
       apiGet("/api/dashboard/client?id=" + q),
       apiGet("/api/finance/bank-accounts?client_id=" + q),
-      apiGet("/api/finance/bills?client_id=" + q)
+      apiGet("/api/finance/bills?client_id=" + q),
+      apiGetSuggestions(clientId)
     ]).then(function (r) {
-      var gridRes = r[0], detailRes = r[1], bankRes = r[2], billRes = r[3];
+      var gridRes = r[0], detailRes = r[1], bankRes = r[2], billRes = r[3], suggRes = r[4];
 
       explain(gridRes, "this client's credit");
       explain(detailRes, "this client's payments and invoices");
       explain(bankRes, "this client's bank accounts");
       explain(billRes, "the repeating charges");
+      // not_entitled is an expected business state (no subscription), not a
+      // technical failure — it gets its own honest panel below, not a
+      // page-wide error banner alongside a database outage or an auth bug.
+      if (suggRes.source !== "not_entitled") explain(suggRes, "this client's optimization suggestions");
 
       var c = detailRes.ok && detailRes.data ? detailRes.data.client : null;
       /* A CLIENT IS OPEN EVEN WHEN THE READ THAT KNOWS HER NAME FAILED, and the
@@ -997,6 +1101,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         invoicedPanel(detailRes) +
         bankPanels(bankRes) +
         '</div><div class="col">' +
+        suggestionsPanel(suggRes) +
         billsPanel(billRes) +
         "</div></div>"
       );
