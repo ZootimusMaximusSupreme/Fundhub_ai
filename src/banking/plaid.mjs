@@ -452,36 +452,36 @@ export async function rotatePlaidTokens(db, { orgId, toKeyId, env = process.env,
  *  integration to do something is a normal state here, not an exception. */
 export const SEAM_REASONS = {
   NOT_CONFIGURED: "not_configured",   // credential material absent or malformed
-  NOT_IMPLEMENTED: "not_implemented"  // configured, and the client still does not exist
+  NOT_IMPLEMENTED: "not_implemented", // kept: callers and tests still branch on it
+  BAD_REQUEST: "bad_request",         // the caller did not supply what it must
+  HELD: "held",                       // the adapters fence refused; nothing was sent
+  UPSTREAM_ERROR: "upstream_error"    // Plaid answered, and the answer was a failure
 };
 
 /**
- * linkAccount({ clientId, publicToken, env }) → { ok:false, reason, item:null, missing[] }
+ * linkAccount({ clientId, publicToken, env }) → { ok, reason, item, missing[] }
  *
- * SEAM — DELIBERATELY EMPTY. In a built system this is where a Plaid public_token
- * from Link is exchanged for a long-lived access_token, the token is encrypted
- * with encryptPlaidToken() above and written to plaid_items.encrypted_access_token,
- * and link_state moves 'pending' → 'active'.
+ * Exchanges a Plaid Link public_token for the long-lived access_token, encrypts
+ * it with encryptPlaidToken() and hands back the row a caller writes to
+ * plaid_items. IMPLEMENTED 2026-09-09 (owner-set) against
+ * ../banking/providers/plaid-http.mjs; the transmission lives there because this
+ * file must stay free of the network (CLAUDE.md §12).
  *
- * ▶ THE REAL PLAID CLIENT WOULD PLUG IN HERE — one POST to /item/public_token/
- *   exchange, and nothing else in this file changes.
+ * WHAT THIS DOES AND DOES NOT DECIDE. It performs the exchange. It does NOT
+ * write to the database, and it does NOT set consent_granted_at — a token this
+ * function produces is useless until a caller stores it, and the consent column
+ * stays the record of a human decision rather than a side effect of a code path.
+ * PLAID_ENV picks the host, and `sandbox` reaches Plaid's fake institutions:
+ * building this did not point anything at a real person's bank.
  *
- * WHY IT IS NOT HERE. That call sends a credential to a third party and receives
- * standing read access to a real person's bank account. Three things gate it and
- * none of them are code: a SOC 2 review of storing bank credentials in this
- * system, a consent-capture flow that compliance has signed off (plaid_items.
- * consent_granted_at exists and is NULL on every row for exactly this reason),
- * and a human decision to turn it on. An agent must not close this seam.
+ * `item` IS null on every failure, NOT AN EMPTY OBJECT. A caller must not be
+ * able to mistake a refusal for a link that produced nothing.
  *
- * `item` IS null, NOT AN EMPTY OBJECT. A caller must not be able to mistake a
- * refusal for a successful link that produced nothing.
+ * THE TOKEN IS NEVER RETURNED IN THE CLEAR. `item.encryptedAccessToken` is the
+ * ciphertext; the plaintext exists only inside this function and is not logged,
+ * echoed or attached to an error.
  */
 export async function linkAccount({ clientId = null, publicToken = null, env = process.env } = {}) {
-  // publicToken is accepted so the signature is the real one, and immediately
-  // dropped: it is credential material and nothing in this file may retain,
-  // log or echo it. Referencing it only to void it is intentional.
-  void publicToken;
-
   const cfg = plaidConfigFromEnv(env);
   if (!cfg.ready) {
     return {
@@ -494,14 +494,57 @@ export async function linkAccount({ clientId = null, publicToken = null, env = p
     };
   }
 
-  // Configured is not implemented. Saying "not_configured" here would be a lie
-  // that sends someone off to set env vars that are already set.
+  /* The message goes in `missing`, not a separate key. That is the mock's own
+     convention (providers/mock.mjs: `missing: ["clientId is required..."]`) and
+     src/banking/provider.test.mjs asserts both providers return the same key
+     set — a caller must not be able to tell which one answered. */
+  if (!publicToken || typeof publicToken !== "string") {
+    return {
+      ok: false, reason: SEAM_REASONS.BAD_REQUEST, item: null, clientId,
+      missing: ["publicToken is required and must be a string"]
+    };
+  }
+
+  const { exchangePublicToken } = await import("./providers/plaid-http.mjs");
+  const r = await exchangePublicToken(publicToken, {
+    environment: cfg.environment,
+    clientId: env.PLAID_CLIENT_ID,
+    secret: env.PLAID_SECRET,
+    env
+  });
+
+  if (!r.ok) {
+    return {
+      ok: false,
+      reason: r.blocked ? SEAM_REASONS.HELD : SEAM_REASONS.UPSTREAM_ERROR,
+      item: null,
+      clientId,
+      missing: [],
+      retryable: !!r.retryable,
+      errorCode: r.errorCode ?? null,
+      error: r.error ?? null
+    };
+  }
+
+  /* Encrypted immediately, bound to the item id, before the value is carried
+     anywhere. encryptPlaidToken binds the ciphertext to itemId as additional
+     authenticated data, so a token lifted from one row cannot be replayed
+     against another. */
+  const encryptedAccessToken = encryptPlaidToken(r.accessToken, { itemId: r.itemId, env });
+
   return {
-    ok: false,
-    reason: SEAM_REASONS.NOT_IMPLEMENTED,
-    item: null,
+    ok: true,
+    reason: null,
     clientId,
-    missing: []
+    missing: [],
+    item: {
+      plaidItemId: r.itemId,
+      encryptedAccessToken,
+      environment: cfg.environment,
+      /* 'active' describes the TOKEN, not permission. consent_granted_at stays
+         NULL until a human grants it — see the column's own migration. */
+      linkState: "active"
+    }
   };
 }
 
@@ -512,21 +555,30 @@ export async function linkAccount({ clientId = null, publicToken = null, env = p
  * token is decrypted with decryptPlaidToken() and the institution's account list
  * is read, then upserted into bank_accounts by a separate store module.
  *
- * ▶ THE REAL PLAID CLIENT WOULD PLUG IN HERE — one POST to /accounts/get.
+ * IMPLEMENTED 2026-09-09 (owner-set). One POST to /accounts/get, through
+ * ../banking/providers/plaid-http.mjs.
  *
- * `accounts` IS null, NOT []. This is the important line in the file. An empty
- * array means "this client has no bank accounts", which is a finding a funding
- * decision would act on. null means "we did not ask" — NULL means unknown and
- * unknown must survive. Handing back [] from an unbuilt integration would let a
- * refusal be read as a fact about someone's finances.
+ * `accounts` IS null ON EVERY FAILURE, NOT []. This is the important line in the
+ * file and implementing the call did not soften it. An empty array means "this
+ * client has no bank accounts", which is a finding a funding decision would act
+ * on. null means "we did not ask, or we asked and did not get an answer" — NULL
+ * means unknown and unknown must survive. A refusal must never be readable as a
+ * fact about someone's finances. An empty array is returned ONLY when Plaid
+ * itself answered with an empty list.
  *
- * NOTE FOR WHOEVER BUILDS THIS: accounts arriving from a bank carry no ownership
- * information this product can trust. Every row written must keep
+ * OWNERSHIP IS NOT DECIDED HERE, AND MUST NOT BE. Accounts arriving from a bank
+ * carry no ownership information this product can trust. Every row written keeps
  * bank_accounts.entity_kind at its 'unknown' default until a human or a document
- * establishes otherwise. Do not map a Plaid subtype onto 'personal' — see the
- * header of db/migrations/082_bank_account_entity_kind.sql.
+ * establishes otherwise. A Plaid subtype is not evidence — see the header of
+ * db/migrations/082_bank_account_entity_kind.sql. `entityKind: "unknown"` is
+ * stamped on every row below so a caller cannot forget.
+ *
+ * The caller supplies the stored ciphertext; this decrypts it in memory, uses it
+ * for one request, and never returns or logs the plaintext.
  */
-export async function getAccounts({ itemId = null, env = process.env } = {}) {
+export async function getAccounts({
+  itemId = null, encryptedAccessToken = null, env = process.env
+} = {}) {
   const cfg = plaidConfigFromEnv(env);
   if (!cfg.ready) {
     return {
@@ -538,12 +590,56 @@ export async function getAccounts({ itemId = null, env = process.env } = {}) {
     };
   }
 
+  /* Requirement messages go in `missing`, matching the mock — see the note in
+     linkAccount above and src/banking/provider.test.mjs. */
+  if (!itemId || !encryptedAccessToken) {
+    return {
+      ok: false, reason: SEAM_REASONS.BAD_REQUEST, accounts: null, itemId,
+      missing: ["itemId and encryptedAccessToken are both required"]
+    };
+  }
+
+  let accessToken;
+  try {
+    accessToken = decryptPlaidToken(encryptedAccessToken, { itemId, env });
+  } catch (e) {
+    /* A token that will not decrypt is a key rotation that did not finish, or a
+       row bound to a different item. Neither is a fact about the accounts, so
+       this is a bad request and NOT an empty account list. e.message is the
+       crypto layer's own text and carries no key material. */
+    return {
+      ok: false, reason: SEAM_REASONS.BAD_REQUEST, accounts: null, itemId,
+      missing: [`stored access token could not be decrypted: ${e.message}`]
+    };
+  }
+
+  const { fetchAccounts } = await import("./providers/plaid-http.mjs");
+  const r = await fetchAccounts(accessToken, {
+    environment: cfg.environment,
+    clientId: env.PLAID_CLIENT_ID,
+    secret: env.PLAID_SECRET,
+    env
+  });
+
+  if (!r.ok) {
+    return {
+      ok: false,
+      reason: r.blocked ? SEAM_REASONS.HELD : SEAM_REASONS.UPSTREAM_ERROR,
+      accounts: null,
+      itemId,
+      missing: [],
+      retryable: !!r.retryable,
+      errorCode: r.errorCode ?? null,
+      error: r.error ?? null
+    };
+  }
+
   return {
-    ok: false,
-    reason: SEAM_REASONS.NOT_IMPLEMENTED,
-    accounts: null,
+    ok: true,
+    reason: null,
     itemId,
-    missing: []
+    missing: [],
+    accounts: r.accounts.map((a) => ({ ...a, entityKind: "unknown" }))
   };
 }
 

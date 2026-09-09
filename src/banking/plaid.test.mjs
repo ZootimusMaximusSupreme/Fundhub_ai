@@ -125,11 +125,29 @@ describe("the seams refuse honestly", () => {
     assert.ok(r.missing.includes("PLAID_CLIENT_ID"));
   });
 
-  test("linkAccount still refuses when fully configured — configured is not implemented", async () => {
-    const r = await linkAccount({ clientId: "c1", publicToken: "public-sandbox-xyz", env: configured() });
+  /* IMPLEMENTED 2026-09-09 (owner-set). This test used to assert
+     NOT_IMPLEMENTED. That was a product decision, and it no longer holds — the
+     exchange is built. What it asserts now is the property that actually
+     mattered underneath it: a call that cannot complete returns item:null and
+     names why, rather than inventing a link. The fence is held here, so no
+     request leaves the process. */
+  test("linkAccount returns held, and item null, when the adapters fence is up", async () => {
+    const r = await linkAccount({
+      clientId: "c1", publicToken: "public-sandbox-xyz",
+      env: { ...configured(), ADAPTERS_DRY_RUN: "1" }
+    });
     assert.strictEqual(r.ok, false);
-    assert.strictEqual(r.reason, SEAM_REASONS.NOT_IMPLEMENTED);
-    assert.strictEqual(r.item, null);
+    assert.strictEqual(r.reason, SEAM_REASONS.HELD);
+    assert.strictEqual(r.item, null, "a held call must never look like a link that produced nothing");
+  });
+
+  test("linkAccount refuses a missing or non-string public token before reaching the wire", async () => {
+    for (const token of [null, undefined, "", 42, {}]) {
+      const r = await linkAccount({ clientId: "c1", publicToken: token, env: configured() });
+      assert.strictEqual(r.ok, false, String(token));
+      assert.strictEqual(r.reason, SEAM_REASONS.BAD_REQUEST);
+      assert.strictEqual(r.item, null);
+    }
   });
 
   test("linkAccount never echoes the public token it was handed", async () => {
@@ -137,23 +155,46 @@ describe("the seams refuse honestly", () => {
     assert.ok(!JSON.stringify(r).includes("public-sandbox-xyz"));
   });
 
-  test("getAccounts returns accounts: null, NOT an empty array", async () => {
-    // The whole point. [] means "this client has no bank accounts" — a finding a
-    // funding decision would act on. null means "we did not ask".
-    for (const env of [{}, configured()]) {
-      const r = await getAccounts({ itemId: ITEM_A, env });
-      assert.strictEqual(r.ok, false);
-      assert.strictEqual(r.accounts, null, "a refusal must never look like an empty account list");
-      assert.ok(!Array.isArray(r.accounts));
+  /* THE MOST IMPORTANT ASSERTION IN THIS FILE, and implementing the call did not
+     soften it. [] means "this client has no bank accounts" — a finding a funding
+     decision would act on. null means "we did not ask, or we did not get an
+     answer". Every failure path below must be null. */
+  test("getAccounts returns accounts: null on EVERY failure, never an empty array", async () => {
+    const token = encryptPlaidToken(TOKEN, { itemId: ITEM_A, env: configured() });
+    const cases = [
+      ["unconfigured", { itemId: ITEM_A, env: {} }],
+      ["no token supplied", { itemId: ITEM_A, env: configured() }],
+      ["no item id", { encryptedAccessToken: token, env: configured() }],
+      ["fence held", { itemId: ITEM_A, encryptedAccessToken: token, env: { ...configured(), ADAPTERS_DRY_RUN: "1" } }],
+      ["token bound to another item", { itemId: ITEM_B, encryptedAccessToken: token, env: configured() }]
+    ];
+    for (const [label, args] of cases) {
+      const r = await getAccounts(args);
+      assert.strictEqual(r.ok, false, label);
+      assert.strictEqual(r.accounts, null, `${label}: a refusal must never look like an empty account list`);
+      assert.ok(!Array.isArray(r.accounts), label);
     }
   });
 
-  test("getAccounts distinguishes not_configured from not_implemented", async () => {
+  test("getAccounts names why it refused, and the reasons stay distinct", async () => {
+    const token = encryptPlaidToken(TOKEN, { itemId: ITEM_A, env: configured() });
     assert.strictEqual((await getAccounts({ itemId: ITEM_A, env: {} })).reason, SEAM_REASONS.NOT_CONFIGURED);
-    assert.strictEqual((await getAccounts({ itemId: ITEM_A, env: configured() })).reason, SEAM_REASONS.NOT_IMPLEMENTED);
+    assert.strictEqual((await getAccounts({ itemId: ITEM_A, env: configured() })).reason, SEAM_REASONS.BAD_REQUEST);
+    assert.strictEqual(
+      (await getAccounts({ itemId: ITEM_A, encryptedAccessToken: token, env: { ...configured(), ADAPTERS_DRY_RUN: "1" } })).reason,
+      SEAM_REASONS.HELD
+    );
   });
 
-  test("both seams return rather than throw, and neither ever reports ok", async () => {
+  test("a stored token that will not decrypt is a bad request, not a finding about the accounts", async () => {
+    const token = encryptPlaidToken(TOKEN, { itemId: ITEM_A, env: configured() });
+    const r = await getAccounts({ itemId: ITEM_B, encryptedAccessToken: token, env: configured() });
+    assert.strictEqual(r.reason, SEAM_REASONS.BAD_REQUEST);
+    assert.strictEqual(r.accounts, null);
+    assert.ok(!JSON.stringify(r).includes(TOKEN), "the plaintext token must never reach the result");
+  });
+
+  test("both entry points return rather than throw when they cannot proceed", async () => {
     const results = [
       await linkAccount({ env: {} }),
       await linkAccount({ env: configured() }),

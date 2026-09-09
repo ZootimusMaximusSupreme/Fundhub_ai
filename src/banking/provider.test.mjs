@@ -117,12 +117,16 @@ test("the seam dispatches to the mock and gets real accounts", async () => {
   assert.equal(out.accounts.length > 0, true);
 });
 
-test("the seam dispatches to plaid, which still refuses on purpose", async () => {
-  // Configured is not implemented. plaid.mjs says so in its header and the seam
-  // must not paper over it.
+/* Was: "the seam dispatches to plaid, which still refuses on purpose", asserting
+   NOT_IMPLEMENTED. The exchange was implemented 2026-09-09 (owner-set), so that
+   assertion pinned a product decision that no longer holds. What it was really
+   protecting is kept and widened below: the seam reaches plaid, plaid refuses
+   when it cannot proceed, and a refusal is never an empty account list. */
+test("the seam dispatches to plaid, which refuses without a stored token", async () => {
   const out = await getAccounts({ itemId: "item-1", env: PLAID_READY });
   assert.equal(out.ok, false);
-  assert.equal(out.reason, plaid.SEAM_REASONS.NOT_IMPLEMENTED);
+  assert.equal(out.reason, plaid.SEAM_REASONS.BAD_REQUEST,
+    "no encryptedAccessToken was supplied, so nothing could be asked");
   assert.equal(out.accounts, null, "null, not [] — see provider.mjs");
 });
 
