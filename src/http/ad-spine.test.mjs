@@ -47,7 +47,7 @@ const row = (over = {}) => ({
   spend_cents: null,
   impressions: null,
   clicks: null,
-  video_3sec_watched: null,
+  video_continuous_2s_watched: null,
   video_p75_watched: null,
   ad_days_reported: 0,
   ads_reported_in_window: 0,
@@ -144,8 +144,12 @@ describe("ad-spine: unknown never becomes zero", () => {
 
 /* HOOK RATE AND HOLD RATE.
  *
- *   hook rate = 3-second views ÷ impressions   did the opening stop them
- *   hold rate = p75 views ÷ 3-second views     did the middle keep them
+ *   hook rate = kept watching past the opening ÷ impressions
+ *   hold rate = p75 views ÷ kept watching past the opening
+ *
+ * "Kept watching past the opening" is Meta's two-continuous-seconds count,
+ * video_continuous_2s_watched. META PUBLISHES NO 3-SECOND FIELD (378's header),
+ * so this is not the number Ads Manager prints beside the words "hook rate".
  *
  * The arithmetic itself is proved in src/ops/meta-marketing.test.mjs, where
  * watchRate lives. What is proved HERE is the wiring: that the endpoint feeds
@@ -154,12 +158,14 @@ describe("ad-spine: unknown never becomes zero", () => {
 describe("ad-spine: how far into the video people got", () => {
   test("a photo-only group has no hook rate at all — not zero, not '0%'", () => {
     // The single most damaging thing this endpoint could do. A photo ad has no
-    // video, so video_3sec_watched sums to NULL. Reading that as 0 would put
-    // "0% hook rate" beside a perfectly good photo ad and it would look like the
-    // worst ad in the account.
-    const g = shapeGroup(row({ impressions: "50000", video_3sec_watched: null, video_p75_watched: null }));
+    // video, so video_continuous_2s_watched sums to NULL. Reading that as 0
+    // would put "0% hook rate" beside a perfectly good photo ad and it would
+    // look like the worst ad in the account.
+    const g = shapeGroup(row({
+      impressions: "50000", video_continuous_2s_watched: null, video_p75_watched: null
+    }));
 
-    assert.strictEqual(g.video_3sec_watched, null);
+    assert.strictEqual(g.video_continuous_2s_watched, null);
     assert.strictEqual(g.hook_rate.rate, null,
       `a photo-only group reported a hook rate of ${JSON.stringify(g.hook_rate.rate)}`);
     assert.notStrictEqual(g.hook_rate.rate, 0, "an unknown hook rate became zero");
@@ -170,23 +176,28 @@ describe("ad-spine: how far into the video people got", () => {
   test("both rates are computed from the right two columns", () => {
     const g = shapeGroup(row({
       impressions: "10000",
-      video_3sec_watched: "2500",   // a quarter of the people shown it stayed 3s
+      // a quarter of the people shown it kept watching past the opening
+      video_continuous_2s_watched: "2500",
       video_p75_watched: "500"      // a fifth of those got three quarters in
     }));
 
-    assert.strictEqual(g.hook_rate.rate, 0.25, "hook rate is not 3-second views over impressions");
-    assert.strictEqual(g.hold_rate.rate, 0.2, "hold rate is not p75 over 3-second views");
+    assert.strictEqual(g.hook_rate.rate, 0.25,
+      "hook rate is not past-the-opening views over impressions");
+    assert.strictEqual(g.hold_rate.rate, 0.2,
+      "hold rate is not p75 over past-the-opening views");
     assert.equal(g.hook_rate.status, "MEASURED");
     assert.equal(g.hold_rate.status, "MEASURED");
 
     // The raw counts travel too, so a reader can check the division themselves.
-    assert.strictEqual(g.video_3sec_watched, 2500);
+    assert.strictEqual(g.video_continuous_2s_watched, 2500);
     assert.strictEqual(g.video_p75_watched, 500);
   });
 
   test("a real zero survives — a video nobody watched is a measurement", () => {
-    const g = shapeGroup(row({ impressions: "10000", video_3sec_watched: "0", video_p75_watched: "0" }));
-    assert.strictEqual(g.video_3sec_watched, 0, "a reported zero was thrown away as unknown");
+    const g = shapeGroup(row({
+      impressions: "10000", video_continuous_2s_watched: "0", video_p75_watched: "0"
+    }));
+    assert.strictEqual(g.video_continuous_2s_watched, 0, "a reported zero was thrown away as unknown");
     assert.strictEqual(g.hook_rate.rate, 0);
     assert.equal(g.hook_rate.status, "MEASURED");
 
@@ -197,7 +208,9 @@ describe("ad-spine: how far into the video people got", () => {
   test("a tiny sample is refused under the same one threshold, not a second one", () => {
     // Nine impressions is not a hook rate, it is noise. MIN_N_RATE is not
     // restated here — this asserts the one rule is reached.
-    const g = shapeGroup(row({ impressions: "9", video_3sec_watched: "3", video_p75_watched: "1" }));
+    const g = shapeGroup(row({
+      impressions: "9", video_continuous_2s_watched: "3", video_p75_watched: "1"
+    }));
     assert.strictEqual(g.hook_rate.rate, null, "a hook rate was computed off nine impressions");
     assert.equal(g.hook_rate.status, "INSUFFICIENT");
     assert.strictEqual(g.hook_rate.n, 9, "the refusal hid how far short the sample was");
@@ -211,13 +224,13 @@ describe("ad-spine: how far into the video people got", () => {
 
   test("the no-window branch reports no video numbers either", () => {
     const g = shapeGroup(row({ has_window: false }));
-    assert.strictEqual(g.video_3sec_watched, null);
+    assert.strictEqual(g.video_continuous_2s_watched, null);
     assert.strictEqual(g.hook_rate.rate, null);
   });
 
   test("the rate is defined once — the endpoint does no dividing of its own", async () => {
     /* THE RULE THIS PROTECTS: one definition, in one file. If somebody later
-       writes `video_3sec / impressions` straight into the handler, the two
+       writes `video_continuous_2s_watched / impressions` straight into the handler, the two
        definitions drift and two screens disagree about the same ad. */
     const src = await readFile(new URL("../../api/read/ad-spine.mjs", import.meta.url), "utf8");
     // Comments talk about the rule at length. Only real code counts here.
@@ -229,7 +242,7 @@ describe("ad-spine: how far into the video people got", () => {
       "hold rate is worked out somewhere other than the shared watchRate()");
     assert.ok(!code.includes("MIN_N_RATE"),
       "the endpoint names the small-sample threshold itself, which is a second copy of the one rule");
-    assert.ok(!/video_3sec\w*\s*\/|\/\s*impressions/.test(code),
+    assert.ok(!/video_\w*watched\s*\/|\/\s*impressions/.test(code),
       "the endpoint divides the video counts itself instead of asking watchRate()");
   });
 });
@@ -349,15 +362,15 @@ describe("ad-spine: the SQL, read without a database", () => {
 
   test("the video sums ride the same join as the money, and only the two that are needed", () => {
     const { sql } = grouped();
-    assert.ok(sql.includes("sum(m.video_3sec_watched)"),
-      "the 3-second count is not summed, so hook rate has no numerator");
+    assert.ok(sql.includes("sum(m.video_continuous_2s_watched)"),
+      "the past-the-opening count is not summed, so hook rate has no numerator");
     assert.ok(sql.includes("sum(m.video_p75_watched)"),
       "the p75 count is not summed, so hold rate has no numerator");
 
-    // The other five of 378's seven columns are deliberately not selected: they
+    // The other six of 378's eight columns are deliberately not selected: they
     // are not part of either rate and nothing asked for them yet.
     for (const unused of ["video_p25_watched", "video_p50_watched", "video_p95_watched",
-                          "video_p100_watched", "video_thruplay_watched"]) {
+                          "video_p100_watched", "video_thruplay_watched", "video_plays"]) {
       assert.ok(!sql.includes(unused), `the grouped query pulls ${unused}, which nothing reads`);
     }
 
@@ -370,8 +383,8 @@ describe("ad-spine: the SQL, read without a database", () => {
 
   test("a query with no window pulls no video numbers either", () => {
     const { sql } = grouped({ window: null });
-    assert.ok(!sql.includes("sum(m.video_3sec_watched)"));
-    assert.ok(sql.includes("NULL::bigint AS video_3sec_watched"),
+    assert.ok(!sql.includes("sum(m.video_continuous_2s_watched)"));
+    assert.ok(sql.includes("NULL::bigint AS video_continuous_2s_watched"),
       "the no-window branch dropped the video columns instead of returning them as unknown");
     assert.ok(sql.includes("NULL::bigint AS video_p75_watched"));
   });

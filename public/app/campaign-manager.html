@@ -445,9 +445,11 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
           video to measure — a photo ad has no hook rate and never will have one.
         </div>
         <div class="cap">
-          <b>Hook rate</b> is how many people got past the first three seconds, out of everyone the ad
+          <b>Hook rate</b> is how many people kept watching past the opening, out of everyone the ad
           was put in front of. <b>Hold rate</b> is how many of those got three quarters of the way
-          through. <b>Cost per booked person</b> is spend divided by the people who booked — on a sample
+          through. Meta counts "past the opening" at two seconds of watching. It does not publish a
+          three-second count at all, so this is close to but <b>not the same number</b> Meta's own Ads
+          Manager shows next to the words "hook rate". <b>Cost per booked person</b> is spend divided by the people who booked — on a sample
           too small to divide it is not worked out at all, and the reason is printed in the cell
           instead of a made-up number. <b>Ads</b> counts every ad that label has ever had; the money
           covers only the window above, which is why each row also says how many of those ads reported
@@ -560,14 +562,57 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             <thead><tr>
               <th>Ad</th><th>Campaign</th><th>Platform</th><th>Spend</th><th>Impressions</th>
               <th>Frequency</th><th>CTR</th><th>ROAS</th><th>Last date</th><th>Rotated</th>
-              <th>Next rotation</th><th>Recommendation</th>
+              <th>Next rotation</th><th>Recommendation</th><th>Label</th>
             </tr></thead>
             <tbody id="fatRows"></tbody>
           </table>
         </div>
         <div class="pager" id="fatFoot"></div>
+        <!-- ══ CM-06b · LINK AN AD TO A CREATIVE, AND GIVE IT OUR NUMBER ═════
+             POST /api/campaigns/link-asset, routed since 2026-09-08
+             (netlify/functions/api.mjs:677) and called by NOTHING under public/
+             until now. ads.asset_id has existed since 046 and no code has ever
+             written it, which is why v_ad_label_spine shows NULL labels for
+             every ad and the panel above it reads empty.
+
+             THE AD'S OWN ID IS NEVER TYPED. The endpoint needs ads.id, a long
+             random string that appears on no screen. The Label button in each
+             row carries it in a data attribute, taken from the row the table
+             already drew (f.ad_id), so the person only ever picks a row.
+
+             IT ONLY EVER SETS. There is no "unlink" here on purpose: the
+             endpoint treats a blank string as an instruction to CLEAR, and
+             clearing asset_id turns an ad's labels back off with no error
+             anywhere. So a field left empty is left OUT of the request
+             entirely, which is the endpoint's one way of saying "leave it
+             alone" (api/campaigns/link-asset.mjs:44-54). -->
+        <div class="card-bd" id="linkBox" style="display:none;border-top:1px solid var(--line)">
+          <div class="eyebrow" style="margin-bottom:8px">LINK THIS AD</div>
+          <p class="note" id="linkWho" style="margin:0 0 10px;max-width:52rem"></p>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end">
+            <div class="selwrap" style="min-width:300px">
+              <label for="linkAsset">Creative</label>
+              <select id="linkAsset" style="max-width:100%;min-width:0"><option value="">— leave it as it is —</option></select>
+            </div>
+            <div class="selwrap" style="min-width:200px">
+              <label for="linkNumber">Our ad number</label>
+              <input id="linkNumber" type="text" inputmode="numeric" autocomplete="off"
+                     placeholder="e.g. 43" maxlength="9" style="width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:7px;background:#fff">
+            </div>
+            <button type="button" class="btn dark mono" id="linkSaveBtn">Save this link</button>
+            <button type="button" class="btn mono" id="linkCloseBtn">Close</button>
+          </div>
+          <p class="note" id="linkMsg" style="margin:10px 0 0"></p>
+        </div>
         <div class="cap">
           Only ads that ran in this window are listed. <b>Unconfigured</b> means the rotation rules are switched off for this partner.
+        </div>
+        <div class="cap">
+          <b>Label</b> is how an ad gets tied to the creative it is running and to our own ad number.
+          Our ad number is the leading digits of <code>utm_content</code> in the ad's link — it is what
+          matches the people who arrived to the ad they came from. Meta's own id is much longer and does
+          not go here. This screen can set those two things; it does not read back what is already set,
+          and it cannot remove a link once one is made.
         </div>
       </div>
 
@@ -1215,8 +1260,13 @@ function renderFatigue(){
       '<td class="mono">'+(f.rotated_at?dt(f.rotated_at,true):nul())+'</td>'+
       '<td class="mnum">'+(f.hours_until_next_rotation===null?nul():dec(f.hours_until_next_rotation,1)+'h')+'</td>'+
       '<td><span class="badge '+(REC_TONE[f.recommendation]||'b-gray')+' mono">'+esc(f.recommendation)+'</span></td>'+
+      /* THE AD'S INTERNAL ID TRAVELS ON THE BUTTON. /api/campaigns/link-asset
+         needs ads.id and it is on no screen; the row already has it, so the
+         row hands it over and nobody is ever asked to find or type one. */
+      '<td><button type="button" class="btn sm mono" data-link-ad="'+esc(f.ad_id)+'" '+
+        'data-link-name="'+esc(f.ad_name)+'">Label…</button></td>'+
     '</tr>';
-  }).join('') : panelRow(12, 'fatigue',
+  }).join('') : panelRow(13, 'fatigue',
       (UI.fatState==='unconfigured'
         ? 'Nothing is unconfigured. The rotation rules are on for this partner.'
         : 'No ad matches this filter within the window.'));
@@ -2676,9 +2726,13 @@ document.getElementById('syncMetaBtn').addEventListener('click', function () {
     body: JSON.stringify(pid ? { partner_id: pid } : {})
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
+      /* The server now says in words what it saved and what it did not. A run
+         that saved some campaigns and lost others answers ok:false, so the old
+         'Nothing was pulled from Meta' prefix would have been a lie here — it
+         is only used when the server sent no sentence of its own. */
       if (!res.ok) {
-        msg.textContent = 'Nothing was pulled from Meta. ' +
-          (res.message || 'Press Sync Meta now to try again.');
+        msg.textContent = res.message ||
+          'Nothing was pulled from Meta. Press Sync Meta now to try again.';
         return;
       }
       msg.textContent = 'Pulled in ' + (res.campaigns || 0) + ' campaigns · ' +
@@ -2723,6 +2777,186 @@ document.getElementById('metaAgencyBtn').addEventListener('click', function () {
       }
       msg.textContent = res.message ||
         'Saved. Partner admin must Approve once in Meta Business Settings → Requests.';
+      wireAll();
+    });
+});
+
+/* ══ CM-06b · LINK AN AD TO A CREATIVE, AND GIVE IT OUR NUMBER ═══════════
+   POST /api/campaigns/link-asset. Two things, set independently: which creative
+   is running on this ad, and what our own number for it is.
+
+   WHY THIS IS A PERSON PRESSING A BUTTON. Meta's pull never asks for a creative
+   (api/campaigns/sync.mjs:229) and nothing has ever pushed one of ours to Meta,
+   so the two sides share no identifier at all. There is nothing to match on. A
+   human picking the row is slower and correct; a name guess is instant and
+   cannot be checked.
+
+   THE AD'S INTERNAL ID IS NEVER TYPED. It comes off the row's own button.
+
+   A BLANK FIELD IS LEFT OUT OF THE REQUEST, NOT SENT AS "". On this endpoint a
+   key that is present but blank means CLEAR, and clearing the creative turns an
+   ad's labels back off with no error anywhere. Absent is the only thing that
+   means "leave it alone" (api/campaigns/link-asset.mjs:44-54).
+   ═══════════════════════════════════════════════════════════════════════════ */
+var LINK = { adId:null, adName:'', assetsLoaded:false, loading:false };
+
+/* Refusals with no sentence of their own get one written here. The rest of this
+   endpoint's refusals already carry a sentence meant for a person to read — the
+   number is taken, that creative belongs to another partner, our ad number is
+   one to nine digits — and those are shown exactly as they came back, the same
+   way the ClickFunnels box above shows its provider's own words. */
+function linkPlain(res){
+  switch(String((res && res.error) || '')){
+    case 'unauthorized':
+      return 'You are signed out. Sign in again and try once more.';
+    case 'forbidden':
+      return 'Your sign-in is not allowed to change this ad.';
+    case 'auth_unavailable':
+      return 'The system could not check who you are just now. Try again in a moment.';
+    case 'offline':
+      return 'The screen could not reach the server, so nothing changed.';
+    case 'partner_id_required':
+      return 'The screen does not know which partner this is for. Pick a partner at the top and try again.';
+    case 'ad_id_required': case 'ad_id_not_a_uuid':
+      return 'The screen lost track of which ad this is. Reload the page and press Label again.';
+    case 'asset_id_not_a_uuid':
+      return 'The screen lost track of which creative that is. Reload the page and try again.';
+    case 'method_not_allowed':
+      return 'That request was made the wrong way, so nothing changed. Reload the page and try again.';
+  }
+  /* The endpoint's own sentence, with only its first letter raised so it does not
+     read as a fragment after "Nothing was saved." NEVER when it opens with a
+     field name: angle_key is a real column and Angle_key is not, so a sentence
+     whose first word carries an underscore is left exactly as it came back. */
+  if(res && typeof res.message === 'string' && res.message){
+    var firstWord = res.message.split(' ')[0];
+    return firstWord.indexOf('_') === -1
+      ? res.message.charAt(0).toUpperCase() + res.message.slice(1)
+      : res.message;
+  }
+  return 'The server would not do it, and nothing changed. Try again in a moment.';
+}
+
+/* The creatives this partner has, read once, the first time somebody opens the
+   box. A read that fails is SAID OUT LOUD and leaves the ad number usable —
+   an empty picker with no explanation reads as "there are none". */
+function loadLinkAssets(){
+  if(LINK.assetsLoaded || LINK.loading) return;
+  LINK.loading = true;
+  var sel = document.getElementById('linkAsset');
+  var msg = document.getElementById('linkMsg');
+  var pid = partnerParam();
+  fetch('/api/creative/library?limit=100' + (pid ? '&partner_id=' + encodeURIComponent(pid) : ''),
+        { headers: authHeaders() })
+    .then(function(r){ return r.json().catch(function(){ return { ok:false, error:'offline' }; }); })
+    .catch(function(){ return { ok:false, error:'offline' }; })
+    .then(function(res){
+      LINK.loading = false;
+      if(!res || !res.ok){
+        msg.textContent = 'The list of creatives could not be read, so only the ad number can be set here. '
+          + linkPlain(res);
+        return;
+      }
+      LINK.assetsLoaded = true;
+      var items = res.items || [];
+      items.forEach(function(a){
+        var o = document.createElement('option');
+        o.value = a.id;
+        var words = a.copy_text ? String(a.copy_text).replace(/\s+/g,' ').trim().slice(0,40) : '';
+        o.textContent = [a.kind, a.format, a.created_at ? dt(a.created_at) : '']
+          .filter(Boolean).join(' · ')
+          + (words ? ' · ' + words : '')
+          + ' · ' + String(a.id).slice(0,8);
+        sel.appendChild(o);
+      });
+      if(!items.length){
+        msg.textContent = 'There are no creatives on file for this partner yet, so only the ad number can '
+          + 'be set here. Creatives are made on the Creative Factory screen.';
+      }
+    });
+}
+
+/* Delegated, because renderFatigue() replaces every row in this table each time
+   the window or the filter changes. The listener is on the tbody, which stays. */
+document.getElementById('fatRows').addEventListener('click', function(e){
+  var b = e.target && e.target.closest ? e.target.closest('[data-link-ad]') : null;
+  if(!b) return;
+  LINK.adId = b.getAttribute('data-link-ad');
+  LINK.adName = b.getAttribute('data-link-name') || '';
+  var box = document.getElementById('linkBox');
+  box.style.display = '';
+  document.getElementById('linkWho').innerHTML =
+    'Setting the creative and our ad number for <b>' + esc(LINK.adName) + '</b>. ' +
+    'The screen already knows which ad this is, so there is no id to look up.';
+  document.getElementById('linkMsg').textContent = '';
+  document.getElementById('linkNumber').value = '';
+  document.getElementById('linkAsset').value = '';
+  loadLinkAssets();
+  try { box.scrollIntoView({ block:'nearest' }); } catch(err) {}
+});
+
+document.getElementById('linkCloseBtn').addEventListener('click', function(){
+  document.getElementById('linkBox').style.display = 'none';
+  LINK.adId = null;
+});
+
+document.getElementById('linkSaveBtn').addEventListener('click', function(){
+  var btn = this;
+  var msg = document.getElementById('linkMsg');
+  if(!LINK.adId){
+    msg.textContent = 'Nothing was sent. Press Label on one of the ads above first.';
+    return;
+  }
+  var assetId = document.getElementById('linkAsset').value;
+  var number = (document.getElementById('linkNumber').value || '').trim();
+  if(!assetId && !number){
+    msg.textContent = 'Nothing was sent. Pick a creative, type our ad number, or both.';
+    return;
+  }
+  var body = { ad_id: LINK.adId };
+  var pid = partnerParam();
+  if(pid) body.partner_id = pid;
+  if(assetId) body.asset_id = assetId;
+  if(number) body.fundhub_ad_number = number;
+
+  var prev = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  msg.textContent = 'Saving…';
+  fetch('/api/campaigns/link-asset', {
+    method: 'POST',
+    headers: authHeaders({ 'content-type':'application/json' }),
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json().catch(function(){ return { ok:false, error:'offline' }; }); })
+    .catch(function(){ return { ok:false, error:'offline' }; })
+    .then(function(res){
+      btn.disabled = false;
+      btn.textContent = prev;
+      if(!res || !res.ok){
+        msg.textContent = 'Nothing was saved. ' + linkPlain(res);
+        return;
+      }
+      /* THE LABELS PRINTED HERE ARE READ BACK, NOT GUESSED. The endpoint selects
+         the ad's row out of v_ad_label_spine after the write and returns it, so
+         this says what the database now really holds — including "still none",
+         which is the answer whenever the creative has no script on it. */
+      var ad = res.ad || {};
+      var sp = res.spine;
+      var tail;
+      if(!sp){
+        tail = ' The labels could not be read back just now.';
+      } else {
+        var labels = ['script_type','lane','angle_key','hook_key','offer_key']
+          .map(function(k){ return sp[k]; })
+          .filter(function(v){ return !!v; });
+        if(labels.length) tail = ' It now carries these labels: ' + labels.join(', ') + '.';
+        else if(ad.asset_id) tail = ' It still carries no labels: the creative it points at has no script on it.';
+        else tail = ' It still carries no labels: no creative is linked to it yet.';
+      }
+      msg.textContent = 'Saved.'
+        + (ad.fundhub_ad_number ? ' Our number for this ad is ' + ad.fundhub_ad_number + '.' : '')
+        + (ad.asset_id ? ' A creative is linked to it.' : '')
+        + tail;
       wireAll();
     });
 });

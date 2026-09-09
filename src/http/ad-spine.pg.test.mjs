@@ -237,14 +237,18 @@ describe("GET /api/read/ad-spine", { skip: !HAS_DB ? "no DATABASE_URL" : false }
          30 p75 views: hook rate 100/300, hold rate 30/100. Both denominators are
          well over MIN_N_RATE, so both are real numbers rather than a refusal.
 
-         video is passed as null on purpose for the photo rows. The seven columns
+         video is passed as null on purpose for the photo rows. The eight columns
          (378_ad_video_metrics.sql) are nullable with no default precisely so a
-         photo ad reads as "there is no such number" and not as "nobody watched". */
-      const metric = (adId, day, spend, impressions, clicks, sec3 = null, p75 = null) => tx.query(
+         photo ad reads as "there is no such number" and not as "nobody watched".
+
+         `pastOpening` is video_continuous_2s_watched — people who kept watching
+         past the opening. It is NOT a 3-second count; Meta publishes no such
+         field. See 378's header. */
+      const metric = (adId, day, spend, impressions, clicks, pastOpening = null, p75 = null) => tx.query(
         `INSERT INTO ad_metrics_daily (org_id, partner_id, ad_id, date, spend_cents, impressions, clicks,
-                                       video_3sec_watched, video_p75_watched)
+                                       video_continuous_2s_watched, video_p75_watched)
          VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9)`,
-        [org, partnerId, adId, day, spend, impressions, clicks, sec3, p75]
+        [org, partnerId, adId, day, spend, impressions, clicks, pastOpening, p75]
       );
 
       await metric(ad901, utcDay(0), 1000, 100, 10, 40, 10);
@@ -682,15 +686,17 @@ describe("GET /api/read/ad-spine", { skip: !HAS_DB ? "no DATABASE_URL" : false }
 
     // The raw counts first, so a failure below says which half went wrong.
     assert.strictEqual(alpha.impressions, 300);
-    assert.strictEqual(alpha.video_3sec_watched, 100, "the 3-second views did not add up over the window");
+    assert.strictEqual(alpha.video_continuous_2s_watched, 100,
+      "the past-the-opening views did not add up over the window");
     assert.strictEqual(alpha.video_p75_watched, 30);
 
-    // hook rate = 3-second views over impressions. Did the opening stop them.
+    // hook rate = past-the-opening views over impressions. Did the opening stop
+    // them. Not Ads Manager's hook rate — Meta has no 3-second field.
     assert.equal(alpha.hook_rate.status, "MEASURED");
     assert.strictEqual(alpha.hook_rate.rate, 0.3333,
       `hook rate came back as ${alpha.hook_rate.rate}, expected 100/300 rounded`);
 
-    // hold rate = p75 over 3-second views. Did the middle keep them.
+    // hold rate = p75 over past-the-opening views. Did the middle keep them.
     assert.equal(alpha.hold_rate.status, "MEASURED");
     assert.strictEqual(alpha.hold_rate.rate, 0.3,
       `hold rate came back as ${alpha.hold_rate.rate}, expected 30/100`);
@@ -706,7 +712,7 @@ describe("GET /api/read/ad-spine", { skip: !HAS_DB ? "no DATABASE_URL" : false }
     assert.ok(g, "the photo-ad fixture group did not come back");
 
     assert.strictEqual(g.impressions, 30000, "the photo ad did not report its impressions");
-    assert.strictEqual(g.video_3sec_watched, null, "a photo ad reported video views");
+    assert.strictEqual(g.video_continuous_2s_watched, null, "a photo ad reported video views");
     assert.strictEqual(g.hook_rate.rate, null,
       `a photo ad reported a hook rate of ${JSON.stringify(g.hook_rate.rate)}`);
     assert.notStrictEqual(g.hook_rate.rate, 0, "an unknown hook rate became zero");
@@ -715,29 +721,30 @@ describe("GET /api/read/ad-spine", { skip: !HAS_DB ? "no DATABASE_URL" : false }
     // And null survives the JSON body rather than turning into 0 or "".
     const again = JSON.parse(JSON.stringify(g));
     assert.strictEqual(again.hook_rate.rate, null, "a null hook rate did not survive JSON");
-    assert.strictEqual(again.video_3sec_watched, null);
+    assert.strictEqual(again.video_continuous_2s_watched, null);
   });
 
   test("a label with no reported day has no rates and no video counts", async () => {
     const { byKey } = await group({ days: "30" });
     const beta = byKey.get("adspine_beta");
-    assert.strictEqual(beta.video_3sec_watched, null);
+    assert.strictEqual(beta.video_continuous_2s_watched, null);
     assert.strictEqual(beta.video_p75_watched, null);
     assert.strictEqual(beta.hook_rate.rate, null);
     assert.strictEqual(beta.hold_rate.rate, null);
   });
 
   test("a wider window mixes a video ad and a photo ad without inventing zeros", async () => {
-    /* Over 365 days alpha holds both ads: the video one (100 three-second views
-       across 300 impressions) and the photo one (5000 impressions, no video).
-       Postgres's sum() skips the NULLs, so the 3-second total stays 100 while
-       impressions climb to 5300. That is the honest reading — "of everything we
-       were told" — and it is only correct because nothing coalesces. */
+    /* Over 365 days alpha holds both ads: the video one (100 people kept
+       watching past the opening, across 300 impressions) and the photo one
+       (5000 impressions, no video). Postgres's sum() skips the NULLs, so the
+       past-the-opening total stays 100 while impressions climb to 5300. That is
+       the honest reading — "of everything we were told" — and it is only correct
+       because nothing coalesces. */
     const { byKey } = await group({ days: "365" });
     const alpha = byKey.get("adspine_alpha");
 
     assert.strictEqual(alpha.impressions, 5300);
-    assert.strictEqual(alpha.video_3sec_watched, 100,
+    assert.strictEqual(alpha.video_continuous_2s_watched, 100,
       "the photo ad's missing video count was read as 0 and folded into the total");
     assert.strictEqual(alpha.hook_rate.rate, Math.round((100 / 5300) * 10000) / 10000);
   });

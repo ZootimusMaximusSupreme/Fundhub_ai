@@ -38,7 +38,7 @@ made-up name for that browser.
 | # | The link | Can it happen today? |
 |---|---|---|
 | 1 | video → the script writes down what it sees | **Only after the paste.** The script is in this repo, not on the page |
-| 2 | the script → our site | **Yes.** `POST /api/public/vsl-watch` is routed (`netlify/functions/api.mjs:778`) |
+| 2 | the script → our site | **Yes.** `POST /api/public/vsl-watch` is routed (`netlify/functions/api.mjs:785`) |
 | 3 | our site → the two tables | **Yes, once 379 is applied.** It has never run against a database |
 | 4 | the tables → a screen | **No. Nothing reads them yet.** See "What is missing" |
 
@@ -77,17 +77,17 @@ flowchart TD
     M -->|"navigator.sendBeacon,<br/>a text/plain blob so the browser<br/>asks no permission first — :516"| O["POST https://fundhub.ai/api/public/vsl-watch<br/>ENDPOINT — :211"]
     M -->|"if sendBeacon is missing:<br/>fetch, keepalive — :526"| O
 
-    O --> P["THE ROUTE LINE.<br/>public/vsl-watch<br/>netlify/functions/api.mjs:778<br/>Without it the whole internet gets 404"]
+    O --> P["THE ROUTE LINE.<br/>public/vsl-watch<br/>netlify/functions/api.mjs:785<br/>Without it the whole internet gets 404"]
 
     P --> Q{"Which method?"}
     Q -->|"OPTIONS"| R["The browser's permission question.<br/>Answered, writes nothing<br/>api/public/vsl-watch.mjs:198"]
-    Q -->|"anything but POST"| S["405. Nothing is stored<br/>api/public/vsl-watch.mjs:203"]
+    Q -->|"anything but POST"| S["405. Nothing is stored<br/>api/public/vsl-watch.mjs:205"]
     Q -->|"POST"| T{"Bigger than 8 KB?"}
 
-    T -->|yes| U["413. REFUSED, never cut short —<br/>half a message is a row that says<br/>something that did not happen<br/>api/public/vsl-watch.mjs:210"]
+    T -->|yes| U["413. REFUSED, never cut short —<br/>half a message is a row that says<br/>something that did not happen<br/>api/public/vsl-watch.mjs:211"]
     T -->|no| V{"Does every field pass?"}
 
-    V -->|no| W["400, and the single word 'invalid'.<br/>The real reason stays on our side<br/>api/public/vsl-watch.mjs:214"]
+    V -->|no| W["400, and the single word 'invalid'.<br/>The real reason stays on our side<br/>api/public/vsl-watch.mjs:217"]
     V -->|yes| X["The three it will not work without:<br/>which video, which browser, which viewing<br/>src/vsl/watch-beacon.mjs:249-259<br/>EMPTY STAYS EMPTY — a thing we were<br/>never told is never stored as 0<br/>src/vsl/watch-beacon.mjs:179-184"]
 
     X --> Y["Open a transaction and declare<br/>the one visitor being written for.<br/>It never becomes staff<br/>withVslVisitor — src/vsl/watch-store.mjs:84<br/>fundhub_vsl_visitor() — 379:234"]

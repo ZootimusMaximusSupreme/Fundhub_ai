@@ -6,9 +6,22 @@
 //   meta_business_id      — client's Meta Business Portfolio id (digits)
 //   ad_account_id         — optional act_… when known
 //
-// Always upserts ad_platform_connections (pending unless Graph already active).
+// Always upserts ad_platform_connections as 'pending'.
 // Tries Graph managed_businesses and, when ad_account_id is set, client_ad_accounts.
 // Client must still Approve once in Meta — CRM cannot skip that.
+//
+// WHY THIS NEVER WRITES 'active', EVEN WHEN THE GRAPH CALLS SUCCEED. A success
+// here proves Fundhub's agency token authenticates and that Meta accepted a
+// partnership REQUEST. It does not prove access to the partner's ad account —
+// the partner admin has to Approve first, which is the whole point of
+// meta_approve_required below. Stamping 'active' on a request that has not been
+// approved would make the launch gate in 046 (which refuses to let a campaign go
+// live on a non-active connection) trust a fact nobody established.
+//
+// 'active' is earned in api/campaigns/sync.mjs instead: the first Meta read that
+// actually comes back for this ad account, with this row's own stored token,
+// promotes pending → active. Until then this row is pending AND still syncable,
+// so pressing "Sync Meta now" is what turns it on.
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -163,6 +176,9 @@ export default async function handler(req, res, deps = {}) {
            external_business_id = EXCLUDED.external_business_id,
            encrypted_access_token = COALESCE(EXCLUDED.encrypted_access_token, ad_platform_connections.encrypted_access_token),
            scopes = EXCLUDED.scopes,
+           -- Re-saving a connection that a sync already proved must not knock it
+           -- back to pending; re-saving anything else leaves it waiting for that
+           -- proof. api/campaigns/sync.mjs is the only writer of 'active'.
            connection_state = CASE
              WHEN ad_platform_connections.connection_state = 'active' THEN 'active'
              ELSE 'pending'
@@ -192,7 +208,7 @@ export default async function handler(req, res, deps = {}) {
       graph,
       meta_approve_required: true,
       message: graphOk
-        ? "Agency request sent to Meta. Partner admin must Approve once in Business Settings → Requests."
+        ? "Agency request sent to Meta. Partner admin must Approve once in Business Settings → Requests. After they approve, press Sync Meta now — the first sync that comes back is what marks this connection active."
         : "Saved in CRM as pending. Meta Graph could not complete the request from this app/token — partner still must Approve (or invite Fundhub Business " +
           agencyBiz +
           ") in Meta. See graph errors for capability gaps."

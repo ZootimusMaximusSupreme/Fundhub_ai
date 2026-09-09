@@ -1,8 +1,8 @@
-// Where people stop watching an ad — the seven columns, against real Postgres.
+// Where people stop watching an ad — the eight columns, against real Postgres.
 //
 // Two halves, and the second is the one that matters:
 //
-//   1. THE COLUMNS EXIST AND NULL SURVIVES. A row written with the seven video
+//   1. THE COLUMNS EXIST AND NULL SURVIVES. A row written with the eight video
 //      numbers reads back with those numbers; a row written without them reads
 //      back NULL, not 0. That difference is the entire reason
 //      db/migrations/378_ad_video_metrics.sql was written: a photo ad has NO
@@ -11,9 +11,15 @@
 //
 //   2. THE WHOLE PULL, END TO END, WITH A FAKE META. POST /api/campaigns/sync is
 //      driven with an injected fetch that answers exactly the way Meta's
-//      documentation says it does — the seven fields come back as LISTS of
+//      documentation says it does — the eight fields come back as LISTS of
 //      { action_type, value } objects with STRING values. It asserts that the
-//      request asked for all seven, and that the numbers landed in the columns.
+//      request asked for all eight, and that the numbers landed in the columns.
+//
+//      ⚠️ AND THAT NO FIELD NAME IS INVENTED. Meta refuses the WHOLE insights
+//      request when one field name is unknown, so one bad name empties spend,
+//      clicks and impressions too. We asked for video_3sec_watched_actions
+//      until 2026-09-09 and Meta has no such field. The names below are Meta's
+//      own, read from facebook_business/adobjects/adsinsights.py.
 //
 // Lives under src/http/, not next to the handler under api/, because npm test's
 // glob is "src/**" and "scripts/**" only (CLAUDE.md §12) — a test file under
@@ -46,7 +52,8 @@ const SLUG = "videometrics-pg-test";
 const EMAIL = `partner.videometrics_pg_test@example.com`;
 
 const VIDEO_COLUMNS = [
-  "video_3sec_watched",
+  "video_continuous_2s_watched",
+  "video_plays",
   "video_p25_watched",
   "video_p50_watched",
   "video_p75_watched",
@@ -56,7 +63,8 @@ const VIDEO_COLUMNS = [
 ];
 
 const META_FIELDS = [
-  "video_3sec_watched_actions",
+  "video_continuous_2_sec_watched_actions",
+  "video_play_actions",
   "video_p25_watched_actions",
   "video_p50_watched_actions",
   "video_p75_watched_actions",
@@ -67,6 +75,9 @@ const META_FIELDS = [
 
 /* One Meta action array, exactly as documented: a list, one object, a STRING. */
 const views = (n) => [{ action_type: "video_view", value: String(n) }];
+
+/* video_play_actions is the one field Meta labels video_play, not video_view. */
+const plays = (n) => [{ action_type: "video_play", value: String(n) }];
 
 const res = () => {
   const r = { code: null, body: null };
@@ -95,12 +106,17 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
     } else if (u.includes("/insights?")) {
       payload = {
         data: [{
+          // The pull is now ONE account-level request at level=ad, so every row
+          // carries the ad it belongs to. Without ad_id a row cannot be tied to
+          // an ad and is dropped on purpose.
+          ad_id: "vm-ad-1",
           date_start: "2026-09-01",
           spend: "12.34",
           impressions: "1000",
           clicks: "25",
           ctr: "2.5",
-          video_3sec_watched_actions: views(400),
+          video_continuous_2_sec_watched_actions: views(400),
+          video_play_actions: plays(650),
           video_p25_watched_actions: views(220),
           video_p50_watched_actions: views(140),
           video_p75_watched_actions: views(90),
@@ -210,15 +226,15 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
 
   // ── 1. the columns, and the difference between 0 and nothing ─────────────
 
-  test("all seven columns exist on ad_metrics_daily", async () => {
+  test("all eight columns exist on ad_metrics_daily", async () => {
     const r = await db.query(
       `SELECT column_name, data_type, is_nullable, column_default
          FROM information_schema.columns
         WHERE table_name = 'ad_metrics_daily' AND column_name = ANY($1)`,
       [VIDEO_COLUMNS]
     );
-    assert.equal(r.rows.length, 7,
-      `migration 378 has not been applied here — found ${r.rows.length} of 7 video columns`);
+    assert.equal(r.rows.length, 8,
+      `migration 378 has not been applied here — found ${r.rows.length} of 8 video columns`);
     for (const row of r.rows) {
       assert.equal(row.is_nullable, "YES", `${row.column_name} is NOT NULL, so "no video" cannot be stored`);
       assert.strictEqual(row.column_default, null,
@@ -227,18 +243,20 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
     }
   });
 
-  test("a row written with the seven numbers reads them all back", async () => {
+  test("a row written with the eight numbers reads them all back", async () => {
     await asStaff((tx) => tx.query(
       `INSERT INTO ad_metrics_daily (
          org_id, partner_id, ad_id, date, spend_cents, impressions, clicks,
-         video_3sec_watched, video_p25_watched, video_p50_watched, video_p75_watched,
+         video_continuous_2s_watched, video_plays,
+         video_p25_watched, video_p50_watched, video_p75_watched,
          video_p95_watched, video_p100_watched, video_thruplay_watched
-       ) VALUES ($1,$2,$3,'2026-08-01',1234,1000,25,400,220,140,90,60,55,180)`,
+       ) VALUES ($1,$2,$3,'2026-08-01',1234,1000,25,400,650,220,140,90,60,55,180)`,
       [org, partnerId, adId]
     ));
     const row = await readRow("2026-08-01");
     assert.ok(row, "the row was not written");
-    assert.equal(Number(row.video_3sec_watched), 400);
+    assert.equal(Number(row.video_continuous_2s_watched), 400);
+    assert.equal(Number(row.video_plays), 650);
     assert.equal(Number(row.video_p25_watched), 220);
     assert.equal(Number(row.video_p50_watched), 140);
     assert.equal(Number(row.video_p75_watched), 90);
@@ -264,13 +282,13 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
 
   test("a real zero is stored as zero and stays different from NULL", async () => {
     await asStaff((tx) => tx.query(
-      `INSERT INTO ad_metrics_daily (org_id, partner_id, ad_id, date, video_3sec_watched)
+      `INSERT INTO ad_metrics_daily (org_id, partner_id, ad_id, date, video_continuous_2s_watched)
        VALUES ($1,$2,$3,'2026-08-03',0)`,
       [org, partnerId, adId]
     ));
     const row = await readRow("2026-08-03");
-    assert.equal(Number(row.video_3sec_watched), 0, "a real zero did not survive");
-    assert.notStrictEqual(row.video_3sec_watched, null, "a real zero was flattened into 'unknown'");
+    assert.equal(Number(row.video_continuous_2s_watched), 0, "a real zero did not survive");
+    assert.notStrictEqual(row.video_continuous_2s_watched, null, "a real zero was flattened into 'unknown'");
     assert.strictEqual(row.video_p25_watched, null, "an unasked column was invented");
   });
 
@@ -309,7 +327,7 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
 
   // ── 2. the sync, driven end to end against a fake Meta ────────────────────
 
-  test("the sync asks Meta for all seven video fields and stores what comes back", async () => {
+  test("the sync asks Meta for all eight video fields and stores what comes back", async () => {
     requestedUrls.length = 0;
     const r = res();
     await syncHandler(
@@ -323,11 +341,31 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
     assert.deepEqual(r.body.errors, [], "the sync reported errors");
     assert.ok(r.body.insights >= 1, "no insight rows were stored");
 
-    const insightsUrl = requestedUrls.find((u) => u.includes("/insights?"));
-    assert.ok(insightsUrl, "no insights request was made at all");
+    /* ONE insights call for the whole ad account, not one per ad. This used to
+       be a separate call for every single ad, which on a real account is
+       hundreds of calls in a row and does not finish in time. */
+    const insightsCalls = requestedUrls.filter((u) => u.includes("/insights?"));
+    assert.equal(insightsCalls.length, 1,
+      `the numbers were pulled with ${insightsCalls.length} calls — it must be one call for the whole ad account`);
+    const insightsUrl = insightsCalls[0];
+    const decodedInsightsUrl = decodeURIComponent(insightsUrl);
+    assert.ok(/act_[^/]+\/insights/.test(decodedInsightsUrl),
+      `the numbers were asked of ${insightsUrl} — it must be the ad account, not one ad`);
+    assert.ok(decodedInsightsUrl.includes("level=ad"),
+      "the request did not ask for level=ad, so Meta would not return a row per ad");
+    assert.ok(decodedInsightsUrl.includes("ad_id"),
+      "the request never asked for ad_id, so the rows cannot be tied back to an ad");
+
     for (const field of META_FIELDS) {
       assert.ok(insightsUrl.includes(field), `the request never asked Meta for ${field}`);
     }
+
+    /* THE ONE THAT WOULD HAVE CAUGHT THE BUG. A field name Meta does not know
+       makes Meta refuse the ENTIRE request, so spend, clicks and impressions
+       come back empty too and the connection looks completely broken. Meta has
+       no 3-second field in any spelling. */
+    assert.ok(!/3_?sec/i.test(decodeURIComponent(insightsUrl)),
+      "the request asks Meta for a 3-second field, which does not exist — Meta would refuse the whole call");
 
     const row = await asStaff((tx) => tx.query(
       `SELECT m.* FROM ad_metrics_daily m
@@ -338,7 +376,10 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
 
     // The numbers arrived as lists of objects holding strings. These are the
     // numbers that were inside them.
-    assert.equal(Number(row.video_3sec_watched), 400, "the 3-second number did not survive the parse");
+    assert.equal(Number(row.video_continuous_2s_watched), 400,
+      "the past-the-opening number did not survive the parse");
+    assert.equal(Number(row.video_plays), 650,
+      "the play count did not survive the parse — its rows are labelled video_play, not video_view");
     assert.equal(Number(row.video_p25_watched), 220);
     assert.equal(Number(row.video_p50_watched), 140);
     assert.equal(Number(row.video_p75_watched), 90);
@@ -356,7 +397,10 @@ describe("ad video drop-off metrics", { skip: !HAS_DB ? "no DATABASE_URL" : fals
         return {
           ok: true, status: 200,
           text: async () => JSON.stringify({
-            data: [{ date_start: "2026-09-02", spend: "5.00", impressions: "800", clicks: "9" }]
+            data: [{
+              ad_id: "vm-ad-1", date_start: "2026-09-02",
+              spend: "5.00", impressions: "800", clicks: "9"
+            }]
           })
         };
       }

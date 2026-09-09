@@ -424,6 +424,92 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         </div>
       </div>
 
+      <!-- ══ WRITE A SCRIPT AND LABEL IT ═══════════════════════════════════
+           POST /api/scripts/write, which was routed on 2026-09-08
+           (netlify/functions/api.mjs:597) and which NOTHING under public/ has
+           ever called. That is the whole reason the label spine reads empty:
+           ad_scripts had no writer a person could reach, so every ad arrives at
+           v_ad_label_spine with NULL labels and the screen cannot tell "nobody
+           labelled it" from "the join is broken".
+
+           STAFF ONLY. The endpoint gates on ROLE_SETS.STAFF
+           (api/scripts/write.mjs:128) and a partner login is refused. The card
+           is hidden for a partner rather than shown as a button that can only
+           refuse (UI-STANDARDS §5). Hiding is NOT the gate — the server is; this
+           only stops a person being handed a control they cannot use. Same
+           cached-role idiom as the brand review buttons at :1800.
+
+           NO NEW CSS. .card / .cap / .field / .btn / .hint only, so §12.7's type
+           trap cannot bite: every size here comes from a whitelisted class. -->
+      <div class="card" id="secScriptWrite" style="display:none">
+        <div class="card-hd">
+          <div class="eyebrow">Write a script and label it</div>
+        </div>
+        <div class="cap">
+          <b>Save the words of an ad, and the labels that say what kind of ad it is.</b>
+          The labels are how you later ask which angle and which hook are working. A label you have
+          never used before is saved the first time you type it — nothing here refuses a new one.
+          The script is filed under the partner picked at the top of this screen.
+        </div>
+        <div class="card-bd" style="padding:16px;border-top:1px solid var(--line);display:grid;gap:16px">
+          <div class="field">
+            <label for="swBody">The words of the ad</label>
+            <textarea id="swBody" rows="4" placeholder="Paste or type the script here."></textarea>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:16px">
+            <div class="field">
+              <label for="swTitle">Name for this script</label>
+              <input id="swTitle" placeholder="optional" maxlength="200">
+            </div>
+            <div class="field">
+              <label for="swType">Kind of script</label>
+              <input id="swType" list="swTypeList" placeholder="optional" autocomplete="off">
+              <datalist id="swTypeList"></datalist>
+            </div>
+            <div class="field">
+              <label for="swAngle">Angle</label>
+              <input id="swAngle" list="swAngleList" placeholder="optional" autocomplete="off">
+              <datalist id="swAngleList"></datalist>
+            </div>
+            <div class="field">
+              <label for="swHook">Hook</label>
+              <input id="swHook" list="swHookList" placeholder="optional" autocomplete="off">
+              <datalist id="swHookList"></datalist>
+            </div>
+            <div class="field">
+              <label for="swOffer">Offer</label>
+              <input id="swOffer" list="swOfferList" placeholder="optional" autocomplete="off">
+              <datalist id="swOfferList"></datalist>
+            </div>
+            <!-- Lane is the ONE field with a fixed list, and not as a naming rule:
+                 it is a database enum (ad_lane), so an unrecognised lane is a
+                 Postgres error nobody can read. The five values are LANES in
+                 src/ads/registry.mjs:24, verbatim. -->
+            <div class="field">
+              <label for="swLane">Lane</label>
+              <select id="swLane">
+                <option value="">— not tied to one lane —</option>
+                <option value="funding600">funding600</option>
+                <option value="premium">premium</option>
+                <option value="sorting">sorting</option>
+                <option value="uwiq">uwiq</option>
+                <option value="wl">wl</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:16px;align-items:center">
+            <button class="btn mono fh-tap" type="button" id="swSaveBtn">Save this script</button>
+            <span class="hint mono" id="swMsg" style="font-size:var(--fs-caption);color:var(--gray2)"></span>
+          </div>
+        </div>
+        <div class="cap">
+          A saved script joins the <b>Script</b> list in Generate and decide below, so the next thing
+          you make can be tied to it. Nothing reads saved scripts back yet, so that list and the
+          suggestion lists above start empty again every time this page is reloaded. Saving the same
+          words twice saves them twice.
+        </div>
+      </div>
+
       <!-- Generate and decide — the primary action, above the fold (§1). -->
       <div class="card">
         <div class="card-hd">
@@ -460,6 +546,17 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
             </div>
             <div class="selwrap" style="flex:1 1 180px"><label for="genIdem">Name this batch</label>
               <input id="genIdem" placeholder="a short name you have not used before">
+            </div>
+            <!-- WHICH SCRIPT THESE WORDS CAME FROM. Optional, and the middle link
+                 of the whole label chain. The id rides inside spec as scriptId,
+                 which api/creative/generate.mjs:131 reads and stores on the job,
+                 and src/creative/generate.mjs:248 copies onto
+                 creative_assets.script_id. Left out, the creative carries no
+                 script, so the ad it ends up on shows NULL for every label.
+                 The list holds the scripts saved on this screen. Nobody is ever
+                 asked to find or type an id. -->
+            <div class="selwrap"><label for="genScript">Script</label>
+              <select id="genScript"><option value="">— none —</option></select>
             </div>
             <button class="btn dark mono fh-tap" type="button" id="genBtn" disabled>Enqueue generation</button>
             <button class="btn mono fh-tap" type="button" id="runJobsBtn" disabled>Run queued jobs now</button>
@@ -2512,6 +2609,17 @@ document.getElementById('genBtn').addEventListener('click', function () {
      then the compliance check blocks every piece of it and shows the engine's
      own words. Better to ask one question now. */
   if (!offer) { msg.textContent = 'Say what is being sold first.'; return; }
+  /* scriptId is OPTIONAL and is only put in the spec when one was picked. An
+     empty string here would fail the uuid shape check on the endpoint
+     (api/creative/generate.mjs:132) and refuse the whole job, so "none" must
+     send nothing at all rather than "". */
+  var scriptId = document.getElementById('genScript').value;
+  /* offerType rides inside spec, not beside it. The endpoint hands body.spec
+     straight to enqueue(), which stores it on the job, and the compliance
+     check reads spec.offerType off that stored job — so a copy of it at the
+     top level of this body would be dropped and never seen. */
+  var genSpec = { prompt: prompt, formats: ['1x1'], variants: 1, assetKind: kind, offerType: offer };
+  if (scriptId) genSpec.scriptId = scriptId;
   msg.textContent = 'Enqueueing…';
   var t = '';
   try { t = localStorage.getItem('fh_token') || ''; } catch (e) { t = ''; }
@@ -2527,11 +2635,7 @@ document.getElementById('genBtn').addEventListener('click', function () {
       asset_kind: kind,
       idempotency_key: idem,
       prompt: prompt,
-      /* offerType rides inside spec, not beside it. The endpoint hands body.spec
-         straight to enqueue(), which stores it on the job, and the compliance
-         check reads spec.offerType off that stored job — so a copy of it at the
-         top level of this body would be dropped and never seen. */
-      spec: { prompt: prompt, formats: ['1x1'], variants: 1, assetKind: kind, offerType: offer }
+      spec: genSpec
     })
   }).then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
     .then(function (res) {
@@ -2571,6 +2675,154 @@ function cfAuthHeaders() {
   if (t && t !== 'demo') h.authorization = 'Bearer ' + t;
   return h;
 }
+/* ══ WRITE A SCRIPT AND LABEL IT ═════════════════════════════════════════
+   POST /api/scripts/write — the only way a row reaches ad_scripts, and until
+   this form existed nothing under public/ called it. Every label on every ad
+   starts here: script -> creative -> ad.
+
+   WHAT THIS SENDS AND WHAT IT LEAVES OUT. Only `body` is required. A label the
+   person left blank is OMITTED from the request rather than sent as "", because
+   the endpoint normalises whatever it is given and an empty string is not a
+   label — leaving the key out is how "we do not know" stays unknown.
+
+   THE LABELS ARE NOT CHECKED HERE. That is deliberate and it is an owner rule
+   (CLAUDE.md §3c, 2026-09-06): naming must never be a blocker. A brand-new angle
+   nobody has written down saves the first time it is typed. The datalists are
+   suggestions only and never restrict what may be typed — an <input list=…> in
+   HTML accepts any value, unlike a <select>.
+
+   WHERE THE SUGGESTIONS COME FROM. Nothing reads the label dictionary back —
+   there is no endpoint for it — so they are seeded from what this screen has
+   already saved, using the `dictionary` array the endpoint returns. No
+   vocabulary is invented here; an empty list means nothing has been saved yet.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* The employee roles the endpoint accepts — ROLE_SETS.STAFF in
+   src/http/read-api.mjs:173, verbatim. An UNKNOWN role still sees the card: the
+   cache is a hint, not the session, and hiding a control from a real employee
+   because the cache was cold is the worse mistake. The server is the gate. */
+var SW_STAFF_ROLES = ['owner','admin','funding_advisor','closer','inquiry_specialist','setter','sales_manager','csm'];
+(function swRoleGate(){
+  var vrole = '';
+  try { vrole = String(localStorage.getItem('fh_role') || '').trim().toLowerCase(); } catch(e){}
+  var card = document.getElementById('secScriptWrite');
+  if(!card) return;
+  card.style.display = (vrole && SW_STAFF_ROLES.indexOf(vrole) === -1) ? 'none' : '';
+})();
+
+/* One suggestion added to one datalist, never twice, never blank. */
+function swSuggest(listId, value){
+  if(!value) return;
+  var dl = document.getElementById(listId);
+  if(!dl) return;
+  for(var i = 0; i < dl.children.length; i++){
+    if(dl.children[i].value === value) return;
+  }
+  var o = document.createElement('option');
+  o.value = value;
+  dl.appendChild(o);
+}
+var SW_LIST_FOR = { script_type:'swTypeList', angle:'swAngleList', hook:'swHookList', offer:'swOfferList' };
+
+/* WHAT A REFUSAL SAYS. The sign-in and wrong-method answers carry no message and
+   go through this screen's own plain-words helper. The rest of this endpoint's
+   refusals are written for a person AND name the exact text that was typed —
+   "angle_key came out as 3_second_hook after tidying" is worth more than any
+   sentence this screen could invent — so those are shown exactly as they came
+   back rather than reworded into something vaguer. */
+function swSay(res){
+  switch(String((res && res.error) || '')){
+    case 'unauthorized': case 'forbidden': case 'auth_unavailable':
+    case 'method_not_allowed': case 'offline':
+      return plainCreative(res);
+    case 'body_required':
+      return 'Type or paste the words of the ad first.';
+  }
+  /* The endpoint's own sentence, with only its first letter raised so it does not
+     read as a fragment after "Nothing was saved." NEVER when it opens with a
+     field name: angle_key is a real column and Angle_key is not, so a sentence
+     whose first word carries an underscore is left exactly as it came back. */
+  if(res && typeof res.message === 'string' && res.message){
+    var firstWord = res.message.split(' ')[0];
+    return firstWord.indexOf('_') === -1
+      ? res.message.charAt(0).toUpperCase() + res.message.slice(1)
+      : res.message;
+  }
+  return plainCreative(res);
+}
+
+document.getElementById('swSaveBtn').addEventListener('click', function () {
+  var btn = this;
+  var msg = document.getElementById('swMsg');
+  var text = document.getElementById('swBody').value;
+  if(!text.trim()){ msg.textContent = 'Type or paste the words of the ad first.'; return; }
+
+  var payload = { body: text };
+  var title = document.getElementById('swTitle').value.trim();
+  if(title) payload.title = title;
+  [['swType','script_type'],['swAngle','angle_key'],['swHook','hook_key'],['swOffer','offer_key']]
+    .forEach(function(pair){
+      var v = document.getElementById(pair[0]).value.trim();
+      if(v) payload[pair[1]] = v;
+    });
+  var lane = document.getElementById('swLane').value;
+  if(lane) payload.lane = lane;
+  /* The partner this screen is scoped to. Left out when there is none, and then
+     the endpoint files the script under the house partner rather than failing. */
+  var pid = cfPartnerId();
+  if(pid) payload.partner_id = pid;
+
+  var prev = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  msg.textContent = 'Saving…';
+  fetch('/api/scripts/write', {
+    method: 'POST',
+    headers: cfAuthHeaders(),
+    body: JSON.stringify(payload)
+  }).then(function (r) { return r.json().catch(function () { return { ok:false, error:'offline' }; }); })
+    .catch(function () { return { ok:false, error:'offline' }; })
+    .then(function (res) {
+      btn.disabled = false;
+      btn.textContent = prev;
+      if(!res || !res.ok){
+        msg.textContent = 'Nothing was saved. ' + swSay(res);
+        return;
+      }
+      var s = res.script || {};
+      /* THE TIDIED LABELS, NOT THE TYPED ONES. The endpoint lower-cases and
+         joins words with underscores, so "Denial Angle" is stored as
+         denial_angle. Showing what it BECAME is the only way the tidying is
+         visible instead of a silent rename. */
+      var stored = res.labels || {};
+      var shown = ['script_type','lane','angle_key','hook_key','offer_key']
+        .map(function(k){ return stored[k]; })
+        .filter(function(v){ return !!v; });
+      msg.textContent = 'Saved as version ' + (s.version == null ? '1' : s.version) +
+        (shown.length ? ' · labelled ' + shown.join(', ') : ' · no labels on it') +
+        '. It is now in the Script list below.';
+
+      /* The dictionary the endpoint says it learned, fed back as suggestions. */
+      (res.dictionary || []).forEach(function(d){
+        if(d && SW_LIST_FOR[d.kind]) swSuggest(SW_LIST_FOR[d.kind], d.key);
+      });
+
+      /* Into the Generate form's Script list, and picked, so the very next thing
+         made is tied to it. This is the middle link of the chain. */
+      if(s.id){
+        var sel = document.getElementById('genScript');
+        var label = (s.title || String(s.body || '').replace(/\s+/g,' ').trim().slice(0, 48) || 'untitled')
+          + ' · v' + (s.version == null ? '1' : s.version);
+        var o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = label;
+        sel.appendChild(o);
+        sel.value = s.id;
+      }
+      document.getElementById('swBody').value = '';
+    });
+});
+
 document.getElementById('runJobsBtn').addEventListener('click', function () {
   var msg = document.getElementById('genMsg');
   var partnerId = cfPartnerId();

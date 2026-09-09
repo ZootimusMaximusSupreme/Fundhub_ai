@@ -711,7 +711,7 @@ from "the middle drags".
 |---|---|
 | `src/ops/meta-marketing.mjs` | **new** `watchRate()` at `:89` — THE only place either rate is worked out. Imports the same `MIN_N_RATE` `costPerBooked` already uses. Added to the default export. |
 | `src/ops/meta-marketing.test.mjs` | 9 new tests (15 total, all passing, no database needed) |
-| `api/read/ad-spine.mjs` | two sums added to the grouped money `SELECT` (`:353`) on the join that already existed; `shapeGroup` (`:478`) gained `video_3sec_watched`, `video_p75_watched`, `hook_rate`, `hold_rate`; header updated |
+| `api/read/ad-spine.mjs` | two sums added to the grouped money `SELECT` (`:353`) on the join that already existed; `shapeGroup` (`:478`) gained `video_continuous_2s_watched`, `video_p75_watched`, `hook_rate`, `hold_rate`; header updated. **Corrected 2026-09-09:** this manifest first said `video_3sec_watched`. Meta publishes no 3-second field, so that name is gone everywhere — see the top of `docs/journeys/CHANGELOG.md`. |
 | `src/http/ad-spine.test.mjs` | 9 new tests (32 total, all passing, no database needed) |
 | `src/http/ad-spine.pg.test.mjs` | photo-ad fixture row added (30000 impressions, no video); 4 new end-to-end assertions. **Never executed** |
 | `docs/journeys/ad-label-spine-flow.md` | the "hook rate and hold rate are not worked out anywhere" gap is closed and the page says so; diagram gained the rates node; moved line citations repointed |

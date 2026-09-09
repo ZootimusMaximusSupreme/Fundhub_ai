@@ -1,9 +1,16 @@
 // The video drop-off parser — Meta's action arrays turned into one number.
 //
 // THIS FILE NEEDS NO DATABASE AND IT RUNS ON THIS MACHINE. That is the point of
-// it: the shape it checks is the shape that decides whether the seven columns
+// it: the shape it checks is the shape that decides whether the eight columns
 // added by db/migrations/378_ad_video_metrics.sql ever hold anything. Getting it
 // wrong stores NULL forever and looks exactly like "Meta has no data".
+//
+// IT ALSO GUARDS THE FIELD NAMES THEMSELVES, which is the more expensive
+// failure. Meta refuses the WHOLE insights request when one field name is
+// unknown, so a single invented name takes spend, clicks and impressions down
+// with it. We asked for video_3sec_watched_actions until 2026-09-09; there is no
+// such field. The list asserted below is Meta's own, from
+// facebook_business/adobjects/adsinsights.py.
 //
 // The shape being asserted is Meta's documented one for the *_watched_actions
 // insights fields: a LIST of objects, each { action_type, value }, with value a
@@ -23,6 +30,9 @@ import {
 
 /* One field as Meta sends it. */
 const views = (n) => [{ action_type: "video_view", value: String(n) }];
+
+/* video_play_actions is the one field whose rows Meta labels "video_play". */
+const plays = (n) => [{ action_type: "video_play", value: String(n) }];
 
 describe("watchedActionCount — one Meta action array, one number", () => {
   test("the documented shape gives the number inside it", () => {
@@ -89,10 +99,11 @@ describe("watchedActionCount — one Meta action array, one number", () => {
   });
 });
 
-describe("videoMetrics — the seven fields, keyed by our column names", () => {
+describe("videoMetrics — the eight fields, keyed by our column names", () => {
   test("every column comes back, and each carries its own field's number", () => {
     const row = {
-      video_3sec_watched_actions: views(1000),
+      video_continuous_2_sec_watched_actions: views(1000),
+      video_play_actions: plays(1800),
       video_p25_watched_actions: views(400),
       video_p50_watched_actions: views(250),
       video_p75_watched_actions: views(120),
@@ -101,7 +112,8 @@ describe("videoMetrics — the seven fields, keyed by our column names", () => {
       video_thruplay_watched_actions: views(310)
     };
     assert.deepStrictEqual(videoMetrics(row), {
-      video_3sec_watched: 1000,
+      video_continuous_2s_watched: 1000,
+      video_plays: 1800,
       video_p25_watched: 400,
       video_p50_watched: 250,
       video_p75_watched: 120,
@@ -111,7 +123,7 @@ describe("videoMetrics — the seven fields, keyed by our column names", () => {
     });
   });
 
-  test("a photo ad — no video fields at all — is seven nulls, not seven zeros", () => {
+  test("a photo ad — no video fields at all — is eight nulls, not eight zeros", () => {
     const out = videoMetrics({ spend: "10.00", impressions: "500" });
     for (const [, column] of VIDEO_INSIGHT_FIELDS) {
       assert.strictEqual(out[column], null, `${column} was invented as ${out[column]}`);
@@ -121,10 +133,10 @@ describe("videoMetrics — the seven fields, keyed by our column names", () => {
 
   test("one field missing does not blank the others", () => {
     const out = videoMetrics({
-      video_3sec_watched_actions: views(500),
+      video_continuous_2_sec_watched_actions: views(500),
       video_p100_watched_actions: views(20)
     });
-    assert.strictEqual(out.video_3sec_watched, 500);
+    assert.strictEqual(out.video_continuous_2s_watched, 500);
     assert.strictEqual(out.video_p100_watched, 20);
     assert.strictEqual(out.video_p50_watched, null);
   });
@@ -135,8 +147,8 @@ describe("videoMetrics — the seven fields, keyed by our column names", () => {
 });
 
 describe("the request list and the parser cannot drift apart", () => {
-  test("seven fields are asked for, and they are the seven that are parsed", () => {
-    assert.strictEqual(VIDEO_INSIGHT_REQUEST_FIELDS.length, 7);
+  test("eight fields are asked for, and they are the eight that are parsed", () => {
+    assert.strictEqual(VIDEO_INSIGHT_REQUEST_FIELDS.length, 8);
     assert.deepStrictEqual(
       [...VIDEO_INSIGHT_REQUEST_FIELDS],
       VIDEO_INSIGHT_FIELDS.map(([metaField]) => metaField)
@@ -145,7 +157,8 @@ describe("the request list and the parser cannot drift apart", () => {
 
   test("the field names are Meta's exact spelling", () => {
     assert.deepStrictEqual([...VIDEO_INSIGHT_REQUEST_FIELDS], [
-      "video_3sec_watched_actions",
+      "video_continuous_2_sec_watched_actions",
+      "video_play_actions",
       "video_p25_watched_actions",
       "video_p50_watched_actions",
       "video_p75_watched_actions",
@@ -153,6 +166,67 @@ describe("the request list and the parser cannot drift apart", () => {
       "video_p100_watched_actions",
       "video_thruplay_watched_actions"
     ]);
+  });
+
+  /* THE GUARD THAT WOULD HAVE CAUGHT THE BUG. Meta declares no 3-second field
+     in any spelling. Asking for one makes Meta refuse the entire request, so
+     spend, clicks and impressions come back empty too and the whole connection
+     looks broken with nothing saying why. */
+  test("no 3-second field is asked for — Meta does not have one", () => {
+    for (const field of VIDEO_INSIGHT_REQUEST_FIELDS) {
+      assert.ok(!/3_?sec/i.test(field),
+        `${field} does not exist at Meta and would break the whole insights request`);
+    }
+  });
+
+  /* Every name here appears in Meta's own SDK field list, read on 2026-09-09
+     from facebook_business/adobjects/adsinsights.py. A name outside this set is
+     an invented one until somebody re-checks that file. */
+  test("every field asked for is one Meta declares", () => {
+    const META_DECLARED_VIDEO_FIELDS = new Set([
+      "video_15_sec_watched_actions",
+      "video_30_sec_watched_actions",
+      "video_6_sec_watched_actions",
+      "video_continuous_2_sec_watched_actions",
+      "video_p25_watched_actions",
+      "video_p50_watched_actions",
+      "video_p75_watched_actions",
+      "video_p95_watched_actions",
+      "video_p100_watched_actions",
+      "video_thruplay_watched_actions",
+      "video_play_actions",
+      "video_play_curve_actions",
+      "video_avg_time_watched_actions",
+      "video_time_watched_actions",
+      "video_play_retention_0_to_15s_actions",
+      "video_play_retention_20_to_60s_actions"
+    ]);
+    for (const field of VIDEO_INSIGHT_REQUEST_FIELDS) {
+      assert.ok(META_DECLARED_VIDEO_FIELDS.has(field),
+        `${field} is not a field Meta declares — the whole insights request would be refused`);
+    }
+  });
+});
+
+describe("video_play_actions — the plays that started at all", () => {
+  /* Its rows are labelled video_play, not video_view, so they take
+     watchedActionCount's fallback path. Largest still wins, so the answer is
+     the same — this test is here so that stays true. */
+  test("a video_play row is read, not thrown away as the wrong action type", () => {
+    assert.strictEqual(watchedActionCount(plays(1800)), 1800);
+  });
+
+  test("a breakdown on video_play is not double counted either", () => {
+    const withBreakdown = [
+      { action_type: "video_play", action_video_type: "click_to_play", value: "700" },
+      { action_type: "video_play", action_video_type: "impressions", value: "1100" },
+      { action_type: "video_play", action_video_type: "total", value: "1800" }
+    ];
+    assert.strictEqual(watchedActionCount(withBreakdown), 1800);
+  });
+
+  test("a photo ad has no plays — null, never 0", () => {
+    assert.strictEqual(videoMetrics({ impressions: "500" }).video_plays, null);
   });
 });
 
@@ -166,7 +240,7 @@ describe("normalizeInsight carries the video numbers without disturbing the old 
     ctr: "2.5",
     actions: [{ action_type: "lead", value: "3" }],
     purchase_roas: [{ value: "1.8" }],
-    video_3sec_watched_actions: views(400),
+    video_continuous_2_sec_watched_actions: views(400),
     video_p75_watched_actions: views(90)
   };
 
@@ -180,11 +254,11 @@ describe("normalizeInsight carries the video numbers without disturbing the old 
 
   test("the video numbers ride along on the same row", () => {
     const out = normalizeInsight(row);
-    assert.strictEqual(out.video_3sec_watched, 400);
+    assert.strictEqual(out.video_continuous_2s_watched, 400);
     assert.strictEqual(out.video_p75_watched, 90);
   });
 
-  test("an insight row with no video fields carries seven nulls", () => {
+  test("an insight row with no video fields carries eight nulls", () => {
     const out = normalizeInsight({ spend: "1.00", impressions: "10", date_start: "2026-09-08" });
     for (const [, column] of VIDEO_INSIGHT_FIELDS) {
       assert.strictEqual(out[column], null, `${column} was ${out[column]} instead of null`);

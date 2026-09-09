@@ -53,8 +53,25 @@ export function costPerBooked({ spendCents, bookedN } = {}) {
  *
  * Two rates are read by everybody who buys ads, and both are this same division:
  *
- *   hook rate = 3-second views ÷ impressions   did the opening stop them
- *   hold rate = p75 views ÷ 3-second views     did the middle keep them
+ *   hook rate = kept watching past the opening ÷ impressions
+ *                                              did the opening stop them
+ *   hold rate = p75 views ÷ kept watching past the opening
+ *                                              did the middle keep them
+ *
+ * ⚠️ WHICH META NUMBERS THESE ARE MADE FROM, AND WHAT THEY ARE NOT.
+ * "Kept watching past the opening" is ad_metrics_daily.video_continuous_2s_watched,
+ * filled from Meta's video_continuous_2_sec_watched_actions — people who watched
+ * two continuous seconds. META PUBLISHES NO 3-SECOND FIELD, in any spelling
+ * (checked 2026-09-09 against Meta's own SDK field list; see 378's header). So
+ * the hook rate computed here IS NOT the number Ads Manager shows beside the
+ * words "hook rate", and it must never be labelled as if it were. Same words,
+ * different arithmetic. A screen that prints this should say what it is: how
+ * many people kept watching past the opening, out of everyone who saw the ad.
+ *
+ * Meta also gives us video_plays — how many plays started at all. It is stored
+ * (378) and is the right denominator for a different question, "of the people
+ * who started it, how many stayed". This function does not choose a denominator;
+ * the caller passes one. api/read/ad-spine.mjs passes impressions.
  *
  * They are NOT two functions and NOT two columns. 378_ad_video_metrics.sql's
  * header says why: a rate defined in two places is how two different answers to
@@ -62,7 +79,7 @@ export function costPerBooked({ spendCents, bookedN } = {}) {
  *
  * THE RULES, IN THE ORDER THEY ARE CHECKED:
  *
- *   1. EITHER SIDE UNKNOWN → null. A photo ad has no 3-second views at all —
+ *   1. EITHER SIDE UNKNOWN → null. A photo ad has no video views at all —
  *      there is no video — so it has no hook rate, and that is a fact and not a
  *      zero (378's whole header, and CLAUDE.md §12). A rate built out of a NULL
  *      is a NULL.
@@ -83,7 +100,7 @@ export function costPerBooked({ spendCents, bookedN } = {}) {
  *
  * IT MAY COME BACK ABOVE 1, AND THAT IS NOT CORRUPTION. Meta estimates,
  * de-duplicates and restates these counts after the fact, so on a given day p75
- * can land above the 3-second count. Clamping it would hide a real Meta
+ * can land above the past-the-opening count. Clamping it would hide a real Meta
  * restatement behind a number that looks fine.
  */
 export function watchRate({ numerator, denominator } = {}) {

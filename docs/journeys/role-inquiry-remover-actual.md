@@ -35,7 +35,7 @@ flowchart TD
     CAN --> A_ops[ops — 1 route]
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 10 routes]
-    CAN --> A_read[Reading data — 49 routes]
+    CAN --> A_read[Reading data — 50 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_scripts[scripts — 1 route]
     CAN --> A_social[social — 6 routes]
@@ -71,7 +71,7 @@ flowchart TD
 
 ## What they can reach
 
-**160 of 239 routes.**
+**161 of 240 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -192,6 +192,7 @@ flowchart TD
 | `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
+| `/api/read/finance-os-suggestions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/funnel-pages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
@@ -245,7 +246,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**79 of 239 routes.**
+**79 of 240 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -59,7 +59,8 @@ Marketing API, no instrumentation, no beacon, no pixel work:
 
 | Field | What it means in plain words |
 |---|---|
-| `video_3sec_watched_actions` | got past the first 3 seconds |
+| `video_continuous_2_sec_watched_actions` | kept watching past the opening (two continuous seconds) |
+| `video_play_actions` | the play started at all |
 | `video_p25_watched_actions` | reached a quarter of the way |
 | `video_p50_watched_actions` | reached halfway |
 | `video_p75_watched_actions` | reached three quarters |
@@ -67,11 +68,24 @@ Marketing API, no instrumentation, no beacon, no pixel work:
 | `video_p100_watched_actions` | finished it |
 | ThruPlay | watched 15 seconds, or all of it if shorter |
 
+> **Corrected 2026-09-09: there is no 3-second field.** This table first listed
+> `video_3sec_watched_actions`. Meta does not publish it, in any spelling —
+> checked against Meta's own SDK field list. Asking for a field Meta does not
+> know makes Meta refuse the WHOLE request, so spend, clicks and impressions
+> would have come back empty too. The nearest real field is the
+> two-continuous-seconds one above. Do not label a rate built on it "hook rate"
+> as Ads Manager means it — same words, different number.
+
 **That is a five-point drop-off curve for every single ad.** Two numbers everyone in
 paid media actually uses fall straight out of it:
 
-- **Hook rate** = 3-second views ÷ impressions → *did the first 3 seconds stop them*
-- **Hold rate** = p75 ÷ 3-second views → *did the middle keep them*
+- **Hook rate** = kept-past-the-opening ÷ impressions → *did the opening stop them*
+- **Hold rate** = p75 ÷ kept-past-the-opening → *did the middle keep them*
+
+Both are built on the two-continuous-seconds field, because Meta publishes no
+three-second one. They answer the same question Ads Manager's hook and hold rates
+answer, but they are **not the same numbers** and must never be labelled as if they
+were.
 
 **So "where do people fall off inside the ad" needs zero new code on our side.** It
 needs the Meta ad account connected. That is it.

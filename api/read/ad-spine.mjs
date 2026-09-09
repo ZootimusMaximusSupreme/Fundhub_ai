@@ -25,9 +25,13 @@
 //
 //   5. VIDEO     the same call, same window
 //                 And how far into the video people got, as the two rates paid
-//                 media actually reads: hook_rate (3-second views ÷ impressions,
-//                 did the opening stop them) and hold_rate (p75 views ÷ 3-second
-//                 views, did the middle keep them). Both come out of watchRate()
+//                 media actually reads: hook_rate (people who kept watching past
+//                 the opening ÷ impressions, did the opening stop them) and
+//                 hold_rate (p75 views ÷ that same past-the-opening count, did
+//                 the middle keep them). Meta publishes no 3-second field, so
+//                 neither is the number Ads Manager prints beside the words
+//                 "hook rate" — do not label them that way on a screen.
+//                 Both come out of watchRate()
 //                 in src/ops/meta-marketing.mjs and are defined nowhere else —
 //                 see the note on shapeGroup. The numbers behind them are the
 //                 columns 378_ad_video_metrics.sql added to ad_metrics_daily.
@@ -338,9 +342,13 @@ export function buildQuery({ orgId, groupBy = null, limit, offset, query = {}, w
      Named "reported", not "with spend": a day that reported zero spend still
      counts here, because it is still a day somebody told us about. */
   /* THE TWO VIDEO SUMS ARE HERE FOR ONE REASON: hook rate and hold rate.
-     They come from the seven columns 378_ad_video_metrics.sql added to
-     ad_metrics_daily, and only two of the seven are summed — the two that are
+     They come from the eight columns 378_ad_video_metrics.sql added to
+     ad_metrics_daily, and only two of the eight are summed — the two that are
      the tops and bottoms of the two rates anybody actually reads.
+
+     video_continuous_2s_watched is "kept watching past the opening". It is NOT
+     a 3-second count; Meta publishes no 3-second field (378's header). Do not
+     rename it back on the way out.
 
      sum() SKIPS NULLS, AND THAT IS THE BEHAVIOUR WE WANT. A group holding one
      video ad and nine photo ads sums to the video ad's number, which is the
@@ -350,7 +358,7 @@ export function buildQuery({ orgId, groupBy = null, limit, offset, query = {}, w
     ? `sum(m.spend_cents)         AS spend_cents,
        sum(m.impressions)         AS impressions,
        sum(m.clicks)              AS clicks,
-       sum(m.video_3sec_watched)  AS video_3sec_watched,
+       sum(m.video_continuous_2s_watched) AS video_continuous_2s_watched,
        sum(m.video_p75_watched)   AS video_p75_watched,
        count(m.id)::int           AS ad_days_reported,
        count(DISTINCT m.ad_id)::int AS ads_reported_in_window,
@@ -358,7 +366,7 @@ export function buildQuery({ orgId, groupBy = null, limit, offset, query = {}, w
     : `NULL::bigint AS spend_cents,
        NULL::bigint AS impressions,
        NULL::bigint AS clicks,
-       NULL::bigint AS video_3sec_watched,
+       NULL::bigint AS video_continuous_2s_watched,
        NULL::bigint AS video_p75_watched,
        0::int       AS ad_days_reported,
        0::int       AS ads_reported_in_window,
@@ -480,12 +488,18 @@ export function shapeGroup(r) {
 
   /* THE VIDEO DROP-OFF, AND THE TWO RATES BUILT ON IT.
 
-     impressions      how many times the ad was shown
-     3-second views   how many people got past the first three seconds
-     p75 views        how many got three quarters of the way in
+     impressions   how many times the ad was shown
+     past-opening  how many people kept watching past the opening — Meta's
+                   two-continuous-seconds count
+     p75 views     how many got three quarters of the way in
 
-     hook rate = 3-second ÷ impressions   did the opening stop them
-     hold rate = p75 ÷ 3-second           did the middle keep them
+     hook rate = past-opening ÷ impressions   did the opening stop them
+     hold rate = p75 ÷ past-opening           did the middle keep them
+
+     THESE ARE NOT ADS MANAGER'S NUMBERS AND MUST NOT BE LABELLED AS IF THEY
+     WERE. Meta publishes no 3-second field at all, so "hook rate" here is built
+     on the two-second count, which is the nearest real one. Same words,
+     different arithmetic. 378's header has the whole story.
 
      BOTH ARE COMPUTED BY watchRate() IN src/ops/meta-marketing.mjs AND NOWHERE
      ELSE. That is the same file costPerBooked lives in and it refuses under the
@@ -493,10 +507,10 @@ export function shapeGroup(r) {
      and no second definition anywhere — 378's header asked for exactly that,
      because a rate written twice is how two screens end up disagreeing.
 
-     A PHOTO AD HAS NO HOOK RATE. It has no video, so 3-second views is NULL, so
-     the rate is null with a note saying why. It is never 0 and never "0%". */
+     A PHOTO AD HAS NO HOOK RATE. It has no video, so the past-opening count is
+     NULL, so the rate is null with a note saying why. Never 0, never "0%". */
   const impressions = countOrNull(r.impressions);
-  const video3sec = countOrNull(r.video_3sec_watched);
+  const videoPastOpening = countOrNull(r.video_continuous_2s_watched);
   const videoP75 = countOrNull(r.video_p75_watched);
 
   /* TWO things must BOTH be true before a missing people row may be read as a
@@ -526,10 +540,10 @@ export function shapeGroup(r) {
     spend_cents: spendCents,
     impressions,
     clicks: countOrNull(r.clicks),
-    video_3sec_watched: video3sec,
+    video_continuous_2s_watched: videoPastOpening,
     video_p75_watched: videoP75,
-    hook_rate: watchRate({ numerator: video3sec, denominator: impressions }),
-    hold_rate: watchRate({ numerator: videoP75, denominator: video3sec }),
+    hook_rate: watchRate({ numerator: videoPastOpening, denominator: impressions }),
+    hold_rate: watchRate({ numerator: videoP75, denominator: videoPastOpening }),
     ad_days_reported: r.ad_days_reported,
     ads_reported_in_window: r.ads_reported_in_window,
     people,

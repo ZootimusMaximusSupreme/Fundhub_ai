@@ -143,22 +143,44 @@ export async function fetchInsights(connection, { externalId, since, until }, ct
   return (res?.data || []).map(normalizeInsight);
 }
 
-/* THE SEVEN VIDEO FIELDS — where people stop watching an ad.
+/* THE EIGHT VIDEO FIELDS — where people stop watching an ad.
 
    Meta reports the drop-off curve for free on the same insights call we already
    make. The field names are Meta's; the column names are ours (378).
+
+   ⚠️ EVERY NAME ON THE LEFT MUST BE A FIELD META ACTUALLY DECLARES. Meta refuses
+   the WHOLE insights request when one field name is unknown — it does not skip
+   the bad name and answer the rest — so a single invented field takes spend,
+   clicks and impressions down with it and the connection looks completely
+   broken. This list was checked on 2026-09-09 against Meta's own Python SDK
+   field list, facebook_business/adobjects/adsinsights.py.
+
+   THERE IS NO 3-SECOND FIELD. Not video_3sec_watched_actions, not
+   video_3_sec_watched_actions. We asked for one until 2026-09-09 and it would
+   have broken every sync. The real field closest in meaning is
+   video_continuous_2_sec_watched_actions — "kept watching past the opening" —
+   and our column is named after what it holds, not after 3 seconds.
+
+   video_play_actions is how many plays STARTED at all. It is the honest
+   denominator for a hook-style rate and it is free on this same request.
+
+   NOT ASKED FOR YET, AND THE OBVIOUS NEXT STEP: video_play_curve_actions
+   returns a per-second retention curve for the ad — where in the video people
+   actually leave, second by second — on this same call for no extra cost. It is
+   better than the five percentage points below. See 378's header.
 
    REQUEST_FIELDS is exported so the request and the parser can never drift
    apart: the list a caller asks Meta for is literally the list this file knows
    how to read. */
 export const VIDEO_INSIGHT_FIELDS = Object.freeze([
-  ["video_3sec_watched_actions",     "video_3sec_watched"],
-  ["video_p25_watched_actions",      "video_p25_watched"],
-  ["video_p50_watched_actions",      "video_p50_watched"],
-  ["video_p75_watched_actions",      "video_p75_watched"],
-  ["video_p95_watched_actions",      "video_p95_watched"],
-  ["video_p100_watched_actions",     "video_p100_watched"],
-  ["video_thruplay_watched_actions", "video_thruplay_watched"]
+  ["video_continuous_2_sec_watched_actions", "video_continuous_2s_watched"],
+  ["video_play_actions",                     "video_plays"],
+  ["video_p25_watched_actions",              "video_p25_watched"],
+  ["video_p50_watched_actions",              "video_p50_watched"],
+  ["video_p75_watched_actions",              "video_p75_watched"],
+  ["video_p95_watched_actions",              "video_p95_watched"],
+  ["video_p100_watched_actions",             "video_p100_watched"],
+  ["video_thruplay_watched_actions",         "video_thruplay_watched"]
 ]);
 
 /* The names to put in the insights request's `fields` parameter. */
@@ -185,7 +207,12 @@ export const VIDEO_INSIGHT_REQUEST_FIELDS = Object.freeze(
    the parts AND their total in the same list, so adding them up counts the same
    people twice — silently, with no error. Taking the largest is right in both
    cases. `video_view` entries win over any other action_type, because that is
-   the row these fields are actually about. */
+   the row these fields are actually about.
+
+   video_play_actions IS THE ONE FIELD HERE WHOSE ROWS ARE NOT `video_view` —
+   Meta labels them `video_play`. They land on the fallback path, where the
+   largest entry still wins, so the answer is the same. No special case is
+   needed and none is added. */
 export function watchedActionCount(field) {
   if (field === null || field === undefined) return null;
 
@@ -246,7 +273,7 @@ export function normalizeInsight(row) {
     conversions,
     cpa_cents: conversions > 0 ? Math.round(toCents(row.spend) / conversions) : null,
     roas: num(row.purchase_roas?.[0]?.value),
-    // The seven video numbers. null when Meta did not report them — see
+    // The eight video numbers. null when Meta did not report them — see
     // videoMetrics above and 378_ad_video_metrics.sql.
     ...videoMetrics(row)
   };

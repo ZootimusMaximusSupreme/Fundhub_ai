@@ -32,7 +32,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 8 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 195 routes]
+    WHO -->|Yes| CANT[Blocked — 196 routes]
     CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_analytics[analytics — 4 blocked]
     CANT --> B_auth[Signing in and out — 6 blocked]
@@ -55,7 +55,7 @@ flowchart TD
     CANT --> B_partners[partners — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
-    CANT --> B_read[Reading data — 60 blocked]
+    CANT --> B_read[Reading data — 61 blocked]
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_scripts[scripts — 1 blocked]
     CANT --> B_social[social — 7 blocked]
@@ -66,7 +66,7 @@ flowchart TD
 
 ## What they can reach
 
-**44 of 239 routes.**
+**44 of 240 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -122,7 +122,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**195 of 239 routes.**
+**196 of 240 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -267,6 +267,7 @@ flowchart TD
 | `/api/read/finance-ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/finance-command` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/finance-os` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
+| `/api/read/finance-os-suggestions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/funding-rounds` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/funnel-pages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/inbox` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
