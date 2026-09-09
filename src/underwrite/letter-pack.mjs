@@ -628,7 +628,7 @@ function sharpenEmptyReason(reason, { engineSkip, engineFault }) {
  * Read-only and fail-soft: a hiccup here must cost a sentence in a PDF, never
  * the whole pack.
  */
-async function readBusinessOnFile(db, { clientId, customFields } = {}) {
+export async function readBusinessOnFile(db, { clientId, customFields } = {}) {
   try {
     const r = await db.query(
       `SELECT name, age_months FROM businesses WHERE client_id = $1 ORDER BY created_at ASC`,

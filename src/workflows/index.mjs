@@ -17,6 +17,7 @@ import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
 import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
 import { waypointNudgeSweeper } from './waypoint-nudge-sweeper.mjs';
+import { financeOsPullSweeper } from './finance-os-pull-sweeper.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
@@ -175,6 +176,7 @@ export const functions = [
      never chased, and the last rung is a staff task rather than a fourth
      message. */
   waypointNudgeSweeper,
+  financeOsPullSweeper,
 
   /* THE END OF A CHECKOUT INVITATION. Registered 2026-09-06, and it is the
      other half of the sweeper above.

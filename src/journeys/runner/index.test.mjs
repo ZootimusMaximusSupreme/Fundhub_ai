@@ -78,7 +78,12 @@ import { isSyntheticRow } from "./synthetic.mjs";
    It is a cron with no event trigger, so no journey can ever reach it and it
    will always appear in neverFired — the same note the sweepers above carry,
    and the correct outcome for a scheduled job rather than a coverage hole. */
-const REGISTERED = 72;
+/* 73 since the Finance OS monthly pull sweeper (2026-09-09) was registered —
+   the clock behind the one soft pull a finance-os subscriber's monthly fee
+   includes. It is a cron with no event trigger, so like every sweeper here it
+   will always appear in neverFired, which is the correct outcome for a
+   scheduled job rather than a coverage hole. */
+const REGISTERED = 73;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

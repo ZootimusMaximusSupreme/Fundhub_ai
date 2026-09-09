@@ -238,6 +238,7 @@ const API_KEYS = [
   "read/finance-ask",
   "read/finance-command",
   "read/finance-os",
+  "read/finance-os-suggestions",
   "read/funding-rounds",
   "read/funnel-pages",
   "read/inbox",

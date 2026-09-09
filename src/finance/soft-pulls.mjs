@@ -91,7 +91,11 @@ export class SoftPullError extends Error {
 /** The states a request can be in. Mirrors the CHECK in 077 — there is no
  *  'sent', because there is nothing that sends. */
 export const SOFT_PULL_STATUSES = ["queued", "processing", "fulfilled", "failed", "cancelled"];
-export const REQUESTER_KINDS = ["staff", "client"];
+/* 'system' added 380_finance_os_monthly_pull.sql — a scheduled Finance OS
+   pull with no human requester. Every other call site is unaffected: the
+   default export from src/finance/finance-os-pull-scheduler.mjs is the only
+   caller that passes { kind: "system" }. */
+export const REQUESTER_KINDS = ["staff", "client", "system"];
 
 const SELECT_COLUMNS = `
   id, org_id, client_id,
@@ -108,6 +112,14 @@ const SELECT_COLUMNS = `
  * AND a subject is refused with 401 rather than defaulted — see rule 1. */
 export function normalizeRequester(requestedBy) {
   const kind = String(requestedBy?.kind ?? "").trim().toLowerCase();
+
+  // 'system' is the one kind with no subject to require — see 380's header. A
+  // caller cannot opt a human requester out of attribution by typing "system";
+  // this branch is reachable ONLY when the kind itself is exactly "system".
+  if (kind === "system") {
+    return { kind, staffId: null, accountId: null };
+  }
+
   const id = requestedBy?.id ?? (kind === "staff" ? requestedBy?.staffId : requestedBy?.accountId);
 
   if (!kind || !id) {

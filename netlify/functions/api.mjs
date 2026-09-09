@@ -92,6 +92,7 @@ import readMessages from "../../api/read/messages.mjs";
 import readSearch from "../../api/read/search.mjs";
 import readTradelines from "../../api/read/tradelines.mjs";
 import readFinanceOs from "../../api/read/finance-os.mjs";
+import readFinanceOsSuggestions from "../../api/read/finance-os-suggestions.mjs";
 import readBankingSurface from "../../api/read/banking-surface.mjs";
 import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
@@ -480,6 +481,12 @@ export const ROUTES = {
   // the handler and the screen: a screen whose endpoint 404s is the failure
   // this map exists to prevent, and it has shipped twice.
   "read/finance-os": readFinanceOs,
+
+  // read/finance-os-suggestions gates on an active finance-os subscription in
+  // ADDITION to ROLE_SETS.STAFF — Finance OS is a paid add-on (owner-set
+  // 2026-09-09), not a fact of being a funding or repair client. Routed in the
+  // same commit as the handler for the same reason as the entry above it.
+  "read/finance-os-suggestions": readFinanceOsSuggestions,
 
   // read/banking-surface is the cash companion to read/finance-os and carries
   // the same ROLE_SETS.STAFF gate. Bank balances are no more sensitive than the

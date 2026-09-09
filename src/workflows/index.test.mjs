@@ -66,7 +66,19 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 72 since the paid checkout expiry sweeper (2026-09-06) — the clock that
+  /* 73 since the Finance OS monthly pull sweeper (2026-09-09) — the clock
+     behind the one soft pull a finance-os subscriber's monthly fee includes.
+     Registering it queues a soft_pull_requests row and nothing more: the
+     provider seam 077 describes (a real bureau call, on an answer calling
+     fulfilSoftPull()) is called from nowhere in application code, for any
+     requester kind, so this writes the honest record "a pull was requested"
+     and stops — it does not make a bureau call and does not make a fresh
+     credit file appear. The consent gate in requestSoftPull() still runs for
+     every row this writes, requester kind included, so a client with no valid
+     soft_pull_consent is skipped, not pulled. 380_finance_os_monthly_pull.sql
+     is the migration that made 'system' an allowed requester kind for exactly
+     this row.
+     Was 72 since the paid checkout expiry sweeper (2026-09-06) — the clock that
      ends a hosted checkout invitation nobody accepted. Nothing in this
      repository ever moved a paid_service_requests row off 'awaiting_payment' on
      its own: the payment webhook could, and docs/journeys/paid-round-actual.md
@@ -143,7 +155,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 72, `expected 72, got ${functions.length}`);
+  assert.equal(functions.length, 73, `expected 73, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

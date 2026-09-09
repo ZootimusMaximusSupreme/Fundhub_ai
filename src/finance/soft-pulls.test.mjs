@@ -142,8 +142,11 @@ describe("an unattributed soft pull is refused before anything is written", () =
       (e) => e.status === 400);
   });
 
-  test("a kind outside the two the table accepts is refused, not coerced", async () => {
-    for (const kind of ["robot", "affiliate", "partner", "system", "admin"]) {
+  /* 'system' moved OUT of this list 2026-09-09 (380_finance_os_monthly_pull.sql,
+     owner-set): it is now a real, accepted kind for a scheduled pull with no
+     human requester. Its own coverage is the describe block below. */
+  test("a kind outside the three the table accepts is refused, not coerced", async () => {
+    for (const kind of ["robot", "affiliate", "partner", "admin"]) {
       const db = fakeDb();
       await assert.rejects(() => requestSoftPull(db, { ...ok, requestedBy: { kind, id: STAFF } }),
         (e) => e instanceof SoftPullError && e.status === 400);
@@ -160,6 +163,43 @@ describe("an unattributed soft pull is refused before anything is written", () =
     // FK points at accounts(id), because that is who tapped.
     assert.deepEqual(normalizeRequester({ kind: "CLIENT", id: ACCOUNT }),
       { kind: "client", staffId: null, accountId: ACCOUNT });
+  });
+});
+
+describe("a system-requested pull needs no subject", () => {
+  // 380_finance_os_monthly_pull.sql: a scheduled pull has no human requester,
+  // and forcing one onto either FK would be a false record on this table's own
+  // audit trail. This is the one kind normalizeRequester does not demand an id
+  // for — not a hole in the "unattributed is refused" rule above, because the
+  // row it produces genuinely has no attributable person, on purpose, and the
+  // database CHECK (soft_pull_requests_requester_ck) requires exactly that
+  // shape for this kind: both FK columns NULL.
+  test("normalizeRequester accepts { kind: 'system' } with no id at all", () => {
+    assert.deepEqual(normalizeRequester({ kind: "system" }),
+      { kind: "system", staffId: null, accountId: null });
+  });
+
+  test("an id supplied alongside kind:'system' is ignored, not attributed", () => {
+    // A caller that accidentally passes an id must not have it silently
+    // attached to either FK — the CHECK constraint would refuse the write, and
+    // this function must not disagree with the database about what a 'system'
+    // row looks like.
+    assert.deepEqual(normalizeRequester({ kind: "system", id: STAFF, staffId: STAFF, accountId: ACCOUNT }),
+      { kind: "system", staffId: null, accountId: null });
+  });
+
+  test("requestSoftPull writes a system row with both FK columns null", async () => {
+    // Queue order matches every other passing scenario in this file: the
+    // consent gate's SELECT, then openRequestFor()'s SELECT (nothing open),
+    // then the INSERT's RETURNING row.
+    const db = fakeDb([CONSENT_OK(), { rows: [] }, { rows: [rowFor({ requested_by_kind: "system", requested_by_staff_id: null })] }]);
+    await requestSoftPull(db, { ...ok, requestedBy: { kind: "system" } });
+    const insert = db.calls.find((c) => /INSERT INTO soft_pull_requests/.test(c.text));
+    assert.ok(insert, "no INSERT was issued");
+    const [, , kind, staffId, accountId] = insert.params;
+    assert.equal(kind, "system");
+    assert.equal(staffId, null);
+    assert.equal(accountId, null);
   });
 });
 
@@ -480,7 +520,8 @@ describe("nothing transmits", () => {
     // 'processing' is the claimed-before-provider state added by migration 157.
     assert.deepEqual(SOFT_PULL_STATUSES, ["queued", "processing", "fulfilled", "failed", "cancelled"]);
     assert.ok(!SOFT_PULL_STATUSES.includes("sent"));
-    assert.deepEqual(REQUESTER_KINDS, ["staff", "client"]);
+    // 'system' added 2026-09-09 — 380_finance_os_monthly_pull.sql.
+    assert.deepEqual(REQUESTER_KINDS, ["staff", "client", "system"]);
   });
 });
 
