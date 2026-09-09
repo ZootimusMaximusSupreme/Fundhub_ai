@@ -103,6 +103,10 @@
       sid    this one viewing                   same shape. REQUIRED
       dur    how long the file is, in seconds   a number or empty. Never 0
       pos    the furthest second reached        a number or empty
+      pos_unmuted  the furthest second reached  a number or empty. EMPTY, and
+             AFTER they tapped for sound        never 0, when they never
+                                                tapped. 0 means they tapped
+                                                and then watched nothing
       unmuted   did they tap for sound          true / false / empty
       finished  did it reach the end            true / false / empty
       blocked   the browser refused to start it true / false / empty
@@ -133,8 +137,16 @@
       the browser refused to start it        blocked = true
       it played but nobody tapped for sound  unmuted = false, with seconds
       somebody tapped for sound              unmuted = true
+      how far they got AFTER tapping         pos_unmuted
   That third line is the only one that means a person chose to watch. Read
   drop-off for unmuted = true on its own before believing any number.
+
+  The fourth line is the number that is actually safe to quote. It is a second
+  high-water mark kept in this script. It starts EMPTY — not 0 — and it only
+  starts filling once the tap for sound has happened, so it can never pick up a
+  second from the silent pass. Empty means "they never chose to watch". 0 means
+  "they chose to watch and got nowhere". Those are different facts and the
+  script keeps them different.
 
   ── THE THREE THINGS THAT MAKE THIS DATA LIE, AND HOW EACH IS HANDLED ─────────
   1. THE VIDEO STARTS ON ITS OWN, WITH NO SOUND.
@@ -159,11 +171,16 @@
         exists for and they are also the awkward ones, because the browser
         reports "it is playing again" BEFORE it reports "it has jumped", so the
         code has to still know a restart is coming by the time the jump lands.
-     => WHAT IS STILL WRONG, AND IT IS NOT FIXABLE FROM HERE: the seconds
-        themselves. The table keeps one merged set per viewing, so the silent
-        pass and the sound pass both land in it. The opening will still look
-        better watched than it was. Read "THE ONE THING THE TABLE CANNOT HOLD"
-        above before trusting the first few seconds of any curve.
+     => The HEADLINE NUMBER is kept honest by a second high-water mark that
+        starts empty and only fills after the tap. It travels as `pos_unmuted`.
+        So "they chose to watch and reached 0:12" can be read straight off the
+        row, even though the silent pass got to 3:00.
+     => WHAT IS STILL WRONG, AND IT IS NOT FIXABLE FROM HERE: the CURVE. The
+        table keeps one merged set of seconds per viewing, so the silent pass
+        and the sound pass both land in it. The opening will still look better
+        watched than it was on the curve. Read "THE ONE THING THE TABLE CANNOT
+        HOLD" above before trusting the first few seconds of any curve, and use
+        `pos_unmuted` rather than the curve for how far a chooser got.
 
   3. AUTOPLAY CAN BE BLOCKED.
      Phones block it on low power and data saver. The video never starts, so
@@ -389,6 +406,13 @@
     var seekFrom    = null;    /* where a seek started */
     var furthest    = null;    /* furthest second reached, whole video */
     var furthestExact = null;  /* the same, to the fraction of a second */
+    /* THE SECOND HIGH-WATER MARK, and the only number here that is safe to
+       quote as "a person chose to watch and got this far".
+       It starts EMPTY and it is NEVER seeded from furthestExact. Seeding it
+       would import the silent pass's position and recreate the exact lie this
+       exists to prevent (src/vsl/watch-beacon.mjs:78-84). Empty means "they
+       never tapped for sound". 0 means "they tapped and watched nothing". */
+    var furthestUnmutedExact = null;
     var metadataSeen = false;  /* the browser has the file and could play it */
     var lengthSec   = null;    /* the file's length, once the browser says */
     var everUnmuted = null;    /* null = never heard either way */
@@ -415,6 +439,15 @@
     function mark(second) {
       if (typeof second !== "number" || !isFinite(second) || second < 0) return;
       if (furthestExact === null || second > furthestExact) furthestExact = second;
+      /* The second mark only ever moves once the tap has already happened.
+         everUnmuted is set to true by the volumechange handler at the moment of
+         the tap, and the page's own code sends the video back to 0 in the same
+         breath, so the first thing this can record is the restart. Nothing from
+         before the tap can reach it. */
+      if (everUnmuted === true &&
+          (furthestUnmutedExact === null || second > furthestUnmutedExact)) {
+        furthestUnmutedExact = second;
+      }
       var whole = Math.floor(second);
       if (furthest === null || whole > furthest) furthest = whole;
       if (rows.length < MAX_ROWS && rows.indexOf(whole) === -1) rows.push(whole);
@@ -478,6 +511,10 @@
 
         dur: lengthSec,                   /* empty until the browser says */
         pos: furthestExact,               /* empty when nothing ever played */
+        /* EMPTY WHEN THEY NEVER TAPPED FOR SOUND, and empty is the right
+           answer for those people forever. Never 0 for them — 0 is reserved
+           for somebody who did tap and then watched none of it. */
+        pos_unmuted: furthestUnmutedExact,
 
         unmuted: unmuted,
         finished: completed ? true : (final ? false : null),
@@ -584,7 +621,7 @@
       completed = false; justEnded = false;
       restartArmed = false; armedTicks = 0;
       replays = 0; rewinds = 0; skips = 0; sampleTotal = 0;
-      furthestExact = null; metadataSeen = false;
+      furthestExact = null; furthestUnmutedExact = null; metadataSeen = false;
       send("open");
     });
 

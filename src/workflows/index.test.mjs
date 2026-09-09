@@ -66,7 +66,21 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 73 since the Finance OS monthly pull sweeper (2026-09-09) — the clock
+  /* 74 since the Meta campaign sync sweeper (2026-09-09) — the clock behind the
+     ad-numbers pull. Nothing ever ran api/campaigns/sync.mjs on a schedule: the
+     route map, src/pulse/registry.mjs and its own tests were the only places
+     `campaigns/sync` appeared, so a person pressing Sync was the whole
+     mechanism. Paired with a seven-day window that was permanent loss rather
+     than delay — eight days without a press and day eight could never be asked
+     for again, and the screens draw a missing row as zero spend. The window is
+     28 days now and this is what runs it unasked.
+     Registering it SENDS NOTHING AND SPENDS NOTHING: it reads from Meta and
+     writes our own campaigns / ad_sets / ads / ad_metrics_daily rows. No
+     campaign is created, started, paused or re-budgeted. Re-pulling a day it
+     already has overwrites that day through ON CONFLICT (ad_id, date), so
+     nothing double-counts, and one partner's broken connection is caught on its
+     own rather than ending the pass.
+     Was 73 since the Finance OS monthly pull sweeper (2026-09-09) — the clock
      behind the one soft pull a finance-os subscriber's monthly fee includes.
      Registering it queues a soft_pull_requests row and nothing more: the
      provider seam 077 describes (a real bureau call, on an answer calling
@@ -155,7 +169,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 73, `expected 73, got ${functions.length}`);
+  assert.equal(functions.length, 74, `expected 74, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

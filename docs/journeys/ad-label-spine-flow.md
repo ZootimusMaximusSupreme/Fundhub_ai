@@ -54,10 +54,11 @@ flowchart TD
 
     B -->|"picked in the Script list on<br/>Generate and decide, sent as spec.scriptId<br/>POST /api/creative/generate"| D["creative_assets row<br/>script_id points at the script<br/>src/creative/generate.mjs:248"]
 
-    E["Paul builds the ad in Meta"] -->|"a person presses Sync on<br/>public/app/campaign-manager.html"| E2["ONE call for the WHOLE ad account,<br/>level=ad, seven days, a row per ad per day<br/>insightsRequestUrl(), api/campaigns/sync.mjs:238-251<br/>follows Meta's next-page link, up to 100 pages<br/>fetchInsightPages(), :262-278"]
-    E2 --> E3["THE ACCOUNT IS SWITCHED ON HERE,<br/>the moment Meta answers — not after the walk<br/>pending becomes active<br/>handler, api/campaigns/sync.mjs:625-637"]
-    E3 --> E4["Meta's own word on business verification<br/>is written straight through.<br/>No answer = nothing written, badge stays unverified<br/>readVerificationState(), :200-209<br/>handler, :647-655"]
-    E3 --> F["ads row created<br/>external_id = META'S id<br/>upsertAd(), api/campaigns/sync.mjs:370-390<br/>ONE SHORT SAVE PER CAMPAIGN, :686-713<br/>a campaign that fails is named in the answer<br/>and the ones already saved stay saved"]
+    E["Paul builds the ad in Meta"] -->|"a person presses Sync on<br/>public/app/campaign-manager.html"| E2["ONE call for the WHOLE ad account,<br/>level=ad, 28 days, a row per ad per day<br/>insightsRequestUrl(), api/campaigns/sync.mjs:299-312<br/>follows Meta's next-page link, up to 100 pages<br/>fetchAllPages(), :328-344"]
+    E2 --> E3["THE ACCOUNT IS SWITCHED ON HERE,<br/>the moment Meta answers — not after the walk<br/>pending becomes active<br/>the switch-on UPDATE inside syncPartnerConnections()<br/>api/campaigns/sync.mjs:721-735"]
+    E3 --> E4["Meta's own word on business verification<br/>is written straight through.<br/>No answer = nothing written, badge stays unverified<br/>readVerificationState(), :261-270<br/>the write inside syncPartnerConnections(), :743-751"]
+    E3 --> E5["EVERY LIST IS READ TO ITS END<br/>campaigns, ad sets and ads, not just<br/>the first page Meta hands back<br/>metaList(), api/campaigns/sync.mjs:359-361<br/>→ fetchAllPages(), :328-344<br/>capped at 50 pages of 100 = 5,000 rows each<br/>a list cut short is named in the answer,<br/>never dropped in silence"]
+    E5 --> F["ads row created<br/>external_id = META'S id<br/>upsertAd(), api/campaigns/sync.mjs:462-482<br/>ONE SHORT SAVE PER CAMPAIGN — the per-campaign<br/>transaction in syncPartnerConnections(), :795-829<br/>a campaign that fails is named in the answer<br/>and the ones already saved stay saved"]
 
     F --> G{"A person presses Label on the ad row<br/>and picks the creative<br/>public/app/campaign-manager.html<br/>the ad id comes off the row, never typed"}
     D --> G
@@ -70,7 +71,7 @@ flowchart TD
 
     I -->|"GET /api/read/ad-spine?group_by=hook and days=30"| M["One row per hook, with money on it:<br/>spend, clicks, people, people booked,<br/>cost per booked person,<br/>hook rate and hold rate<br/>api/read/ad-spine.mjs:443"]
     K -->|"joined on the ad, day by day,<br/>inside the days asked for"| M
-    K -->|"kept watching past the opening (2 seconds)<br/>and p75 views summed<br/>over the same days<br/>api/read/ad-spine.mjs:361-362"| Q["hook rate = past-the-opening ÷ impressions<br/>hold rate = p75 ÷ past-the-opening<br/>ONE definition, watchRate()<br/>src/ops/meta-marketing.mjs:106"]
+    K -->|"kept watching past the opening (2 seconds)<br/>and p75 views summed<br/>over the same days<br/>api/read/ad-spine.mjs:361-362"| Q["hook rate = past-the-opening ÷ impressions<br/>hold rate = p75 ÷ past-the-opening<br/>ONE definition, watchRate()<br/>src/ops/meta-marketing.mjs:126"]
     Q --> M
     M -->|"a person opens Campaigns and picks angle, hook, lane,<br/>offer or script type"| S["THE PANEL<br/>Which angle and which hook are working<br/>public/app/campaign-manager.html:416<br/>a dash where the answer is unknown,<br/>a 0 only where it was really zero"]
     N["A person clicks the ad link<br/>utm_content = OUR number"] --> O["client_ad_attribution row<br/>src/ads/store.mjs:21"]
@@ -78,8 +79,8 @@ flowchart TD
     O --> P["bookings row, not cancelled<br/>db/migrations/225_bookings.sql"]
     P -->|"counted as PEOPLE, not calls"| M
 
-    F -->|"the same short save,<br/>from the rows already in hand"| K["ad_metrics_daily<br/>spend, impressions, clicks, ctr, roas<br/>+ where people stopped watching:<br/>past-the-opening (2s), plays, p25, p50,<br/>p75, p95, p100, ThruPlay<br/>storeInsights(), api/campaigns/sync.mjs:412-451"]
-    E2 -->|"matched back to an ad by ad_id;<br/>a row with no ad_id is dropped, never guessed<br/>groupInsightsByAd(), :284-293"| K
+    F -->|"the same short save,<br/>from the rows already in hand"| K["ad_metrics_daily<br/>spend, impressions, clicks, ctr, roas<br/>+ where people stopped watching:<br/>past-the-opening (2s), plays, p25, p50,<br/>p75, p95, p100, ThruPlay<br/>storeInsights(), api/campaigns/sync.mjs:504-543"]
+    E2 -->|"matched back to an ad by ad_id;<br/>a row with no ad_id is dropped, never guessed<br/>groupInsightsByAd(), :374-383"| K
 
     B -->|"POST /api/scripts/write<br/>with parent_script_id"| L["a NEW ad_scripts row<br/>version = parent + 1<br/>parent_script_id points back<br/>api/scripts/write.mjs:251"]
     L --> B
@@ -98,16 +99,16 @@ been run against a database — see the note at the foot of this page.
 | nothing | an `ad_scripts` row, `version = 1`, labels on it | somebody posts the words and the tags | `api/scripts/write.mjs:254` | **yes** |
 | a script | a creative carrying that script id | generating with `script_id` | `src/creative/generate.mjs:248` | **yes** |
 | a label key | a row in `ad_labels` | the same write, in the same transaction | `api/scripts/write.mjs:277` | **yes** |
-| a connected account sitting on "waiting" | the account switched on | Meta answers the first read of the Sync press | handler, `api/campaigns/sync.mjs:625-637` | **yes** |
-| a connected account | Meta's own business-verification word written down | the same Sync press, one read later | `readVerificationState()`, `api/campaigns/sync.mjs:200-209` | **yes** |
-| an ad in Meta | an `ads` row with Meta's id | a person presses Sync on the Campaign Manager screen | `upsertAd()`, `api/campaigns/sync.mjs:370-390` | **yes** |
+| a connected account sitting on "waiting" | the account switched on | Meta answers the first read of the Sync press | the switch-on `UPDATE` in `syncPartnerConnections()`, `api/campaigns/sync.mjs:721-735` | **yes** |
+| a connected account | Meta's own business-verification word written down | the same Sync press, one read later | `readVerificationState()`, `api/campaigns/sync.mjs:261-270` | **yes** |
+| an ad in Meta | an `ads` row with Meta's id | a person presses Sync on the Campaign Manager screen | `upsertAd()`, `api/campaigns/sync.mjs:462-482` | **yes** |
 | an `ads` row | `asset_id` set, `fundhub_ad_number` set | a person picks the creative and types our number | `api/campaigns/link-asset.mjs:210` | **yes** |
-| an `ads` row | a day of spend, clicks, and how far into the video people got | the same Sync press | `storeInsights()`, `api/campaigns/sync.mjs:412-451` | **yes** |
-| one campaign's rows | saved on their own, the moment that campaign is done | the same Sync press | handler, `api/campaigns/sync.mjs:686-713` | **yes** |
+| an `ads` row | a day of spend, clicks, and how far into the video people got | the same Sync press | `storeInsights()`, `api/campaigns/sync.mjs:504-543` | **yes** |
+| one campaign's rows | saved on their own, the moment that campaign is done | the same Sync press | the per-campaign save in `syncPartnerConnections()`, `api/campaigns/sync.mjs:795-829` | **yes** |
 | all of the above | labels readable next to the ad | the view joins them; nothing is copied | `377:619-652` | **yes, once the row above is set** |
 | a script | a rewrite of it | posting again with `parent_script_id` | `api/scripts/write.mjs:251` | **yes** |
 | labels + spend + people | what each label cost and what it brought | asking for a group and a number of days | `api/read/ad-spine.mjs:443` | **yes** |
-| a day of video views | hook rate and hold rate for a label | the same call, same days | `watchRate()`, `src/ops/meta-marketing.mjs:106` | **yes** |
+| a day of video views | hook rate and hold rate for a label | the same call, same days | `watchRate()`, `src/ops/meta-marketing.mjs:126` | **yes** |
 
 ---
 
@@ -115,13 +116,13 @@ been run against a database — see the note at the foot of this page.
 
 **1. The ad exists before the creative is attached, not after.**
 The only `INSERT INTO ads` in the whole tree outside tests is the Meta pull
-(`upsertAd()`, `api/campaigns/sync.mjs:384`). So an ad row always starts life with no creative and no
+(the `INSERT INTO ads` inside `upsertAd()`, `api/campaigns/sync.mjs:476`). So an ad row always starts life with no creative and no
 number on it, and a person fills both in afterwards. Anything drawn the other way round —
 "our creative becomes an ad" — is not what the code does.
 
 **2. Linking the creative to the ad is a person, on purpose.**
 `api/campaigns/link-asset.mjs:11-32` sets out why: the Meta pull never even asks for a
-creative (`api/campaigns/sync.mjs:673` requests `id,name,status,adset_id`), our
+creative (the ad list in `syncPartnerConnections()`, `api/campaigns/sync.mjs:778`, requests `id,name,status,adset_id`), our
 `creative_assets.provider_asset_id` is the generation vendor's id and Meta has never seen
 one, and nothing has ever pushed one of our creatives to Meta. The two sides share no
 identifier at all. A guess here makes every label answer silently wrong.
@@ -158,37 +159,50 @@ the corrected one immediately.
 - Writing a script with its five labels, and the dictionary learning the new words.
 - Writing a rewrite that points back at what it replaced, without touching the original.
 - Pulling ads and daily spend in from Meta — and, since 2026-09-09, how far into each
-  video ad people got before they left. `insightsRequestUrl()`, `api/campaigns/sync.mjs:238-251`, asks Meta for
-  eight extra fields (the list itself lives once, at
-  `VIDEO_INSIGHT_FIELDS`, `src/adplatforms/meta.mjs:175-184`) and `storeInsights()`, `api/campaigns/sync.mjs:412-451`, writes them
+  video ad people got before they left. `insightsRequestUrl()`,
+  `api/campaigns/sync.mjs:299-312`, asks Meta for eight extra fields (the list itself
+  lives once, at `VIDEO_INSIGHT_FIELDS`, `src/adplatforms/meta.mjs:175-184`) and
+  `storeInsights()`, `api/campaigns/sync.mjs:504-543`, writes them
   into eight new columns on `ad_metrics_daily`
   (`db/migrations/378_ad_video_metrics.sql`). It costs nothing extra: eight more words
   on a request the app already sends every Sync.
 - **Since 2026-09-09, the pull asks Meta ONCE for the whole ad account instead of once per
   ad.** `level=ad` makes one answer carry a line for every ad on every day
-  (`insightsRequestUrl()`, `api/campaigns/sync.mjs:238-251`), and `fetchInsightPages()`
-  (`:262-278`) follows Meta's own next-page link up to 100 pages so a big account does not
-  quietly lose days. A line with no `ad_id` is dropped rather than guessed at
-  (`groupInsightsByAd()`, `:284-293`). Hundreds of calls in a row used to run the page out
+  (`insightsRequestUrl()`, `api/campaigns/sync.mjs:299-312`), and the walker
+  `fetchAllPages()` (`:328-344`, still exported under its old name `fetchInsightPages`
+  at `:348`) follows Meta's own next-page link up to 100 pages so a big account does
+  not quietly lose days. A line with no `ad_id` is dropped rather than guessed at
+  (`groupInsightsByAd()`, `:374-383`). Hundreds of calls in a row used to run the page out
   of time before it finished.
+- **Since 2026-09-09, every list Meta answers is read to its end, not just its first
+  page.** Meta hands back a page of rows plus a link to the next page. The campaign, ad set
+  and ad reads asked for a page and never followed that link, so an ad account with more
+  than a hundred campaigns — or an ad set with more than a hundred ads — lost everything
+  past the first hundred, and no screen and no message ever said so. All four lists now go
+  through the same walker (`metaList()`, `api/campaigns/sync.mjs:359-361`, calling
+  `fetchAllPages()`, `:328-344`), which follows the link, stops at 50 pages of 100 rows so one runaway account cannot spin
+  forever, and puts a line in the answer's `errors` when it stops early
+  (`listTruncationMessage()`, `:365-368`). A list that was cut short says it was cut short.
 - **The account is switched on the moment Meta answers, not at the end.** A connected
   account starts on "waiting" and only Sync moves it. The line that moves it now runs
   before the walk through campaigns, ad sets and ads
-  (`api/campaigns/sync.mjs:625-637`), because that walk can run out of time on a busy
+  (the switch-on `UPDATE` in `syncPartnerConnections()`,
+  `api/campaigns/sync.mjs:721-735`), because that walk can run out of time on a busy
   account and the switch was never reached. Only "waiting" is changed; an account somebody
   marked expired or revoked is left alone.
 - **Meta's own word on business verification is written down.** The sync reads it and
-  stores it (`readVerificationState()`, `api/campaigns/sync.mjs:200-209`; the write at
-  `:647-655`). Only Meta saying verified earns it. If Meta does not answer — a token
-  without that permission, for instance — nothing is written, the run still says ok, and
+  stores it (`readVerificationState()`, `api/campaigns/sync.mjs:261-270`; the write in
+  `syncPartnerConnections()` at `:743-751`). Only Meta saying verified earns it. If
+  Meta does not answer — a token without that permission, for instance — nothing is written, the run still says ok, and
   the screen keeps saying unverified, which is true. Nothing in the tree ever set this
   before, so a campaign could never go live.
 - **Each campaign is saved on its own, the moment it is done**
-  (`api/campaigns/sync.mjs:686-713`). Nothing is held open across a call to Meta. If the
+  (the per-campaign save in `syncPartnerConnections()`,
+  `api/campaigns/sync.mjs:795-829`). Nothing is held open across a call to Meta. If the
   run dies partway, what was already saved stays saved. And the answer cannot claim work it
   did not do: a run that lost a campaign comes back `ok:false` with `partial:true`, the
   campaign named, and only the counts that really landed
-  (`buildSyncResponse()`, `api/campaigns/sync.mjs:467-511`).
+  (`buildSyncResponse()`, `api/campaigns/sync.mjs:559-603`).
 - Saying which creative runs on an ad, and what our number for it is.
 - Reading the whole chain back, either as a list or grouped by angle, hook, lane, offer or
   script type.
@@ -218,7 +232,7 @@ the corrected one immediately.
   - **It refuses to divide on a tiny sample.** Under ten booked people there is no cost
     per booked person — just a line saying how many are needed and how many there are.
     That threshold is `MIN_N_RATE` in `src/ops/discoveries.mjs:9` and the refusal is
-    `costPerBooked()` in `src/ops/meta-marketing.mjs:17`, both already used elsewhere. It
+    `costPerBooked()` in `src/ops/meta-marketing.mjs:37`, both already used elsewhere. It
     is one rule in one place, not a second opinion.
   - **A booked person is not a booked call.** Someone who books, cancels and rebooks is one
     person. The field is called `people_booked` for that reason. The older rollup at
@@ -236,7 +250,7 @@ the corrected one immediately.
     the way in. p75 views divided by past-the-opening views.
 
   Both are worked out in one function and one function only, `watchRate()` at
-  `src/ops/meta-marketing.mjs:106`. Three things about them:
+  `watchRate()`, `src/ops/meta-marketing.mjs:126`. Three things about them:
 
   - **A photo ad has no hook rate, and it is blank, not zero.** There is no video, so there
     is no such number and there never will be. Printing 0 there would make a perfectly good

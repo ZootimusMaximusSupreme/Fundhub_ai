@@ -14,6 +14,26 @@ export function specialAdCategoryRule() {
   };
 }
 
+/* costPerBooked — spend divided by BOOKED PEOPLE, never by booked calls.
+ *
+ * THE WORD MATTERS AND IT USED TO BE THE WRONG ONE. `bookedN` is a count of
+ * PEOPLE at every caller there is, and both of them count it as people on
+ * purpose:
+ *
+ *   api/read/ad-spine.mjs:570 passes people_booked, which is
+ *     count(DISTINCT client_id) — a person who books, cancels and rebooks is
+ *     one, and the column on the screen beside it is headed "People booked"
+ *     (public/app/campaign-manager.html:434).
+ *   marketingSnapshot below passes company_8.booked_calls, which is
+ *     kpis.booked_count — also count(DISTINCT client_id)
+ *     (src/dashboard/kpis.mjs:58-64). Only that FIELD NAME says "calls"; the
+ *     number underneath it has always been people.
+ *
+ * So the sentences here say "booked people". Saying "calls" beside a column
+ * headed "People booked" made the screen contradict itself, and counting calls
+ * against people is exactly how a rate somewhere else in this system can come
+ * out above 100%.
+ */
 export function costPerBooked({ spendCents, bookedN } = {}) {
   const n = Number(bookedN);
   const spend = Number(spendCents);
@@ -22,7 +42,7 @@ export function costPerBooked({ spendCents, bookedN } = {}) {
       status: "INSUFFICIENT",
       cost_cents: null,
       n: Number.isFinite(n) ? n : 0,
-      note: `Need ${MIN_N_RATE} booked calls. Have ${Number.isFinite(n) ? n : 0}. Do not invent a cost.`
+      note: `Need ${MIN_N_RATE} booked people. Have ${Number.isFinite(n) ? n : 0}. Do not invent a cost.`
     };
   }
   if (spendCents == null || spendCents === "") {
@@ -45,7 +65,7 @@ export function costPerBooked({ spendCents, bookedN } = {}) {
     status: "MEASURED",
     cost_cents: Math.round(spend / n),
     n,
-    note: "Spend divided by booked calls. Read only."
+    note: "Spend divided by booked people. Read only."
   };
 }
 

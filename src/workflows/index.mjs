@@ -20,6 +20,7 @@ import { waypointNudgeSweeper } from './waypoint-nudge-sweeper.mjs';
 import { financeOsPullSweeper } from './finance-os-pull-sweeper.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
+import { metaCampaignSyncSweeper } from './meta-campaign-sync-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
@@ -204,6 +205,32 @@ export const functions = [
   paidCheckoutExpirySweeper,
 
   meetTranscriptSweeper,
+
+  /* THE CLOCK BEHIND THE META PULL. Registered 2026-09-09, daily at 07:00 UTC.
+
+     Until now NOTHING ran api/campaigns/sync.mjs on a schedule — grepped: the
+     route map, the pulse registry and its own tests were the only mentions. A
+     person pressing Sync on the campaigns screen was the entire mechanism. And
+     the pull only reached back seven days, so eight days without a press meant
+     day eight could never be asked for again. Meta still holds it; this
+     platform would never ask. The screens then read the missing row as zero, so
+     "nobody looked" and "we spent nothing" drew the identical chart.
+
+     Both halves are needed and both landed together: the window is now 28 days
+     (INSIGHT_WINDOW_DAYS), so a missed week is still recoverable and Meta's own
+     restatements are picked up; and this runs the pull without anyone asking.
+
+     REGISTERING IT SENDS NOTHING AND SPENDS NOTHING. It READS from Meta and
+     writes our own campaigns / ad_sets / ads / ad_metrics_daily rows. No
+     campaign is created, started, paused or re-budgeted — that is
+     api/campaigns/write.mjs, a button a person presses, untouched by this. Days
+     that are pulled again overwrite themselves through
+     ON CONFLICT (ad_id, date), so nothing double-counts.
+
+     One partner's broken connection never stops the pass: each is caught on its
+     own and recorded against that connection's last_error, which is what the
+     screen already shows. */
+  metaCampaignSyncSweeper,
 
   /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in
      this platform charged a card on a cycle: 075_subscriptions.sql recorded the

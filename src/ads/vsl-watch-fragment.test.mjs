@@ -521,3 +521,140 @@ describe("the events in the order a real browser fires them", () => {
     );
   });
 });
+
+// ── THE SECOND HIGH-WATER MARK ─────────────────────────────────────────────
+// The video auto-plays MUTED and the tap for sound sends it back to zero
+// (docs/workflows/cf-vsl-watch-html-step1.html:133). So "the video reached
+// 3:00" and "a person chose to watch and reached 3:00" are different facts.
+// `pos` is the first. `pos_unmuted` is the second, and it is the only one worth
+// quoting. src/vsl/watch-beacon.mjs:71-84 spells out why, and :285 is the
+// validator that accepts it.
+//
+// If the page script does not send it the column is empty forever and the
+// difference is thrown away at the source, where it can never be recovered.
+describe("pos_unmuted — how far they got AFTER they chose to watch", () => {
+  test("before any tap it is empty, and empty is not zero", () => {
+    // Somebody who scrolled past a silently playing video never chose to
+    // watch. The honest answer for them is "we do not know", forever. A 0 here
+    // would read as a measured fact — that they tapped and watched nothing.
+    const h = runFragment();
+    h.video.fire("loadedmetadata");
+    h.video.paused = false;
+    h.video.fire("play");
+    h.video.currentTime = 60;
+    h.video.fire("timeupdate");
+    h.leave();
+
+    const sent = h.last();
+    assert.equal(sent.pos, 60, "the whole viewing did reach 60 seconds");
+    assert.equal(sent.pos_unmuted, null, "nobody tapped, so this must be empty");
+    assert.notEqual(sent.pos_unmuted, 0, "0 would claim they tapped and watched nothing");
+    assert.equal(sent.unmuted, false, "and the flag agrees they never tapped");
+  });
+
+  test("it is never seeded from the silent run — the exact lie this exists to stop", () => {
+    // Ran silently to 3:00, tapped for sound, left immediately. Reported with
+    // `pos` alone this person is "chose to watch, reached 3:00". They watched
+    // none of it after choosing.
+    const h = runFragment();
+    h.video.fire("loadedmetadata");
+    h.video.paused = false;
+    h.video.fire("play");
+    h.video.currentTime = 180;
+    h.video.fire("timeupdate");
+
+    // The tap. The page's own code runs v.muted=false; v.currentTime=0;
+    // v.play(). A real browser fires volumechange, seeking, play, then seeked.
+    h.video.muted = false;
+    h.video.fire("volumechange");
+    h.video.currentTime = 0;
+    h.video.fire("seeking");
+    h.video.fire("play");
+    h.video.fire("seeked");
+    h.leave();
+
+    const sent = h.last();
+    assert.equal(sent.pos, 180, "the whole viewing still reached 180 seconds");
+    assert.equal(sent.unmuted, true, "they did tap");
+    assert.equal(sent.pos_unmuted, 0, "they tapped and watched nothing — that is 0, not 180");
+    assert.notEqual(sent.pos_unmuted, 180, "the silent run's position leaked into the chosen run");
+  });
+
+  test("after the tap it fills from the tap onward, and stops at the furthest point reached", () => {
+    const h = runFragment();
+    h.video.fire("loadedmetadata");
+    h.video.paused = false;
+    h.video.fire("play");
+    h.video.currentTime = 180;
+    h.video.fire("timeupdate");
+
+    h.video.muted = false;
+    h.video.fire("volumechange");
+    h.video.currentTime = 0;
+    h.video.fire("seeking");
+    h.video.fire("play");
+    h.video.fire("seeked");
+
+    // Now they actually watch, with the sound on.
+    for (const t of [1, 5, 12]) {
+      h.video.currentTime = t;
+      h.video.fire("timeupdate");
+    }
+    h.leave();
+
+    const sent = h.last();
+    assert.equal(sent.pos_unmuted, 12, "the chosen run reached 12 seconds");
+    assert.equal(sent.pos, 180, "and the whole viewing still reached 180");
+  });
+
+  test("it goes up and never comes back down when they rewind after tapping", () => {
+    const h = runFragment();
+    h.video.fire("loadedmetadata");
+    h.video.paused = false;
+    h.video.fire("play");
+
+    h.video.muted = false;
+    h.video.fire("volumechange");
+    h.video.fire("seeking");
+    h.video.fire("play");
+    h.video.fire("seeked");
+
+    h.video.currentTime = 90;
+    h.video.fire("timeupdate");
+    h.video.fire("seeking");
+    h.video.currentTime = 30;   // a real rewind, with the sound on
+    h.video.fire("seeked");
+    h.video.currentTime = 40;
+    h.video.fire("timeupdate");
+    h.leave();
+
+    const sent = h.last();
+    assert.equal(sent.pos_unmuted, 90, "a rewind must not pull the furthest point back");
+    assert.equal(sent.rewinds, 1, "and it is still counted as a rewind");
+  });
+
+  test("the receiver actually reads this name — a name that drifts is silent data loss", () => {
+    // src/vsl/watch-beacon.mjs ignores any key it does not know. So a fragment
+    // sending posUnmuted, or pos_after_unmute, is accepted and dropped with no
+    // error anywhere. The name has to match exactly.
+    const validator = fs.readFileSync(path.join(ROOT, "src", "vsl", "watch-beacon.mjs"), "utf8");
+    assert.ok(
+      /\bbody\.pos_unmuted\b/.test(validator),
+      "the receiver no longer reads body.pos_unmuted — the fragment's key is now dead"
+    );
+    assert.ok(/pos_unmuted:/.test(CODE), "the fragment must send pos_unmuted");
+  });
+
+  test("it is never seeded from pos in the code, not just in behaviour", () => {
+    // A future edit that writes `furthestUnmutedExact = furthestExact` anywhere
+    // would pass every behaviour test above only until the ordering changed.
+    assert.ok(
+      !/furthestUnmutedExact\s*=\s*furthestExact/.test(CODE),
+      "the after-tap mark must never be seeded from the whole-viewing mark"
+    );
+    assert.ok(
+      /var furthestUnmutedExact = null/.test(CODE),
+      "the after-tap mark must start empty, not at 0"
+    );
+  });
+});

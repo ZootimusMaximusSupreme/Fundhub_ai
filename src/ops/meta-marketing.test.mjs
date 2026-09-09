@@ -26,11 +26,30 @@ describe("costPerBooked", () => {
     assert.match(out.note, /Do not invent/);
   });
 
-  it("computes spend per booked call when n is 10 or more", () => {
+  it("computes spend per booked person when n is 10 or more", () => {
     const out = costPerBooked({ spendCents: 100000, bookedN: MIN_N_RATE });
     assert.equal(out.status, "MEASURED");
     assert.equal(out.cost_cents, 10000);
     assert.equal(out.n, 10);
+  });
+
+  /* PEOPLE, NOT CALLS, IN THE WORDS AS WELL AS THE ARITHMETIC. Both callers
+     pass a count of DISTINCT people — api/read/ad-spine.mjs:570 (people_booked)
+     and marketingSnapshot, whose company_8.booked_calls is kpis.booked_count,
+     itself count(DISTINCT client_id) at src/dashboard/kpis.mjs:58-64. The
+     screen's column is headed "People booked", so a note saying "calls" made
+     the page contradict its own heading — and counting calls against people is
+     how a rate reads over 100%. */
+  it("says booked PEOPLE, never booked calls, when it refuses", () => {
+    const out = costPerBooked({ spendCents: 100000, bookedN: 3 });
+    assert.match(out.note, /Need 10 booked people\. Have 3\./);
+    assert.ok(!/booked calls/.test(out.note), "the refusal still says calls where it means people");
+  });
+
+  it("says booked PEOPLE, never booked calls, when it measures", () => {
+    const out = costPerBooked({ spendCents: 100000, bookedN: 20 });
+    assert.equal(out.note, "Spend divided by booked people. Read only.");
+    assert.ok(!/booked calls/.test(out.note), "the measured note still says calls where it means people");
   });
 
   it("does not invent a cost when spend is missing", () => {

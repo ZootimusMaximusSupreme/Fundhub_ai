@@ -196,10 +196,12 @@ blank without it.
 Nothing reads the watch data. No page, no report. It piles up in the database and
 there is nowhere to look at it.
 
-**9. Fix one wrong word.**
-A column headed "Cost per booked **person**" prints the sentence "Need 10 booked
+**9. Fix one wrong word. — FIXED 2026-09-09.**
+A column headed "Cost per booked **person**" printed the sentence "Need 10 booked
 **calls**." Those are two different counts and the older panel on the same screen
-really does count calls. It will not add up when you try to.
+really does count calls, so it did not add up. Both sentences in
+`src/ops/meta-marketing.mjs` now say **booked people**, which is what every
+caller has always passed.
 
 **Small one, worth doing while I am in there:** the ClickFunnels sync button can
 stick on "Syncing…" forever if your wifi drops. A page reload clears it.
@@ -221,7 +223,7 @@ Do not chase these.
 - **A hook rate over 100% is right.** Meta changes its own numbers after the
   fact. We pass through what arrives rather than tidying it.
 
-- **"Need 10 booked calls. Have 0."** is a refusal, not a failure. Under ten
+- **"Need 10 booked people. Have 0."** is a refusal, not a failure. Under ten
   people it will not invent a cost. That is the behaviour you want.
 
 - **The "FundHub (house)" partner says "invited". Leave it.** Switching it on

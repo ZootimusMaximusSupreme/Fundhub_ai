@@ -48,34 +48,34 @@ made-up name for that browser.
 
 ```mermaid
 flowchart TD
-    A["A person opens<br/>apply.fundhub.ai/watch<br/>a ClickFunnels page"] --> B["The pasted script wakes up<br/>and looks for a video<br/>07-vsl-watch-beacon.html:705"]
+    A["A person opens<br/>apply.fundhub.ai/watch<br/>a ClickFunnels page"] --> B["The pasted script wakes up<br/>and looks for a video<br/>sweep() — 07-vsl-watch-beacon.html:742"]
     B -->|"no video on the page"| B2["Nothing happens.<br/>The page is untouched"]
-    B -->|"a video is found"| C["track(video) starts listening<br/>07-vsl-watch-beacon.html:376"]
+    B -->|"a video is found"| C["track(video) starts listening<br/>07-vsl-watch-beacon.html:393"]
 
-    C --> D["Two made-up names.<br/>One for this browser, kept on the device.<br/>One for this single viewing.<br/>:274 and :260<br/>Neither is a person and neither<br/>can be turned into one"]
+    C --> D["Two made-up names.<br/>One for this browser, kept on the device.<br/>One for this single viewing.<br/>visitorId() — :291, randomKey() — :277<br/>Neither is a person and neither<br/>can be turned into one"]
 
-    D --> E["The video starts on its own,<br/>SOUND OFF<br/>play — :591"]
-    D --> F["The browser REFUSED to start it.<br/>Recorded only if the file was ready,<br/>nothing ever played, and the player<br/>is still stopped when they leave<br/>:463-468"]
+    D --> E["The video starts on its own,<br/>SOUND OFF<br/>play — :628"]
+    D --> F["The browser REFUSED to start it.<br/>Recorded only if the file was ready,<br/>nothing ever played, and the player<br/>is still stopped when they leave<br/>payload() — :496-501"]
 
-    E --> G["Every whole second reached<br/>is written down ONCE<br/>timeupdate — :620<br/>fhShouldSample — :232<br/>NO TIMER: the clock is the browser's<br/>own timeupdate on a real video,<br/>the rule at public/app/client-portal.html:1240"]
+    E --> G["Every whole second reached<br/>is written down ONCE<br/>timeupdate — :657<br/>fhShouldSample — :249<br/>NO TIMER: the clock is the browser's<br/>own timeupdate on a real video,<br/>the rule at public/app/client-portal.html:1240"]
 
     E --> H{"They TAP FOR SOUND"}
-    H -->|"volumechange — :666"| I["THE MOMENT THEY CHOSE TO WATCH.<br/>The page's own code then jumps<br/>back to zero and starts again"]
-    I --> J["That jump is NOT a rewind.<br/>restartArmed says it is the same person<br/>starting over with the sound on<br/>fhClassifySeek — :249"]
+    H -->|"volumechange — :703"| I["THE MOMENT THEY CHOSE TO WATCH.<br/>The page's own code then jumps<br/>back to zero and starts again"]
+    I --> J["That jump is NOT a rewind.<br/>restartArmed says it is the same person<br/>starting over with the sound on<br/>fhClassifySeek — :266"]
     J --> G
 
-    G --> K["Jumped backwards = a REWIND<br/>Jumped forwards = a SKIP<br/>Back to 0 after the end = a REPLAY<br/>seeked — :643, ended — :614"]
+    G --> K["Jumped backwards = a REWIND<br/>Jumped forwards = a SKIP<br/>Back to 0 after the end = a REPLAY<br/>seeked — :680, ended — :651"]
 
-    G --> L["Paused, stalled, or reached the end<br/>:607, :612, :614"]
+    G --> L["Paused, stalled, or reached the end<br/>pause — :644, waiting — :649, ended — :651"]
 
-    G -->|"60 seconds have piled up,<br/>or the page is closing"| M["ONE MESSAGE, up to 200 seconds in it<br/>payload — :440<br/>Never more than 8 messages a page view"]
+    G -->|"60 seconds have piled up,<br/>or the page is closing"| M["ONE MESSAGE, up to 200 seconds in it<br/>payload — :473<br/>Never more than 8 messages a page view"]
     F --> M
     K --> M
     L --> M
-    N["They leave the page<br/>pagehide / hidden — :688-689"] --> M
+    N["They leave the page<br/>pagehide / hidden — :725-726"] --> M
 
-    M -->|"navigator.sendBeacon,<br/>a text/plain blob so the browser<br/>asks no permission first — :516"| O["POST https://fundhub.ai/api/public/vsl-watch<br/>ENDPOINT — :211"]
-    M -->|"if sendBeacon is missing:<br/>fetch, keepalive — :526"| O
+    M -->|"navigator.sendBeacon,<br/>a text/plain blob so the browser<br/>asks no permission first — send() :553"| O["POST https://fundhub.ai/api/public/vsl-watch<br/>ENDPOINT — :228"]
+    M -->|"if sendBeacon is missing:<br/>fetch, keepalive — send() :563"| O
 
     O --> P["THE ROUTE LINE.<br/>public/vsl-watch<br/>netlify/functions/api.mjs:785<br/>Without it the whole internet gets 404"]
 
@@ -133,25 +133,26 @@ measured and it really was zero, which is a different thing.
 
 Before the fix the script filed that jump as somebody rewinding. It is not. It is the
 same person starting over with the sound on
-(`clickfunnels-fragments/07-vsl-watch-beacon.html:249-252`).
+(`fhClassifySeek`, `clickfunnels-fragments/07-vsl-watch-beacon.html:266-273`).
 
 ---
 
 ## What is missing, and it is not small
 
-**The page does not yet send the after-the-tap number.** The message the script builds
-(`clickfunnels-fragments/07-vsl-watch-beacon.html:473-500`) has no `pos_unmuted` in it. I
-searched the file for it and it is not there.
+**FIXED 2026-09-09 — the page now sends the after-the-tap number.** It used to not, and
+until it did, `max_position_after_unmute_seconds` was empty on every row and the half of
+the design that tells "watched in silence" apart from "chose to watch" was inert.
 
-The receiver is ready for it (`src/vsl/watch-beacon.mjs:285`) and the column exists
-(`379:394`), so nothing breaks — but `max_position_after_unmute_seconds` will be **empty
-on every single row** until the script sends it. The half of the fix that tells "watched
-in silence" apart from "chose to watch" is therefore **inert on the page as written**.
+The script now keeps a second high-water mark, `furthestUnmutedExact`
+(`clickfunnels-fragments/07-vsl-watch-beacon.html:415`). It starts empty. It only moves
+once the tap has already happened (`:447`). It is never seeded from the first mark. It
+goes out as `pos_unmuted` (`:517`), which is the name the receiver reads
+(`src/vsl/watch-beacon.mjs:285`) and the column that holds it (`379:394`).
 
-The script already knows the moment of the tap — it sets `restartArmed` right there
-(`clickfunnels-fragments/07-vsl-watch-beacon.html:666-673`) — so this is a small change:
-a second high-water mark that starts empty and only begins filling after the tap. It must
-never be seeded from the first one.
+Proved without a database in `src/ads/vsl-watch-fragment.test.mjs`, which runs the real
+pasted script inside a hand-made browser: before any tap the field is empty and not 0;
+after a tap it fills from the tap onward; and a viewing that ran silently to 3:00 then
+tapped and left reports 0, not 180.
 
 **Nothing reads these tables.** There is no endpoint and no screen. A drop-off curve
 exists in the data and nowhere else.
@@ -164,7 +165,7 @@ exists in the data and nowhere else.
   on. Migration `379_vsl_watch.sql` has never been applied and
   `src/http/vsl-watch.pg.test.mjs` has never run — with `DATABASE_URL` unset it skips.
 * **The cross-site post has never been made by a real browser.** Both send paths use a
-  `text/plain` body on purpose (`clickfunnels-fragments/07-vsl-watch-beacon.html:516-533`),
+  `text/plain` body on purpose (`send`, `clickfunnels-fragments/07-vsl-watch-beacon.html:552-572`),
   which is the kind of request a browser sends without asking permission first, so the
   `OPTIONS` branch at `api/public/vsl-watch.mjs:198` is a spare answer the page as written
   never triggers. `sendBeacon` never reads the reply; the `fetch` fallback does, and for
@@ -174,7 +175,7 @@ exists in the data and nowhere else.
   That is the whole reason for this work, and it also means the first drop-off curve drawn
   from a handful of viewers will be noise, not a finding.
 * **`fh_attribution` must already be on the page.** The ad number is read from what
-  `06-utm-hidden-fields.html` saved (`clickfunnels-fragments/07-vsl-watch-beacon.html:292-301`).
+  `06-utm-hidden-fields.html` saved (`attribution`, `clickfunnels-fragments/07-vsl-watch-beacon.html:309-319`).
   If that fragment is not pasted on the same page, `utm_content` — and therefore the ad
   number — is empty and no watch row can be tied to an ad. **UNVERIFIED**: whether it is
   on the live page was not checked.

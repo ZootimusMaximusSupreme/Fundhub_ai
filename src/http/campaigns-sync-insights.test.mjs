@@ -27,6 +27,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
 
 import {
   insightsRequestUrl,
@@ -87,11 +88,18 @@ describe("the insights request", () => {
     assert.ok(url.includes("time_increment=1"), "the day-by-day breakdown was lost");
   });
 
-  test("the window is still the last seven days", () => {
+  /* WAS SEVEN DAYS, AND SEVEN DAYS LOST NUMBERS FOR GOOD — changed 2026-09-09.
+     Nothing ran this pull on a schedule; a person pressing Sync was the whole
+     mechanism. So eight days without a press meant day eight could never be
+     asked for again, and the screens draw a missing day as zero spend. 28 days
+     means a missed week is still recoverable, and it re-reads days Meta has
+     since restated. Re-pulling a stored day overwrites it through
+     ON CONFLICT (ad_id, date) — db/migrations/046_ad_platforms.sql:461. */
+  test("the window reaches back 28 days, so a missed week can still be caught up", () => {
     const { since, until } = insightWindow(Date.UTC(2026, 8, 9));
     assert.equal(until, "2026-09-09");
-    assert.equal(since, "2026-09-02");
-    assert.equal(INSIGHT_WINDOW_DAYS, 7);
+    assert.equal(since, "2026-08-12");
+    assert.equal(INSIGHT_WINDOW_DAYS, 28);
   });
 
   /* An account with hundreds of ads used to mean hundreds of requests. */
@@ -246,5 +254,44 @@ describe("what the run says when it is over", () => {
     assert.equal(body.ads, 40);
     assert.equal(body.insights, 280);
     assert.deepEqual(body.errors, []);
+  });
+});
+
+// ── 3. the number the SCREEN prints is the number that was saved ────────────
+//
+// buildSyncResponse counts only what committed, but that is worth nothing if
+// the page throws the sentence away and writes its own. It used to: the Sync
+// Meta button built "Pulled in N campaigns · N ad sets · N ads" out of three of
+// the four counts and dropped the fourth — days of numbers, the only one that
+// says whether any SPEND was saved. A run that saved the shape of the account
+// and none of the money read exactly like a run that saved everything.
+
+const screen = () =>
+  readFileSync(new URL("../../public/app/campaign-manager.html", import.meta.url), "utf8");
+
+const syncBlock = () => {
+  const src = screen();
+  const from = src.indexOf("getElementById('syncMetaBtn')");
+  assert.ok(from > 0, "the Sync Meta button handler is gone from campaign-manager.html");
+  const to = src.indexOf("getElementById('metaAgencyBtn')", from);
+  assert.ok(to > from, "the Sync Meta handler no longer ends where this test expects");
+  return src.slice(from, to);
+};
+
+describe("what the Sync Meta button prints", () => {
+  test("it prints the server's own sentence, which counts only what saved", () => {
+    assert.match(
+      syncBlock(),
+      /msg\.textContent = \(res\.message \|\|/,
+      "the Sync Meta button rebuilds its own sentence instead of printing the server's"
+    );
+  });
+
+  test("even the fallback sentence names the days of numbers", () => {
+    assert.match(
+      syncBlock(),
+      /res\.insights[\s\S]{0,60}days of numbers/,
+      "the fallback sentence still drops the one count that says whether spend was saved"
+    );
   });
 });

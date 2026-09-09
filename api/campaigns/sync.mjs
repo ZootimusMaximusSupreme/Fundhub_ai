@@ -84,6 +84,15 @@
 //    fails is named in the answer and does not take the others with it. Nothing
 //    is counted until its transaction has actually committed, and any failure
 //    at all makes the answer say so (buildSyncResponse).
+//
+// 3. ONE PAGE IS NOT THE LIST. Every list Meta answers is a page plus a link
+//    to the next page. The campaign, ad set and ad reads asked for a page and
+//    never followed the link, so an ad account with more than a hundred
+//    campaigns — or an ad set with more than a hundred ads — lost everything
+//    past the first hundred, permanently and silently. Now all four lists go
+//    through fetchAllPages(), which follows `paging.next` to the end, caps the
+//    walk (LIST_MAX_PAGES) so a runaway account cannot spin forever, and puts
+//    a line in `errors` when the cap is hit. A short answer says it is short.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { db } from "../../src/db.mjs";
@@ -103,10 +112,62 @@ const BASE = "https://graph.facebook.com";
 
 /* How many days of numbers to pull, and how far the pager is allowed to walk.
    The page cap is a stop, not a target: a pull that hits it keeps the rows it
-   already read and says out loud that it stopped early. */
-export const INSIGHT_WINDOW_DAYS = 7;
+   already read and says out loud that it stopped early.
+
+   ═══════════════════════════════════════════════════════════════════════════
+   WHY 28 AND NOT 7 — 2026-09-09. A SEVEN-DAY WINDOW LOSES DAYS FOREVER.
+
+   Until now this pull only ever asked Meta for the last seven days, and the
+   only thing that ran it was a person pressing Sync. Those two facts together
+   are the whole problem: miss eight days and day eight is gone. Not "late" —
+   gone. Meta still holds it, but nothing here would ever ask for it again, so
+   ad_metrics_daily has no row for it, and the screens read a missing row as
+   zero spend. "Nobody looked" and "we spent nothing" look identical.
+
+   28 days is chosen for two reasons, not one:
+
+     1. A MISSED WEEK IS STILL RECOVERABLE. The scheduled sweeper below runs
+        daily, but a schedule that has been paused, a deploy that was down, or
+        a connection that was broken and then fixed all produce a gap. 28 days
+        means three whole weeks of that can be repaired by the next successful
+        pull instead of being written off.
+
+     2. META RESTATES RECENT NUMBERS. Attribution keeps settling after the day
+        closes — conversions get credited back to earlier days, spend is
+        adjusted. A day read once on the day itself is not the final number. A
+        28-day window re-reads every day until it has stopped moving.
+
+   RE-PULLING A DAY WE ALREADY HAVE IS CORRECT, NOT WASTE. storeInsights()
+   writes with `ON CONFLICT (ad_id, date) DO UPDATE SET ...` (below), and that
+   conflict target is a real unique index — db/migrations/046_ad_platforms.sql
+   :461-462 `ad_metrics_daily_uniq ON ad_metrics_daily (ad_id, date)`. So a day
+   that is pulled again overwrites itself with Meta's newer answer. It cannot
+   double-count and it cannot duplicate a row.
+
+   THE COST IS PAGES, AND IT IS BOUNDED. Four times the days is four times the
+   rows, and the rows arrive INSIGHT_PAGE_SIZE at a time behind one account-level
+   call (see insightsRequestUrl). At 500 rows a page, an account with 400 ads
+   produces about 23 pages across 28 days, well inside INSIGHT_MAX_PAGES. A pull
+   that ever does hit that cap keeps what it read and says so. */
+export const INSIGHT_WINDOW_DAYS = 28;
 export const INSIGHT_MAX_PAGES = 100;
 export const INSIGHT_PAGE_SIZE = 500;
+
+/* THE LISTS PAGE TOO — CAMPAIGNS, AD SETS AND ADS.
+   Meta answers a list request with at most `limit` rows and a `paging.next`
+   link for the rest. Asking for one page and never following that link is a
+   silent loss: an ad account with more than LIST_PAGE_SIZE campaigns, or an ad
+   set with more than LIST_PAGE_SIZE ads, simply never saw the rest, and no
+   screen and no error ever said so.
+
+   WHY 50 PAGES. Meta's own published ad-account limits are 5,000 campaigns,
+   5,000 ad sets and 5,000 ads per account, so 50 pages of 100 covers a real
+   account to Meta's own ceiling. It is a stop, not a target: a walk that hits
+   it keeps every row it already read and says out loud that it stopped early
+   (listTruncationMessage below), because replacing one silent truncation with
+   another is the exact failure this exists to end. */
+export const LIST_PAGE_SIZE = 100;
+export const LIST_MAX_PAGES = 50;
 
 function acct(connection) {
   const id = String(connection.external_ad_account_id || "");
@@ -250,16 +311,21 @@ export function insightsRequestUrl(connection, { since, until, version = API_VER
   return `${BASE}/${version}/${acct(connection)}/insights?${params}`;
 }
 
-/* fetchInsightPages → { rows, pages, truncated }
+/* fetchAllPages → { rows, pages, truncated }
 
    Follows Meta's `paging.next` until it runs out. Bounded, and it refuses to
    read a page URL it has already read, because a cursor that loops back on
    itself would otherwise hang the request forever.
 
+   THE SAME SHAPE src/analytics/clickfunnels.mjs:162-174 ALREADY USES for
+   ClickFunnels: walk the cursor, cap the number of pages so one runaway account
+   cannot spin forever. One walker, used by all four Meta lists — the numbers,
+   the campaigns, the ad sets and the ads — rather than four half-answers.
+
    TRUNCATION IS REPORTED, NOT THROWN. The rows already read are real numbers
    worth keeping; throwing would drop every one of them to say the last page was
    missing. */
-export async function fetchInsightPages({ url, token, ctx = {}, maxPages = INSIGHT_MAX_PAGES }) {
+export async function fetchAllPages({ url, token, ctx = {}, maxPages = INSIGHT_MAX_PAGES }) {
   const rows = [];
   const seen = new Set();
   let next = url;
@@ -277,6 +343,30 @@ export async function fetchInsightPages({ url, token, ctx = {}, maxPages = INSIG
   return { rows, pages, truncated: Boolean(next) };
 }
 
+/* The name this walker had when it only ever walked insights. Kept because the
+   journey pages and the tests that pin the paging behaviour call it that. */
+export const fetchInsightPages = fetchAllPages;
+
+/* metaListUrl — the first page of one of Meta's lists. Same field list and same
+   page size the single-page read used, so nothing about the request changed
+   except that the answer is now followed to its end. */
+export function metaListUrl(path, fields, { version = API_VERSION(), limit = LIST_PAGE_SIZE } = {}) {
+  const qs = new URLSearchParams({ fields, limit: String(limit) });
+  return `${BASE}/${version}/${path}?${qs}`;
+}
+
+/* metaList → { rows, pages, truncated } for campaigns / ad sets / ads. */
+async function metaList(path, fields, { token, ctx = {}, maxPages = LIST_MAX_PAGES } = {}) {
+  return fetchAllPages({ url: metaListUrl(path, fields), token, ctx, maxPages });
+}
+
+/* One sentence for a walk that stopped early, used by all four lists so the
+   screen never has to guess which kind of shortfall it is looking at. */
+export function listTruncationMessage({ pages, listed, missing = listed }) {
+  return `stopped after ${pages} pages of ${listed} — ` +
+    `the list was cut short, so some ${missing} are missing`;
+}
+
 /* groupInsightsByAd → Map keyed by Meta's ad id, holding that ad's day rows.
 
    A row with no ad_id cannot be tied to an ad, so it is dropped rather than
@@ -292,8 +382,10 @@ export function groupInsightsByAd(rows) {
   return byAd;
 }
 
-/* The date window the pull covers. Unchanged from the per-ad version it
-   replaces: the last seven days, one row per day. */
+/* The date window the pull covers: the last INSIGHT_WINDOW_DAYS days, one row
+   per day. It was seven days for as long as a person pressing Sync was the only
+   thing that ever ran it — see INSIGHT_WINDOW_DAYS above for why that pair of
+   facts lost days permanently, and why the window is 28 now. */
 export function insightWindow(now = Date.now()) {
   return {
     since: new Date(now - INSIGHT_WINDOW_DAYS * 864e5).toISOString().slice(0, 10),
@@ -523,6 +615,234 @@ function describeError(entry) {
   return `${where} — ${entry.error}`;
 }
 
+/* syncPartnerConnections — THE PULL ITSELF, with no request and no response in
+   it. Everything below used to live inside the handler, which meant the only
+   way to run a sync was to be a signed-in person pressing a button. Lifting it
+   out changes nothing about what it does; it just gives the scheduled sweeper
+   (src/workflows/meta-campaign-sync-sweeper.mjs) the same door.
+
+   IT STILL RUNS INSIDE THE PARTNER'S OWN SCOPE. inScope below is the same
+   withPartnerScope call it always was, so the row-level policies apply to a
+   scheduled run exactly as they apply to a button press. A sweeper looping over
+   partners therefore opens one scoped transaction per partner and can never see
+   across the boundary — see src/partners/rls.mjs.
+
+   It throws NO_CONNECTION / NO_TOKEN the way it always did; the handler turns
+   those into the same 400s, and the sweeper counts them as skips. */
+export async function syncPartnerConnections({ partnerId, connectionId = null, deps = {} }) {
+  /* Every database touch below opens its own short transaction. NONE of them
+     wraps a call to Meta — that is the whole point of this shape. */
+  const inScope = (fn) => withPartnerScope({ kind: "partner", partnerId }, fn);
+
+  const connId = connectionId;
+  const found = await inScope((tx) => tx.query(
+    `SELECT * FROM ad_platform_connections
+      WHERE partner_id = $1 AND platform = 'meta'
+        AND ($2::uuid IS NULL OR id = $2)
+      ORDER BY created_at`,
+    [partnerId, connId]
+  ).then((r) => r.rows));
+
+  /* Filtered here rather than in the WHERE so the reason a row was skipped
+     survives into the answer. "Connect a Meta ad account first" told Chris
+     to redo the one thing he had already done. */
+  const usable = found.filter((c) => syncBlockReason(c) === null);
+  if (!usable.length) {
+    const e = new Error(
+      found.length ? syncBlockReason(found[0]) : "no Meta connection for this partner"
+    );
+    e.code = "NO_CONNECTION";
+    e.connected = found.length > 0;
+    throw e;
+  }
+
+  const stats = { connections: 0, campaigns: 0, ad_sets: 0, ads: 0, insights: 0, errors: [] };
+  const orgId = usable[0].org_id;
+
+  for (const connection of usable) {
+    stats.connections += 1;
+    try {
+      const token = tokenFor(connection);
+      const { since, until } = insightWindow();
+
+      /* ONE call for every ad's numbers, instead of one call per ad. Done
+         before the walk so each ad's days are already in hand when its row is
+         written, which keeps the write transactions short. */
+      const pull = await fetchAllPages({
+        url: insightsRequestUrl(connection, { since, until }),
+        token,
+        ctx: deps
+      });
+      const insightsByAd = groupInsightsByAd(pull.rows);
+      if (pull.truncated) {
+        stats.errors.push({
+          connection: connection.id,
+          error: listTruncationMessage({
+            pages: pull.pages, listed: "numbers", missing: "days"
+          })
+        });
+      }
+
+      /* THE CAMPAIGN LIST, FOLLOWED TO ITS END. This used to read one page.
+         An ad account with more than LIST_PAGE_SIZE campaigns lost every
+         campaign past the first page, with nothing on screen to say so. */
+      const campaignPull = await metaList(
+        `${acct(connection)}/campaigns`,
+        "id,name,status,objective,daily_budget,special_ad_categories",
+        { token, ctx: deps }
+      );
+      if (campaignPull.truncated) {
+        stats.errors.push({
+          connection: connection.id,
+          error: listTruncationMessage({ pages: campaignPull.pages, listed: "campaigns" })
+        });
+      }
+
+      /* THE PROMOTION, AND THE ONLY THING THAT EVER SETS 'active'.
+         Reaching this line means Meta answered a read of this ad account
+         with this connection's own stored token — which is exactly what
+         'active' is defined to mean in 046_ad_platforms.sql:64-69. The
+         token is non-null (syncBlockReason refuses a row without one), so
+         ad_platform_connections_active_token_ck cannot be violated here.
+         Anything other than 'pending' is left alone: a row someone
+         deliberately marked expired or revoked is not un-marked by a sync.
+
+         IT RUNS HERE, THE MOMENT META ANSWERS — NOT AFTER THE WALK.
+         It used to sit below the campaign loop. The walk makes one call per
+         campaign and one per ad set (see the header note above), so a busy
+         ad account can pass the serverless time limit before the loop ends.
+         When that happened the promotion was never reached, the row stayed
+         'pending', and the next press did exactly the same thing — the same
+         permanent dead end, just moved to bigger accounts. Everything after
+         the two reads above is OUR writing, not proof of access; the proof
+         already arrived with the insights pull and the campaign list, so the
+         proof is recorded the moment it lands — before any further call to
+         Meta, including the verification read directly below it. */
+      await inScope((tx) => tx.query(
+        `UPDATE ad_platform_connections
+            SET last_synced_at = now(),
+                last_error = NULL,
+                connection_state = CASE WHEN connection_state = 'pending'
+                                        THEN 'active' ELSE connection_state END,
+                updated_at = now()
+          WHERE id = $1`,
+        [connection.id]
+      )).catch((err) => {
+        // Swallowing this used to leave a connection stuck pending with
+        // nothing on screen to say why.
+        stats.errors.push({ connection: connection.id, error: String(err.message || err) });
+        return null;
+      });
+
+      /* THE SECOND GATE, EARNED THE SAME WAY. Meta's own word on the
+         partner's business verification, written straight through. NULL
+         means Meta did not say, and the column keeps what it had. Never
+         fatal, never counted as a failure of the run: readVerificationState
+         swallows its own errors, so a token without business_management
+         scope costs nothing here. */
+      const verification = await readVerificationState(connection, deps);
+      if (verification) {
+        await inScope((tx) => tx.query(
+          `UPDATE ad_platform_connections
+              SET platform_verification_state = $2, updated_at = now()
+            WHERE id = $1 AND platform_verification_state IS DISTINCT FROM $2`,
+          [connection.id, verification]
+        )).catch(() => null);
+      }
+
+      for (const crow of campaignPull.rows) {
+        /* Read this campaign's ad sets and ads from Meta BEFORE opening a
+           transaction. A transaction is never held open across a network
+           call. */
+        const tree = [];
+        try {
+          /* Both of these are walked to the end too. An ad set with more
+             than LIST_PAGE_SIZE ads used to lose every ad past the first
+             page — the screen showed fewer ads than exist, forever. A walk
+             that hits the cap keeps what it read and is named in the answer
+             so the shortfall is visible instead of silent. */
+          const setPull = await metaList(
+            `${crow.id}/adsets`,
+            "id,name,status,daily_budget,campaign_id",
+            { token, ctx: deps }
+          );
+          if (setPull.truncated) {
+            stats.errors.push({
+              campaign: crow.id,
+              error: listTruncationMessage({ pages: setPull.pages, listed: "ad sets" })
+            });
+          }
+          for (const srow of setPull.rows) {
+            const adPull = await metaList(
+              `${srow.id}/ads`,
+              "id,name,status,adset_id",
+              { token, ctx: deps }
+            );
+            if (adPull.truncated) {
+              stats.errors.push({
+                campaign: crow.id,
+                error: `ad set ${srow.id} — ` +
+                  listTruncationMessage({ pages: adPull.pages, listed: "ads" })
+              });
+            }
+            tree.push({ set: srow, ads: adPull.rows });
+          }
+        } catch (err) {
+          stats.errors.push({ campaign: crow.id, error: String(err.message || err) });
+          continue;
+        }
+
+        /* One short transaction for this campaign and everything under it.
+           Counted only after it has committed — see buildSyncResponse. */
+        try {
+          const written = await inScope(async (tx) => {
+            const done = { ad_sets: 0, ads: 0, insights: 0 };
+            const camp = await upsertCampaign(tx, {
+              orgId, partnerId, connectionId: connection.id, row: crow
+            });
+            for (const { set: srow, ads } of tree) {
+              const adSet = await upsertAdSet(tx, {
+                orgId, partnerId, connectionId: connection.id,
+                campaignId: camp.id, row: srow
+              });
+              done.ad_sets += 1;
+              for (const arow of ads) {
+                const ad = await upsertAd(tx, {
+                  orgId, partnerId, connectionId: connection.id,
+                  campaignId: camp.id, adSetId: adSet.id, row: arow
+                });
+                done.ads += 1;
+                done.insights += await storeInsights(tx, {
+                  orgId, partnerId, adId: ad.id,
+                  insights: insightsByAd.get(String(arow.id)) || []
+                });
+              }
+            }
+            return done;
+          });
+          stats.campaigns += 1;
+          stats.ad_sets += written.ad_sets;
+          stats.ads += written.ads;
+          stats.insights += written.insights;
+        } catch (err) {
+          stats.errors.push({ campaign: crow.id, error: String(err.message || err) });
+        }
+      }
+
+    } catch (err) {
+      stats.errors.push({ connection: connection.id, error: String(err.message || err) });
+      // Its own transaction, so a failure while recording a failure cannot
+      // take anything else down with it.
+      await inScope((tx) => tx.query(
+        `UPDATE ad_platform_connections SET last_error = $2 WHERE id = $1`,
+        [connection.id, String(err.message || err).slice(0, 500)]
+      )).catch(() => null);
+    }
+  }
+
+  return stats;
+}
+
 export default async function handler(req, res, deps = {}) {
   const database = deps.db || db;
   if (req.method !== "POST") {
@@ -543,191 +863,12 @@ export default async function handler(req, res, deps = {}) {
   // App credentials are optional for user-token sync, but document the gap.
   const missingApp = !process.env.META_APP_ID || !process.env.META_APP_SECRET;
 
-  /* Every database touch below opens its own short transaction. NONE of them
-     wraps a call to Meta — that is the whole point of this shape. */
-  const inScope = (fn) => withPartnerScope({ kind: "partner", partnerId }, fn);
-
   try {
-    const connId = body.connection_id || null;
-    const found = await inScope((tx) => tx.query(
-      `SELECT * FROM ad_platform_connections
-        WHERE partner_id = $1 AND platform = 'meta'
-          AND ($2::uuid IS NULL OR id = $2)
-        ORDER BY created_at`,
-      [partnerId, connId]
-    ).then((r) => r.rows));
-
-    /* Filtered here rather than in the WHERE so the reason a row was skipped
-       survives into the answer. "Connect a Meta ad account first" told Chris
-       to redo the one thing he had already done. */
-    const usable = found.filter((c) => syncBlockReason(c) === null);
-    if (!usable.length) {
-      const e = new Error(
-        found.length ? syncBlockReason(found[0]) : "no Meta connection for this partner"
-      );
-      e.code = "NO_CONNECTION";
-      e.connected = found.length > 0;
-      throw e;
-    }
-
-    const stats = { connections: 0, campaigns: 0, ad_sets: 0, ads: 0, insights: 0, errors: [] };
-    const orgId = usable[0].org_id;
-
-    for (const connection of usable) {
-      stats.connections += 1;
-      try {
-        const token = tokenFor(connection);
-        const { since, until } = insightWindow();
-
-        /* ONE call for every ad's numbers, instead of one call per ad. Done
-           before the walk so each ad's days are already in hand when its row is
-           written, which keeps the write transactions short. */
-        const pull = await fetchInsightPages({
-          url: insightsRequestUrl(connection, { since, until }),
-          token,
-          ctx: deps
-        });
-        const insightsByAd = groupInsightsByAd(pull.rows);
-        if (pull.truncated) {
-          stats.errors.push({
-            connection: connection.id,
-            error: `stopped after ${pull.pages} pages of numbers — some days are missing`
-          });
-        }
-
-        const campRes = await metaGet(
-          connection,
-          `${acct(connection)}/campaigns`,
-          "id,name,status,objective,daily_budget,special_ad_categories",
-          deps
-        );
-
-        /* THE PROMOTION, AND THE ONLY THING THAT EVER SETS 'active'.
-           Reaching this line means Meta answered a read of this ad account
-           with this connection's own stored token — which is exactly what
-           'active' is defined to mean in 046_ad_platforms.sql:64-69. The
-           token is non-null (syncBlockReason refuses a row without one), so
-           ad_platform_connections_active_token_ck cannot be violated here.
-           Anything other than 'pending' is left alone: a row someone
-           deliberately marked expired or revoked is not un-marked by a sync.
-
-           IT RUNS HERE, THE MOMENT META ANSWERS — NOT AFTER THE WALK.
-           It used to sit below the campaign loop. The walk makes one call per
-           campaign and one per ad set (see the header note above), so a busy
-           ad account can pass the serverless time limit before the loop ends.
-           When that happened the promotion was never reached, the row stayed
-           'pending', and the next press did exactly the same thing — the same
-           permanent dead end, just moved to bigger accounts. Everything after
-           the two reads above is OUR writing, not proof of access; the proof
-           already arrived with the insights pull and the campaign list, so the
-           proof is recorded the moment it lands — before any further call to
-           Meta, including the verification read directly below it. */
-        await inScope((tx) => tx.query(
-          `UPDATE ad_platform_connections
-              SET last_synced_at = now(),
-                  last_error = NULL,
-                  connection_state = CASE WHEN connection_state = 'pending'
-                                          THEN 'active' ELSE connection_state END,
-                  updated_at = now()
-            WHERE id = $1`,
-          [connection.id]
-        )).catch((err) => {
-          // Swallowing this used to leave a connection stuck pending with
-          // nothing on screen to say why.
-          stats.errors.push({ connection: connection.id, error: String(err.message || err) });
-          return null;
-        });
-
-        /* THE SECOND GATE, EARNED THE SAME WAY. Meta's own word on the
-           partner's business verification, written straight through. NULL
-           means Meta did not say, and the column keeps what it had. Never
-           fatal, never counted as a failure of the run: readVerificationState
-           swallows its own errors, so a token without business_management
-           scope costs nothing here. */
-        const verification = await readVerificationState(connection, deps);
-        if (verification) {
-          await inScope((tx) => tx.query(
-            `UPDATE ad_platform_connections
-                SET platform_verification_state = $2, updated_at = now()
-              WHERE id = $1 AND platform_verification_state IS DISTINCT FROM $2`,
-            [connection.id, verification]
-          )).catch(() => null);
-        }
-
-        for (const crow of campRes?.data || []) {
-          /* Read this campaign's ad sets and ads from Meta BEFORE opening a
-             transaction. A transaction is never held open across a network
-             call. */
-          const tree = [];
-          try {
-            const sets = await metaGet(
-              connection,
-              `${crow.id}/adsets`,
-              "id,name,status,daily_budget,campaign_id",
-              deps
-            );
-            for (const srow of sets?.data || []) {
-              const ads = await metaGet(
-                connection,
-                `${srow.id}/ads`,
-                "id,name,status,adset_id",
-                deps
-              );
-              tree.push({ set: srow, ads: ads?.data || [] });
-            }
-          } catch (err) {
-            stats.errors.push({ campaign: crow.id, error: String(err.message || err) });
-            continue;
-          }
-
-          /* One short transaction for this campaign and everything under it.
-             Counted only after it has committed — see buildSyncResponse. */
-          try {
-            const written = await inScope(async (tx) => {
-              const done = { ad_sets: 0, ads: 0, insights: 0 };
-              const camp = await upsertCampaign(tx, {
-                orgId, partnerId, connectionId: connection.id, row: crow
-              });
-              for (const { set: srow, ads } of tree) {
-                const adSet = await upsertAdSet(tx, {
-                  orgId, partnerId, connectionId: connection.id,
-                  campaignId: camp.id, row: srow
-                });
-                done.ad_sets += 1;
-                for (const arow of ads) {
-                  const ad = await upsertAd(tx, {
-                    orgId, partnerId, connectionId: connection.id,
-                    campaignId: camp.id, adSetId: adSet.id, row: arow
-                  });
-                  done.ads += 1;
-                  done.insights += await storeInsights(tx, {
-                    orgId, partnerId, adId: ad.id,
-                    insights: insightsByAd.get(String(arow.id)) || []
-                  });
-                }
-              }
-              return done;
-            });
-            stats.campaigns += 1;
-            stats.ad_sets += written.ad_sets;
-            stats.ads += written.ads;
-            stats.insights += written.insights;
-          } catch (err) {
-            stats.errors.push({ campaign: crow.id, error: String(err.message || err) });
-          }
-        }
-
-      } catch (err) {
-        stats.errors.push({ connection: connection.id, error: String(err.message || err) });
-        // Its own transaction, so a failure while recording a failure cannot
-        // take anything else down with it.
-        await inScope((tx) => tx.query(
-          `UPDATE ad_platform_connections SET last_error = $2 WHERE id = $1`,
-          [connection.id, String(err.message || err).slice(0, 500)]
-        )).catch(() => null);
-      }
-    }
-
+    const stats = await syncPartnerConnections({
+      partnerId,
+      connectionId: body.connection_id || null,
+      deps
+    });
     const answer = buildSyncResponse({ stats, missingApp });
     return res.status(answer.status).json(answer.body);
   } catch (err) {

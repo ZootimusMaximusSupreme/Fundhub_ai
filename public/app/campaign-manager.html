@@ -2735,8 +2735,23 @@ document.getElementById('syncMetaBtn').addEventListener('click', function () {
           'Nothing was pulled from Meta. Press Sync Meta now to try again.';
         return;
       }
-      msg.textContent = 'Pulled in ' + (res.campaigns || 0) + ' campaigns · ' +
+      /* THE SENTENCE IS THE SERVER'S, AND THE SERVER COUNTS ONLY WHAT SAVED.
+         This line used to build its own sentence out of three of the four
+         counts and drop the fourth — days of numbers, which is the only one
+         that says whether any SPEND landed. So a run that pulled the shape of
+         an account but saved no money at all read exactly like a run that
+         saved everything.
+
+         api/campaigns/sync.mjs adds to its insight count only after that
+         campaign's transaction has committed (see buildSyncResponse and the
+         stats.insights += written.insights line under it), so res.message is
+         rows SAVED, never rows attempted. Rebuilding it here is how the two
+         wordings drift apart; the fallback stays only for an answer with no
+         sentence in it. */
+      msg.textContent = (res.message ||
+        'Pulled in ' + (res.campaigns || 0) + ' campaigns · ' +
         (res.ad_sets || 0) + ' ad sets · ' + (res.ads || 0) + ' ads' +
+        ' · ' + (res.insights || 0) + ' days of numbers') +
         (res.note ? ' · ' + res.note : '');
       wireAll();
     });
