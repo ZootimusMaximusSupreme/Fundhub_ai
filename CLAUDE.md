@@ -109,6 +109,29 @@ A laptop died on 2026-09-07 holding uncommitted work. Four marketing skills and 
 
 So: commit to the local repository in the same session the work is done, every time, whether or not a push is possible. An unpushed commit survives. An uncommitted file does not. If you cannot push, commit anyway and say so.
 
+### We do not use GitHub (owner-set 2026-09-09)
+
+Chris does not use GitHub. This is a choice, not a lockout, and it is settled.
+
+So: **never push, never try to push, and never treat an unpushed commit as a problem.**
+`origin/main` is stale by design and will only fall further behind. Do not compare
+against it, do not report the gap, and do not propose a backup, a mirror, a bundle or
+any other way to get the work off this machine. It has been raised and answered.
+
+What this changes about the rules around it:
+
+* §8's "open a pull request now" and "delete your branch when it lands" describe a
+  GitHub workflow that is not in use. Local branches and local merges still matter;
+  the pull-request half does not apply.
+* §8's check `git branch -r --no-merged origin/main` is misleading here, because
+  `origin/main` is frozen. Use `git branch -r --no-merged main` — the local one — if
+  you need to find stranded work.
+* The "commit locally, every session" rule above is now the WHOLE safety net rather
+  than half of it. That makes it more important, not less. Commit every session.
+
+Earlier notes in this repo describe GitHub as "locked out" with 2FA lost. That framing
+is wrong and it made agents treat a settled decision as a fault to route around.
+
 ### Never ask permission to run a tool (owner-set 2026-09-08)
 
 Bash is always allowed. So are Read, Write, Edit, Glob, Grep, WebFetch and WebSearch.
