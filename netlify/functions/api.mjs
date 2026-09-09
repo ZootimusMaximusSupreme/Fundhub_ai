@@ -192,6 +192,7 @@ import publicDeclineAutopsyReport from "../../api/public/decline-autopsy-report.
 import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import publicEeoSurvey from "../../api/public/eeo-survey.mjs";
 import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
+import publicVslWatch from "../../api/public/vsl-watch.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
@@ -763,6 +764,18 @@ export const ROUTES = {
      same whether the code resolved to an affiliate or to nobody, so it cannot
      be used to enumerate the partner roster. */
   "public/affiliate-click": publicAffiliateClick,
+  /* The VSL player's own beacon. No auth — a stranger watching a sales video has
+     no account, so there is nobody to authenticate; same class as
+     public/affiliate-click. POST only, so no <img> tag or crawler can trigger it,
+     and OPTIONS only to answer the browser's cross-site permission question: the
+     page is ClickFunnels at apply.fundhub.ai and this endpoint is on fundhub.ai,
+     so the handler echoes Access-Control-Allow-Origin for an allow-listed origin
+     and never a wildcard. Write-only: every answer is {ok:true} or one word, so
+     nothing about our ads or funnels can be read back out. Rate limited twice
+     from real rows — per visitor id, and site-wide on NEW viewings, because a
+     visitor id is a string the caller invents for free. Read the header of
+     api/public/vsl-watch.mjs before adding anything beside it. */
+  "public/vsl-watch": publicVslWatch,
   /* Public lending-climate lead magnet. No auth — same class as survey-submit. */
   "climate": climate,
   "climate/geocode": climateGeocode,

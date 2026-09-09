@@ -394,6 +394,68 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
         <div class="cap" id="adBooksCap"></div>
       </div>
 
+      <!-- ══ CM-11 · WHICH ANGLE AND WHICH HOOK ARE WORKING ════════════════
+           GET /api/read/ad-spine?group_by=<angle|hook|lane|offer|script_type>&days=N
+           → { ok, group_by, window:{from,to,days}, people_rows_in_window,
+               count, limit, offset, hasMore, items:[ shapeGroup ] }.
+
+           Org-wide and staff-only, exactly like CM-09 and CM-10 above: the
+           endpoint takes no partner_id (org comes off the session), so it is not
+           one of the five partner-scoped PANELS, not part of the "X of 5 panels
+           loaded" count, and not in the loadWarn banner.
+
+           ALREADY ROUTED. netlify/functions/api.mjs:591 maps "read/ad-spine";
+           that file was not touched to add this panel.
+
+           EVERY NUMBER HERE CAN BE UNKNOWN, AND UNKNOWN IS NOT ZERO. The endpoint
+           returns null for "nobody told us" and a real number for a real zero
+           (api/read/ad-spine.mjs:106-127). This panel paints a grey dash for the
+           first and the digit for the second, and the dash carries the endpoint's
+           own reason on hover. Flattening the two would throw away the reason the
+           read was written the way it was. -->
+      <div class="card" id="secAdSpine">
+        <div class="card-hd">
+          <div class="eyebrow">WHICH ANGLE AND WHICH HOOK ARE WORKING</div>
+          <div class="spacer"></div>
+          <div class="rail" id="spineRail"></div>
+          <div class="selwrap"><label for="spineDays">Window</label>
+            <select id="spineDays">
+              <option value="7">7 days</option>
+              <option value="14">14 days</option>
+              <option value="30" selected>30 days</option>
+              <option value="90">90 days</option>
+            </select>
+          </div>
+        </div>
+        <div class="tblscroll">
+          <table class="grid">
+            <thead><tr>
+              <th>Label</th><th>Ads</th><th>Spend</th><th>People arrived</th>
+              <th>People booked</th><th>Cost per booked person</th>
+              <th>Hook rate</th><th>Hold rate</th>
+            </tr></thead>
+            <tbody id="spineRows"></tbody>
+          </table>
+        </div>
+        <div class="pager" id="spineFoot"></div>
+        <div class="cap">
+          <b>A dash means we do not know. A 0 means we counted and it really was zero.</b>
+          They are never the same thing. Hover a dash and it says which reason it was.
+          Blank spend means no day was reported for those ads. A blank hook rate means there was no
+          video to measure — a photo ad has no hook rate and never will have one.
+        </div>
+        <div class="cap">
+          <b>Hook rate</b> is how many people got past the first three seconds, out of everyone the ad
+          was put in front of. <b>Hold rate</b> is how many of those got three quarters of the way
+          through. <b>Cost per booked person</b> is spend divided by the people who booked — on a sample
+          too small to divide it is not worked out at all, and the reason is printed in the cell
+          instead of a made-up number. <b>Ads</b> counts every ad that label has ever had; the money
+          covers only the window above, which is why each row also says how many of those ads reported
+          inside it.
+        </div>
+        <div class="cap" id="spineCap" style="display:none"></div>
+      </div>
+
       <!-- ══ CM-10 · FUNNEL PAGES — ClickFunnels page performance ══════════
            GET /api/read/funnel-pages. Org-wide (no partner_id on the endpoint,
            same as CM-09 above), staff-only, so it loads whether or not a
@@ -700,6 +762,7 @@ var ACTIONS     = [];   /* GET /api/campaigns/action-log  → items[] */
 var ADBOOKS     = null; /* GET /api/read/ad-books → the whole response body, or null while unread */
 var FUNNEL_PAGES = [];  /* GET /api/read/funnel-pages → pages[] */
 var FUNNEL_CONN  = null;/* GET /api/read/funnel-pages → connection, or null when nothing is connected */
+var SPINE        = null;/* GET /api/read/ad-spine → the whole response body, or null while unread */
 
 /* GET /api/campaigns/spend → items[] over v_partner_spend_vs_ceiling.
    ACTIVE ceilings only — the view filters on sc.active, so an inactive ceiling
@@ -820,7 +883,10 @@ var UI = {
   fatState:'all', fatDays:7,
   connState:'all',
   logState:'all', logTarget:'all', logRule:'all',
-  adBooksGroupBy:'lane'
+  adBooksGroupBy:'lane',
+  /* CM-11. Angle first: it is the question Chris asks first — which idea is
+     working — and hook is one click away on the same rail. */
+  spineGroupBy:'angle', spineDays:30
 };
 
 /* the five ?state= allowlists, verbatim from the endpoints */
@@ -833,6 +899,16 @@ var LOG_STATES = ['all','agent','human','revertible','failed'];
    already in memory — each choice is a different server query, like fDays
    above, so onPick below re-reads rather than re-rendering in place. */
 var AD_BOOKS_GROUPS = ['lane','ad_id','variant','gate','entry','primary_offer','secondary_offer'];
+/* GROUPS in api/read/ad-spine.mjs, verbatim (LABELS at :219-225). Same as
+   AD_BOOKS_GROUPS above, each choice is a different server query, so picking
+   one re-reads rather than re-rendering rows already in memory. */
+var SPINE_GROUPS = ['angle','hook','lane','offer','script_type'];
+/* Which spine read is the current one. Both pickers — the label rail and the
+   window select — fire a fresh SERVER read, so two answers can be in flight at
+   once and the slower one can land last, putting the wrong rows under the right
+   heading. Same hazard as the drawer's, so the same guard: loadDetail's DW.seq
+   at :2076/:2081 is the pattern this copies. */
+var SPINE_SEQ = 0;
 
 function rail(host, values, current, counts, onPick){
   host.innerHTML = values.map(function(v){
@@ -1250,6 +1326,196 @@ function readFunnelPages(){
       try { FUNNEL_PAGES = []; FUNNEL_CONN = null; renderFunnelPages(); } catch(e){}
     }
     renderSources();
+    return res;
+  });
+}
+
+/* ══ CM-11 · WHICH ANGLE AND WHICH HOOK ARE WORKING ══════════════════════
+   GET /api/read/ad-spine?group_by=…&days=… → one row per label, with what that
+   label cost and what it brought. Items arrive already sorted most ads first,
+   then key (api/read/ad-spine.mjs:459) — nothing here re-sorts them.
+
+   THE ONE RULE THIS PANEL EXISTS TO KEEP: A BLANK IS NOT A ZERO.
+   The endpoint hands back null for "nobody told us" and a real number for a real
+   zero, deliberately and throughout (api/read/ad-spine.mjs:106-127). So every
+   cell below asks "did the server say null?" BEFORE it formats anything. A null
+   paints a grey dash carrying the endpoint's own plain sentence on hover; a real
+   zero paints as 0 in ink. Nothing here coalesces one into the other, and nothing
+   here invents a number the read refused to give.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* A grey dash that can say why. cents()/int()/dec() already paint a bare dash for
+   null; this one is for the cells where the endpoint ALSO handed back a reason,
+   so the reason is not thrown away on the way to the screen. */
+function unknownCell(why){
+  return '<span class="nul" title="' + esc(why) + '">' + NBSP + '</span>';
+}
+
+/* MEASURED → the rate as a percent, INCLUDING a real 0.0%. Anything else → the
+   dash plus watchRate()'s own sentence (src/ops/meta-marketing.mjs:89), which
+   already separates "there was no video at all" from "too few to divide". */
+function rateCell(r){
+  if(r && r.status === 'MEASURED' && r.rate !== null && r.rate !== undefined){
+    return (Number(r.rate) * 100).toFixed(1) + '%';
+  }
+  return unknownCell((r && r.note) || 'Not reported. This is not a zero.');
+}
+
+/* The label's name, its key, and the honest version of either being absent.
+   A NULL KEY is the group of ads nobody has labelled. It is counted, never
+   dropped (api/read/ad-spine.mjs:98-104), because "how many ads nobody has
+   labelled" is one of the numbers worth seeing.
+   A NULL NAME ON A LANE IS NOT A GAP: lane is a fixed list in the database and
+   has no dictionary row to find (api/read/ad-spine.mjs:219-225), so no "no name
+   yet" line is printed for it. */
+function spineName(g){
+  var kind = words(UI.spineGroupBy);
+  if(g.key === null || g.key === undefined || g.key === ''){
+    return '<b>No ' + esc(kind) + ' set</b><span class="sub">nobody has said yet</span>';
+  }
+  if(g.name) return '<b>' + esc(g.name) + '</b><span class="sub">' + esc(g.key) + '</span>';
+  if(UI.spineGroupBy === 'lane') return '<b>' + esc(words(g.key)) + '</b>';
+  return '<b>' + esc(words(g.key)) + '</b><span class="sub">no name written down for it yet</span>';
+}
+
+/* THE EMPTY STATE IS THE NORMAL STATE TODAY, so it says why rather than looking
+   like a fault. Zero groups means zero ads on file AT ALL: the view returns one
+   row per ad and an unlabelled ad still lands in the null-key group, so "no
+   groups" can never mean "ads exist but nobody labelled them". */
+function spineEmptyMsg(){
+  return 'No ads on file yet, so there is nothing to group. ' +
+    'Ads arrive when you press <b>Sync Meta now</b> further down this page. ' +
+    'Angles and hooks arrive after that: write a script with its labels, make a creative from ' +
+    'that script, then say which creative runs on which ad.';
+}
+
+function renderAdSpine(){
+  var unread = panelUnread('adspine');
+  rail(document.getElementById('spineRail'), SPINE_GROUPS, UI.spineGroupBy, null,
+       function(v){ UI.spineGroupBy = v; readAdSpine(); });
+
+  var items = (SPINE && SPINE.items) || [];
+  document.getElementById('spineRows').innerHTML = items.length ? items.map(function(g){
+    var spend = (g.spend_cents === null || g.spend_cents === undefined)
+      ? unknownCell('No day of spend was reported for these ads in this window. That is not the same as spending nothing.')
+      : cents(g.spend_cents);
+    var noMatch = 'No ad in this group has our ad number on it, so nobody could be matched to it even in principle. That is not the same as nobody arriving.';
+    var people = (g.people === null || g.people === undefined) ? unknownCell(noMatch) : int(g.people);
+    var booked = (g.people_booked === null || g.people_booked === undefined)
+      ? unknownCell(noMatch)
+      : '<b>' + int(g.people_booked) + '</b>';
+    /* THE REFUSAL IS SHOWN, NOT HIDDEN. Under the sample size costPerBooked()
+       will divide on, it returns no cost and a plain sentence saying how many are
+       needed and how many there are (src/ops/meta-marketing.mjs:17). That
+       sentence is printed. A blank here, or a made-up number, would both be
+       worse than the refusal. */
+    /* THE CELL IS NOT nowrap AND THE NUMBER IS. .mnum sets white-space:nowrap
+       (:158), and the printed sentence below inherits it, so a 48-character
+       refusal was forced onto one line and pushed hook rate and hold rate off
+       the right edge — in the state every group is in today. So the column
+       carries no class and only the figure wears .mnum.
+       The reason is said ONCE: printed under the dash when there is one to
+       print, on hover when there is not. */
+    var c = g.cost_per_booked_person || {};
+    var cost = (c.status === 'MEASURED' && c.cost_cents !== null && c.cost_cents !== undefined)
+      ? '<span class="mnum"><b>' + cents(c.cost_cents) + '</b></span>'
+      : (c.note
+          ? '<span class="nul">' + NBSP + '</span><span class="sub">' + esc(c.note) + '</span>'
+          : unknownCell('Not worked out.'));
+    return '<tr>' +
+      '<td>' + spineName(g) + '</td>' +
+      /* Same reason as the cost cell in this row: the sentence under the count is
+         held on one line by .mnum's nowrap unless the CELL is free of it.
+         Measured in a 1200px card with both cells fixed, the table lands at
+         exactly 1200px and hook rate and hold rate are on screen; with the
+         classes on the cells it needed 1434px. */
+      '<td><span class="mnum"><b>' + int(g.ads) + '</b></span>' +
+        '<span class="sub">' + int(g.ads_reported_in_window) + ' reported in this window</span></td>' +
+      '<td class="mnum">' + spend + '</td>' +
+      '<td class="mnum">' + people + '</td>' +
+      '<td class="mnum">' + booked + '</td>' +
+      '<td>' + cost + '</td>' +
+      '<td class="mnum">' + rateCell(g.hook_rate) + '</td>' +
+      '<td class="mnum">' + rateCell(g.hold_rate) + '</td>' +
+    '</tr>';
+  }).join('') : panelRow(8, 'adspine', spineEmptyMsg());
+
+  var w = (SPINE && SPINE.window) || null;
+  document.getElementById('spineFoot').textContent = unread ? unread :
+    items.length + ' ' + words(UI.spineGroupBy) + (items.length === 1 ? ' group' : ' groups') +
+    (w ? ' · money covers ' + w.from + ' to ' + w.to : '') +
+    ' · most ads first' +
+    (SPINE && SPINE.hasMore ? ' · only the first ' + SPINE.limit + ' are shown' : '');
+
+  /* Two sentences that only appear when they are true, and both are about
+     whether a zero below can be believed. Silent while the read is in flight —
+     a claim about rows this screen has not seen yet is the same false all-clear
+     as a zero printed before a read answered. */
+  var cap = document.getElementById('spineCap');
+  if(cap){
+    var notes = [];
+    /* Both notes are about how to read a NUMBER IN THE TABLE, so neither is
+       said when there is no table — the empty state above already explains
+       itself and does not need a warning about columns that are not there. */
+    if(!unread && items.length){
+      /* people_rows_in_window is the whole-company sanity check the endpoint
+         carries for exactly this purpose (api/read/ad-spine.mjs:560-579). */
+      if(SPINE && SPINE.people_rows_in_window === 0){
+        notes.push('<b>Nobody was recorded arriving from any ad in these days.</b> If calls were still ' +
+                   'coming in, arrivals are not being recorded — so do not read the people columns as a real zero.');
+      }
+      var anyDay = items.some(function(g){ return Number(g.ad_days_reported) > 0; });
+      if(!anyDay){
+        notes.push('<b>No ad spend has been reported for these days</b>, so every money column is blank ' +
+                   'rather than zero. Spend arrives once a Meta ad account is connected below and ' +
+                   '<b>Sync Meta now</b> has been pressed.');
+      }
+    }
+    cap.innerHTML = notes.join('<br>');
+    cap.style.display = notes.length ? '' : 'none';
+  }
+}
+
+/* GET /api/read/ad-spine. Reproduces wirePanel's outcome contract by hand for the
+   same reason readAdBooks does: the response is { ok, items, window, … }, not
+   { ok, data:{ items } }, so wirePanel's items-only unwrap does not fit it. Not
+   run through scoped() — the endpoint takes no partner_id, org comes off the
+   session — so this never sends partner_id even when one is picked above. */
+function readAdSpine(){
+  var seq = ++SPINE_SEQ;
+  /* Back to "Reading…" before the new read goes out. The group and the window
+     are both SERVER queries, so leaving the old rows up would put last window's
+     numbers under this window's heading. */
+  delete PANEL_MSG.adspine;
+  SRC.adspine = { source:'…', note:'', rows:null };
+  try { SPINE = null; renderAdSpine(); } catch(e){}
+
+  return apiGet('/api/read/ad-spine?group_by=' + encodeURIComponent(UI.spineGroupBy) +
+                '&days=' + encodeURIComponent(UI.spineDays) + '&limit=200').then(function(res){
+    if(seq !== SPINE_SEQ) return res;                /* a newer pick won */
+    var s = SRC.adspine;
+    if(res.ok){
+      delete PANEL_MSG.adspine;
+      s.source = 'api';
+      s.note = '';
+      s.rows = (res.data && res.data.items) ? res.data.items.length : 0;
+      try { SPINE = res.data; renderAdSpine(); }
+      catch(e){
+        PANEL_MSG.adspine = 'This could not be shown. Press Reload to try again.';
+        s.source = 'error'; s.note = PANEL_MSG.adspine; s.rows = null;
+        try { SPINE = null; renderAdSpine(); } catch(e2){}
+      }
+    } else {
+      /* readFailureText's badrequest branch says "pick a partner", which is the
+         wrong sentence here — this endpoint is org-wide and never takes one. */
+      PANEL_MSG.adspine = res.source === 'badrequest'
+        ? 'This report could not be read with those settings. Press Reload to try again.'
+        : readFailureText(res);
+      s.source = res.source;
+      s.note = PANEL_MSG.adspine;
+      s.rows = null;
+      try { SPINE = null; renderAdSpine(); } catch(e){}
+    }
     return res;
   });
 }
@@ -1897,6 +2163,9 @@ SRC.adbooks = { source:'…', note:'', rows:null };
 /* CM-10 funnel pages is the same shape as CM-09 just above: org-wide, staff-
    only, its own SRC entry, not one of the five and not in the loadWarn banner. */
 SRC.funnelPages = { source:'…', note:'', rows:null };
+/* CM-11 the label spine is the same shape again: org-wide, staff-only, its own
+   SRC entry, not one of the five and not in the loadWarn banner. */
+SRC.adspine = { source:'…', note:'', rows:null };
 /* '…' is the in-flight marker wireAll seeds every panel with, not an outcome —
    painting it like a failure reports six errors while nothing has failed yet. */
 function tone(src){ return src==='api' ? 'real' : src==='…' ? 'reading'
@@ -2003,6 +2272,9 @@ document.getElementById('fLimit').addEventListener('change',    function(){ UI.c
    memory would leave 7-day rows under a footer claiming 30 — the one caption on
    this screen that could assert something the data does not back. */
 document.getElementById('fDays').addEventListener('change',     function(){ UI.fatDays = Number(this.value); renderFatigue(); readFatigue(); });
+/* Same reason as fDays just above: days= is a SERVER window, so changing it has
+   to re-read. Re-rendering would leave 7-day rows under a 30-day footer. */
+document.getElementById('spineDays').addEventListener('change', function(){ UI.spineDays = Number(this.value); readAdSpine(); });
 document.getElementById('fTarget').addEventListener('change',   function(){ UI.logTarget = this.value; renderLog(); });
 document.getElementById('fRule').addEventListener('change',     function(){ UI.logRule = this.value; renderLog(); });
 
@@ -2156,6 +2428,7 @@ function wireAll(){
   SRC.detail = { source:'…', note:'', rows:null };
   SRC.adbooks = { source:'…', note:'', rows:null };
   SRC.funnelPages = { source:'…', note:'', rows:null };
+  SRC.adspine = { source:'…', note:'', rows:null };
   renderSources();
 
   /* Ad performance (CM-09) is org-wide, not this partner book — the endpoint
@@ -2186,6 +2459,18 @@ function wireAll(){
   } else {
     readFunnelPages();
   }
+
+  /* Label spine (CM-11) is the same shape a third time: org-wide, staff-only, and
+     /api/read/ad-spine gates on ROLE_SETS.STAFF (api/read/ad-spine.mjs:605), which
+     a partner login is never in. Firing it for one would show "you are not signed
+     in", which is false — they are signed in, just not staff. */
+  if (isPartnerLogin()) {
+    PANEL_MSG.adspine = 'This report is for staff. It is not part of a partner login.';
+    SRC.adspine = { source:'forbidden', note:PANEL_MSG.adspine, rows:null };
+    try { renderAdSpine(); } catch(e){}
+  } else {
+    readAdSpine();
+  }
   funnelScopeUi();
 
   /* Staff with no partner in the address: do not call the five reads.
@@ -2205,6 +2490,7 @@ function wireAll(){
     try { renderLog(); } catch(e){}
     try { renderAdBooks(); } catch(e){}
     try { renderFunnelPages(); } catch(e){}
+    try { renderAdSpine(); } catch(e){}
     try { renderTiles(); } catch(e){}
     try { renderAttention(); } catch(e){}
     renderSources();
@@ -2450,6 +2736,7 @@ renderCampaigns(true);
 renderFatigue();
 renderAdBooks();
 renderFunnelPages();
+renderAdSpine();
 renderConn();
 renderLog();
 loadPartnerPicker();

@@ -69,6 +69,7 @@ flowchart TD
     K -->|"joined on the ad, day by day,<br/>inside the days asked for"| M
     K -->|"3-second and p75 views summed<br/>over the same days<br/>api/read/ad-spine.mjs:353"| Q["hook rate = 3-second ÷ impressions<br/>hold rate = p75 ÷ 3-second<br/>ONE definition, watchRate()<br/>src/ops/meta-marketing.mjs:89"]
     Q --> M
+    M -->|"a person opens Campaigns and picks angle, hook, lane,<br/>offer or script type"| S["THE PANEL<br/>Which angle and which hook are working<br/>public/app/campaign-manager.html:416<br/>a dash where the answer is unknown,<br/>a 0 only where it was really zero"]
     N["A person clicks the ad link<br/>utm_content = OUR number"] --> O["client_ad_attribution row<br/>src/ads/store.mjs:21"]
     O -->|"joined on OUR number,<br/>042 and 42 are the same ad"| M
     O --> P["bookings row, not cancelled<br/>db/migrations/225_bookings.sql"]
@@ -225,9 +226,36 @@ still reads with blank labels, and blank looks exactly like "no data yet" rather
 like a fault. That is the failure worth watching for on any screen built on this.
 
 **Does not exist yet:**
-- **No screen calls any of the three endpoints.** Searched `public/` on 2026-09-08: no page
-  mentions `read/ad-spine`, `scripts/write` or `campaigns/link-asset`. They answer, but only
-  to something posting to them directly.
+- **Two of the three endpoints still have no screen.** Searched `public/` on 2026-09-09: no
+  page mentions `scripts/write` or `campaigns/link-asset`. They answer, but only to something
+  posting to them directly.
+
+  **`read/ad-spine` now has one.** `public/app/campaign-manager.html:416` is a panel on the
+  Campaigns screen called *Which angle and which hook are working*. It is a panel on a page
+  that already existed — no new page, tab or menu row. It calls
+  `GET /api/read/ad-spine?group_by=…&days=…&limit=200`, org-wide and staff-only like the two
+  panels above it, and it draws one row per label with the ads, the spend, the people who
+  arrived, the people who booked, the cost of one booked person, and the two watch rates.
+
+  Three things about it are the point of it:
+
+  - **A dash is not a zero, and they do not look alike.** A grey dash means the read said
+    "unknown"; a black `0` means it counted and the answer really was zero. Hovering the dash
+    prints the endpoint's own sentence saying which kind of unknown it was — no spend day
+    reported, no ad number to match anybody to, or no video to measure.
+  - **The refusal is printed, not hidden.** When the sample is too small to divide, the cell
+    shows the words `costPerBooked()` returned — how many are needed and how many there are —
+    instead of a blank or an invented number.
+  - **The empty state says why it is empty.** Today it will read *"No ads on file yet, so
+    there is nothing to group"* and then say what makes ads and labels appear. Two more lines
+    appear only when they are true: that no spend was reported for the window, and that nobody
+    was recorded arriving from any ad — the sanity check that says whether a zero in the people
+    columns can be believed at all.
+
+  **Never run against a live answer.** The panel was checked in a browser by handing
+  `renderAdSpine()` a made-up response shaped exactly like the endpoint's, to prove the dash
+  and the zero paint differently and that all four states draw. No real row has ever reached
+  it, because no Meta account is connected and no ad has been labelled.
 - **No real Meta numbers have ever arrived.** `ad_platform_connections` has no row, so
   nothing has ever been pulled. Every spend, impression and video number described above is
   a column waiting to be filled. The moment Chris connects a Meta account and somebody

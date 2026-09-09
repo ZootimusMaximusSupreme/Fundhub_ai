@@ -798,3 +798,115 @@ it is **written**, on `link-asset`, not casting where it is read), and
 `api/read/transactions.mjs` and `api/read/money-map.mjs` still hold their own `readDays`
 copies — out of that lane's scope, named in the shared helper's comment so the next person
 finds it.
+
+---
+
+## Unit — the label spine on a screen. `done` (code), never run against a live answer.
+
+**What Chris asked for:** data and dashboards. One question: *which angle and which hook are
+working?*
+
+**What was true before this:** three endpoints answered and **no page in `public/` called any
+of them.** The answer existed and nobody could see it.
+
+**What there is now:** one panel on a page that already exists. `public/app/campaign-manager.html:416`,
+called **Which angle and which hook are working**, sitting between the two panels on that screen
+that already read org-wide, staff-only endpoints (ad performance, funnel pages).
+
+**No new page, no new tab, no new menu row.** `netlify/functions/api.mjs` was **not touched** —
+`read/ad-spine` has been routed at `:591` since 2026-09-08, so **no route key is needed from the
+integrator.**
+
+### What it shows
+
+Pick a label — angle, hook, lane, offer or script type — and a window of 7, 14, 30 or 90 days.
+One row per label:
+
+| Column | Where it comes from |
+|---|---|
+| the friendly name, with the raw key under it | `ad_labels`, through the endpoint's `name` |
+| how many ads carry it, and how many reported inside the window | `ads` and `ads_reported_in_window` |
+| spend | `spend_cents` |
+| people who arrived, people who booked | `people`, `people_booked` |
+| cost per booked person | `cost_per_booked_person` |
+| hook rate, hold rate | `hook_rate`, `hold_rate` |
+
+Both the label and the window are **server** queries, so changing either re-reads. Re-sorting
+rows already in memory would leave 7-day rows sitting under a 30-day footer.
+
+### The three things that matter, and they are all about honesty
+
+**1. A dash is not a zero, and they do not look alike.** The endpoint returns `null` for "nobody
+told us" and a number for a real zero, deliberately and everywhere
+(`api/read/ad-spine.mjs:106-127`). A screen that prints both as `0` throws away the whole reason
+that read was written the way it was. So every cell asks *did the server say null?* before it
+formats anything. A null paints a grey dash carrying **the endpoint's own sentence** on hover —
+no day of spend was reported, or no ad here carries our number so nobody could be matched, or
+Meta reported no video because a photo ad has none. A real zero paints as a black `0`.
+
+Checked in a browser by handing `renderAdSpine()` a made-up response of the endpoint's exact
+shape: the row with `spend_cents: 0` and `people: 0` printed `0.00` and `0`; the row with
+`spend_cents: null` and `people: null` printed dashes with their reasons.
+
+**2. The refusal is printed, not hidden.** When the sample is too small to divide,
+`costPerBooked()` returns no cost and a plain sentence saying how many are needed and how many
+there are. That sentence is printed in the cell, under the dash. The number ten is **never typed
+into the HTML**, so the screen cannot drift away from `MIN_N_RATE` in `src/ops/discoveries.mjs:9`.
+
+**3. The empty state is the normal state today, and it says why.** Nothing is labelled, no Meta
+account is connected, and the endpoint is not on the live site yet. So the first thing Chris sees
+is an empty panel, and it reads *"No ads on file yet, so there is nothing to group"* followed by
+what makes ads and labels appear. Two more lines appear only when they are true **and only when
+there are rows to misread**: that no spend was reported for the window, and that
+`people_rows_in_window` is 0 — the endpoint's own company-wide check on whether any zero in the
+people columns can be believed at all.
+
+There are **no sample rows anywhere.** The panel starts null and is filled only by a read that
+answered. *Reading*, *rejected* and *empty* are three different messages, using the same
+`panelUnread` / `panelRow` contract the rest of that screen already uses. Staff-only, matching the
+endpoint's own gate, so a partner login is told it is staff-only rather than the false "you are
+not signed in".
+
+### Manifest
+
+| File | What changed |
+|---|---|
+| `public/app/campaign-manager.html` | the panel — markup at `:397-457`, the render and read code at `:1327-1500`, plus the state holder, the window select's listener, the `SRC` entry, the `wireAll` staff gate, and one boot call |
+| `docs/journeys/ad-label-spine-flow.md` | the "no screen calls any of the three endpoints" line was **false** as of this change and is corrected; the diagram gained the panel |
+| `docs/journeys/CHANGELOG.md` | one line appended, newest at top |
+
+**No new CSS and no new dependency.** It reuses `.card` `.card-hd` `.eyebrow` `.rail` `.selwrap`
+`.tblscroll` `table.grid` `.cap` `.pager` `.empty` `.mnum` `.nul` `.sub`, so it cannot trip the
+`UI-STANDARDS` §12.7 type trap (no px font size is written anywhere) and it adds nothing to the
+screen's horizontal overflow.
+
+### Not done, plainly
+
+- **No real row has ever reached this panel.** No Meta account is connected and no ad has been
+  labelled, so every number it can show today is blank. Blank is correct here and on a screen it
+  looks the same as broken, which is exactly why the dash carries its reason and the caps say what
+  is missing.
+- **The endpoint is not on the live site yet.** Until a deploy goes out, opening the panel on
+  production will show *"This could not be read right now. Press Reload to try again."* That is
+  the honest answer, not a fault to chase.
+- **No Playwright spec was added and none was run.** `CLAUDE.md` §6 asks for a Playwright check on
+  a UI change. The CRM specs need a signed-in session against a running site, and there is no
+  database on this machine, so it could not be run here. What was done instead: the file was
+  opened in a real browser and all four states were driven directly — reading, rejected, empty,
+  and full — with a hand-made response of the endpoint's exact shape. The horizontal overflow was
+  measured at 375px with the panel shown and hidden: 1090 both ways, so the panel adds none of it.
+- **Nothing was committed.** No git command was run.
+
+### Checks, measured 2026-09-09 on this Mac, `DATABASE_URL` unset
+
+- `npm run lint` — clean, 1977 files
+- `npx tsc --noEmit` — silent, exit 0
+- `npm run journeys:check` — up to date, 9 files
+- `npm run diagrams:check` — up to date, 11 files
+- `npm test` — **9690 tests, 9682 pass, 4 fail, 4 skipped**
+
+The 4 failures were measured **both ways**: with this change, and with `campaign-manager.html`
+restored to `HEAD`. The list is byte-identical — `client-control-panel.html binds the live URL
+client`, `every clock and timestamp on a staff screen is Arizona`, `every read endpoint scopes to
+the caller's company`, and `registry: every routed api/ handler and live public/app desk is
+listed`. None of them names `campaign-manager.html`.
