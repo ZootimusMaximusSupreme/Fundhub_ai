@@ -95,7 +95,7 @@
 <div class="kv"><b>Date</b><span>2026-09-16</span><b>Where</b><span>fundhub.ai · apply.fundhub.ai (live)</span><b>Board</b><span><code>docs/workflows/live-walkthrough-2026-09-16.md</code></span><b>Rule</b><span>Checking only. If it breaks, mark it and keep going.</span></div>
 
 <h2 id="l0">L0 · Before you start</h2>
-<div class="rules"><p>fundhub.ai is running the <b>Sept 12 build</b>. If the new laptop build gets deployed first, the marketing screens change. See "If the new build is live" under L4.</p><p><b>Walk order:</b> 1) L4, all clients come in from their ad links. 2) L1, each client on the closer deck. 3) L2, fulfillment for #8, #9, #10. 4) L3, the money and the next offer.</p><p><b>New private window for every client</b> (Cmd+Shift+N). One email can run the funnel once.</p><p><b>Phone on every client: +16616054248</b> (the agent phone). Texts go there. Say "check texts #N".</p><p><b>Emails</b> land in your Gmail under the +sim-NN address.</p><p><b>Old test clients still exist:</b> Walk1–Walk4 and Sim One–Five. They are marked demo, so they are <b>hidden from Pipeline</b>. Their emails cannot run the funnel again. Use the fresh #8–#14.</p><p><b>Notes:</b> mark each step Worked / Broken / Not sure and type what you saw. Press "Copy my notes" and paste them into the chat.</p></div>
+<div class="rules"><p>fundhub.ai is running the <b>Sept 12 build</b>. If the new laptop build gets deployed first, the marketing screens change. See "If the new build is live" under L4.</p><p><b>Walk order:</b> 1) L4, all clients come in from their ad links. 2) L1, each client on the closer deck. 3) L2, fulfillment for #8, #9, #10. 4) L3, the money and the next offer.</p><p><b>New private window for every client</b> (Cmd+Shift+N). One email can run the funnel once.</p><p><b>Phone on every client: +16616054248</b> (the agent phone). Texts go there. Say "check texts #N".</p><p><b>Emails</b> land in your Gmail under the +sim-NN address.</p><p><b>Consent form values</b> for each client are in <code>docs/workflows/sim-documents/NN/consent-form.txt</code>. <b>Uploads</b> follow <code>docs/workflows/sim-documents/MATRIX.md</code>: the order, and what should pass or fail.</p><p><b>Push credit before push payment</b>, every client. Reload the deck and the file after each push; they do not refresh on their own.</p><p><b>Old test clients still exist:</b> Walk1–Walk4 and Sim One–Five. They are marked demo, so they are <b>hidden from Pipeline</b>. Their emails cannot run the funnel again. Use the fresh #8–#14.</p><p><b>Notes:</b> mark each step Worked / Broken / Not sure and type what you saw. Press "Copy my notes" and paste them into the chat.</p></div>
 <h3>Test clients</h3>
 <div class="tbl"><table><thead><tr><th>#</th><th>Name / email</th><th>Ad link</th><th>Path</th></tr></thead><tbody>
 <tr><td>#8</td><td>Sim Eight-Funding<div class="link">stanbridgejchris+sim-08@gmail.com</div><button class="copy" data-copy="stanbridgejchris+sim-08@gmail.com">Copy</button></td><td><span class="link">https://apply.fundhub.ai/watch?utm_source=fb&amp;utm_medium=paid&amp;utm_campaign=funding600&amp;utm_content=42-ringlights&amp;utm_term=sun</span><button class="copy" data-copy="https://apply.fundhub.ai/watch?utm_source=fb&amp;utm_medium=paid&amp;utm_campaign=funding600&amp;utm_content=42-ringlights&amp;utm_term=sun">Copy</button></td><td>Soft pull → Funding done-for-you ($3,000) → funded → success fee</td></tr>
@@ -107,7 +107,7 @@
 <tr><td>#14</td><td>Sim Fourteen (spare)<div class="link">stanbridgejchris+sim-14@gmail.com</div><button class="copy" data-copy="stanbridgejchris+sim-14@gmail.com">Copy</button></td><td>same link as the client you rerun</td><td>Only if a run above fails</td></tr>
 </tbody></table></div>
 <h3>Say this to Claude</h3>
-<div class="tbl"><table><tbody><tr><td><span class="say">push credit #N</span></td><td>Claude puts a fake three-bureau credit file on that client. No bureau is called.</td></tr><tr><td><span class="say">push payment #N</span></td><td>Claude marks the open pay link as paid with a fake receipt. Needs you to press &quot;Send pay link&quot; first. It refuses the $32 soft-pull link.</td></tr><tr><td><span class="say">make docs #N</span></td><td>Claude makes the fake upload documents (license, bank statement, bill, SSN card; clean and bad copies).</td></tr><tr><td><span class="say">check texts #N</span></td><td>Claude checks the texts that went to the agent phone for that client.</td></tr></tbody></table></div>
+<div class="tbl"><table><tbody><tr><td><span class="say">push credit #N</span></td><td>Claude puts a fake three-bureau credit file on that client. No bureau is called.</td></tr><tr><td><span class="say">push payment #N</span></td><td>Claude marks the open pay link as paid with a fake receipt. Needs you to press &quot;Send pay link&quot; first. It refuses the $32 soft-pull link.</td></tr><tr><td><span class="say">make docs #N</span></td><td>Already done for #8 to #12: docs/workflows/sim-documents/NN/. What to upload, in what order, and what should come back: docs/workflows/sim-documents/MATRIX.md.</td></tr><tr><td><span class="say">put identity on file #N</span></td><td>Claude writes the fake address and birth date where the document checker reads them, on that test client only. Use it when a good ID comes back &quot;one thing needs fixing&quot;.</td></tr><tr><td><span class="say">check texts #N</span></td><td>Claude checks the texts that went to the agent phone for that client.</td></tr></tbody></table></div>
 <div class="rules stop"><p><b>Never click</b></p><p>&quot;Pull TransUnion&quot;, &quot;Pull Experian&quot;, &quot;Pull Equifax&quot; — Client Control Panel. Real credit pull.</p><p>&quot;Pay soft-pull assessment&quot; / &quot;Pay $32 assessment&quot; — Soft-pull email and form page. Paying starts a real credit pull.</p><p>Any pay link or Pay button — Emails, texts, portal. Real charge. Claude pushes the receipt instead.</p><p>&quot;Send with mail&quot; — Specialist desk. Real paper mail.</p><p>The old trial Enroll button — Specialist desk. Caps a client at the $200 two-round trial.</p><p>Anything that deletes — Anywhere. —.</p></div>
 
 <h2 id="L4">L4 · Marketing: ad click to the lead in the CRM</h2>
@@ -396,7 +396,7 @@
 <tr data-step="L1.5">
 <td>L1.5<div class="who">#8</div></td>
 <td><div class="where">Chris's Gmail (stanbridgejchris+sim-08@gmail.com), then the form page it links to</div>
-<div class="do">Open the email titled &quot;Your soft-pull assessment — authorize, then pay&quot;. Click &quot;Open soft-pull authorization form&quot;. On the form, fill in the fake identity: Full legal name, Social Security number, Date of birth, Street address, City, State, ZIP. Skip &quot;+ Add a business&quot;. Click &quot;I agree — submit soft-pull approval&quot;.</div>
+<div class="do">Open the email titled &quot;Your soft-pull assessment — authorize, then pay&quot;. Click &quot;Open soft-pull authorization form&quot;. Fill the form with the values in docs/workflows/sim-documents/NN/consent-form.txt (NN = the client number): the client's own name, SSN 666-15-4480, and the same fake birth date and address for everyone. Skip &quot;+ Add a business&quot;. Click &quot;I agree — submit soft-pull approval&quot; once.</div>
 </td>
 <td>The email has two links: the form and &quot;Pay soft-pull assessment&quot;. A text also goes to the agent phone. The form page is titled &quot;Approve your soft-pull assessment&quot;. After you submit, the page says &quot;Consent saved&quot; and shows a &quot;Pay $32 assessment&quot; button.<div class="heads">Heads-up: Do NOT click &quot;Pay soft-pull assessment&quot; in the email or &quot;Pay $32 assessment&quot; on the page. Paying the $32 starts a REAL credit pull. Claude's payment tool also refuses this link.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L1.5">
@@ -450,7 +450,7 @@
 <td><div class="where">Client Control Panel (reload it), &quot;Client facts&quot;; then the &quot;Documents&quot; item in the left menu</div>
 <div class="do">Reload the client's file. Then open Documents from the left menu and look for this client.</div>
 </td>
-<td>The Scores and Card Use tiles no longer show a dash. The credit push also builds the five UnderwriteIQ documents: Credit Analysis Report, dispute letter pack, Credit Optimization Roadmap, Funding Snapshot, and Bank and Lender Match List.<div class="heads">Heads-up: No email or text tells the client their documents are ready. Files are kept in the server's short-term memory, so a document can show as saved and still fail to download after the server restarts.</div></td>
+<td>The Scores tile fills. Card Use shows a percent (a real pull would show &quot;not measured&quot; there — the fake file carries extra numbers). For #8, #11 and #12 the Documents list gets the Credit Analysis Report, Credit Optimization Roadmap, Funding Snapshot, Bank and Lender Match List and Capital Readiness Summary. #9 and #10 get no documents from a push.<div class="heads">Heads-up: Those documents are built on Claude's laptop, so a download may fail. No email or text tells the client they are ready.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L1.10">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -609,7 +609,7 @@
 <td><div class="where">Chris's Gmail (stanbridgejchris+sim-08) and the agent phone</div>
 <div class="do">Check the inbox and the phone.</div>
 </td>
-<td>An email and a text asking for documents. A second text saying the funding round is underway.</td>
+<td>An email and a text asking for documents. A second text saying the funding round is underway.<div class="heads">Heads-up: About 3 hours after paying, #8 also gets &quot;ID needed&quot; messages, and one more email 2 days later. Uploading does not stop them — nothing marks the ID as received.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.2">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -628,8 +628,8 @@
 <td>L2.4<div class="who">#8</div></td>
 <td><div class="where">Client Control Panel for #8, right column &quot;Quick launch&quot; area / Actions group: &quot;Send portal sign-in link&quot;; then Gmail</div>
 <div class="do">Press &quot;Send portal sign-in link&quot;. Open the email as soon as it lands and click the link. At the same time, ask Claude to make the fake documents.</div>
-<div class="claude"><span class="say">say &quot;make the sim documents&quot; (Claude runs scripts/sim/make-documents.mjs, which writes docs/workflows/sim-documents/)</span></div></td>
-<td>The client portal opens as Sim Eight. Claude reports nine picture files in docs/workflows/sim-documents/ (id-clean.png, id-blurry.png, id-expired.png, id-wrong-person.png, three bank statements, proof-of-address-clean.png, ssn-card-clean.png).<div class="heads">Heads-up: The sign-in link from a paid client's email dies in 15 minutes. Open it right away. Paying does not email a sign-in link by itself.</div></td>
+</td>
+<td>The client portal opens as Sim Eight. The fake documents are already built: docs/workflows/sim-documents/08/.<div class="heads">Heads-up: The sign-in link from a paid client's email dies in 15 minutes. Open it right away. Paying does not email a sign-in link by itself.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.4">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -637,9 +637,9 @@
 <tr data-step="L2.5">
 <td>L2.5<div class="who">#8</div></td>
 <td><div class="where"><span class="link">https://fundhub.ai/app/client-portal.html, card &quot;Send a file&quot;, box &quot;ID and personal documents&quot;</span><button class="copy" data-copy="https://fundhub.ai/app/client-portal.html, card &quot;Send a file&quot;, box &quot;ID and personal documents&quot;">Copy</button></div>
-<div class="do">In &quot;What is this? (helps us file it)&quot; pick &quot;Photo ID&quot;. Press &quot;Upload documents&quot;. Choose id-clean.png.</div>
+<div class="do">First open #8's Client Control Panel, expand &quot;Credit &amp; Hold Status&quot;, and check &quot;On Hold Because&quot; reads &quot;Documents Pending Approval&quot; (ignore the &quot;On hold because&quot; box in &quot;Funding round&quot; — it stays a dash). Then, in the portal, upload #8's bad files in the order in docs/workflows/sim-documents/MATRIX.md: photo-id-2, photo-id-4, photo-id-3 as &quot;Photo ID&quot;, then bank-statement-2 as &quot;Bank statement&quot;. Pick the type, press &quot;Upload documents&quot; to choose the file, then &quot;Send 1 file&quot;. Set the type again before every file. Wait for each answer and reload the panel.</div>
 </td>
-<td>The file uploads with no error. Within a few minutes an email and a text say the documents were approved.<div class="heads">Heads-up: Use only PNG, JPG or PDF. The picker also offers HEIC (iPhone photos), but the server always refuses it.</div></td>
+<td>Each one comes back &quot;one thing needs fixing&quot; (a text, plus a note in the Send a file card after a reload). photo-id-4 may instead make a staff task &quot;Document hold — …&quot;. &quot;On Hold Because&quot; still reads &quot;Documents Pending Approval&quot; after every one.<div class="heads">Heads-up: If &quot;On Hold Because&quot; says anything else before you start, tell Claude. If nothing comes back, or a staff task says &quot;Check this id document by hand — nobody has read it&quot;, the checker could not read the file. Tell Claude. Texts wait between 8 pm and 8 am Arizona time.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.5">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -647,9 +647,9 @@
 <tr data-step="L2.6">
 <td>L2.6<div class="who">#8</div></td>
 <td><div class="where">Same portal box, then the phone</div>
-<div class="do">Upload id-blurry.png as &quot;Photo ID&quot;. Then upload id-wrong-person.png as &quot;Photo ID&quot;.</div>
-</td>
-<td>For the blurry one, a text asking for a better file, and nothing is saved as proof. For the wrong-person one, either that same text or a staff task named &quot;Document hold — …&quot;. If the agent could not read a file at all, a task appears instead: &quot;Check this photo id by hand — nobody has read it&quot;.<div class="heads">Heads-up: Known bug: a document for the wrong person can still count toward a complete document set the moment it lands.</div></td>
+<div class="do">Upload ssn-card-1 as &quot;Social Security card&quot; and reload the panel. Then upload photo-id-1 as &quot;Photo ID&quot;. If it comes back &quot;one thing needs fixing&quot;, write that down, say &quot;put identity on file #8&quot;, and upload photo-id-1 again. Then upload proof-of-address-1 as &quot;Proof of address&quot;.</div>
+<div class="claude"><span class="say">if the good ID bounces: say &quot;put identity on file #8&quot;</span></div></td>
+<td>The Social Security card: email &quot;Documents approved — you're moving&quot; plus a text, and &quot;On Hold Because&quot; is now empty. Then each good file sends the same approved email and text.<div class="heads">Heads-up: Known bug: the wrong-person ID from L2.5 still counts toward a full ID-and-address set. If the card comes back hold, the &quot;SIMULATED&quot; line on it is the likely reason. If the pause never lifts, L2.10 to L2.12 are refused — stop and tell Claude.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.6">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -739,9 +739,9 @@
 <tr data-step="L2.15">
 <td>L2.15<div class="who">#9</div></td>
 <td><div class="where">Client portal as Sim Nine (sign-in link as in L2.4), box &quot;ID and personal documents&quot;</div>
-<div class="do">Upload id-clean.png as &quot;Photo ID&quot;. Then upload proof-of-address-clean.png as &quot;Proof of address&quot;.</div>
-</td>
-<td>The approved email and text arrive. On the Repair board the card moves to &quot;Analysis&quot;.</td>
+<div class="do">Say &quot;put identity on file #9&quot; first. Then in the client portal as Sim Nine, box &quot;ID and personal documents&quot;: upload docs/workflows/sim-documents/09/photo-id-1.png as &quot;Photo ID&quot;, then proof-of-address-1.png as &quot;Proof of address&quot;.</div>
+<div class="claude"><span class="say">say &quot;put identity on file #9&quot;</span></div></td>
+<td>The approved email and text arrive. On the Repair board the card moves to &quot;Analysis&quot;. Either file approved is enough to unlock &quot;Stage&quot;.<div class="heads">Heads-up: If neither file is approved, stop and tell Claude. Nothing on screen can approve a document by hand, and &quot;Stage&quot; will keep saying the ID has not been read.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.15">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -765,15 +765,25 @@
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.17">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
+</tr>
+<tr data-step="L2.17b">
+<td>L2.17b<div class="who">#9</div></td>
+<td><div class="where">Client portal as Sim Nine, box &quot;Upload your bureau response&quot;</div>
+<div class="do">After round 2 is staged, upload 09/bureau-letter-2.png as &quot;Letter from a credit bureau&quot;, then 09/bureau-letter-1.png the same way.</div>
+</td>
+<td>The blurry one gets &quot;Please retake your bureau letter photo&quot; and the card moves to &quot;Response received&quot;. The good one is confirmed with no staff press: #9's Gmail gets &quot;We reviewed your bureau response&quot; three times (only one lists the accounts) and a &quot;Round N is out&quot; email. After a reload the Repair card sits on &quot;Round complete&quot;.<div class="heads">Heads-up: The answers are applied to all three bureaus. Uploading after round 2 is staged keeps the round-2 letters clean.</div></td>
+<td class="mark"><div class="seg" role="group" aria-label="Result for L2.17b">
+<button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
+<textarea rows="2" placeholder="What you saw"></textarea></td>
 </tr></tbody></table></div>
 <h3>Repair trial: Sim Ten-Trial (#10), $200, two rounds</h3>
 <div class="tbl"><table><thead><tr><th>Step</th><th>You do</th><th>You should see</th><th>Your result</th></tr></thead>
 <tbody><tr data-step="L2.18">
 <td>L2.18<div class="who">#10</div></td>
 <td><div class="where">Pipeline, tab &quot;Optimization (Repair) Rounds&quot;; then the Specialist desk &quot;Repair&quot; tab</div>
-<div class="do">After L1 minted the $200 pay link, tell Claude to push the payment. Then repeat L2.15 to L2.17 for Sim Ten-Trial (upload ID and address proof, &quot;Stage&quot;, read letters, push credit again, &quot;Stage&quot; for round 2).</div>
-<div class="claude"><span class="say">say &quot;push payment #10&quot;, later &quot;push credit #10&quot; before round 2</span></div></td>
-<td>Card on the Repair board. The program opens by itself as the trial, capped at 2 rounds. Round 1 and round 2 letters get staged the same way as #9.</td>
+<div class="do">After L1 minted the $200 pay link, tell Claude to push the payment. Say &quot;put identity on file #10&quot;. Upload 10/photo-id-1.png as &quot;Photo ID&quot; and 10/proof-of-address-1.png as &quot;Proof of address&quot;. Then &quot;Stage&quot; and read the letters as for #9, push credit again, and &quot;Stage&quot; for round 2.</div>
+<div class="claude"><span class="say">say &quot;push payment #10&quot;, &quot;put identity on file #10&quot;, later &quot;push credit #10&quot; before round 2</span></div></td>
+<td>Card on the Repair board. The program opens by itself as the trial, capped at 2 rounds. Round 1 and round 2 letters get staged the same way as #9.<div class="heads">Heads-up: If neither upload is approved, stop and tell Claude — &quot;Stage&quot; cannot make letters until one is.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.18">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -783,7 +793,7 @@
 <td><div class="where">Specialist desk, Sim Ten-Trial row</div>
 <div class="do">After round 2 letters exist, tell Claude to push one more credit file, then press &quot;Stage&quot; again.</div>
 <div class="claude"><span class="say">say &quot;push credit #10&quot; (third file)</span></div></td>
-<td>It refuses. The line under the buttons reads &quot;round_cap_exceeded&quot;. This is where the trial stops. Hand over to L3 for the upsell.<div class="heads">Heads-up: The &quot;Trial done — sales&quot; tag and the trial-complete upsell email only fire after a bureau answer is uploaded and a person confirms it. Letters never get mailed in this test, so expect the tag not to show on this path.</div></td>
+<td>It refuses. The line under the buttons reads &quot;round_cap_exceeded&quot;. This is where the trial stops. Hand over to L3 for the upsell.<div class="heads">Heads-up: The trial ends when a bureau answer is confirmed, not on a timer. That is L3.14.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L2.19">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
@@ -952,10 +962,10 @@
 <div class="tbl"><table><thead><tr><th>Step</th><th>You do</th><th>You should see</th><th>Your result</th></tr></thead>
 <tbody><tr data-step="L3.14">
 <td>L3.14<div class="who">#10</div></td>
-<td><div class="where"><span class="link">https://fundhub.ai/app/inquiry-remover.html (repair desk), tile &quot;Trial ending&quot;</span><button class="copy" data-copy="https://fundhub.ai/app/inquiry-remover.html (repair desk), tile &quot;Trial ending&quot;">Copy</button></div>
-<div class="do">After #10's round 2 bureau answers have been confirmed by staff, click the &quot;Trial ending&quot; tile.</div>
+<td><div class="where">Client portal as Sim Ten, box &quot;Upload your bureau response&quot;; then https://fundhub.ai/app/inquiry-remover.html, &quot;Repair&quot;</div>
+<div class="do">Upload 10/bureau-letter-2.png as &quot;Letter from a credit bureau&quot;, then 10/bureau-letter-1.png the same way. On the Specialist desk press &quot;Repair&quot; and reload. In the box &quot;Needs a human read&quot;, press &quot;Mark as checked&quot; on the row &quot;Bureau answer needs a look&quot; that shows &quot;Confidence 0.576&quot;. Then click the &quot;Trial ending&quot; tile.</div>
 </td>
-<td>#10 is listed with the label &quot;Trial done — sales&quot;. Gmail for #10 gets &quot;Your trial rounds are complete — next steps&quot;. It says a team member will reach out about the full program.<div class="heads">Heads-up: This only happens when a staff member confirms bureau answers at the round-2 limit. Nothing happens on a timer. Do not use the old trial &quot;Enroll&quot; button on the Specialist desk.</div></td>
+<td>The blurry letter gets &quot;Please retake your bureau letter photo&quot; and the card moves to &quot;Response received&quot;. The good one waits under &quot;Needs a human read&quot;. After the press the button reads &quot;Checked&quot;, and #10's Gmail gets &quot;We reviewed your bureau response&quot; twice, &quot;Round 2 is out&quot; (expected), and &quot;Your trial rounds are complete — next steps&quot;. #10 is counted under &quot;Trial ending&quot;, the Repair card lands on &quot;Round complete&quot;, and a task &quot;Re-pull CRS and re-underwrite — new round&quot; appears under &quot;No date on it&quot;.<div class="heads">Heads-up: The box lists the whole company with no client names. If there is more than one row, stop and tell Claude before pressing. The row label will read &quot;Send letters&quot;, not &quot;Trial done — sales&quot;, because letters are never mailed. Upload the letters only after round-1 letters are staged, or they are ignored. Do this BEFORE L3.15.</div></td>
 <td class="mark"><div class="seg" role="group" aria-label="Result for L3.14">
 <button data-v="ok">Worked</button><button data-v="bad">Broken</button><button data-v="unsure">Not sure</button></div>
 <textarea rows="2" placeholder="What you saw"></textarea></td>
