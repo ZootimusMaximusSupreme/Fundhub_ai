@@ -1,6 +1,6 @@
 {
-  "ran_at": "2026-09-06T01:28:42.392Z",
-  "out_dir": "/Users/zootimusmaximus/fundhub-platform/public/assets/lenders",
+  "ran_at": "2026-09-17T04:46:34.082Z",
+  "out_dir": "/Users/chrisstanbridge/Developer/fundhub-platform/public/assets/lenders",
   "results": [
     {
       "slug": "associated-bank",
@@ -45,17 +45,6 @@
       "kind": "missing",
       "result": "no_logo",
       "why": "website did not answer (site_unreachable)"
-    },
-    {
-      "slug": "clear-mountain-bank",
-      "name": "Clear Mountain Bank",
-      "domain": "clearmountainbank.com",
-      "kind": "missing",
-      "result": "saved",
-      "confirmed": true,
-      "why": "212x85 from https://www.clearmountain.bank/getmedia/35f4b9d7-eb6d-49f8-b284-c960126ed6db/logo-WZ9JNNMY-lg.png?width=212&amp;height=85&amp;ext=.png",
-      "bytes": 14039,
-      "title": "Clear Mountain Bank Financial Services | Checking &amp; Savings"
     },
     {
       "slug": "columbia-state-bank",
@@ -116,16 +105,18 @@
       "name": "Evergreen Bank Group",
       "domain": "evergreenbankgroup.com",
       "kind": "missing",
-      "result": "no_logo",
-      "why": "website did not answer (site_unreachable)"
+      "result": "refused",
+      "why": "evergreenbankgroup.com now forwards to oldsecond.com — this bank was bought, and that logo belongs to the buyer",
+      "title": "Old Second"
     },
     {
       "slug": "evergreen-bank-0",
       "name": "Evergreen Bank Group",
       "domain": "evergreenbankgroup.com",
       "kind": "missing",
-      "result": "no_logo",
-      "why": "website did not answer (site_unreachable)"
+      "result": "refused",
+      "why": "evergreenbankgroup.com now forwards to oldsecond.com — this bank was bought, and that logo belongs to the buyer",
+      "title": "Old Second"
     },
     {
       "slug": "evertrust-bank",
@@ -174,11 +165,8 @@
       "name": "Hilltop Bank",
       "domain": "hilltop.bank",
       "kind": "missing",
-      "result": "saved",
-      "confirmed": true,
-      "why": "180x180 from https://www.hilltop.bank/wp-content/uploads/2019/02/cropped-hilltopfavicon512-180x180.png",
-      "bytes": 34464,
-      "title": "Home at Hilltop Bank | Personal Banking | Business Solutions | Wealth Management Services | Trust Services"
+      "result": "no_logo",
+      "why": "website did not answer (site_unreachable)"
     },
     {
       "slug": "illinois-bank-and-trust",
@@ -325,270 +313,6 @@
       "name": "Wisconsin Bank and Trust",
       "domain": "wisconsinbankandtrust.com",
       "kind": "missing",
-      "result": "no_logo",
-      "why": "website did not answer (site_unreachable)"
-    },
-    {
-      "slug": "berkshire-bank",
-      "name": "Berkshire Bank",
-      "domain": "berkshirebank.com",
-      "kind": "wrong",
-      "result": "saved_unconfirmed",
-      "confirmed": false,
-      "why": "180x180 from https://www.google.com/s2/favicons?domain=berkshirebank.com&sz=256 — the site blocks automated visits, so this was matched on the web address only — worth a human look",
-      "bytes": 5584,
-      "title": null
-    },
-    {
-      "slug": "central-pacific-bank",
-      "name": "Central Pacific Bank",
-      "domain": "cpb.bank",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": "Central Pacific Bank - We Got You!"
-    },
-    {
-      "slug": "community-bank",
-      "name": "Community Bank",
-      "domain": "cbna.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "180x180 from https://cbna.com/apple-touch-icon.png",
-      "bytes": 4165,
-      "title": "Community Bank, N.A. | Your Trusted Neighborhood Bank"
-    },
-    {
-      "slug": "exchange-state-bank",
-      "name": "Exchange State Bank",
-      "domain": "exchangestatebank.com",
-      "kind": "wrong",
-      "result": "refused",
-      "why": "exchangestatebank.com now forwards to thumb.bank — this bank was bought, and that logo belongs to the buyer",
-      "title": "Thumb Bank & Trust | Personal and Business Banking"
-    },
-    {
-      "slug": "first-american-bank",
-      "name": "First American Bank",
-      "domain": "firstambank.com",
-      "kind": "wrong",
-      "result": "saved_unconfirmed",
-      "confirmed": false,
-      "why": "180x180 from https://www.firstambank.com/apple-touch-icon.png — the site blocks automated visits, so this was matched on the web address only — worth a human look",
-      "bytes": 16654,
-      "title": null
-    },
-    {
-      "slug": "first-kentucky-bank",
-      "name": "First Kentucky Bank",
-      "domain": "firstkybank.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "website did not answer (site_unreachable)"
-    },
-    {
-      "slug": "greater-nevada-credit-union",
-      "name": "Greater Nevada Credit Union",
-      "domain": "gncu.org",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "300x300 from https://www.gncu.org/wp-content/uploads/2023/01/gncu-logo-icon-300x300.webp",
-      "bytes": 28854,
-      "title": "Greater Nevada Credit Union"
-    },
-    {
-      "slug": "idaho-first-bank",
-      "name": "Idaho First Bank",
-      "domain": "idahofirstbank.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "440x48 from https://www.idahofirstbank.com/wp-content/uploads/2025/08/site-logo-1.png",
-      "bytes": 10949,
-      "title": "Idaho First Bank | Local Banking in Idaho &amp; Oregon"
-    },
-    {
-      "slug": "intrust-bank",
-      "name": "INTRUST Bank",
-      "domain": "intrustbank.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "256x256 from https://www.intrustbank.com/favicon.ico",
-      "bytes": 4742,
-      "title": "INTRUST Bank | Banking built on values"
-    },
-    {
-      "slug": "premier-bank",
-      "name": "Premier Bank",
-      "domain": "yourpremierbank.com",
-      "kind": "wrong",
-      "result": "refused",
-      "why": "yourpremierbank.com now forwards to wesbanco.com — this bank was bought, and that logo belongs to the buyer",
-      "title": "WesBanco. Money doesn’t make you wealthy. Understanding it does."
-    },
-    {
-      "slug": "towne-bank",
-      "name": "TowneBank",
-      "domain": "townebank.com",
-      "kind": "wrong",
-      "result": "saved_unconfirmed",
-      "confirmed": false,
-      "why": "180x180 from https://www.google.com/s2/favicons?domain=townebank.com&sz=256 — the site draws itself with code and had no readable words, so this was matched on the web address only — worth a human look",
-      "bytes": 5321,
-      "title": null
-    },
-    {
-      "slug": "native-american-bank",
-      "name": "Native American Bank",
-      "domain": "nativeamericanbank.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "180x180 from https://www.nativeamericanbank.com/wp-content/themes/nativeamericanbank/apple-touch-icon.png",
-      "bytes": 6565,
-      "title": "Native American Bank"
-    },
-    {
-      "slug": "native-american-bank-0",
-      "name": "Native American Bank",
-      "domain": "nativeamericanbank.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "180x180 from https://www.nativeamericanbank.com/wp-content/themes/nativeamericanbank/apple-touch-icon.png",
-      "bytes": 6565,
-      "title": "Native American Bank"
-    },
-    {
-      "slug": "providence-bank",
-      "name": "Providence Bank",
-      "domain": "providencebank.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "292x100 from https://www.providence.bank/wp-content/themes/0676_Providence_Bank_v2/images/logo.png",
-      "bytes": 21006,
-      "title": "Providence Bank"
-    },
-    {
-      "slug": "shore-united-bank-0",
-      "name": "Shore United Bank",
-      "domain": "shoreunitedbank.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "180x180 from https://www.shoreunitedbank.com/apple-touch-icon.png",
-      "bytes": 9184,
-      "title": "Shore United Bank | MD DE VA Bank | Checking and Savings Accounts"
-    },
-    {
-      "slug": "west-bank",
-      "name": "West Bank",
-      "domain": "westbankstrong.com",
-      "kind": "wrong",
-      "result": "saved",
-      "confirmed": true,
-      "why": "180x180 from https://www.westbankstrong.com/images/favicon/apple-touch-icon.png",
-      "bytes": 5585,
-      "title": "Home Page | West Bank"
-    },
-    {
-      "slug": "cashmere-valley-bank",
-      "name": "Cashmere Valley Bank",
-      "domain": "cashmerevalleybank.com",
-      "kind": "wrong",
-      "result": "refused",
-      "why": "cashmerevalleybank.com now forwards to cvb.bank — this bank was bought, and that logo belongs to the buyer",
-      "title": "Cashmere Valley Bank | Central WA Personal & Business Banking"
-    },
-    {
-      "slug": "north-valley-bank",
-      "name": "North Valley Bank",
-      "domain": "northvalleybank.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": null
-    },
-    {
-      "slug": "platte-valley-bank",
-      "name": "Platte Valley Bank",
-      "domain": "plattevalleybank.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": null
-    },
-    {
-      "slug": "premier-valley-bank",
-      "name": "Premier Valley Bank",
-      "domain": "premiervalleybank.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "website did not answer (site_unreachable)"
-    },
-    {
-      "slug": "valley-bank",
-      "name": "Valley Bank",
-      "domain": "valleybank.net",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": null
-    },
-    {
-      "slug": "commerce-bank",
-      "name": "Commerce Bank",
-      "domain": "commercebank.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": "Commerce Bank | Banking, Checking, Savings, Mortgages &amp; More"
-    },
-    {
-      "slug": "the-bank-of-commerce",
-      "name": "The Bank of Commerce",
-      "domain": "bankofcommerce.com",
-      "kind": "wrong",
-      "result": "refused",
-      "why": "bankofcommerce.com now forwards to bocokonline.com — this bank was bought, and that logo belongs to the buyer",
-      "title": "Homepage | Bank of Commerce (Duncan, OK)"
-    },
-    {
-      "slug": "bank-of-colorado",
-      "name": "Bank of Colorado",
-      "domain": "bankofcolorado.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": "Bank of Colorado | Personal &amp; Business Banking Services in Colorado"
-    },
-    {
-      "slug": "pinnacle-bank",
-      "name": "Pinnacle Bank",
-      "domain": "pinnbank.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": "Pinnacle Bank | Banking in Nebraska, Missouri and Kansas"
-    },
-    {
-      "slug": "arizona-bank-and-trust",
-      "name": "Arizona Bank and Trust",
-      "domain": "arizonabank.com",
-      "kind": "wrong",
-      "result": "no_logo",
-      "why": "the website had no picture big enough to use",
-      "title": null
-    },
-    {
-      "slug": "new-mexico-bank-and-trust",
-      "name": "New Mexico Bank and Trust",
-      "domain": "nmb-t.com",
-      "kind": "wrong",
       "result": "no_logo",
       "why": "website did not answer (site_unreachable)"
     }
