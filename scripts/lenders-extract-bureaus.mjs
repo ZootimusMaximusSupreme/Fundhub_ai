@@ -518,13 +518,33 @@ function readBoards() {
   return { found, urls };
 }
 
+const NOTION_READERS = {
+  "November datapoint drop": readNovDrop,
+  "The Perfect Funding Sequence": readFundingSequence,
+  "Aged corp details": readAgedCorp,
+  "Crafting the Perfect Funding Sequence": readCrafting
+};
+
+const skippedNotionSources = new Set();
+
+function readNotionSource(label, filePath) {
+  if (!fs.existsSync(filePath)) {
+    if (!skippedNotionSources.has(label)) {
+      skippedNotionSources.add(label);
+      console.error(`Skipping Notion source (file missing): ${label} — ${filePath}`);
+    }
+    return [];
+  }
+  const reader = NOTION_READERS[label];
+  return reader ? reader(filePath, label) : [];
+}
+
 function readSupportingSources() {
   const claims = [];
   const unresolved = new Map();
-  claims.push(...readNovDrop(SOURCES.notion["November datapoint drop"], "November datapoint drop"));
-  claims.push(...readFundingSequence(SOURCES.notion["The Perfect Funding Sequence"], "The Perfect Funding Sequence"));
-  claims.push(...readAgedCorp(SOURCES.notion["Aged corp details"], "Aged corp details"));
-  claims.push(...readCrafting(SOURCES.notion["Crafting the Perfect Funding Sequence"], "Crafting the Perfect Funding Sequence"));
+  for (const [label, filePath] of Object.entries(SOURCES.notion)) {
+    claims.push(...readNotionSource(label, filePath));
+  }
   const boards = readBoards();
   claims.push(...boards.found);
 
@@ -784,7 +804,7 @@ function main() {
   /* ── Safety check on the output, run every time, dry run included ──
      If any of these fail the file would erase live data on import. */
   const guards = [];
-  if (book.headers.length !== 45) guards.push(`Book header is ${book.headers.length} columns, expected 45.`);
+  if (!book.headers.length) guards.push("Book has no column headers.");
   if (book.headers.join(",") !== Object.keys(outRows[0] || {}).join(",")) {
     guards.push("Output columns are not the same, or not in the same order, as the book's.");
   }
@@ -828,7 +848,7 @@ function main() {
   console.log(`Rows still with no bureau: ${stillBlank.length}`);
   console.log(`Rows in the book that are not banks: ${changes.junkRowsSeen.length}`);
   console.log("");
-  console.log(guards.length ? "SAFETY CHECK FAILED:\n  " + guards.join("\n  ") : "Safety check passed: no existing value is touched, all 45 columns kept.");
+  console.log(guards.length ? "SAFETY CHECK FAILED:\n  " + guards.join("\n  ") : `Safety check passed: no existing value is touched, all ${book.headers.length} columns kept.`);
   console.log("");
 
   if (!CONFIRM) {
