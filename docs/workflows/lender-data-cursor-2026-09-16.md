@@ -3,12 +3,65 @@
 | Task | Owner | Status | Notes |
 |---|---|---|---|
 | A | Clean inquiry CSV | done | No separate file rewrite — `readInquiries()` in `lenders-extract-bureaus.mjs` normalises bureau typos at read time |
-| B | Bureau + match | blocked | Needs 4× `FULL.md` under `credentials/notion-scrape/output/` — none on Mac; dry-run ENOENT on first file |
-| C | Personal split | blocked | Needs 5 personal page dirs + `page.md` — all missing; blocked on G |
+| B | Bureau + match | partial | **2026-09-17:** `--confirm` from legacy-strong only (4 Notion `FULL.md` still missing — skipped). Book bureaus **3 → 34**; merge/import kept DB at **81** (CRM backfill). Review `docs/workflows/lender-list-2026-09-05.md`. |
+| C | Personal split | blocked | **2026-09-17:** pull auth failed — 5 personal dirs still **PAGE NOT FOUND**; dry/`--confirm` **0 rows**. |
 | D | Import + ship | done | **2026-09-16:** `scripts/lenders-merge-crm-into-csv.mjs` → `credentials/lenders-audit/lenders-audited-merged-for-import.csv`. Clearing **172 → 0** (import guard; 457 CRM cells backfilled incl. logos). **Confirmed import:** 306 updated, 0 inserted. **DB after:** 307 banks, **287** logos (+2), **216** apply URLs (+1), 81 bureau, 37 ranking. Ship skipped (DB-only; logo PNGs already on disk). |
 | E | Apply links + logos audit | done | Manifest `credentials/lenders-audit/manifest.json` · report `credentials/lenders-audit/AUDIT-REPORT.md` · apply → `lenders-audited.csv` (2026-09-16 run: 152 complete, 90 needs_research, ~17 min) |
 | F | Logo fetch (bank sites) | done | Missing-only run 2026-09-16 ~21:46 PT — see **Task F report** below |
-| G | Notion re-scrape | blocked | No `credentials/notion-scrape/profile/` (Playwright persistent context); scrape not attempted — would not be logged in |
+| G | Notion re-scrape | blocked (auth) | **2026-09-17:** Profile + Cookies present after `notion:login`. Pull hits **“Sign in to see this page in Legacy Strong”** (headless + `NOTION_HEADFUL=1`); **0** sidebar seeds; only junk folder `notion--8f2a819d` (login interstitial). `start-url.txt` written (Vault). Pull script now uses `channel: "chrome"`. **Fix:** re-run `npm run notion:login`, open Legacy Strong sidebar, Enter; then `npm run notion:pull` → `npm run notion:organize` (skip transcribe if no ffmpeg). |
+
+## Scrape locate — 2026-09-16 (subagent)
+
+Chris: Notion was already scraped. Agents blocked by looking only at `credentials/notion-scrape/profile/` and `credentials/notion-scrape/output/*/FULL.md`.
+
+### Where data actually lives on this Mac
+
+| Location | What | Status |
+|---|---|---|
+| `docs/legacy-strong/` | 2026-09-05 rescrape via `notion-rescrape-datapoints.mjs` — `bank-datapoints-active-banks.md` (26), `inquiry-master-database.csv` (5,472), `state-funding-boards.md`, `bankers-rms.md`, `lenders-legacy-strong.csv` (313), `full-inquiry-database.csv` | **Present** (tracked in git) |
+| `credentials/notion-scrape/output/` | Expected home for page trees (`FULL.md`, `page.md`, `meta.json`, `INDEX.md`) per `scripts/notion-scrape/lib.mjs` | **Only** seed copy `lenders-legacy-strong.csv` (132K). **No** `profile/`, **no** subfolders, **no** `FULL.md`, **no** `page.md` |
+| `fundhub-docs/` | Not a Notion dump — 3 files under `sources/` (Airtable, SMS, email templates) | Unrelated |
+| `docs/legacy-strong/README.md` | Documents gitignored scrape dirs that **should** sit under `credentials/notion-scrape/output/` (`bank-datapoints--0f247723/`, etc.) | Those dirs **not on disk** |
+
+### Machine-wide search (2026-09-16)
+
+- `mdfind` / `find` under `/Users/chrisstanbridge`: **0** files named `FULL.md`; **0** dirs `*--29ac3aa7`, `*--26a2ec40`, or `nov-datapoint-drop*`; **0** `page.md` in a notion-scrape tree.
+- Only `notion-scrape` dirs on machine: `scripts/notion-scrape/` (code) and `credentials/notion-scrape/` (csv only).
+
+### Exact paths required by extract scripts
+
+**`scripts/notion-scrape/lib.mjs`:** `PROFILE_DIR` = `credentials/notion-scrape/profile`; `OUTPUT_DIR` = `credentials/notion-scrape/output`; folders = `<slug>--<first 8 hex of page id>/`.
+
+**`scripts/lenders-extract-bureaus.mjs` `SOURCES` (besides book + legacy-strong files):**
+
+1. `credentials/notion-scrape/output/nov-datapoint-drop-cca-network--29ac3aa7/FULL.md`
+2. `credentials/notion-scrape/output/the-perfect-funding-sequence--2edc3aa7/FULL.md`
+3. `credentials/notion-scrape/output/details-aged-corp--1b8c3aa7/FULL.md`
+4. `credentials/notion-scrape/output/crafting-the-perfect-funding-sequence--acf9a724/FULL.md`
+
+Also reads: `docs/legacy-strong/bank-datapoints-active-banks.md`, `inquiry-master-database.csv`, `state-funding-boards.md`; book = `credentials/lenders-audit/lenders-audited.csv`.
+
+**`scripts/lenders-extract-personal.mjs`:** each dir under `credentials/notion-scrape/output/` with `page.md`:
+
+1. `alec-s-favorite-personal-cards--26a2ec40`
+2. `high-limit-personal-cards--9cafa36e`
+3. `best-balance-transfer-cards--f9e698f9`
+4. `personal-loans--677b0a52`
+5. `balance-transfers--6aaef26e`
+
+### Copy / symlink
+
+**Not done** — no source tree found to copy or symlink without deleting anything. Prior successful bureau run (2026-09-05, `docs/workflows/lender-list-2026-09-05.md`) implies those files existed on **some** machine then; they are not on this laptop now.
+
+### Extract runs (2026-09-16)
+
+| Script | Result |
+|---|---|
+| `node scripts/lenders-extract-bureaus.mjs` (dry) | **FAIL** — ENOENT first Notion file (`nov-datapoint-drop-cca-network--29ac3aa7/FULL.md`) |
+| `node scripts/lenders-extract-personal.mjs` (dry) | **PASS** (no write) — all 5 pages **PAGE NOT FOUND**; **0 rows** would add |
+| `--confirm` for either | **Not run** (blocked) |
+
+**Import / ship:** skipped (no extract outputs).
 
 ## G attempt — 2026-09-16 (Cursor subagent)
 
@@ -32,6 +85,20 @@
 2. On this Mac: `npm run notion:login` (one interactive Chrome login), then `npm run notion:pull` → `npm run notion:organize` (writes `credentials/notion-scrape/output/<folder>/FULL.md` — **not** `notion-rescrape-datapoints.mjs` alone). Then bureau `--confirm` and personal `--confirm`.
 
 **After G unblocks:** Re-run [Notion rescrape](b046bcab-7e40-485f-b552-729f10a214d4) lane or this chat for tasks B + C only.
+
+## Pipeline run — 2026-09-17 (Cursor subagent)
+
+| Step | Result |
+|---|---|
+| Profile check | `credentials/notion-scrape/profile/Default/Cookies` present |
+| `npm run notion:all` | **FAIL auth** — pull saved login wall only; transcribe skipped (no ffmpeg / no pages) |
+| `lenders-extract-bureaus.mjs --confirm` | **PASS** — skipped 4 missing Notion files; wrote `lenders-audited-with-bureaus.csv` + review md |
+| `lenders-extract-personal.mjs --confirm` | **Not run** (0 rows; pages missing) |
+| merge CRM | **338** cells filled; clearing **0** |
+| import `--confirm` | **306 updated**, 0 inserted; DB **81** bureau, **287** logo, **37** ranking |
+| Ship | Pending commit (pull script + review md); DB-only import may no-op ship |
+
+**Notion output folders:** none of the 9 required (`4× FULL.md` + `5× personal page.md`). Only `notion--8f2a819d` (failed auth scrape).
 
 ## Seeded (2026-09-16)
 

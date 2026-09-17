@@ -48,8 +48,10 @@ function waitForEnter(prompt) {
 
 async function launchContext(headless) {
   fs.mkdirSync(PROFILE_DIR, { recursive: true });
+  const headed = process.env.NOTION_HEADFUL === "1";
   return chromium.launchPersistentContext(PROFILE_DIR, {
-    headless,
+    headless: headed ? false : headless,
+    channel: "chrome",
     viewport: { width: 1440, height: 900 },
     locale: "en-US",
   });
