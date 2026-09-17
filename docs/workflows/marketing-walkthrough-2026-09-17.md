@@ -69,7 +69,7 @@ flowchart TD
     L --> M[Approve or reject or archive]
     N[Ad words in the docs ads folder] --> O[Checker run by hand from the chat]
     P[Sales video file on our own server] --> Q[Watch page on ClickFunnels]
-    Q --> R[No counting script on the live page so no numbers
+    Q --> R[No counting script on the live page so no numbers]
 ```
 
 ### A. Open the screen and pick who it is for
@@ -146,31 +146,33 @@ This lane walks the two screens where the marketing work actually runs: Campaign
 
 ```mermaid
 flowchart TD
-A[Open Campaign Manager] --> B[Pick a partner in the Partner box]
-B --> C[Five number tiles fill in]
-C --> D[NEEDS ATTENTION four tiles]
-D --> E[Ad performance panel - known broken on four of its buttons]
-E --> F[Angle and hook panel - money columns blank until a Meta sync]
-F --> G[Funnel pages - press Sync now, read only]
-G --> H[Todays spend vs ceilings - green here is not checked]
-H --> I[Press Sync Meta now - read only]
-I --> J[Campaigns table fills in]
-J --> K[Click a campaign row to open the side panel]
-K --> L[Side panel holds three buttons that change the real ad account]
-L --> M[Do not press any of the three]
-J --> N[Creative fatigue - press Label to open the link box]
-N --> O[Platform connections - can launch and blockers]
-O --> P[Request Meta agency access - do not press]
-P --> Q[Action log at the bottom]
-Q --> R[Open Social Studio]
-R --> S[Five tiles and the partner is picked for you]
-S --> T[Write 3 posts for me - small real cost, drafts only]
-T --> U[Connect buttons for Facebook Instagram LinkedIn - do not press]
-U --> V[Write a post and watch the Copy check]
-V --> W[Do not press Queue post or Send anything due now]
-W --> X[Who approves posts]
-X --> Y[The list tabs - Waiting, Needs a rewrite, Could not be sent, Sent, Send history]
-Y --> Z[A held post shows Approve it and Refuse it - do not press Approve it]
+  subgraph CM[Campaign Manager]
+    direction TB
+    A[Open and pick a partner] --> B[Five number tiles fill in]
+    B --> C[Needs attention tiles]
+    C --> D[Ad performance panel]
+    D --> E[Angle and hook panel]
+    E --> F[Todays spend vs ceilings]
+    F --> G[Press Sync Meta now - read only]
+    G --> H[Campaigns table fills in]
+    H --> I[Open a campaign row]
+    I --> J[Side panel - three buttons change the real ad account]
+    J --> K[Do not press those three]
+    H --> L[Creative fatigue - Label button]
+    L --> M[Platform connections and blockers]
+    M --> N[Request Meta agency access - do not press]
+  end
+  subgraph SS[Social Studio]
+    direction TB
+    O[Open Social Studio] --> P[Five tiles, partner picked for you]
+    P --> Q[Write 3 posts for me - small real cost]
+    Q --> R[Connect buttons - do not press]
+    R --> S[Write a post and watch the Copy check]
+    S --> T[Do not press Queue post or Send anything due now]
+    T --> U[Who approves posts]
+    U --> V[The list tabs]
+    V --> W[Held post - do not press Approve it]
+  end
 ```
 
 ### Campaign Manager — open it and pick who you are looking at
