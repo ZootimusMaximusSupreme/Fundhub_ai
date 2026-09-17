@@ -182,3 +182,27 @@ that is the baseline, not damage this pass did:
 Rollback point: `git reset --hard checkpoint/pre-fix-pass-2026-09-17` (owner runs this; it is on the deny list
 for agents).
 
+
+---
+
+## Parked for later validation (owner-set 2026-09-17)
+
+**Oxylabs bank proxy — PARKED.** Chris: "Labs is not working right now — add to validation list for later."
+
+What it blocks, so nobody re-discovers it cold:
+
+- Clicking **Apply** on a funding round returns HTTP 422 `oxylabs_auth_failed` (the proxy answers 407,
+  rejecting our username and password). No bank application form can open at all.
+- That is the real reason the Apply door reads "0 banks" / "no matches". It is not a bank problem and not a
+  lender-list problem.
+- Downstream of it: no bank-yes can be recorded, so the confirmed-dollars figure cannot move, and the
+  success-fee bill cannot be raised against real confirmed money.
+- Credentials live in `OXYLABS_USERNAME` / `OXYLABS_PASSWORD` and are read in `src/adapters/oxylabs.mjs:53-55`.
+  `src/verification/report.mjs:189` already lists "Oxylabs residential proxy geo-verify" as a credential check.
+
+**To un-park:** confirm the Oxylabs account is paid and active, then hand over the username and password. An
+agent sets them with `netlify env:set ... --secret` and re-runs the Apply click. No owner console work.
+
+**Do not** build a workaround, a mock, or a fallback path for this. It is a credentials problem with a
+credentials fix.
+
