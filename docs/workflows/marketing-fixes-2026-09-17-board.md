@@ -13,7 +13,7 @@ failed task.
 |---|---|---|
 | F1 | Creative Factory script drop-down reads "— none —" after a script saves | **done** — fixed, tested, committed `6e93c3e7` |
 | F2 | The /watch page records no views | **needs Chris** — no code can fix it |
-| F3 | Social Studio "Write 3 posts for me" writes 0 drafts | **needs one permission** — no code fixes it either |
+| F3 | Social Studio "Write 3 posts for me" writes 0 drafts | **done** — fixed in code, committed `a91a81f8` |
 
 Run as one Workflow: diagnose (3 parallel, read-only) → fix (serialised, one shared tree) →
 verify (2 lenses per fix: does it work, did it stay in scope) → whole-diff scope audit.
@@ -63,19 +63,27 @@ the code never falls through to Anthropic — and the Anthropic key on the site 
 switched on, so nothing was written"; nobody captured that line on the walk, which is why it was
 recorded as nothing happening.
 
-**Owner rule, set 2026-09-17 after this was proposed: never remove a key.** See CLAUDE.md
-§11 "Never remove a key". The `OPENAI_API_KEY` stays exactly where it is, mask and all. Any
-future agent reading this file must not unset, clear or overwrite it. The removal command that
-stood here has been deleted so nobody runs it.
+**Owner rule, set 2026-09-17 after removal was proposed: never remove a key.** See CLAUDE.md
+§11 "Never remove a key". The `OPENAI_API_KEY` stays exactly where it is, mask and all. No
+future agent may unset, clear or overwrite it. The removal command that stood here is deleted
+so nobody runs it.
 
-That leaves the fix in code, around the key: treat a password that is only asterisks as not
-filled in, so the site uses Anthropic, which already works. **Not applied** — Chris has not
-picked an approach yet, and F3 is stopped pending his call. No file was changed for F3.
+### Fixed in code instead. Commit `a91a81f8`.
 
-Blast radius when applied, flagged so nobody is surprised: `src/company-brain/answer.mjs` and
+`openaiKeyOf()` in `src/agents/model.mjs` now treats a value containing an asterisk as not set.
+A real OpenAI key never carries one, so this recognises a mask exactly and refuses no genuine
+credential. One function gates every caller — `liveModelProvider`, `pickProvider` and the call
+path — so that is the whole diff. The moment a real key replaces the mask, OpenAI is used again
+with no further change.
+
+Proof: `src/agents/model.test.mjs` 7/7. The two new tests were run against the **unpatched**
+module first and both failed, so they are not rubber stamps. Every test touching the module,
+including `src/http/social-generate.pg.test.mjs` against a real `DATABASE_URL`: 40 pass, 0 fail,
+**0 skipped**. lint clean, tsc clean.
+
+Side effect, flagged so nobody is surprised: `src/company-brain/answer.mjs` and
 `src/company-brain/classify.mjs` pick the provider the same way, so Company Brain is quietly
-taking the same 401s. Removing the bad variable fixes those too. No repo file should be edited
-to work around this.
+taking the same 401s. This fix repairs those too — they now reach Anthropic, which works.
 
 ## main was broken, and it was not this work
 
