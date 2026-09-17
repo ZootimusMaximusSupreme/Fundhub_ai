@@ -35,8 +35,3 @@ docs/workflows/fix-*/evidence/
 docs/artifacts/
 docs/jokes/
 .playwright-mcp/
-
-# Fake walk documents print the fake identity from credentials/, so they stay local.
-# The pass/fail matrix beside them is committed.
-docs/workflows/sim-documents/*
-!docs/workflows/sim-documents/MATRIX.md

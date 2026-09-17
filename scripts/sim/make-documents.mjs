@@ -7,8 +7,8 @@
 //   node scripts/sim/make-documents.mjs --list          # the plan, writes nothing
 //   node scripts/sim/make-documents.mjs --today 2026-09-16
 //
-// Writes docs/workflows/sim-documents/<NN>/ (pictures + consent-form.txt, kept out
-// of git because they print the fake identity) and docs/workflows/sim-documents/
+// Writes docs/workflows/sim-documents/<NN>/ (pictures + consent-form.txt, all fake)
+// and docs/workflows/sim-documents/
 // MATRIX.md (committed: which file passes, which fails, and what you should see).
 //
 // WHY THESE EXIST. The DOC-CHECK agent decides accept / request_more / hold on a
@@ -445,7 +445,7 @@ function matrix(people) {
   const lines = [
     "# Fake upload documents — what should pass and what should fail",
     "",
-    `Built ${iso(TODAY)} by \`scripts/sim/make-documents.mjs\`. The pictures are in the numbered folders beside this file and stay out of git, because they print the fake identity. Re-run the script to rebuild them; dates are worked out from the day it runs.`,
+    `Built ${iso(TODAY)} by \`scripts/sim/make-documents.mjs\`. The pictures are in the numbered folders beside this file. Re-run the script to rebuild them; dates are worked out from the day it runs.`,
     "",
     "## Before you upload anything",
     "",
