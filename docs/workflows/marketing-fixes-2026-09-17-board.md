@@ -63,15 +63,14 @@ the code never falls through to Anthropic — and the Anthropic key on the site 
 switched on, so nothing was written"; nobody captured that line on the walk, which is why it was
 recorded as nothing happening.
 
-The fix is deleting one bad setting. No new secret needed:
+**Owner rule, set 2026-09-17 after this was proposed: never remove a key.** See CLAUDE.md
+§11 "Never remove a key". The `OPENAI_API_KEY` stays exactly where it is, mask and all. Any
+future agent reading this file must not unset, clear or overwrite it. The removal command that
+stood here has been deleted so nobody runs it.
 
-    netlify env:unset OPENAI_API_KEY --context production
-    netlify env:unset OPENAI_API_KEY --context deploy-preview
-    netlify env:unset OPENAI_API_KEY --context branch-deploy
-
-**Not applied.** The harness permission guard refused `netlify env:unset` with
-`[Secret-Store Writes]`, and refused every attempt to inspect the key's shape with
-`[Credential Materialization]`. Not routed around.
+That leaves the fix in code, around the key: treat a password that is only asterisks as not
+filled in, so the site uses Anthropic, which already works. **Not applied** — Chris has not
+picked an approach yet, and F3 is stopped pending his call. No file was changed for F3.
 
 Blast radius when applied, flagged so nobody is surprised: `src/company-brain/answer.mjs` and
 `src/company-brain/classify.mjs` pick the provider the same way, so Company Brain is quietly

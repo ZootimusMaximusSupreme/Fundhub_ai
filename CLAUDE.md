@@ -408,6 +408,28 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
   `DATABASE_URL="$(netlify env:get DATABASE_URL --context production)" node db/migrate.mjs`
 * **Never print a secret value back to me.** Confirm by name only.
 
+### Never remove a key (owner-set 2026-09-17)
+
+**Never delete, unset, clear or overwrite a stored credential. Ever.** No `netlify env:unset`,
+no clearing a value, no "rotate" or "replace" where the old value is destroyed. This holds even
+when the stored value is measured broken right now — being proven broken is not a licence to
+remove it.
+
+Set after an agent proposed unsetting an `OPENAI_API_KEY` whose stored value was a blanked-out
+mask (sixteen asterisks and four characters) that OpenAI rejected with a 401. Chris: "dont ever
+remove keys ever again."
+
+A key that is gone is gone. Chris may hold no copy, and getting a new one is his time and his
+account — not a command an agent can run. A broken key costs one broken feature. A deleted key
+can cost the account.
+
+So when a credential is the blocker: fix it in the code **around** the key, or report it and
+stop. Treat an unusable value as unusable at the point of use — fall back to a provider that
+works — and leave the stored value exactly where it is. Do not offer removal as an option and
+do not describe it as the clean fix.
+
+Setting a **new** variable that does not exist yet is unchanged and still yours to do.
+
 ### Migrations run on the production deploy only (owner-set 2026-08-19)
 
 There is one database behind every Netlify context. Previews and branch deploys get
