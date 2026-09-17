@@ -1,13 +1,31 @@
 # optimize — actual
 
+> **2026-09-17 — the roadmap has a screen again, on its own page at `/roadmap`.** Owner
+> asked for the second step back: sign up, then a page where the person puts their details
+> in, then the plan, then the close. `public/roadmap.html` is that page. It draws the
+> roadmap endpoint that has been live and unused since 2026-08-28. The Pay-for-Audit
+> checkout stays removed — it was not asked for and nothing calls `POST /api/public/optimize`.
+>
+> **The plan is built on the SAMPLE file and the page says so.** `buildOptimizeRoadmap()`
+> falls back to `SAMPLE_STORED_FILE` whenever no `crsResult` is passed, and the no-auth
+> referral door passes none. The page reads `source` off the response and prints a notice
+> saying the names, balances and dates are not the person's own. The notice disappears by
+> itself the day a real pull is wired — `source` becomes `"file"` and the branch stops firing.
+>
+> **The roadmap link is on the page, not behind the sign-up.** `CONSUMER_DIRECT_CLIENT_KEY`
+> is not set in production, so the widget never mounts, `cd-signup-next-step` never fires and
+> `showDone()` is dead code there. Everyone who clicks the sign-up button leaves for
+> smartcredit.com and does not come back. A roadmap door reachable only from `showDone()`
+> would be a door on a path nobody is on.
+
 > **2026-08-28 — the ConsumerDirect SmartCredit&reg; sign-up box is now built into the page,
 > and ConsumerDirect's twelve-item compliance wording is on the page around it.** The page is
-> still ONE form. The Audit section, the Pay-for-Audit checkout and the roadmap render stay
-> removed by owner decision; the roadmap API is untouched and still works, nothing draws it here.
-> The FCRA rights ticker was removed — ConsumerDirect's checklist bans wording that suggests
-> credit repair, and disputing / deletion / 30-day-investigation lines do exactly that.
+> still ONE form. The Audit section and the Pay-for-Audit checkout stay removed by owner
+> decision. The FCRA rights ticker was removed — ConsumerDirect's checklist bans wording that
+> suggests credit repair, and disputing / deletion / 30-day-investigation lines do exactly that.
 
-Traced from `public/optimize.html`, `api/public/optimize.mjs`, and `netlify.toml`. Not from the spec.
+Traced from `public/optimize.html`, `public/roadmap.html`, `api/public/optimize.mjs`, and
+`netlify.toml`. Not from the spec.
 
 ## In one picture
 
@@ -19,6 +37,23 @@ flowchart TD
     PAGE --> SCBOX["SEPARATE bordered SmartCredit card"]
     PAGE --> FHBOX["SEPARATE Fundhub Credit Solutions LLC card + Book a call"]
     FHBOX --> CAL["apply.fundhub.ai/schedule/phonecall"]
+    FHBOX --> RMLINK["See my roadmap — on the page, works on every path"]
+    RMLINK --> SAVE2["remember() writes name/email to sessionStorage"]
+    SAVE2 --> RM["/roadmap serves public/roadmap.html"]
+
+    RM --> INTAKE["Intake card — first, last, email, goal. First name REQUIRED"]
+    INTAKE --> FETCH["GET /api/public/optimize?view=roadmap"]
+    FETCH --> SRC{"source"}
+    SRC -->|"sample — today, always"| NOTICE["Notice: this is an example, these are NOT your numbers"]
+    SRC -->|"file — when a real pull exists"| NONOTICE["no notice, the branch stops firing"]
+    NOTICE --> DRAW
+    NONOTICE --> DRAW["Draw the plan"]
+    DRAW --> S1["Where you stand — preapprovalKnown false prints 'Not known yet', never a 0"]
+    DRAW --> S2["Open accounts"]
+    DRAW --> S3["What we found — observed/expected through readable(), objects spelled out"]
+    DRAW --> S4["The order we work in — 6 rounds, current one marked"]
+    S4 --> CLOSE["Book my call"]
+    CLOSE --> CAL
 
     PAGE --> GET["GET /api/public/optimize"]
     GET --> LEGAL["legal = 4 policy addresses + cancel route, from env BY NAME"]

@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your roadmap | Fundhub Credit Solutions LLC</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="robots" content="noindex">
+<meta name="description" content="Fundhub Credit Solutions LLC. Your report reviewed with you, step by step.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* Same system as optimize.html — this page is its second step and has to look
+     like the same company. Shared rules are copied, not imported, because
+     optimize.html inlines its own and neither page loads a stylesheet. */
+  :root{
+    --spectrum:linear-gradient(90deg,#F2A69B 0%,#F5CE8F 20%,#F2E39B 40%,#A8D8B0 60%,#A9C6E8 80%,#C4B3E5 100%);
+    --paper:#FCFCFC; --ink:#0A0A0A; --gray:#52525B; --gray2:#8A8A93;
+    --line:#E4E4E7; --soft:#F4F4F5;
+    --blue:#188bf6; --blue-dark:#0f6fd0;
+    --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+    --sans:'Inter',system-ui,-apple-system,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{overflow-x:hidden}
+  body{color:var(--ink);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background-color:var(--paper);
+    background-image:linear-gradient(rgba(10,10,10,.048) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(10,10,10,.048) 1px,transparent 1px);
+    background-size:44px 44px}
+  a{color:inherit;text-decoration:none}
+  :focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+  .wrap{max-width:900px;margin:0 auto;padding:0 24px}
+    .logo{display:inline-block;background:url(data:image/svg+xml;base64,PHN2ZyB2ZXJzaW9uPSIxLjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyIgd2lkdGg9IjI2OTguMTQ4NDcxcHQiIGhlaWdodD0iNTQyLjk3ODc1OXB0IiB2aWV3Qm94PSIwIDAgMjY5OC4xNDg0NzEgNTQyLjk3ODc1OSIgcHJlc2VydmVBc3BlY3RSYXRpbz0ieE1pZFlNaWQgbWVldCI+PGcgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTE0Mi4wMDAwMDAsNjkxLjkwMjU0NSkgc2NhbGUoMC4xMDAwMDAsLTAuMTAwMDAwKSIgZmlsbD0iIzBBMEEwQSIgc3Ryb2tlPSJub25lIj48cGF0aCBkPSJNMjc4MCA2OTA1IGMtMTAxIC0yMyAtMTg3IC01MyAtMjc1IC05NiAtMjY3IC0xMzMgLTQ1MyAtMzQyIC01NTYgLTYyNCAtNTQgLTE1MCAtNjEgLTIxMiAtNjYgLTU2NSAtMyAtMjMzIC03IC0zMTYgLTE2IC0zMjIgLTcgLTQgLTEwMiAtOCAtMjEzIC04IC0xODIgMCAtMjAyIC0yIC0yMTcgLTE4IC0xNSAtMTcgLTE3IC02NiAtMTcgLTQ5MyAwIC0zNTYgMyAtNDc4IDEyIC00ODcgOSAtOSA3MSAtMTIgMjE4IC0xMiAxNDcgMCAyMDkgLTMgMjE4IC0xMiA5IC05IDEyIC0zMTYgMTIgLTEzMTcgMSAtMTA3MCAzIC0xMzA5IDE0IC0xMzIzIDEyIC0xNyA1MCAtMTggNTMzIC0xOCAzOTAgMCA1MjIgMyA1MzEgMTIgOSA5IDEyIDMxNSAxMiAxMzE2IDAgODc5IDMgMTMxMCAxMCAxMzIzIDEwIDE4IDIzIDE5IDIyNSAxOSAyMTAgMCAyMTQgMCAyMjkgMjIgMTQgMjAgMTYgODIgMTYgNDg0IGwwIDQ2MyAtMjYgMjAgYy0yNSAyMCAtMzkgMjEgLTIzMCAyMSAtMTkxIDAgLTIwNCAxIC0yMTQgMTkgLTYgMTIgLTEwIDEwMCAtMTAgMjE2IDAgMzAxIC01IDI5NSAyNjEgMjk1IDE2NyAwIDE4OCAyIDIwMiAxOCAxNSAxNyAxNyA2OCAxNyA1MzMgLTEgNDEyIC0zIDUxNyAtMTQgNTMyIC0xMiAxNiAtMzggMTcgLTMwNyAxNiAtMTkxIC0xIC0zMTMgLTYgLTM0OSAtMTR6Ii8+PHBhdGggZD0iTTE0MDUxIDY0MDcgYy04IC0xMCAtMTIgLTE5NiAtMTMgLTYzMiAtMyAtNTY4IC00IC02MTkgLTIwIC02MjggLTEzIC05IC0yMSAtNyAtMzUgNSAtMTggMTYgLTE4NSAxMDIgLTI1MyAxMzEgLTIyOSA5NyAtNTQ2IDEzNiAtODI1IDEwMyAtMTk4IC0yNCAtMjY0IC0zOSAtNDE0IC05OCAtMjUwIC05OCAtNDI5IC0yMTUgLTYyNSAtNDExIC03OCAtNzggLTE2MyAtMTY5IC0xODggLTIwMiAtNjMgLTg0IC0xMTggLTE2NCAtMTE4IC0xNzEgMCAtMyAtOCAtMTggLTE5IC0zMiAtNjUgLTk0IC0xNzIgLTM0MyAtMjEwIC00ODkgLTMwIC0xMTcgLTMxIC0xMjIgLTYwIC0zMzMgLTE3IC0xMjAgLTQgLTQzNyAyNCAtNjAwIDUzIC0zMDkgMjI3IC02NzIgNDM2IC05MTEgMjQwIC0yNzUgNDM4IC00MjEgNzM0IC01NDIgMTMwIC01MyAyMTggLTc1IDM4MCAtOTYgOTAgLTEyIDQ0OCAtNyA1MDAgNyAyMiA2IDY1IDE2IDk1IDIzIDEzNiAzMCAzNTkgMTIyIDQ5MiAyMDIgMjAgMTIgNTcgMzUgODIgNTAgNzIgNDQgODAgMzcgODQgLTYzIDIgLTQ2IDggLTkwIDE0IC05NyAxNSAtMTggOTc4IC0xOSA5OTYgLTEgMTcgMTcgMTcgNDc2OSAwIDQ3ODYgLTE5IDE5IC0xMDQxIDE3IC0xMDU3IC0xeiBtLTYzMCAtMjAzNSBjMTMgLTYgNDQgLTE2IDY5IC0yMyA1MyAtMTYgMTYxIC03MSAyMTAgLTEwNyAxNzAgLTEyNyAzMTkgLTMzOSAzNjggLTUyNyAyMiAtODMgMjYgLTEyNCAyNiAtMjcwIDAgLTE1NCAtMTAgLTI2MSAtMjUgLTI3MSAtNSAtMyAtOSAtMTYgLTkgLTMwIDAgLTEzIC00IC0zMiAtOCAtNDIgLTU3IC0xMTkgLTEwNCAtMjA1IC0xMzYgLTI0NiAtNjggLTg4IC0xNTkgLTE3NiAtMjMxIC0yMjUgLTc2IC01MCAtOTIgLTU5IC0xOTcgLTEwMCAtMTI0IC00OCAtMzg2IC00NiAtNTMzIDQgLTEyNSA0MyAtMjM3IDExNyAtMzM0IDIyMyAtOTAgOTggLTExOSAxNDAgLTE2NiAyMzIgLTUwIDk5IC00NyA5MCAtODQgMjM1IC0yOCAxMTEgLTMyIDI0NiAtMTEgMzgwIDE4IDExOSAyMiAxMzUgMzEgMTQxIDUgMyA5IDEzIDkgMjMgMCAzMSA3MCAxNjMgMTI1IDIzNiA2NyA4OSAxNTUgMTgwIDIyNSAyMzIgNjYgNDkgMTY1IDEwMyAxOTAgMTAzIDExIDAgMjEgNCAyNCA5IDYgOSAyOSAxNSAxMjEgMzEgNjEgMTEgMzAzIDUgMzM2IC04eiIvPjxwYXRoIGQ9Ik0xNTU0NyA2NDAyIGMtMTYgLTE3IC0xNyAtMTk3IC0xNyAtMjM4NiAwIC0xNjEzIDMgLTIzNzMgMTAgLTIzODcgMTAgLTE4IDI3IC0xOSA1MzUgLTE5IDMyMSAwIDUyNiA0IDUzMCAxMCAzIDUgNSA0MjcgNSA5MzcgMCA4OTMgNSAxMDg1IDMyIDEyNTggNDMgMjc4IDE0NiA0NTQgMzEzIDUzNiBsNzAgMzQgMTUyIDAgYzEwOCAwIDE1NiAtNCAxNjUgLTEyIDYgLTcgMjAgLTEzIDI5IC0xMyAyNiAwIDkyIC0zOCAxMzcgLTc5IDU5IC01MiAxMDUgLTEyNyAxNDUgLTIzMyAzNCAtOTAgNDIgLTExOSA2OCAtMjU4IDkgLTQ4IDE0IC0zMzggMTYgLTExMTAgMyAtNzE1IDggLTEwNDggMTUgLTEwNTcgOCAtMTAgMTIwIC0xMyA1MjggLTEzIDQzOSAwIDUxOSAyIDUzMCAxNCAxNiAyMSA5IDIzNjAgLTggMjQ1NiAtNyAzNiAtMTcgOTIgLTIzIDEyNSAtMjggMTY1IC03MiAzMDQgLTEzNCA0MzAgLTEyMiAyNDYgLTM3NiA0ODEgLTY3MCA2MTkgLTE1MiA3MiAtMTY5IDc4IC0zMjUgMTE2IC03OSAyMCAtMjUxIDMyIC0zNDYgMjYgLTIzMiAtMTYgLTM3MCAtNTEgLTU0OCAtMTQxIC0xNjEgLTgxIC0xNDcgLTEzNyAtMTQ2IDU2MSAxIDQyNiAtMiA1NzkgLTExIDU5MCAtMTAgMTIgLTk1IDE0IC01MjQgMTQgLTQ4MyAwIC01MTMgLTEgLTUyOCAtMTh6Ii8+PHBhdGggZD0iTTIyOTYyIDY0MDggYy05IC05IC0xMiAtNTU0IC0xMiAtMjM4OSAwIC0xMzA4IDMgLTIzODQgNiAtMjM5MyA1IC0xNCA1OSAtMTYgNTA0IC0xNiAzOTYgMCA1MDAgMyA1MDggMTMgNiA3IDEyIDUxIDE0IDk3IDMgODEgNCA4NSAyNSA4MyAxMiAtMiA1NSAtMjUgOTUgLTUyIDE4NCAtMTIzIDM2MCAtMTk1IDU5OCAtMjQzIDg4IC0xOCA1MTMgLTE4IDU5NSAwIDMzIDcgODMgMTggMTEwIDIzIDIyOSA0OCA1MDMgMTg2IDcwNyAzNTYgMTQ3IDEyMiAzMzcgMzQyIDQxNCA0NzggNTIgOTMgMTE4IDIyNiAxNDAgMjgyIDE0IDM3IDI5IDc3IDM0IDg4IDQgMTEgMTMgNDAgMjAgNjUgNyAyNSAxNiA1NiAyMSA3MCAxMSAzMyAzNCAxMzggNTEgMjI1IDE3IDkyIDE4IDU4OCAxIDY2NSAtNiAzMCAtMTcgODIgLTIzIDExNSAtMTYgODIgLTY2IDI1NiAtOTAgMzEwIC01IDExIC0yNiA1OCAtNDcgMTA1IC01NSAxMjMgLTEyNyAyNDcgLTIwMSAzNDYgLTExOSAxNTkgLTMyMSAzNTkgLTQ0NiA0NDMgLTIwNSAxMzggLTQxMCAyMzAgLTU5NiAyNzEgLTMwIDYgLTY4IDE1IC04NSAyMCAtOTEgMjUgLTQzMSAzMiAtNTg1IDEyIC0xMjIgLTE3IC0yMjcgLTM5IC0zMDQgLTY3IC05NiAtMzMgLTI0OCAtMTA3IC0zMTIgLTE1MCAtNDAgLTI3IC01MCAtMzAgLTU5IC0xNSAtMyA1IC02IDI4MyAtNSA2MTcgMCA1MzggLTEgNjExIC0xNSA2MzEgbC0xNiAyMiAtNTE4IDAgYy0zODkgMCAtNTIwIC0zIC01MjkgLTEyeiBtMjEyMCAtMjA0MSBjMjYgLTcgNTAgLTE2IDU0IC0yMCA0IC00IDE2IC03IDI2IC03IDEwIDAgMjcgLTQgMzggLTEwIDExIC01IDI5IC0xNCA0MCAtMjAgMTc1IC04NyAzNDYgLTI4MCA0MjAgLTQ3MSA0NyAtMTIzIDUzIC0xNTggNTcgLTM2OSA2IC0yMzYgLTEwIC0zMzAgLTgyIC00ODUgLTEwMyAtMjIxIC0yOTUgLTM5OCAtNDk1IC00NTMgLTE5IC02IC01MiAtMTYgLTc0IC0yMiAtODUgLTI3IC0zOTMgLTEyIC00NTggMjEgLTEwIDUgLTI1IDkgLTMzIDkgLTggMCAtMjMgNCAtMzMgOSAtOSA1IC00NiAyMyAtODIgNDEgLTg0IDQyIC0xMzAgNzggLTIwOCAxNTkgLTE0OSAxNTYgLTIxNCAyODEgLTI2MiA1MTEgLTE0IDY2IC04IDM3NSA4IDQzNSA2IDIyIDE0IDU0IDE4IDcwIDExIDUyIDgwIDE5MCAxMjQgMjUxIDU0IDczIDE3MCAxODkgMjMwIDIzMCAxMDIgNjggMjM3IDEyMSAzNTUgMTM4IDU2IDggMzEwIC00IDM1NyAtMTd6Ii8+PHBhdGggZD0iTTkyMTAgNTM4OCBjLTQxIC01IC05MyAtMTQgLTExNSAtMTkgLTIyIC02IC01OCAtMTUgLTgwIC0yMSAtNzggLTIwIC0yMjEgLTgzIC0zMTAgLTEzNSAtNDkgLTMwIC05NiAtNTIgLTEwNSAtNTEgLTEwIDIgLTE2IDE3IC0xOCA0MyAtNyA3OSAyNCA3NSAtNTEyIDc1IC00NDkgMCAtNDc4IC0xIC00OTMgLTE4IC0xNiAtMTcgLTE3IC0xNTggLTE3IC0xODI0IDAgLTE0OTEgMiAtMTgwNyAxMyAtMTgxNyAxOSAtMTUgMTAzNCAtMTYgMTA1MyAwIDExIDkgMTQgMTg4IDE4IDEwMzcgNCA5ODAgOCAxMTMxIDM2IDEyNjYgNDAgMTk5IDE0OCAzMzcgMzMwIDQyMiAxOSA5IDQ2IDIxIDU5IDI4IDE0IDYgNzcgMTEgMTU1IDExIDEyNyAwIDEzMyAtMSAxOTcgLTMyIDExNCAtNTYgMTk4IC0xNTAgMjQ0IC0yNzMgOSAtMjUgMjAgLTU0IDI1IC02NSAxNiAtNDMgMjkgLTkzIDQwIC0xNjAgNiAtMzggMTYgLTk0IDIxIC0xMjQgNSAtMzEgOSAtNDkzIDkgLTEwNzAgMSAtODI5IDMgLTEwMTkgMTQgLTEwMzMgMTIgLTE3IDUwIC0xOCA1MzMgLTE4IDQ0MiAwIDUyMiAyIDUzMyAxNCAxNyAyMSA4IDIzMTcgLTkgMjQyNiAtNjEgMzgyIC0xMDEgNDk4IC0yNDQgNzE1IC03NCAxMTIgLTI2MiAzMDAgLTM3MiAzNzQgLTc5IDUyIC0yOTkgMTY0IC0zNTkgMTgzIC0yMTIgNjYgLTQ0NSA5MCAtNjQ2IDY2eiIvPjxwYXRoIGQ9Ik0zODU1IDUyNjQgYy0xNSAtMTUgLTE2IC0xMTYgLTEyIC0xMTk4IDIgLTg4OCA2IC0xMTk3IDE2IC0xMjQ2IDcgLTM2IDE3IC05MCAyMiAtMTIwIDI3IC0xNDggNzcgLTI5NiAxNTAgLTQ0NSAxNTEgLTMwNyA0NjggLTU3MSA4MzQgLTY5MyAxMzcgLTQ1IDI0MSAtNjIgNDM1IC03MCAzMjggLTE0IDUyMyAzMiA3MjYgMTcwIDM5IDI2IDc3IDQ4IDg1IDQ4IDkgMCAyNCAtMjIgMzYgLTUwIGwyMSAtNTAgNDgxIDAgYzQ2NSAwIDQ4MSAxIDQ5MSAxOSA3IDEzIDEwIDU5OCAxMCAxODE5IDAgMTczMCAtMSAxODAwIC0xOCAxODE1IC0xNyAxNSAtNjggMTcgLTUyMyAxNyAtNDIwIDAgLTUwOCAtMiAtNTI1IC0xNCAtMTkgLTE0IC0xOSAtNDAgLTI1IC0xMDkzIC01IC0xMDQ5IC02IC0xMDgwIC0yNiAtMTE2MyAtNDkgLTE5OSAtOTMgLTI5MSAtMTgzIC0zODAgLTEwNCAtMTA0IC0xODIgLTEzMyAtMzY2IC0xMzIgLTEzNSAwIC0yMTIgMTkgLTI5MSA3MyAtOTcgNjcgLTE4NiAyMTkgLTIyNSAzODQgLTI4IDEyMCAtMzEgMjAyIC0zNyAxMjI2IC01IDg4MiAtOCAxMDY5IC0yMCAxMDgyIC0xMiAxNSAtNjIgMTcgLTUyNyAxNyAtNDYwIDAgLTUxNCAtMiAtNTI5IC0xNnoiLz48cGF0aCBkPSJNMTkyNDcgNTI2MiBjLTE2IC0xNyAtMTcgLTEwOSAtMTcgLTExMTggMCAtMTA1MiA1IC0xMjQ5IDMxIC0xMzg0IDM1IC0xODIgNjEgLTI3NiAxMDIgLTM3NSA0NCAtMTA3IDc4IC0xNzYgMTA5IC0yMjIgMTUgLTIzIDI4IC00NSAyOCAtNDggMCAtMTQgMTIyIC0xNTQgMTkxIC0yMjAgMjAwIC0xODkgNDk1IC0zMzUgNzc0IC0zODQgMjA1IC0zNiA1NTcgLTI2IDY3MyAyMCAxMyA1IDMwIDkgMzkgOSAzNyAwIDI4OSAxMzggMzA4IDE2OSAxMSAxOCA0NSAtNyA0NSAtMzMgMCAtMTIgMTAgLTMyIDIzIC00NCAyMyAtMjIgMjQgLTIyIDQ5NSAtMjIgNDU2IDAgNDcyIDEgNDgyIDE5IDcgMTMgMTAgNTk4IDEwIDE4MTkgMCAxNzMwIC0xIDE4MDAgLTE4IDE4MTUgLTE3IDE1IC02OCAxNyAtNTIzIDE3IC00MjAgMCAtNTA4IC0yIC01MjUgLTE0IC0xOSAtMTQgLTE5IC00MCAtMjUgLTEwODggLTcgLTExMTkgLTYgLTExMDAgLTQ4IC0xMjQ4IC01IC0xOSAtMTMgLTQ2IC0xNiAtNjAgLTI5IC0xMTIgLTExMyAtMjM3IC0xOTYgLTI5MiAtOTUgLTYyIC0xNjYgLTgxIC0zMDkgLTgxIC0xNDcgMCAtMjIzIDIxIC0zMDYgODQgLTEyNiA5NiAtMTkzIDIzNSAtMjM5IDQ5NCAtMTIgNjYgLTE1IDI2NiAtMTUgMTEyMCAwIDkyNSAtMiAxMDQzIC0xNiAxMDYzIGwtMTUgMjIgLTUxMyAwIGMtNDg0IDAgLTUxNCAtMSAtNTI5IC0xOHoiLz48cGF0aCBkPSJNMjc1NDAgMzAxNSBjLTk4IC0yMyAtMTg3IC02MCAtMjYwIC0xMDkgLTk5IC02NiAtMjA4IC0xODkgLTI0OSAtMjgxIC03IC0xNiAtMTcgLTM4IC0yMiAtNDcgLTUgLTEwIC05IC0yNSAtOSAtMzMgMCAtOCAtNCAtMjMgLTkgLTMzIC0yOCAtNTUgLTQxIC0yNTggLTIwIC0zMzYgNiAtMjIgMTUgLTU5IDIxIC04MSAxNyAtNjYgODQgLTE5NyAxMzEgLTI1MyA1MiAtNjMgMTcwIC0xNTQgMjQyIC0xODggMTE3IC01NCAxODIgLTY4IDMyMCAtNjggMTA3IDAgMTQyIDQgMjAwIDIyIDE2NiA1MyAzMDAgMTUwIDM5MiAyODQgOTkgMTQzIDEyNCAyMjcgMTI0IDQxMyAxIDE4NCAtMjQgMjY5IC0xMjQgNDEzIC01MyA3NyAtMTQ0IDE2NyAtMTkzIDE5MiAtMTYgOCAtNDAgMjIgLTU0IDMxIC0xMTEgNzMgLTM0MiAxMDggLTQ5MCA3NHoiLz48L2c+PC9zdmc+) no-repeat center/contain}
+
+  header{padding:18px 0 0;text-align:center}
+  header .logo{width:124px;height:25px}
+  header .cstag{display:block;margin-top:9px;font-family:var(--mono);font-size:9.5px;font-weight:500;
+    letter-spacing:.3em;text-transform:uppercase;color:var(--gray)}
+  @media(max-width:640px){header{padding:11px 0 0}header .logo{width:104px;height:21px}}
+
+  .hero{text-align:center;padding:34px 0 8px}
+  .eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gray);display:inline-block}
+  .eyebrow::before{content:"";display:inline-block;width:16px;height:2px;background:var(--spectrum);
+    border-radius:1px;margin-right:9px;vertical-align:middle}
+  h1{font-size:clamp(30px,5.2vw,50px);font-weight:700;letter-spacing:-.045em;line-height:.98;
+    margin:20px auto 0;max-width:19ch}
+  .lede{margin:20px auto 0;font-size:16.5px;color:var(--gray);max-width:50ch}
+
+  .card{max-width:560px;width:calc(100% - 48px);margin:28px auto 0;background:var(--paper);
+    border:1px solid var(--line);border-radius:14px;box-shadow:0 18px 44px rgba(10,10,10,.10);
+    padding:28px 26px}
+  .cardhead{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gray);text-align:center;margin-bottom:20px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:480px){.two{grid-template-columns:1fr;gap:0}}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--gray);margin-bottom:6px}
+  .field input,.field select{width:100%;font-family:var(--sans);font-size:15px;color:var(--ink);background:#fff;
+    border:1px solid var(--line);border-radius:9px;padding:12px 13px}
+  .field input:focus,.field select:focus{outline:none;border-color:var(--blue)}
+  .btn{display:block;width:100%;background:var(--blue);color:#fff;font-family:var(--sans);font-size:15.5px;
+    font-weight:600;border:1px solid var(--blue);border-radius:9px;padding:14px 18px;text-align:center;
+    cursor:pointer}
+  .btn:hover{background:var(--blue-dark);border-color:var(--blue-dark)}
+  .btn-ghost{background:transparent;color:var(--gray);border:1px solid var(--line);margin-top:10px;
+    font-weight:500}
+  .btn-ghost:hover{background:var(--soft);border-color:var(--line)}
+  .disclaim{margin-top:16px;font-size:12px;color:var(--gray2);line-height:1.55;text-align:center}
+  .err{margin:0 0 10px;font-size:13px;color:#9b1c1c;text-align:center}
+
+  /* ── the roadmap itself ─────────────────────────────────────────────────── */
+  .plan{max-width:720px;width:calc(100% - 48px);margin:28px auto 0}
+  .panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px 22px;
+    margin-top:18px;box-shadow:0 10px 30px rgba(10,10,10,.06)}
+  .panel > .rule{height:2px;width:44px;border-radius:1px;background:var(--spectrum)}
+  .panel h2{margin-top:13px;font-size:19px;font-weight:700;letter-spacing:-.025em}
+  .panel .sub{margin-top:8px;font-size:14px;color:var(--gray);line-height:1.6}
+
+  .sample{max-width:720px;width:calc(100% - 48px);margin:24px auto 0;padding:15px 16px;
+    border:1px solid var(--ink);border-radius:9px;background:#fff}
+  .sample .h{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--gray)}
+  .sample p{margin-top:9px;font-size:14.5px;line-height:1.6}
+
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+  @media(max-width:620px){.stats{grid-template-columns:1fr}}
+  .stat{border:1px solid var(--line);border-radius:10px;padding:14px 15px;background:var(--paper)}
+  .stat .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gray)}
+  .stat .v{margin-top:7px;font-size:23px;font-weight:700;letter-spacing:-.03em;line-height:1.1}
+  .stat .v.unknown{font-size:15px;font-weight:600;color:var(--gray);letter-spacing:0}
+
+  .rows{margin-top:16px;display:grid;gap:10px}
+  .row{border:1px solid var(--line);border-radius:10px;padding:13px 15px;background:var(--paper)}
+  .row .top{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+  .row .name{font-size:14.5px;font-weight:600}
+  .row .meta{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--gray)}
+  .row .why{margin-top:8px;font-size:13.5px;color:var(--gray);line-height:1.6}
+  .row .pair{margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--ink);
+    background:var(--soft);border-radius:7px;padding:9px 11px;line-height:1.7;
+    overflow-wrap:anywhere}
+  .tag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+    text-transform:uppercase;border:1px solid var(--line);border-radius:5px;padding:3px 7px;
+    color:var(--gray)}
+  .tag.now{border-color:var(--ink);color:var(--ink);font-weight:600}
+
+  .steps{margin-top:16px;display:grid;gap:10px}
+  .step{border:1px solid var(--line);border-radius:10px;padding:14px 15px;background:var(--paper)}
+  .step.now{border-color:var(--ink)}
+  .step .no{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--gray)}
+  .step h3{margin-top:6px;font-size:15px;font-weight:700;letter-spacing:-.02em}
+  .step .when{margin-top:5px;font-size:13px;color:var(--gray)}
+  .step ul{margin:9px 0 0 17px}
+  .step li{font-size:13px;color:var(--gray);line-height:1.7;overflow-wrap:anywhere}
+
+  .close{max-width:720px;width:calc(100% - 48px);margin:18px auto 0;background:var(--paper);
+    border:1px solid var(--line);border-radius:14px;padding:24px 22px;
+    box-shadow:0 10px 30px rgba(10,10,10,.06)}
+  .close .rule{height:2px;width:44px;border-radius:1px;background:var(--spectrum)}
+  .close h2{margin-top:13px;font-size:19px;font-weight:700;letter-spacing:-.025em}
+  .close p{margin-top:12px;font-size:14.5px;line-height:1.6}
+  .close .btn{margin-top:16px}
+
+  footer{margin:40px 0 34px;text-align:center;font-size:12px;color:var(--gray2);line-height:1.7}
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="logo" role="img" aria-label="Fundhub"></span>
+    <span class="cstag">Credit Solutions</span>
+  </div>
+</header>
+
+<main>
+  <!-- ── Step one: what they tell us ──────────────────────────────────────── -->
+  <section class="hero" id="intro">
+    <span class="eyebrow">Your Roadmap</span>
+    <h1>Build Your Plan</h1>
+    <p class="lede">Tell us who you are and what you are trying to do. We will lay out
+      what we go through together on your call.</p>
+  </section>
+
+  <form class="card" id="intake" novalidate>
+    <div class="cardhead">Your Information</div>
+    <div class="two">
+      <div class="field">
+        <label for="first">First name</label>
+        <input id="first" name="first_name" type="text" autocomplete="given-name" placeholder="First">
+      </div>
+      <div class="field">
+        <label for="last">Last name</label>
+        <input id="last" name="last_name" type="text" autocomplete="family-name" placeholder="Last">
+      </div>
+    </div>
+    <div class="field">
+      <label for="email">Email address</label>
+      <input id="email" name="email" type="email" autocomplete="email" placeholder="you@example.com">
+    </div>
+    <div class="field">
+      <label for="goal">What are you trying to do</label>
+      <select id="goal" name="goal">
+        <option value="">Choose one</option>
+        <option>Get funding for my business</option>
+        <option>Clean up what is on my report</option>
+        <option>Buy a home</option>
+        <option>Buy a vehicle</option>
+        <option>Something else</option>
+      </select>
+    </div>
+    <p class="err" id="err" role="alert" hidden></p>
+    <button class="btn" id="build" type="submit">Build my roadmap</button>
+    <p class="disclaim">Fundhub Credit Solutions LLC does not repair credit and does not
+      contact the bureaus on your behalf. We go through your report with you and explain it.</p>
+  </form>
+
+  <!-- ── Step two: the roadmap ────────────────────────────────────────────── -->
+  <section class="hero" id="planhead" hidden>
+    <span class="eyebrow" id="planeyebrow">Your Roadmap</span>
+    <h1 id="plantitle">Your Plan</h1>
+    <p class="lede" id="plangoal"></p>
+  </section>
+
+  <div class="sample" id="sample" hidden>
+    <span class="h">Read this first</span>
+    <p id="sampletext"></p>
+  </div>
+
+  <div class="plan" id="plan" hidden>
+    <section class="panel">
+      <span class="rule"></span>
+      <h2>Where you stand</h2>
+      <p class="sub">These are the numbers we walk through first.</p>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="panel" id="acctpanel" hidden>
+      <span class="rule"></span>
+      <h2>Your open accounts</h2>
+      <p class="sub">What is on the file, and what we aim each one at.</p>
+      <div class="rows" id="accounts"></div>
+    </section>
+
+    <section class="panel" id="findpanel" hidden>
+      <span class="rule"></span>
+      <h2>What we found on the report</h2>
+      <p class="sub">Each line below is something on the report that does not hold up.
+        We explain every one of these to you in plain words on the call.</p>
+      <div class="rows" id="findings"></div>
+    </section>
+
+    <section class="panel" id="stepspanel" hidden>
+      <span class="rule"></span>
+      <h2>The order we work in</h2>
+      <p class="sub">What happens, and when.</p>
+      <div class="steps" id="steps"></div>
+    </section>
+  </div>
+
+  <div class="close" id="close" hidden>
+    <span class="rule"></span>
+    <h2>Go through this with us</h2>
+    <p>Thirty minutes on the phone. We go through every line above with you and explain
+      what it means. You keep your report and your login either way.</p>
+    <a class="btn" id="book" href="https://apply.fundhub.ai/schedule/phonecall">Book my call</a>
+    <a class="btn btn-ghost" id="again" href="#">Start over</a>
+  </div>
+</main>
+
+<footer>
+  <div class="wrap">Fundhub Credit Solutions LLC</div>
+</footer>
+
+<script>
+  (function () {
+    "use strict";
+
+    var BOOK = "https://apply.fundhub.ai/schedule/phonecall";
+
+    var intake = document.getElementById("intake");
+    var err = document.getElementById("err");
+    var book = document.getElementById("book");
+    var again = document.getElementById("again");
+
+    /* Whatever they already typed on /optimize. remember() there writes this, so
+       a person arriving from the sign-up does not type their name twice. Private
+       mode throws on read — an empty form is the correct fallback, never a crash. */
+    (function prefill() {
+      try {
+        var saved = JSON.parse(sessionStorage.getItem("fh_opt") || "{}");
+        if (saved.first_name) document.getElementById("first").value = saved.first_name;
+        if (saved.last_name) document.getElementById("last").value = saved.last_name;
+        if (saved.email) document.getElementById("email").value = saved.email;
+      } catch (e) { /* nothing saved, or storage is off */ }
+    })();
+
+    /* The booking address comes from the server, same as on /optimize. */
+    fetch("/api/public/optimize", { headers: { accept: "application/json" } })
+      .then(function (r) { return r.json(); })
+      .then(function (cfg) {
+        if (cfg && cfg.bookUrl) { BOOK = cfg.bookUrl; book.setAttribute("href", BOOK); }
+      })
+      .catch(function () { /* the hardcoded address above still works */ });
+
+    book.addEventListener("click", function (e) {
+      e.preventDefault();
+      location.assign(BOOK);
+    });
+
+    again.addEventListener("click", function (e) {
+      e.preventDefault();
+      location.reload();
+    });
+
+    intake.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var first = document.getElementById("first").value.trim();
+      if (!first) {
+        err.textContent = "Please put in your first name so we can put it on your plan.";
+        err.hidden = false;
+        document.getElementById("first").focus();
+        return;
+      }
+      err.hidden = true;
+      remember();
+      load(first, document.getElementById("goal").value.trim());
+    });
+
+    function remember() {
+      try {
+        sessionStorage.setItem("fh_opt", JSON.stringify({
+          first_name: document.getElementById("first").value,
+          last_name: document.getElementById("last").value,
+          email: document.getElementById("email").value,
+          goal: document.getElementById("goal").value
+        }));
+      } catch (e) { /* private mode — the page still works */ }
+    }
+
+    function load(first, goal) {
+      var btn = document.getElementById("build");
+      btn.textContent = "Building your roadmap…";
+      btn.disabled = true;
+      fetch("/api/public/optimize?view=roadmap", { headers: { accept: "application/json" } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (!data || data.ok !== true) throw new Error("bad shape");
+          draw(data, first, goal);
+        })
+        .catch(function () {
+          btn.textContent = "Build my roadmap";
+          btn.disabled = false;
+          err.textContent = "We could not build your roadmap just now. Please try again, " +
+            "or book a call and we will go through it with you.";
+          err.hidden = false;
+        });
+    }
+
+    function el(tag, cls, text) {
+      var n = document.createElement(tag);
+      if (cls) n.className = cls;
+      if (text != null) n.textContent = text;
+      return n;
+    }
+
+    function dollars(n) {
+      return "$" + Number(n).toLocaleString("en-US");
+    }
+
+    /* `observed` is a plain value on a tradeline finding and an object on an
+       inquiry one. Printing the object gives "[object Object]", so each key is
+       spelled out instead. Never show a person a shape. */
+    function readable(v) {
+      if (v == null || v === "") return "";
+      if (typeof v !== "object") return String(v);
+      var out = [];
+      for (var k in v) {
+        if (Object.prototype.hasOwnProperty.call(v, k)) out.push(k + ": " + String(v[k]));
+      }
+      return out.join(" · ");
+    }
+
+    function draw(data, first, goal) {
+      document.getElementById("intro").hidden = true;
+      intake.hidden = true;
+
+      document.getElementById("plantitle").textContent = first + "'s Plan";
+      var goalLine = document.getElementById("plangoal");
+      goalLine.textContent = goal
+        ? "What you told us you want: " + goal.toLowerCase() + "."
+        : "Here is what we go through together on your call.";
+      document.getElementById("planhead").hidden = false;
+
+      /* NEVER let an example read as their own file. The server says which it is
+         and the notice is keyed off that, so it disappears by itself the day a
+         real pull exists — no code change needed. */
+      if (data.source !== "file") {
+        document.getElementById("sampletext").textContent =
+          "This plan is built on an example credit file, not on yours. We cannot read " +
+          "your report until you have pulled it and we have gone through it with you. " +
+          "It shows you the shape of the work and the order we do it in. The names, " +
+          "balances and dates below are not yours.";
+        document.getElementById("sample").hidden = false;
+      }
+
+      drawStats(data);
+      drawAccounts(data.accounts || []);
+      drawFindings(data.findings || []);
+      drawSteps(data.rounds || []);
+
+      document.getElementById("plan").hidden = false;
+      document.getElementById("close").hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function stat(key, value, unknown) {
+      var box = el("div", "stat");
+      box.appendChild(el("span", "k", key));
+      box.appendChild(el("div", unknown ? "v unknown" : "v", value));
+      return box;
+    }
+
+    /* A preapproval of 0 can mean "we never had the credit limit", NOT "you
+       qualify for nothing". The server sends preapprovalKnown so the page can
+       tell those apart. An unknown figure is SAID to be unknown, never drawn
+       as a zero. */
+    function drawStats(data) {
+      var box = document.getElementById("stats");
+      var today = data.today || {};
+      var later = data.later || {};
+      var known = today.preapprovalKnown === true;
+
+      box.appendChild(stat("Where you are now",
+        known ? dollars(today.preapproval) : "Not known yet", !known));
+      box.appendChild(stat("After the work",
+        known && later.preapproval ? dollars(later.preapproval) : "We size this on the call",
+        !(known && later.preapproval)));
+      box.appendChild(stat("Card use",
+        today.util ? String(today.util) : "Not known yet", !today.util));
+    }
+
+    function drawAccounts(accounts) {
+      if (!accounts.length) return;
+      var box = document.getElementById("accounts");
+      accounts.forEach(function (a) {
+        var row = el("div", "row");
+        var top = el("div", "top");
+        top.appendChild(el("span", "name", a.name || "Account"));
+        var limit = a.limit != null ? dollars(a.limit) : "limit not reported";
+        top.appendChild(el("span", "meta",
+          (a.balance != null ? dollars(a.balance) : "balance unknown") + " of " + limit));
+        row.appendChild(top);
+        if (a.target) row.appendChild(el("p", "why", "Where we aim it: " + a.target));
+        box.appendChild(row);
+      });
+      document.getElementById("acctpanel").hidden = false;
+    }
+
+    function drawFindings(findings) {
+      if (!findings.length) return;
+      var box = document.getElementById("findings");
+      findings.forEach(function (f) {
+        var row = el("div", "row");
+        var top = el("div", "top");
+        var who = f.creditor || "This item";
+        if (f.account_last4) who += " · ending " + f.account_last4;
+        top.appendChild(el("span", "name", who));
+        var meta = [f.bureau, f.severity].filter(Boolean).join(" · ");
+        if (meta) top.appendChild(el("span", "meta", meta));
+        row.appendChild(top);
+
+        if (f.reason) row.appendChild(el("p", "why", f.reason));
+
+        var observed = readable(f.observed);
+        var expected = readable(f.expected);
+        if (observed || expected) {
+          var pair = el("div", "pair");
+          if (observed) pair.appendChild(el("div", null, "What the report says: " + observed));
+          if (expected) pair.appendChild(el("div", null, "What it should say: " + expected));
+          row.appendChild(pair);
+        }
+        box.appendChild(row);
+      });
+      document.getElementById("findpanel").hidden = false;
+    }
+
+    function drawSteps(rounds) {
+      if (!rounds.length) return;
+      var box = document.getElementById("steps");
+      rounds.forEach(function (r) {
+        var now = r.status === "current";
+        var step = el("div", now ? "step now" : "step");
+        step.appendChild(el("span", "no", r.step || ""));
+        step.appendChild(el("h3", null, r.title || ""));
+        if (r.when) step.appendChild(el("p", "when", r.when));
+        if (now) {
+          var tag = el("span", "tag now", "We start here");
+          step.appendChild(tag);
+        }
+        if (r.attacks && r.attacks.length) {
+          var ul = document.createElement("ul");
+          r.attacks.forEach(function (a) { ul.appendChild(el("li", null, a)); });
+          step.appendChild(ul);
+        }
+        box.appendChild(step);
+      });
+      document.getElementById("stepspanel").hidden = false;
+    }
+  })();
+</script>
+<script src="/js/clarity.js" defer></script>
+</body>
+</html>

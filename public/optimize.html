@@ -278,6 +278,12 @@
         <div class="t">We talk it through</div>
         <div class="d">Thirty minutes on the phone. You already have your report in hand.</div></div>
     </div>
+    <!-- The way through to the plan. It is NOT behind the SmartCredit sign-up on
+         purpose: the sign-up box is only armed when the ConsumerDirect client key
+         is set, and it is not set, so everyone who clicks the button above leaves
+         for smartcredit.com and never comes back. A door that only opens on a path
+         nobody is on is a door nobody uses. -->
+    <a class="btn" id="roadmap" href="/roadmap">See my roadmap</a>
     <a class="btn btn-ghost" id="book" href="https://apply.fundhub.ai/schedule/phonecall">Or book a call first</a>
   </section>
 </main>
@@ -309,6 +315,7 @@
       var BOOK = "https://apply.fundhub.ai/schedule/phonecall";
       var go = document.getElementById("go");
       var book = document.getElementById("book");
+      var roadmap = document.getElementById("roadmap");
       var agree = document.getElementById("sc-agree");
       var sms = document.getElementById("sms");
       var scErr = document.getElementById("sc-err");
@@ -341,6 +348,15 @@
       book.addEventListener("click", function (e) {
         e.preventDefault();
         location.assign(BOOK);
+      });
+
+      /* Carry what they already typed across to /roadmap so they do not type it
+         twice. remember() is the same writer the sign-up path uses, and the
+         roadmap page reads the same key. Nothing goes in the web address. */
+      roadmap.addEventListener("click", function (e) {
+        e.preventDefault();
+        remember();
+        location.assign("/roadmap");
       });
 
       /* The signup destination comes from the server, never hardcoded here.
@@ -521,6 +537,19 @@
         return a;
       }
 
+      function roadmapButton(label) {
+        var a = document.createElement("a");
+        a.className = "btn";
+        a.href = "/roadmap";
+        a.textContent = label;
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          remember();
+          location.assign("/roadmap");
+        });
+        return a;
+      }
+
       function restartButton() {
         var b = document.createElement("a");
         b.className = "btn btn-ghost";
@@ -549,7 +578,7 @@
             "you every month until you cancel.",
           "Fundhub Credit Solutions LLC is a separate company and a separate thing you buy. " +
             "If you want us to go through your report with you, book a call."
-        ], [bookButton("Book my call")]);
+        ], [roadmapButton("See my roadmap"), bookButton("Book my call")]);
       }
 
       function showStuck(kind) {
