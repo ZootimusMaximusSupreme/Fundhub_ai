@@ -11,9 +11,9 @@ failed task.
 
 | Unit | What | Status |
 |---|---|---|
-| F1 | Creative Factory script drop-down reads "— none —" after a script saves | **done** — fixed, tested, committed `6e93c3e7` |
+| F1 | Creative Factory script drop-down reads "— none —" after a script saves | **done and proven live** — `6e93c3e7`, shipped `8a35bd30` |
 | F2 | The /watch page records no views | **needs Chris** — no code can fix it |
-| F3 | Social Studio "Write 3 posts for me" writes 0 drafts | **done** — fixed in code, committed `a91a81f8` |
+| F3 | Social Studio "Write 3 posts for me" writes 0 drafts | **part done** — mask bug fixed `a91a81f8`, but the button still writes 0 live |
 
 Run as one Workflow: diagnose (3 parallel, read-only) → fix (serialised, one shared tree) →
 verify (2 lenses per fix: does it work, did it stay in scope) → whole-diff scope audit.
@@ -84,6 +84,35 @@ including `src/http/social-generate.pg.test.mjs` against a real `DATABASE_URL`: 
 Side effect, flagged so nobody is surprised: `src/company-brain/answer.mjs` and
 `src/company-brain/classify.mjs` pick the provider the same way, so Company Brain is quietly
 taking the same 401s. This fix repairs those too — they now reach Anthropic, which works.
+
+## Live proof after ship `8a35bd30`
+
+F1 **passes on fundhub.ai**. Staff session as owner, Creative Factory for the house partner,
+full page load: the picker read `["— none —", "MKT-WALK 2026-09-17 · v1"]`, `LIVE_CF.scripts=true`,
+`SCRIPTS.length=1`, and `GET /api/scripts/list` answered HTTP 200 `ok=true`. That option is the
+script the 2026-09-17 walk saved and could never see again. The reported symptom is gone.
+Script: `scripts/tmp/f1-f3-live-proof.mjs`.
+
+F3 **does not yet pass on fundhub.ai.** Pressed "Write 3 posts for me" on the live Social Studio
+as owner: drafts before 0, drafts after 0. The screen said "The writer is not switched on, so
+nothing was written" — the endpoint's `no_model`. Script: `scripts/tmp/f3-live-proof.mjs`.
+
+The code fix is right and is not the thing failing: `no_model` fires on
+`model.mode === "shadow" || model.error || !model.text`, so it is the SAME message both before
+the fix (a real call to OpenAI returning 401) and after it (no provider reachable at all). The
+mask no longer shadows Anthropic — that part is proven by unit test. What is now missing is a
+working writer key in the live function.
+
+**Unresolved, and stopped rather than guessed at:** whether production holds a valid
+`ANTHROPIC_API_KEY`. The earlier diagnostic agent claimed it measured that key at HTTP 200, but
+it may have measured the local `.env` copy rather than the production one — that claim is NOT
+independently confirmed and should not be relied on. I could not check: `netlify env:list`
+truncates its table well short of all 82 variables, and every attempt to read a value is refused
+by the harness guard as `[Credential Materialization]`. `agent_shadow_log` is empty, so it does
+not settle it either.
+
+Worth noting how the mask got there in the first place: `netlify env:list` prints every value as
+a row of asterisks. Someone copied what the screen showed.
 
 ## main was broken, and it was not this work
 
