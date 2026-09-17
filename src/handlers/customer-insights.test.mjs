@@ -64,6 +64,10 @@ test("register wires funded interview and paid mid check-in", () => {
   assert.ok(getHandlers("round.funded").includes(onRoundFundedInsights));
   assert.ok(getHandlers("deposit.paid").includes(onPaidMidCheckin));
   assert.ok(getHandlers("sale.closed").includes(onPaidMidCheckin));
+  /* GAP 35, live walk 2026-09-17: repair / trial / academy clients pay through
+     a path that emits payment.received and nothing else, so this was the whole
+     reason none of them ever got a halfway call. */
+  assert.ok(getHandlers("payment.received").includes(onPaidMidCheckin));
 });
 
 test("funded round creates a Google Meet interview task for the funding advisor", async () => {
@@ -133,6 +137,9 @@ test("same funded event twice does not make a second task", async () => {
       id: "task-existing",
       client_id: "client-1",
       source_workflow: SOURCE_WORKFLOW,
+      // The row carries a title because a real tasks row always does, and the
+      // post task now dedupes on it (GAP 36). The assertion is unchanged.
+      title: TASK_TITLE,
       body
     }]
   });
@@ -193,4 +200,69 @@ test("sale.closed does not make a second mid check-in for the same client", asyn
   );
   assert.equal(res.created, false);
   assert.equal(db.tasks.length, 1);
+});
+
+/* ── the 2026-09-17 live walk, GAP 35 and GAP 36 ──────────────────────────── */
+
+test("payment.received creates the halfway call, and a second one does not", async () => {
+  const db = fakeDb();
+  const first = await onPaidMidCheckin(
+    { id: "evt-payment-1", orgId: "org-1", clientId: "client-1", payload: {} },
+    db
+  );
+  assert.equal(first.created, true);
+  assert.equal(db.tasks[0].title, MID_TASK_TITLE);
+  assert.equal(db.tasks[0].assignee_role, ASSIGNEE_ROLE);
+
+  // An installment after the deposit is still one client and one halfway call.
+  const second = await onPaidMidCheckin(
+    { id: "evt-payment-2", orgId: "org-1", clientId: "client-1", payload: {} },
+    db
+  );
+  assert.equal(second.created, false);
+  assert.equal(db.tasks.length, 1);
+});
+
+test("two funded rounds make one results call, not two", async () => {
+  const db = fakeDb();
+  const first = await onRoundFundedInsights(
+    { id: "evt-funded-a", orgId: "org-1", clientId: "client-1", payload: {} },
+    db
+  );
+  assert.equal(first.created, true);
+
+  // Sim Eight-Funding had exactly this: round.funded twice, two different event
+  // ids, two identical open "Accountability call — results and what's next".
+  const second = await onRoundFundedInsights(
+    { id: "evt-funded-b", orgId: "org-1", clientId: "client-1", payload: {} },
+    db
+  );
+  assert.equal(second.created, false);
+  assert.equal(db.tasks.length, 1);
+});
+
+test("the results call carries a due date, and a booking still moves it", async () => {
+  const db = fakeDb();
+  const before = Date.now();
+  await onRoundFundedInsights(
+    { id: "evt-funded-c", orgId: "org-1", clientId: "client-1", payload: {} },
+    db
+  );
+  const task = db.tasks[0];
+  assert.ok(task.due_at, "an undated task falls into the calendar's No date pile");
+  const due = task.due_at instanceof Date ? task.due_at.getTime() : Date.parse(task.due_at);
+  assert.ok(due >= before - 2000 && due <= Date.now() + 2000,
+    "the results call is due the day the round funds");
+
+  const res = await onInterviewBooked({
+    orgId: "org-1",
+    clientId: "client-1",
+    payload: {
+      eventTypeSlug: "post-funding-interview",
+      meetingUrl: "https://meet.google.com/abc",
+      startTime: "2026-10-01T18:00:00Z"
+    }
+  }, db);
+  assert.equal(res.updated, true);
+  assert.equal(db.tasks[0].due_at, "2026-10-01T18:00:00Z");
 });

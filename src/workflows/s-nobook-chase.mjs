@@ -35,6 +35,18 @@ export const EMAIL_NOBOOK_03 = "EMAIL-NOBOOK-03";
  * email address without that scope would let one company's booking answer for
  * another's. Phone numbers are compared on their last ten digits so
  * "+1 555-000-1111" and "5550001111" are the same number.
+ *
+ * THE FALLBACKS ONLY APPLY TO UNSTAMPED ROWS (2026-09-17). The address match was
+ * built to rescue the old rows that have no customer on them, and it was not
+ * limited to those — so it also matched a NEW, properly-stamped booking that
+ * belongs to somebody else who shares the address. Two people on one phone
+ * number (a husband and wife, a business owner and their bookkeeper) is enough
+ * to do it, and on the 2026-09-17 walk seven records shared one test number, so
+ * four other people's bookings answered "yes, they booked" for a client who
+ * never booked at all and the chase exited at already_booked every time.
+ * `e.client_id IS NULL` on the two fallbacks confines them to exactly the
+ * historical rows they were written for. A booking that IS stamped with this
+ * client still stops the chase, through the first branch.
  */
 export async function hasBooked(db, clientId) {
   const r = await db.query(
@@ -45,9 +57,11 @@ export async function hasBooked(db, clientId) {
         AND e.org_id = me.org_id
         AND (
              e.client_id = $1
-          OR (me.email IS NOT NULL
+          OR (e.client_id IS NULL
+              AND me.email IS NOT NULL
               AND lower(COALESCE(e.payload->>'email','')) = lower(me.email))
-          OR (length(regexp_replace(COALESCE(me.phone,''), '\\D', '', 'g')) >= 10
+          OR (e.client_id IS NULL
+              AND length(regexp_replace(COALESCE(me.phone,''), '\\D', '', 'g')) >= 10
               AND right(regexp_replace(COALESCE(e.payload->>'phone',''), '\\D', '', 'g'), 10)
                 = right(regexp_replace(me.phone, '\\D', '', 'g'), 10))
         )

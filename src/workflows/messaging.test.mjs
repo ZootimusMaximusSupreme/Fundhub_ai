@@ -49,6 +49,7 @@ function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, 
           id: "msg-" + (messages.length + 1),
           org_id: params[0], client_id: params[1], channel: params[2], template_key: params[3],
           rendered_body: params[4], provider_ref: params[5],
+          to_address: params[6],
           created_at: WROTE_AT, conversation_id: null
         });
         const row = messages[messages.length - 1];
@@ -501,4 +502,46 @@ test("a thread write that fails does NOT fail the message it observes", async ()
   assert.equal(res.sent, true, "the send must survive a threading failure");
   assert.equal(db.messages.length, 1);
   assert.equal(lines.length, 1, "and it must say so once, so the gap is findable");
+});
+
+/* GAP 27, measured on the 2026-09-17 live walk. Two clients had their welcome
+ * text, their booking confirmation and a pay link all fail with "destination is
+ * not an E.164 phone number", because their record holds the number the way the
+ * sign-up form typed it — "(661) 605-4248". Twilio refuses that outright.
+ * The address is pinned here, and this is the last point it is frozen before a
+ * provider sees it, so it is pinned in the shape a provider can dial. */
+test("sendTemplated: a phone destination is pinned in international form", async () => {
+  const db = pgFake({
+    templates: [tpl("N-01-SMS", "Hey")],
+    clients: [{ id: "cl-1", first_name: "Sim", last_name: "Ten", email: "ten@example.com",
+      phone: "(661) 605-4248", custom_fields: {} }]
+  });
+  const res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  assert.equal(res.sent, true);
+  assert.equal(db.messages[0].to_address, "+16616054248");
+});
+
+/* A number that cannot be converted is NOT dropped and NOT guessed at. It goes
+ * to the provider exactly as it was typed, is rejected there, and the row keeps
+ * the error — which is how a bad number stays visible instead of going quiet. */
+test("sendTemplated: an unconvertible phone number is kept exactly as typed", async () => {
+  const db = pgFake({
+    templates: [tpl("N-01-SMS", "Hey")],
+    clients: [{ id: "cl-1", first_name: "Sim", last_name: "Ten", email: "ten@example.com",
+      phone: "not a phone", custom_fields: {} }]
+  });
+  const res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  assert.equal(res.sent, true);
+  assert.equal(db.messages[0].to_address, "not a phone");
+});
+
+test("sendTemplated: an email destination is left alone", async () => {
+  const db = pgFake({
+    templates: [tpl("N-01-EMAIL", "Hey")],
+    clients: [{ id: "cl-1", first_name: "Sim", last_name: "Ten", email: "ten@example.com",
+      phone: "(661) 605-4248", custom_fields: {} }]
+  });
+  const res = await sendTemplated(db, { ...BASE, channel: "email", templateKey: "N-01-EMAIL" });
+  assert.equal(res.sent, true);
+  assert.equal(db.messages[0].to_address, "ten@example.com");
 });

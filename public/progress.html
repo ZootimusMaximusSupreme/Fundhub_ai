@@ -127,6 +127,9 @@ h2.sec{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transfor
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:7px;border:1px solid var(--ink);
      background:var(--ink);color:#fff;font-size:13px;font-weight:500;cursor:pointer}
 .btn:hover{opacity:.88}
+/* The pay-again link is an anchor wearing the button style — it goes to the
+   checkout page that already exists, so it is a link, not a form submit. */
+a.btn{text-decoration:none}
 .btn[disabled]{background:var(--soft);border-color:var(--line);color:var(--gray2);cursor:not-allowed;opacity:1}
 .btn.ghost{background:#fff;color:var(--ink);border-color:var(--line)}
 .btn.ghost:hover{border-color:var(--gray2);opacity:1}
@@ -985,6 +988,25 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
             + '<div class="stage-l">We are working on the round you asked for. '
             + 'When it is done this button comes back.</div>';
       el.innerHTML = html + '</div>';
+      /* UNLESS SHE HAS NOT PAID FOR IT YET, in which case that sentence is a
+         dead end and the round never comes — the work starts when the payment
+         lands. GAP 11, live walk 2026-09-16. The read this page loaded with says
+         only inFlight true/false, so the status and the link she already has are
+         asked for separately, once, and only when there is something in flight.
+         A failed ask, any other status, or a link that has lapsed all leave the
+         wording above exactly as it is. */
+      loadPaidResume(function (resume) {
+        if (!resume) return;
+        el.innerHTML = '<h2 class="sec">Run a round now</h2><div class="card">'
+          + '<div class="stage-h">Your round is waiting on payment</div>'
+          + '<div class="stage-l">We have your round ready to start. '
+          + 'It begins as soon as the payment lands. '
+          + 'Your payment page is still open — nothing new is set up and '
+          + '<b>you are not charged until you do it there.</b></div>'
+          + '<div style="margin-top:16px"><a class="btn" href="' + esc(resume.url)
+          + '" target="_blank" rel="noopener noreferrer">Take me to payment</a></div>'
+          + '</div>';
+      });
       return;
     }
     if (PAID.available === false) {
@@ -1059,12 +1081,73 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     return !!(PAID && PAID.inFlight);
   }
 
+  /* THE PAYMENT PAGE SHE ALREADY HAS, LOOKED UP ONCE.
+     GAP 11, live walk 2026-09-16. A client with an unpaid round on file was told
+     "we are working on it" and given nothing to press. Nobody was working on it:
+     the round starts when the money lands, and the checkout link that would let
+     her pay was sitting on her own request row.
+
+     GET /api/paid-services is the read that carries it (paidServiceOffer in
+     src/paid-services/round.mjs). This page loads with only the boolean, so the
+     ask is made here, lazily, and only when something really is in flight.
+
+     NOTHING IS CREATED AND NOTHING IS CHARGED. This is a GET, and what comes
+     back is a link to the page that was minted when she asked for the round. A
+     second request would be a second round she has to pay for.
+
+     IT HANDS BACK null UNLESS ALL FOUR ARE TRUE: the read answered; the status
+     is awaiting_payment, not quoted/paid/staged, which are states where there is
+     genuinely nothing for her to do; the link is a real http(s) address
+     (safeUrl); and it has not passed its seven-day expiry
+     (src/paid-services/link-ttl.mjs). Anything else keeps the old wording,
+     because offering a dead link is worse than offering none. */
+  var paidResumePromise = null;
+  function loadPaidResume(cb) {
+    if (!paidResumePromise) {
+      var id = clientIdFromUrl();
+      paidResumePromise = api(PAID_REQUEST_PATH + (id ? "?client_id=" + encodeURIComponent(id) : ""))
+        .then(function (r) {
+          var list = (r.ok && r.body && r.body.services) || [];
+          var offer = null;
+          for (var i = 0; i < list.length; i++) {
+            if (String(list[i].serviceKey || "") === "paid_round") { offer = list[i]; break; }
+          }
+          if (!offer || String(offer.inFlightStatus || "") !== "awaiting_payment") return null;
+          var url = safeUrl(offer.inFlightCheckoutUrl);
+          if (!url) return null;
+          var ends = parseDate(offer.inFlightCheckoutExpiresAt);
+          if (ends && ends.getTime() <= Date.now()) return null;
+          return { url: url, expiresAt: offer.inFlightCheckoutExpiresAt || null };
+        })
+        .catch(function () { return null; });
+    }
+    paidResumePromise.then(cb).catch(function () { cb(null); });
+  }
+
   function refuseSecondRound() {
-    dialog({
-      title: "You already have one in progress",
-      sub: "We are working on the round you asked for. There is nothing more to do here — "
-         + "reload this page in a little while and it will show where it has got to.",
-      actions: [{ label: "Close", ghost: true }]
+    /* The same door, the same answer. A client who reaches this through a
+       checklist item rather than the round card must not be told something
+       different from what the card says. */
+    loadPaidResume(function (resume) {
+      if (resume) {
+        dialog({
+          title: "Your round is waiting on payment",
+          sub: "We have your round ready to start. It begins as soon as the payment lands. "
+             + "Your payment page is still open — nothing new is set up and you are not "
+             + "charged until you do it there.",
+          actions: [
+            { label: "Not now", ghost: true },
+            { label: "Take me to payment", href: resume.url }
+          ]
+        });
+        return;
+      }
+      dialog({
+        title: "You already have one in progress",
+        sub: "We are working on the round you asked for. There is nothing more to do here — "
+           + "reload this page in a little while and it will show where it has got to.",
+        actions: [{ label: "Close", ghost: true }]
+      });
     });
   }
 

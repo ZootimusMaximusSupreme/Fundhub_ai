@@ -269,6 +269,9 @@ body.no-dispute-consent #dispute-auth-card{display:none !important}
    secondary outline. Nothing was removed and nothing changed what it does. */
 .btn-unlock{background:transparent;color:var(--ink);border:1px solid var(--line);border-radius:7px;padding:9px 12px;font-size:var(--fs-body);font-weight:700;transition:background .12s,border-color .12s}
 .btn-unlock:hover{background:var(--soft);border-color:var(--ink)}
+/* The pay link in the Payments tab is an anchor, not a button — it goes to the
+   checkout page the server already minted. Same secondary style either way. */
+a.btn-unlock{display:inline-block;text-decoration:none}
 .btn-advise{background:none;border:0;padding:0;font-size:var(--fs-body);font-weight:600;color:var(--text-dim);text-decoration:underline;text-underline-offset:2px}
 .btn-advise:hover{color:var(--text)}
 .tile.hidden{display:none}
@@ -841,14 +844,16 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
           </div>
 
           <div class="tabpane on" id="tp-pay" role="tabpanel" data-pane="pay">
-            <div class="pay-row" id="fee-row" hidden>
-              <div><div class="pn">Success Fee</div><div class="pd" id="fee-note">10% of what funds — due when the money lands</div></div>
-              <div class="pv" id="fee-val">—</div>
-            </div>
-            <div class="pay-row">
-              <div><div class="pn">No payments yet</div><div class="pd">They show here after you pay</div></div>
-              <div class="pv">—</div>
-            </div>
+            <!-- EMPTY ON PURPOSE — paintPays() fills this from the server.
+
+                 There were two hardcoded rows here: a "Success Fee — 10% of what
+                 funds" row marked hidden, and a "No payments yet" row. The
+                 hidden attribute did nothing — .pay-row above sets display:flex
+                 and an author rule beats the browser's own [hidden]{display:none},
+                 exactly like the duplicated message rows below. So a client with
+                 a $2,500 invoice raised against her and a $3,000 payment already
+                 taken read "Success Fee —" and "No payments yet", and the pane
+                 held no link to pay with. Walk finding GAP 7, 2026-09-16. -->
           </div>
 
           <div class="tabpane" id="tp-agree" role="tabpanel" data-pane="agree">
@@ -2104,23 +2109,81 @@ document.addEventListener("DOMContentLoaded", async function () {
         "</span><span>" + esc(body) + "</span></div>";
     }).join("");
   }
-  function paintPays(rows) {
+  /* A CHECKOUT LINK IS ONLY OPENED IF IT IS A WEB ADDRESS. The server hands
+     back whatever is stored on the payment_links row; anything that is not
+     http(s) is treated as no link at all rather than rendered. Same guard as
+     public/progress.html safeUrl(). */
+  function payHref(u) {
+    var raw = String(u == null ? "" : u).trim();
+    if (!raw) return null;
+    var parsed;
+    try { parsed = new URL(raw, window.location.origin); } catch (e) { return null; }
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return null;
+    return parsed.href;
+  }
+  /**
+   * paintPays(rows, invoiceDue) — what she owes, then what she has paid.
+   *
+   * WHY BOTH ARGUMENTS CAN BE null AND WHY THAT IS NOT THE SAME AS EMPTY.
+   * /api/read/portal-summary fails every one of its reads soft: null means the
+   * table would not answer. An empty list means it answered and there is
+   * nothing. Printing "No payments yet" over a read that failed tells a client
+   * her money vanished, so the two cases get different sentences.
+   *
+   * `undefined` is a third thing again: the caller did not have that answer to
+   * give. The staff read (/api/dashboard/client) passes transactions only, so
+   * it leaves the invoice out rather than claiming there is none.
+   */
+  function paintPays(rows, invoiceDue) {
     var pane = document.getElementById("tp-pay");
     if (!pane) return;
-    var live = rows || [];
-    if (!live.length) {
-      pane.innerHTML = '<div class="pay-row"><div><div class="pn">No payments yet</div><div class="pd">They show here after you pay</div></div><div class="pv">—</div></div>';
-      return;
+    var html = "";
+    var anything = false;
+
+    // ── WHAT IS STILL OWED, and the link that pays it. The link is the one the
+    //    server found on the invoice; this screen never mints one.
+    if (invoiceDue === null) {
+      html += '<div class="pay-row"><div><div class="pn">We could not check what you owe</div>' +
+        '<div class="pd">Reload in a moment, or ask your advisor</div></div><div class="pv">—</div></div>';
+      anything = true;
+    } else if (invoiceDue && Array.isArray(invoiceDue.items)) {
+      invoiceDue.items.forEach(function (it) {
+        var href = payHref(it.pay_url);
+        var note = [it.kind, it.reference].filter(Boolean).join(" · ");
+        html += '<div class="pay-row"><div><div class="pn">Due now</div>' +
+          '<div class="pd">' + esc(note || "Invoice") + '</div></div>' +
+          '<div class="pv">' + esc(it.amount_display || "—") +
+          (href ? ' <a class="btn-unlock" href="' + esc(href) +
+            '" target="_blank" rel="noopener noreferrer">Pay now</a>' : "") +
+          '</div></div>';
+        anything = true;
+      });
     }
-    pane.innerHTML = live.map(function (t) {
-      var name = esc(t.product_name || "Payment");
-      var when = t.created_at ? fmtWhen(t.created_at) : "—";
-      var amt = t.amount_paid == null ? "—" : String(t.amount_paid);
-      var st = t.status ? String(t.status) : "—";
-      return '<div class="pay-row"><div><div class="pn">' + name +
-        '</div><div class="pd">' + esc(when) + "</div></div>" +
-        '<div class="pv">' + esc(amt) + '<span class="paid-pill">' + esc(st) + '</span></div></div>';
-    }).join("");
+
+    // ── WHAT HAS ALREADY BEEN PAID. Unchanged row shape: /api/dashboard/client
+    //    and /api/read/portal-summary select the same columns for this list.
+    if (rows === null) {
+      html += '<div class="pay-row"><div><div class="pn">We could not check your payments</div>' +
+        '<div class="pd">Reload in a moment, or ask your advisor</div></div><div class="pv">—</div></div>';
+      anything = true;
+    } else if (Array.isArray(rows)) {
+      html += rows.map(function (t) {
+        var name = esc(t.product_name || "Payment");
+        var when = t.created_at ? fmtWhen(t.created_at) : "—";
+        var amt = t.amount_paid == null ? "—" : String(t.amount_paid);
+        var st = t.status ? String(t.status) : "—";
+        return '<div class="pay-row"><div><div class="pn">' + name +
+          '</div><div class="pd">' + esc(when) + "</div></div>" +
+          '<div class="pv">' + esc(amt) + '<span class="paid-pill">' + esc(st) + '</span></div></div>';
+      }).join("");
+      if (rows.length) anything = true;
+    }
+
+    if (!anything) {
+      html = '<div class="pay-row"><div><div class="pn">No payments yet</div>' +
+        '<div class="pd">They show here after you pay</div></div><div class="pv">—</div></div>';
+    }
+    pane.innerHTML = html;
   }
   /* ONE SESSION READ, SHARED BY BOTH THINGS THAT NEED IT. Two questions on this
      screen have the same answer: what is this person called, and which client
@@ -2280,6 +2343,19 @@ document.addEventListener("DOMContentLoaded", async function () {
       docsOnFile = Array.isArray(data.documents) ? data.documents : [];
       softPullDone = data.soft_pull_complete === true;
       if (!STAFF_ROLES[roleHint()]) paintDocs(docsOnFile);
+      /* THE PAYMENTS TAB, FOR THE PERSON WHOSE MONEY IT IS. Staff already have
+         the richer list from /api/dashboard/client above — painting twice would
+         race and the later answer would win at random — so this only runs for a
+         client, who never gets that staff-gated read and therefore, before this
+         line, never saw a payment or an invoice at all (GAP 7). Both fields are
+         passed straight through: null stays null so the pane can say it could
+         not check rather than printing a false empty. */
+      if (!STAFF_ROLES[roleHint()]) {
+        paintPays(
+          Array.isArray(data.payments) || data.payments === null ? data.payments : undefined,
+          data.invoice_due === undefined ? undefined : data.invoice_due
+        );
+      }
       setInquiryCaseOpen(data.inquiry_open);
       stage = data.stage || null;
       paintStage();

@@ -102,8 +102,18 @@ function pgFake({ openShift = null, failOn = null, smsRouting = null, pipelineSt
       if (/INSERT INTO clients/.test(sql)) {
         if (findClient(params[0], params[1])) return { rows: [] }; // ON CONFLICT DO NOTHING
         const id = "cl-" + ++n;
-        clients.push({ id, org_id: params[0], email: params[1], first_name: params[2], last_name: params[3], custom_fields: {}, outcome_tier: null, ghl_contact_id: null });
+        clients.push({ id, org_id: params[0], email: params[1], first_name: params[2], last_name: params[3], phone: params[4] ?? null, custom_fields: {}, outcome_tier: null, ghl_contact_id: null });
         return { rows: [{ id }] };
+      }
+      // patchClientContact — fills phone / name only where the row is still blank.
+      if (/UPDATE clients SET[\s\S]*phone = COALESCE\(NULLIF\(phone/.test(sql)) {
+        const c = clients.find((c) => c.id === params[0]);
+        if (c) {
+          if (!c.phone && params[1]) c.phone = params[1];
+          if (!c.first_name && params[2]) c.first_name = params[2];
+          if (!c.last_name && params[3]) c.last_name = params[3];
+        }
+        return { rows: [] };
       }
       if (/UPDATE clients\s+SET\s+ghl_contact_id\s*=\s*COALESCE/i.test(sql)) {
         const c = clients.find((c) => c.id === params[1]);
@@ -573,4 +583,36 @@ test("analysis.completed: an anchor for another client is refused", async () => 
     /different org or client/
   );
   assert.equal(db.crs.length, 1);
+});
+
+/* GAP 27, measured on the 2026-09-17 live walk. This door stored the phone
+ * number exactly as the sign-up form typed it — "(661) 605-4248" — and Twilio
+ * refuses anything that is not the international form, so the welcome text, the
+ * booking confirmation and a pay link all failed for the two clients who came in
+ * through here. The three other sign-up doors already convert on the way in. */
+test("resolveClient: a new client's phone number is stored in international form", async () => {
+  const db = pgFake();
+  const id = await resolveClient(db, ev("entry.captured", {
+    email: "shape@example.com", name: "Sim Ten", phone: "(661) 605-4248"
+  }));
+  assert.equal(db.clients.find((c) => c.id === id).phone, "+16616054248");
+});
+
+test("resolveClient: a later webhook fills a blank phone in international form", async () => {
+  const db = pgFake();
+  const id = await resolveClient(db, ev("entry.captured", { email: "later@example.com" }));
+  await resolveClient(db, ev("survey.submitted", {
+    email: "later@example.com", phone: "661-605-4248"
+  }));
+  assert.equal(db.clients.find((c) => c.id === id).phone, "+16616054248");
+});
+
+/* A number that cannot be converted is kept exactly as typed — never dropped,
+   never guessed at — so a bad number stays visible instead of going quiet. */
+test("resolveClient: an unconvertible phone number is stored exactly as typed", async () => {
+  const db = pgFake();
+  const id = await resolveClient(db, ev("entry.captured", {
+    email: "odd@example.com", phone: "ask reception"
+  }));
+  assert.equal(db.clients.find((c) => c.id === id).phone, "ask reception");
 });

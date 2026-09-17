@@ -116,6 +116,7 @@ import readAdAttribution from "../../api/read/ad-attribution.mjs";
 import readAdBooks from "../../api/read/ad-books.mjs";
 import readAdSpine from "../../api/read/ad-spine.mjs";
 import scriptsWrite from "../../api/scripts/write.mjs";
+import scriptsList from "../../api/scripts/list.mjs";
 import clickfunnelsConnect from "../../api/analytics/clickfunnels-connect.mjs";
 import clickfunnelsSync from "../../api/analytics/clickfunnels-sync.mjs";
 import readFunnelPages from "../../api/read/funnel-pages.mjs";
@@ -602,6 +603,10 @@ export const ROUTES = {
      reads had to start here. A rewrite is a NEW row pointing at its parent;
      nothing is ever overwritten. */
   "scripts/write": scriptsWrite,
+  /* The way back OUT of ad_scripts, for the Script picker on the Creative
+     Factory screen. Without it the picker only ever held the script saved in
+     that one browser tab, and a reload emptied it. */
+  "scripts/list": scriptsList,
   "read/funnel-pages": readFunnelPages,
   "read/video-stats": readVideoStats,
   "analytics/clickfunnels-connect": clickfunnelsConnect,

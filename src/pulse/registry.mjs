@@ -317,6 +317,7 @@ const DESK_FILES = [
   "content-admin.html",
   "contracts.html",
   "creative-factory.html",
+  "csm-queue.html",
   "documents.html",
   "finance-os.html",
   "galaxy.html",

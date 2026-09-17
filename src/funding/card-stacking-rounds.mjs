@@ -8,7 +8,8 @@
 //   approved        → round.approved
 //   action_required → (none)
 //   funded          → round.funded  (hard-requires funded_amount > 0, AND every
-//                     bank yes on the round either priced or explicitly excluded)
+//                     bank yes on the round either priced or explicitly excluded,
+//                     AND at least one priced bank yes to bill against)
 //   closed          → round.closeout  (staff marks the engagement complete)
 //
 // Idempotency key includes roundNumber so round 2 can re-enter the same stages.
@@ -17,8 +18,10 @@ import { emit } from "../events/bus.mjs";
 import {
   resolveSuccessFee,
   sumConfirmedApprovals,
+  listConfirmedApprovals,
   listUnpricedApprovals,
-  unpricedApprovalNames
+  unpricedApprovalNames,
+  NO_CONFIRMED_APPROVALS
 } from "./success-fee.mjs";
 
 export const PIPELINE_KEY = "funding_card_stacking";
@@ -115,6 +118,22 @@ export async function resolveFundedAmount(db, {
   return sumApprovedApplications(db, fundingRoundId);
 }
 
+/* The empty case of the rule below, phrased for a person.
+   A round with NO bank yes at all is not a smaller version of a round with a
+   blank approval on it — it is the same money leak with nothing on screen to
+   point at, which is why it went unnoticed for a whole live walk. */
+function noConfirmedApprovalRefusal() {
+  return (
+    "Cannot move to Funded — no bank on this round has said yes with a dollar " +
+    "amount recorded against it. We bill a percent of the approvals that carry " +
+    "an amount, so a round closed with no bank yes on it is a round this client " +
+    "is never invoiced for. " +
+    "Open the client's Funding tab, press Bank yes on the bank that approved and " +
+    "type the amount in the Approved $ box beside it. " +
+    "If no bank approved, this round did not fund — leave it where it is."
+  );
+}
+
 /**
  * Every bank yes on the round that is still worth nothing on the bill, phrased
  * for a person. Empty list → nothing blocking.
@@ -135,7 +154,7 @@ function missingAmountRefusal(names) {
 
 /**
  * Guard: a funded move requires (a) no bank yes left without a dollar amount,
- * and (b) funded_amount > 0.
+ * (b) at least one bank yes that DOES carry one, and (c) funded_amount > 0.
  *
  * (a) came second in time but comes FIRST here, and it is not overridable by
  * sending a funded amount. The success fee is a percent of approvals that carry
@@ -170,9 +189,9 @@ export async function guardFundedAmount(db, {
     };
   }
 
-  /* A round with NO approvals at all is untouched by this and always was —
-     listUnpricedApprovals comes back empty and we fall through to the funded
-     amount rule exactly as before. */
+  /* A round with NO approvals at all is untouched by this — listUnpricedApprovals
+     comes back empty. That hole is closed by the confirmed-approval rule that
+     runs straight after it. */
   const unpriced = round?.id
     ? await listUnpricedApprovals(db, { orgId, fundingRoundId: round.id })
     : [];
@@ -188,6 +207,29 @@ export async function guardFundedAmount(db, {
         bank: String(row.bank || "").trim() || null
       })),
       missingApprovalBanks: names,
+      suggestedFundedAmount: null,
+      round
+    };
+  }
+
+  /* AND THE EMPTY CASE — no bank yes on this round at all.
+     Measured 2026-09-16 on the live walk: round 1 on Sim Eight-Funding had zero
+     application rows, fell straight through the rule above, and was marked
+     funded for $25,000 unopposed. Nothing was billed for it, and that refusal
+     was correct — F-07 writes a named reason rather than a $0 invoice
+     (docs/CLOSEOUT-FEE-BASIS.md) — so the round simply closed for free.
+     The fee is a percent of confirmed approvals. With none there is nothing to
+     bill, so the door stays shut and the refusal says which box to type in.
+     A blank approval already gets the better, bank-naming refusal above; this
+     one only fires when there is nothing on the round at all. */
+  const confirmed = round?.id
+    ? await listConfirmedApprovals(db, { orgId, fundingRoundId: round.id })
+    : [];
+  if (!confirmed.length) {
+    return {
+      ok: false,
+      reason: NO_CONFIRMED_APPROVALS,
+      message: noConfirmedApprovalRefusal(),
       suggestedFundedAmount: null,
       round
     };

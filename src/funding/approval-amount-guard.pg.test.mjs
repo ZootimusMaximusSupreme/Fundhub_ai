@@ -161,6 +161,37 @@ describe("funded move blocks on an approval with no amount (pg)", { skip: !HAS_D
     assert.equal(await sumConfirmedApprovals(db, { orgId, fundingRoundId: roundId }), 35000);
   });
 
+  /* THE EMPTY CASE, and the one the live walk actually hit on 2026-09-16.
+     The rule above only fires when there IS an approval sitting on the round
+     with no dollar amount against it. A round with no applications at all fell
+     straight through it, and round 1 on Sim Eight-Funding was marked funded for
+     $25,000 with nothing on the file. Nothing was billed for it, correctly, so
+     the round closed for free. */
+  test("no bank yes at all — refused, with somewhere to go and type one", async () => {
+    const { clientId, roundId, move } = await makeClient();
+
+    assert.deepEqual(await listUnpricedApprovals(db, { orgId, fundingRoundId: roundId }), [],
+      "nothing is blank, because there is nothing at all");
+
+    const refused = await move("funded", { fundedAmount: 25000 });
+    assert.equal(refused.moved, false, "a round with no bank yes must not close");
+    assert.equal(refused.reason, "no_confirmed_approvals");
+    assert.match(refused.message, /Bank yes/, "the refusal says which button to press");
+    assert.equal(await stageOf(clientId), "approved", "the card must not reach funded");
+
+    const round = (await db.query(
+      `SELECT status, funded_amount FROM funding_rounds WHERE id = $1`, [roundId]
+    )).rows[0];
+    assert.notEqual(round.status, "funded");
+    assert.equal(round.funded_amount, null, "and no funded amount was half-written");
+
+    // Record the bank yes and the same move goes through.
+    await addApproval(roundId, clientId, "Bank A", 25000);
+    const funded = await move("funded", { fundedAmount: 25000 });
+    assert.equal(funded.moved, true, funded.message);
+    assert.equal(await stageOf(clientId), "funded");
+  });
+
   test("one blank approval — refused, and the refusal names that bank", async () => {
     const { clientId, roundId, move } = await makeClient();
     await addApproval(roundId, clientId, "Bank A", 20000);

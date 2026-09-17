@@ -200,7 +200,7 @@ function staffDatabase({ role = "owner", orgId = ORG, data } = {}) {
   return calls;
 }
 
-function clientDatabase({ documents = [], inquiryOpen = false } = {}) {
+function clientDatabase({ documents = [], inquiryOpen = false, transactions = null } = {}) {
   const calls = [];
   db.query = async (sql, params) => {
     calls.push({ sql, params });
@@ -222,6 +222,12 @@ function clientDatabase({ documents = [], inquiryOpen = false } = {}) {
     if (/FROM crs_results/i.test(sql)) return { rows: [] };
     if (/FROM businesses/i.test(sql)) return { rows: [] };
     if (/FROM inquiry_removal_cases/i.test(sql)) return { rows: inquiryOpen ? [{ "?column?": 1 }] : [] };
+    /* The payments list the Payments tab paints. `null` here means the caller did
+       not ask for one, so the query falls through to the throw below and the
+       endpoint's own safeRead turns it into a null answer — which is exactly the
+       "we could not check" case the screen has to be able to tell apart from
+       "nothing paid". */
+    if (transactions && /FROM transactions/i.test(sql)) return { rows: transactions };
     throw new Error("unexpected query: " + sql);
   };
   return calls;
@@ -364,6 +370,44 @@ test("client portal summary ignores requested client ids and returns only sessio
      open somebody else's. */
   assert.deepEqual(inquiryRead.params, [CLIENT, ORG]);
   assert.equal(res.body.inquiry_open, false);
+});
+
+/* GAP 7, live walk 2026-09-16. A client with a $3,000 payment taken and a $2,500
+   invoice raised against her opened the Payments tab and read "Success Fee —"
+   and "No payments yet", with nothing to click. Her payment history never left
+   the server: the only read carrying it was staff-gated, so the portal had
+   nothing to paint. These two pin the fix at the endpoint — the list is
+   returned, and a read that cannot answer comes back null rather than as an
+   empty list that would print "no payments yet" over money she has paid. */
+test("the portal summary carries the client's own payment history", async () => {
+  const paid = [{
+    id: "77777777-7777-4777-8777-777777777777",
+    product_name: "Card Stacking DFY",
+    amount_paid: "3000.00",
+    status: "succeeded",
+    created_at: "2026-09-16T12:00:00Z"
+  }];
+  const calls = clientDatabase({ transactions: paid });
+  const res = response();
+  await portalSummaryHandler(request({ query: {} }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.payments.length, 1);
+  assert.equal(res.body.payments[0].product_name, "Card Stacking DFY");
+  // Read on the SESSION's org and client, never a client_id the caller asked for.
+  const paymentsRead = calls.find((call) => /FROM transactions/i.test(call.sql));
+  assert.deepEqual(paymentsRead.params, [ORG, CLIENT]);
+  // Only money that actually landed, and never demo money.
+  assert.match(paymentsRead.sql, /status = 'succeeded'/);
+  assert.match(paymentsRead.sql, /is_demo IS NOT TRUE/);
+});
+
+test("a payment read that cannot answer comes back null, never an empty list", async () => {
+  clientDatabase({});          // no transactions branch — the read throws
+  const res = response();
+  await portalSummaryHandler(request({ query: {} }), res);
+  assert.equal(res.statusCode, 200);
+  assert.equal(res.body.payments, null,
+    "an unreadable payments table must not print to a client as 'No payments yet'");
 });
 
 test("an open inquiry case is reported to the portal as inquiry_open", async () => {

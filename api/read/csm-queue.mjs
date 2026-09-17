@@ -52,6 +52,14 @@ const QUEUE_SQL = `
          t.due_at,
          t.source_workflow,
          t.meeting_url,
+         /* WHO HAS TAKEN THIS ONE. Without it the queue screen can only show a
+            claim for as long as the tab stays open, so a CSM who reloads sees
+            Claim again on work they already took and the claim looks like it
+            never stuck (live walk 2026-09-17, GAP 37). The claim itself is
+            PATCH /api/tasks and has always persisted; this is the read that
+            proves it. Null means nobody has taken it — it stays on the role
+            queue for whoever gets there first. */
+         t.assignee_staff_id,
          t.client_id,
          /* There is no clients.name — first_name / last_name, either of which
             can be null. NULLIF on the trimmed join keeps an empty string from
@@ -95,6 +103,7 @@ export function presentRow(r) {
     client_id: r.client_id,
     client_name: r.client_name || null,
     client_code: r.client_code || null,
+    assignee_staff_id: r.assignee_staff_id || null,
     /* Both shapes on purpose: cents for anything that does arithmetic,
        the formatted string for the screen. fromCents returns a string. */
     balance_due_cents: cents,

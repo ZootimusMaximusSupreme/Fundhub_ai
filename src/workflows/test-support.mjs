@@ -350,7 +350,9 @@ export function pgFake(seed = {}) {
       }
       /* s-nobook-chase hasBooked — client id OR the email/phone carried in a
          historical event whose client_id is null. Mirrors the SQL exactly:
-         same company, last-ten-digits phone compare, case-insensitive email. */
+         same company, last-ten-digits phone compare, case-insensitive email,
+         and the address fallbacks apply ONLY to a row with no customer on it —
+         otherwise a housemate's stamped booking answers for this client. */
       if (/WITH me AS \(SELECT org_id, email, phone FROM clients/.test(sql)) {
         const clientId = params[0];
         const me = clients.find((c) => c.id === clientId);
@@ -361,6 +363,7 @@ export function pgFake(seed = {}) {
           if (e.name !== "booking.created") return false;
           if (e.org_id && me.org_id && e.org_id !== me.org_id) return false;
           if (e.client_id && e.client_id === clientId) return true;
+          if (e.client_id) return false;
           const p = e.payload || {};
           if (me.email && p.email
             && String(p.email).toLowerCase() === String(me.email).toLowerCase()) return true;

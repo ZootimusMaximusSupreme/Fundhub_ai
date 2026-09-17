@@ -881,7 +881,7 @@
                  hiding a recorded zero behind a dash would call a known fact
                  unknown. money() below, and pipeline.html moneyText(), are the
                  same rule — src/http/client-panel-screen.test.mjs proves it. -->
-            <div class="kv"><div class="kv-label">Approved</div><div class="kv-value mono" id="ccp-cp-round-amount">—</div></div>
+            <div class="kv"><div class="kv-label">Approved this round</div><div class="kv-value mono" id="ccp-cp-round-amount">—</div></div>
             <div class="kv"><div class="kv-label">On hold because</div><div class="kv-value" id="ccp-cp-round-hold">—</div></div>
             <!-- HOW LONG THIS HAS BEEN OPEN. Every other value in this block is
                  a state; none of them is a clock, so a round waiting since June
@@ -889,6 +889,17 @@
                  the same gated answer as the rest of the block. -->
             <div class="kv"><div class="kv-label">Opened</div><div class="kv-value" id="ccp-cp-round-opened">—</div></div>
           </div>
+
+          <!-- EVERY ROUND ON THE FILE, NOT JUST THE CURRENT ONE.
+               The grid above is one round. On a client with two funded rounds it
+               silently left the first one off the screen — the walk on 2026-09-16
+               read a single $25,000 on a file holding two funded rounds, and
+               there was nothing on the page to say a round was missing.
+               Only painted when the gated answer above produced a round, so a
+               repair-only client still sees nothing at all (GATE B), and only
+               when there is more than one round, so it never just repeats the
+               grid. -->
+          <p class="fact-note" id="ccp-cp-rounds-all" hidden></p>
 
           <!-- THE THREE MOVES, ON THE SCREEN WHERE THE AMOUNTS ARE TYPED.
                Same endpoint as the board's drag (POST /api/pipeline-cards),
@@ -2121,6 +2132,47 @@ document.addEventListener("DOMContentLoaded", function () {
        exactly like one from this morning. A round with no date on it stays a
        dash — ageOf() never guesses "today" from a missing timestamp. */
     setText("ccp-cp-round-opened", ageOf(opened));
+    /* Everything above is the CURRENT round. This names the others, and it is
+       passed the gated answer so it paints nothing when that gate said no. */
+    paintEveryRound(round, d);
+  }
+
+  /* ── EVERY ROUND ON THE FILE ─────────────────────────────────────────────
+     One line, in words, naming each round with what it approved and what it
+     funded. It exists because the grid above shows one round and says nothing
+     about the ones it is not showing, so a second funded round was simply
+     invisible.
+
+     GATE B IS NOT WEAKENED. `gatedRound` is the worked-out round from
+     src/fulfillment/next-action.mjs. When that came back null — a repair-only
+     client who never bought funding — this paints nothing and reads no rows at
+     all. The raw rows are only ever read once the gate has already said yes.
+
+     Money is money(): unknown stays a dash, never a zero. */
+  function everyRoundLine(r) {
+    var bits = ["Round " + (r && r.round_number != null ? r.round_number : "?")];
+    var st = r && r.status ? String(r.status).trim() : "";
+    if (st) bits.push(st);
+    bits.push("approved " + money(r ? r.approved_amount : null));
+    bits.push("funded " + money(r ? r.funded_amount : null));
+    return bits.join(" · ");
+  }
+
+  function paintEveryRound(gatedRound, d) {
+    var el = $("ccp-cp-rounds-all");
+    if (!el) return;
+    el.hidden = true;
+    el.textContent = "";
+    if (!gatedRound) return;
+    var rows = [];
+    try { if (d && Array.isArray(d.funding_rounds)) rows = d.funding_rounds; } catch (e) { rows = []; }
+    if (rows.length < 2) return;
+    var lines = rows.slice().sort(function (a, b) {
+      return (Number(a && a.round_number) || 0) - (Number(b && b.round_number) || 0);
+    }).map(everyRoundLine);
+    el.textContent = "Every round on this file — " + lines.join("   |   ")
+      + ". The boxes above are the current round only.";
+    el.hidden = false;
   }
 
   function paintControlPanel(fx, d, cf) {
@@ -3521,8 +3573,13 @@ document.addEventListener("DOMContentLoaded", function () {
       if (!known) {
         cmpEl.textContent = "The confirmed total could not be read either.";
       } else if (summary.confirmed > 0) {
+        /* "on this file" is doing real work. This counts every bank yes on the
+           client, across every round; the Funding round box below counts one
+           round. Two right numbers that differ read as one wrong number unless
+           each one says what it is counting. */
         cmpEl.textContent = CP.money(summary.confirmed_dollars) + " confirmed across "
-          + summary.confirmed + (summary.confirmed === 1 ? " bank yes" : " bank yeses") + ".";
+          + summary.confirmed + (summary.confirmed === 1 ? " bank yes" : " bank yeses")
+          + " on this file.";
       } else {
         cmpEl.textContent = "No bank yes on this file carries a dollar amount yet.";
       }

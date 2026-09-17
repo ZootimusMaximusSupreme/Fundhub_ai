@@ -32,6 +32,15 @@
     "ops-admin.html", "galaxy.html",
     "agent-editor.html", "automations.html", "products-commissions.html",
     "staff-teams.html",
+    /* The CSM's own desk. /api/read/csm-queue has always returned their day —
+       who to call, what they owe, what they already have — and until
+       2026-09-17 no page in the app had ever asked it for anything, so the
+       role's home was the pick-a-client Client Control Panel and the queue was
+       invisible (live walk, GAP 34). It stays on the shared STAFF rail rather
+       than getting a CSM-only list: the endpoint gates on ROLE_SETS.STAFF, so
+       every staff role can genuinely use the row and none of them gets a 403
+       (UI-STANDARDS §4). */
+    "csm-queue.html",
     "inquiry-remover.html", "affiliate.html", "client-portal.html", "partner-galaxy.html", "brand-studio.html",
     /* The $10,000 curriculum (docs/specs/W7-curriculum.md). A partner screen,
        reachable by URL, offered by no sidebar — see PRINCIPAL_ONLY below. */
@@ -443,8 +452,10 @@
     setter: "pipeline.html",
     // The Sales pipeline is the thing they own, so it is where they land.
     sales_manager: "sales-floor.html",
-    // One client at a time is the job, so that is the screen they land on.
-    csm: "client-control-panel.html",
+    /* The call list, not the client chooser. A CSM opening the app used to land
+       on client-control-panel.html and be asked to pick somebody, with no way
+       to see who was actually waiting for a call. */
+    csm: "csm-queue.html",
     client: "client-portal.html",
     affiliate: "affiliate.html",
     partner: "partner-galaxy.html"

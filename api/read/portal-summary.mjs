@@ -189,12 +189,13 @@ export default async function handler(req, res) {
        screen has always needed. These are additions, so a table that will not
        answer must cost the caller the fact it could not read and nothing else —
        the same reasoning as the signing block near the top of this file. */
-    const [callHeld, signedAt, paid, advisor, invoiceDue] = await Promise.all([
+    const [callHeld, signedAt, paid, advisor, invoiceDue, payments] = await Promise.all([
       readCallHeld(orgId, clientId),
       readAgreementSignedAt(orgId, clientId),
       readPaymentPosted(orgId, clientId),
       readAdvisor(orgId, clientId, cf),
-      readInvoiceDue(orgId, clientId)
+      readInvoiceDue(orgId, clientId),
+      readPayments(orgId, clientId)
     ]);
 
     /* SOFT PULL IS TRUE ON EITHER SIGNAL. The custom-field flags are set by the
@@ -252,6 +253,11 @@ export default async function handler(req, res) {
          null means the read failed — the screen must say it could not check,
          never print a zero. `{ count: 0 }` means it read, and nothing is owed. */
       invoice_due: invoiceDue,
+      /* WHAT SHE HAS ALREADY PAID. The same shape /api/dashboard/client returns
+         for staff, so the Payments tab paints one list either way. null means
+         the read failed — the screen must say it could not check, never print
+         "no payments yet" over a payment that exists. */
+      payments,
       advisor,
       stage: portalStage({
         softPullComplete,
@@ -386,6 +392,36 @@ function readPaymentPosted(orgId, clientId) {
       [orgId, clientId]
     );
     return r.rows.length > 0;
+  });
+}
+
+/* WHAT SHE ACTUALLY PAID — the list, not just the yes/no above.
+   readPaymentPosted answers one question the stage machine asks; the Payments
+   tab needs the rows themselves. The column list is the one
+   api/dashboard/client.mjs already selects for the same pane, so the screen's
+   painter takes one row shape from either read and needs no second branch.
+
+   Only 'succeeded', only non-demo, newest first: the same two filters as the
+   boolean above, for the same reason — a status nobody has defined must never
+   print to a client as money received. Capped at 20, which is what the painter
+   showed before this read existed.
+
+   FAILS SOFT AS null, like every read in this file. An empty array is "you have
+   paid nothing"; null is "we could not check". Printing the first when we mean
+   the second is how a client is told their payment vanished. */
+function readPayments(orgId, clientId) {
+  return safeRead("payments", null, async () => {
+    const r = await db.query(
+      `SELECT id, product_name, amount_paid, status, created_at
+         FROM transactions
+        WHERE org_id = $1 AND client_id = $2
+          AND status = 'succeeded'
+          AND is_demo IS NOT TRUE
+        ORDER BY created_at DESC
+        LIMIT 20`,
+      [orgId, clientId]
+    );
+    return r.rows;
   });
 }
 

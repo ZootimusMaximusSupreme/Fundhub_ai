@@ -83,6 +83,23 @@ describe("a handler file is not a route, and a route is not a screen", () => {
       "nothing on creative-factory.html posts to /api/creative/generate"
     );
   });
+
+  /* THE HALF THIS FILE USED TO MISS, and it cost a live walk on 2026-09-17.
+     Saving a script worked and the picker filled — in that one browser tab, from
+     the save's own reply. Nothing ever read the saved scripts back, so a reload
+     emptied the picker to "— none —" and yesterday's script could never be
+     picked again. Writing and reading are two facts and only the first had a
+     test, which is the same mistake in miniature that this whole file exists for. */
+  test("a screen reads the saved scripts back, not only writes them", () => {
+    assert.ok(
+      ROUTES.includes('"scripts/list"'),
+      "scripts/list is not a key in netlify/functions/api.mjs ROUTES — the picker's read gets a 404"
+    );
+    assert.ok(
+      FACTORY_CODE.includes("'/api/scripts/list"),
+      "nothing on creative-factory.html reads /api/scripts/list, so the Script picker is empty after a reload"
+    );
+  });
 });
 
 describe("link 1 — the script, with its labels", () => {

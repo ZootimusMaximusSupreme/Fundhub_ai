@@ -383,6 +383,48 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
   var kind = (rawKind && ALLOWED_KINDS[rawKind]) ? rawKind : "soft_pull_consent";
   var isDispute = kind === "dispute_authorization";
   var method = isDispute ? "signature" : "typed";
+
+  /* PER-KIND WORDS, KEYED BY THE KIND — not by a yes/no "is this a dispute".
+     There are FOUR kinds and a boolean can only tell two of them apart, so
+     call_recording and marketing_use both fell into the else branch and wore
+     soft-pull wording: the page was titled "Soft Pull Consent" while the body
+     correctly described recording, and after saving it said "A soft pull may
+     be requested for this client" (live walk 2026-09-17, GAP 39).
+
+     soft_pull_consent and dispute_authorization keep their strings exactly as
+     they were — neither of those two screens changes by a character.
+
+     These are NOT the titles in src/consent/disclosures.mjs. That file calls
+     the first kind "Soft Pull Authorization", and adopting its titles here
+     would change the soft-pull heading, which this fix is not allowed to do.
+     The disclosure paragraph still comes from the server and is untouched. */
+  var KIND_COPY = {
+    soft_pull_consent: {
+      title: "Soft Pull Consent",
+      validLede: "Consent is on file",
+      validDetail: "A soft pull may be requested for this client.",
+      saved: "Consent recorded. A soft pull may now be requested for this client."
+    },
+    dispute_authorization: {
+      title: "Authorize dispute letters",
+      validLede: "Authorization is on file",
+      validDetail: "You already signed. We can prepare dispute letters. This is not a credit pull.",
+      saved: "Signature recorded. We can prepare dispute letters. This is not a credit pull."
+    },
+    call_recording: {
+      title: "Call recording consent",
+      validLede: "Recording consent is on file",
+      validDetail: "This call may be recorded.",
+      saved: "Consent recorded. This call may be recorded."
+    },
+    marketing_use: {
+      title: "Marketing use consent",
+      validLede: "Marketing-use consent is on file",
+      validDetail: "What this client said may be used in advertising.",
+      saved: "Consent recorded. What this client said may be used in advertising."
+    }
+  };
+  var kindCopy = KIND_COPY[kind] || KIND_COPY.soft_pull_consent;
   var disclosureVersion = null;
   var busy = false;
   var padState = { sized: false, ink: false, drawing: false, last: null, dist: 0 };
@@ -409,7 +451,7 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
   }
 
   function applyKindCopy() {
-    var title = isDispute ? "Authorize dispute letters" : "Soft Pull Consent";
+    var title = kindCopy.title;
     document.title = "Fundhub — " + title;
     $("ccPageTitle").textContent = title;
     $("ccTitle").textContent = title;
@@ -472,8 +514,7 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
   }
 
   var REASON_TEXT = isDispute ? {
-    valid: ["is-valid", "Authorization is on file",
-      "You already signed. We can prepare dispute letters. This is not a credit pull."],
+    valid: ["is-valid", kindCopy.validLede, kindCopy.validDetail],
     none_on_file: ["is-blocked", "No signature on file",
       "Sign below so we can prepare dispute letters. This is not a credit pull."],
     revoked: ["is-blocked", "Authorization was withdrawn",
@@ -486,7 +527,7 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
       "Your session has no organisation attached, so consent cannot be checked. Sign out and back in."],
     bad_input: ["is-unknown", "Cannot check", "This page was opened without a valid client."]
   } : {
-    valid: ["is-valid", "Consent is on file", "A soft pull may be requested for this client."],
+    valid: ["is-valid", kindCopy.validLede, kindCopy.validDetail],
     none_on_file: ["is-blocked", "No consent on file",
       "A soft pull cannot be requested until this client agrees. Record it below."],
     revoked: ["is-blocked", "Consent was withdrawn",
@@ -749,9 +790,7 @@ table.cc-hist{ width:100%; border-collapse:collapse; }
         say("err", problem(res));
         return;
       }
-      say("ok", isDispute
-        ? "Signature recorded. We can prepare dispute letters. This is not a credit pull."
-        : "Consent recorded. A soft pull may now be requested for this client.");
+      say("ok", kindCopy.saved);
       $("ccName").value = "";
       $("ccExpires").value = "";
       clearPad();

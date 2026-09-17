@@ -22,6 +22,8 @@ import { addTags } from "../workflows/tags.mjs";
 import { demoFlagForEmail } from "../demo/test-identity.mjs";
 import { advanceCardToStage } from "../workflows/cards.mjs";
 import { evaluateWaypoints } from "../waypoints/verify.mjs";
+// The one E.164 converter in the repo. Reused, not re-written (CLAUDE.md §8).
+import { normalizePhone } from "../messaging/providers/bland-voice.mjs";
 
 // Last question on the CF apply survey (Available Capital).
 // docs/clickfunnels/cf-survey-ground-truth.md — Survey Complete only when this lands.
@@ -166,11 +168,31 @@ async function backfillCrmLinkIfMissing(db, clientId, orgId, p, opts = {}) {
   return clientId;
 }
 
+/* contactPhone — store a phone number the way a provider can dial it.
+ *
+ * Three other sign-up doors (api/public/survey-submit.mjs,
+ * api/public/education-enroll.mjs, api/public/optimize.mjs) already run the
+ * number through this same converter on the way in. This door — the funnel
+ * event handler — did not, so it stored "(661) 605-4248" exactly as the form
+ * typed it. Twilio refuses anything that is not E.164, and on 2026-09-17 that
+ * is why the welcome text, the booking confirmation and a pay link all failed
+ * for the two clients who came in through here.
+ *
+ * A number that cannot be converted is kept EXACTLY as typed rather than
+ * dropped or guessed at: the converter only handles the unambiguous cases
+ * (already +international, ten digits, or eleven starting with 1).
+ */
+function contactPhone(raw) {
+  const s = raw == null ? "" : String(raw).trim();
+  if (!s) return null;
+  return normalizePhone(s) || s;
+}
+
 /** Fill phone / name when a later webhook has them and the row is still blank. */
 async function patchClientContact(db, clientId, p = {}) {
   if (!clientId) return;
   const { firstName, lastName } = splitName(p.name);
-  const phone = p.phone ? String(p.phone).trim() : null;
+  const phone = contactPhone(p.phone);
   if (!phone && !firstName && !lastName) return;
   await db.query(
     `UPDATE clients SET
@@ -213,12 +235,12 @@ export async function resolveClient(db, event, opts = {}) {
      VALUES ($1,$2,$3,$4,$5,$6,$7)
      ON CONFLICT (org_id, lower(email)) WHERE email IS NOT NULL DO NOTHING
      RETURNING id`,
-    [orgId, email, firstName, lastName, p.phone || null, p.source || null,
+    [orgId, email, firstName, lastName, contactPhone(p.phone), p.source || null,
      demoFlagForEmail(email)]
   );
   if (ins.rows[0]) {
     const clientId = ins.rows[0].id;
-    await syncCrmContact(db, { clientId, orgId, email, phone: p.phone || null, firstName, lastName }, opts);
+    await syncCrmContact(db, { clientId, orgId, email, phone: contactPhone(p.phone), firstName, lastName }, opts);
     return clientId;
   }
 

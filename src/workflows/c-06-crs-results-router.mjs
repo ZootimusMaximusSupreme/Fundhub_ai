@@ -21,6 +21,7 @@ import {
   persistFundingLetterFiles,
   storeFromEnv
 } from "../underwrite/funding-letter-pdf.mjs";
+import { KINDS } from "../documents/kinds.mjs";
 
 // RETIRED 2026-08-22 — owner: "We never tell somebody they're declined."
 // Kept for the seed/audit trail; no send site references them.
@@ -113,6 +114,25 @@ async function deliverFundingLetters(db, { clientId, orgId, store } = {}) {
       persisted = { stored: [], skipped: String(err && err.message || err).slice(0, 240) };
     }
   }
+  /* DELIVERED MEANS STORED, NOT PRINTED. This used to be a hardcoded `true`
+     whenever the pack came back with files in it, with the save result attached
+     as a number nobody read. So when the save threw — and it does, loudly, when
+     the document store is not configured — the error was swallowed above, the
+     caller stamped the client as delivered, and the once-only guard then blocked
+     the job from ever trying again. Measured 2026-09-17: a client whose eleven
+     PDFs all built correctly had zero documents on file and no way back.
+     src/sales/closer-deck.mjs has computed it this way since it was fixed; this
+     is the same shape, five hundred lines away. */
+  const stored = persisted?.stored?.length || 0;
+  if (stored === 0) {
+    return {
+      delivered: false,
+      reason: persisted?.skipped || (org ? "nothing_stored" : "no_org"),
+      letterCount: files.length,
+      fundingLettersStored: 0,
+      engineSkip: pack.engineSkip || null
+    };
+  }
   return {
     delivered: true,
     letterCount: files.length,
@@ -120,14 +140,34 @@ async function deliverFundingLetters(db, { clientId, orgId, store } = {}) {
       path: f.filename || f.name || f.path,
       bytes: f.buffer?.byteLength || f.content?.byteLength || f.pdf?.byteLength || f.bytes?.byteLength || 0
     })),
-    fundingLettersStored: persisted?.stored?.length || 0,
+    fundingLettersStored: stored,
     engineSkip: pack.engineSkip || null
   };
 }
 
+/* Does this client actually have a deliverable on file?
+ *
+ * The once-only guard below used to trust the stamp alone, so a client stamped
+ * on a delivery that stored nothing was locked out permanently — the job would
+ * skip for ever and the Documents screen would stay empty. This is the second
+ * half of that check.
+ *
+ * NO ROW BACK IS NOT "NONE ON FILE". If the count cannot be read, the guard is
+ * kept exactly as it was. Re-delivering on a reading we did not get would be
+ * guessing, and the cost of guessing wrong is a duplicate document pack. */
+async function hasDeliverableOnFile(db, clientId) {
+  const r = await db.query(
+    `SELECT count(*)::int AS n FROM documents WHERE client_id = $1 AND kind = $2`,
+    [clientId, KINDS.DELIVERABLE]
+  );
+  const n = r?.rows?.[0]?.n;
+  return typeof n === "number" ? n > 0 : true;
+}
+
 async function deliverFundingLettersOnce(db, fetchImpl, { clientId, orgId, eventId, deliverFundingLettersFn = deliverFundingLetters }) {
   const r = await db.query(`SELECT custom_fields FROM clients WHERE id = $1`, [clientId]);
-  if (r.rows[0]?.custom_fields?.funding_letters_delivered_event_id === eventId) {
+  const stamped = r.rows[0]?.custom_fields?.funding_letters_delivered_event_id === eventId;
+  if (stamped && await hasDeliverableOnFile(db, clientId)) {
     return { delivered: true, skipped: true };
   }
   const result = await deliverFundingLettersFn(db, { clientId, orgId });

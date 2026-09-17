@@ -369,6 +369,30 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     }
   });
 
+  /* GAP 10, live walk 2026-09-16. A client paid $5,000 for the Capital Blueprint
+     ("Consulting Services Package") and the Capital Blueprint tile in their
+     portal still read LOCKED, while two tiles they had not bought read
+     "Included". The tile gates on `credit-optimization-roadmap`
+     (public/app/client-portal.html MAP, UWIQ_DELIVERABLES) and nothing mapped
+     the product to that code. db/migrations/383_blueprint_entitlement.sql adds
+     the one missing row; this fails if it is not applied. */
+  test("a paid Capital Blueprint grants the roadmap its portal tile gates on", async () => {
+    const out = await grantFromTransaction(db, {
+      orgId: org, clientId, transactionId: txA, productCode: "consulting-package"
+    });
+    assert.equal(out.unmapped, false, "consulting-package is unmapped");
+    assert.ok(
+      out.granted.includes("credit-optimization-roadmap"),
+      "383_blueprint_entitlement.sql not applied — the Capital Blueprint tile stays locked for a paying client"
+    );
+    assert.equal(
+      await has(db, { orgId: org, clientId, code: "credit-optimization-roadmap" }),
+      true
+    );
+    // The letter pack 180 already granted is still granted. Nothing was taken away.
+    assert.ok(out.granted.includes("metro2-letter-pack"));
+  });
+
   test("replaying a real purchase grants once, not twice", async () => {
     const first = await grantFromTransaction(db, {
       orgId: org, clientId, transactionId: txA, productCode: "diagnostic" });

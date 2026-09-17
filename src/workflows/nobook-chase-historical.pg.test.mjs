@@ -131,3 +131,28 @@ test("a booking event carrying no email and no phone is simply not a match",
     await bookingEvent(orgId, { clientId: null, payload: { source: "clickfunnels" } });
     assert.equal(await hasBooked(db, id), false);
   });
+
+/* GAP 23, measured on the 2026-09-17 live walk. Seven records in one company
+ * carried the same test phone number. Four of them had real, properly-stamped
+ * bookings, and this query answered "booked" for a client who had none — so the
+ * chase exited at already_booked and he never received a single message.
+ *
+ * The address fallbacks are a rescue for the old rows that have NO customer on
+ * them. A booking stamped with somebody else is somebody else's booking, and in
+ * real life this is a husband and wife, or an owner and their bookkeeper, on one
+ * number. The real SQL is the thing under test here: the fake in
+ * test-support.mjs answers the way its author expected, which is exactly the
+ * mistake this file was written to catch.
+ */
+test("somebody else's stamped booking on the same phone number does not stop this chase",
+  { skip: !HAS_DB }, async () => {
+    const mine = await makeClient(orgId, { email: "sharer-a@nobook.test", phone: "+15550009999" });
+    const theirs = await makeClient(orgId, { email: "sharer-b@nobook.test", phone: "+15550009999" });
+    await bookingEvent(orgId, {
+      clientId: theirs,
+      payload: { email: "sharer-b@nobook.test", phone: "+15550009999" }
+    });
+    assert.equal(await hasBooked(db, mine), false);
+    // ...and their own booking still stops theirs.
+    assert.equal(await hasBooked(db, theirs), true);
+  });

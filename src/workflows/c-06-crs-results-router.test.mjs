@@ -175,3 +175,64 @@ test("row 20: replaying the same event does not double-deliver funding letters",
   await handle({ event, db, step: fakeStep(), deliverFundingLettersFn });
   assert.equal(deliverCount, 1, "in-repo deliver must not run twice on replay");
 });
+
+// --- GAP 19: the five underwriting documents never reached the Documents screen ---
+//
+// Measured on live 2026-09-17: a funding-path client had the "letters delivered"
+// stamp on their record, the analysis.completed event id it was stamped against,
+// and ZERO deliverable documents. The pack itself built correctly — all eleven
+// PDFs, real bytes. What broke is below: deliverFundingLetters returned
+// `delivered: true` whenever the pack had files, whatever the save did with
+// them, so a save that threw was reported as a delivery, the client was stamped,
+// and the once-only guard then locked the job out for good.
+
+/* Wraps a pgFake so the "does this client have a deliverable on file?" count can
+   be answered. pgFake has no documents table and returns no row for that query,
+   which the guard deliberately reads as "unknown, keep the guard". */
+const withDeliverableCount = (db, n) => ({
+  ...db,
+  async query(sql, params) {
+    if (/FROM documents/.test(sql) && /count\(\*\)/.test(sql)) return { rows: [{ n }] };
+    return db.query(sql, params);
+  }
+});
+
+test("GAP 19: a delivery that stored nothing is NOT stamped as delivered", async () => {
+  const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: {} }] });
+  // What the real function now returns when the document store refuses the save.
+  const deliverFundingLettersFn = async () => ({
+    delivered: false, reason: "MissingBlobsEnvironmentError", letterCount: 11, fundingLettersStored: 0
+  });
+  const res = await handle({
+    event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-gap19", clientId: "cl-1" }),
+    db, step: fakeStep(), deliverFundingLettersFn
+  });
+  assert.equal(res.delivery.delivered, false);
+  assert.equal(db.clients[0].custom_fields.funding_letters_delivered_event_id, undefined,
+    "a client with no documents on file must not be recorded as having received them");
+});
+
+test("GAP 19: a client wrongly stamped with no documents on file is tried again, not locked out", async () => {
+  const base = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: { funding_letters_delivered_event_id: "evt-gap19-heal" } }] });
+  const db = withDeliverableCount(base, 0);
+  let attempts = 0;
+  const deliverFundingLettersFn = async () => { attempts++; return { delivered: true, letterCount: 11 }; };
+  await handle({
+    event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-gap19-heal", clientId: "cl-1" }),
+    db, step: fakeStep(), deliverFundingLettersFn
+  });
+  assert.equal(attempts, 1,
+    "the stamp alone must not skip a client who has no deliverable documents");
+});
+
+test("GAP 19: a client who really does have the documents is still skipped on replay", async () => {
+  const base = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: "FULL_FUNDING", custom_fields: { funding_letters_delivered_event_id: "evt-gap19-ok" } }] });
+  const db = withDeliverableCount(base, 11);
+  let attempts = 0;
+  const deliverFundingLettersFn = async () => { attempts++; return { delivered: true, letterCount: 11 }; };
+  await handle({
+    event: ev("analysis.completed", { source: "crs", scores: { ex: 650 } }, { id: "evt-gap19-ok", clientId: "cl-1" }),
+    db, step: fakeStep(), deliverFundingLettersFn
+  });
+  assert.equal(attempts, 0, "no double-delivery for a client who already has the pack");
+});

@@ -772,6 +772,17 @@ export async function paidServiceOffer(db, { orgId, clientId, outcomeTier } = {}
     components: roundPriceList(),
     inFlight: !!open,
     inFlightRequestId: open ? open.id : null,
-    inFlightStatus: open ? open.status : null
+    inFlightStatus: open ? open.status : null,
+    /* THE LINK THAT ALREADY EXISTS, HANDED BACK — never a new one.
+       GAP 11, live walk 2026-09-16: a client sat at status awaiting_payment with
+       a minted, unexpired checkout link on the row, and the progress screen told
+       her "you already have one in progress — when it is done this button comes
+       back". The round never comes, because the round starts when she pays, and
+       she had no way back to the page that takes the payment. The url was on the
+       row the whole time (openRoundFor SELECTs *) and this read threw it away.
+       Facts only, as above: the screen decides whether to offer it, and the
+       expiry travels with it so a lapsed invitation is not dressed as live. */
+    inFlightCheckoutUrl: open ? (open.checkout_url || null) : null,
+    inFlightCheckoutExpiresAt: open ? (open.checkout_expires_at || null) : null
   };
 }

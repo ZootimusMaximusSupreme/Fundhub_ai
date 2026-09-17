@@ -66,7 +66,19 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 74 since the Meta campaign sync sweeper (2026-09-09) — the clock behind the
+  /* 75 since the Commas inbox drain (2026-09-17) — a SECOND clock under the
+     payment queue. netlify/functions/commas-inbox-sweeper.mjs already runs this
+     exact pass on Netlify's cron and is unchanged; it had silently stopped
+     firing. Measured on live: six commas_inbox rows pending with attempts=0,
+     two of them two days old, while the Inngest clock fired on schedule in the
+     same hours. netlify.toml:104-117 records the same silent failure once
+     before. A client who paid was still being chased.
+     Registering it SENDS NOTHING AND CHARGES NOTHING: it reads bytes Commas
+     already delivered and hands them to the same processor the Netlify function
+     uses. Running both is safe — claim() takes rows FOR UPDATE SKIP LOCKED so
+     overlapping passes work different rows, and the inbox dedupes on the
+     payment id, so a double pass cannot count a payment twice.
+     Was 74 since the Meta campaign sync sweeper (2026-09-09) — the clock behind the
      ad-numbers pull. Nothing ever ran api/campaigns/sync.mjs on a schedule: the
      route map, src/pulse/registry.mjs and its own tests were the only places
      `campaigns/sync` appeared, so a person pressing Sync was the whole
@@ -169,7 +181,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      The count stays pinned as well as derived: registering a function is how a
      job starts running, and Inngest executes functions in production today, so
      it should cost somebody a line in a test. */
-  assert.equal(functions.length, 74, `expected 74, got ${functions.length}`);
+  assert.equal(functions.length, 75, `expected 75, got ${functions.length}`);
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);

@@ -14,6 +14,7 @@ import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
+import { commasInboxDrain } from './commas-inbox-drain.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
 import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
 import { waypointNudgeSweeper } from './waypoint-nudge-sweeper.mjs';
@@ -115,6 +116,23 @@ export const functions = [
 
      The file's own header carries the full reasoning for what moved. */
   messageDispatchSweeper,
+
+  /* THE SECOND CLOCK UNDER THE PAYMENT QUEUE. Registered 2026-09-17.
+
+     netlify/functions/commas-inbox-sweeper.mjs runs the identical pass on
+     Netlify's cron and is unchanged. It had stopped firing: measured on live,
+     six commas_inbox rows were sitting pending with attempts=0 — never even
+     tried — two of them for two days, while the Inngest clock fired on schedule
+     in the same hours. netlify.toml:104-117 records the same silent failure
+     once before. A single clock under the money path is the defect.
+
+     Running both is safe: claim() uses FOR UPDATE SKIP LOCKED so overlapping
+     passes take different rows, and the inbox dedupes on the payment id before
+     a row is written. A double pass cannot count a payment twice.
+
+     REGISTERING IT SENDS NOTHING AND CHARGES NOTHING. It reads bytes Commas
+     already delivered and hands them to the same processor. */
+  commasInboxDrain,
 
   /* THE ONLY THING THAT ASKS "SHOULD WE BE HIRING" WITHOUT BEING ASKED FIRST.
      Registered 2026-09-05. src/hiring/bench.mjs has argued since 051 that

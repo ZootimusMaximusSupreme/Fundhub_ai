@@ -55,7 +55,7 @@ export function interviewTaskBody(eventId, env = process.env) {
     bookUrl
       ? `Send the client this booking link (Google Meet is created when they book): ${bookUrl}`
       : "Book a Google Meet (set INSIGHT_MEET_BOOKING_URL on Netlify).",
-    "Click Record in Google Meet. Ask these questions. Save answers with POST /api/customer-insights (stage=post, channel=google_meet).",
+    "Click Record in Google Meet. Ask these questions, then save the answers on the CSM queue (/app/csm-queue.html) — open this row and fill in the form.",
     RECORDING_NOTE,
     "",
     /* Owner-set 2026-09-05, after the Cole Gordon research. One call, and the
@@ -86,7 +86,7 @@ export function checkinTaskBody(eventId) {
   return [
     "Call them (phone or AI reach-out). This is not a Google Meet.",
     "An accountability call: how are they doing against what they came here for.",
-    "Ask these questions. Save answers with POST /api/customer-insights (stage=mid, channel=call).",
+    "Ask these questions, then save the answers on the CSM queue (/app/csm-queue.html) — open this row and fill in the form.",
     "If they are in a good place, nudge toward what they do not already have. A nudge, not a pitch.",
     "",
     questions,
@@ -113,7 +113,30 @@ export async function onRoundFundedInsights(event, db, env = process.env) {
     assigneeRole: ASSIGNEE_ROLE,
     eventId,
     body: interviewTaskBody(eventId, env),
-    meetingUrl: bookUrl
+    meetingUrl: bookUrl,
+    /* DUE THE DAY FUNDING LANDS, because the task's own first instruction is
+       "send the client this booking link" and that is work for today. No
+       post-funding interval is written down anywhere in this repo to borrow —
+       searched src/, scripts/, db/ and docs/, there is no POST_DUE_DAYS and no
+       spec line — so this deliberately does not invent one. Without a date the
+       row fell into the calendar's "No date" pile and nobody ever saw it
+       (live walk 2026-09-17, GAP 36). onInterviewBooked below overwrites with
+       `due_at = COALESCE($4, due_at)`, so the real meeting time wins the moment
+       the client books. */
+    dueAt: new Date(),
+    /* ONE RESULTS CALL PER CLIENT, matching onPaidMidCheckin below.
+       The default dedupe key is the event id, which is embedded in the body as
+       `[event:...]` — so two round.funded events produce two different bodies,
+       two different keys and two identical open calls. That is exactly what
+       Sim Eight-Funding had. Keying on the title is what the mid check-in has
+       always done.
+
+       KNOWN AND ACCEPTED: createTask's title dedupe does not filter on
+       done=false, so once a CSM ticks this off, a later second funding for the
+       same client is also suppressed. The halfway task already behaves that
+       way; changing it means editing src/lib/create-task.mjs, which nineteen
+       other workflows share. */
+    dedupeOn: "title"
   });
 }
 
@@ -157,8 +180,20 @@ export async function onInterviewBooked(event, db) {
 
 export function register() {
   on("round.funded", onRoundFundedInsights);
+  /* ALL THREE MONEY-IN EVENTS, not two. `payment.received` is emitted for every
+     successful payment (src/adapters/commas.mjs) and was the only one missing
+     here, so repair, trial and academy clients paid and no halfway call was
+     ever created for them — only the deposit/close shaped sales got one (live
+     walk 2026-09-17, GAP 35).
+
+     The trio is already treated as one set elsewhere: ROUTED_EVENTS in
+     src/handlers/purchase-routing.mjs is these same three names, and
+     src/workflows/repair-enrollment.mjs lists them too. Keep them together.
+     onPaidMidCheckin dedupes on title, so a client who pays a deposit AND an
+     installment still gets exactly one halfway task. */
   on("deposit.paid", onPaidMidCheckin);
   on("sale.closed", onPaidMidCheckin);
+  on("payment.received", onPaidMidCheckin);
   on("booking.created", onInterviewBooked);
 }
 

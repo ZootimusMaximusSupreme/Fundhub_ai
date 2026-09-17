@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fundhub — Client Success</title>
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="fundhub-brand.css">
+<link rel="stylesheet" href="crm-sidebar.css">
+<style>
+/* ══ SHARED CHROME — identical across every internal surface ══════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--butter:#F2E39B}
+html,body{height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.5;-webkit-font-smoothing:antialiased}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+a{color:inherit;text-decoration:none}
+button,input,select,textarea{font:inherit;color:inherit}
+.logo{width:118px;height:24px;flex:0 0 118px}
+.app{display:flex;min-height:100vh}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:57px;flex:0 0 57px;display:flex;align-items:center;gap:14px;padding:0 24px;border-bottom:1px solid var(--line);background:var(--paper);position:sticky;top:0;z-index:20}
+.topbar h1{font-size:var(--fs-title);font-weight:600;letter-spacing:-.01em}
+.topbar .crumb{font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.1em;text-transform:uppercase}
+.spacer{flex:1}
+.content{padding:22px 24px 40px;flex:1}
+.foot{border-top:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:var(--fs-caption);color:var(--gray2);letter-spacing:.09em;text-transform:lowercase}
+
+/* ══ SCREEN ══════════════════════════════════════════════════════════════ */
+/* NO PAGE CAP. UI-STANDARDS §1: content fills the window; only the 228px rail
+   is reserved. The one thing capped here is the notes box's reading measure,
+   which is a BLOCK, not the page. */
+:root{ --surface:#FFFFFF; --text:var(--ink2); --text-dim:var(--gray); --text-faint:var(--gray2);
+       --green:#2C5138; --green-bg:rgba(168,216,176,.26);
+       --red:#6E2A22;   --red-bg:rgba(242,166,155,.24);
+       --amber:#6B4A12; --amber-bg:rgba(245,206,143,.26); }
+
+/* THE HEADLINE. Top-left, largest, because the CSM's first question of the day
+   is "who am I calling next" (UI-STANDARDS §10). */
+.q-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:24px; }
+.q-count .vl{ font-weight:700; letter-spacing:-.02em; line-height:1.05; display:block; }
+.q-count .lb{ display:block; margin-top:4px; color:var(--text-dim); }
+.q-count .cmp{ display:block; margin-top:2px; color:var(--text-faint); }
+
+/* THE CLOCK. It lives here, on the CSM's own screen, because /api/tasks refuses
+   a claim from anybody who is not on a shift and the only clock button in the
+   app was on Staff & Teams — a finance screen a CSM is bounced off (live walk
+   2026-09-17, GAP 37). api/shifts.mjs takes the staff id off the session, so
+   every staff role is already allowed to press this. */
+.q-shift{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px;
+          min-width:260px; }
+.q-shift .state{ display:flex; align-items:center; gap:8px; }
+.q-shift .dot{ width:9px; height:9px; border-radius:50%; background:var(--text-faint); flex:0 0 9px; }
+.q-shift.on .dot{ background:var(--green); }
+.q-shift .who{ font-weight:600; color:var(--text); }
+.q-shift .when{ display:block; color:var(--text-dim); margin-top:2px; }
+.q-shift .cta{ margin-top:10px; }
+
+.q-banner{ border-radius:8px; padding:12px 14px; margin-bottom:16px; border:1px solid transparent; display:none; }
+.q-banner.show{ display:block; }
+.q-banner.err{ color:var(--red); background:var(--red-bg); border-color:rgba(110,42,34,.22); }
+.q-banner.ok{ color:var(--green); background:var(--green-bg); border-color:rgba(44,81,56,.22); }
+
+/* ONE ROW PER CALL. .card is on the brand file's shadow list, so it gets
+   --panel-shadow for free and this screen never writes a shadow value
+   (UI-STANDARDS §12.2). */
+.q-list{ display:flex; flex-direction:column; gap:12px; }
+.card{ background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:16px; }
+.q-row{ display:flex; align-items:flex-start; gap:16px; flex-wrap:wrap; }
+.q-who{ flex:1 1 260px; min-width:0; }
+.q-name{ font-weight:600; color:var(--text); display:inline-block; max-width:100%; overflow:hidden;
+         text-overflow:ellipsis; white-space:nowrap; vertical-align:bottom; }
+.q-name:hover{ text-decoration:underline; }
+.q-what{ color:var(--text-dim); margin-top:2px; }
+.q-facts{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; align-items:center; }
+.q-acts{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+/* STATUS IS NEVER COLOUR ALONE (UI-STANDARDS §12.6) — every chip says its word.
+   A white-label tenant with one hue paints --alert and --ok the same colour. */
+.chip{ border:1px solid var(--soft); border-radius:999px; padding:4px 10px; color:var(--text-dim);
+       background:var(--paper); white-space:nowrap; }
+.chip.late{ color:var(--red); background:var(--red-bg); border-color:rgba(110,42,34,.28); }
+.chip.owed{ color:var(--amber); background:var(--amber-bg); border-color:rgba(107,74,18,.28); }
+.chip.mine{ color:var(--green); background:var(--green-bg); border-color:rgba(44,81,56,.28); }
+.chip.num{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+.btn{ border:1px solid var(--ink2); background:var(--ink2); color:var(--paper); border-radius:7px;
+      padding:10px 16px; font-weight:600; cursor:pointer; min-height:40px; }
+.btn:hover{ opacity:.9; }
+.btn[disabled]{ opacity:.45; cursor:not-allowed; }
+.btn.ghost{ background:transparent; color:var(--text); border-color:var(--soft); }
+.btn.ghost:hover{ border-color:var(--gray2); }
+
+/* THE ANSWER FORM (GAP 38). Collapsed until the CSM opens the row —
+   UI-STANDARDS §9, the daily 20% is the list, the form is one click deeper. */
+.q-form{ border-top:1px solid var(--line); margin-top:14px; padding-top:14px; display:none; }
+.q-form.open{ display:block; }
+.q-field{ margin-top:12px; }
+.q-field label{ display:block; color:var(--text); font-weight:600; margin-bottom:5px; }
+.q-input, .q-area, .q-select{ width:100%; border:1px solid var(--soft); border-radius:6px; padding:9px 11px;
+                              background:var(--surface); }
+.q-area{ min-height:64px; resize:vertical; }
+.q-notes{ max-width:78ch; }
+.q-save{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:14px; }
+.q-say{ display:none; border-radius:6px; padding:8px 11px; }
+.q-say.show{ display:inline-block; }
+.q-say.ok{ color:var(--green); background:var(--green-bg); }
+.q-say.err{ color:var(--red); background:var(--red-bg); }
+
+.q-empty{ color:var(--text-dim); }
+.q-foot-note{ margin-top:20px; }
+.q-link{ text-decoration:underline; }
+.q-empty .btn{ margin-top:12px; }
+
+/* LOADING — skeletons in the real layout, never a full-page spinner (§6.1). */
+.q-skel{ height:74px; border-radius:10px; border:1px solid var(--line); background:var(--paper);
+         opacity:.6; animation:qpulse 1.2s ease-in-out infinite; }
+@keyframes qpulse{ 0%,100%{opacity:.35} 50%{opacity:.7} }
+@media (prefers-reduced-motion: reduce){ .q-skel{ animation:none } }
+
+@media (max-width:860px){
+  .q-head{ gap:16px; }
+  .q-shift{ min-width:0; width:100%; }
+  .q-acts{ width:100%; }
+}
+</style>
+<script defer src="shell.js"></script>
+</head>
+<body>
+<div class="app">
+<aside class="side" id="side">
+  <div class="side-top"><a class="logo inv" href="pipeline.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
+  <nav class="side-scroll" id="fh-side-nav">
+
+<div class="navgroup" data-fh-section="home"><button class="navhead" type="button">Home<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="partner-galaxy.html"><span class="ico">⌂</span><span class="lbl">Home</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="sales"><button class="navhead" type="button">Sales<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="pipeline.html"><span class="ico">▤</span><span class="lbl">Pipeline</span></a>
+        <a class="navitem" href="closer-dashboard.html"><span class="ico">★</span><span class="lbl">Closer Dashboard</span></a>
+        <a class="navitem" href="my-numbers.html"><span class="ico">＃</span><span class="lbl">My numbers</span></a>
+        <a class="navitem" href="sales-floor.html"><span class="ico">▣</span><span class="lbl">Sales floor</span></a>
+        <a class="navitem" href="calendar.html"><span class="ico">▦</span><span class="lbl">Calendar</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="funding"><button class="navhead" type="button">Funding<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="lenders.html"><span class="ico">⬡</span><span class="lbl">Lenders</span></a>
+        <a class="navitem" href="client-control-panel.html"><span class="ico">◎</span><span class="lbl">Client Control Panel</span></a>
+        <a class="navitem" href="finance-os.html"><span class="ico">▩</span><span class="lbl">Finance OS</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="client-ops"><button class="navhead" type="button">Client ops<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem on" href="csm-queue.html"><span class="ico">☎</span><span class="lbl">Client Success</span></a>
+        <a class="navitem" href="consent-capture.html"><span class="ico">☑</span><span class="lbl">Consent</span></a>
+        <a class="navitem" href="messaging.html"><span class="ico">✉</span><span class="lbl">Messaging</span></a>
+        <a class="navitem" href="documents.html"><span class="ico">▧</span><span class="lbl">Documents</span></a>
+        <a class="navitem" href="inquiry-remover.html"><span class="ico">⊘</span><span class="lbl">Specialist</span></a>
+        <a class="navitem" href="company-brain.html"><span class="ico">◎</span><span class="lbl">Company Brain</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="watch"><button class="navhead" type="button">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
+        <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="automation"><button class="navhead" type="button">Automation<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="agent-editor.html"><span class="ico">◈</span><span class="lbl">Agent Editor</span></a>
+        <a class="navitem" href="automations.html"><span class="ico">⇄</span><span class="lbl">Workflows</span></a>
+        <a class="navitem" href="journeys.html"><span class="ico">⇝</span><span class="lbl">Journeys</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="marketing"><button class="navhead" type="button">Marketing<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="campaign-manager.html"><span class="ico">◇</span><span class="lbl">Campaigns</span></a>
+        <a class="navitem" href="social-studio.html"><span class="ico">◉</span><span class="lbl">Social Studio</span></a>
+        <a class="navitem" href="creative-factory.html"><span class="ico">✳</span><span class="lbl">Creative Factory</span></a>
+        <a class="navitem" href="content-admin.html"><span class="ico">▭</span><span class="lbl">Content</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="admin"><button class="navhead" type="button">Admin<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="staff-teams.html"><span class="ico">⚇</span><span class="lbl">Staff &amp; Teams</span></a>
+        <a class="navitem" href="hiring.html"><span class="ico">⊕</span><span class="lbl">Hiring</span></a>
+        <a class="navitem" href="products-commissions.html"><span class="ico">⛁</span><span class="lbl">Products &amp; Commissions</span></a>
+        <a class="navitem" href="contracts.html"><span class="ico">✒</span><span class="lbl">Contract templates</span></a>
+        <a class="navitem" href="brand-studio.html"><span class="ico">◆</span><span class="lbl">Brand Studio</span></a>
+</div></div>
+
+<div class="navgroup" data-fh-section="portals"><button class="navhead" type="button">Portals<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="client-portal.html"><span class="ico">◐</span><span class="lbl">Client Portal</span></a>
+        <a class="navitem" href="affiliate.html"><span class="ico">⇗</span><span class="lbl">Affiliate</span></a>
+</div></div>
+
+  </nav>
+  <div class="side-foot"><span class="pulse"></span><span class="who">fundhub</span></div>
+</aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span class="crumb">Client success</span><h1>My queue</h1>
+      <div class="spacer"></div>
+    </div>
+
+    <div class="content">
+
+      <div class="q-head">
+        <div class="q-count">
+          <span class="vl mono" id="qCount">—</span>
+          <span class="lb caption" id="qCountLabel">calls waiting</span>
+          <span class="cmp caption" id="qOverdue">&nbsp;</span>
+        </div>
+
+        <div class="q-shift" id="qShift">
+          <div class="state">
+            <span class="dot"></span>
+            <span>
+              <span class="who" id="qShiftWho">Checking your shift…</span>
+              <span class="when caption" id="qShiftWhen">&nbsp;</span>
+            </span>
+          </div>
+          <div class="cta">
+            <button class="btn" id="qClock" type="button" disabled>Start shift</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="q-banner err" id="qBanner"></div>
+
+      <div class="q-list" id="qList">
+        <!-- Loading state. Skeletons in the real row shape, replaced on first paint. -->
+        <div class="q-skel"></div>
+        <div class="q-skel"></div>
+        <div class="q-skel"></div>
+      </div>
+
+      <!-- THE WAY OUT, as a real href that works before any script runs. -->
+      <p class="q-empty caption q-foot-note" id="qFootNote">
+        Need one client instead of the whole queue?
+        <a class="q-link" href="client-control-panel.html">Open the Client Control Panel</a>.
+      </p>
+
+    </div>
+
+    <div class="foot"><span>fundhub</span><span class="spacer"></span><span id="qStamp">—</span></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* THE CSM'S DAY, IN ONE SCREEN.
+   *
+   * GET /api/read/csm-queue has returned the right rows since the day it
+   * shipped, and until 2026-09-17 nothing in public/ had ever asked it for
+   * them: a grep of the whole app for "csm-queue" returned nothing. The CSM's
+   * home was the pick-a-client Client Control Panel, so the first thing the
+   * role saw was a chooser, not a call list (live walk 2026-09-17, GAP 34).
+   *
+   * Three jobs, one screen: who to call, get on shift and take the row, write
+   * down what they said.
+   */
+
+  function $(id) { return document.getElementById(id); }
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  /* The session token is a Bearer header when the screen has one and a
+     same-origin cookie otherwise — src/http/middleware/requireAuth.mjs accepts
+     either, and calendar.html and consent-capture.html each use one of them. */
+  function api(path, options) {
+    var init = options || {};
+    init.headers = init.headers || {};
+    init.headers.accept = "application/json";
+    try {
+      var t = localStorage.getItem("fh_token") || "";
+      if (t && t !== "demo" && t !== "demo-token") init.headers.authorization = "Bearer " + t;
+    } catch (e) {}
+    if (init.body !== undefined) {
+      init.headers["content-type"] = "application/json";
+      init.body = JSON.stringify(init.body);
+    }
+    init.credentials = "same-origin";
+    return fetch(path, init).then(
+      function (r) {
+        return r.json().then(
+          function (b) { return { status: r.status, body: b }; },
+          function () { return { status: r.status, body: null }; }
+        );
+      },
+      function (e) { return { status: 0, body: null, transport: (e && e.message) || "network error" }; }
+    );
+  }
+
+  /* WHAT WENT WRONG, IN THE WORDS OF THE PERSON IT HAPPENED TO — never a raw
+     status code (UI-STANDARDS §6.3). The two shift-shaped refusals reuse
+     calendar.html's existing sentences rather than inventing a second set of
+     words for the same two facts. */
+  function problem(res) {
+    var err = String((res.body && res.body.error) || "");
+    if (res.transport || res.status === 0) return "Could not reach the server. Check your connection and try again.";
+    if (res.status === 401) return "You are signed out. Sign in and open this page again.";
+    if (err === "no_active_shift") return "Clock in first. Work can only be claimed or closed on a shift.";
+    if (err === "already_claimed") return "Somebody else took this one first.";
+    if (err === "shift_already_open") return "You are already on a shift.";
+    if (err === "no_open_shift") return "You are not on a shift right now.";
+    if (res.status === 403) return "Your account is not allowed to do that.";
+    if (res.status === 404) return "That is gone. Reload the page.";
+    if (res.status === 503) return "The database is not reachable right now. Try again in a moment.";
+    if (res.body && res.body.message) return String(res.body.message);
+    return "That did not work. Try again in a moment.";
+  }
+
+  function banner(tone, text) {
+    var el = $("qBanner");
+    el.className = "q-banner show " + tone;
+    el.textContent = text;
+  }
+  function clearBanner() { $("qBanner").className = "q-banner"; }
+
+  /* Relative under a day, absolute after, exact time always in the tooltip
+     (UI-STANDARDS §7). "No date" is said out loud rather than left blank. */
+  function whenText(iso) {
+    if (!iso) return { text: "No date set", title: "" };
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return { text: "No date set", title: "" };
+    var diff = d.getTime() - Date.now();
+    var hours = Math.round(Math.abs(diff) / 3600000);
+    var title = d.toLocaleString();
+    if (hours < 24) {
+      if (hours < 1) return { text: diff >= 0 ? "Due now" : "Due now", title: title };
+      return { text: diff >= 0 ? "Due in " + hours + "h" : hours + "h ago", title: title };
+    }
+    return {
+      text: d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }),
+      title: title
+    };
+  }
+
+  /* MID or POST, read off the row's own source_workflow. Anything else is a CSM
+     task from another workflow and simply has no interview form. */
+  function stageOf(row) {
+    if (row.source_workflow === "customer-insights-mid") return "mid";
+    if (row.source_workflow === "customer-insights-post") return "post";
+    return null;
+  }
+
+  var state = {
+    rows: [],
+    shift: null,          // the open shift row, or null
+    myStaffId: null,      // read off the shift; it is the only id this screen gets
+    questions: null,      // { mid: [...], post: [...] } from the read endpoint
+    open: null            // task_id whose answer form is showing
+  };
+
+  /* ── the shift ─────────────────────────────────────────────────────────── */
+
+  function paintShift() {
+    var box = $("qShift");
+    var btn = $("qClock");
+    btn.disabled = false;
+    if (state.shift) {
+      box.className = "q-shift on";
+      $("qShiftWho").textContent = "You are on shift";
+      var started = state.shift.started_at ? new Date(state.shift.started_at) : null;
+      $("qShiftWhen").textContent = started && !isNaN(started.getTime())
+        ? "Since " + started.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })
+        : "";
+      btn.textContent = "End shift";
+    } else {
+      box.className = "q-shift";
+      $("qShiftWho").textContent = "You are not clocked in";
+      $("qShiftWhen").textContent = "Start a shift before you claim a call.";
+      btn.textContent = "Start shift";
+    }
+  }
+
+  function loadShift() {
+    return api("/api/shifts").then(function (res) {
+      if (res.status !== 200 || !res.body || !res.body.ok) {
+        $("qShiftWho").textContent = "Cannot read your shift";
+        $("qShiftWhen").textContent = problem(res);
+        $("qClock").disabled = true;
+        return;
+      }
+      state.shift = res.body.shift || null;
+      state.myStaffId = state.shift ? (state.shift.staff_id || null) : state.myStaffId;
+      paintShift();
+    });
+  }
+
+  function toggleClock() {
+    var btn = $("qClock");
+    var goingOn = !state.shift;
+    btn.disabled = true;
+    btn.textContent = goingOn ? "Starting…" : "Ending…";
+    clearBanner();
+    // staff_id and org_id are deliberately NOT sent: api/shifts.mjs refuses a
+    // body that carries either, and takes both off the session instead.
+    api("/api/shifts", { method: "POST", body: { action: goingOn ? "clock_in" : "clock_out" } })
+      .then(function (res) {
+        if (res.status !== 200 || !res.body || !res.body.ok) {
+          banner("err", problem(res));
+          return loadShift();
+        }
+        state.shift = goingOn ? (res.body.shift || null) : null;
+        if (state.shift && state.shift.staff_id) state.myStaffId = state.shift.staff_id;
+        paintShift();
+        banner("ok", goingOn ? "You are on shift. You can claim calls now." : "Shift ended.");
+      });
+  }
+
+  /* ── the queue ─────────────────────────────────────────────────────────── */
+
+  function moneyChip(row) {
+    /* NULL SURVIVES. The endpoint returns null when the client has no invoice
+       at all, which means "unknown until you look", not zero. A dash is the
+       honest render; a "$0.00" here would be a number nobody measured
+       (CLAUDE.md §12). */
+    if (row.balance_due === null || row.balance_due === undefined) {
+      return '<span class="chip num" title="No invoice on file for this client">Owes —</span>';
+    }
+    var n = row.open_invoices === 1 ? "1 invoice" : row.open_invoices + " invoices";
+    return '<span class="chip owed num">Owes $' + esc(row.balance_due) + " · " + esc(n) + "</span>";
+  }
+
+  function rowHtml(row) {
+    var name = row.client_name || row.client_code || "Unnamed client";
+    var when = whenText(row.due_at);
+    var late = row.days_overdue !== null && row.days_overdue !== undefined && row.days_overdue > 0;
+    var mine = state.myStaffId && row.assignee_staff_id === state.myStaffId;
+    var taken = row.assignee_staff_id && !mine;
+
+    var chips = '<span class="chip" title="' + esc(when.title) + '">' + esc(when.text) + "</span>";
+    if (late) {
+      chips += '<span class="chip late num">' + esc(row.days_overdue) + " days overdue</span>";
+    }
+    chips += moneyChip(row);
+    for (var i = 0; i < row.owned_codes.length; i++) {
+      chips += '<span class="chip">Has ' + esc(row.owned_codes[i]) + "</span>";
+    }
+    if (mine) chips += '<span class="chip mine">Claimed by you</span>';
+    else if (taken) chips += '<span class="chip">Claimed by a teammate</span>';
+
+    var acts = "";
+    if (!row.assignee_staff_id) {
+      acts += '<button class="btn ghost" type="button" data-claim="' + esc(row.task_id) + '">Claim this call</button>';
+    }
+    if (stageOf(row)) {
+      acts += '<button class="btn ghost" type="button" data-open="' + esc(row.task_id) + '">' +
+              (state.open === row.task_id ? "Hide answers" : "Write down their answers") + "</button>";
+    }
+    if (row.meeting_url) {
+      acts += '<a class="btn ghost" href="' + esc(row.meeting_url) + '" target="_blank" rel="noopener">Booking link</a>';
+    }
+
+    return '<div class="card" data-row="' + esc(row.task_id) + '">' +
+      '<div class="q-row">' +
+        '<div class="q-who">' +
+          '<a class="q-name" href="client-control-panel.html?client_id=' + esc(row.client_id) + '">' + esc(name) + "</a>" +
+          '<div class="q-what">' + esc(row.title) + "</div>" +
+          '<div class="q-facts">' + chips + "</div>" +
+        "</div>" +
+        '<div class="q-acts">' + acts + "</div>" +
+      "</div>" +
+      (state.open === row.task_id ? formHtml(row) : "") +
+      "</div>";
+  }
+
+  /* THE ANSWER FORM (GAP 38). There were 0 rows in customer_insights because no
+     screen had ever posted to /api/customer-insights, and the task body told
+     the CSM to call the API by hand. The questions come from the read endpoint,
+     which already serves the one question bank (src/insights/questions.mjs) —
+     this screen never keeps a second copy of them. */
+  function formHtml(row) {
+    var stage = stageOf(row);
+    var list = (state.questions && state.questions[stage]) || [];
+    if (!list.length) {
+      return '<div class="q-form open"><p class="q-empty">The question list did not load. ' +
+             "Reload the page and open this row again.</p></div>";
+    }
+    var channel = stage === "post" ? "google_meet" : "call";
+    var h = '<div class="q-form open">' +
+      '<div class="q-field">' +
+        '<label for="qChan">How did you speak to them?</label>' +
+        '<select class="q-select" id="qChan">' +
+          '<option value="call"' + (channel === "call" ? " selected" : "") + ">Phone call</option>" +
+          '<option value="google_meet"' + (channel === "google_meet" ? " selected" : "") + ">Google Meet</option>" +
+          '<option value="ai_reachout">AI reach-out</option>' +
+        "</select>" +
+      "</div>";
+    for (var i = 0; i < list.length; i++) {
+      h += '<div class="q-field">' +
+             '<label for="qa-' + esc(list[i].id) + '">' + esc(list[i].prompt) + "</label>" +
+             '<textarea class="q-area" id="qa-' + esc(list[i].id) + '" data-answer="' + esc(list[i].id) + '"></textarea>' +
+           "</div>";
+    }
+    h += '<div class="q-field q-notes">' +
+           '<label for="qNotes">Anything else worth keeping</label>' +
+           '<textarea class="q-area" id="qNotes" placeholder="Optional."></textarea>' +
+         "</div>" +
+         '<div class="q-save">' +
+           '<button class="btn" type="button" data-save="' + esc(row.task_id) + '">Save these answers</button>' +
+           '<span class="q-say" id="qSay"></span>' +
+         "</div>" +
+       "</div>";
+    return h;
+  }
+
+  function paintQueue() {
+    var list = $("qList");
+    if (!state.rows.length) {
+      $("qCount").textContent = "0";
+      $("qCountLabel").textContent = "calls waiting";
+      $("qOverdue").textContent = "Nothing is due.";
+      list.innerHTML = '<div class="card q-empty">' +
+        "<p>No calls are waiting for you.</p>" +
+        "<p>A call appears here when a client pays (the halfway check-in) or when a " +
+        "funding round lands (the results call).</p>" +
+        '<a class="btn ghost" href="client-control-panel.html">Open a client instead</a>' +
+        "</div>";
+      return;
+    }
+    var late = 0;
+    for (var i = 0; i < state.rows.length; i++) {
+      if (state.rows[i].days_overdue > 0) late++;
+    }
+    $("qCount").textContent = String(state.rows.length);
+    $("qCountLabel").textContent = state.rows.length === 1 ? "call waiting" : "calls waiting";
+    $("qOverdue").textContent = late ? late + " past due" : "None past due";
+
+    var html = "";
+    for (var j = 0; j < state.rows.length; j++) html += rowHtml(state.rows[j]);
+    list.innerHTML = html;
+  }
+
+  function loadQueue() {
+    return api("/api/read/csm-queue").then(function (res) {
+      if (res.status !== 200 || !res.body || !res.body.ok) {
+        $("qCount").textContent = "—";
+        $("qCountLabel").textContent = "queue did not load";
+        $("qOverdue").textContent = "";
+        $("qList").innerHTML = '<div class="card q-empty">' + esc(problem(res)) +
+          ' <a class="q-link" href="client-control-panel.html">Open the Client Control Panel</a>' +
+          " while this is down.</div>";
+        return;
+      }
+      state.rows = (res.body.items || []).slice();
+      paintQueue();
+      $("qStamp").textContent = "read " + new Date().toLocaleTimeString();
+    });
+  }
+
+  /* The question bank rides along on the interview READ endpoint, which returns
+     it on every response. limit=1 because the rows are not what this is for. */
+  function loadQuestions() {
+    return api("/api/read/customer-insights?limit=1").then(function (res) {
+      if (res.status === 200 && res.body && res.body.questions) state.questions = res.body.questions;
+    });
+  }
+
+  /* ── the two writes ────────────────────────────────────────────────────── */
+
+  function claim(taskId, btn) {
+    clearBanner();
+    btn.disabled = true;
+    btn.textContent = "Claiming…";
+    api("/api/tasks", { method: "PATCH", body: { id: taskId, claim: true } }).then(function (res) {
+      if (res.status !== 200 || !res.body || !res.body.ok) {
+        banner("err", problem(res));
+        return loadQueue();
+      }
+      /* The claim is what tells this screen who the signed-in person is: the
+         queue read carries assignee_staff_id but never "you". */
+      var task = res.body.task || {};
+      if (task.assignee_staff_id) state.myStaffId = task.assignee_staff_id;
+      banner("ok", "This call is yours.");
+      return loadQueue();
+    });
+  }
+
+  function save(taskId, btn) {
+    var row = null;
+    for (var i = 0; i < state.rows.length; i++) {
+      if (state.rows[i].task_id === taskId) row = state.rows[i];
+    }
+    if (!row) return;
+
+    var answers = {};
+    var boxes = document.querySelectorAll("[data-answer]");
+    for (var j = 0; j < boxes.length; j++) {
+      var v = boxes[j].value.trim();
+      if (v) answers[boxes[j].getAttribute("data-answer")] = v;
+    }
+    var say = $("qSay");
+    if (!Object.keys(answers).length) {
+      say.className = "q-say show err";
+      say.textContent = "Write down at least one answer before saving.";
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = "Saving…";
+    say.className = "q-say";
+    api("/api/customer-insights", {
+      method: "POST",
+      body: {
+        client_id: row.client_id,
+        task_id: row.task_id,
+        stage: stageOf(row),
+        channel: $("qChan").value,
+        answers: answers,
+        notes: $("qNotes").value.trim() || null
+      }
+    }).then(function (res) {
+      btn.disabled = false;
+      btn.textContent = "Save these answers";
+      if (res.status !== 201 || !res.body || !res.body.ok) {
+        say.className = "q-say show err";
+        // The store writes a readable sentence on every InsightError; show that
+        // rather than the code beside it.
+        say.textContent = problem(res);
+        return;
+      }
+      state.open = null;
+      banner("ok", "Answers saved for " + (row.client_name || row.client_code || "this client") + ".");
+      paintQueue();
+    });
+  }
+
+  /* One delegated listener: the rows are repainted on every read, so a listener
+     per button would have to be rebound each time. */
+  $("qList").addEventListener("click", function (e) {
+    var t = e.target;
+    while (t && t !== this) {
+      if (t.getAttribute) {
+        if (t.getAttribute("data-claim")) { claim(t.getAttribute("data-claim"), t); return; }
+        if (t.getAttribute("data-save")) { save(t.getAttribute("data-save"), t); return; }
+        if (t.getAttribute("data-open")) {
+          var id = t.getAttribute("data-open");
+          state.open = state.open === id ? null : id;
+          paintQueue();
+          return;
+        }
+      }
+      t = t.parentNode;
+    }
+  });
+
+  $("qClock").addEventListener("click", toggleClock);
+
+  loadQuestions();
+  loadShift();
+  loadQueue();
+})();
+</script>
+</body>
+</html>

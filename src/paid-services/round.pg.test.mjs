@@ -645,6 +645,23 @@ describe("the self-serve paid round", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
       assert.equal(offer.inFlightStatus, "awaiting_payment");
     });
 
+    /* GAP 11, live walk 2026-09-16. A client sat at awaiting_payment with a
+       minted, unexpired checkout link on her row and the progress screen told
+       her "we are working on it" with nothing to press. The round never starts,
+       because it starts when she pays. The link was already on the row and this
+       read dropped it, so the screen had nothing to offer her. */
+    test("the checkout link she already has comes back with the in-flight round", async () => {
+      const out = await ask();
+      const offer = await paidServiceOffer(db, { orgId: org, clientId: client });
+      assert.equal(offer.inFlightStatus, "awaiting_payment");
+      assert.equal(
+        offer.inFlightCheckoutUrl,
+        out.checkoutUrl,
+        "the existing checkout link must reach the screen, or the client has no way back to it"
+      );
+      assert.ok(offer.inFlightCheckoutExpiresAt, "a live link must carry its expiry");
+    });
+
     test("the price list is still returned when the client may not buy — a price is not a permission", async () => {
       client = await makeClient({ tier: "ACADEMY" });
       const offer = await paidServiceOffer(db, { orgId: org, clientId: client });

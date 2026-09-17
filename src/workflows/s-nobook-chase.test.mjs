@@ -125,3 +125,29 @@ test("nobook: another company's booking for the same address does NOT stop this 
   assert.equal(res.exitedAt, "completed");
   assert.equal(db.messages.length, 6);
 });
+
+/* GAP 23, 2026-09-17 live walk. Sim Thirteen-NoBook never booked and never got a
+   single chase message: four OTHER clients in the same company shared the test
+   phone number, their bookings answered "yes, they booked" on his behalf, and
+   the chase exited at already_booked before it ever sent anything. The address
+   fallback exists for old rows with nobody on them; a booking stamped with
+   somebody else is not this client's booking. */
+test("nobook: somebody else's booking on the same phone number does NOT stop this chase", async () => {
+  const db = pgFake({
+    clients: [
+      { id: "cl-1", org_id: "org-1", email: "nobook@example.com", phone: "+15550001111", custom_fields: {} },
+      { id: "cl-2", org_id: "org-1", email: "housemate@example.com", phone: "+15550001111", custom_fields: {} }
+    ],
+    templates: templates(),
+    events: [{
+      org_id: "org-1", client_id: "cl-2", name: "booking.created",
+      payload: { email: "housemate@example.com", phone: "+15550001111" }
+    }]
+  });
+  const res = await handle({
+    event: ev("survey.submitted", {}, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+  assert.equal(res.exitedAt, "completed");
+  assert.equal(db.messages.length, 6);
+});

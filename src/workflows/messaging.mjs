@@ -27,6 +27,8 @@ import { resolveShiftId } from "../shifts/attribution.mjs";
 import { emit } from "../events/bus.mjs";
 import { isDraftTemplateRow } from "../messaging/draft-guard.mjs";
 import { threadMessage } from "../conversations/store.mjs";
+// The one E.164 converter in the repo. Reused, not re-written (CLAUDE.md §8).
+import { normalizePhone } from "../messaging/providers/bland-voice.mjs";
 
 /* Which column on the client record is the destination for a channel.
    The destination is recorded in the terms of the CHANNEL, not of whichever
@@ -209,7 +211,21 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   // time so a message that waits in the queue still goes where it was written
   // to go. This pins the ADDRESS ONLY — opt-out state is still read fresh by the
   // gate at the instant of sending, which is the whole point of the gate.
-  const toAddress = base.contact?.[ADDRESS_BY_CHANNEL[channel]] ?? null;
+  const addressField = ADDRESS_BY_CHANNEL[channel];
+  const rawAddress = base.contact?.[addressField] ?? null;
+  /* A PHONE DESTINATION IS PINNED IN E.164, NOT AS THE SIGN-UP FORM TYPED IT.
+     Twilio refuses anything else outright — "destination is not an E.164 phone
+     number" — and on 2026-09-17 that is exactly how the welcome text, the
+     booking confirmation and a pay link all failed for two clients whose record
+     holds "(661) 605-4248". The funnel door now converts on the way in, but
+     records created before it did still hold the raw shape, and this is the last
+     point the address is frozen before a provider sees it.
+     A number that CANNOT be converted is written exactly as it was typed, so it
+     still reaches the provider and is still rejected loudly with the error on
+     the row. Nothing is dropped and nothing is guessed at. */
+  const toAddress = addressField === "phone"
+    ? (normalizePhone(rawAddress) || rawAddress)
+    : rawAddress;
 
   const providerRef = `workflow:${templateKey}:${eventId}`;
   // RETURNING id so a deduped replay can be told from a real queue. It changes
