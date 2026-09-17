@@ -10,6 +10,7 @@
   "scripts": {
     "lint": "node scripts/lint.mjs",
     "migrate": "node db/migrate.mjs",
+    "ship": "node scripts/ship.mjs",
     "migrations:manifest": "node scripts/db/expected-migrations.mjs",
     "artifact": "node scripts/build-artifact.mjs",
     "diagrams": "node scripts/diagrams/generate.mjs",
