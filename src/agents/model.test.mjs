@@ -99,3 +99,48 @@ test("callModel with both keys uses OpenAI, not Anthropic", async () => {
   assert.equal(res.text, "I am the buyer.");
   assert.equal(res.request.provider, "openai");
 });
+
+// A MASKED KEY IS NOT A KEY. These guard the 2026-09-17 fault: the live
+// OPENAI_API_KEY was the blanked-out form of one (asterisks), OpenAI answered 401,
+// and because SOMETHING was set the valid Anthropic key was never reached — so
+// Social Studio's "Write 3 posts for me" wrote nothing at all. The stored value is
+// never removed (CLAUDE.md §11 "Never remove a key"); it is routed around here.
+test("a masked OpenAI key counts as not set, so Anthropic is reached", () => {
+  const MASK = "****************Ab3d";
+
+  // The exact live shape: sixteen asterisks then four characters.
+  assert.equal(liveModelProvider({ OPENAI_API_KEY: MASK }), null);
+  assert.equal(liveModelProvider({
+    OPENAI_API_KEY: MASK,
+    ANTHROPIC_API_KEY: "sk-ant"
+  }), "anthropic", "a mask must not shadow a working Anthropic key");
+
+  // The Company Brain variable is the same door and must behave the same way.
+  assert.equal(liveModelProvider({
+    COMPANY_BRAIN_OPENAI_API_KEY: MASK,
+    ANTHROPIC_API_KEY: "sk-ant"
+  }), "anthropic");
+
+  // Any asterisk marks a mask — a real OpenAI key never carries one.
+  assert.equal(liveModelProvider({ OPENAI_API_KEY: "sk-proj-abc*def" }), null);
+
+  // A genuine key is untouched by this. If this line ever fails, the check has
+  // grown too wide and is refusing real credentials.
+  assert.equal(liveModelProvider({ OPENAI_API_KEY: "sk-proj-abcDEF123" }), "openai");
+});
+
+test("a masked OpenAI key sends the request to Anthropic, not OpenAI", async () => {
+  const res = await callModel({
+    system: "sys",
+    user: "write me three posts",
+    env: { OPENAI_API_KEY: "****************Ab3d", ANTHROPIC_API_KEY: "sk-ant" },
+    fetchImpl: async (url) => {
+      assert.match(url, /anthropic/, "a mask must not route the call to OpenAI");
+      assert.doesNotMatch(url, /api\.openai\.com/);
+      return { ok: true, json: async () => ({ content: [{ type: "text", text: "Post one." }] }) };
+    }
+  });
+  assert.equal(res.mode, "live");
+  assert.equal(res.text, "Post one.");
+  assert.equal(res.request.provider, "anthropic");
+});

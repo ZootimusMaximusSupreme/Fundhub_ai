@@ -14,9 +14,27 @@ export const DEFAULT_MODEL = "claude-sonnet-4-5-20250929";
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 export const DEFAULT_MAX_TOKENS = 600;
 
+// A MASKED KEY IS NOT A KEY. Measured 2026-09-17: the live OPENAI_API_KEY was the
+// blanked-out form of one — sixteen asterisks and four characters, i.e. what the
+// screen shows when a password is hidden. Someone copied the mask instead of the
+// value. OpenAI answered it with 401. That alone would be a small fault, but because
+// SOMETHING was set, liveModelProvider() below returned "openai" and the valid
+// Anthropic key was never reached — so Social Studio's "Write 3 posts for me" wrote
+// nothing, and Company Brain took the same 401s silently.
+//
+// A real OpenAI key never contains an asterisk, so a value carrying one is a mask and
+// is treated here as not set. The stored value is left exactly where it is: owner rule,
+// CLAUDE.md §11 "Never remove a key" — we route around a bad credential, we never
+// delete one.
+function isMasked(value) {
+  return String(value).includes("*");
+}
+
 function openaiKeyOf(env) {
   if (!env) return null;
-  return env.OPENAI_API_KEY || env.COMPANY_BRAIN_OPENAI_API_KEY || null;
+  const key = env.OPENAI_API_KEY || env.COMPANY_BRAIN_OPENAI_API_KEY || null;
+  if (!key || isMasked(key)) return null;
+  return key;
 }
 
 /**
