@@ -288,9 +288,18 @@ like a fault. That is the failure worth watching for on any screen built on this
     rather than shown as a button that can only refuse. What it saves goes straight into the
     Script list on the Generate form below it.
   - **`creative/generate` with a script** — the Generate form now has a **Script** picker,
-    holding the scripts saved on that screen. The id rides in `spec.scriptId`, which is the
-    only place the endpoint reads it from. Nothing reads saved scripts back, so the list starts
-    empty on every page load — and nobody is ever asked to find or type an id.
+    holding the scripts saved for that partner. The id rides in `spec.scriptId`, which is the
+    only place the endpoint reads it from — and nobody is ever asked to find or type an id.
+
+    **The picker was half-built until 2026-09-17, and this is what that cost.** Only the save
+    filled it, from its own reply, in that one browser tab. Reload the page and it fell back to
+    its single built-in "— none —", so a script written yesterday could never be tied to
+    anything. The live walk that morning saw both halves of it: *"Saved as version 1"*, then
+    *"— none —"* after a reload. `GET /api/scripts/list` (`api/scripts/list.mjs`, routed in
+    `netlify/functions/api.mjs`) is the read half, and `renderScriptPicker()` on the screen
+    rebuilds the picker from it on every load. `/api/read/ad-spine` could not have stood in:
+    `v_ad_label_spine` starts `FROM ads` (377:650), so a script with no creative and no ad
+    yields no row there at all.
   - **`campaigns/link-asset`** — a **Label** button on every row of *Creative fatigue by ad* on
     `public/app/campaign-manager.html`, which opens a small form below the table: pick the
     creative, type our ad number. The ad's own internal id travels on the button, taken from
