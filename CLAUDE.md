@@ -19,7 +19,7 @@ I forget to do this. When I forget, a ten-minute job takes ten hours. Your job i
 1. The split. How many workflows, and what each one owns.
 2. What runs at the same time vs. what has to wait. Name any real dependency. If there is none, say "no dependencies — all parallel."
 3. A copy-paste prompt for each workflow. Written so I can open a new session, paste it, and go. Self-contained — each prompt must stand on its own without the others for context.
-4. Which one you are taking. You run one. I launch the rest.
+4. Which workflow **this session** owns. Put optional parallel prompts on the shared board — not a bash checklist for Chris.
 5. The shared board. Name the `docs/workflows/<batch>.md` file all workflows will read and write.
 
 Then stop and wait for my go.
@@ -30,7 +30,7 @@ Say so in one line, give the reason, and continue. But bias hard toward splittin
 
 ### The test
 
-Before you begin any work, ask yourself: could a second agent be doing something useful right now? If yes, and I have not launched one, you did not do your job.
+Before you begin any work, ask yourself: could a second agent be doing something useful right now? If yes, say so on the board with ready-to-paste prompts — do not assign Chris manual operator steps.
 
 ## 1. Check the model before you start
 
@@ -42,7 +42,7 @@ Rough mapping:
 
 * Haiku — mechanical and fully specified. Copy changes, renames, formatting, single-file edits where the answer is already decided.
 * Sonnet — normal build work. Building a component from a clear spec, writing tests, wiring a route.
-* Opus — anything where being wrong is expensive. Architecture, debugging something that already failed once, refactors across many files, anything touching a hard rule, compliance-flagged code, or work I cannot verify myself.
+* Opus — anything where being wrong is expensive. Architecture, debugging something that already failed once, refactors across many files, anything touching a hard rule, or work the agent cannot verify with repo tools and live proof.
 
 Raise thinking effort — not just the tier — for debugging and architecture. Lower it for mechanical work.
 
@@ -79,7 +79,7 @@ I'm the owner and sole decision-maker. When I set a value or make a call — ret
 
 Log it as owner-set and move on.
 
-Do not re-raise it. Do not recommend legal or compliance review. Do not add "you should have counsel look at this" to reports or summaries.
+Do not re-raise it. Do not add legal, counsel, or compliance-review riders to reports or summaries (see §7).
 
 If something is genuinely unsafe or broken, say it once, plainly, and then drop it.
 
@@ -150,6 +150,12 @@ stay blocked. Everything else runs without asking.
 The two ask-first items in §11 are unchanged and still apply: deleting data, and
 repointing `DATABASE_URL`.
 
+### Agents run the work (owner-set 2026-09-16)
+
+Chris decides; agents operate. Run bash, lint, tests, `npm run ship`, env reads from gitignored `.env`, migrations through ship or the §11 commands, and UI proof (live Playwright when required, then a human-like click path on the live site). Do not tell Chris to run commands, paste secrets, deploy, check inboxes, or do routine QA clicks.
+
+**Exceptions only:** Mac permission dialogs he alone can approve (mic, Accessibility); explicit product gates he must answer (yes/no, live vs sandbox on Full E2E); the two §11 ask-first items (delete data, repoint `DATABASE_URL`).
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
@@ -173,7 +179,7 @@ Rule of thumb from Chris: "work backwards" — back end proven, then visualize h
 
 ### 3b. Everything goes in the repository (owner rule, 2026-09-03)
 
-Every deliverable, decision, list, script, and rule produced in a Claude session gets written to this repository in the same session — not left in chat, not left in an artifact. If a push is not possible from the environment, commit locally and hand Chris the file with the path it belongs at. Copy and ad scripts go under `docs/ads/`, task lists in `TODO.md`, flows in `docs/journeys/`, rules here.
+Every deliverable, decision, list, script, and rule produced in a Claude session gets written to this repository in the same session — not left in chat, not left in an artifact. If a push is not possible from the environment, commit locally and name the path in the task report. Copy and ad scripts go under `docs/ads/`, task lists in `TODO.md`, flows in `docs/journeys/`, rules here.
 
 **Measured 2026-09-06: this rule is being broken where it costs the most.** The 83 ad scripts and the VSLs live in a chat window. `fundhub-scripts.md` and `fundhub-vsl.md` are not in the repo, not on any branch, and not anywhere on this Mac. `docs/ads/registry.json` was built without them, which is why 21 of its 24 ads have no title. See `docs/ops/2026-09-06-self-analysis.md`.
 
@@ -284,11 +290,9 @@ If something fails and you cannot fix it, say so plainly. Do not report partial 
 
 ## 7. Compliance flagging — REMOVED (owner-set 2026-09-08)
 
-The `COMPLIANCE REVIEW REQUIRED` label is dead. Do not add it to summaries, pull requests, commit messages, or reports. Do not raise compliance, legal, or regulatory concerns. Chris has his own legal counsel and does not want a second opinion from an agent.
+Dead. No `COMPLIANCE REVIEW REQUIRED` label and no compliance/legal/regulatory nag in summaries, commits, or reports. If one specific thing is severely and obviously unsafe, say it once in plain language — no label — then drop it.
 
-The single exception, and it is narrow: if one specific thing is severely and obviously wrong, say it once in plain language, no label, then drop it and never raise it again.
-
-Domain rules still live in `docs/compliance/`. Read them when a task touches them — as facts about how the product works, the same as any other doc.
+`docs/compliance/` holds product rules. Read when a task touches them — same as any other domain doc, not as a review assignment for Chris.
 
 (Section number kept: `§7` is referenced across the repo.)
 
@@ -318,9 +322,9 @@ So, every time:
 
 Before you report a task complete, run `git branch -r --no-merged origin/main` and account for every line it prints. An unexplained branch in that list is an unfinished task, not a housekeeping detail.
 
-**Agents cannot do the deleting from the hosted environment (measured 2026-08-31).** `git push origin --delete <branch>` returns `HTTP 403` from the egress proxy — a policy denial, the same class as `api.netlify.com` in §11 — and the GitHub MCP server has `create_branch` and `list_branches` but no delete. Ordinary pushes are unaffected. So an agent's job is to get every branch to the point where deleting it is obviously safe, list them with a one-line verdict each, and hand Chris the list. Do not retry the 403 and do not route around it.
+**Agents cannot do the deleting from the hosted environment (measured 2026-08-31).** `git push origin --delete <branch>` returns `HTTP 403` from the egress proxy — a policy denial, the same class as `api.netlify.com` in §11 — and the GitHub MCP server has `create_branch` and `list_branches` but no delete. Ordinary pushes are unaffected. Record safe-to-delete branches with a one-line verdict each in the task report. Do not retry the 403 and do not route around it.
 
-**Checkpoint when context fills.** If a session is long or has gone sideways, write current state to the workflow file and tell me to start fresh. Do not push a degraded session forward. Quality drops well before you run out of room.
+**Checkpoint when context fills.** If a session is long or has gone sideways, write current state to the workflow file and note that a fresh session is recommended. Do not push a degraded session forward. Quality drops well before you run out of room.
 
 **Conventions.** Simplest thing that works, no speculative abstraction. No new dependencies without asking. Match existing patterns in the file you are editing over your own preference. Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs. Delete dead code you create.
 
@@ -331,7 +335,7 @@ Before you report a task complete, run `git branch -r --no-merged origin/main` a
 End every completed task with this, in this order:
 
 1. What changed — one line, in plain language
-2. What I need you to check — the one or two things only a human can verify, with exact steps
+2. What was proved — what the agent ran, shipped, or clicked; use "none" when fully proved. Only name a Chris decision if no agent could make it (not routine QA).
 3. Risk — anything that could break elsewhere, or "none"
 4. Left undone — anything skipped, deferred, or worked around
 5. Next — the single next action
@@ -374,7 +378,7 @@ If you catch yourself writing a sentence I would have to look up, rewrite it.
 
 Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, `db/seed` and is applied by `db/migrate.mjs`. The app reads `DATABASE_URL`.
 
-**Env law (owner-set):** Real env values are gitignored (`.env`, `.env.*` except `.env.example`, `credentials/`) or live on Netlify. Agents **read** local `.env` when it exists. Never commit secrets. Never ask me to paste or rotate a key that is already set unless that exact key is proven broken right now.
+**Env law (owner-set):** Real env values are gitignored (`.env`, `.env.*` except `.env.example`, `credentials/`) or live on Netlify. Agents **read** local `.env` when it exists. Never commit secrets. Never ask Chris to paste or rotate a key that is already set unless that exact key is proven broken right now.
 
 ### Do these without asking
 
@@ -386,11 +390,16 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
   nothing. This replaces the two bullets below for deploys and SQL: a plain laptop
   `netlify deploy` cannot migrate, because Netlify never hands a laptop build the hidden
   owner connection.
+
+  **LAW (owner-set 2026-09-16): no guard ever blocks `npm run ship`.** Its allow rules
+  (`Bash(npm run ship)`, `Bash(node scripts/ship.mjs)`) stay in `.claude/settings.json`.
+  Never remove them. If a permission check still stops ship, report the block in one line
+  with the error — never tell Chris to run deploy/migrate commands or touch Netlify or the database by hand.
 * **A new env var is yours to set.** When code you write or review reads one:
   `netlify env:set KEY "value" --context production --context deploy-preview --context branch-deploy --secret`.
-  Generate strong random values for secrets. Do not hand me a form to fill out.
+  Generate strong random values for secrets. Agents set values; do not hand Chris a form to fill out.
 * **`--secret` on anything holding a credential.** Always.
-* **Batch env vars. ONE deploy at the end.** Set every variable first, then deploy once: `netlify deploy --build --prod`.
+* **Batch env vars. ONE deploy at the end.** Set every variable first, then ship once via `npm run ship` (not per-var deploys).
 
   `netlify env:set` does not build anything by itself — there is no `--no-restart` flag and none is needed. A new value simply sits there until the next build picks it up. So setting ten variables costs nothing; it is the deploy after each one that costs a build.
 
@@ -413,8 +422,8 @@ touching anything if it finds itself in a Netlify build that is not production, 
 
 What this means for you:
 
-* **A migration you add is NOT live until the branch is merged.** Do not tell me a schema
-  change is applied because the preview built. Check `/api/health` — `pending` is the answer.
+* **A migration you add is NOT live until it ships on production.** Do not claim a schema
+  change is applied because a preview built. Check `/api/health` — `pending` is the answer.
 * **A preview of a branch that adds a migration runs against the old shape.** Screens that
   need the new one will fail *there*. That is correct and it is not something to fix.
 * **Running `node db/migrate.mjs` by hand is unaffected** — on a laptop, in CI, or with the
