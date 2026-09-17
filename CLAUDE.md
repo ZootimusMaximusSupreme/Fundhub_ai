@@ -378,6 +378,14 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
 
 ### Do these without asking
 
+* **Ship with `npm run ship` — once, at the end of any session that changed main (owner-set 2026-09-16).**
+  Chris does nothing for Netlify or the database. `scripts/ship.mjs` checks, applies pending
+  database changes through the Supabase key the MCP already uses (`SUPABASE_ACCESS_TOKEN`),
+  deploys once, confirms `/api/health` reads pending 0, and logs the ship in
+  `docs/ops/ship-log.md`. It skips when nothing changed, so it never burns a credit for
+  nothing. This replaces the two bullets below for deploys and SQL: a plain laptop
+  `netlify deploy` cannot migrate, because Netlify never hands a laptop build the hidden
+  owner connection.
 * **A new env var is yours to set.** When code you write or review reads one:
   `netlify env:set KEY "value" --context production --context deploy-preview --context branch-deploy --secret`.
   Generate strong random values for secrets. Do not hand me a form to fill out.
