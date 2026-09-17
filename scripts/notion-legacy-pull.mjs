@@ -48,12 +48,41 @@ function waitForEnter(prompt) {
 
 async function launchContext(headless) {
   fs.mkdirSync(PROFILE_DIR, { recursive: true });
-  const headed = process.env.NOTION_HEADFUL === "1";
+  const loginArgv = process.argv.includes("--login");
+  const forceHeaded = loginArgv || process.env.NOTION_HEADFUL === "1";
   return chromium.launchPersistentContext(PROFILE_DIR, {
-    headless: headed ? false : headless,
+    headless: forceHeaded ? false : headless,
     channel: "chrome",
     viewport: { width: 1440, height: 900 },
     locale: "en-US",
+  });
+}
+
+/** True when the saved profile can see Legacy Strong content (not the public sign-in gate). */
+async function probeLegacyStrongSession(page) {
+  await page.waitForTimeout(2000);
+  return page.evaluate(() => {
+    const text = document.body?.innerText || "";
+    const signInGate =
+      /Sign in to see this page/i.test(text) ||
+      /Log in to see this page/i.test(text);
+    const legacyLinks = new Set();
+    for (const a of document.querySelectorAll("a[href]")) {
+      const href = a.href || "";
+      const label = (a.textContent || "").trim();
+      if (!href.includes("/p/legacystrong/")) continue;
+      if (!label || label === "Skip to content") continue;
+      legacyLinks.add(href.split("?")[0]);
+    }
+    const sidebar =
+      document.querySelector('[data-testid="sidebar"]') ||
+      document.querySelector(".notion-sidebar");
+    return {
+      signInGate,
+      legacyLinkCount: legacyLinks.size,
+      hasSidebar: Boolean(sidebar),
+      url: location.href,
+    };
   });
 }
 
@@ -278,16 +307,54 @@ async function crawlPage(page, url, outBase, visited, queue) {
 }
 
 async function loginMode() {
-  console.log("Opening browser. Log into Notion and open Legacy Strong (sidebar visible).");
+  console.log("Opening Chrome (headed, not headless).");
+  console.log(
+    "Log into Notion, open the Legacy Strong workspace, wait until the sidebar is visible.",
+  );
+  console.log(
+    "Open The Vault (or any known page) and confirm there is NO “Sign in to see this page” prompt.",
+  );
+  console.log("Only then press Enter in this terminal — not before.");
   const context = await launchContext(false);
   const page = context.pages()[0] || (await context.newPage());
-  await page.goto(DEFAULT_START, NAV_OPTS);
-  await waitForEnter("\nWhen the workspace sidebar is open, press Enter here… ");
-  const url = page.url();
-  fs.mkdirSync(path.dirname(PROFILE_DIR), { recursive: true });
-  fs.writeFileSync(START_URL_FILE, url);
-  console.log(`Saved start URL: ${url}`);
-  console.log(`Profile saved under credentials/notion-scrape/profile/`);
+  const bootUrl = fs.existsSync(START_URL_FILE)
+    ? fs.readFileSync(START_URL_FILE, "utf8").trim()
+    : DEFAULT_START;
+  const openUrl =
+    bootUrl.includes("/p/legacystrong/") ? bootUrl : "https://www.notion.so";
+  await page.goto(openUrl, NAV_OPTS);
+
+  for (;;) {
+    await waitForEnter("\nWhen Legacy Strong is open (sidebar + no sign-in gate), press Enter… ");
+    const probe = await probeLegacyStrongSession(page);
+    if (probe.signInGate || probe.legacyLinkCount < 2) {
+      console.error(
+        `\nSession not saved — still on sign-in gate or workspace not loaded.`,
+      );
+      console.error(
+        `  url=${probe.url} legacyLinks=${probe.legacyLinkCount} sidebar=${probe.hasSidebar} signInGate=${probe.signInGate}`,
+      );
+      console.error(
+        "Fix it in Chrome (log in, enter Legacy Strong, open The Vault), then press Enter again.\n",
+      );
+      continue;
+    }
+    const url = page.url();
+    if (!url.includes("/p/legacystrong/")) {
+      console.error(
+        `\nCurrent URL is not a Legacy Strong page: ${url}`,
+      );
+      console.error("Navigate to The Vault or Library in Chrome, then press Enter again.\n");
+      continue;
+    }
+    fs.mkdirSync(path.dirname(PROFILE_DIR), { recursive: true });
+    fs.writeFileSync(START_URL_FILE, url);
+    console.log(`Saved start URL: ${url}`);
+    console.log(`Profile saved under credentials/notion-scrape/profile/`);
+    console.log(`Legacy Strong links visible: ${probe.legacyLinkCount}`);
+    break;
+  }
+
   await context.close();
 }
 
