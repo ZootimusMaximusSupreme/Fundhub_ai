@@ -36,7 +36,7 @@ credit file into `buildOptimizeRoadmap({ crsResult })`?**
 |---|------|-------|--------|
 | W1 | What Smart Credit access do we already hold? | this session | **done** |
 | W2 | What does the Smart Credit / ConsumerDirect API actually offer? | W2 | **done** |
-| W3 | What shape does our roadmap engine need a report in? | open | pending |
+| W3 | What shape does our roadmap engine need a report in? | W3 | **done** |
 
 No dependencies. All three are "go and look". Nothing waits.
 
@@ -387,4 +387,273 @@ Recording it here because I read that page for question 4. Not acting on it.
 
 ## W3 findings
 
-_pending_
+**Owner: W3. Status: done. Traced 2026-09-17 by reading code, plus one read-only count
+against the production database and one local run of the engine over the vendor's own
+sandbox payloads.**
+
+### The headline
+
+**A real credit pull already exists in this repo, it already stores the exact shape the
+roadmap wants, and two real reports are sitting in the production database right now.**
+
+`crs_results` holds 21 rows. Two of them are real pulls from the live bureau system
+(`provider = 'crs_softview'`, `result.environment = 'production'`), both dated
+**2026-08-24**. One of those two carries **13 real tradelines from Experian** and an
+Experian score of 811. The other returned a file with no tradelines and was held for
+fraud review. The remaining 19 rows are simulated (`result.simulated = true`).
+
+So the answer to "can we feed the roadmap a real report" is not "build an integration".
+It is "point the roadmap at a row we already have".
+
+---
+
+### 1. The exact shape of `crsResult`
+
+`crsResult` is **two shapes in one object**, because the roadmap runs it through two
+unrelated engines. Nothing requires both halves. Each half quietly does nothing when its
+fields are missing.
+
+#### Half A — the raw bureau file (drives `findings` and `rounds`)
+
+Read by `violationsByBureauFromMergedCrs` and `derogatoryClaimsByBureau`, both of which
+call `bureauReportsFromMergedCrs` in `src/metro2/diy/from-crs.mjs` and then
+`normalizeFromCrs` in `src/metro2/normalize.mjs`.
+
+Top level:
+
+| Field | Required? | Read by |
+|---|---|---|
+| `bureaus.TU` / `.EX` / `.EQ` | one of the three, or the object is the bureau body itself | `bureauReportsFromMergedCrs` |
+| `bureausPulled` | **not read by the roadmap at all** | only `src/finance/crs-tier.mjs` |
+
+A bureau body counts as a report only if it has at least one of `tradelines`,
+`creditFiles` or `inquiries` as an array (`isBureauReport`). If `bureaus` is absent, the
+whole object is treated as ONE bureau and the code is worked out from
+`creditFiles[0].creditFileDetail.sourceType` or `tradelines[0].sourceType` —
+`"TransUnion"`/`"TU"`, `"Experian"`/`"EX"`, `"Equifax"`/`"EQ"`. Anything else and the
+file is silently skipped.
+
+Inside a bureau body:
+
+| Field | Required? | What it does |
+|---|---|---|
+| `tradelines[]` | **required** — no tradelines, no findings | every Metro 2 check and every derogatory claim |
+| `creditFiles[0].creditFileDetail.creditFileInfileDate` | optional | the report's as-of date (`reportAsOf`) |
+| `responseDetail.dateRequested` | optional | fallback as-of date |
+| `creditFiles[].aliases[] / dobs[] / addresses[] / employments[]` | optional | personal-information checks; missing means those checks stay silent |
+| `inquiries[]` | optional | inquiry checks |
+| `scores` | not read on this half | — |
+
+Per tradeline record — these are the **exact vendor key names**, read in
+`normalizeTradeline` (`src/metro2/normalize.mjs`) and `classifyDerogatory`
+(`src/metro2/diy/derogatory.mjs`). Nothing else on a tradeline is read:
+
+| Key | Required? | Used for |
+|---|---|---|
+| `creditorName` | one of these two, or the record is dropped | who the letter names |
+| `accountIdentifier` | (same) | last four digits |
+| `sourceType` | optional | which bureau |
+| `accountType` | optional | Metro 2 Field 8. Only `Revolving` / `Installment` / `Mortgage` / `Open` translate |
+| `accountOwnershipType` | optional | Metro 2 Field 37. Only 6 values translate |
+| `accountOpenedDate` | optional | Field 10, strict `YYYY-MM-DD` |
+| `accountReportedDate` | optional | Field 24 |
+| `accountClosedDate` | optional | Field 26 |
+| `currentBalanceAmount` | optional | Field 21 |
+| `pastDueAmount` | optional | Field 22, and the late-payment claim |
+| `chargeOffAmount` | optional | Field 23 |
+| `currentRatingType` | optional | the bureau's own words, quoted in the letter |
+| `paymentStatus` | optional | fallback for the above |
+| `businessType` | optional | marks a collection agency |
+| `loanType` | optional | marks a collection agency |
+| `_30DayLates` / `_60DayLates` / `_90DayLates` | optional | the late-payment claim |
+
+**Twenty-six of the thirty-eight Metro 2 checks can never fire on this data**, and that
+is deliberate, not broken. `docs/metro2/CRS-FIELD-COVERAGE.md` lists every refused field
+with its evidence. Field 17A (Account Status) alone is read by fifteen checks and is not
+in a consumer soft pull.
+
+#### Half B — the underwriting engine result (drives `accounts`, `today`, `later`)
+
+Read by `buildBlackReportClient` in `src/underwrite/black-report-client.mjs`. The roadmap
+uses only four things off the returned client dict: `revolving`, `preapproval_now`,
+`preapproval_after`, `util_pct`.
+
+| Field | Required? | Effect when missing |
+|---|---|---|
+| `normalized.tradelines[]`, else top-level `tradelines[]` | needed for the `accounts` table | `accounts` comes back `[]` |
+| `preapprovals.totalCombined` | needed for `today.preapproval` | **forced to 0**, and `today.preapprovalKnown` reports `false` |
+| `projectedPreapproval.totalCombined` | needed for `later.preapproval` | falls back to `preapproval_now` |
+| `consumerSignals.utilization.{pct,totalBalance,totalLimit}` | fallback only | re-summed from the tradelines when they carry limits |
+| `consumerSignals.scores.perBureau.{ex,eq,tu}`, `scores`, `outcome`, `findings`, `consumerSignals.bureauNegatives`, `normalized.identity`, `normalized.publicRecords`, `businessSignals`, `pulledAt` | **not used by the roadmap** | nothing |
+
+`buildBlackReportClient` happily reads **raw vendor spellings** on a tradeline, not just
+the engine's own: `currentBalanceAmount`, `creditLimitAmount`, `accountOpenedDate`,
+`accountStatusType`. This matters — it means a raw pull feeds the accounts table with no
+conversion at all.
+
+An account only reaches the `accounts` table if `accountType` is `revolving` (case
+ignored), `isAU` is not true, and it has a creditor name. `effectiveLimit` /
+`creditLimitAmount` is what produces the pay-down target; with no limit the row still
+prints but the target is blank.
+
+#### `buildRoundPlan` reads nothing off `crsResult`
+
+It takes only the flattened items the roadmap hands it — `bureau`, `round`, `creditor`,
+`account_last4`, `rule_id` — and the round ladder from
+`src/metro2/letters/catalog.mjs`. Every finding is stamped `round: "R1"`, so all attacks
+land on Round 1 and R2–R6 are always empty. Six rounds always come back.
+
+---
+
+### 2. What already produces this shape
+
+| File | Real or simulated | How it gets its data |
+|---|---|---|
+| `src/finance/crs-map.mjs` → `mergeBureauReports()` | **REAL** | Merges the live bureau responses into `crs_results.result`. This is the producer. |
+| `src/finance/crs-pull.mjs` → `runCrsPull()` | **REAL** | Orders each bureau through `src/finance/crs-client.mjs` → `src/messaging/providers/crs-softview.mjs`, then stores through `coordinateCrsResult()` in `src/finance/soft-pulls.mjs`. |
+| `src/workflows/c-00-crs-soft-pull-request.mjs` | **REAL** | Fires `runCrsPull` automatically on the `diagnostic.paid` event. |
+| `src/waypoints/seed.mjs` → `latestCreditFile()` | **REAL (reader)** | The existing one-line way to fetch a logged-in client's newest stored file: `SELECT id, created_at, result FROM crs_results WHERE client_id=$1 AND org_id=$2 AND is_demo IS NOT TRUE ORDER BY created_at DESC LIMIT 1`. **This is the hook the roadmap needs.** |
+| `src/demo/simulate-client.mjs` | simulated | Hardcoded scores and tradelines, written with `is_demo = true`. |
+| `scripts/sim/push-credit.mjs` | simulated | Hand-built `bureaus.{TU,EX,EQ}`, stamped `simulated: true`. |
+| `src/demo/platform-seed.mjs` | simulated | Invented creditor names, older shape with no `bureaus` key. |
+| `src/optimize-page/roadmap.mjs` → `SAMPLE_STORED_FILE` | sample | The placeholder the public page falls back to. |
+| `vendor/underwriteiq-full/api/lite/crs/sandbox/{tu,exp,efx}.json` | real vendor payloads, fake people | The vendor's own sandbox responses. Used by tests. |
+
+**No CSV holds credit data.** Checked `db/`, `scripts/` and `docs/`.
+
+**`src/adapters/crs.mjs` is not a producer** — it only reshapes an engine result into
+events. **`src/workflows/u-03-crs-snapshot-sync.mjs` is not a producer either** — it
+reads an already-stored result.
+
+#### What is actually in the database, measured 2026-09-17
+
+| | rows |
+|---|---|
+| Total `crs_results` | 21 |
+| Real production pulls (`provider = 'crs_softview'`) | **2** |
+| Simulated (`result.simulated = true`) | 19 |
+| Carrying a `bureaus` object | 21 |
+| Carrying `preapprovals` | 19 — **all of them simulated** |
+
+The two real rows, both 2026-08-24:
+
+| Bureau | Tradelines | Score | Outcome |
+|---|---|---|---|
+| EX | **13** | 811 | PREMIUM_STACK |
+| EQ | 0 | none | FRAUD_HOLD |
+
+**The real rows do NOT carry `preapprovals`, `projectedPreapproval` or `consumerSignals`.**
+`mergeBureauReports()` never writes them. The underwriting engine runs at pull time
+(`src/finance/crs-tier.mjs`) but only its tier and one funding number are kept — the tier
+goes to `clients.outcome_tier` and `crs_results.outcome_tier`, and the rest is thrown
+away. The simulated rows carry those fields because the simulator writes them by hand.
+
+Note for W1: the two production rows prove the live fence was OPEN on 2026-08-24. W1
+measured it CLOSED today. Both are facts about different days; neither contradicts
+the other.
+
+#### Proof the shape works end to end
+
+Ran `buildOptimizeRoadmap` locally over the vendor's three real sandbox payloads wrapped
+as `{ bureausPulled, bureaus: { TU, EX, EQ }, tradelines }` — the exact output of
+`mergeBureauReports()`:
+
+```
+onRepairPath=false  source=file  findings=41  rules=M2-005,M2-031,M2-036
+                    accounts=8  util="23%"  preapprovalKnown=false  preapproval=0
+onRepairPath=true   source=file  findings=46  rules=+DEROG-CHARGEOFF,DEROG-LATE
+                    accounts=8  util="23%"  preapprovalKnown=false  preapproval=0
+```
+
+41 real findings, 8 real card rows, a real 23% utilisation figure. **Zero conversion
+code was written.** The only thing that came out wrong is the pre-approval, and the page
+already knows to hide it because `preapprovalKnown` is `false`.
+
+---
+
+### 3. `personal` and `onRepairPath`
+
+#### `personal` changes nothing in the roadmap's output today
+
+`buildBlackReportClient` uses `personal` for `applicant`, `address`, `state` and
+`booking_url`, reading `name`, `address`, `state`, and `bookingUrl` / `booking_link`.
+The roadmap returns **none of those four**. It reads only `revolving`,
+`preapproval_now`, `preapproval_after` and `util_pct`, and it uses its own hardcoded
+`BOOK_URL`. So `personal` is currently dead weight — passing a real name changes no
+byte of the answer. It would only start to matter if the page began printing the
+client's name or address.
+
+#### `onRepairPath` is the dispute-claim switch
+
+`true` merges the derogatory claims (`DEROG-COLLECTION`, `DEROG-CHARGEOFF`,
+`DEROG-LATE`) into the Metro 2 findings, one per derogatory account, skipping any
+account the Metro 2 engine already flagged.
+
+`false` — what the public referral door at `api/public/optimize.mjs:226` passes —
+**suppresses every derogatory claim**. A file that is nothing but collections and
+charge-offs, reported cleanly, produces **zero findings and zero attacks**: a wrecked
+report reads as a clean one. The measurement above shows the size of it — 41 findings
+off the flag, 46 on, and the 5 extra are exactly the ones a repair client is paying for.
+
+This is deliberate. The owner rule of 2026-09-03 is "any derogatory deserves a letter,
+but only if they are in the correct offer path", and a stranger on a no-auth referral
+page is on no offer path. A caller that knows the client answers it from
+`clients.outcome_tier`, or from `src/repair/on-repair-path.mjs` when it also has the
+org id.
+
+---
+
+### 4. What would have to be written
+
+Two very different sizes of job, depending on which vendor.
+
+#### If the report comes from CRS — almost nothing
+
+The shape already matches. What is missing is only the plumbing:
+
+1. **A way in.** `buildOptimizeRoadmap` has exactly one caller today —
+   `api/public/optimize.mjs:226` — and it calls it with no arguments at all. There is no
+   logged-in door. Something has to read the client's newest row and pass it in.
+   `latestCreditFile()` in `src/waypoints/seed.mjs` already does the read.
+2. **The offer-path answer.** That same caller has to work out `onRepairPath`, or every
+   derogatory claim stays hidden.
+3. **The pre-approval, if it is wanted on screen.** The real rows do not carry it, so
+   `today.preapproval` will be 0 and `preapprovalKnown` will be `false`. Either re-run
+   the tier engine over the stored row (`runTierEngineFromCrsResult` in
+   `src/finance/crs-tier.mjs` already does exactly this and needs nothing new) and merge
+   with `mergeStoredUnderwrite`, or leave the figure hidden.
+4. **The live fence.** W1 measured `CRS_ALLOW_LIVE = 0` and the sandbox host today, so a
+   NEW real pull cannot happen until the owner opens it. The two rows from 2026-08-24
+   are readable regardless.
+
+#### If the report comes from a new third party — a translator has to be written
+
+There is no generic importer in this repo. Whatever arrives would have to be turned into
+the CRS vendor's own field names, listed in section 1 above, before either engine reads a
+thing. Specifically:
+
+- **Per bureau, not merged.** The engine runs once per bureau file and writes one letter
+  per bureau. A single flattened list loses that.
+- **Exact key names.** `creditorName`, `accountIdentifier`, `currentBalanceAmount`,
+  `accountOpenedDate`, and the rest of the table above. A close-enough name reads as
+  missing and the check stays silent — it does not error.
+- **Exact enumeration values.** `accountType` must be the literal words `Revolving` /
+  `Installment` / `Mortgage` / `Open`. `accountOwnershipType` must be one of six exact
+  strings. `sourceType` must be `TransUnion` / `Experian` / `Equifax`. Anything else is
+  refused on purpose — `src/metro2/normalize.mjs` has the reasoning written out, and the
+  refusals are the safety feature, not a bug to route around.
+- **Dates strictly `YYYY-MM-DD`.** Any other format is dropped.
+- **Money as dollars.** A string or a number; converted to cents internally. Empty stays
+  unknown and must not become zero.
+
+That translator is roughly the same job as `src/metro2/normalize.mjs`'s input contract,
+written in reverse, and it is only worth writing if the new vendor gives us something CRS
+does not.
+
+---
+
+### What W3 concludes
+
+Nothing needs to be built to put a real report on the roadmap. One row already in the
+database has thirteen real tradelines in exactly the right shape. What is missing is a
+logged-in door that reads it, and an answer to whether that client is on a repair path.
