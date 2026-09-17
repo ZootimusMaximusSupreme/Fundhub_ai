@@ -163,3 +163,22 @@ Rules: work on main in this checkout. One commit per fix, message names the GAP.
 
 Each lane writes here when done: what changed, what was proved with a live click, what is left.
 
+### Baseline — measured 2026-09-17 on `main` at `ca0f7efd`, before any lane edited a file
+
+Laptop, macOS, `DATABASE_URL` not readable from this session (so the database-backed tests skipped).
+
+- `npm run lint` — **clean**, 2093 files parse (exit 0)
+- `npx tsc --noEmit` — **clean** (exit 0)
+- `npm test` — **9912 tests, 9904 pass, 4 fail, 4 skipped**
+
+The four that were ALREADY failing before this pass started. If any of these is still failing at the end,
+that is the baseline, not damage this pass did:
+
+1. `client-control-panel.html binds the live URL client and does not fake a pull`
+2. `every clock and timestamp on a staff screen is Arizona — no exceptions`
+3. `every read endpoint scopes to the caller's company`
+4. `registry: every routed api/ handler and live public/app desk is listed or explicitly unmonitored`
+
+Rollback point: `git reset --hard checkpoint/pre-fix-pass-2026-09-17` (owner runs this; it is on the deny list
+for agents).
+
