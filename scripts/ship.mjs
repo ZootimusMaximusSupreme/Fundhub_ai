@@ -95,7 +95,18 @@ if (unlisted.length) fail(`db files missing from db/expected-migrations.mjs (run
 say("  lint and guards pass");
 
 // ── 4. database changes ───────────────────────────────────────────────────────
-const TOKEN = process.env.SUPABASE_ACCESS_TOKEN || "";
+// The key is set for Claude's shell by .claude/settings.local.json (gitignored), not for
+// Chris's own terminal — so read it from the same file when the shell does not have it.
+function supabaseToken() {
+  if (process.env.SUPABASE_ACCESS_TOKEN) return process.env.SUPABASE_ACCESS_TOKEN;
+  try {
+    const local = JSON.parse(fs.readFileSync(path.join(ROOT, ".claude/settings.local.json"), "utf8"));
+    return String(local?.env?.SUPABASE_ACCESS_TOKEN || "");
+  } catch {
+    return "";
+  }
+}
+const TOKEN = supabaseToken();
 async function sql(query) {
   const res = await fetch(`https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`, {
     method: "POST",
