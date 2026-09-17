@@ -34,7 +34,7 @@ credit file into `buildOptimizeRoadmap({ crsResult })`?**
 
 | # | Task | Owner | Status |
 |---|------|-------|--------|
-| W1 | What Smart Credit access do we already hold? | this session | claimed |
+| W1 | What Smart Credit access do we already hold? | this session | **done** |
 | W2 | What does the Smart Credit / ConsumerDirect API actually offer? | open | pending |
 | W3 | What shape does our roadmap engine need a report in? | open | pending |
 
@@ -112,7 +112,92 @@ findings", then mark W3 done in the task table. Commit locally.
 
 ## W1 findings
 
-_in progress — this session_
+**Owner: this session. Status: done. Measured 2026-09-17 against Netlify production.**
+
+### 1. We DO hold ConsumerDirect credentials. My earlier "they never gave us a key" was wrong.
+
+Set on Netlify production, confirmed by name:
+
+```
+CONSUMERDIRECT_PID
+CONSUMERDIRECT_STAGE_CLIENT_KEY   (secret)
+```
+
+### 2. The code cannot see them. The names do not match, by one underscore.
+
+`smartCreditFromEnv()` in `api/public/optimize.mjs` reads:
+
+```
+CONSUMER_DIRECT_CLIENT_KEY   or   SMART_CREDIT_CLIENT_KEY
+CONSUMER_DIRECT_PID          or   SMART_CREDIT_PID
+CONSUMER_DIRECT_ENV          or   SMART_CREDIT_ENV
+```
+
+`CONSUMERDIRECT_PID` and `CONSUMER_DIRECT_PID` are different names. Nothing matches, so
+the gate `if (clientKey && pid)` never opens, the sign-up widget never mounts, and
+`/optimize` falls back to the plain affiliate link for everyone.
+
+**This is not new.** `docs/workflows/consumerdirect-widget-2026-08-28.md` found it on
+2026-08-28, wrote it up as workflow 1 with a full task spec (lines 575-610), and it was
+never done. It has been sitting broken for 20 days.
+
+### 3. The key we hold is a PRACTICE key, not a live one.
+
+`CONSUMERDIRECT_STAGE_CLIENT_KEY` is a stage key — their test system. Fixing the names
+alone is not enough: `smartCreditFromEnv()` only points at the practice system when
+`CONSUMER_DIRECT_ENV` equals `stage`, and that variable is not set at all. A practice key
+sent to the live system fails.
+
+### 4. A SEPARATE credit-report pull system already exists in this repo: CRS.
+
+This is the big one for the roadmap question. `src/finance/crs-identities.mjs` is a real
+soft-pull gate with real credentials on Netlify production:
+
+```
+CRS_API_HOST            CRS_LIVE_API_HOST        (secret)
+CRS_API_USERNAME        CRS_LIVE_API_USERNAME    (secret)
+CRS_API_PASSWORD        CRS_LIVE_API_PASSWORD    (secret)
+CRS_ALLOW_LIVE          CRS_ACTIVE_BUREAUS
+```
+
+Measured state of the gate, production, 2026-09-17:
+
+| Setting | Value | Meaning |
+|---|---|---|
+| `CRS_API_HOST` | the sandbox host | pointed at the practice system |
+| `CRS_ALLOW_LIVE` | `0` | live pulls are OFF |
+| `CRS_ACTIVE_BUREAUS` | `TU,EX,EQ` | all three bureaus would be ordered |
+
+The gate needs BOTH the production host AND `CRS_ALLOW_LIVE` on. Today neither is set that
+way, so it fails closed. That is the fence working as designed, not a fault.
+
+The sandbox accepts only three synthetic identities from the vendor's fixtures, whose
+Social Security numbers are in the never-issued 666-xx-xxxx range. A real person cannot
+be pulled against the sandbox.
+
+**W3 is tracing whether CRS output already matches the `crsResult` shape the roadmap
+engine wants. That is the question that decides everything. Do not duplicate it here.**
+
+### 5. What I could NOT check, and did not guess
+
+`CRS_LIVE_API_HOST`, `CRS_LIVE_API_USERNAME` and `CRS_LIVE_API_PASSWORD` are stored with
+`--secret`. Reading them back returns a mask of asterisks, not the value. **A masked read
+is expected and proves nothing about whether the stored value is right.** I did not treat
+the mask as a broken value and nobody else should either — that exact mistake is what the
+"never remove a key" rule (CLAUDE.md, owner-set 2026-09-17) was written after.
+
+### What W1 concludes
+
+Two separate doors to a real credit report exist, and both are shut:
+
+1. **ConsumerDirect / SmartCredit** — we hold a practice key that the code cannot see
+   because of a name typo. Fixable in code. Whether their API even returns report DATA
+   (rather than just a sign-up widget) is W2's question.
+2. **CRS** — a full pull system already built, already credentialled, deliberately fenced
+   to the sandbox. Whether it feeds the roadmap engine is W3's question.
+
+Nothing here needs Chris to ask ConsumerDirect for anything yet. That was my earlier
+advice and it was premature.
 
 ## W2 findings
 
