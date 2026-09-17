@@ -29,6 +29,7 @@ flowchart TD
     CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 10 routes]
     CAN --> A_read[Reading data — 5 routes]
+    CAN --> A_scripts[scripts — 1 route]
     CAN --> A_social[social — 6 routes]
     CAN --> A_top_level[Everything else — 7 routes]
     CAN --> A_trials[trials — 2 routes]
@@ -64,7 +65,7 @@ flowchart TD
 
 ## What they can reach
 
-**67 of 240 routes.**
+**68 of 241 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -125,6 +126,7 @@ flowchart TD
 | `/api/read/partner-production` | GET | partner, staff |
 | `/api/read/partner-training` | GET | partner, staff |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
+| `/api/scripts/list` | GET | partner, staff |
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
 | `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
@@ -143,7 +145,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**173 of 240 routes.**
+**173 of 241 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

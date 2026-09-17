@@ -152,6 +152,23 @@ SELECT id, lender_id, approved_amount,
    AND ${unpricedApprovalConditions()}
  ORDER BY created_at ASC`;
 
+/* THE ESCAPE, COUNTED. A bank yes a human has explicitly marked as not counting
+   (setApprovalExclusion, src/applications/status.mjs) is not a confirmed
+   approval and never bills — but it IS a bank yes somebody looked at and wrote
+   a reason against. A round where every approval was excluded therefore bills
+   nothing on purpose, with a name attached, and it has to be allowed to close.
+   Without this the exclusion escape deadlocks the very round it exists to free.
+   See guardFundedAmount in ./card-stacking-rounds.mjs. */
+const SQL_EXCLUDED_APPROVALS = `
+SELECT id, approved_amount,
+       COALESCE(NULLIF(btrim(lender_name), ''), NULLIF(btrim(bank), '')) AS bank
+  FROM applications
+ WHERE funding_round_id = $1::uuid
+   AND ($2::uuid IS NULL OR org_id = $2::uuid)
+   AND status = 'Approved'
+   AND approval_excluded_at IS NOT NULL
+ ORDER BY created_at ASC`;
+
 /* The rate the client agreed to, frozen on the sale this round is linked to.
    funding_round_sales is written at round.started (money-chain). */
 const SQL_AGREED_FEE_PERCENT = `
@@ -173,6 +190,13 @@ export function amountOrNull(value) {
 export async function listConfirmedApprovals(db, { orgId = null, fundingRoundId } = {}) {
   if (!fundingRoundId) return [];
   const r = await db.query(SQL_CONFIRMED_APPROVALS, [fundingRoundId, orgId || null]);
+  return r.rows || [];
+}
+
+/** Every bank yes on a round that a human recorded as NOT counting. */
+export async function listExcludedApprovals(db, { orgId = null, fundingRoundId } = {}) {
+  if (!fundingRoundId) return [];
+  const r = await db.query(SQL_EXCLUDED_APPROVALS, [fundingRoundId, orgId || null]);
   return r.rows || [];
 }
 

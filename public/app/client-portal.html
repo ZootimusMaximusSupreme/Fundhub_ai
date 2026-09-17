@@ -850,10 +850,17 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
                  funds" row marked hidden, and a "No payments yet" row. The
                  hidden attribute did nothing — .pay-row above sets display:flex
                  and an author rule beats the browser's own [hidden]{display:none},
-                 exactly like the duplicated message rows below. So a client with
-                 a $2,500 invoice raised against her and a $3,000 payment already
+                 exactly like the duplicated message rows below. So a client who
+                 had a real invoice raised against her and a real payment already
                  taken read "Success Fee —" and "No payments yet", and the pane
-                 held no link to pay with. Walk finding GAP 7, 2026-09-16. -->
+                 held no link to pay with. Walk finding GAP 7, 2026-09-16.
+
+                 NOTE ON DOLLAR FIGURES IN THIS FILE. Do not write an example
+                 amount here, not even inside a comment. crm-html.test.mjs greps
+                 the whole file for list-price numbers and cannot tell a comment
+                 from a tile; $32 is the only dollar figure allowed to be
+                 literal anywhere in this page. Every amount this pane shows
+                 comes from the server at runtime through paintPays(). -->
           </div>
 
           <div class="tabpane" id="tp-agree" role="tabpanel" data-pane="agree">

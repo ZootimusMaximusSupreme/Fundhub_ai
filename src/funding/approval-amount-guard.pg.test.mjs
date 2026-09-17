@@ -23,7 +23,8 @@ import { guardFundedAmount } from "./card-stacking-rounds.mjs";
 import {
   sumConfirmedApprovals,
   listUnpricedApprovals,
-  unpricedApprovalNames
+  unpricedApprovalNames,
+  NO_CONFIRMED_APPROVALS
 } from "./success-fee.mjs";
 import {
   setApprovalExclusion,
@@ -374,21 +375,37 @@ describe("funded move blocks on an approval with no amount (pg)", { skip: !HAS_D
     );
   });
 
-  test("a round with no approvals at all behaves exactly as it did before", async () => {
+  /* CHANGED 2026-09-17. This test used to assert that a round with no bank yes
+     on it at all still funded on an explicit amount ("behaves exactly as it did
+     before"). That is the exact hole the 2026-09-16 live walk caught: round 1 on
+     Sim Eight-Funding was marked funded for $25,000 with zero application rows,
+     and because the fee is a percent of confirmed approvals, that round could
+     never be invoiced. The owner's instruction is that a funded move requires at
+     least one approved bank application on the round. So the refusal below is
+     the intended behaviour and the old assertion encoded the defect. */
+  test("a round with no bank yes on it cannot be funded, with or without an amount", async () => {
     const { clientId, roundId, move } = await makeClient();
     assert.deepEqual(await listUnpricedApprovals(db, { orgId, fundingRoundId: roundId }), []);
 
-    // No approvals and no amount → the old funded_amount_required refusal, word
-    // for word. The new guard must not have taken this path over.
+    // Nothing on the round at all → the no-bank-yes refusal, not the amount one.
+    // There is no blank approval to name, so the message points at the box to fill.
     const bare = await move("funded");
     assert.equal(bare.moved, false);
-    assert.equal(bare.reason, "funded_amount_required");
+    assert.equal(bare.reason, NO_CONFIRMED_APPROVALS);
+    assert.match(bare.message, /no bank on this round has said yes/i);
 
     const zero = await move("funded", { fundedAmount: 0 });
     assert.equal(zero.moved, false);
-    assert.equal(zero.reason, "funded_amount_required");
+    assert.equal(zero.reason, NO_CONFIRMED_APPROVALS);
 
-    // And an explicit funded amount still funds it.
+    // An explicit funded amount does NOT buy past it — that is the whole point.
+    const explicit = await move("funded", { fundedAmount: 12000 });
+    assert.equal(explicit.moved, false, "an explicit amount must not override a missing bank yes");
+    assert.equal(explicit.reason, NO_CONFIRMED_APPROVALS);
+    assert.notEqual(await stageOf(clientId), "funded");
+
+    // Record the bank yes with its amount and the same move now goes through.
+    await addApproval(roundId, clientId, "Bank Y", 12000);
     const funded = await move("funded", { fundedAmount: 12000 });
     assert.equal(funded.moved, true, funded.message);
     assert.equal(funded.fundedAmount, 12000);

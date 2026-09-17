@@ -46,6 +46,8 @@ import { attachGateToRound } from "../inquiry-ops/gate.mjs";
 import { accrueForPaymentSafe, voidForRefund } from "../partners/revenue.mjs";
 import { toCents } from "../commissions/money.mjs";
 import { convertSafe } from "../affiliates/economics.mjs";
+import { listConfirmedApprovals, listExcludedApprovals, NO_CONFIRMED_APPROVALS } from "../funding/success-fee.mjs";
+import { PRODUCT as CARD_STACKING_PRODUCT } from "../funding/card-stacking-rounds.mjs";
 
 /** Semantic product bucket → products.code when name/alias resolve fails. */
 export const BUCKET_TO_CODE = Object.freeze({
@@ -1100,6 +1102,68 @@ export async function onRoundFundedMoney(event, db) {
     };
   }
 
+  /* NO BANK YES, NO FUNDED ROUND — the same rule the card board enforces
+     (guardFundedAmount in src/funding/card-stacking-rounds.mjs), enforced again
+     here because the board is not the only way this event arrives. An event
+     replay, the verification harness or any future caller can emit round.funded
+     straight at this handler and walk past the board's refusal.
+
+     WHY IT MATTERS. The success fee is a percent of CONFIRMED APPROVALS
+     (docs/CLOSEOUT-FEE-BASIS.md). A card-stacking round closed with no bank yes
+     on it can never be invoiced, and once it is closed nobody goes back for it.
+     Measured 2026-09-16 on the live walk: round 1 on Sim Eight-Funding was
+     marked funded for $25,000 with zero application rows.
+
+     SCOPE. Card-stacking rounds only. The alt-fin rail (src/adapters/lendflow.mjs)
+     records no per-bank application rows at all, so the same test there would
+     refuse every genuine Lendflow funding. That rail's rounds are not billed off
+     confirmed approvals, so they are left exactly as they were.
+
+     An ALREADY-funded round is never re-blocked: replays of a delivered event
+     are routine and must stay idempotent. */
+  const alreadyFunded = round.status === "funded" && Number(round.funded_amount) > 0;
+  const isCardStacking = String(round.product || "") === CARD_STACKING_PRODUCT;
+  if (!alreadyFunded && isCardStacking) {
+    const orgForRound = round.org_id || event.orgId || null;
+    const confirmed = await listConfirmedApprovals(db, {
+      orgId: orgForRound,
+      fundingRoundId: round.id
+    });
+    /* Same carve-out as the board guard: a round where every bank yes was
+       explicitly marked as not counting has been looked at by a human and
+       closes. Only a round with nothing recorded on it at all is refused. */
+    const excused = confirmed.length
+      ? []
+      : await listExcludedApprovals(db, { orgId: orgForRound, fundingRoundId: round.id });
+    if (!confirmed.length && !excused.length) {
+      console.error(
+        `[money-chain] round.funded refused: no confirmed bank approval on the round ` +
+        `(org=${event.orgId} client=${event.clientId || "?"} round=${round.id}).`
+      );
+      return {
+        done: false,
+        reason: NO_CONFIRMED_APPROVALS,
+        detail:
+          "round.funded on a card-stacking round requires at least one Approved " +
+          "application with a dollar amount recorded against it"
+      };
+    }
+  }
+
+  /* THE ROUND'S APPROVED FIGURE IS NOT OURS TO WRITE when the round has per-bank
+     rows. Migration 382 keeps funding_rounds.approved_amount equal to the
+     confirmed approvals on the round by trigger; writing the event payload over
+     the top is the drift that left $25,000 in the round box against a $10,000
+     bank yes. A round with NO application rows at all is untouched by that
+     trigger (an imported summary, or the alt-fin rail), so there the payload is
+     still the only source and is still used. Passing null keeps COALESCE on the
+     stored value — an unknown stays unknown, it never becomes 0. */
+  const hasApplicationRows = (await db.query(
+    `SELECT 1 FROM applications WHERE funding_round_id = $1 LIMIT 1`,
+    [round.id]
+  )).rows.length > 0;
+  const approvedAmountToWrite = hasApplicationRows ? null : approvedAmount;
+
   const updated = await db.query(
     `UPDATE funding_rounds
         SET status = 'funded',
@@ -1108,7 +1172,7 @@ export async function onRoundFundedMoney(event, db) {
             updated_at = now()
       WHERE id = $1
       RETURNING *`,
-    [round.id, fundedAmount, approvedAmount]
+    [round.id, fundedAmount, approvedAmountToWrite]
   );
   round = updated.rows[0] || round;
 

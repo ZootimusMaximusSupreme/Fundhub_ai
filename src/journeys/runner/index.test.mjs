@@ -78,7 +78,16 @@ import { isSyntheticRow } from "./synthetic.mjs";
    It is a cron with no event trigger, so no journey can ever reach it and it
    will always appear in neverFired — the same note the sweepers above carry,
    and the correct outcome for a scheduled job rather than a coverage hole. */
-/* 74 since the Meta campaign sync sweeper (2026-09-09) was registered — the
+/* 75 since the Commas payment inbox drain (2026-09-17) was registered — a
+   SECOND clock under the payment queue, because the Netlify cron that had been
+   the only one under it stopped firing and nobody was told. It is a cron with
+   no event trigger, so like every sweeper here it can never be reached by a
+   journey and will always appear in neverFired. That is the correct outcome
+   for a scheduled job, not a coverage hole to paper over: do not invent a
+   trigger for it to make this list shorter. It is exercised directly by
+   src/workflows/commas-inbox-drain.test.mjs.
+
+   Was 74 since the Meta campaign sync sweeper (2026-09-09) was registered — the
    clock behind the ad-numbers pull. Nothing ever ran api/campaigns/sync.mjs on
    a schedule, and the pull only reached back seven days, so a week nobody
    pressed Sync in was lost for good and drew on screen as zero spend. It is a
@@ -91,7 +100,7 @@ import { isSyntheticRow } from "./synthetic.mjs";
    includes. It is a cron with no event trigger, so like every sweeper here it
    will always appear in neverFired, which is the correct outcome for a
    scheduled job rather than a coverage hole. */
-const REGISTERED = 74;
+const REGISTERED = 75;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

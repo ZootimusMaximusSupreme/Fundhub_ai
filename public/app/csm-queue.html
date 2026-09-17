@@ -345,6 +345,20 @@ button,input,select,textarea{font:inherit;color:inherit}
     };
   }
 
+  /* HOW LATE THE CALL IS, in whole days, from the call's OWN due date.
+     Nothing else on this row measures the call. The money chip measures the
+     BILL, and the two are different facts about the same client — a 30-day-old
+     invoice says nothing about whether today's call is late. Returns null when
+     there is no date, the date is unreadable, or the call is not late yet. */
+  function callLateDays(iso) {
+    if (!iso) return null;
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return null;
+    var ms = Date.now() - d.getTime();
+    if (ms <= 0) return null;
+    return Math.floor(ms / 86400000);
+  }
+
   /* MID or POST, read off the row's own source_workflow. Anything else is a CSM
      task from another workflow and simply has no interview form. */
   function stageOf(row) {
@@ -429,19 +443,34 @@ button,input,select,textarea{font:inherit;color:inherit}
       return '<span class="chip num" title="No invoice on file for this client">Owes —</span>';
     }
     var n = row.open_invoices === 1 ? "1 invoice" : row.open_invoices + " invoices";
-    return '<span class="chip owed num">Owes $' + esc(row.balance_due) + " · " + esc(n) + "</span>";
+    /* bill_days_overdue is the OLDEST UNPAID INVOICE's lateness, so it belongs
+       inside the money chip and nowhere near the call. It used to be printed on
+       its own as "30 days overdue" right beside the call time, which read as a
+       late call and is not one. */
+    var billLate = "";
+    if (row.bill_days_overdue !== null && row.bill_days_overdue !== undefined &&
+        row.bill_days_overdue > 0) {
+      billLate = " · bill " + (row.bill_days_overdue === 1
+        ? "1 day late" : row.bill_days_overdue + " days late");
+    }
+    return '<span class="chip owed num" title="What this client still owes. This is ' +
+      'about their bill, not about this call.">Owes $' + esc(row.balance_due) +
+      " · " + esc(n) + esc(billLate) + "</span>";
   }
 
   function rowHtml(row) {
     var name = row.client_name || row.client_code || "Unnamed client";
     var when = whenText(row.due_at);
-    var late = row.days_overdue !== null && row.days_overdue !== undefined && row.days_overdue > 0;
+    var lateDays = callLateDays(row.due_at);
     var mine = state.myStaffId && row.assignee_staff_id === state.myStaffId;
     var taken = row.assignee_staff_id && !mine;
 
     var chips = '<span class="chip" title="' + esc(when.title) + '">' + esc(when.text) + "</span>";
-    if (late) {
-      chips += '<span class="chip late num">' + esc(row.days_overdue) + " days overdue</span>";
+    if (lateDays !== null) {
+      chips += '<span class="chip late num" title="This call was due ' + esc(when.title) +
+        ' and has not been done.">Call ' +
+        (lateDays < 1 ? "late today" : esc(lateDays) + (lateDays === 1 ? " day late" : " days late")) +
+        "</span>";
     }
     chips += moneyChip(row);
     for (var i = 0; i < row.owned_codes.length; i++) {
@@ -529,13 +558,18 @@ button,input,select,textarea{font:inherit;color:inherit}
         "</div>";
       return;
     }
+    /* COUNTS LATE CALLS, not late bills. The headline sits above a list of
+       calls, so the only number that belongs in it is how many of those calls
+       are past their own due time. */
     var late = 0;
     for (var i = 0; i < state.rows.length; i++) {
-      if (state.rows[i].days_overdue > 0) late++;
+      if (callLateDays(state.rows[i].due_at) !== null) late++;
     }
     $("qCount").textContent = String(state.rows.length);
     $("qCountLabel").textContent = state.rows.length === 1 ? "call waiting" : "calls waiting";
-    $("qOverdue").textContent = late ? late + " past due" : "None past due";
+    $("qOverdue").textContent = late
+      ? (late === 1 ? "1 call past due" : late + " calls past due")
+      : "No calls past due";
 
     var html = "";
     for (var j = 0; j < state.rows.length; j++) html += rowHtml(state.rows[j]);

@@ -116,13 +116,24 @@ async function deliverFundingLetters(db, { clientId, orgId, store } = {}) {
   }
   /* DELIVERED MEANS STORED, NOT PRINTED. This used to be a hardcoded `true`
      whenever the pack came back with files in it, with the save result attached
-     as a number nobody read. So when the save threw — and it does, loudly, when
-     the document store is not configured — the error was swallowed above, the
-     caller stamped the client as delivered, and the once-only guard then blocked
+     as a number nobody read. So a save that stored nothing — whether it threw
+     and was caught just above, or returned an empty `stored` — still had the
+     caller stamp the client as delivered, and the once-only guard then blocked
      the job from ever trying again. Measured 2026-09-17: a client whose eleven
      PDFs all built correctly had zero documents on file and no way back.
-     src/sales/closer-deck.mjs has computed it this way since it was fixed; this
-     is the same shape, five hundred lines away. */
+
+     WHY THAT SAVE FAILED IS NOT KNOWN, AND NOTHING HERE SHOULD PRETEND IT IS.
+     An earlier draft of this comment said the cause was an unconfigured
+     document store. That is not supported: the same client had a contract and
+     eight uploaded files written to `documents` on the same day, so the store
+     was demonstrably working for other writes. The error text was caught above,
+     truncated onto `skipped`, and never logged anywhere a person looks — which
+     is why the cause is a blank rather than a fact. It is carried out of here
+     on `reason` now, so the next occurrence names itself instead of leaving
+     another blank.
+
+     src/sales/closer-deck.mjs has computed delivered-means-stored this way
+     since it was fixed; this is the same shape, five hundred lines away. */
   const stored = persisted?.stored?.length || 0;
   if (stored === 0) {
     return {

@@ -19,6 +19,7 @@ import {
   resolveSuccessFee,
   sumConfirmedApprovals,
   listConfirmedApprovals,
+  listExcludedApprovals,
   listUnpricedApprovals,
   unpricedApprovalNames,
   NO_CONFIRMED_APPROVALS
@@ -225,7 +226,20 @@ export async function guardFundedAmount(db, {
   const confirmed = round?.id
     ? await listConfirmedApprovals(db, { orgId, fundingRoundId: round.id })
     : [];
-  if (!confirmed.length) {
+  /* THE ONE THING THIS RULE MUST NOT DO IS DEADLOCK THE ESCAPE.
+     "Confirmed" deliberately leaves out an approval a human has marked as not
+     counting. So a round where staff excluded EVERY approval also comes back
+     empty here — and that round is one somebody has already looked at, written
+     a reason against and decided bills nothing. Refusing it would lock the door
+     the exclusion escape exists to open, and there would then be no way to close
+     the round at all. It closes, and F-07 still writes a named reason instead of
+     a $0 invoice (docs/CLOSEOUT-FEE-BASIS.md).
+     What is refused below is a round with NOTHING recorded on it — no bank yes
+     anybody filled in and none anybody excluded. */
+  const excused = confirmed.length
+    ? []
+    : (round?.id ? await listExcludedApprovals(db, { orgId, fundingRoundId: round.id }) : []);
+  if (!confirmed.length && !excused.length) {
     return {
       ok: false,
       reason: NO_CONFIRMED_APPROVALS,

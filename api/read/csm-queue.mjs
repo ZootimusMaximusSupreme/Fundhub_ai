@@ -68,6 +68,13 @@ const QUEUE_SQL = `
          c.client_code,
          o.balance_amount,
          o.open_invoices,
+         /* HOW LATE THE BILL IS — NOT HOW LATE THE CALL IS. This is
+            MAX(days_overdue) out of v_invoice_aging, so it answers "the oldest
+            unpaid invoice is N days past its due date". The call's own
+            lateness is t.due_at against now, and the two are unrelated: a
+            client can owe a 30-day-old bill and not be due a call until next
+            month. It is carried to the browser as bill_days_overdue so the
+            screen cannot print it beside the call as if it were the call. */
          o.worst_days_overdue,
          COALESCE(w.codes, ARRAY[]::text[]) AS owned_codes
     FROM tasks t
@@ -110,7 +117,9 @@ export function presentRow(r) {
     balance_due: cents === null ? null : fromCents(cents),
     open_invoices: r.open_invoices === null || r.open_invoices === undefined
       ? 0 : Number(r.open_invoices),
-    days_overdue: r.worst_days_overdue === null || r.worst_days_overdue === undefined
+    /* The BILL's lateness. Named for what it is — see the note in the query.
+       NULL survives: no invoice means nobody has measured this. */
+    bill_days_overdue: r.worst_days_overdue === null || r.worst_days_overdue === undefined
       ? null : Number(r.worst_days_overdue),
     owned_codes: Array.isArray(r.owned_codes) ? r.owned_codes : []
   };

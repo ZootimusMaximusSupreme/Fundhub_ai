@@ -27,7 +27,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 208 routes]
+    WHO -->|Yes| CANT[Blocked — 209 routes]
     CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_analytics[analytics — 4 blocked]
@@ -54,7 +54,7 @@ flowchart TD
     CANT --> B_push[push — 3 blocked]
     CANT --> B_read[Reading data — 63 blocked]
     CANT --> B_repair[repair — 5 blocked]
-    CANT --> B_scripts[scripts — 1 blocked]
+    CANT --> B_scripts[scripts — 2 blocked]
     CANT --> B_social[social — 7 blocked]
     CANT --> B_staff[staff — 3 blocked]
     CANT --> B_top_level[Everything else — 37 blocked]
@@ -63,7 +63,7 @@ flowchart TD
 
 ## What they can reach
 
-**32 of 240 routes.**
+**32 of 241 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -107,7 +107,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**208 of 240 routes.**
+**209 of 241 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -301,6 +301,7 @@ flowchart TD
 | `/api/repair/generate` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/inbound-mail` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
+| `/api/scripts/list` | GET | partner, staff |
 | `/api/scripts/write` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/shifts` | GET, POST | staff |
 | `/api/slo-connections` | POST | owner, admin |

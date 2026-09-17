@@ -21,6 +21,103 @@ const DELIBERATELY_UNSERVED = {
   // "some-workflow-id": "why, and who decided",
 };
 
+/* EVERY WORKFLOW THIS REPO SERVES, BY NAME.
+ *
+ * This list replaced a bare `functions.length === 75` on 2026-09-17. The number
+ * was doing a real job — registering a workflow is how a job starts running in
+ * production, so it should cost somebody a deliberate line in a test rather
+ * than slipping in unnoticed — but it could only ever say "expected 75, got
+ * 76". It never said WHICH one arrived or WHICH one went away, and the next
+ * person to register anything had to work that out by hand.
+ *
+ * The names do the same job and say it out loud. Add a workflow to
+ * src/workflows/index.mjs and this test fails until you add its id here too;
+ * remove one and it fails until you take the id out. The failure message names
+ * the id in both directions.
+ *
+ * Sorted, so a new entry lands in an obvious place and two people adding one at
+ * the same time do not collide on the same line.
+ *
+ * DO NOT replace this with a read of `functions` — a list that regenerates
+ * itself from the thing it is checking proves nothing. */
+const EXPECTED_WORKFLOW_IDS = [
+  "af-01-affiliate-drip",
+  "af-02-referral-ownership-capture",
+  "ai-set-01-josh-setter",
+  "ai-set-03-no-answer-cadence",
+  "ai-set-04-3way-handoff",
+  "ar-collections",
+  "at-01-first-touch-capture",
+  "bc-01-customer-responsiveness",
+  "bc-02-customer-friction",
+  "blake-lead-watch",
+  "bs-01-precall-launcher",
+  "c-00-crs-soft-pull-request",
+  "c-02-inquiry-created",
+  "c-02b-inquiry-removal-requested",
+  "c-03-inquiry-removed-resume-or-hold",
+  "c-05-pre-funding-review",
+  "c-06-crs-results-router",
+  "commas-inbox-drain",
+  "contract-chaser",
+  "daily-pulse",
+  "doc-check",
+  "dpc-01-analyzer-lock",
+  "dpc-02-call-outcome-enforcement",
+  "dpc-03-inbound-reply-router",
+  "dpc-05-no-progress-escalation",
+  "ds-01-repair-referral",
+  "ds-02-diy-letters",
+  "f-01-funding-intake",
+  "f-02-portal-id-missing",
+  "f-03-round-submitted",
+  "f-04-round-approvals",
+  "f-05-inquiry-cleanup-gate",
+  "f-06-funding-conditions-missing-docs",
+  "f-07-funding-locked",
+  "f-08-post-funding-monitoring",
+  "f-09-funding-declined-no-path",
+  "f-10-client-funding-inbox-provisioner",
+  "f-11-bank-email-event-router",
+  "finance-os-pull-sweeper",
+  "hiring-bench-sweeper",
+  "hiring-outreach-cadence",
+  "inquiry-call-sweeper",
+  "meet-transcript-sweeper",
+  "message-dispatch-sweeper",
+  "meta-campaign-sync-sweeper",
+  "n-01-cold-nurture",
+  "n-02-warm-nurture",
+  "n-03-hot-nurture",
+  "n-04-post-funding-nurture",
+  "n-06-renewal-second-wave",
+  "paid-checkout-expiry-sweeper",
+  "partner-production-floor",
+  "repair-bureau-response-reader",
+  "round-started-client-notify",
+  "s-00-welcome",
+  "s-01-new-lead-intake",
+  "s-02-incomplete-survey-nudge",
+  "s-04-call-booked",
+  "s-04b-booking-reminders",
+  "s-04c-staff-booked-alert",
+  "s-05a-no-show-recovery",
+  "s-06-post-call-funding-purchased",
+  "s-08-post-call-funding-declined",
+  "s-doc-collection",
+  "s-nobook-chase",
+  "s-offer-bucket",
+  "s-portal-invite",
+  "subscription-billing-sweeper",
+  "sys-01-client-value-calculator",
+  "sys-01-ltv-calculator",
+  "u-02-analyzer-complete-delivery",
+  "u-03-crs-snapshot-sync",
+  "u-04-promote-crs-primary",
+  "u-05-data-health-monitor",
+  "waypoint-nudge-sweeper",
+];
+
 /* Every id passed to inngest.createFunction in this directory, read from the
    source rather than by importing — importing every module to count them would
    run each one's module-scope side effects just to answer "does it exist". */
@@ -66,7 +163,12 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
   const disk = idsOnDisk();
   const expected = disk.size - Object.keys(DELIBERATELY_UNSERVED).length;
 
-  /* 75 since the Commas inbox drain (2026-09-17) — a SECOND clock under the
+  /* THE HISTORY OF THIS LIST. Each entry below records why a workflow was
+     added, in the words of the person who added it. The counts named in it are
+     the historical record of what the pin said at the time; the pin itself is
+     EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
+
+     Added the Commas inbox drain (2026-09-17) — a SECOND clock under the
      payment queue. netlify/functions/commas-inbox-sweeper.mjs already runs this
      exact pass on Netlify's cron and is unchanged; it had silently stopped
      firing. Measured on live: six commas_inbox rows pending with attempts=0,
@@ -178,16 +280,35 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      setter was registered (2026-08-21). Was 53 after the incomplete-survey
      nudge and the inquiry call sweeper were switched on (2026-08-19).
 
-     The count stays pinned as well as derived: registering a function is how a
-     job starts running, and Inngest executes functions in production today, so
-     it should cost somebody a line in a test. */
-  assert.equal(functions.length, 75, `expected 75, got ${functions.length}`);
+     The served set stays pinned as well as derived: registering a function is
+     how a job starts running, and Inngest executes functions in production
+     today, so it should cost somebody a deliberate line in a test. The pin is
+     EXPECTED_WORKFLOW_IDS at the top of this file — the names, not a count, so
+     the failure says which workflow moved. */
+  const ids = functions.map((fn) => fn.id());
+  assert.equal(new Set(ids).size, ids.length, "a workflow is registered twice");
+
+  const named = new Set(EXPECTED_WORKFLOW_IDS);
+  const serving = new Set(ids);
+  assert.deepEqual(
+    ids.filter((id) => !named.has(id)).sort(), [],
+    "these workflows are registered in index.mjs but are not named in " +
+    "EXPECTED_WORKFLOW_IDS at the top of this file. Registering a job is how it " +
+    "starts running in production — add the id there in the same commit, so the " +
+    "decision is written down."
+  );
+  assert.deepEqual(
+    EXPECTED_WORKFLOW_IDS.filter((id) => !serving.has(id)), [],
+    "EXPECTED_WORKFLOW_IDS names these, but index.mjs no longer registers them, " +
+    "so they cannot run. Either register them again or take the id out of the list."
+  );
+  assert.equal(functions.length, EXPECTED_WORKFLOW_IDS.length,
+    `${EXPECTED_WORKFLOW_IDS.length} workflows are named, but ${functions.length} are registered — ` +
+    `check EXPECTED_WORKFLOW_IDS for a duplicate line`);
+
   assert.equal(functions.length, expected,
     `${disk.size} workflows on disk, ${Object.keys(DELIBERATELY_UNSERVED).length} deliberately unserved, ` +
     `so ${expected} should be served — but ${functions.length} are`);
-
-  const ids = functions.map((fn) => fn.id());
-  assert.equal(new Set(ids).size, ids.length, "a workflow is registered twice");
   for (const id of ids) {
     assert.ok(disk.has(id), `"${id}" is served but no file in this directory defines it`);
   }

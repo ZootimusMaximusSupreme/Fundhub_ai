@@ -1100,7 +1100,17 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
      genuinely nothing for her to do; the link is a real http(s) address
      (safeUrl); and it has not passed its seven-day expiry
      (src/paid-services/link-ttl.mjs). Anything else keeps the old wording,
-     because offering a dead link is worse than offering none. */
+     because offering a dead link is worse than offering none.
+
+     IT ALWAYS CALLS BACK, AND IT CALLS BACK ONCE. A fetch that never settles is
+     not a rejection — `.catch` never runs and the callback never fires. That is
+     how a press turned into silence. So every caller gets an answer inside
+     PAID_RESUME_TIMEOUT_MS whatever the network does: the timer hands back null,
+     which is the same answer a failed read gives, and null is already the safe
+     wording. The request itself is still cached and shared, so a slow answer
+     that lands after the timer is not a second round trip — it is simply
+     ignored for that press. */
+  var PAID_RESUME_TIMEOUT_MS = 8000;
   var paidResumePromise = null;
   function loadPaidResume(cb) {
     if (!paidResumePromise) {
@@ -1121,14 +1131,52 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
         })
         .catch(function () { return null; });
     }
-    paidResumePromise.then(cb).catch(function () { cb(null); });
+    var done = false;
+    var timer = setTimeout(function () {
+      if (done) return;
+      done = true;
+      cb(null);
+    }, PAID_RESUME_TIMEOUT_MS);
+    paidResumePromise.then(
+      function (v) { if (done) return; done = true; clearTimeout(timer); cb(v); },
+      function () { if (done) return; done = true; clearTimeout(timer); cb(null); }
+    );
   }
 
+  /* THE DIALOG COMES UP ON THE PRESS, NOT ON THE ANSWER.
+     Reviewer must-fix, 2026-09-17. This used to wait on loadPaidResume() before
+     it painted anything, so a slow or dead GET turned a press that had ALWAYS
+     produced a dialog into a press that produced nothing — the client clicks and
+     the screen sits there. A control that sometimes does nothing is the same
+     defect as a control that never does anything.
+
+     So the order is inverted. The safe wording — the one that is true whether or
+     not there is a payment page to resume — paints immediately, with a line
+     saying the check is running. If the read comes back with a live checkout
+     link the dialog is upgraded in place to the one that offers it; if it comes
+     back empty, fails, or times out, the same safe wording stays and only the
+     "checking" line goes. Every path ends at a dialog. */
   function refuseSecondRound() {
     /* The same door, the same answer. A client who reaches this through a
        checklist item rather than the round card must not be told something
        different from what the card says. */
+    var waiting = {
+      title: "You already have one in progress",
+      sub: "We are working on the round you asked for. There is nothing more to do here — "
+         + "reload this page in a little while and it will show where it has got to.",
+      actions: [{ label: "Close", ghost: true }]
+    };
+    dialog({
+      title: waiting.title,
+      sub: waiting.sub,
+      body: '<div class="note">Checking whether your payment page is still open…</div>',
+      actions: waiting.actions
+    });
+    var mine = dialogSeq;
     loadPaidResume(function (resume) {
+      /* She closed it, or pressed something else that opened another dialog.
+         Either way this answer is stale and must not take the screen back. */
+      if (!dialogIsMine(mine)) return;
       if (resume) {
         dialog({
           title: "Your round is waiting on payment",
@@ -1142,12 +1190,7 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
         });
         return;
       }
-      dialog({
-        title: "You already have one in progress",
-        sub: "We are working on the round you asked for. There is nothing more to do here — "
-           + "reload this page in a little while and it will show where it has got to.",
-        actions: [{ label: "Close", ghost: true }]
-      });
+      dialog(waiting);
     });
   }
 
@@ -1442,9 +1485,22 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     });
   }
 
-  /* ── THE DIALOG. One element, reused. ─────────────────────────────────── */
+  /* ── THE DIALOG. One element, reused. ───────────────────────────────────
+
+     dialogSeq COUNTS THE PAINTS. One element serves every dialog on this page,
+     so "is my dialog still the one on screen?" cannot be answered by looking at
+     the element. Anything that paints a dialog and then waits on an answer
+     grabs the number, and only repaints if the number has not moved and the
+     dialog has not been closed. Without it a slow read could rewrite whatever
+     dialog the client had opened since. */
+  var dialogSeq = 0;
+  function dialogIsMine(seq) {
+    var d = $("dlg");
+    return dialogSeq === seq && !!(d && d.open);
+  }
   function dialog(opts) {
     var d = $("dlg");
+    dialogSeq++;
     $("dlgT").textContent = opts.title || "";
     $("dlgS").innerHTML = opts.sub || "";
     $("dlgB").innerHTML = opts.body || "";
