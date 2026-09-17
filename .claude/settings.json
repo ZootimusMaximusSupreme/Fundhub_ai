@@ -50,7 +50,11 @@
       "WebSearch",
       "Task",
       "TodoWrite",
-      "NotebookEdit"
+      "NotebookEdit",
+      "Bash(npm run ship)",
+      "Bash(npm run ship:*)",
+      "Bash(node scripts/ship.mjs)",
+      "Bash(node scripts/ship.mjs:*)"
     ],
     "deny": [
       "Read(.env*)",
