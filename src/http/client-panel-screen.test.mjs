@@ -988,3 +988,55 @@ describe("client-control-panel.html — the round's three moves", () => {
       "the date is coming from somewhere other than the gated answer");
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   A FILE ON ITS WAY IS LOADING, NOT EMPTY (hole 5, 2026-09-17). With ?id= in
+   the address the header said "No client open — pick one below." for four to
+   five seconds while the file read was slow. The fix is display only: a class
+   set in <head> before the first paint swaps the no-client words for a loading
+   line and skeleton bars, and the FHData.client() callback takes it off before
+   any branch. e2e/ccp-first-paint.spec.mjs proves it in a real browser; this
+   keeps the shape from quietly coming undone.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("client-control-panel.html — opening a file shows loading, never the no-client words", () => {
+
+  test("the id-present branch runs before the first paint, is always ended, and never writes the big slot", () => {
+    const head = PANEL_HTML.slice(0, PANEL_HTML.indexOf("</head>"));
+    assert.match(head, /document\.documentElement\.classList\.add\("ccp-opening"\)/,
+      "the loading class is no longer set in <head>, so the no-client words paint first again");
+
+    // The head and the page script must agree on what "an id in the address" is.
+    const keysIn = (src) => (src.match(/\(\s*"(id|client_id|client|contact)"\s*\)/g) || [])
+      .map((k) => k.replace(/[^a-z_]/g, ""));
+    const opener = head.slice(head.indexOf("FH-CCP-OPENING"));
+    const pageId = (PANEL_HTML.match(/var id = FHData\.param\([^;]*;/) || [""])[0];
+    assert.ok(pageId, "the page script's id line is gone");
+    assert.deepEqual(keysIn(opener), keysIn(pageId),
+      "the <head> check and the page script read different address keys");
+
+    // Taken off at the TOP of the file read's answer, before any branch, so a
+    // failed read shows its own words and no skeleton outlives the read.
+    assert.match(PANEL_HTML,
+      /FHData\.client\(id\)\.then\(function \(res\) \{(?:\s*\/\*[\s\S]*?\*\/)?\s*document\.documentElement\.classList\.remove\("ccp-opening"\);\s*if \(res\.ok\)/,
+      "the loading class is not removed before the first branch of the file read's answer");
+
+    // Each no-client phrase is the idle half of a pair, with a loading half beside it.
+    for (const words of ["No client open — pick one below.", "Pick a client below.",
+      "Open a client file to see what is blocking it."]) {
+      // ">" + words: the element's own text, not a comment that quotes it.
+      const at = PANEL_HTML.indexOf(">" + words) + 1;
+      assert.ok(at > 0, "the no-client words are gone from the markup: " + words);
+      const tag = PANEL_HTML.slice(PANEL_HTML.lastIndexOf("<", at), at);
+      assert.match(tag, /class="[^"]*\bccp-idle\b/, "not hidden while a file loads: " + words);
+      assert.match(PANEL_HTML.slice(at, at + 200), /class="ccp-wait\b/, "no loading line beside: " + words);
+    }
+    assert.match(PANEL_HTML, /\.ccp-wait\{display:none;\}/, "the loading line would show with no file open");
+    assert.match(PANEL_HTML, /html\.ccp-opening \.ccp-idle\{display:none;\}/,
+      "the no-client words are not hidden while a file loads");
+
+    // GATE A still holds: the skeleton in the big slot is markup and CSS only.
+    assert.ok(!/setText\("ccp-next-action"/.test(PANEL_HTML),
+      "ccp-next-action is being set directly; only paintNextAction may write it");
+  });
+});

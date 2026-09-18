@@ -582,6 +582,24 @@
   .mirror{display:none;}
   .cp-count{font-family:'JetBrains Mono',monospace;font-weight:800;letter-spacing:0;color:var(--text-faint);}
   .cp-empty{font-size:var(--fs-body);color:var(--text-dim);margin:0;}
+  /* OPENING A FILE IS NOT "NO FILE" (hole 5, 2026-09-17). With a client id in
+     the address, the header said "No client open — pick one below." for four
+     to five seconds while the file was on its way, and the picker beside it
+     already named the client. The no-client words are the EMPTY state; a file
+     on its way is the LOADING state, which is skeletons in the real layout
+     (UI-STANDARDS §6.1). html.ccp-opening is set in <head> before the first
+     paint and taken off at the top of the FHData.client() callback, so a
+     failed read brings the honest words back instead of a skeleton forever. */
+  .ccp-wait{display:none;}
+  html.ccp-opening .ccp-idle{display:none;}
+  html.ccp-opening .ccp-wait{display:inline;}
+  html.ccp-opening .ccp-wait.skel{display:block;}
+  .skel{height:1em;margin:.1em 0;width:min(100%,12em);border-radius:4px;background:var(--line);
+    animation:ccpSkel 1.4s ease-in-out infinite;}
+  .skel.is-wide{width:min(100%,24em);}
+  .skel + .skel{margin-top:8px;}
+  @keyframes ccpSkel{0%,100%{opacity:.5}50%{opacity:1}}
+  @media (prefers-reduced-motion:reduce){.skel{animation:none;}}
 
   /* ---------- the round's three moves, on the screen the amounts are typed on
      Every stage move used to happen on the Pipeline board and every dollar
@@ -685,6 +703,22 @@
     .kv-grid,.details-grid{grid-template-columns:1fr;}
   }
 </style>
+<script>
+/* FH-CCP-OPENING. A client id in the address means a file is on its way, so
+   the header shows the loading state, not "No client open" (hole 5). This runs
+   before the first paint — the page script waits for DOMContentLoaded, which
+   is too late to stop the no-client words flashing. Same four keys, same
+   order, as the page script's `id`. The class comes off at the top of the
+   FHData.client() callback, whatever the read says. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search);
+    if (q.get("id") || q.get("client_id") || q.get("client") || q.get("contact")) {
+      document.documentElement.classList.add("ccp-opening");
+    }
+  } catch (e) { /* no class: the page keeps its no-client words, as before */ }
+})();
+</script>
 <script defer src="shell.js"></script>
 <script src="demo-client-bootstrap.js"></script>
 </head>
@@ -775,7 +809,11 @@
       <div class="record-lead">
         <div class="record-id">
           <div class="record-name" id="ccp-name">Loading…</div>
-          <div class="record-key" id="ccp-key">No client open — pick one below.</div>
+          <!-- Two sets of words, and CSS picks one before the first paint:
+               .ccp-idle with no client id in the address, .ccp-wait while a
+               file is on its way (html.ccp-opening — see the note in <head>).
+               render() and every failure branch overwrite both with setText. -->
+          <div class="record-key" id="ccp-key"><span class="ccp-idle">No client open — pick one below.</span><span class="ccp-wait">Opening this client’s file…</span></div>
         </div>
         <!-- THE ONE THING THE PERSON CAME FOR: what to do next on this file.
              Owner-set 2026-09-06 — the slot used to hold a count of bank answers
@@ -799,8 +837,10 @@
                than one waiting to be pointed at a client. paintNextAction()
                replaces this the moment a file is opened, and it is the ONLY
                thing allowed to write here (GATE A) — which is why this is
-               static markup and not a setText() call. -->
-          <div class="na-main big" id="ccp-next-action">Pick a client below.</div>
+               static markup and not a setText() call. While a file is on its
+               way the words step aside for a skeleton bar (html.ccp-opening);
+               paintNextAction() replaces both spans when the file lands. -->
+          <div class="na-main big" id="ccp-next-action"><span class="ccp-idle">Pick a client below.</span><span class="ccp-wait skel" aria-hidden="true"></span></div>
           <p class="cp-why" id="ccp-cp-why" hidden></p>
           <p class="cp-note" id="ccp-cp-note" hidden></p>
           <!-- THE INQUIRIES THEMSELVES, UNDER THE STEP THAT SAYS TO REMOVE THEM.
@@ -868,7 +908,7 @@
 
         <div class="cp-sec is-first">
           <div class="cp-sec-title card-title">Active blockers <span class="cp-count" id="ccp-cp-blocker-count"></span></div>
-          <div id="ccp-cp-blockers"><p class="cp-empty">Open a client file to see what is blocking it.</p></div>
+          <div id="ccp-cp-blockers"><p class="cp-empty ccp-idle">Open a client file to see what is blocking it.</p><span class="ccp-wait skel is-wide" aria-hidden="true"></span><span class="ccp-wait skel" aria-hidden="true"></span></div>
         </div>
 
         <div class="cp-sec">
@@ -2611,6 +2651,13 @@ document.addEventListener("DOMContentLoaded", function () {
         if (!c || !c.id) return;
         var n = [c.first_name, c.last_name].filter(Boolean).join(" ").trim();
         var label = n || c.email || c.id;
+        /* The list usually lands seconds before the full file. When it names
+           the open client, put that name in the header now instead of leaving
+           "Loading…" beside a picker that already says who it is (hole 5).
+           Only over "Loading…": a name render() painted, or a failure line,
+           is never overwritten. render() repaints it from the full record. */
+        var head = $("ccp-name");
+        if (c.id === id && n && head && head.textContent === "Loading…") setText("ccp-name", n);
         html.push('<option value="' + String(c.id).replace(/"/g, "") + '"' +
           (c.id === id ? " selected" : "") + ">" +
           String(label).replace(/[&<>]/g, function (ch) {
@@ -3291,6 +3338,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   if (!id) paintBusinesses("empty");
   FHData.client(id).then(function (res) {
+    /* The file answered, one way or another. The loading state ends here,
+       before any branch, so every branch below paints its own honest words
+       and no skeleton outlives the read (see FH-CCP-OPENING in <head>). */
+    document.documentElement.classList.remove("ccp-opening");
     if (res.ok) { render(res.data); return; }
     /* Say it where the reader is already looking, in words, instead of a dash
        where the name goes and the real answer in a bar at the other end of
