@@ -705,6 +705,55 @@ describe("dashboard reads: the fulfillment next action", () => {
       "that nothing must be a truthful nothing, not a read that failed");
   });
 
+  /* ── HOLE 7: "No step applies" while the ID sits unread ──────────────────
+     Live on #9 Sim Nine-Repair: both screens said no step applies while the
+     ID and proof sat unread and the repair program had not started. */
+
+  const repairStartTasks = () => [
+    { id: "t-doc", title: "Check this id document by hand — nobody has read it", done: false,
+      source_workflow: "doc-check", assignee_role: "closer" },
+    { id: "t-start", title: "Start the repair program — confirm the plan with the client", done: false,
+      source_workflow: "repair-enrollment", assignee_role: "inquiry_specialist" },
+    { id: "t-book", title: "Strategy session booked", done: false,
+      source_workflow: "clickfunnels", assignee_role: "closer" }
+  ];
+
+  test("hole 7: the control panel names the unread ID job, not 'no step applies'", async () => {
+    plan.detailRow = detailRow({ outcome_tier: "REPAIR_ONLY", custom_fields: {} });
+    plan.consentRows = [consentRow()];
+    plan.realCrsCounts = [{ client_id: CLIENT_ID, n: 1 }];
+    plan.tasks = repairStartTasks();
+
+    const r = res();
+    await clientHandler(req({ id: CLIENT_ID }), r);
+
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+    assert.equal(r.body.next_action_degraded, false);
+    assert.equal(r.body.next_action && r.body.next_action.key, "open_job",
+      "the file still says no step applies while its ID sits unread: " +
+      JSON.stringify(r.body.next_action));
+    assert.equal(r.body.next_action.label, "Check this id document by hand — nobody has read it");
+    assert.ok(r.body.active_blockers.some((b) => b.label === r.body.next_action.label),
+      "the next step names a job the blocker list does not show");
+  });
+
+  test("hole 7: the Fulfillment list names the same job for the same file", async () => {
+    plan.listRows = [listRow({ outcome_tier: "REPAIR_ONLY", custom_fields_raw: {} })];
+    plan.consentRows = [consentRow()];
+    plan.realCrsCounts = [{ client_id: CLIENT_ID, n: 1 }];
+    plan.openTasks = repairStartTasks().map((t) => ({ client_id: CLIENT_ID, ...t }));
+
+    const r = res();
+    await clientsHandler(req(LENS), r);
+
+    assert.equal(r.code, 200, JSON.stringify(r.body));
+    const c = r.body.clients[0];
+    assert.equal(c.next_action_degraded, false);
+    assert.equal(c.next_action && c.next_action.key, "open_job",
+      "the list still says no step applies while the ID sits unread: " + JSON.stringify(c.next_action));
+    assert.equal(c.next_action.label, "Check this id document by hand — nobody has read it");
+  });
+
   test("Send Letters beats Remove Inquiries on the list when letters are unsent", async () => {
     plan.listRows = [listRow({
       outcome_tier: "REPAIR_ONLY",
