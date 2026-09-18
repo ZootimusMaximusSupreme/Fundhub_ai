@@ -59,7 +59,19 @@ flowchart TD
     MC0 -->|Yes| MC1{Card-stacking round,<br/>not already funded,<br/>and no confirmed bank yes?}
     MC1 -->|Yes| R5[Refused — no_confirmed_approvals]
     MC1 -->|No| WRITE[UPDATE funding_rounds<br/>status = funded, funded_amount set]
+    WRITE --> PERSON[UPDATE clients<br/>funded = true, funded_amount = total of the client's funded rounds<br/>syncClientFunded, src/handlers/money-chain.mjs]
 ```
+
+### The person row follows the rounds
+
+Right after the round is written funded, `syncClientFunded()` in `src/handlers/money-chain.mjs`
+sets `clients.funded = true` and `clients.funded_amount` to the total of that client's funded
+rounds. If any funded round has no amount, the total stays unknown (`NULL`), never a partial sum
+and never `0`. It only ever sets funded to true; nothing here un-funds a client.
+
+Before 2026-09-18 nothing wrote those two columns. Measured on the live site, 2026-09-18 (hole 8):
+Sim Eight-Funding had two funded rounds of $25,000 each, and the person row still said
+`funded = false` with no amount, so the Client Control Panel's Funded line read "No".
 
 ---
 

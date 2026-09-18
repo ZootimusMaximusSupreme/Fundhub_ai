@@ -4,7 +4,8 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   BUCKET_TO_CODE, paymentKindFor, nothingUnlockedReason, NOTHING_UNLOCKED,
-  ensureAttributions, ensureSalePayment, resolveProductId
+  ensureAttributions, ensureSalePayment, resolveProductId,
+  onRoundFundedMoney, syncClientFunded, SQL_SYNC_CLIENT_FUNDED
 } from "./money-chain.mjs";
 import { OFFERS } from "../config/offers.mjs";
 
@@ -233,5 +234,88 @@ describe("resolveProductId matches product codes, not just display names", () =>
       productBucket: "funding-mastery"
     });
     assert.equal(id, "p-course");
+  });
+});
+
+/* HOLE 8 — the person row follows the rounds.
+   On the 2026-09-17 live walk Sim Eight-Funding had two funded $25,000 rounds
+   and clients.funded was still false with no amount, because nothing ever
+   wrote it. round.funded now writes it, right after the round itself. */
+describe("round.funded writes the person row funded (hole 8)", () => {
+  const ORG = "00000000-0000-4000-8000-0000000000a8";
+  const CLIENT = "00000000-0000-4000-8000-0000000000c8";
+  const ROUND = "00000000-0000-4000-8000-0000000000f8";
+
+  function roundDb(round) {
+    const queries = [];
+    return {
+      queries,
+      query: async (sql, params = []) => {
+        const text = String(sql);
+        queries.push({ text, params });
+        if (/SELECT \* FROM funding_rounds WHERE id = \$1/.test(text)) return { rows: [round] };
+        if (/UPDATE funding_rounds/.test(text)) {
+          return { rows: [{ ...round, status: "funded", funded_amount: String(params[1]) }] };
+        }
+        if (/UPDATE clients c/.test(text)) {
+          return { rows: [{ id: params[0], funded: true, funded_amount: "50000.00" }] };
+        }
+        return { rows: [] };
+      }
+    };
+  }
+
+  // Not card stacking, so the bank-yes check (which has its own tests) is not
+  // what this test is about.
+  const altFinRound = () => ({
+    id: ROUND, org_id: ORG, client_id: CLIENT, round_number: 2,
+    status: "approved", product: "alt_fin", funded_amount: null, approved_amount: null
+  });
+
+  test("a funded round marks the client funded, scoped to that client and org", async () => {
+    const db = roundDb(altFinRound());
+    const out = await onRoundFundedMoney(
+      { name: "round.funded", orgId: ORG, clientId: CLIENT, payload: { fundingRoundId: ROUND, fundedAmount: 25000 } },
+      db
+    );
+    assert.equal(out.done, true, JSON.stringify(out));
+    const roundAt = db.queries.findIndex((q) => /UPDATE funding_rounds/.test(q.text));
+    const clientAt = db.queries.findIndex((q) => /UPDATE clients c/.test(q.text));
+    assert.ok(roundAt >= 0, "the round was never written funded");
+    assert.ok(clientAt >= 0,
+      "the round was written funded and the person row was not — clients.funded stays false, " +
+      "which is exactly what the 2026-09-17 live walk found on Sim Eight-Funding");
+    assert.ok(clientAt > roundAt, "the person row must be written after the round, from the rounds");
+    assert.deepEqual(db.queries[clientAt].params, [CLIENT, ORG]);
+  });
+
+  test("a refused round.funded does not touch the person row", async () => {
+    const db = roundDb(altFinRound());
+    const out = await onRoundFundedMoney(
+      { name: "round.funded", orgId: ORG, clientId: CLIENT, payload: { fundingRoundId: ROUND } },
+      db
+    );
+    assert.equal(out.done, false);
+    assert.equal(out.reason, "missing_funded_amount");
+    assert.ok(!db.queries.some((q) => /UPDATE clients/.test(q.text)),
+      "a round that did not fund marked the client funded");
+  });
+
+  test("the funded total is the funded rounds, and unknown stays unknown", () => {
+    const sql = SQL_SYNC_CLIENT_FUNDED;
+    assert.match(sql, /fr\.status = 'funded'/, "only funded rounds may count toward the funded total");
+    assert.match(sql, /SUM\(fr\.funded_amount\)/, "the funded total is the sum of the funded rounds");
+    assert.match(sql, /bool_and\(fr\.funded_amount IS NOT NULL\)/,
+      "a funded round with no amount must leave the total unknown (NULL), not a partial sum");
+    assert.doesNotMatch(sql, /COALESCE\([^)]*funded_amount[^)]*,\s*0\)/i, "unknown money must never become 0");
+    assert.match(sql, /HAVING count\(\*\) > 0/, "a client with no funded round must not be marked funded");
+    assert.doesNotMatch(sql, /funded\s*=\s*false/i, "this never un-funds a client");
+  });
+
+  test("with no client or org it does nothing", async () => {
+    const db = roundDb(altFinRound());
+    assert.equal(await syncClientFunded(db, { clientId: null, orgId: ORG }), null);
+    assert.equal(await syncClientFunded(db, { clientId: CLIENT, orgId: null }), null);
+    assert.equal(db.queries.length, 0);
   });
 });

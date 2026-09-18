@@ -44,6 +44,7 @@
  */
 
 import { CONSENT_REASONS, CONSENT_VALID_SQL } from "../consent/index.mjs";
+import { FUNDING_TIERS } from "../config/product-path.mjs";
 import { checkDocPacket } from "../inquiry-ops/doc-gate.mjs";
 import { openBlockers } from "../http/client-detail.mjs";
 
@@ -498,16 +499,31 @@ export async function gatherDetailSignals(db, { orgId, clientId, consentStatus }
    list's LIMIT is deliberately NOT applied: a tile that said "12 clients"
    because the page showed 12 would be a lie about the book.
 
-   TWO OF THE SIX ARE null, AND THAT IS THE ANSWER, NOT A GAP (Phase 0 §5):
+   ONE OF THE SIX IS ALWAYS null, AND THAT IS THE ANSWER, NOT A GAP (Phase 0 §5):
 
      ready           Nothing in this system writes a status called "Ready" and
                      no definition exists. Zero would read as "nobody is ready",
                      which is a claim. null is the truth: nothing was recorded.
-     total_approved  The honest source is approved amounts on funding rounds and
-                     that table has no real rows. Phase 0 also names the
-                     "Total Approved" column on another table as the wrong
-                     source — its own code comment says the name is historical
-                     and the number is a fee calculation.
+
+   total_approved WAS the second one, hard-wired to null because funding_rounds
+   had no real rows. It has them now: the 2026-09-17 live walk put two funded
+   rounds on Sim Eight-Funding, one carrying a $10,000 bank yes, while this tile
+   still said "No bank approval has ever been recorded" (hole 8). So it is now
+   counted from the honest source Phase 0 named — funding_rounds.approved_amount,
+   which migration 382's trigger keeps equal to the CONFIRMED approvals on the
+   round. Phase 0's warning still stands: the "Total Approved" column on
+   funding_closeout is NOT this number (its own comment says it is a fee basis).
+
+     * A DEMO ROUND is never counted, same as ROUNDS_SQL above.
+     * GATE B at the number level: only clients on one of the three funding
+       tiers (FUNDING_TIERS, passed in as $4 — the same list isFundingPath()
+       reads). A row on any other tier is refused its round and approved amount
+       by deriveNextAction(); the tile may not add up what the rows may not show.
+     * No approval recorded anywhere is NULL, never 0.
+     * total_approved_rounds is how many rounds the sum came from, and
+       funded_rounds_no_approval is how many FUNDED rounds carry no approval at
+       all — so the screen can say why the approved total is below the funded
+       total instead of looking like it disagrees with the file.
 
    needs_pull is "paid, no real credit report on file, AND WRITTEN PERMISSION
    IS LIVE". The consent half is GATE A at the number level and it is not
@@ -608,6 +624,16 @@ function rollupsSql() {
            AND irc.org_id = c.org_id
            AND NULLIF(TRIM(COALESCE(irc.fraud_alert_after, '')), '') IS NOT NULL) )`;
 
+  /* Total Approved (hole 8). A REAL round on this client — the same demo rule
+     ROUNDS_SQL uses — and only for a client on a funding tier ($4, GATE B).
+     A correlated subquery per client, summed, so the client count above is not
+     multiplied by a join. */
+  const realRound = `
+    fr.client_id = c.id
+      AND fr.org_id = c.org_id
+      AND COALESCE(fr.is_demo, false) = false`;
+  const onFundingTier = `c.outcome_tier = ANY($4::text[])`;
+
   return `
   SELECT
     COUNT(*)::int AS total_clients,
@@ -637,7 +663,21 @@ function rollupsSql() {
     COUNT(*) FILTER (
       WHERE c.custom_fields->>'total_funding_estimate' ~ '^[0-9]+(\\.[0-9]+)?$'
         AND (c.custom_fields->>'total_funding_estimate')::numeric > 0
-    )::int AS total_prequal_clients
+    )::int AS total_prequal_clients,
+    SUM((
+      SELECT SUM(fr.approved_amount) FROM funding_rounds fr
+       WHERE ${realRound} AND fr.approved_amount > 0
+    )) FILTER (WHERE ${onFundingTier}) AS total_approved,
+    COALESCE(SUM((
+      SELECT count(*) FROM funding_rounds fr
+       WHERE ${realRound} AND fr.approved_amount > 0
+    )) FILTER (WHERE ${onFundingTier}), 0)::int AS total_approved_rounds,
+    COALESCE(SUM((
+      SELECT count(*) FROM funding_rounds fr
+       WHERE ${realRound}
+         AND fr.status = 'funded'
+         AND COALESCE(fr.approved_amount, 0) <= 0
+    )) FILTER (WHERE ${onFundingTier}), 0)::int AS funded_rounds_no_approval
   FROM clients c
   WHERE c.org_id = $1::uuid
     AND ($2::boolean OR COALESCE(c.is_demo, false) = false)`;
@@ -646,9 +686,10 @@ function rollupsSql() {
 /**
  * listRollups — the six tiles, or null if they could not be counted.
  *
- * total_prequal is passed through EXACTLY as Postgres hands it over (a string
- * for numeric, or null). It is not rounded, not coerced and never defaulted to
- * zero — see CLAUDE.md §12 on money and on NULL meaning unknown.
+ * total_prequal and total_approved are passed through EXACTLY as Postgres hands
+ * them over (a string of dollars for numeric, or null). They are not rounded,
+ * not coerced and never defaulted to zero — see CLAUDE.md §12 on money and on
+ * NULL meaning unknown.
  *
  * `needs_consent` rides along beside needs_pull. It is NOT a seventh tile — the
  * screen shows it as the sentence under "Needs Pull", so the clients the
@@ -657,7 +698,7 @@ function rollupsSql() {
 export async function listRollups(db, { orgId, demoOn = false } = {}) {
   if (!orgId) return null;
   const rows = await safeRows(
-    db, ROLLUPS_SQL, [orgId, demoOn === true, SOFT_PULL_KIND], "rollups"
+    db, ROLLUPS_SQL, [orgId, demoOn === true, SOFT_PULL_KIND, [...FUNDING_TIERS]], "rollups"
   );
   if (rows === null) return null;
   const r = rows[0] || {};
@@ -672,7 +713,10 @@ export async function listRollups(db, { orgId, demoOn = false } = {}) {
     ready: null,
     total_prequal: r.total_prequal === undefined ? null : r.total_prequal,
     total_prequal_clients: r.total_prequal_clients == null ? null : Number(r.total_prequal_clients),
-    // Phase 0 §5: no real rows behind it. null, never 0.
-    total_approved: null
+    // Confirmed bank approvals on real rounds, funding tiers only. No approval
+    // recorded is null, never 0 (hole 8 — see the note above rollupsSql).
+    total_approved: r.total_approved === undefined ? null : r.total_approved,
+    total_approved_rounds: r.total_approved_rounds == null ? null : Number(r.total_approved_rounds),
+    funded_rounds_no_approval: r.funded_rounds_no_approval == null ? null : Number(r.funded_rounds_no_approval)
   };
 }

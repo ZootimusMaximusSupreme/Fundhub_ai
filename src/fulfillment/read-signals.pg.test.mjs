@@ -18,8 +18,9 @@
  *     beside it (GATE A at the number level);
  *   * "Total Prequal" must stay NULL when nothing was recorded, never 0, and
  *     must report how many clients contributed;
- *   * "Ready" and "Total Approved" must stay NULL because Phase 0 found no
- *     honest source for either.
+ *   * "Ready" must stay NULL because Phase 0 found no honest source for it;
+ *   * "Total Approved" must add up the bank approvals on REAL rounds of
+ *     funding-tier clients only, and stay NULL when none is recorded (hole 8).
  *
  * SKIPS WITHOUT DATABASE_URL, which is the default. That is why the wiring
  * assertions live in the stub test instead — those must run on every push.
@@ -212,10 +213,45 @@ describe("fulfillment read layer: the tiles and the demo filter (real Postgres)"
       "a demo round's approved amount was shown as this client's money");
   });
 
-  test("Ready and Total Approved stay null — Phase 0 found no honest source", async () => {
+  test("Ready stays null, and Total Approved stays null when the only approval is a demo round", async () => {
     const t = await listRollups(db, { orgId, demoOn: false });
     assert.strictEqual(t.ready, null, "0 would claim nobody is ready; nothing was recorded");
-    assert.strictEqual(t.total_approved, null, "0 would claim nobody was approved; nothing was recorded");
+    assert.strictEqual(t.total_approved, null,
+      "the only approval on file is B's DEMO round — counting it adds $75,000 nobody approved, " +
+      "and 0 would claim nobody was approved");
+    assert.strictEqual(t.total_approved_rounds, 0);
+    assert.strictEqual(t.funded_rounds_no_approval, 0);
+  });
+
+  /* HOLE 8, the live shape. Sim Eight-Funding on 2026-09-17: round 1 funded
+     $25,000 with no bank yes, round 2 funded $25,000 with a $10,000 bank yes.
+     A REPAIR_ONLY client's round must not reach the total (GATE B). Rows are
+     added and removed inside this test so no other test here sees them. */
+  test("Total Approved adds real approvals on funding tiers and counts funded rounds with none", async () => {
+    const mk = async (name, tier) => (await db.query(
+      `INSERT INTO clients (org_id, first_name, last_name, email, outcome_tier)
+       VALUES ($1, $2, 'Test', $3, $4) RETURNING id`,
+      [orgId, name, `${name}.${process.pid}@example.test`, tier]
+    )).rows[0].id;
+    const funded = await mk("twoFundedRounds", "PREMIUM_STACK");
+    const repair = await mk("repairOnlyRound", "REPAIR_ONLY");
+    try {
+      await db.query(
+        `INSERT INTO funding_rounds (org_id, client_id, round_number, status, approved_amount, funded_amount)
+         VALUES ($1,$2,1,'funded',NULL,25000.00), ($1,$2,2,'funded',10000.00,25000.00),
+                ($1,$3,1,'approved',5000.00,NULL)`,
+        [orgId, funded, repair]
+      );
+      const t = await listRollups(db, { orgId, demoOn: false });
+      assert.strictEqual(t.total_approved, "10000.00",
+        "the $10,000 bank yes was not counted, or the REPAIR_ONLY round's $5,000 or the demo round's $75,000 was");
+      assert.strictEqual(t.total_approved_rounds, 1);
+      assert.strictEqual(t.funded_rounds_no_approval, 1,
+        "round 1 funded with no bank yes on it, and the tile was not told");
+    } finally {
+      await db.query(`DELETE FROM funding_rounds WHERE client_id = ANY($1::uuid[])`, [[funded, repair]]);
+      await db.query(`DELETE FROM clients WHERE id = ANY($1::uuid[])`, [[funded, repair]]);
+    }
   });
 
   test("no prequal recorded at all stays null, it does not become zero", async () => {

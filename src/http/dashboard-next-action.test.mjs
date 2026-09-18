@@ -817,7 +817,7 @@ describe("dashboard reads: the fulfillment next action", () => {
     assert.strictEqual(t.ready, null,
       "'Ready' has no definition and no source — 0 would claim nobody is ready");
     assert.strictEqual(t.total_approved, null,
-      "'Total Approved' has no real rows behind it — 0 would claim nobody was approved");
+      "no approval came back for 'Total Approved' — 0 would claim nobody was approved");
     assert.strictEqual(t.total_prequal, "50000",
       "prequal money must pass through raw, not be rounded or coerced");
     assert.strictEqual(t.total_prequal_clients, 1,
@@ -839,6 +839,29 @@ describe("dashboard reads: the fulfillment next action", () => {
     assert.strictEqual(r.body.rollups.total_prequal, null,
       "unknown money became $0, which is a claim nobody made");
     assert.strictEqual(r.body.rollups.total_prequal_clients, 0);
+  });
+
+  /* HOLE 8. The tile was hard-wired to null even after real funded rounds with
+     a bank yes landed on Sim Eight-Funding. What the count finds must reach the
+     screen, as the string of dollars Postgres sends, with its two counts. */
+  test("recorded approvals reach the Total Approved tile, unrounded", async () => {
+    plan.listRows = [listRow()];
+    plan.consentRows = [consentRow()];
+    plan.rollupRow = {
+      total_clients: 36, needs_pull: 0, action_needed: 24,
+      total_prequal: "1060000", total_prequal_clients: 5,
+      total_approved: "10000.00", total_approved_rounds: 1, funded_rounds_no_approval: 1
+    };
+
+    const r = res();
+    await clientsHandler(req(LENS), r);
+
+    const t = r.body.rollups;
+    assert.strictEqual(t.total_approved, "10000.00",
+      "a recorded $10,000 bank yes was dropped — the tile went back to saying none was ever recorded");
+    assert.strictEqual(t.total_approved_rounds, 1);
+    assert.strictEqual(t.funded_rounds_no_approval, 1);
+    assert.strictEqual(t.ready, null, "'Ready' still has no source");
   });
 
   test("a rollup read that fails costs the tiles, never the list", async () => {
@@ -880,6 +903,18 @@ describe("the fulfillment read layer: rules that live in the SQL", () => {
     assert.ok(!/revoked_at IS NULL/.test(src),
       "a second copy of the credit-pull consent rule was typed into the read layer. " +
       "src/consent/index.mjs owns that predicate; import CONSENT_VALID_SQL instead.");
+  });
+
+  test("Total Approved counts real rounds only, on funding tiers only (hole 8)", () => {
+    const block = src.slice(src.indexOf("function rollupsSql"));
+    assert.match(block, /COALESCE\(fr\.is_demo, false\) = false/,
+      "the Total Approved tile counts demo rounds as real approvals");
+    assert.match(block, /c\.outcome_tier = ANY\(\$4::text\[\]\)/,
+      "the Total Approved tile adds up approvals the rows are refused (GATE B)");
+    assert.match(src, /FUNDING_TIERS/,
+      "the funding-tier list was typed by hand instead of imported from product-path.mjs");
+    assert.doesNotMatch(block, /total_approved:\s*null/,
+      "Total Approved is hard-wired to null again — the tile will say no approval was ever recorded");
   });
 
   test("nothing in the fulfillment layer writes", () => {
