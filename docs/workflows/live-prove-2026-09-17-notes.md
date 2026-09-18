@@ -1400,3 +1400,4 @@ Same protocol: one fixer per hole (own worktree, no merge/ship), main session me
 - 18:47 UTC: hole 12 round 3 re-shipped as `87a72b67`; app re-registered with Inngest at 18:47:52 (`PUT /api/inngest` → 200, `modified: true`). Final hole 12 reviewer claimed (reads after 19:00 UTC).
 - Hole 20: live-proof reviewer claimed (timed jobs running + Gmail failures in logs since 18:48).
 - 25 fixers (N1–N22, N25, N26, H24) running as workflow `wf_900b1204-dc1`, 5 at a time, each in its own worktree.
+- 19:30 UTC — **Dictator mode on (owner-set, Chris 2026-09-18): "run more agents".** Fixer pool raised from 5 to 10 at a time (overrides the CLAUDE.md §5 cap of 5 for this run). Workflow stopped and resumed with finished fixers kept; in-flight ones restarted.
