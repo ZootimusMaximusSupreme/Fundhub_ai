@@ -1258,8 +1258,8 @@ Five agents at a time. First five are on different screens.
 | 17 Inquiry upload never lands | client portal upload | pending | pending | |
 | 18 Combo pay pending, no round | payments | pending | pending | |
 | 19 #12 progress has no checklist | progress page | pending | pending | |
-| 20 Prove Gmail token dead | laptop env / `src/gmail/` | claimed | pending | |
+| 20 Prove Gmail token dead | laptop env / `src/gmail/` | **NOT A PROBLEM** — laptop sees only Netlify's 16-asterisk mask; live `/api/company-brain/sync` says `drive_ready=true`; 13:01 UTC daily check logged no Gmail failure. No code change. | pending | `fix/live-h20-gmail-token` (scripts only) → merged |
 | 21 No-book chase never sent | messaging | pending | pending | |
-| 22 Combo 0 docs, no address | specialist repair | pending | pending | |
+| 22 Combo 0 docs, no address | specialist repair | claimed | pending | |
 | 23 Consent line says no permission | control panel | pending | pending | |
 | 24 Intended vs actual route lists | journeys docs | pending | pending | |
