@@ -107,6 +107,11 @@ async function loadDocumentBytes(db, { documentId, versionId = null, store = nul
 export const RETRY_HANDLER = WORKFLOW_ID;
 export const RETRY_MAX_ATTEMPTS = 12;
 
+/* How the task for a queued document starts. The retry sweeper closes that task
+ * once the reader has answered (closeAnsweredWaits), and it finds it by this
+ * prefix — so the two must never drift apart. */
+export const WAITING_TASK_TITLE_PREFIX = "Waiting on the document reader";
+
 /* THE BACKUP READER — WAITING WAS NOT THE ONLY WAY OUT.
  *
  * MEASURED 2026-09-18 on live, file #9 (hole 16 on
@@ -492,7 +497,7 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
       eventId: event.id || documentId,
       docType,
       title: waiting
-        ? `Waiting on the document reader — this ${(SUBTYPE_TITLES[String(docType)] || "Document").toLowerCase()} has not been read yet`
+        ? `${WAITING_TASK_TITLE_PREFIX} — this ${(SUBTYPE_TITLES[String(docType)] || "Document").toLowerCase()} has not been read yet`
         : null,
       why: waiting
         ? (noCredit

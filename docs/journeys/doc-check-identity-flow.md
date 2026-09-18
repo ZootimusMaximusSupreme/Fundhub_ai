@@ -3,7 +3,10 @@
      Updated 2026-09-17 with the "the reader had no credit" branch and the retry
      sweeper (src/workflows/doc-check-retry-sweeper.mjs), traced the same way.
      Updated 2026-09-18 with the backup reader (readWithBackupReader in
-     src/handlers/doc-check.mjs), traced the same way. -->
+     src/handlers/doc-check.mjs), traced the same way.
+     Updated 2026-09-18 (hole N4) with the retry sweeper closing the "waiting"
+     task once the reader answers (closeAnsweredWaits in
+     src/workflows/doc-check-retry-sweeper.mjs), traced the same way. -->
 
 # The identity chain — from a photo of an ID to the name on a dispute letter
 
@@ -51,6 +54,7 @@ flowchart TD
     QUEUE -.->|every 20 minutes| SWEEP[doc-check retry sweeper]
     SWEEP --> MODEL
     SWEEP -->|12 tries, about 9 days| GIVEUP[Row exhausted — task: check it by hand]
+    SWEEP -->|the reader answered: row resolved| CLOSEWAIT[Same pass: the waiting task<br/>for that document is closed]
 
     ANS -->|Yes| OUT{What did it decide?}
 
@@ -75,6 +79,7 @@ flowchart TD
 | An empty **OpenAI** wallet is not the end of the read. When OpenAI says "no credit" and an Anthropic key is set, the same file is read once more by Anthropic and that verdict routes as usual. The stored OpenAI key is never removed — it is only left out of that one call. If the backup fails too, the document is queued exactly as before. | `readWithBackupReader` in `src/handlers/doc-check.mjs` |
 | A queued document is read again **without anybody doing anything** — no re-upload, no button. Twelve tries, backing off to daily, then it stops and asks a person. | `src/workflows/doc-check-retry-sweeper.mjs` |
 | The retry sweeper claims **only** rows whose handler is `doc-check`. It cannot replay another handler's queued failure. | `due(db, { handler })`, `src/events/dead-letter.mjs` |
+| Once the reader has answered for a queued document, its "Waiting on the document reader — … has not been read yet" task is **closed** on the same pass, so the file stops saying the document is unread. Only that task, for that exact document — a "check it by hand" task or a hold task is left alone. Every pass does this, so a task left open by an earlier pass is closed too. | `closeAnsweredWaits`, `src/workflows/doc-check-retry-sweeper.mjs` |
 | A document that is still unread **never** gets a stand-in identity — not a placeholder, not a value off the credit report. Late beats wrong. | the `!json` branch, `src/handlers/doc-check.mjs` |
 | Only an **accept** records anything. A document the agent refused has proved nothing, however much of it the model managed to read. | `routeDocCheckOutcome`, `src/handlers/doc-check.mjs` |
 | A field the agent did not report is **NULL**. Never blank, never zero, never a value borrowed from the client record. | `recordVerifiedIdentity`, `src/identity/verified.mjs` |

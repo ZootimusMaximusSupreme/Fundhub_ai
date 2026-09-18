@@ -3,11 +3,13 @@ import assert from "node:assert/strict";
 import {
   SWEEP_CRON,
   SOURCE_WORKFLOW,
+  closeAnsweredWaits,
   orgsWithDueReads,
   readerAnswered,
   retryOne,
   sweep
 } from "./doc-check-retry-sweeper.mjs";
+import { WAITING_TASK_TITLE_PREFIX } from "../handlers/doc-check.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CLIENT = "22222222-2222-4222-8222-222222222222";
@@ -15,11 +17,27 @@ const CLIENT = "22222222-2222-4222-8222-222222222222";
 /* A fake failed_events table, close enough to answer the four queries this
    sweeper and dead-letter make of it. Everything it is asked is recorded, so a
    test can assert on WHICH rows were claimed as well as what happened to them. */
-function fakeQueue(rows) {
+function fakeQueue(rows, tasks = []) {
   const store = new Map(rows.map((r) => [r.id, { ...r }]));
-  const seen = { dueArgs: [], resolved: [], rescheduled: [] };
+  const seen = { dueArgs: [], resolved: [], rescheduled: [], waitCloses: [] };
   const db = {
     async query(sql, params = []) {
+      // closeAnsweredWaits: an open doc-check task with the waiting title whose
+      // body names a document the reader has now answered for.
+      if (/UPDATE tasks t/.test(sql) && /FROM failed_events f/.test(sql)) {
+        seen.waitCloses.push({ sql, params });
+        const prefix = String(params[2]).replace(/%$/, "");
+        const answered = [...store.values()].filter((r) =>
+          r.handler_name === params[0] && r.status === "resolved" && r.payload?.document_id);
+        const closed = [];
+        for (const t of tasks) {
+          if (t.done || t.source_workflow !== params[1] || !t.title.startsWith(prefix)) continue;
+          const hit = answered.some((r) => r.org_id === t.org_id && r.client_id === t.client_id
+            && t.body.includes(`Document: ${r.payload.document_id}`));
+          if (hit) { t.done = true; closed.push({ id: t.id }); }
+        }
+        return { rows: closed };
+      }
       if (/SELECT DISTINCT org_id/.test(sql)) {
         const orgs = [...new Set([...store.values()]
           .filter((r) => r.status === "pending" && r.handler_name === params[0])
@@ -197,4 +215,92 @@ test("retryOne reports the verdict it got back", async () => {
   });
   assert.equal(res.outcome, "resolved");
   assert.equal(res.verdict, "request_more");
+});
+
+/* HOLE N4, measured on live 2026-09-18: the sweeper read all three of #9's
+   queued documents at 17:20 UTC and resolved their queue rows, but the three
+   "Waiting on the document reader — … has not been read yet" tasks stayed open,
+   so the control panel went on saying the ID was unread after it had been read. */
+function waitingTask(over = {}) {
+  return {
+    id: "t-wait",
+    org_id: ORG,
+    client_id: CLIENT,
+    source_workflow: "doc-check",
+    done: false,
+    title: `${WAITING_TASK_TITLE_PREFIX} — this id document has not been read yet`,
+    body: "A id document was uploaded and the document reader has no credit left on the AI account, "
+      + "so it could not read it. Open the file, confirm it belongs to this client, and confirm it is readable. "
+      + "Document: doc-429",
+    ...over
+  };
+}
+
+test("the reader answers, and its 'waiting on the reader' job closes in the same pass", async () => {
+  const tasks = [
+    waitingTask(),
+    // Same document, but a person was asked to check it by hand — not ours to close.
+    waitingTask({ id: "t-hand", title: "Check this id document by hand — nobody has read it" }),
+    // Another document whose read is still queued — still genuinely waiting.
+    waitingTask({ id: "t-other-doc", body: "… Document: doc-still-queued" }),
+    // The same document id on another client's file — never touched.
+    waitingTask({ id: "t-other-client", client_id: "33333333-3333-4333-8333-333333333333" })
+  ];
+  const { db } = fakeQueue([
+    queuedRow(),
+    queuedRow({ id: "fe-2", event_id: "evt-doc-2", payload: { subtype: "id_document", document_id: "doc-still-queued" } })
+  ], tasks);
+  const out = await sweep(db, {
+    runImpl: async (_db, event) => (event.payload.document_id === "doc-429"
+      ? { done: true, json: { outcome: "accept" } }
+      : { done: true, json: null, route: { failure: "no_credit" } })
+  });
+  assert.equal(out.resolved, 1);
+  assert.equal(out.rescheduled, 1);
+  assert.equal(out.waitsClosed, 1);
+  const done = Object.fromEntries(tasks.map((t) => [t.id, t.done]));
+  assert.deepEqual(done, { "t-wait": true, "t-hand": false, "t-other-doc": false, "t-other-client": false });
+});
+
+test("a document read before this existed loses its stale waiting job on the next quiet pass", async () => {
+  // Exactly #9 on live: the rows are already resolved, nothing is due.
+  const tasks = [waitingTask()];
+  const { db } = fakeQueue([queuedRow({ status: "resolved" })], tasks);
+  const out = await sweep(db, { runImpl: async () => { throw new Error("must not run"); } });
+  assert.equal(out.ok, true);
+  assert.equal(out.attempted, 0);
+  assert.equal(out.waitsClosed, 1);
+  assert.equal(tasks[0].done, true);
+});
+
+test("a read still waiting keeps its waiting job open", async () => {
+  const tasks = [waitingTask()];
+  const { db } = fakeQueue([queuedRow()], tasks);
+  const out = await sweep(db, {
+    runImpl: async () => ({ done: true, json: null, route: { failure: "no_credit" } })
+  });
+  assert.equal(out.rescheduled, 1);
+  assert.equal(out.waitsClosed, 0);
+  assert.equal(tasks[0].done, false, "the reader has not answered, so the wait is real");
+});
+
+test("closeAnsweredWaits asks only for open doc-check waiting jobs of answered documents", async () => {
+  const asked = [];
+  const db = { async query(sql, params) { asked.push({ sql, params }); return { rows: [{ id: "t-1" }] }; } };
+  const res = await closeAnsweredWaits(db);
+  assert.equal(res.closed, 1);
+  assert.deepEqual(asked[0].params, ["doc-check", "doc-check", `${WAITING_TASK_TITLE_PREFIX}%`]);
+  assert.match(asked[0].sql, /f\.status = 'resolved'/);
+  assert.match(asked[0].sql, /t\.done = false/);
+  assert.match(asked[0].sql, /t\.org_id = f\.org_id/);
+  assert.match(asked[0].sql, /t\.client_id = f\.client_id/);
+  assert.match(asked[0].sql, /'Document: ' \|\| \(f\.payload->>'document_id'\)/);
+  assert.doesNotMatch(asked[0].sql, /DELETE/i, "a job is closed, never removed");
+});
+
+test("closeAnsweredWaits never throws — a failed close must not take the pass down", async () => {
+  const db = { async query() { throw new Error("relation \"tasks\" is locked"); } };
+  const res = await closeAnsweredWaits(db);
+  assert.equal(res.closed, 0);
+  assert.match(res.error, /locked/);
 });
