@@ -45,7 +45,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 28 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 73 routes]
+    WHO -->|Yes| CANT[Blocked — 74 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 6 blocked]
     CANT --> B_banking[banking — 2 blocked]
@@ -66,13 +66,13 @@ flowchart TD
     CANT --> B_repair[repair — 3 blocked]
     CANT --> B_social[social — 1 blocked]
     CANT --> B_staff[staff — 2 blocked]
-    CANT --> B_top_level[Everything else — 14 blocked]
+    CANT --> B_top_level[Everything else — 15 blocked]
     CANT --> B_trials[trials — 2 blocked]
 ```
 
 ## What they can reach
 
-**168 of 241 routes.**
+**168 of 242 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -254,7 +254,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**73 of 241 routes.**
+**74 of 242 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -331,6 +331,7 @@ flowchart TD
 | `/api/training-progress` | POST | owner, admin |
 | `/api/trials/convert` | POST | owner, admin |
 | `/api/trials/provision` | POST | owner, admin |
+| `/api/waypoint-tick` | POST | client |
 
 ## UNVERIFIED
 

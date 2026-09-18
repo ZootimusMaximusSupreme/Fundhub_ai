@@ -67,6 +67,7 @@ import { clientRepairView } from "../repair/portal.mjs";
 import { readRepairStage, REPAIR_PIPELINE } from "../repair/pipeline.mjs";
 import { onRepairPath } from "../repair/on-repair-path.mjs";
 import { listWaypoints } from "../waypoints/store.mjs";
+import { closedBy } from "../waypoints/self-attest.mjs";
 /* The PUBLIC name of the buyable service, imported rather than retyped — see
    publicServiceKey() below for why this file must not emit the stored one.
    netlify/functions/api.mjs imports every handler into one process, so
@@ -352,6 +353,12 @@ function waypointView(row) {
     dueAt: isoOrNull(row.due_at),
     overdue: !!row.overdue,
     completedAt: isoOrNull(row.completed_at),
+    /* How this step gets closed (owner-set 2026-09-17): 'client' gets a
+       checkbox, 'credit_report' closes itself on the next pull (paydown),
+       'ongoing' is a rule that is never ticked (no_new_credit), 'fundhub' is
+       ours. The same rule api/waypoint-tick.mjs enforces — see
+       src/waypoints/self-attest.mjs. */
+    closedBy: closedBy(row),
     paidAlternative: price == null ? null : {
       // Translated for the same reason paidServices[].serviceKey is — see
       // publicServiceKey(). A screen posts this value to api/paid-services.mjs,

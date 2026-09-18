@@ -238,6 +238,7 @@ import documentsUpload from "../../api/documents-upload.mjs";
 import documentsDownload from "../../api/documents-download.mjs";
 import paymentLinks from "../../api/payment-links.mjs";
 import paidServices from "../../api/paid-services.mjs";
+import waypointTick from "../../api/waypoint-tick.mjs";
 import pushKey from "../../api/push/key.mjs";
 import pushSubscribe from "../../api/push/subscribe.mjs";
 import pushUnsubscribe from "../../api/push/unsubscribe.mjs";
@@ -1007,6 +1008,12 @@ export const ROUTES = {
      no slash on purpose: routes.test.mjs forbids a key under the "documents/"
      prefix branch, and a flat key is resolved by the exact lookup. */
   "paid-services": paidServices,
+
+  /* A client ticks or unticks ONE of their own checklist steps (owner-set
+     2026-09-17). CLIENT ONLY, pinned to the session's own file — no client_id
+     parameter exists. Paydown and no-new-credit steps are refused server-side
+     (src/waypoints/self-attest.mjs). Flat key, same reason as paid-services. */
+  "waypoint-tick": waypointTick,
 
   /* ── Web push for the client portal (352_client_push_subscriptions.sql,
         src/push/) ───────────────────────────────────────────────────────────

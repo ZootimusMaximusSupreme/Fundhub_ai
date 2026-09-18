@@ -169,12 +169,42 @@ today, so the score itself is also `null` for every real client.
 | `movement.series[]` | one point per pull that produced a score; a tombstoned row draws none | `[]` |
 | `movement.itemsRemoved/Disputed` | `dispute_items` counts | `null` if the table will not answer; a real `0` is a real zero |
 | `waypoints[]` | `client_waypoints`, `overdue` computed from `due_at` and never stored | `[]` |
+| `waypoints[].closedBy` | `closedBy()` in `src/waypoints/self-attest.mjs`: `client` when `owner_kind='client'` and `verify_kind IS NULL`, `credit_report` for `paydown`, `ongoing` for `no_new_credit`, else `fundhub` | never null |
 | `nextStep` | exactly one open waypoint — the client's first, else FundHub's | `null` when nothing is open |
 | `timeline[]` | `repair_decision_log` → the `TIMELINE_WORDS` allowlist → `timelineLine()`. An unknown decision name reads `progress update` | `[]` |
 | `escalations[]` | `dispute_letters` rows for R4/R5 with target `cfpb`/`state_ag`, plus `clients.custom_fields.escalation_filings` for the client's own report | `[]` when that rung was never reached; `filed: false` for every client today |
 | `deliverables[]` | `documents` where `kind = 'deliverable'` | `[]` |
 | `paidServices[]` | prices from `src/waypoints/pricing.mjs`; `inFlight` from an open `paid_service_requests` row | `available: false` |
 | `referral` | `clients.custom_fields.referral_affiliate_id` → `affiliates.tracking_id` | `enrolled: false` |
+
+## Ticking a step off (POST /api/waypoint-tick, added 2026-09-17)
+
+Traced from `api/waypoint-tick.mjs` and `src/waypoints/self-attest.mjs`.
+
+```mermaid
+flowchart TD
+    A[Client presses the circle on a step with closedBy = client] --> B[POST /api/waypoint-tick with waypoint_id and done]
+    B --> C{Client session?}
+    C -->|No session| C1[401]
+    C -->|Staff or other kind| C2[403]
+    C -->|Yes| D[Look up the step by id AND the session's org AND client]
+    D -->|No row: missing OR another client's| E[404 not_found - same answer both ways]
+    D -->|Row found| F{tickRefusal}
+    F -->|verify_kind paydown| G[409 closes_on_credit_report]
+    F -->|verify_kind no_new_credit| H[409 ongoing_rule]
+    F -->|other verify_kind| I[409 machine_checked]
+    F -->|owner_kind fundhub| J[409 our_step]
+    F -->|client-owned, verify_kind NULL| K{done?}
+    K -->|true, row open| L[completeWaypoint - state done, completed_at set]
+    K -->|true, row skipped| M[409 skipped]
+    K -->|false, row done| N[markWaypointState not_started, state_reason unticked_by_client]
+    K -->|already in that state| O[200 changed false]
+    L --> P[Page redraws the row and recomputes the next-step card]
+    N --> P
+```
+
+The page draws no box for `credit_report` or `ongoing` steps; it prints one
+line saying why. The server refuses them regardless.
 
 ## Known gaps, written down rather than filled
 

@@ -29,7 +29,7 @@ flowchart TD
     CAN --> A_public[public — 10 routes]
     CAN --> A_push[push — 3 routes]
     CAN --> A_read[Reading data — 5 routes]
-    CAN --> A_top_level[Everything else — 8 routes]
+    CAN --> A_top_level[Everything else — 9 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     WHO -->|Yes| CANT[Blocked — 197 routes]
@@ -66,7 +66,7 @@ flowchart TD
 
 ## What they can reach
 
-**44 of 241 routes.**
+**45 of 242 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -113,6 +113,7 @@ flowchart TD
 | `/api/read/portal-summary` | GET | staff, client |
 | `/api/soft-pull-approve` | GET, POST | **not a sign-in** — signed link |
 | `/api/trials/eligibility` | POST | anyone |
+| `/api/waypoint-tick` | POST | client |
 | `/api/webhooks/:provider` | — | **not a sign-in** — provider signature |
 
 ### Worth knowing
@@ -122,7 +123,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**197 of 241 routes.**
+**197 of 242 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

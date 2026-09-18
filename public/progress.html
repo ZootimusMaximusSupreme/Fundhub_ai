@@ -119,6 +119,17 @@ h2.sec{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transfor
 .wp .tick{flex:0 0 18px;height:18px;border-radius:50%;border:1.5px solid var(--line);margin-top:2px;
      display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--gray2)}
 .wp.done .tick{background:var(--ok);border-color:var(--ok);color:#2C5138}
+/* The checkbox a client ticks (owner-set 2026-09-17). The circle stays 18px so
+   it lines up with every other row; the BUTTON around it is 40px, the minimum
+   hit area in docs/UI-STANDARDS.md §5. Negative margin keeps the row height. */
+.wp .tickbtn{flex:0 0 40px;width:40px;height:40px;margin:-9px -11px -11px;padding:0;border:0;background:none;
+     cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%}
+.wp .tickbtn .tick{border-color:var(--gray2);margin-top:0}
+.wp .tickbtn:hover .tick{border-color:var(--ink)}
+.wp .tickbtn:focus-visible{outline:2px solid var(--info);outline-offset:-4px}
+.wp .tickbtn[aria-busy="true"]{cursor:progress;opacity:.55}
+.wp .how{font-size:12px;color:var(--gray);margin-top:3px}
+.wp .terr{font-size:12px;color:#6E2A22;margin-top:6px}
 .wp .bd{flex:1 1 auto;min-width:0}
 .wp .ti{font-weight:600}
 .wp.done .ti{color:var(--gray);text-decoration:line-through}
@@ -913,10 +924,92 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     var alt = (!done && wp.paidAlternative && wp.paidAlternative.priceCents != null)
       ? '<div class="alt">' + paidAltButton(wp) + '</div>' : '';
 
-    return '<div class="wp' + (done ? " done" : "") + '">'
-         + '<div class="tick">' + (done ? "✓" : "") + '</div>'
-         + '<div class="bd"><div class="ti">' + esc(wp.title || "Step " + esc(wp.order)) + '</div>'
-         + '<div class="mt">' + meta.join("") + '</div>' + alt + '</div></div>';
+    /* HOW THE STEP CLOSES decides whether there is a box. The server sends
+       `closedBy` and api/waypoint-tick.mjs enforces the same rule, so a box
+       that is not drawn here would be refused there anyway.
+         client        — a real checkbox; the client ticks it and can untick it.
+         credit_report — no box. It closes itself on the next credit report,
+                         and the row says so, so nobody wonders where it went.
+         ongoing       — no box. A rule to keep, never a task to finish. */
+    var how = String(wp.closedBy || "");
+    var title = esc(wp.title || "Step " + esc(wp.order));
+    var tick;
+    if (how === "client") {
+      tick = '<button type="button" class="tickbtn" role="checkbox" data-tick="' + esc(wp.id) + '"'
+           + ' aria-checked="' + (done ? "true" : "false") + '"'
+           + ' aria-label="' + (done ? "Mark not done: " : "Mark done: ") + esc(wp.title || "") + '">'
+           + '<span class="tick">' + (done ? "✓" : "") + '</span></button>';
+    } else {
+      tick = '<div class="tick">' + (done ? "✓" : "") + '</div>';
+    }
+    var note = "";
+    if (!done && how === "credit_report") {
+      note = '<div class="how">This closes itself when your next credit report shows the new balance.</div>';
+    } else if (how === "ongoing") {
+      note = '<div class="how">A rule to keep while we work on your file. Nothing to tick.</div>';
+    }
+
+    return '<div class="wp' + (done ? " done" : "") + '" data-wp="' + esc(wp.id) + '">'
+         + tick
+         + '<div class="bd"><div class="ti">' + title + '</div>'
+         + '<div class="mt">' + meta.join("") + '</div>' + note + alt + '</div></div>';
+  }
+
+  /* The same choice src/progress/read.mjs nextStepOf() makes on the server:
+     the client's first open step in list order, else the first open step. Run
+     here after a tick so the "what is next" card does not keep naming a step
+     the client just finished. */
+  var OPEN_STATES = { not_started: 1, in_progress: 1, blocked: 1 };
+  function nextFrom(waypoints) {
+    var open = waypoints.filter(function (w) { return OPEN_STATES[String(w.state || "")]; });
+    var mine = null;
+    for (var i = 0; i < open.length; i++) if (open[i].owner === "client") { mine = open[i]; break; }
+    var chosen = mine || open[0] || null;
+    return chosen ? { waypointId: chosen.id, owner: chosen.owner } : null;
+  }
+
+  var TICK_PATH = "/api/waypoint-tick";
+
+  function tickWaypoint(btn, waypoints) {
+    if (btn.getAttribute("aria-busy") === "true") return;
+    var id = btn.getAttribute("data-tick");
+    var wp = null;
+    for (var i = 0; i < waypoints.length; i++) if (String(waypoints[i].id) === String(id)) { wp = waypoints[i]; break; }
+    if (!wp) return;
+    var row = btn.closest(".wp");
+    var old = row && row.querySelector(".terr");
+    if (old) old.parentNode.removeChild(old);
+
+    var want = String(wp.state || "") !== "done";
+    btn.setAttribute("aria-busy", "true");
+    api(TICK_PATH, { method: "POST", body: { waypoint_id: wp.id, done: want } }).then(function (r) {
+      if (r.status === 401) return toLogin();
+      if (!r.ok || !r.body || r.body.ok === false) {
+        btn.removeAttribute("aria-busy");
+        var msg = (r.body && r.body.message) ? r.body.message
+                : "That did not save. Nothing changed. Please try again in a moment.";
+        var bd = row && row.querySelector(".bd");
+        if (bd) bd.insertAdjacentHTML("beforeend", '<div class="terr" role="alert">' + esc(msg) + '</div>');
+        return;
+      }
+      var w = r.body.waypoint || {};
+      wp.state = w.state || (want ? "done" : "not_started");
+      wp.completedAt = w.completedAt || null;
+      if (wp.state === "done") wp.overdue = false;
+      if (row) {
+        row.insertAdjacentHTML("afterend", waypointCard(wp));
+        var fresh = row.nextElementSibling;
+        row.parentNode.removeChild(row);
+        var nb = fresh && fresh.querySelector("button[data-tick]");
+        if (nb) nb.focus();
+      }
+      paintNext(nextFrom(waypoints), waypoints);
+    }, function () {
+      btn.removeAttribute("aria-busy");
+      var bd = row && row.querySelector(".bd");
+      if (bd) bd.insertAdjacentHTML("beforeend",
+        '<div class="terr" role="alert">We could not reach the server. Nothing changed. Check your connection and try again.</div>');
+    });
   }
 
   function paintWaypoints(waypoints) {
@@ -931,6 +1024,8 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     });
     el.innerHTML = sorted.map(waypointCard).join("");
     el.addEventListener("click", function (ev) {
+      var tb = ev.target.closest ? ev.target.closest("button[data-tick]") : null;
+      if (tb) return tickWaypoint(tb, waypoints);
       var btn = ev.target.closest ? ev.target.closest("button[data-alt]") : null;
       if (!btn) return;
       var id = btn.getAttribute("data-alt");
