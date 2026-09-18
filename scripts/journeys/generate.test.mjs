@@ -203,6 +203,22 @@ describe("the extraction is faithful to the code", () => {
     assert.ok(templates.gate.roles.includes(spec.subject), "an action-only check must not close the whole route");
   });
 
+  test("a 'not this role and not in that set' check narrows the route too", () => {
+    // Hole 24, round 2 (2026-09-18). api/read/my-numbers.mjs lets every employee
+    // past requireRole(ROLE_SETS.STAFF), then answers 403 "My numbers is for
+    // closers." unless the role is closer or in ROLE_SETS.FINANCE. Round 1 read
+    // only `!SET.has(role)`, so the Specialist was still drawn reaching it.
+    const spec = JOURNEYS.find((j) => j.name === "role-inquiry-remover");
+    const e = data.endpoints.find((x) => x.key === "read/my-numbers");
+    assert.ok(e, "/api/read/my-numbers vanished from the routing table");
+    assert.deepEqual([...e.gate.roles].sort(), ["admin", "closer", "owner", "sales_manager"],
+      "/api/read/my-numbers admits closers plus owner, admin, sales_manager — nobody else");
+    const body = files["role-inquiry-remover-actual.md"];
+    const blocked = body.slice(body.indexOf("## What they are blocked from"));
+    assert.ok(blocked.includes("`/api/read/my-numbers`"),
+      "the Specialist must be shown blocked from /api/read/my-numbers");
+  });
+
   test("readHandler endpoints that name principals also admit staff", () => {
     // src/http/read-api.mjs:194 calls requirePrincipal(req, res, ["staff", ...principals]).
     // Reading only the declared list would show these as closed to employees.

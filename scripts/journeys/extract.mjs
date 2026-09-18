@@ -183,7 +183,7 @@ export function wrapperGates() {
  *   "unverified"     the parser does not recognise the shape — a finding
  */
 export function gateFor(file, ctx) {
-  return narrowStaff(primaryGate(file, ctx), file);
+  return narrowStaff(primaryGate(file, ctx), file, ctx);
 }
 
 function primaryGate(file, { sets, wrappers }) {
@@ -420,10 +420,18 @@ function primaryGate(file, { sets, wrappers }) {
         idiom. hasRole passes SUPER_ROLES, so those are added. dashboard/seed.
      3. canAccessPartnerMarketing(...) — the roles it admits are read from its
         own source in src/brand/meter.mjs, not written here.
+     4. `if (<role> !== "closer" && !allowsRole(ROLE_SETS.FINANCE, <role>))` —
+        an && chain of two or more terms, each either `<role> !== "x"` or
+        `!allowsRole(ROLE_SETS.X, <role>)`. The caller is refused only when
+        every term holds, so the roles let through are the UNION of the named
+        roles and sets. api/read/my-numbers.mjs ("My numbers is for closers.",
+        hole 24 round 2). A lone `!allowsRole(...)` is NOT read: in that same
+        file it guards only the ?staff_id= branch, and in api/finance/alerts.mjs
+        only one action. Any term not in those two forms skips the whole check.
 
    The result is the INTERSECTION with whatever the entry gate already allowed,
    so this can only ever remove roles, never add one. */
-function narrowStaff(gate, file) {
+function narrowStaff(gate, file, { sets } = {}) {
   if (!["role-set", "explicit-roles", "principal", "wrapper"].includes(gate.kind)) return gate;
   if (gate.principals && !gate.principals.includes("staff")) return gate;
   const src = code(read(file));
@@ -447,6 +455,20 @@ function narrowStaff(gate, file) {
     if (roles) limits.push({ roles, by: "canAccessPartnerMarketing (src/brand/meter.mjs)" });
   }
 
+  for (const cond of ifConditions(src)) {
+    const terms = topLevelAnd(cond);
+    if (terms.length < 2) continue;
+    const allowed = terms.map((t) => {
+      const lit = /^(?:String\(\s*)?[\w.]*\brole\s*\)?(?:\.toLowerCase\(\))?\s*!==\s*"([^"]+)"$/.exec(t);
+      if (lit) return [lit[1]];
+      const inSet = /^!\s*allowsRole\(\s*ROLE_SETS\.(\w+)\s*,\s*[\w.]*\brole\s*\)$/.exec(t);
+      return inSet && sets && sets[inSet[1]] ? sets[inSet[1]] : null;
+    });
+    if (allowed.every(Boolean)) {
+      limits.push({ roles: [...new Set(allowed.flat())], by: `if (${terms.join(" && ")})` });
+    }
+  }
+
   if (!limits.length) return gate;
   let roles = gate.anyStaff ? null : gate.roles;
   for (const l of limits) roles = roles ? roles.filter((r) => l.roles.includes(r)) : [...l.roles];
@@ -468,6 +490,24 @@ function ifConditions(src) {
     }
     if (!depth) out.push(src.slice(start, i - 1).trim());
   }
+  return out;
+}
+
+/* A condition split on its top-level `&&` — not on one inside a call's parentheses. */
+function topLevelAnd(cond) {
+  const out = [];
+  let depth = 0;
+  let start = 0;
+  for (let i = 0; i < cond.length; i++) {
+    if (cond[i] === "(") depth++;
+    else if (cond[i] === ")") depth--;
+    else if (!depth && cond.startsWith("&&", i)) {
+      out.push(cond.slice(start, i).trim());
+      start = i + 2;
+      i++;
+    }
+  }
+  out.push(cond.slice(start).trim());
   return out;
 }
 
