@@ -1251,13 +1251,13 @@ Five agents at a time. First five are on different screens.
 | 8 Funded numbers lie vs two $25k rounds | control panel / pipeline / ops money | **fixed** — REAL; funding a round now marks the client funded (sum of rounds, NULL if any unknown); #8 row set live to funded $50,000 (data, already live); Total Approved tile reads real round approvals (code). Possible new hole: #8 invoice bills 10% of $25,000 approvals but the only confirmed approval is $10,000. | pending (control panel now; pipeline after ship) | `fix/live-h8-funded-numbers` → merged |
 | 9 Staff portal Payments hides $2,500 | client portal | **fixed** — REAL; staff Payments tab now also paints the bill from portal-summary | pending (after ship) | `fix/live-h9-payments-tab-invoice` → merged |
 | 11 #12 What You Own empty | client portal | **fixed** — REAL; What You Own said nothing while Unlock More said Capital Academy owned; now shows a Funding Mastery course row with Open course | pending (after ship) | `fix/live-h11-what-you-own` → merged |
-| 12 #8 stored next-action says Collect Documents | control panel | claimed | pending | |
+| 12 #8 stored next-action says Collect Documents | control panel | **fixed** — REAL; F-02 saved Collect Documents over open inquiry cases; now saves Remove Inquiries while a case is open (code); #8 saved value set to Remove Inquiries 14:35 UTC (data, already live). Possible new hole: F-01, S-DOC, F-06 also save Collect Documents over an open inquiry case. | pending | `fix/live-h12-stale-next-action` → merged |
 | 13 Staff portal `?id=` greets Chris on #11 | client portal | claimed | pending | |
 | 14 Specialist header "waiting on a bureau" | inquiry remover / repair | **fixed** — REAL; line now built from the Stuck/Waiting tiles | pending (after ship) | `fix/live-h14-specialist-stuck-header` → merged `499676fc` |
 | 16 Document reader 429, no chase | doc reader | **fixed** — REAL; on OpenAI 'no credit' the same file is read once by Anthropic; stored OpenAI key untouched. Possible new hole: reader retry clock not running (3 reads still on try 1, 5h past due). | pending (after ship) | `fix/live-h16-doc-reader-429` → merged |
 | 17 Inquiry upload never lands | client portal upload | pending | pending | |
 | 18 Combo pay pending, no round | payments | claimed | pending | |
-| 19 #12 progress has no checklist | progress page | pending | pending | |
+| 19 #12 progress has no checklist | progress page | claimed | pending | |
 | 20 Prove Gmail token dead | laptop env / `src/gmail/` | **NOT A PROBLEM** — laptop sees only Netlify's 16-asterisk mask; live `/api/company-brain/sync` says `drive_ready=true`; 13:01 UTC daily check logged no Gmail failure. No code change. | pending | `fix/live-h20-gmail-token` (scripts only) → merged |
 | 21 No-book chase never sent | messaging | claimed | pending | |
 | 22 Combo 0 docs, no address | specialist repair | claimed | pending | |
