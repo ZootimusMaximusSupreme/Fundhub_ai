@@ -445,7 +445,7 @@ export async function matchForClient(db, {
     orgId,
     lender_table: lenderTable,
     active: true,
-    limit: 500,
+    limit: MAX_LENDER_ROWS,
     includeDemo: demoMode
   });
 
