@@ -28,6 +28,15 @@ and bureau). It walks past Metro 2 dispute letters on purpose. So the analysis c
 six; the total number of rows is that plus however many funding letters the pack carried.
 Every pack built for this page carried zero letters — see "Things this page does NOT claim".
 
+**No home address, no letters (N9, 2026-09-18).** A letter is built only when the client has a
+real name AND a home address on the saved identity record (`pii_identity.addresses[0]` with a
+street line — the same record the credit form writes and the Repair desk checks). The address
+printed on the letter comes from that record, never from the typed `clients.custom_fields`
+keys. With no home address the pack still carries the analysis pages and reports
+`letterSkip: "missing_home_address"`. Code: `src/underwrite/letter-pack.mjs` (`NO_HOME_ADDRESS`,
+`readHomeAddress`). This builder is shared, so the same rule holds for the closer deck, the SLO
+pack and the DS-02 repair fallback.
+
 Four of the analysis documents are printed by the black-report printer. The other one or two come from a different
 generator, and BOTH of those were being dropped by the saver (F46). The sixth is gated by the
 vendor at `vendor/underwriteiq-full/api/lite/crs/build-documents.js:162-168`: it is added only
@@ -58,6 +67,12 @@ flowchart TD
     FS --> THIN{thinFile true<br/>OR auDominance over 0.6?}
     THIN -->|no| ONLY5[no sixth document — this is the ordinary client]
     THIN -->|yes| P6[business_prep_summary spec<br/>Business-Readiness-Guide.pdf]
+
+    TIER --> HOME{real name AND a home address<br/>on the identity record?<br/>pii_identity.addresses 0 has a street}
+    HOME -->|no name| NONAME[no letters — letterSkip missing_consumer_name]
+    HOME -->|no home address| NOHOME[no letters — letterSkip missing_home_address<br/>analysis pages still built]
+    HOME -->|yes| LET[inquiry-removal + personal-info letters<br/>home address printed from pii_identity]
+    LET --> SAVE
 
     P1 --> SAVE[persistFundingLetterFiles]
     P2 --> SAVE

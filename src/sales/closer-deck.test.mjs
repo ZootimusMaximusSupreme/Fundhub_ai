@@ -482,9 +482,14 @@ function letterPackDb(storedCrs, priorOutcomes = []) {
         return { rows: [{
           first_name: "Fixture",
           last_name: "Client",
-          custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+          custom_fields: {},
           outcome_tier: "REPAIR_ONLY"
         }] };
+      }
+      // The home address sits on the identity record, where the letters read it
+      // (letter-pack.mjs NO_HOME_ADDRESS). Same address the fixture always used.
+      if (/FROM pii_identity/i.test(s)) {
+        return { rows: [{ addresses: [{ addressLine1: "100 Test Ave", city: "Denton", state: "TX", postalCode: "76205" }] }] };
       }
       if (/FROM crs_results/i.test(s)) return { rows: storedCrs ? [{ result: storedCrs }] : [] };
       if (/FROM dispute_items/i.test(s)) return { rows: [...priorOutcomes] };

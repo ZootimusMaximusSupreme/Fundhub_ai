@@ -128,6 +128,65 @@ export function personalFromClient(row) {
   };
 }
 
+/* NO HOME ADDRESS, NO LETTERS (N9, 2026-09-18).
+ *
+ * Every letter in this pack is mailed to a credit bureau from the client's home.
+ * It carries their home address at the top and, on the personal-information
+ * letter, asks the bureau to "keep only this address". A letter with no home
+ * address on it prints the name and the date and nothing else, and the
+ * personal-information letter lists the client's own current address among the
+ * "old addresses" to remove. Measured on live 2026-09-18: Sim Combo's six saved
+ * funding letters did exactly that, while the Repair desk showed its address on
+ * file.
+ *
+ * WHERE THE HOME ADDRESS COMES FROM. pii_identity.addresses[0] — the row the
+ * real credit form (api/soft-pull-approve.mjs) writes, the row the credit pull
+ * reads back, and the row the Repair desk checks for "address on file"
+ * (../repair/read-repair-signals.mjs ADDRESS_SQL: the first address with a
+ * street line). The typed clients.custom_fields keys personalFromClient() reads
+ * are not that record: no code under src/ or api/ writes them, and on live the
+ * letters built from them printed a street with no city or ZIP (Sim Eight). They
+ * stay in personalFromClient() for its other callers and are overridden here.
+ *
+ * A company address is never used. That fallback belongs to an envelope's return
+ * address (../repair/analyze.mjs loadIdentity), not to "my address is" in a
+ * letter signed by the client. */
+export const NO_HOME_ADDRESS = "missing_home_address";
+
+const EMPTY_HOME = Object.freeze({ address: "", city: "", state: "", zip: "" });
+
+/** pii_identity.addresses → the four address fields a letter prints. */
+export function homeAddressFromIdentity(addresses) {
+  let list = addresses;
+  if (typeof list === "string") {
+    try { list = JSON.parse(list || "[]"); } catch { list = []; }
+  }
+  const a = Array.isArray(list) ? list[0] : null;
+  if (!a || typeof a !== "object") return { ...EMPTY_HOME };
+  const text = (v) => String(v ?? "").trim();
+  const street = text(a.address_line1 || a.addressLine1 || a.line1 || a.street);
+  if (!street) return { ...EMPTY_HOME };
+  const line2 = text(a.address_line2 || a.addressLine2 || a.line2);
+  const city = text(a.city || a.address_city);
+  const state = text(a.state || a.address_state);
+  const zip = text(a.postalCode || a.postal_code || a.zip || a.zip5 || a.address_zip || a.postal);
+  const cityLine = [city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
+  return { address: [street, line2, cityLine].filter(Boolean).join("\n"), city, state, zip };
+}
+
+/** The client's saved home address, read-only. A failed read is no address. */
+export async function readHomeAddress(db, { clientId, orgId } = {}) {
+  try {
+    const r = await db.query(
+      `SELECT addresses FROM pii_identity WHERE client_id = $1 AND org_id = $2 LIMIT 1`,
+      [clientId, orgId]
+    );
+    return { ...homeAddressFromIdentity(r.rows?.[0]?.addresses), skip: null };
+  } catch (err) {
+    return { ...EMPTY_HOME, skip: String(err && err.message || err).slice(0, 240) };
+  }
+}
+
 function formatIdentityName(n) {
   if (!n || typeof n !== "object") return "";
   return n.full || n.display || [n.first, n.middle, n.last].filter(Boolean).join(" ").trim();
@@ -502,9 +561,12 @@ export async function buildLetterPack({
    * None of the three is a letter mailed to a credit bureau, which is what the
    * refusal above protects. */
   const letterName = realConsumerName(who.name);
-  const letterSkip = letterName ? null : NO_CONSUMER_NAME;
+  // NO HOME ADDRESS, NO LETTERS — see NO_HOME_ADDRESS above. Same narrow refusal
+  // as the name: the letters are withheld, the analysis documents are not.
+  const letterHome = complaintIdentityFromPersonal(who).addressLine1;
+  const letterSkip = !letterName ? NO_CONSUMER_NAME : (!letterHome ? NO_HOME_ADDRESS : null);
   const letters = [];
-  if (letterName) {
+  if (letterName && letterHome) {
     letters.push(...(await generateLetters({
       path,
       bureaus,
@@ -583,6 +645,7 @@ export async function buildLetterPack({
     summarySkip,
     // Null normally. "missing_consumer_name" when this client has no real name
     // on record, which withholds every mailed letter and both complaints.
+    // "missing_home_address" when there is a name but no home address.
     letterSkip,
     complaintCount: escalation.files.length,
     complaintSkip: escalation.skip,
@@ -661,7 +724,7 @@ export async function buildLetterPackForClient(
   let row;
   try {
     const client = await db.query(
-      `SELECT first_name, last_name, custom_fields, outcome_tier FROM clients WHERE id = $1`,
+      `SELECT org_id, first_name, last_name, custom_fields, outcome_tier FROM clients WHERE id = $1`,
       [clientId]
     );
     row = client.rows[0];
@@ -677,7 +740,10 @@ export async function buildLetterPackForClient(
   if (!row) {
     return { files: [], reason: PACK_REASON.NO_CLIENT, deliverableCount: 0, engineSkip: "no_client", engineOutcome: null };
   }
-  const personal = personalFromClient(row);
+  // The home address comes from the saved identity record, never the typed
+  // custom_fields keys. See NO_HOME_ADDRESS above.
+  const { skip: homeAddressSkip, ...home } = await readHomeAddress(db, { clientId, orgId: row.org_id });
+  const personal = { ...personalFromClient(row), ...home };
   let engine = null;
   let storedCrs = null;
   let engineSkip = null;
@@ -728,7 +794,9 @@ export async function buildLetterPackForClient(
       reason: sharpenEmptyReason(packOut.reason, { engineSkip, engineFault }),
       engineSkip,
       engineOutcome: engine?.outcome ?? null,
-      priorOutcomeSkip: prior.skip
+      priorOutcomeSkip: prior.skip,
+      // Null normally. The error text when the identity record could not be read.
+      homeAddressSkip
     };
   } catch (err) {
     return {

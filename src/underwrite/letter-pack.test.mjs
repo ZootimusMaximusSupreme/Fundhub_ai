@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { buildLetterPack, buildLetterPackForClient, personalFromClient, bureausFromEngine, PACK_REASON } from "./letter-pack.mjs";
+import {
+  buildLetterPack, buildLetterPackForClient, personalFromClient, bureausFromEngine, PACK_REASON,
+  NO_HOME_ADDRESS, homeAddressFromIdentity
+} from "./letter-pack.mjs";
 import { mergeBureauReports } from "../finance/crs-map.mjs";
 import { extractPdfText } from "../company-brain/pdf-text.mjs";
 
@@ -174,10 +177,11 @@ test("funding letters without the four analysis PDFs are not a complete pack", a
   assert.equal(pack.reason, "missing_funding_analysis");
 });
 
-function fakePackDb({ client, crs } = {}) {
+function fakePackDb({ client, crs, identity } = {}) {
   return {
     async query(sql) {
       if (/FROM clients/.test(sql)) return { rows: client ? [client] : [] };
+      if (/FROM pii_identity/.test(sql)) return { rows: identity ? [{ addresses: identity }] : [] };
       if (/FROM crs_results/.test(sql)) return { rows: crs ? [{ result: crs }] : [] };
       return { rows: [] };
     }
@@ -209,10 +213,13 @@ const SANDBOX_CLIENT = {
   custom_fields: { address: "1100 Lynhurst Ln", city: "Denton", state: "TX", zip: "76205" },
   outcome_tier: null
 };
+// The saved identity record, in the shape the real credit form writes
+// (api/soft-pull-approve.mjs). This is where the letters read the home address.
+const SANDBOX_IDENTITY = [{ addressLine1: "1100 Lynhurst Ln", city: "Denton", state: "TX", postalCode: "76205" }];
 
 test("a stored pull WITH result.bureaus builds real letters through the tier engine", async () => {
   const out = await buildLetterPackForClient(
-    fakePackDb({ client: SANDBOX_CLIENT, crs: mergedSandboxPull() }),
+    fakePackDb({ client: SANDBOX_CLIENT, crs: mergedSandboxPull(), identity: SANDBOX_IDENTITY }),
     { clientId: "cl-real", pack: "funding" }
   );
   assert.equal(out.engineSkip, null, `engine must run clean, got ${out.engineSkip}`);
@@ -265,4 +272,85 @@ test("REGRESSION: clients.outcome_tier is not stamped onto the engine", async ()
     { runEngine: () => ({ outcome: "REPAIR_ONLY", normalized: {} }) }
   );
   assert.equal(out.engineOutcome, "REPAIR_ONLY");
+});
+
+/* ═══ N9 — NO HOME ADDRESS, NO LETTERS (live, 2026-09-18) ═══════════════════
+   Sim Combo's six funding letters were saved on live printing the client's name
+   and the date and no home address, and the personal-information letters asked
+   the bureau to "keep only my current address" while listing that very address
+   among the ones to remove. The Repair desk showed the address on file the
+   whole time: it lives on the identity record, and the builder was reading the
+   typed custom_fields keys. */
+
+const letterFilesOf = (out) => out.files.filter((f) => /inquiry_|personal_info_|round/.test(f.filename));
+async function letterText(f) {
+  const buf = Buffer.isBuffer(f.content) ? f.content : Buffer.from(f.content);
+  return ((await extractPdfText(buf)).text || "").replace(/\s+/g, " ");
+}
+
+test("N9: every letter prints the home address from the saved identity record, not the typed custom fields", async () => {
+  const out = await buildLetterPackForClient(
+    fakePackDb({
+      client: { ...SANDBOX_CLIENT, custom_fields: { address: "9 Typed Only Rd" } },
+      crs: mergedSandboxPull(),
+      identity: [{ addressLine1: "5815 Knoll Krest St", city: "San Antonio", state: "TX", postalCode: "78242" }]
+    }),
+    { clientId: "cl-n9", pack: "funding" }
+  );
+  const letters = letterFilesOf(out);
+  assert.ok(letters.length >= 3, `expected letters, got ${out.files.map((f) => f.filename)}`);
+  assert.equal(out.letterSkip, null);
+  for (const f of letters) {
+    const text = await letterText(f);
+    assert.match(text, /5815 Knoll Krest St/, `${f.filename} prints no street`);
+    assert.match(text, /San Antonio, TX 78242/, `${f.filename} prints no city, state and ZIP`);
+    assert.doesNotMatch(text, /9 Typed Only Rd/, `${f.filename} printed the typed custom field`);
+  }
+});
+
+test("N9: with no home address on the identity record no letter is built, and the analysis pages still are", async () => {
+  // SANDBOX_CLIENT still carries a typed custom_fields address. It is not a home address.
+  const out = await buildLetterPackForClient(
+    fakePackDb({ client: SANDBOX_CLIENT, crs: mergedSandboxPull() }),
+    { clientId: "cl-n9-none", pack: "funding" }
+  );
+  assert.deepEqual(letterFilesOf(out).map((f) => f.filename), []);
+  assert.equal(out.letterSkip, NO_HOME_ADDRESS);
+  assert.equal(out.files.filter((f) => f.contentType === "text/html").length, 4,
+    "the four analysis pages name no address and are still owed");
+});
+
+test("N9: an identity row with no street line is no home address", async () => {
+  const out = await buildLetterPackForClient(
+    fakePackDb({
+      client: SANDBOX_CLIENT,
+      crs: mergedSandboxPull(),
+      identity: [{ city: "Denton", state: "TX", postalCode: "76205" }]
+    }),
+    { clientId: "cl-n9-nostreet", pack: "funding" }
+  );
+  assert.deepEqual(letterFilesOf(out).map((f) => f.filename), []);
+  assert.equal(out.letterSkip, NO_HOME_ADDRESS);
+});
+
+test("N9: buildLetterPack withholds every letter, funding and repair, for a named client with no home address", async () => {
+  for (const pack of ["funding", "repair"]) {
+    const out = await buildLetterPack({ crsResult: ENGINE, personal: { name: "Jordan Sample", address: "" }, pack });
+    assert.deepEqual(letterFilesOf(out).map((f) => f.filename), [], `${pack} pack built a letter with no address`);
+    assert.equal(out.letterSkip, NO_HOME_ADDRESS);
+  }
+});
+
+test("homeAddressFromIdentity reads the shape the credit form saves, and a missing street is empty", () => {
+  assert.deepEqual(
+    homeAddressFromIdentity([{ addressLine1: "5815 Knoll Krest St", city: "San Antonio", state: "TX", postalCode: "78242" }]),
+    { address: "5815 Knoll Krest St\nSan Antonio, TX 78242", city: "San Antonio", state: "TX", zip: "78242" }
+  );
+  assert.equal(
+    homeAddressFromIdentity(JSON.stringify([{ address_line1: "1 Elm", address_line2: "Apt 2", address_city: "Mesa", address_state: "AZ", address_zip: "85201" }])).address,
+    "1 Elm\nApt 2\nMesa, AZ 85201"
+  );
+  assert.deepEqual(homeAddressFromIdentity([]), { address: "", city: "", state: "", zip: "" });
+  assert.deepEqual(homeAddressFromIdentity(null), { address: "", city: "", state: "", zip: "" });
+  assert.deepEqual(homeAddressFromIdentity([{ city: "Mesa", zip: "85201" }]), { address: "", city: "", state: "", zip: "" });
 });

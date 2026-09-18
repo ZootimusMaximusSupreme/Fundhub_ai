@@ -144,6 +144,10 @@ const STORED_CRS_SCOREABLE = mergeBureauReports({
   environment: "sandbox"
 });
 
+// The home address sits on the identity record, where the letters read it
+// (letter-pack.mjs NO_HOME_ADDRESS). Same address the fixture always used.
+const FIXTURE_HOME = [{ addressLine1: "100 Test Ave", city: "Denton", state: "TX", postalCode: "76205" }];
+
 /**
  * The three reads buildLetterPackForClient makes — the client, the stored credit
  * pull, and the confirmed bureau answers already on file (which this stub has
@@ -160,11 +164,12 @@ function fakeClientDb(storedCrs, priorOutcomes = []) {
           rows: [{
             first_name: "Fixture",
             last_name: "Client",
-            custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+            custom_fields: {},
             outcome_tier: "REPAIR_ONLY"
           }]
         };
       }
+      if (/FROM pii_identity/i.test(sql)) return { rows: [{ addresses: FIXTURE_HOME }] };
       if (/FROM crs_results/i.test(sql)) {
         return { rows: storedCrs ? [{ result: storedCrs }] : [] };
       }
@@ -673,11 +678,12 @@ function clientDbOnTier(outcomeTier, storedCrs, priorOutcomes = []) {
           rows: [{
             first_name: "Fixture",
             last_name: "Client",
-            custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+            custom_fields: {},
             outcome_tier: outcomeTier
           }]
         };
       }
+      if (/FROM pii_identity/i.test(sql)) return { rows: [{ addresses: FIXTURE_HOME }] };
       if (/FROM crs_results/i.test(sql)) return { rows: storedCrs ? [{ result: storedCrs }] : [] };
       if (/FROM dispute_items/i.test(sql)) return { rows: [...priorOutcomes] };
       return { rows: [] };
