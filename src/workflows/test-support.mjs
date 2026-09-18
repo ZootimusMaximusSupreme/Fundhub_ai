@@ -544,3 +544,58 @@ export function fakeStep() {
 }
 
 export const ev = (name, payload, extra = {}) => ({ id: "evt-x", orgId: "org-1", name, payload, ...extra });
+
+/* withPanelReads — the reads the Client Control Panel works its step out from
+   (src/fulfillment/client-step.mjs), answered for the clients in `inner.clients`.
+   Everything else falls through to `inner.query`, so a real workflow can run
+   against pgFake with the panel's answer scripted.
+
+   `panelFor(clientId)` returns that file's signals:
+     consent       "valid" | "none" | "throws"   (default "valid")
+     realCrs       count of real credit reports  (default 0)
+     inquiryCases  active inquiry-removal cases  (default [])
+     card          { pipeline_key, stage_key } | null
+   Client rows come from inner.clients as they stand at the moment of the read,
+   so a write made earlier in the same run is seen. */
+export function withPanelReads(inner, panelFor = () => ({})) {
+  const clients = () => inner.clients || [];
+  const find = (id) => clients().find((c) => c.id === id) || null;
+  const panel = (id) => ({ consent: "valid", realCrs: 0, inquiryCases: [], card: null, ...(panelFor(id) || {}) });
+  const wrapped = Object.create(inner);
+  wrapped.query = async (sql, params = []) => {
+    const text = String(sql);
+    if (/SELECT org_id FROM clients WHERE id = \$1 LIMIT 1/.test(text)) {
+      const c = find(params[0]);
+      return { rows: c ? [{ org_id: c.org_id }] : [] };
+    }
+    if (/FROM clients WHERE id = \$1 AND org_id = \$2/.test(text)) {
+      const c = find(params[0]);
+      if (!c || c.org_id !== params[1]) return { rows: [] };
+      return { rows: [{ tags: [], custom_fields: {}, outcome_tier: null, ...c }] };
+    }
+    if (/FROM crs_results/.test(text) && /is_demo/.test(text)) {
+      const id = Array.isArray(params[1]) ? params[1][0] : params[0];
+      const n = panel(id).realCrs;
+      return { rows: n > 0 ? [{ client_id: id, n }] : [] };
+    }
+    if (/FROM client_consents/.test(text)) {
+      const how = panel(params[1]).consent;
+      if (how === "throws") throw new Error('relation "client_consents" is unreadable');
+      if (how !== "valid") return { rows: [] };
+      return { rows: [{ client_id: params[1], is_valid: true, revoked_at: null, granted_at: new Date("2026-01-01T00:00:00Z") }] };
+    }
+    if (/FROM inquiry_removal_cases/.test(text)) return { rows: panel(params[1]).inquiryCases };
+    if (/FROM cards ca/.test(text)) {
+      const id = Array.isArray(params[1]) ? params[1][0] : null;
+      const card = panel(id).card;
+      return { rows: card ? [{ client_id: id, ...card }] : [] };
+    }
+    if (/WHERE client_id = \$1 AND org_id = \$2/.test(text) &&
+        /FROM (crs_results|tasks|funding_rounds|v_invoice_balance)\b/.test(text)) return { rows: [] };
+    if (/FROM businesses/.test(text) && /client_id = \$1 AND org_id = \$2/.test(text)) return { rows: [] };
+    if (/FROM (documents|dispute_responses|dispute_cases|dispute_letters|payment_links)\b/.test(text) &&
+        /ANY\(\$2/.test(text)) return { rows: [] };
+    return inner.query(sql, params);
+  };
+  return wrapped;
+}

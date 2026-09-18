@@ -3,7 +3,6 @@
 // Returns the client row + related transactions[], crs_results[], messages[], tasks[].
 // No writes. SELECT only. ESM. Mirrors api/health.mjs style.
 import { db } from "../../src/db.mjs";
-import { clientDetailExtras } from "../../src/http/client-detail.mjs";
 import { redact, isUuid, requireRole, ROLE_SETS, CLIENT_DATA_ERRORS } from "../../src/http/read-api.mjs";
 import { requireDashboardAccess } from "../../src/http/dashboard-auth.mjs";
 import { resolvePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
@@ -11,18 +10,16 @@ import { AUTH_UNAVAILABLE } from "../../src/http/middleware/requireAuth.mjs";
 import { requireClientInOrg } from "../../src/http/client-scope.mjs";
 import { requireSessionOrg } from "../../src/http/session-org.mjs";
 import { safeError } from "../../src/http/health.mjs";
-import { getActiveCaseForClient } from "../../src/inquiry-ops/cases.mjs";
-import { consentStatus } from "../../src/consent/index.mjs";
-import { deriveNextAction, sanitizeBlockerLabels } from "../../src/fulfillment/next-action.mjs";
-import { gatherDetailSignals } from "../../src/fulfillment/read-signals.mjs";
+import {
+  readClientStepRows,
+  readActiveInquiryCase,
+  workOutClientStep
+} from "../../src/fulfillment/client-step.mjs";
 
-/* Demo rows are shown on the page as they always were, but they never drive a
-   derived answer. Only an explicit true counts as demo, so a NULL or a missing
-   column leaves a row in — a real row wrongly dropped is worse than a demo row
-   wrongly kept, and the demo seed always sets the flag. */
-function realOnly(rows) {
-  return Array.isArray(rows) ? rows.filter((r) => !(r && r.is_demo === true)) : [];
-}
+/* The step this page paints is worked out in src/fulfillment/client-step.mjs,
+   the ONE place the saved step (custom_fields.employee_next_action) is also
+   worked out from — hole 12, 2026-09-18. The reads it needs and the work-out
+   itself moved there; this handler calls them and paints the answer. */
 
 export default async function handler(req, res) {
   // A signed-in client (or any non-staff principal) is refused here. Do this
@@ -71,24 +68,13 @@ export default async function handler(req, res) {
   if (!await requireClientInOrg(res, db, staff, id)) return;
 
   try {
-    const [clientRes, txRes, crsRes, msgRes, taskRes, roundRes, invRes, bizRes] = await Promise.all([
-      db.query(
-        `SELECT id, org_id, first_name, last_name, email, phone,
-                outcome_tier, funded, funded_amount, days_to_fund,
-                channel_source, tags, pipeline_ids,
-                dnd_sms, dnd_email, dnd_voice, consent_sms,
-                custom_fields, created_at, updated_at
-         FROM clients WHERE id = $1 AND org_id = $2`,
-        [id, orgId]
-      ),
+    /* The six reads the step is worked out from come from the shared piece;
+       only the two this page paints and the step never reads stay here. */
+    const [rows, txRes, msgRes] = await Promise.all([
+      readClientStepRows(db, { orgId, clientId: id }),
       db.query(
         `SELECT id, product_name, amount_paid, status, provider, provider_ref, created_at
          FROM transactions WHERE client_id = $1 AND org_id = $2 ORDER BY created_at DESC`,
-        [id, orgId]
-      ),
-      db.query(
-        `SELECT id, outcome_tier, result, created_at
-         FROM crs_results WHERE client_id = $1 AND org_id = $2 ORDER BY created_at DESC`,
         [id, orgId]
       ),
       db.query(
@@ -97,141 +83,34 @@ export default async function handler(req, res) {
          FROM messages WHERE client_id = $1 AND org_id = $2
          ORDER BY created_at DESC LIMIT 100`,
         [id, orgId]
-      ),
-      db.query(
-        `SELECT id, assignee_role, assignee_staff_id, title, body, due_at, done,
-                source_workflow, created_at, is_demo
-         FROM tasks WHERE client_id = $1 AND org_id = $2 ORDER BY created_at DESC`,
-        [id, orgId]
-      ),
-      db.query(
-        `SELECT id, round_number, status, product, submitted_amount, approved_amount,
-                funded_amount, hold_reason, conditions, created_at, is_demo
-         FROM funding_rounds WHERE client_id = $1 AND org_id = $2
-         ORDER BY round_number DESC`,
-        [id, orgId]
-      ),
-      db.query(
-        `SELECT invoice_id AS id, status, currency, amount_due, amount_paid,
-                balance_due, due_at, paid_at, created_at
-         FROM v_invoice_balance WHERE client_id = $1 AND org_id = $2
-         ORDER BY created_at DESC`,
-        [id, orgId]
-      ),
-      db.query(
-        `SELECT name, age_months, entity_data
-           FROM businesses
-          WHERE client_id = $1 AND org_id = $2
-          ORDER BY updated_at DESC
-          LIMIT 20`,
-        [id, orgId]
       )
     ]);
 
-    if (!clientRes.rows.length) {
+    if (!rows.client) {
       return res.status(404).json({ ok: false, error: "client not found" });
     }
 
-    const client = clientRes.rows[0];
-    const extras = clientDetailExtras({
-      client,
-      crsResults: crsRes.rows,
-      tasks: taskRes.rows,
-      fundingRounds: roundRes.rows,
-      invoices: invRes.rows,
-      businesses: bizRes.rows
+    const client = rows.client;
+    const inquiry_removal_case = await readActiveInquiryCase(db, { orgId, clientId: id });
+
+    // The step, the safe blocker labels and the detail extras — one work-out,
+    // shared with the saved step. See src/fulfillment/client-step.mjs.
+    const { extras, open_blockers, fulfillment } = await workOutClientStep(db, {
+      orgId,
+      clientId: id,
+      rows,
+      inquiryCase: inquiry_removal_case
     });
-
-    // Active inquiry-removal case for the control panel status tile.
-    // Table may be absent before migration — never break the dashboard.
-    let inquiry_removal_case = null;
-    try {
-      inquiry_removal_case = await getActiveCaseForClient(db, {
-        orgId,
-        clientId: id
-      });
-    } catch (_) {
-      inquiry_removal_case = null;
-    }
-
-    /* FULFILLMENT — what should someone do about this client next.
-       READ ONLY, and DELIBERATELY OPTIONAL. Everything below is wrapped so that
-       any failure — a derivation error, a table that is not there yet, a
-       consent read that times out — returns this endpoint's response EXACTLY as
-       it was before this block existed. The three new keys are ABSENT on
-       failure, never blank and never a guess, so today's display survives.
-
-       Nearly every signal is already in hand: the client row carries
-       custom_fields, tags and outcome_tier; taskRes, roundRes and the active
-       inquiry case are already loaded; open_blockers comes from
-       clientDetailExtras. Only consent, the demo-filtered credit count, the
-       identity packet, the dispute rows and the funding card need reading, and
-       gatherDetailSignals() does all five in one parallel round.
-
-       consentStatus() is passed in rather than called there so this endpoint
-       uses the SAME function src/finance/soft-pulls.mjs:306-314 gates the pull
-       on. The screen and the button cannot disagree.
-
-       GATE A, AT THE SOURCE. This endpoint also returns the RAW open_blockers
-       array from clientDetailExtras, and the client control panel paints that
-       array directly — in the pre-existing Blockers panel, and again in the new
-       control block when no derivation arrives. Both printed the task title as
-       written, so a client with no recorded permission had one panel saying
-       "Funding intake — pull CRS" while the panel below it said "waiting on
-       written permission". Relabelling per panel failed three times.
-
-       So the RELABEL HAPPENS HERE, ONCE, on the array this endpoint emits, and
-       the derivation is handed the already-safe array. Every consumer — both
-       panels, the pipeline lens, and anything built later — gets the safe label
-       without having to know it should ask. sanitizeBlockerLabels() is
-       idempotent and never throws; its header carries the rule. */
-    let fulfillment = null;
-    /* Fail closed. Until the consent read comes back, this client's written
-       permission is UNCHECKED, so anything failing below still ships the safe
-       label rather than the raw one. */
-    let open_blockers = sanitizeBlockerLabels(extras.open_blockers, { consentValid: null });
-    try {
-      const gathered = await gatherDetailSignals(db, { orgId, clientId: id, consentStatus });
-      /* true / false / null, where null means the consent read failed. Same
-         three-state rule the derivation applies to this signal: anything that
-         is not the shape consentStatus() returns is "we did not ask", not "no". */
-      const consentValid =
-        gathered && gathered.consent && typeof gathered.consent.valid === "boolean"
-          ? gathered.consent.valid
-          : null;
-      open_blockers = sanitizeBlockerLabels(extras.open_blockers, { consentValid });
-      fulfillment = deriveNextAction({
-        ...gathered,
-        custom_fields:  client.custom_fields,
-        tags:           client.tags,
-        outcome_tier:   client.outcome_tier,
-        // getActiveCaseForClient already returns ACTIVE cases only.
-        inquiry_cases:  inquiry_removal_case ? [inquiry_removal_case] : [],
-        /* DEMO ROWS NEVER DRIVE A DERIVED ANSWER.
-           The list path already excludes them in SQL (src/fulfillment/read-signals.mjs,
-           OPEN_TASKS_SQL and ROUNDS_SQL). These two queries are pre-existing and feed
-           the rest of today's page, so they are left exactly as they are and the demo
-           rows are dropped here instead — an adversary found a real client carrying a
-           demo funding round, and the new block printed "Approved $99,999" for it while
-           the lens correctly showed nothing. Filtered here, both surfaces agree. */
-        tasks:          realOnly(taskRes.rows),
-        funding_rounds: realOnly(roundRes.rows),
-        open_blockers
-      });
-    } catch (err) {
-      console.warn("[fulfillment] next action unavailable for client detail:", err && err.message);
-      fulfillment = null;
-    }
 
     res.status(200).json(redact({
       ok: true,
       client,
       transactions:  txRes.rows,
-      crs_results:   crsRes.rows,
+      crs_results:   rows.crsResults,
       messages:      msgRes.rows,
-      tasks:         taskRes.rows,
-      funding_rounds: roundRes.rows,
-      invoices:      invRes.rows,
+      tasks:         rows.tasks,
+      funding_rounds: rows.fundingRounds,
+      invoices:      rows.invoices,
       inquiry_removal_case,
       // Derived, never stored — see src/http/client-detail.mjs for why each of
       // these explains rather than recomputes.
@@ -240,10 +119,10 @@ export default async function handler(req, res) {
          spread carries. Same rows, same ids, same details; only a pull-credit
          label on a client without established permission is rewritten, and the
          words on the record survive on `recorded_label`. See the Gate A block
-         above. */
+         in src/fulfillment/client-step.mjs. */
       open_blockers,
       /* Derived, never stored. Absent entirely when the derivation could not
-         run — see the block above. `next_action_degraded` true means one signal
+         run — see src/fulfillment/client-step.mjs. `next_action_degraded` true means one signal
          could not be read, so the screen should fall back to today's display
          rather than trust a partial answer. */
       ...(fulfillment ? {
