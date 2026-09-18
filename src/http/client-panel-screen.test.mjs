@@ -1100,3 +1100,67 @@ describe("client-control-panel.html — a sample report says it is a sample (liv
       "a sample report is being printed as the last credit pull again");
   });
 });
+
+describe("client-control-panel.html — the System Facts header says the state it is in (hole N21)", () => {
+  /* Live 2026-09-18: opening System Facts turned the arrow and set
+     aria-expanded="true", but the header still read "collapsed" while the list
+     sat open under it. This runs the page's own fold script against the page's
+     own System Facts button, with a stand-in DOM, and reads the header words
+     after each click. */
+  function factsHeader() {
+    const m = PANEL_HTML.match(/<button class="group-title card-title tog"[^>]*aria-controls="facts-body"[^>]*>([\s\S]*?)<\/button>/);
+    assert.ok(m, "the System Facts header button is gone");
+    const start = m[0].match(/aria-expanded="(true|false)"/);
+    assert.ok(start, "the System Facts header lost aria-expanded");
+    const attrs = { "aria-controls": "facts-body", "aria-expanded": start[1] };
+    const chev = m[1].match(/<span class="chev">([\s\S]*?)<span class="cg">/);
+    assert.ok(chev, "the System Facts header lost its state words");
+    const s = chev[1].match(/<span class="tog-state"([^>]*)>([^<]*)<\/span>/);
+    const state = s && {
+      textContent: s[2],
+      getAttribute: (k) => ((s[1].match(new RegExp(k + '="([^"]*)"')) || [])[1] ?? null)
+    };
+    const listeners = [];
+    const button = {
+      getAttribute: (k) => attrs[k] ?? null,
+      setAttribute: (k, v) => { attrs[k] = String(v); },
+      addEventListener: (type, fn) => { if (type === "click") listeners.push(fn); },
+      querySelector: (sel) => (sel === ".tog-state" ? state : null),
+      click: () => listeners.forEach((fn) => fn())
+    };
+    const words = () => (state ? state.textContent : chev[1].replace(/<[^>]*>/g, "")).trim();
+    return { button, attrs, words };
+  }
+
+  function runFold(button) {
+    const a = PANEL_HTML.indexOf("/* Groups fold. */");
+    assert.ok(a !== -1, "the fold script is gone");
+    const b = PANEL_HTML.indexOf("</script>", a);
+    const body = { hidden: /<div class="group-body" id="facts-body" hidden>/.test(PANEL_HTML) };
+    const document = {
+      querySelectorAll: (sel) => (sel === ".group-title.tog" ? [button] : []),
+      getElementById: (id) => (id === "facts-body" ? body : null)
+    };
+    vm.runInNewContext(PANEL_HTML.slice(a, b), { document });
+    return body;
+  }
+
+  test("it says collapsed when shut, open when open, and aria-expanded agrees", () => {
+    const { button, attrs, words } = factsHeader();
+    const body = runFold(button);
+
+    assert.equal(body.hidden, true, "System Facts no longer starts shut");
+    assert.equal(attrs["aria-expanded"], "false");
+    assert.equal(words(), "collapsed");
+
+    button.click();
+    assert.equal(body.hidden, false, "clicking the header did not open the list");
+    assert.equal(attrs["aria-expanded"], "true");
+    assert.equal(words(), "open", "the header still says \"" + words() + "\" while the list is open");
+
+    button.click();
+    assert.equal(body.hidden, true, "a second click did not shut the list");
+    assert.equal(attrs["aria-expanded"], "false");
+    assert.equal(words(), "collapsed");
+  });
+});
