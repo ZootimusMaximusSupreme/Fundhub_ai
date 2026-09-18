@@ -26,11 +26,14 @@
 //      production deploy costs Netlify credits (the 2026-08-06 lesson).
 //   3. lint and two guards.
 //   4. database changes, then 5. one `netlify deploy --prod`.
-//   6. /api/health must answer pending 0 for this build's list, then the ship is
-//      written to docs/ops/ship-log.md and committed. A failed run writes nothing,
-//      so the next run tries again.
+//   6. /api/health must answer pending 0 for this build's list.
+//   7. re-register the app with Inngest (PUT /api/inngest) — Inngest keeps the job
+//      list it was last handed, so a job added in a ship never runs without this
+//      (board N25, 2026-09-18). Then the ship is written to docs/ops/ship-log.md and
+//      committed. A failed run writes nothing, so the next run tries again.
 
 import { loadEnv } from "./load-env.mjs";
+import { reregisterInngest } from "./inngest-register.mjs";
 loadEnv();
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -156,7 +159,7 @@ if (process.env.MIGRATION_DATABASE_URL && !process.env.MIGRATION_DATABASE_URL.in
 // ── 5. deploy ─────────────────────────────────────────────────────────────────
 say("\n→ deploy");
 if (DRY) {
-  say("  (dry run: would run netlify deploy --prod)");
+  say("  (dry run: would run netlify deploy --prod, then re-register with Inngest)");
   say("\nDry run finished. Nothing changed.");
   process.exit(0);
 }
@@ -179,6 +182,14 @@ if (!health || health.pending !== 0 || health.expected !== EXPECTED_MIGRATIONS.l
   fail(`deployed, but /api/health does not show this build yet: ${JSON.stringify(health)}`);
 }
 say(`  live: ${health.migrations} database changes applied, ${health.pending} pending`);
+
+say("\n→ re-registering with Inngest (the timed and event jobs)");
+try {
+  const { modified } = await reregisterInngest({ site: SITE });
+  say(`  ${SITE}/api/inngest: Successfully registered (modified: ${modified})`);
+} catch (e) {
+  fail(`deployed and live, but Inngest was NOT re-registered, so new or changed jobs will not run: ${e.message}. Nothing was logged, so the next npm run ship deploys and tries again. To retry without a deploy: node scripts/inngest-register.mjs`);
+}
 
 const stamp = new Date().toLocaleString("sv-SE", { timeZone: "America/Phoenix" }).slice(0, 16);
 if (!fs.existsSync(LOG)) {
