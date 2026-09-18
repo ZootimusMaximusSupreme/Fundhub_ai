@@ -1100,3 +1100,122 @@ describe("client-control-panel.html — a sample report says it is a sample (liv
       "a sample report is being printed as the last credit pull again");
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LIVE HOLE N12 (2026-09-18) — EVERY FIGURE OFF A SAMPLE REPORT SAYS SAMPLE
+   Hole 23 labelled the scores on #13 Sim Thirteen-NoBook. The same sample
+   report still painted "The 4 inquiries on this file", the Inquiries tile "4",
+   Card Use "6% · excellent" and the Experian income estimate "$37,000/yr" with
+   nothing saying sample. The fixture is that live row's own stamp and its four
+   inquiries; the control is a real pull (environment "production").
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("client-control-panel.html — the inquiries, Card Use and income off a sample report say sample (live hole N12)", () => {
+  const AT = "2026-09-18T08:54:06.344Z";
+  const INQ = [
+    { creditorName: "CAPITAL ONE", source: "EX" },
+    { creditorName: "SYNCB/PAYPAL CREDIT", source: "EX" },
+    { creditorName: "NAVY FEDERAL CU", source: "TU" },
+    { creditorName: "CITIBANK NA", source: "EQ" }
+  ];
+  const sampleRow = {
+    created_at: AT,
+    result: { source: "crs", environment: "simulated", simulated: true, utilization: 6, inquiries: INQ }
+  };
+  const realRow = {
+    created_at: AT,
+    result: { source: "crs", environment: "production", utilization: 6, inquiries: INQ }
+  };
+
+  /* A tiny DOM: just enough for the three paint functions, which only ever use
+     getElementById, createElement, textContent, className, hidden and
+     appendChild. Setting textContent clears the children, as the browser does. */
+  function fakeNode(id) {
+    const n = {
+      id, className: "", hidden: false, children: [], own: "",
+      appendChild(c) { this.children.push(c); return c; },
+      get textContent() { return this.own + this.children.map((c) => c.textContent).join(""); },
+      set textContent(v) { this.own = String(v); this.children = []; }
+    };
+    return n;
+  }
+  function paintWith(rows) {
+    const nodes = {};
+    for (const id of ["ccp-inquiries", "ccp-inquiries-sample", "ccp-inquiry-names", "ccp-next-inquiries"]) {
+      nodes[id] = fakeNode(id);
+      if (id === "ccp-inquiries-sample" || id === "ccp-next-inquiries") nodes[id].hidden = true;
+    }
+    const a = PANEL_HTML.indexOf("function fileInquiries(");
+    const b = PANEL_HTML.indexOf("/* WHY A REMOVAL CASE SAYS BLOCKED");
+    assert.ok(a !== -1 && b > a, "fileInquiries / paintInquiries moved; this test cannot find them");
+    const sandbox = {
+      FHCP: loadPanel(),
+      document: { getElementById: (id) => nodes[id] || null, createElement: () => fakeNode(null) }
+    };
+    sandbox.$ = (id) => sandbox.document.getElementById(id);
+    sandbox.setText = (id, v) => { const n = sandbox.$(id); if (n) n.textContent = v == null || v === "" ? "—" : String(v); };
+    vm.createContext(sandbox);
+    vm.runInContext(PANEL_HTML.slice(a, b) + "\npaintInquiries(ROWS);", Object.assign(sandbox, { ROWS: rows }));
+    return nodes;
+  }
+
+  test("a sample report's inquiries list and count both say sample", () => {
+    const P = loadPanel();
+    assert.match(P.SAMPLE_FIGURE_NOTE, /sample/i);
+    assert.match(P.SAMPLE_FIGURE_NOTE, /not a real credit pull/i);
+    const n = paintWith([sampleRow]);
+    assert.equal(n["ccp-inquiries"].textContent, "4");
+    assert.equal(n["ccp-inquiries-sample"].hidden, false, "the Inquiries tile does not say sample");
+    assert.equal(n["ccp-inquiries-sample"].textContent, P.SAMPLE_FIGURE_NOTE);
+    const box = n["ccp-next-inquiries"];
+    assert.equal(box.hidden, false);
+    assert.match(box.children[0].textContent, /The 4 inquiries on this file/);
+    assert.equal(box.children[1].textContent, P.SAMPLE_FIGURE_NOTE,
+      "the inquiries list does not say sample straight under its head");
+    assert.equal(box.children.filter((c) => c.className === "na-inq-row").length, 4);
+  });
+
+  test("a real pull's inquiries never say sample", () => {
+    const P = loadPanel();
+    const n = paintWith([realRow]);
+    assert.equal(n["ccp-inquiries"].textContent, "4");
+    assert.equal(n["ccp-inquiries-sample"].hidden, true);
+    assert.equal(n["ccp-inquiries-sample"].textContent, "");
+    assert.ok(!n["ccp-next-inquiries"].textContent.includes(P.SAMPLE_FIGURE_NOTE));
+    // Only the report the list came off counts: an OLDER sample under a newer real pull is not it.
+    const older = { ...sampleRow, created_at: "2026-09-01T00:00:00.000Z" };
+    const m = paintWith([older, realRow]);
+    assert.equal(m["ccp-inquiries-sample"].hidden, true);
+    assert.ok(!m["ccp-next-inquiries"].textContent.includes(P.SAMPLE_FIGURE_NOTE));
+  });
+
+  test("a sample report with no inquiry list still labels the tile; no report adds nothing", () => {
+    const P = loadPanel();
+    const n = paintWith([{ created_at: AT, result: { environment: "simulated", simulated: true } }]);
+    assert.equal(n["ccp-inquiries"].textContent, "none listed");
+    assert.equal(n["ccp-inquiries-sample"].hidden, false);
+    assert.equal(n["ccp-inquiries-sample"].textContent, P.SAMPLE_FIGURE_NOTE);
+    const none = paintWith([]);
+    assert.equal(none["ccp-inquiries"].textContent, "no report yet");
+    assert.equal(none["ccp-inquiries-sample"].hidden, true);
+  });
+
+  test("Card Use and the income estimates are matched to their own report and say sample", () => {
+    assert.match(PANEL_HTML, /id="ccp-inquiries">—<\/div>\s*<p class="fact-note" id="ccp-inquiries-sample" hidden><\/p>/,
+      "the sample line is gone from the Inquiries tile");
+    assert.match(PANEL_HTML, /id="ccp-card-use">—<\/div>\s*<p class="fact-note" id="ccp-card-use-sample" hidden><\/p>/,
+      "the sample line is gone from the Card Use tile");
+    assert.match(PANEL_HTML,
+      /var sampleCardUse = FHCP\.isSampleReport\(d\.crs_results, d\.utilisation && d\.utilisation\.asOf\);/);
+    assert.match(PANEL_HTML, /cardUseNote\.textContent = sampleCardUse \? FHCP\.SAMPLE_FIGURE_NOTE : "";/);
+    assert.match(PANEL_HTML, /var sampleIncome = FHCP\.isSampleReport\(d\.crs_results, inc\.asOf\);/);
+    assert.match(PANEL_HTML, /setText\("ccp-income-ex", incomeLine\(inc\.experian\)\);/);
+    assert.match(PANEL_HTML, /setText\("ccp-income-eq", incomeLine\(inc\.equifax\)\);/);
+    // The server's own asOf is that report's created_at — the match key the screen relies on.
+    const P = loadPanel();
+    assert.equal(P.isSampleReport([sampleRow], AT), true);
+    assert.equal(P.isSampleReport([realRow], AT), false);
+    assert.equal(P.isSampleReport([sampleRow], null), false,
+      "a Card Use figure with no report date (the custom-field fallback) must not be called a sample");
+  });
+});
