@@ -2,6 +2,12 @@
 // Wired from onRepairEvent so HTTP-path and bus-path both send.
 
 import { sendTemplated } from "../workflows/messaging.mjs";
+import { claimCustomFieldLock } from "../workflows/custom-fields.mjs";
+import {
+  EMAIL_TEMPLATE_KEY as DOC_REQUEST_EMAIL,
+  DOC_01_LOCK,
+  alreadySentDoc01
+} from "../handlers/inquiry-docs.mjs";
 
 export const EMAIL_REPAIR_WELCOME = "EMAIL-REPAIR-WELCOME";
 export const EMAIL_REPAIR_LETTERS_SENT = "EMAIL-REPAIR-LETTERS-SENT";
@@ -161,6 +167,38 @@ function eventIdFor(name, orgId, clientId, payload = {}) {
   return `repair-email:${name}:${orgId}:${clientId}:${stamp}`;
 }
 
+/* ── "WE NEED YOUR ID AND PROOF OF ADDRESS" (hole N8, 2026-09-18) ───────────
+ *
+ * repair.docs.needed moves the card to awaiting_documents and the portal says
+ * "Upload your ID and proof of address to continue". Until this, nothing told
+ * the client: the event had no template, so notifyRepairEmail returned
+ * no_template_for_event. Measured on live: all five repair files that reached
+ * the stage (Walk2, Walk3, Sim Nine, Sim Ten, Sim Combo) got no ask from it.
+ *
+ * The ask is the existing, owner-approved EMAIL-DOC-01-REQUEST ("Documents
+ * needed before we can start": photo ID, proof of address, upload in the
+ * portal). Email only — repair is email only (owner §2.4, 2026-08-21).
+ *
+ * ONCE PER CLIENT, shared with the funding and inquiry paths that send the
+ * same message (src/workflows/s-doc-collection.mjs, src/handlers/inquiry-docs.mjs):
+ * the same "already sent" check and the same one-shot lock. A client who was
+ * already asked is never asked again, and enrolment's double run of this
+ * handler asks at most once. No database means no way to prove "once", so
+ * nothing is sent. */
+export const REPAIR_DOCS_NEEDED_EVENT = "repair.docs.needed";
+export const EMAIL_REPAIR_DOCS_NEEDED = DOC_REQUEST_EMAIL;
+
+async function askForIdentityDocsOnce(db, { name, orgId, clientId, payload = {}, send }) {
+  const templateKey = EMAIL_REPAIR_DOCS_NEEDED;
+  if (!db?.query) return { sent: false, reason: "no_db", templateKey };
+  if (await alreadySentDoc01(db, clientId)) return { sent: false, reason: "already_asked", templateKey };
+  const claimed = await claimCustomFieldLock(db, clientId, DOC_01_LOCK);
+  if (!claimed) return { sent: false, reason: "already_locked", templateKey };
+  const eventId = eventIdFor(name, orgId, clientId, payload);
+  const result = await send(db, { orgId, clientId, channel: "email", templateKey, eventId });
+  return { ...result, templateKey, eventId };
+}
+
 /**
  * Queue the email for a repair.* event. Channel is always email.
  * trial-complete upsell only fires when program is trial (payload or DB).
@@ -172,6 +210,10 @@ export async function notifyRepairEmail(db, {
   payload = {},
   send = sendTemplated
 } = {}) {
+  if (name === REPAIR_DOCS_NEEDED_EVENT) {
+    if (!orgId || !clientId) return { sent: false, reason: "missing_ids" };
+    return askForIdentityDocsOnce(db, { name, orgId, clientId, payload, send });
+  }
   const templateKey = TEMPLATE_BY_EVENT[name];
   if (!templateKey) return { sent: false, reason: "no_template_for_event" };
   if (!orgId || !clientId) return { sent: false, reason: "missing_ids" };

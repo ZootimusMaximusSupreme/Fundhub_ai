@@ -293,6 +293,138 @@ describe("onRepairEvent wires emails", () => {
   });
 });
 
+/* ── hole N8: the "we need your ID and proof of address" stage asked nobody ──
+   repair.docs.needed moved the card to awaiting_documents and sent nothing:
+   notifyRepairEmail had no template for it and returned no_template_for_event.
+   On live, every repair file that reached the stage got no ask from it. These
+   pin the ask, and pin "once" — shared with the funding/inquiry paths that send
+   the same EMAIL-DOC-01-REQUEST. */
+describe("repair.docs.needed asks the client for their ID and proof of address, once", () => {
+  const ORG = "11111111-1111-1111-1111-111111111111";
+  const CLIENT = "22222222-2222-2222-2222-222222222222";
+  const docsNeeded = {
+    name: "repair.docs.needed",
+    orgId: ORG,
+    clientId: CLIENT,
+    payload: {
+      source: "repair.enrolled",
+      missing: ["id_document", "proof_of_address"],
+      idempotencyKey: `repair.docs.needed:${ORG}:${CLIENT}`
+    }
+  };
+
+  /* A client row with a one-shot lock, and a messages table, answered by SQL
+     shape. The lock UPDATE mirrors claimCustomFieldLock: it wins only while the
+     field is empty. */
+  function askDb({ alreadyAsked = false, lockHeld = false } = {}) {
+    const state = { lock: lockHeld ? "2026-09-18T15:13:14.561Z" : "", messages: [] };
+    return {
+      state,
+      async query(sql, params = []) {
+        if (/FROM messages/.test(sql) && /template_key IN/.test(sql)) {
+          return { rows: alreadyAsked || state.messages.length ? [{ "?column?": 1 }] : [] };
+        }
+        if (/UPDATE clients/.test(sql) && /custom_fields/.test(sql)) {
+          if (state.lock) return { rows: [] };
+          state.lock = JSON.parse(params[1])[params[2]];
+          return { rows: [{ id: params[0] }] };
+        }
+        if (/FROM message_templates/.test(sql)) {
+          return {
+            rows: [{
+              body: "Hey {{contact.first_name}}, we need: Government-issued photo ID, Proof of address.",
+              subject: "Documents needed before we can start",
+              compliance_passed: true
+            }]
+          };
+        }
+        if (/FROM clients/.test(sql)) {
+          return {
+            rows: [{
+              first_name: "Sim",
+              last_name: "Repair",
+              email: "e2e+aff-repair@example.com",
+              phone: "+15555550100",
+              custom_fields: {}
+            }]
+          };
+        }
+        if (/INSERT INTO messages/.test(sql)) {
+          if (state.messages.some((m) => m.provider_ref === params[5])) return { rows: [] };
+          state.messages.push({ channel: params[2], template_key: params[3], rendered_body: params[4], provider_ref: params[5] });
+          return { rows: [{ id: `msg-${state.messages.length}` }] };
+        }
+        return { rows: [] };
+      }
+    };
+  }
+
+  it("queues EMAIL-DOC-01-REQUEST by email when the stage is entered", async () => {
+    const db = askDb();
+    const res = await notifyRepairEmail(db, { ...docsNeeded, send: sendTemplated });
+    assert.equal(res.sent, true, `nothing was queued: ${res.reason}`);
+    assert.equal(res.templateKey, "EMAIL-DOC-01-REQUEST");
+    assert.equal(db.state.messages.length, 1);
+    assert.equal(db.state.messages[0].channel, "email", "repair is email only");
+    assert.equal(db.state.messages[0].template_key, "EMAIL-DOC-01-REQUEST");
+    assert.match(db.state.messages[0].rendered_body, /photo ID/);
+    assert.match(db.state.messages[0].rendered_body, /Proof of address/);
+    assert.ok(db.state.lock, "the shared one-shot lock was not claimed");
+  });
+
+  it("enrolment runs the handler twice; the client is asked once", async () => {
+    const db = askDb();
+    await notifyRepairEmail(db, { ...docsNeeded, send: sendTemplated });
+    const second = await notifyRepairEmail(db, { ...docsNeeded, send: sendTemplated });
+    assert.equal(second.sent, false);
+    assert.equal(db.state.messages.length, 1, "the client was asked twice");
+  });
+
+  it("a client already asked by the funding or inquiry path is not asked again", async () => {
+    const sent = [];
+    const send = async (_db, args) => { sent.push(args); return { sent: true }; };
+    const res = await notifyRepairEmail(askDb({ alreadyAsked: true }), { ...docsNeeded, send });
+    assert.equal(res.sent, false);
+    assert.equal(res.reason, "already_asked");
+    assert.equal(sent.length, 0);
+  });
+
+  it("the shared lock already held means no second ask", async () => {
+    const sent = [];
+    const send = async (_db, args) => { sent.push(args); return { sent: true }; };
+    const res = await notifyRepairEmail(askDb({ lockHeld: true }), { ...docsNeeded, send });
+    assert.equal(res.sent, false);
+    assert.equal(res.reason, "already_locked");
+    assert.equal(sent.length, 0);
+  });
+
+  it("with no database there is no way to prove 'once', so nothing is sent", async () => {
+    const sent = [];
+    const send = async (_db, args) => { sent.push(args); return { sent: true }; };
+    const res = await notifyRepairEmail(null, { ...docsNeeded, send });
+    assert.equal(res.sent, false);
+    assert.equal(sent.length, 0);
+  });
+
+  it("onRepairEvent on repair.docs.needed moves the card AND queues the ask", async () => {
+    const db = askDb();
+    const inner = db.query.bind(db);
+    db.query = async (sql, params) => {
+      if (/pipeline_stages/.test(sql)) return { rows: [{ stage_id: "st", pipeline_id: "pl" }] };
+      if (/FROM cards/.test(sql) || /INSERT INTO cards/.test(sql) || /UPDATE cards/.test(sql)) {
+        return { rows: [{ id: "card-1" }] };
+      }
+      return inner(sql, params);
+    };
+    const r = await onRepairEvent(db, docsNeeded);
+    assert.equal(r.stageKey, "awaiting_documents");
+    assert.equal(r.email?.templateKey, "EMAIL-DOC-01-REQUEST");
+    assert.equal(r.email?.sent, true, `the stage was entered and nobody was asked: ${r.email?.reason}`);
+    assert.equal(db.state.messages.length, 1);
+    assert.equal(db.state.messages[0].channel, "email");
+  });
+});
+
 describe("repairMergeContext", () => {
   it("builds repair.* bag for templates", () => {
     const ctx = repairMergeContext({

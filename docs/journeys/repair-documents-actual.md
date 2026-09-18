@@ -23,6 +23,9 @@ flowchart TD
     ASK -->|Yes| EV3[["event: repair.docs.complete"]]
 
     EV2 --> WAIT["card → awaiting_documents<br/>portal reads: 'We need a few documents —<br/>Upload your ID and proof of address to continue'<br/>SLA chases the owner after 14 days"]
+    EV2 --> ASKED{"Was this client already asked?<br/>a DOC-01 message on file, or the<br/>shared one-shot lock doc_01_request_sent_at<br/>src/repair/notify.mjs"}
+    ASKED -->|"No"| ASK1["email EMAIL-DOC-01-REQUEST queued once<br/>'Documents needed before we can start':<br/>photo ID + proof of address, portal link<br/>email only — repair never texts"]
+    ASKED -->|"Yes — by the funding or inquiry path,<br/>or by this step's own second run"| ASK0["nothing sent — never asked twice"]
 
     WAIT --> DOORS{"How does the client send them?"}
     DOORS --> PORTAL["Client portal, the identity door<br/>public/app/client-portal.html<br/>open to repair AND funding clients"]
@@ -59,6 +62,7 @@ flowchart TD
 | The stage list | `src/repair/pipeline.mjs` | `intake → awaiting_documents → analysis → …` |
 | The client's words | `src/repair/portal.mjs` | "We need a few documents" |
 | The 14-day chase | `src/repair/sla.mjs` | `awaiting_documents: 14 days → owner_contact_client` |
+| Asks the client for them | `src/repair/notify.mjs` | On `repair.docs.needed`: `EMAIL-DOC-01-REQUEST`, email only, once per client. Shares the "already asked" check and the `doc_01_request_sent_at` lock with `src/workflows/s-doc-collection.mjs` and `src/handlers/inquiry-docs.mjs`, which send the same message. Until 2026-09-18 this step sent nothing (hole N8). |
 | Has the packet arrived | `src/inquiry-ops/doc-gate.mjs` | `checkDocPacket()` — the ONE implementation |
 | Emits the two events | `src/repair/handlers.mjs` | `announceRepairDocState()` |
 | Listens for uploads | `src/repair/register.mjs` | `docs.received → onRepairDocsReceived` |
