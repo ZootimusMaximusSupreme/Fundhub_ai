@@ -69,7 +69,14 @@ test("submit is handled in JS with preventDefault, never a real submission", () 
 });
 
 test("no pull API is called from this page", () => {
-  assert.doesNotMatch(html, /fetch\(/, "no fetch() may exist — there is no pull API in this task");
+  // The ONE network call allowed is the plain GET for the price — no body, no
+  // method, nothing the person typed. Anything else is a transmission.
+  const fetches = html.match(/fetch\([^)]*\)/g) || [];
+  assert.equal(fetches.length, 1, "exactly one fetch: the price read");
+  assert.match(fetches[0], /\/api\/public\/slo-checkout/, "it reads the price endpoint");
+  assert.doesNotMatch(html, /method:\s*["']POST/i, "nothing is POSTed from this page");
+  const submit = html.slice(html.indexOf('form.addEventListener("submit"'));
+  assert.doesNotMatch(submit, /fetch\(/, "the submit handler sends nothing anywhere");
   assert.doesNotMatch(html, /XMLHttpRequest/, "no XMLHttpRequest may exist");
   assert.doesNotMatch(html, /navigator\.sendBeacon/, "no sendBeacon may exist");
   assert.match(
@@ -141,7 +148,11 @@ test("trust copy only uses wording already in the fragment source", () => {
   // clickfunnels-fragments/slo/slo-01-sales.html:406 — "Your $297 credits
   // toward your $3,000 deposit." This page must reuse that fact, not invent
   // new numbers or claims.
-  assert.match(html, /\$297\s+credits toward your\s+\$3,000 deposit/i);
+  // The price is a slot the server fills, like the sales and pay pages — never typed.
+  assert.match(html, /<span data-price><\/span>\s+credits toward your\s+\$3,000 deposit/i);
+  assert.doesNotMatch(html, /297/, "the price is never typed in this page");
+  assert.doesNotMatch(html, /payment is confirmed/i,
+    "this page cannot check a payment and must not claim one");
   assert.match(html, /soft pull only/i);
   assert.match(html, /zero score impact/i);
   assert.match(html, /do not sell your data/i);

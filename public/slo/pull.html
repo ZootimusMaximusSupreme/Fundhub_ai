@@ -118,9 +118,12 @@
     <section class="hero">
       <span class="eyebrow">Diagnostic order received</span>
       <h1>Let's Build Your Funding Pack</h1>
-      <p class="lede">Your $297 payment is confirmed. Verify a few details below and we'll run your
-        soft pull and put Underwrite IQ to work. Soft pull only. Zero score impact. Your $297
-        credits toward your $3,000 deposit if you move forward.</p>
+      <!-- "Thanks for your order", not "payment confirmed": this page cannot check a
+           payment, and anyone can open its address directly. The price is filled
+           from GET /api/public/slo-checkout like the sales and pay pages. -->
+      <p class="lede">Thanks for your order. Verify a few details below and we'll run your
+        soft pull and put Underwrite IQ to work. Soft pull only. Zero score impact. Your
+        <span data-price></span> credits toward your $3,000 deposit if you move forward.</p>
     </section>
   </div>
 
@@ -229,6 +232,20 @@
     var orderClientId = qp.get("client_id") || null;
     void orderRef;
     void orderClientId;
+
+    /* The price is the server's. If it cannot be read, say "diagnostic fee"
+       rather than guess a number. */
+    (function () {
+      var slots = document.querySelectorAll("[data-price]");
+      function paint(text) { for (var i = 0; i < slots.length; i++) slots[i].textContent = text; }
+      fetch("/api/public/slo-checkout", { headers: { accept: "application/json" } })
+        .then(function (r) { if (!r.ok) throw new Error(String(r.status)); return r.json(); })
+        .then(function (cfg) {
+          if (!cfg || cfg.ok !== true || !cfg.priceDisplay) throw new Error("no price");
+          paint(String(cfg.priceDisplay));
+        })
+        .catch(function () { paint("diagnostic fee"); });
+    })();
 
     var form = document.getElementById("pull");
     var err = document.getElementById("formErr");
