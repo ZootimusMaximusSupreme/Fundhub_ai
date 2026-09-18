@@ -159,6 +159,39 @@ exists in the data and nowhere else.
 
 ---
 
+## Which funnel a viewing belongs to (385, 2026-09-17)
+
+Chris asked how we account for more than one funnel. Every viewing already saved the page
+address its video played on (`page_url`, 379). `db/migrations/385_vsl_funnels.sql` adds a
+short list that names a funnel by that address, and a view, `v_vsl_watch_by_funnel`, that
+shows every viewing with its funnel.
+
+```mermaid
+flowchart TD
+    A[Visitor watches the video on a funnel page] --> B[Page script sends the page address]
+    B --> C[vsl_watch_sessions saves the viewing with page_url]
+    C --> D{Is this page on the vsl_funnels list?}
+    D -->|Yes| E[Viewing shows that funnel's key and name]
+    D -->|No| F[Viewing shows no funnel key, and its page address as the name]
+    G[Staff lists a funnel: one row, page address to name] -.->|any time, even later| D
+```
+
+* **The page script did not change, so nobody pastes anything twice.** The funnel is worked
+  out on our side from the address the counter already saves.
+* **Listing a funnel later still names older viewings.** The address was saved all along, so
+  a funnel listed today names last week's viewings too.
+* **An unlisted page is never hidden.** It shows under its own address. Nothing drops out of
+  a count.
+* **One page, one funnel.** A capital letter or a trailing slash cannot make a second
+  listing, which is also what stops one viewing ever being counted twice. One funnel may own
+  several pages.
+* **Nothing is listed yet.** Naming the live funnel would be a guess. It gets a row once it
+  has a name.
+* **Partner sites are not in this.** `/sites/*` pages carry no video, so there is nothing
+  for the counter to count there.
+* **No screen reads this yet.** Front end last (CLAUDE.md §3a). Proven by
+  `src/vsl/vsl-funnels.pg.test.mjs`.
+
 ## UNVERIFIED — traced but never run
 
 * **No row has ever been written.** There is no Postgres on the machine this was written
