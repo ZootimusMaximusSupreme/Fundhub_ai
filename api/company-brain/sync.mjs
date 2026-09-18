@@ -1,11 +1,13 @@
 // GET/POST /api/company-brain/sync — pick up Meet recordings from Drive.
 // ROLE_SETS.FINANCE: owner, admin, sales_manager.
 // Files stay in Drive. This only indexes metadata + stores the link.
+// GET ?check=1 also asks Google, read-only, whether a stored token reads Drive.
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole } from "../../src/http/read-api.mjs";
 import { driveConfigFromEnv } from "../../src/company-brain/config.mjs";
+import { checkDriveAccess } from "../../src/company-brain/drive-client.mjs";
 import { syncDriveIncremental, getSyncState } from "../../src/company-brain/sync.mjs";
 import { processOrgMeetWords } from "../../src/company-brain/meet-transcript.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
@@ -28,13 +30,20 @@ export default async function handler(req, res, deps = {}) {
     try {
       const getState = deps.getSyncState || getSyncState;
       const state = await getState(database, orgId);
-      return res.status(200).json({
+      const body = {
         ok: true,
         drive_ready: config.ready,
         missing: config.ready ? [] : config.missing,
         last_sync_at: state?.last_sync_at || null,
         last_error: state?.last_error || null
-      });
+      };
+      // ?check=1 — drive_ready only says a key is set. This asks Google whether a
+      // token actually reads Drive, and which env key it came from. Read-only.
+      if (String(req.query?.check || "") === "1") {
+        const check = deps.checkDriveAccess || checkDriveAccess;
+        body.drive_check = await check(config);
+      }
+      return res.status(200).json(body);
     } catch (e) {
       if (dbDown(res, e)) return;
       throw e;

@@ -42,6 +42,37 @@ test("GET /api/company-brain/sync is honest when Drive is off", async () => {
   assert.ok(res.body.missing.includes("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON"));
 });
 
+test("GET /api/company-brain/sync?check=1 asks Google which token reads Drive; plain GET does not", async () => {
+  const env = {
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify({ refresh_token: "a", client_id: "b", client_secret: "c" })
+  };
+  let checks = 0;
+  const deps = {
+    requireAuth: async () => ({ id: "s1", org_id: ORG, role: "owner" }),
+    env,
+    getSyncState: async () => ({ last_sync_at: null, last_error: null }),
+    checkDriveAccess: async (config) => {
+      checks += 1;
+      assert.equal(config.ready, true);
+      return { ok: true, token_source: "GOOGLE_GMAIL_OAUTH_TOKEN_JSON", refused: [], error: null };
+    }
+  };
+
+  const plain = mockRes();
+  await handler({ method: "GET", query: {} }, plain, deps);
+  assert.equal(plain.statusCode, 200);
+  assert.equal(plain.body.drive_check, undefined);
+  assert.equal(checks, 0);
+
+  const checked = mockRes();
+  await handler({ method: "GET", query: { check: "1" } }, checked, deps);
+  assert.equal(checked.statusCode, 200);
+  assert.equal(checks, 1);
+  assert.deepEqual(checked.body.drive_check, {
+    ok: true, token_source: "GOOGLE_GMAIL_OAUTH_TOKEN_JSON", refused: [], error: null
+  });
+});
+
 test("POST /api/company-brain/sync does not look like a database outage when Drive is off", async () => {
   const res = mockRes();
   await handler(

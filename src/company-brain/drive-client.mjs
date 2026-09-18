@@ -6,29 +6,92 @@ import { fetchAccessToken, fetchOAuthAccessToken } from "./auth.mjs";
 
 const FILE_FIELDS = "id,name,mimeType,parents,modifiedTime,md5Checksum,size,webViewLink,trashed";
 
+const DRIVE_SCOPES = new Set([
+  "https://www.googleapis.com/auth/drive",
+  "https://www.googleapis.com/auth/drive.readonly"
+]);
+
+/** True when Google's granted-scope list can read Drive, or when Google did not say. */
+function grantsDrive(scope) {
+  if (!scope) return true;
+  return String(scope).split(/\s+/).some((s) => DRIVE_SCOPES.has(s));
+}
+
 /**
  * Create a Drive client bound to personal OAuth or a service account + delegate.
  * Token is refreshed lazily and cached until near expiry.
+ *
+ * `oauthCandidates` ([{ credentials, tokenSource }], from driveConfigFromEnv) are
+ * tried in order: a token Google refuses, or one with no Drive scope, is passed
+ * over for the next. Nothing stored is changed — the refused key stays set.
  */
 export function createDriveClient({
   serviceAccount,
   delegateEmail,
   oauthCredentials = null,
+  oauthCandidates = null,
   fetchImpl = globalThis.fetch,
   apiBase = DRIVE_API_BASE
 } = {}) {
-  const useOAuth = !!(oauthCredentials?.refreshToken);
+  const candidates = (oauthCandidates || []).filter((c) => c?.credentials?.refreshToken);
+  if (!candidates.length && oauthCredentials?.refreshToken) {
+    candidates.push({ credentials: oauthCredentials, tokenSource: null });
+  }
+  const useOAuth = candidates.length > 0;
   if (!useOAuth && (!serviceAccount?.clientEmail || !serviceAccount?.privateKey)) {
     throw new Error("createDriveClient requires serviceAccount or oauthCredentials");
   }
 
   let cached = null; // { accessToken, expiresAtMs }
+  let activeIndex = 0; // first candidate still worth trying
+  let activeSource = null;
+  const refused = []; // [{ source, reason }] — reasons are Google error codes, never secrets
+
+  async function oauthAccessToken() {
+    let firstError = null;
+    let noScope = null; // a token that refreshed but has no Drive scope
+    for (let i = activeIndex; i < candidates.length; i += 1) {
+      const cand = candidates[i];
+      const source = cand.tokenSource || `oauth token ${i + 1}`;
+      let tok;
+      try {
+        tok = await fetchOAuthAccessToken({ ...cand.credentials, fetchImpl });
+      } catch (err) {
+        firstError = firstError || err;
+        refused.push({ source, reason: String(err?.message || err).slice(0, 200) });
+        continue;
+      }
+      if (!grantsDrive(tok.scope)) {
+        refused.push({ source, reason: "no Drive scope" });
+        noScope = noScope || { tok, i };
+        continue;
+      }
+      if (refused.length) {
+        console.warn(
+          `[drive] passed over ${refused.map((r) => `${r.source} (${r.reason})`).join("; ")} — using ${source}`
+        );
+      }
+      activeIndex = i;
+      activeSource = cand.tokenSource || null;
+      return tok;
+    }
+    // No token reads Drive. Use one that at least refreshed, as before this fallback.
+    if (noScope) {
+      activeIndex = noScope.i;
+      activeSource = candidates[noScope.i].tokenSource || null;
+      return noScope.tok;
+    }
+    if (candidates.length - activeIndex === 1 && firstError) throw firstError;
+    throw new Error(
+      `oauth token refresh failed for every Google token: ${refused.map((r) => `${r.source}: ${r.reason}`).join("; ")}`
+    );
+  }
 
   async function accessToken() {
     const now = Date.now();
     if (cached && cached.expiresAtMs > now + 60_000) return cached.accessToken;
     const tok = useOAuth
-      ? await fetchOAuthAccessToken({ ...oauthCredentials, fetchImpl })
+      ? await oauthAccessToken()
       : await fetchAccessToken({
         clientEmail: serviceAccount.clientEmail,
         privateKey: serviceAccount.privateKey,
@@ -215,6 +278,10 @@ export function createDriveClient({
     getStartPageToken,
     listChangesPage,
     listAllChanges,
+    /** Env key of the OAuth token in use (null before the first call or for a service account). */
+    tokenSource() { return activeSource; },
+    /** Tokens passed over so far: [{ source, reason }]. */
+    refusedTokens() { return refused.map((r) => ({ ...r })); },
     /** test helper */
     _clearTokenCache() { cached = null; }
   };
@@ -223,11 +290,37 @@ export function createDriveClient({
 /** Build a Drive client from driveConfigFromEnv output. */
 export function createDriveClientFromConfig(config, { fetchImpl = globalThis.fetch } = {}) {
   if (config?.authMode === "oauth") {
-    return createDriveClient({ oauthCredentials: config.oauthCredentials, fetchImpl });
+    return createDriveClient({
+      oauthCredentials: config.oauthCredentials,
+      oauthCandidates: config.oauthCandidates || null,
+      fetchImpl
+    });
   }
   return createDriveClient({
     serviceAccount: config.serviceAccount,
     delegateEmail: config.delegateEmail,
     fetchImpl
   });
+}
+
+/**
+ * Read-only live check: get a Drive token and read the changes start token.
+ * Writes nothing — not to Drive, not to the database.
+ */
+export async function checkDriveAccess(config, { fetchImpl = globalThis.fetch } = {}) {
+  if (!config?.ready) {
+    return { ok: false, token_source: null, refused: [], error: "not_configured" };
+  }
+  const client = createDriveClientFromConfig(config, { fetchImpl });
+  try {
+    await client.getStartPageToken();
+    return { ok: true, token_source: client.tokenSource(), refused: client.refusedTokens(), error: null };
+  } catch (err) {
+    return {
+      ok: false,
+      token_source: client.tokenSource(),
+      refused: client.refusedTokens(),
+      error: String(err?.message || err).slice(0, 300)
+    };
+  }
 }
