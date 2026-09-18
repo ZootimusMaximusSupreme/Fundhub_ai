@@ -9,7 +9,7 @@ Law: every website link is a deep URL. No homepage. No “go to settings.” Mis
 ## Today
 
 1. Google OAuth Desktop JSON download — **Chris-done** (walkthrough). Do not ask Allow again.  
-   Desktop JSON is on disk. `credentials/google-token.json` is still missing. Mint is still waiting on a leftover browser callback. Do not start a new mint.
+   Google Allow already clicked. Token save failed on our side. Do not ask Chris to Allow again. Do not start a new mint. Desktop JSON is on disk. `credentials/google-token.json` is still missing.
 
 2. Regular ClickFunnels watch-page **EDITOR**  
    **NO-DEEP-URL-FOUND** — no page / funnel / builder id in this repo.  
@@ -30,7 +30,7 @@ Law: every website link is a deep URL. No homepage. No “go to settings.” Mis
 7. SLO pull  
    https://fundhub.ai/slo/pull.html
 
-8. SLO ClickFunnels editor  
+8. SLO ClickFunnels editor — **PAUSED (copy)**. He said the copy sucks. Do not paste today.  
    **NO-DEEP-URL-FOUND** — no SLO page / funnel id in this repo.  
    Best path: https://chrisstanbridgestea3f77f.myclickfunnels.com/
 
@@ -66,13 +66,13 @@ Law: every website link is a deep URL. No homepage. No “go to settings.” Mis
 16. Watch paste — view counter  
     file:///Users/chrisstanbridge/Developer/fundhub-platform/clickfunnels-fragments/07-vsl-watch-beacon.html
 
-17. SLO paste — sales  
+17. SLO paste — sales — **PAUSED (copy)**  
     file:///Users/chrisstanbridge/Developer/fundhub-platform/clickfunnels-fragments/slo/slo-01-sales.html
 
-18. SLO paste — order  
+18. SLO paste — order — **PAUSED (copy)**  
     file:///Users/chrisstanbridge/Developer/fundhub-platform/clickfunnels-fragments/slo/slo-02-order.html
 
-19. SLO paste — thank-you  
+19. SLO paste — thank-you — **PAUSED (copy)**  
     file:///Users/chrisstanbridge/Developer/fundhub-platform/clickfunnels-fragments/slo/slo-03-thank-you.html
 
 ---

@@ -1,13 +1,13 @@
 # Company to-do — merged 2026-09-18
 
-Owner-set today: no OpenAI credit hunt. Agreements, SMS copy, and email copy wait until **Saturday**.
+Owner-set today: no OpenAI credit hunt. Agreements, SMS copy, and email copy wait until **Saturday**. SLO ClickFunnels paste is **PAUSED (copy)** — he said the copy sucks. Google Allow already clicked; token save failed on our side (do not ask Chris to Allow again). Saturday list unchanged.
 
 ## Access (reviewed this morning)
 
 | Thing | Have it? | What that means |
 |---|---|---|
-| Gmail OAuth | **Chris-done** (walkthrough click). Token file still missing. | Desktop JSON is on disk. Mint is hung on a leftover browser callback. Do not ask Allow again. Inbox still cannot be read until a token lands without another Allow. |
-| Calendar | **Chris-done** (same walkthrough click). Token file still missing. | Same leftover mint. Do not ask Allow again. Free/busy still cannot run until a token lands. |
+| Gmail OAuth | **Chris-done** (walkthrough click). Token file still missing. | Google Allow already clicked. Token save failed on our side. Do not ask Chris to Allow again. Inbox still cannot be read until a token lands without another Allow. |
+| Calendar | **Chris-done** (same walkthrough click). Token file still missing. | Same: Allow already clicked. Token save failed on our side. Do not ask Chris to Allow again. Free/busy still cannot run until a token lands. |
 | SendGrid | **No, and we do not use it** | Outbound mail is **Mailgun** + **Resend**. Both keys are present. SendGrid is not a provider in this app. |
 | ClickFunnels webhook | **Yes** | `CLICKFUNNELS_WEBHOOK_SECRET` is set. Leads can post in. |
 | ClickFunnels API write | **No** | No CF API key in env. I cannot paste page code for you. You paste in the CF editor. |
@@ -22,14 +22,13 @@ Owner-set today: no OpenAI credit hunt. Agreements, SMS copy, and email copy wai
    - Paste `clickfunnels-fragments/06-utm-hidden-fields.html` at the top.
    - Paste `clickfunnels-fragments/07-vsl-watch-beacon.html` at the bottom.
    - Save and Publish.
-3. **SLO funnel codes** — must be today.
+3. **SLO funnel codes** — **PAUSED (copy)**. He said the copy sucks. Do not paste today.
    - Live pages already on https://fundhub.ai/slo/ (pay + pull work).
-   - CF paste (if SLO lives in CF too): fragments in `clickfunnels-fragments/slo/`
+   - CF paste paused (copy). Fragments stay in `clickfunnels-fragments/slo/`
      - Sales: `slo-01-sales.html`
      - Order: `slo-02-order.html`
      - Thank-you: `slo-03-thank-you.html`
    - Same workspace: https://chrisstanbridgestea3f77f.myclickfunnels.com/
-   - Turn `FH_SIM` to **false** before you publish.
 
 ## Saturday (paused)
 
@@ -67,4 +66,4 @@ Stranger can: land sales → pay $297 → pull form → pack → book.
 
 Already live: https://fundhub.ai/slo/ · https://fundhub.ai/slo/pay.html · https://fundhub.ai/slo/pull.html · GET checkout $297.
 
-Still you today: CF paste if ads send people to ClickFunnels instead of fundhub.ai. Pull submit / live CRS stays off unless you pick live later.
+SLO CF paste paused (copy). Pull submit / live CRS stays off unless you pick live later.
