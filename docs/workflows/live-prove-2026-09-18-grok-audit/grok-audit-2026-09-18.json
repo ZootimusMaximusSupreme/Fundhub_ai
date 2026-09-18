@@ -1,0 +1,2104 @@
+{
+  "at": "2026-09-18T17:27:07.482Z",
+  "login": {
+    "status": 200,
+    "ok": true,
+    "role": "owner",
+    "name": "Chris Stanbridge"
+  },
+  "health": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "db": "up",
+      "state": "up",
+      "migrations": 296,
+      "expected": 286,
+      "pending": 0,
+      "error": null,
+      "checkedAt": "2026-09-18T17:27:09.059Z"
+    }
+  },
+  "holes": {
+    "repairDesk": {
+      "status": 200,
+      "count": 0,
+      "snips": []
+    },
+    "kpis": {
+      "status": 200,
+      "keys": [
+        "ok",
+        "kpis",
+        "display"
+      ]
+    },
+    "ops": {
+      "status": 200,
+      "keys": [
+        "ok",
+        "pulse",
+        "briefs",
+        "hire",
+        "ads",
+        "gaps",
+        "fire",
+        "raise",
+        "bonus"
+      ]
+    },
+    "finance": {
+      "status": 400,
+      "keys": [
+        "ok",
+        "error"
+      ]
+    },
+    "money": {
+      "status": 400,
+      "keys": [
+        "ok",
+        "error"
+      ]
+    },
+    "inquiry": {
+      "status": 200,
+      "count": 24
+    }
+  },
+  "files": {
+    "eight": {
+      "id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+      "name": "Sim Eight-Funding",
+      "dashStatus": 200,
+      "email": "stanbridgejchris+sim-08@gmail.com",
+      "phone": "+16616054248",
+      "funded": true,
+      "funded_amount": "50000.00",
+      "employee_next_action": "Pull CRS",
+      "identity_verified": null,
+      "next_step": null,
+      "blockers": [],
+      "tasks": [
+        {
+          "title": "Funding intake — pull CRS"
+        },
+        {
+          "title": "Check this id document by hand — nobody has read it"
+        },
+        {
+          "title": "Check this id document by hand — nobody has read it"
+        },
+        {
+          "title": "Check this proof of address by hand — nobody has read it"
+        },
+        {
+          "title": "Check this id document by hand — nobody has read it"
+        },
+        {
+          "title": "Check this ssn card by hand — nobody has read it"
+        },
+        {
+          "title": "Check this id document by hand — nobody has read it"
+        },
+        {
+          "title": "30-day check-in + prep for next wave"
+        },
+        {
+          "title": "Invoice client — confirmed approvals 25000 @ 10% = 2500.00 (send)"
+        },
+        {
+          "title": "Accountability call — results and what's next"
+        },
+        {
+          "title": "Contract signed: Funding Agreement — Sim Eight-Funding"
+        },
+        {
+          "title": "Assign pod roles for funding client"
+        }
+      ],
+      "fulfill": {
+        "funded": true,
+        "funded_amount": "50000.00",
+        "next_action": {
+          "key": "remove_inquiries",
+          "label": "Remove Inquiries",
+          "why": "They have credit inquiries we are still working to get taken off."
+        }
+      },
+      "rounds": [
+        {
+          "status": "funded",
+          "product": "card_stacking"
+        },
+        {
+          "status": "funded",
+          "product": "card_stacking"
+        }
+      ],
+      "invoices": [
+        {
+          "status": "paid"
+        }
+      ],
+      "paymentsTab": {
+        "payments": [
+          {
+            "id": "2f448720-cf69-4138-bb41-375bb431c179",
+            "product_name": "Card Stacking DFY",
+            "amount_paid": "3000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-18T15:13:33.525Z"
+          },
+          {
+            "id": "8483ab79-668a-4fd4-93e0-5ac369c3a3c3",
+            "product_name": "Success fee INV-B4B9C768",
+            "amount_paid": "2500.00",
+            "status": "succeeded",
+            "created_at": "2026-09-18T15:13:16.298Z"
+          },
+          {
+            "id": "ca13882a-e4c1-4fbb-9004-e8d385e93c71",
+            "product_name": "Card Stacking DFY",
+            "amount_paid": "3000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-17T17:46:48.030Z"
+          }
+        ],
+        "invoice_due": {
+          "count": 0,
+          "currency": "USD",
+          "total": 0,
+          "total_display": "$0.00",
+          "items": []
+        }
+      },
+      "whatYouOwn": null,
+      "portalGreetingHint": {
+        "stage": {
+          "key": "paid",
+          "before_call": false,
+          "contract_signed_at": "2026-09-17T18:53:23.470Z",
+          "soft_pull_complete": true,
+          "call_held": true,
+          "agreement_signed": true,
+          "payment_posted": true
+        }
+      },
+      "progress": {
+        "status": 200,
+        "steps": 0,
+        "message": "",
+        "keys": [
+          "ok",
+          "stage",
+          "scores",
+          "movement",
+          "waypoints",
+          "nextStep",
+          "escalations",
+          "timeline",
+          "deliverables",
+          "paidServices",
+          "referral"
+        ]
+      },
+      "entitlements": [
+        {
+          "active": true
+        },
+        {
+          "active": true
+        },
+        {
+          "active": true
+        }
+      ],
+      "docs": {
+        "status": 200,
+        "count": 28,
+        "html": 0,
+        "uwiq": [
+          {
+            "id": "30d328b3-8832-4d08-9285-32144bcf53fb",
+            "title": "Credit Optimization Roadmap",
+            "kind": "deliverable"
+          },
+          {
+            "id": "07a52ef8-c3d9-4158-9a4e-7444f32f035b",
+            "title": "Funding Snapshot",
+            "kind": "deliverable"
+          },
+          {
+            "id": "a84ef58d-63b4-4631-936c-68544d2d72ba",
+            "title": "Credit Analysis Report",
+            "kind": "deliverable"
+          }
+        ],
+        "letters": [],
+        "titles": [
+          "Personal info — EQ",
+          "Personal info — TU",
+          "Personal info — EX",
+          "Inquiry removal — EQ",
+          "Inquiry removal — TU",
+          "Inquiry removal — EX",
+          "Capital Readiness Summary",
+          "Credit Optimization Roadmap",
+          "Bank and Lender Match List",
+          "Funding Snapshot",
+          "Credit Analysis Report",
+          "ID Document",
+          "ID Document",
+          "Proof of Address",
+          "ID Document",
+          "SSN Card",
+          "ID Document",
+          "Bank Statement",
+          "ID Document",
+          "Funding Agreement (signed)",
+          "Funding Agreement",
+          "Proof of Address",
+          "ID Document",
+          "SSN Card",
+          "Bank Statement",
+          "ID Document",
+          "ID Document",
+          "ID Document"
+        ]
+      },
+      "underwrite": {
+        "status": 200,
+        "keys": [
+          "ok",
+          "clientId",
+          "tradelineSource",
+          "engine",
+          "underwrite",
+          "suggestions",
+          "utilizationVoices",
+          "dataCompleteness",
+          "caveats"
+        ]
+      },
+      "contracts": [
+        {
+          "id": "f396eb78-85e2-4f87-9448-d9e02198c2e7",
+          "title": "Funding Agreement",
+          "status": "signed",
+          "kind": "contract",
+          "subtype": "funding_agreement",
+          "sent_at": "2026-09-17T18:53:18.304Z",
+          "signed_at": "2026-09-17T18:53:23.470Z"
+        }
+      ],
+      "paylinks": [
+        {
+          "id": "e798f089-f3f2-4100-9128-931ada2694da",
+          "status": "paid",
+          "amount_cents": "250000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/jPOOR",
+          "sent_at": null
+        },
+        {
+          "id": "23149014-bb42-45e5-a2c1-1f3b54ce13e0",
+          "status": "sent",
+          "amount_cents": "4200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/gPQk3",
+          "sent_at": "2026-09-17T18:54:07.059Z"
+        },
+        {
+          "id": "5fab8ca8-4674-4ad9-ad30-ffaf5b7e1e03",
+          "status": "expired",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/5g1Wv",
+          "sent_at": "2026-09-17T18:54:02.841Z"
+        },
+        {
+          "id": "0e843523-4afa-41df-8acb-aaac8085d96d",
+          "status": "sent",
+          "amount_cents": "300000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/nPG1R",
+          "sent_at": "2026-09-17T18:04:43.239Z"
+        },
+        {
+          "id": "904f37bc-7fbd-4b6c-a7da-8e01c964e18c",
+          "status": "expired",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/Ax8ZO",
+          "sent_at": "2026-09-17T18:03:00.036Z"
+        },
+        {
+          "id": "ea35c3d8-7659-4bbd-b3c0-ccd19e0b5290",
+          "status": "sent",
+          "amount_cents": "300000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/nPGj5",
+          "sent_at": "2026-09-17T17:45:19.463Z"
+        },
+        {
+          "id": "19996a68-ffa9-4959-a24c-ca52958103ca",
+          "status": "expired",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/8lMng",
+          "sent_at": "2026-09-17T06:22:22.330Z"
+        }
+      ],
+      "tx": []
+    },
+    "nine": {
+      "id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+      "name": "Sim Nine-Repair",
+      "dashStatus": 200,
+      "email": "stanbridgejchris+sim-09@gmail.com",
+      "phone": "+16616054248",
+      "funded": false,
+      "funded_amount": null,
+      "employee_next_action": "Optimize Profile",
+      "identity_verified": null,
+      "next_step": null,
+      "blockers": [],
+      "tasks": [
+        {
+          "title": "Accountability call — halfway check-in"
+        },
+        {
+          "title": "Waiting on the document reader — this id document has not been read yet"
+        },
+        {
+          "title": "Waiting on the document reader — this proof of address has not been read yet"
+        },
+        {
+          "title": "Waiting on the document reader — this id document has not been read yet"
+        },
+        {
+          "title": "Check this id document by hand — nobody has read it"
+        },
+        {
+          "title": "Check this proof of address by hand — nobody has read it"
+        },
+        {
+          "title": "Check this id document by hand — nobody has read it"
+        },
+        {
+          "title": "Contract signed: Credit Repair Agreement — Sim Nine-Repair"
+        },
+        {
+          "title": "Collect photo identification and proof of address"
+        },
+        {
+          "title": "Start the repair program — confirm the plan with the client"
+        },
+        {
+          "title": "3-way handoff — advisor follow-up on UnderwriteIQ results"
+        },
+        {
+          "title": "Strategy session booked"
+        }
+      ],
+      "fulfill": {
+        "funded": false,
+        "funded_amount": null,
+        "next_action": {
+          "key": "open_job",
+          "label": "Waiting on the document reader — this id document has not been read yet",
+          "why": "Nothing on the step list fits this file, so this is the newest open paperwork or repair job on it."
+        }
+      },
+      "rounds": [],
+      "invoices": [],
+      "paymentsTab": {
+        "payments": [
+          {
+            "id": "ecc55b44-79c0-4c18-9342-dd6504f42401",
+            "product_name": "Credit Repair Bundle",
+            "amount_paid": "1000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-18T15:13:18.877Z"
+          },
+          {
+            "id": "50fe33fe-1ef0-42b4-a1ac-80dc6c36a875",
+            "product_name": "Credit Repair Bundle",
+            "amount_paid": "1000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-17T17:46:34.079Z"
+          }
+        ],
+        "invoice_due": {
+          "count": 0,
+          "currency": "USD",
+          "total": 0,
+          "total_display": "$0.00",
+          "items": []
+        }
+      },
+      "whatYouOwn": null,
+      "portalGreetingHint": {
+        "stage": {
+          "key": "paid",
+          "before_call": false,
+          "contract_signed_at": "2026-09-17T18:53:35.175Z",
+          "soft_pull_complete": true,
+          "call_held": true,
+          "agreement_signed": true,
+          "payment_posted": true
+        }
+      },
+      "progress": {
+        "status": 200,
+        "steps": 7,
+        "message": "",
+        "keys": [
+          "ok",
+          "stage",
+          "scores",
+          "movement",
+          "waypoints",
+          "nextStep",
+          "escalations",
+          "timeline",
+          "deliverables",
+          "paidServices",
+          "referral"
+        ]
+      },
+      "entitlements": [
+        {
+          "active": true
+        },
+        {
+          "active": true
+        }
+      ],
+      "docs": {
+        "status": 200,
+        "count": 22,
+        "html": 0,
+        "uwiq": [],
+        "letters": [
+          {
+            "id": "0fd98299-09d3-4a4b-a873-3435f73ef695",
+            "title": "Bureau Response Letter",
+            "kind": "bureau_response"
+          },
+          {
+            "id": "9a62f027-9743-4940-8e21-8dec466031ad",
+            "title": "Bureau Response Letter",
+            "kind": "bureau_response"
+          },
+          {
+            "id": "6c8bca9c-13c4-4740-afaf-6482fa77ff99",
+            "title": "Bureau Response Letter",
+            "kind": "bureau_response"
+          },
+          {
+            "id": "e014898e-3307-4482-9eea-355ffa7ec0ff",
+            "title": "Bureau Response Letter",
+            "kind": "bureau_response"
+          },
+          {
+            "id": "ac384128-5e45-4545-849a-6caafda5f615",
+            "title": "Bureau Response Letter",
+            "kind": "bureau_response"
+          },
+          {
+            "id": "c15a4fb5-6477-4b85-b665-56b6ab33e9c4",
+            "title": "Bureau Response Letter",
+            "kind": "bureau_response"
+          },
+          {
+            "id": "f488a4a8-34fa-4430-8176-d70488acf04d",
+            "title": "Bureau Response Letter",
+            "kind": "bureau_response"
+          }
+        ],
+        "titles": [
+          "ID Document",
+          "Bureau Response Letter",
+          "ID Document",
+          "Proof of Address",
+          "ID Document",
+          "Bureau Response Letter",
+          "Bureau Response Letter",
+          "ID Document",
+          "Bureau Response Letter",
+          "Bureau Response Letter",
+          "Proof of Address",
+          "ID Document",
+          "Proof of Address",
+          "ID Document",
+          "Proof of Address",
+          "ID Document",
+          "Credit Repair Agreement (signed)",
+          "Credit Repair Agreement",
+          "Bureau Response Letter",
+          "Bureau Response Letter",
+          "Proof of Address",
+          "ID Document"
+        ]
+      },
+      "underwrite": {
+        "status": 200,
+        "keys": [
+          "ok",
+          "clientId",
+          "tradelineSource",
+          "engine",
+          "underwrite",
+          "suggestions",
+          "utilizationVoices",
+          "dataCompleteness",
+          "caveats"
+        ]
+      },
+      "contracts": [
+        {
+          "id": "6ced7fbc-c0aa-4493-862a-b15411800af3",
+          "title": "Credit Repair Agreement",
+          "status": "signed",
+          "kind": "contract",
+          "subtype": "credit_repair",
+          "sent_at": "2026-09-17T18:53:29.994Z",
+          "signed_at": "2026-09-17T18:53:35.175Z"
+        }
+      ],
+      "paylinks": [
+        {
+          "id": "9631af76-948e-4944-a0fa-0b10dec6d97b",
+          "status": "sent",
+          "amount_cents": "100000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/oPA1j",
+          "sent_at": "2026-09-17T18:04:52.288Z"
+        },
+        {
+          "id": "731a6fa4-2c70-4076-8697-677ef97b2fc4",
+          "status": "sent",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/JREp2",
+          "sent_at": "2026-09-17T18:03:19.392Z"
+        },
+        {
+          "id": "32be7e48-d659-426b-bc01-ef5eca445f51",
+          "status": "sent",
+          "amount_cents": "100000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/r6gn2",
+          "sent_at": "2026-09-17T17:45:22.297Z"
+        }
+      ],
+      "tx": []
+    },
+    "eleven": {
+      "id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+      "name": "Sim Eleven-Blueprint",
+      "dashStatus": 200,
+      "email": "stanbridgejchris+sim-11@gmail.com",
+      "phone": "+16616054248",
+      "funded": false,
+      "funded_amount": null,
+      "employee_next_action": "Pull CRS",
+      "identity_verified": null,
+      "next_step": null,
+      "blockers": [],
+      "tasks": [
+        {
+          "title": "Funding intake — pull CRS"
+        },
+        {
+          "title": "Provision funding inbox: confirm forwarding + bank-only filter"
+        },
+        {
+          "title": "Assign pod roles for funding client"
+        },
+        {
+          "title": "Pre-funding review — CRS complete"
+        },
+        {
+          "title": "Accountability call — halfway check-in"
+        }
+      ],
+      "fulfill": {
+        "funded": false,
+        "funded_amount": null,
+        "next_action": {
+          "key": "apply_for_funding",
+          "label": "Apply for Funding",
+          "why": "Their funding card is sitting on Apply Now, so it is time to apply."
+        }
+      },
+      "rounds": [
+        {
+          "status": "started",
+          "product": "card_stacking"
+        }
+      ],
+      "invoices": [],
+      "paymentsTab": {
+        "payments": [
+          {
+            "id": "b7f2b8c6-49ba-4080-a992-a16a8fbda037",
+            "product_name": "Card Stacking DFY",
+            "amount_paid": "3000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-18T15:13:39.074Z"
+          },
+          {
+            "id": "08ae60ee-25cd-496e-96c9-c9ab522eebc6",
+            "product_name": "Consulting Services Package",
+            "amount_paid": "5000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-17T17:46:38.320Z"
+          }
+        ],
+        "invoice_due": {
+          "count": 0,
+          "currency": "USD",
+          "total": 0,
+          "total_display": "$0.00",
+          "items": []
+        }
+      },
+      "whatYouOwn": null,
+      "portalGreetingHint": {
+        "stage": {
+          "key": "paid",
+          "before_call": false,
+          "contract_signed_at": "2026-09-17T18:53:51.138Z",
+          "soft_pull_complete": true,
+          "call_held": true,
+          "agreement_signed": true,
+          "payment_posted": true
+        }
+      },
+      "progress": {
+        "status": 200,
+        "steps": 5,
+        "message": "",
+        "keys": [
+          "ok",
+          "stage",
+          "scores",
+          "movement",
+          "waypoints",
+          "nextStep",
+          "escalations",
+          "timeline",
+          "deliverables",
+          "paidServices",
+          "referral"
+        ]
+      },
+      "entitlements": [
+        {
+          "active": true
+        },
+        {
+          "active": true
+        },
+        {
+          "active": true
+        }
+      ],
+      "docs": {
+        "status": 200,
+        "count": 13,
+        "html": 0,
+        "uwiq": [
+          {
+            "id": "5ed5e2b8-c963-4da9-8807-ed164af891cf",
+            "title": "Credit Optimization Roadmap",
+            "kind": "deliverable"
+          },
+          {
+            "id": "bd92d874-d296-46ea-b784-af4eac57935f",
+            "title": "Funding Snapshot",
+            "kind": "deliverable"
+          },
+          {
+            "id": "ecc91d68-416d-47fb-8852-6a7af25e9d92",
+            "title": "Credit Analysis Report",
+            "kind": "deliverable"
+          }
+        ],
+        "letters": [],
+        "titles": [
+          "Funding Agreement (signed)",
+          "Funding Agreement",
+          "Personal info — EQ",
+          "Personal info — TU",
+          "Personal info — EX",
+          "Inquiry removal — EQ",
+          "Inquiry removal — TU",
+          "Inquiry removal — EX",
+          "Capital Readiness Summary",
+          "Credit Optimization Roadmap",
+          "Bank and Lender Match List",
+          "Funding Snapshot",
+          "Credit Analysis Report"
+        ]
+      },
+      "underwrite": {
+        "status": 200,
+        "keys": [
+          "ok",
+          "clientId",
+          "tradelineSource",
+          "engine",
+          "underwrite",
+          "suggestions",
+          "utilizationVoices",
+          "dataCompleteness",
+          "caveats"
+        ]
+      },
+      "contracts": [
+        {
+          "id": "ad327b1c-d3d6-45db-b0ea-8054649fb0b8",
+          "title": "Funding Agreement",
+          "status": "signed",
+          "kind": "contract",
+          "subtype": "funding_agreement",
+          "sent_at": "2026-09-17T18:05:10.542Z",
+          "signed_at": "2026-09-17T18:53:51.138Z"
+        }
+      ],
+      "paylinks": [
+        {
+          "id": "a090b40f-43b3-42e9-ba79-b0e7a5869696",
+          "status": "sent",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/GEQLy",
+          "sent_at": "2026-09-17T20:00:23.643Z"
+        },
+        {
+          "id": "9e4aa445-7b36-4ef1-8121-b30d788cde51",
+          "status": "sent",
+          "amount_cents": "500000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/NR5lz",
+          "sent_at": "2026-09-17T19:57:58.722Z"
+        },
+        {
+          "id": "ace601c3-1296-4b14-8bd4-62409ce9ddf6",
+          "status": "sent",
+          "amount_cents": "300000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/vkm1m",
+          "sent_at": "2026-09-17T18:05:08.775Z"
+        },
+        {
+          "id": "a1efb0a3-7ec6-47c1-a239-90873aa6372f",
+          "status": "sent",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/R78Aq",
+          "sent_at": "2026-09-17T18:03:55.997Z"
+        },
+        {
+          "id": "01fa7982-7785-4c3a-a70d-e275cd383488",
+          "status": "paid",
+          "amount_cents": "500000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/kP6N6",
+          "sent_at": "2026-09-17T17:45:28.106Z"
+        }
+      ],
+      "tx": []
+    },
+    "twelve": {
+      "id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+      "name": "Sim Twelve-Academy",
+      "dashStatus": 200,
+      "email": "stanbridgejchris+sim-12@gmail.com",
+      "phone": "(661) 605-4248",
+      "funded": false,
+      "funded_amount": null,
+      "employee_next_action": "Pull CRS",
+      "identity_verified": null,
+      "next_step": null,
+      "blockers": [],
+      "tasks": [
+        {
+          "title": "Funding intake — pull CRS"
+        },
+        {
+          "title": "Assign pod roles for funding client"
+        },
+        {
+          "title": "Provision funding inbox: confirm forwarding + bank-only filter"
+        },
+        {
+          "title": "Pre-funding review — CRS complete"
+        },
+        {
+          "title": "Accountability call — halfway check-in"
+        },
+        {
+          "title": "Strategy session booked"
+        }
+      ],
+      "fulfill": {
+        "funded": false,
+        "funded_amount": null,
+        "next_action": {
+          "key": "apply_for_funding",
+          "label": "Apply for Funding",
+          "why": "Their funding card is sitting on Apply Now, so it is time to apply."
+        }
+      },
+      "rounds": [
+        {
+          "status": "started",
+          "product": "card_stacking"
+        }
+      ],
+      "invoices": [],
+      "paymentsTab": {
+        "payments": [
+          {
+            "id": "eacbf48b-dedc-4f2c-99aa-c642df69733d",
+            "product_name": "Card Stacking DFY",
+            "amount_paid": "3000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-18T15:13:25.006Z"
+          },
+          {
+            "id": "2a9e61d3-a53c-4c60-8231-cd6fae04a24a",
+            "product_name": "Funding Mastery Course",
+            "amount_paid": "5000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-17T17:46:32.342Z"
+          }
+        ],
+        "invoice_due": {
+          "count": 0,
+          "currency": "USD",
+          "total": 0,
+          "total_display": "$0.00",
+          "items": []
+        }
+      },
+      "whatYouOwn": null,
+      "portalGreetingHint": {
+        "stage": {
+          "key": "paid",
+          "before_call": false,
+          "contract_signed_at": "2026-09-17T18:53:55.748Z",
+          "soft_pull_complete": true,
+          "call_held": true,
+          "agreement_signed": true,
+          "payment_posted": true
+        }
+      },
+      "progress": {
+        "status": 200,
+        "steps": 0,
+        "message": "",
+        "keys": [
+          "ok",
+          "stage",
+          "scores",
+          "movement",
+          "waypoints",
+          "nextStep",
+          "escalations",
+          "timeline",
+          "deliverables",
+          "paidServices",
+          "referral"
+        ]
+      },
+      "entitlements": [
+        {
+          "active": true
+        },
+        {
+          "active": true
+        }
+      ],
+      "docs": {
+        "status": 200,
+        "count": 2,
+        "html": 0,
+        "uwiq": [],
+        "letters": [],
+        "titles": [
+          "Funding Agreement (signed)",
+          "Funding Agreement"
+        ]
+      },
+      "underwrite": {
+        "status": 200,
+        "keys": [
+          "ok",
+          "clientId",
+          "tradelineSource",
+          "engine",
+          "underwrite",
+          "suggestions",
+          "utilizationVoices",
+          "dataCompleteness",
+          "caveats"
+        ]
+      },
+      "contracts": [
+        {
+          "id": "c77b9db2-2d01-4689-84dd-42639c75fb6f",
+          "title": "Funding Agreement",
+          "status": "signed",
+          "kind": "contract",
+          "subtype": "funding_agreement",
+          "sent_at": "2026-09-17T18:05:19.944Z",
+          "signed_at": "2026-09-17T18:53:55.748Z"
+        }
+      ],
+      "paylinks": [
+        {
+          "id": "50600faa-8452-45df-9c73-27fead060bd8",
+          "status": "sent",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/KR50r",
+          "sent_at": "2026-09-17T20:00:34.001Z"
+        },
+        {
+          "id": "320ed715-1b71-46a0-95d0-2f962739b92f",
+          "status": "sent",
+          "amount_cents": "500000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/mPMK0",
+          "sent_at": "2026-09-17T19:59:04.421Z"
+        },
+        {
+          "id": "f6f55613-46ed-4c30-8375-2bf3741e2669",
+          "status": "sent",
+          "amount_cents": "300000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/nPG1l",
+          "sent_at": "2026-09-17T18:05:18.232Z"
+        },
+        {
+          "id": "51cd7969-2826-48b6-8794-e1dfd47f7cf7",
+          "status": "sent",
+          "amount_cents": "3200",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/1DVZR",
+          "sent_at": "2026-09-17T18:04:14.382Z"
+        },
+        {
+          "id": "a0d8710f-383f-4dc9-a31e-3dd5ede0e702",
+          "status": "paid",
+          "amount_cents": "500000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/lP8NM",
+          "sent_at": "2026-09-17T17:45:30.845Z"
+        }
+      ],
+      "tx": []
+    },
+    "thirteen": {
+      "id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+      "name": "Sim Thirteen-NoBook",
+      "dashStatus": 200,
+      "email": "stanbridgejchris+sim-13@gmail.com",
+      "phone": "+16616054248",
+      "funded": false,
+      "funded_amount": null,
+      "employee_next_action": null,
+      "identity_verified": null,
+      "next_step": null,
+      "blockers": [],
+      "tasks": [],
+      "fulfill": {
+        "funded": false,
+        "funded_amount": null,
+        "next_action": {
+          "key": "remove_inquiries",
+          "label": "Remove Inquiries",
+          "why": "They have credit inquiries we are still working to get taken off."
+        }
+      },
+      "rounds": [],
+      "invoices": [],
+      "paymentsTab": {
+        "payments": [],
+        "invoice_due": {
+          "count": 0,
+          "currency": "USD",
+          "total": 0,
+          "total_display": "$0.00",
+          "items": []
+        }
+      },
+      "whatYouOwn": null,
+      "portalGreetingHint": {
+        "stage": {
+          "key": "soft_pull",
+          "before_call": false,
+          "contract_signed_at": null,
+          "soft_pull_complete": true,
+          "call_held": false,
+          "agreement_signed": false,
+          "payment_posted": false
+        }
+      },
+      "progress": {
+        "status": 200,
+        "steps": 0,
+        "message": "",
+        "keys": [
+          "ok",
+          "stage",
+          "scores",
+          "movement",
+          "waypoints",
+          "nextStep",
+          "escalations",
+          "timeline",
+          "deliverables",
+          "paidServices",
+          "referral"
+        ]
+      },
+      "entitlements": [],
+      "docs": {
+        "status": 200,
+        "count": 2,
+        "html": 0,
+        "uwiq": [],
+        "letters": [],
+        "titles": [
+          "ID Document",
+          "ID Document"
+        ]
+      },
+      "underwrite": {
+        "status": 200,
+        "keys": [
+          "ok",
+          "clientId",
+          "tradelineSource",
+          "engine",
+          "underwrite",
+          "suggestions",
+          "utilizationVoices",
+          "dataCompleteness",
+          "caveats"
+        ]
+      },
+      "contracts": [],
+      "paylinks": [],
+      "tx": []
+    },
+    "combo": {
+      "id": "567c12ce-64de-4043-aa98-d842434bd267",
+      "name": "Sim Combo-20260918",
+      "dashStatus": 200,
+      "email": "stanbridgejchris+sim-combo-20260918@gmail.com",
+      "phone": "+16616054248",
+      "funded": false,
+      "funded_amount": null,
+      "employee_next_action": "Collect Documents",
+      "identity_verified": null,
+      "next_step": null,
+      "blockers": [],
+      "tasks": [
+        {
+          "title": "Funding intake — pull CRS"
+        },
+        {
+          "title": "Assign pod roles for funding client"
+        },
+        {
+          "title": "Provision funding inbox: confirm forwarding + bank-only filter"
+        },
+        {
+          "title": "Pre-funding review — CRS complete"
+        },
+        {
+          "title": "Accountability call — halfway check-in"
+        }
+      ],
+      "fulfill": {
+        "funded": false,
+        "funded_amount": null,
+        "next_action": {
+          "key": "apply_for_funding",
+          "label": "Apply for Funding",
+          "why": "Their funding card is sitting on Apply Now, so it is time to apply."
+        }
+      },
+      "rounds": [
+        {
+          "status": "started",
+          "product": "card_stacking"
+        }
+      ],
+      "invoices": [],
+      "paymentsTab": {
+        "payments": [
+          {
+            "id": "b7d3e044-28de-4202-8de4-6cab5ac007ed",
+            "product_name": "Card Stacking DFY",
+            "amount_paid": "3000.00",
+            "status": "succeeded",
+            "created_at": "2026-09-18T15:13:06.169Z"
+          }
+        ],
+        "invoice_due": {
+          "count": 0,
+          "currency": "USD",
+          "total": 0,
+          "total_display": "$0.00",
+          "items": []
+        }
+      },
+      "whatYouOwn": null,
+      "portalGreetingHint": {
+        "stage": {
+          "key": "paid",
+          "before_call": false,
+          "contract_signed_at": null,
+          "soft_pull_complete": true,
+          "call_held": false,
+          "agreement_signed": false,
+          "payment_posted": true
+        }
+      },
+      "progress": {
+        "status": 200,
+        "steps": 5,
+        "message": "",
+        "keys": [
+          "ok",
+          "stage",
+          "scores",
+          "movement",
+          "waypoints",
+          "nextStep",
+          "escalations",
+          "timeline",
+          "deliverables",
+          "paidServices",
+          "referral"
+        ]
+      },
+      "entitlements": [
+        {
+          "active": true
+        },
+        {
+          "active": true
+        }
+      ],
+      "docs": {
+        "status": 200,
+        "count": 5,
+        "html": 0,
+        "uwiq": [
+          {
+            "id": "134321d8-dd7b-4253-8df8-9e35ba15a765",
+            "title": "Credit Optimization Roadmap",
+            "kind": "deliverable"
+          },
+          {
+            "id": "8938d440-1b32-47e7-a6fc-3da06795e6c4",
+            "title": "Funding Snapshot",
+            "kind": "deliverable"
+          },
+          {
+            "id": "64dafc70-63a0-4964-9d7d-0dec5817fcf6",
+            "title": "Credit Analysis Report",
+            "kind": "deliverable"
+          }
+        ],
+        "letters": [],
+        "titles": [
+          "Capital Readiness Summary",
+          "Credit Optimization Roadmap",
+          "Bank and Lender Match List",
+          "Funding Snapshot",
+          "Credit Analysis Report"
+        ]
+      },
+      "underwrite": {
+        "status": 200,
+        "keys": [
+          "ok",
+          "clientId",
+          "tradelineSource",
+          "engine",
+          "underwrite",
+          "suggestions",
+          "utilizationVoices",
+          "dataCompleteness",
+          "caveats"
+        ]
+      },
+      "contracts": [],
+      "paylinks": [
+        {
+          "id": "6086cd8e-9d4f-4f3e-b547-c306107cd832",
+          "status": "created",
+          "amount_cents": "300000",
+          "checkout_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/lP6Wj",
+          "sent_at": null
+        }
+      ],
+      "tx": []
+    }
+  },
+  "outbound": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "action": "status",
+      "settings": {
+        "outbound_enabled": true,
+        "daily_send_cap": 500,
+        "alert_email": null,
+        "using_defaults": false
+      },
+      "counts": {
+        "queued": 5,
+        "due": 5,
+        "sending": 0,
+        "failed": 67,
+        "blocked": 23,
+        "sent_today": 17,
+        "last_attempt": "2026-09-18T15:30:18.251Z"
+      },
+      "routing": [
+        {
+          "channel": "email",
+          "provider": "resend",
+          "enabled": true
+        },
+        {
+          "channel": "sms",
+          "provider": "twilio",
+          "enabled": true
+        }
+      ],
+      "summary": "5 messages waiting to go out, 5 ready now.",
+      "invoices_never_emailed": 1,
+      "message": "5 messages waiting to go out, 5 ready now."
+    }
+  },
+  "gmail": {
+    "ready": true,
+    "tokenSource": "GOOGLE_GMAIL_OAUTH_TOKEN_PATH",
+    "missing": [],
+    "searches": [
+      {
+        "q": "in:anywhere newer_than:2d (sim OR fundhub OR underwrite OR letter OR contract OR invoice OR portal)",
+        "count": 15,
+        "ids": [
+          "1a0b58c5c0f74758",
+          "1a0b58aacd63171d",
+          "1a0b588a2591404b",
+          "1a0b56bba14edc6c",
+          "1a0b569b15ccb46f",
+          "1a0b53afac2f1b79",
+          "1a0b515eaa20aa9a",
+          "1a0b515e4d832485",
+          "1a0b515de7c0267a",
+          "1a0b503abaccebf7",
+          "1a0b4efab1e52539",
+          "1a0b4d69b99b89ed",
+          "1a0b4346db33fdbc",
+          "1a0b427ed4ff7fff",
+          "1a0b3ba1af0732ea"
+        ],
+        "msgs": [
+          {
+            "id": "1a0b58c5c0f74758",
+            "subject": "A quick update brings your products back.",
+            "from": "GoDaddy Renewals <renewals@e.godaddy.com>",
+            "to": "<Stanbridgejchris@gmail.com>",
+            "date": "Fri, 18 Sep 2026 11:24:28 -0600",
+            "snippet": "Your renewal didn&#39;t go through — here&#39;s the one step to fix it. ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ‌ ",
+            "labels": [
+              "UNREAD",
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b58aacd63171d",
+            "subject": "Fwd:",
+            "from": "Chris Stanbridge <stanbridgejchris@gmail.com>",
+            "to": "will.beck@azfcu.org",
+            "date": "Fri, 18 Sep 2026 10:22:39 -0700",
+            "snippet": "---------- Forwarded message --------- From: Chris Stanbridge &lt;stanbridgejchris@gmail.com&gt; Date: Fri, Sep 18, 2026 at 10:20 AM Subject: Fwd: To: &lt;will.",
+            "labels": [
+              "SENT"
+            ]
+          },
+          {
+            "id": "1a0b588a2591404b",
+            "subject": "Fwd:",
+            "from": "Chris Stanbridge <stanbridgejchris@gmail.com>",
+            "to": "will.beck@azfcu.org",
+            "date": "Fri, 18 Sep 2026 10:20:25 -0700",
+            "snippet": "---------- Forwarded message --------- From: Chris Stanbridge &lt;stanbridgejchris@gmail.com&gt; Date: Fri, Sep 18, 2026 at 9:46 AM Subject: To: Chris Stanbridg",
+            "labels": [
+              "SENT"
+            ]
+          },
+          {
+            "id": "1a0b56bba14edc6c",
+            "subject": "Let’s Find a Simple Way Forward",
+            "from": "Ascent Funding <noreply_ascent@channel.youronlineaccount.com>",
+            "to": "chris <Stanbridgejchris@gmail.com>",
+            "date": "Fri, 18 Sep 2026 16:48:46 +0000",
+            "snippet": "Student loans that help you plan, pay, and succeed in school Hi Chris, Ascent Funding wants to help make resolving your account as easy as possible. You may hav",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b569b15ccb46f",
+            "subject": null,
+            "from": "Chris Stanbridge <stanbridgejchris@gmail.com>",
+            "to": "Chris Stanbridge <StanbridgejChris@gmail.com>",
+            "date": "Fri, 18 Sep 2026 09:46:37 -0700",
+            "snippet": "",
+            "labels": [
+              "IMPORTANT",
+              "SENT",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b53afac2f1b79",
+            "subject": "FEATURE SALE 09-18-2026 - NEW SALE &  PRICE DROPS!!!",
+            "from": "\"Portfolio Investment Solutions, LLC.\" <dbarrett@pisllc.org>",
+            "to": "stanbridgejchris@gmail.com",
+            "date": "Fri, 18 Sep 2026 15:54:41 +0000",
+            "snippet": "FEATURE SALE!!!! NEW SALE &amp; PRICE DROPS!! 09-18-2026! GOOD MORNING - PLEASE SEE BELOW FOR THE FOLLOWING INVENTORY ALERT! 2011 – CASH SMART – STOREF facebook",
+            "labels": [
+              "CATEGORY_PROMOTIONS",
+              "UNREAD",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b515eaa20aa9a",
+            "subject": "Documents needed before we can start",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Fri, 18 Sep 2026 15:15:07 +0000",
+            "snippet": "Hey Sim, One thing standing between you and Round 1: documents. We need these before anything moves: • Government-issued photo ID • Proof of address • Articles ",
+            "labels": [
+              "CATEGORY_PERSONAL",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b515e4d832485",
+            "subject": "Documents needed before we can start",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Fri, 18 Sep 2026 15:15:05 +0000",
+            "snippet": "Hey Sim, One thing standing between you and Round 1: documents. We need these before anything moves: • Government-issued photo ID • Proof of address • Articles ",
+            "labels": [
+              "CATEGORY_PERSONAL",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b515de7c0267a",
+            "subject": "Documents needed before we can start",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-combo-20260918@gmail.com",
+            "date": "Fri, 18 Sep 2026 15:15:04 +0000",
+            "snippet": "Hey Sim, One thing standing between you and Round 1: documents. We need these before anything moves: • Government-issued photo ID • Proof of address • Articles ",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b503abaccebf7",
+            "subject": "Your application is in — the call isn't booked yet",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-13@gmail.com",
+            "date": "Fri, 18 Sep 2026 14:55:10 +0000",
+            "snippet": "Hey Sim, Your application is in and we can see your profile. What we can&#39;t do is tell you what it means until we get you on a call. That&#39;s the part wher",
+            "labels": [
+              "CATEGORY_PROMOTIONS",
+              "UNREAD",
+              "INBOX"
+            ]
+          }
+        ]
+      },
+      {
+        "q": "in:anywhere newer_than:14d {to:stanbridgejchris+sim-08@gmail.com from:stanbridgejchris+sim-08@gmail.com stanbridgejchris",
+        "count": 15,
+        "ids": [
+          "1a0b122501f33217",
+          "1a0b0efe0de5bcdd",
+          "1a0b0eb57ddb4afa",
+          "1a0b0da34a216cfa",
+          "1a0b0da30d09519d",
+          "1a0b0d63efd402a1",
+          "1a0b0d45fd6002b3",
+          "1a0b0cdc9028a4fe",
+          "1a0b0cb3cd80dec5",
+          "1a0b0c7e7c883fa5",
+          "1a0b0c6b4bbff24f",
+          "1a0b0c6b455fcad2",
+          "1a0b0c347eedc951",
+          "1a0b0bda839c02ce",
+          "1a0b0bda4b644eb9"
+        ],
+        "msgs": [
+          {
+            "id": "1a0b122501f33217",
+            "subject": "One quick step before we can begin",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 20:50:10 +0000",
+            "snippet": "Hey Sim, Quick heads up — your onboarding isn&#39;t fully complete yet, and we can&#39;t start your funding rounds until it is. What we still need from you (one",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0efe0de5bcdd",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:55:05 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=lM2g3irpJs_AKZ2EsjMVg4N8suTrnkseHDJ194F0720 The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0eb57ddb4afa",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:50:07 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=EBWwvId2WgQLeiKInWrLoofqXjZAuLqe2kfXiixmmnc The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0da34a216cfa",
+            "subject": "Your invoice from Fundhub — $2,500.00",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:31:25 +0000",
+            "snippet": "Hi Sim, Here is your invoice from Fundhub. What it is for: Funding success fee Amount: $2500.00 Due: on receipt Reference: b4b9c768 If you have already paid thi",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0da30d09519d",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:31:23 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=MEgbOm67-Be4nygVNTR0YcDQEhDHDjZS71MjPqs_JG4 The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0d63efd402a1",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:25:03 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=YFAgQqp8LCVkHj3rGGp6-gYtOz9ERxm2iURp98xSvhY The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0d45fd6002b3",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:25:02 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=HaerDhTdiPZTqk1c5KuAO9Sv88Q0YtRFBZr_gItGzS4 The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0cdc9028a4fe",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:25:06 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=5t01oXFHzjV4sscnUgiRWtiYAAER_qpKcRp3ZFEAYB0 The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0cb3cd80dec5",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:15:04 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=cjYEBeuDNDw7h3lSqS-J6O6lJN3ufgjmvV1RZGQ0KDY The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0c7e7c883fa5",
+            "subject": "Funding Round  has been submitted",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-08@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:15:07 +0000",
+            "snippet": "Hey Sim, Quick update — we&#39;ve submitted Funding Round for your file. What happens next: • Lenders review the submission and return decisions on their timeli",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          }
+        ]
+      },
+      {
+        "q": "in:anywhere newer_than:14d {to:stanbridgejchris+sim-09@gmail.com from:stanbridgejchris+sim-09@gmail.com stanbridgejchris",
+        "count": 15,
+        "ids": [
+          "1a0b0efe4d45ca63",
+          "1a0b0eb583367282",
+          "1a0b0eb5718e562b",
+          "1a0b0da2b04ce185",
+          "1a0b0da2a3e8cdf5",
+          "1a0b0cff448d84a9",
+          "1a0b0cf03cc7490e",
+          "1a0b0cee3e625ff7",
+          "1a0b0c6b90a1f909",
+          "1a0b0c6b6180f48a",
+          "1a0b0bd9e5c4c268",
+          "1a0b0b7866e89655",
+          "1a0b0a2228a04aec",
+          "1a0b0a21c3c2ab34",
+          "1a0b0947bb52bad8"
+        ],
+        "msgs": [
+          {
+            "id": "1a0b0efe4d45ca63",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:55:06 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=JmiJoFsepV6OOn7hjNAfxxX69yW3YaFg16J8YDZ3jPU The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0eb583367282",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:50:08 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=wiOfXqCccy9aQgJl5xAftF5CDtic6CTShoM7Ds8h5_s The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0eb5718e562b",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:50:07 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=52uuo1toYHA06-edhcIXzGA6FYd2uQuVA7T5Xozv4fs The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0da2b04ce185",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:31:22 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=_zVZNv7lO8RnFBZsvDIE3iDcrK-Bew9WxzGucANR4_k The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0da2a3e8cdf5",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:31:22 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=cZ5NpflLcAYsa8yMlRE5dg__Wa3BH0q4xzmGt6uhCZY The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0cff448d84a9",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:20:09 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=GPpPaZrGI-5VH-fzW2EG7JAIL2UkDZpyNS-Y6fokMrE The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0cf03cc7490e",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:06:33 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=a9HQziDdONDeD0IPDkc_68aQVEQwT798HnJpkrtvqyc The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0cee3e625ff7",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:25:03 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=WVaR97Lte8TT3Og03cZNvu5duO1AXuutna8UsunK0Gw The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0c6b90a1f909",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:10:08 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=e2PleeAOHkBMqHd2N6GR9ritdqKEwElZNC-L9FKqOJU The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0c6b6180f48a",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-09@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:10:07 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=IH_ayAoVl-grBr2nq9LSSkObRwAG_A6urdLijeYWuTA The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          }
+        ]
+      },
+      {
+        "q": "in:anywhere newer_than:14d {to:stanbridgejchris+sim-11@gmail.com from:stanbridgejchris+sim-11@gmail.com stanbridgejchris",
+        "count": 15,
+        "ids": [
+          "1a0b515eaa20aa9a",
+          "1a0b0f4bb4a19fad",
+          "1a0b0f2832920bd7",
+          "1a0b0efe32709e04",
+          "1a0b0cc8677699c4",
+          "1a0b0a21eeb53d24",
+          "1a0b09d7d03c4719",
+          "1a0b094686a6b485",
+          "1a0b08c8cfc0d4b8",
+          "1a0b08b482ce621f",
+          "1a0b08b37a2bdbba",
+          "1a0b08a18c94181e",
+          "1a0b07d8ef6ea635",
+          "1a0b07d8d7a999fb",
+          "1a0b07ba8dedfcfa"
+        ],
+        "msgs": [
+          {
+            "id": "1a0b515eaa20aa9a",
+            "subject": "Documents needed before we can start",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Fri, 18 Sep 2026 15:15:07 +0000",
+            "snippet": "Hey Sim, One thing standing between you and Round 1: documents. We need these before anything moves: • Government-issued photo ID • Proof of address • Articles ",
+            "labels": [
+              "CATEGORY_PERSONAL",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0f4bb4a19fad",
+            "subject": "Your soft-pull assessment — authorize, then pay",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 20:00:22 +0000",
+            "snippet": "Hi Sim, Next step on our call: your UnderwriteIQ soft-pull assessment (base $32). 1) Approve the soft pull — this is your written permission for a soft inquiry.",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0f2832920bd7",
+            "subject": "Capital Blueprint — $5,000",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:57:57 +0000",
+            "snippet": "Hi Sim, Here&#39;s the Capital Blueprint pay link from our call. Pay $5000 here: https://www.fanbasis.com/agency-checkout/fundhub-1/NR5lz Stay on the Meet with ",
+            "labels": [
+              "CATEGORY_PROMOTIONS",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0efe32709e04",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:55:05 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=KYZk7SPmshrbysiK_tnL97adPgZz8GJgqsQEeOJvlCU The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0cc8677699c4",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:06:34 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=UOU-J7Cp_vpR2qX6Jix8VXOdrAiIq-h2Tsdtw0DZfM8 The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0a21eeb53d24",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:30:09 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=Z0WsbQ4Cs3giEW4tHyUmK_yTHs7fVUwFVfwAfvDuF1A The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b09d7d03c4719",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:25:05 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=BXPfQY3CQxJcrYts1jTHJi9Fn9WtfNoe09oHHa7Bgp8 The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b094686a6b485",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:15:10 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=babpky0DNf1uc7JbtF_T2rSUHQfkNIEQ1EdcLFLMkxQ The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b08c8cfc0d4b8",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:06:35 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=so5ZEAJM1PR6pXJTDMt_fiJs0Xwm_y4ud94mKroZndw The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b08b482ce621f",
+            "subject": "Please sign: Funding Agreement",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-11@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:05:12 +0000",
+            "snippet": "Hi Sim, Chris Stanbridge has sent you a document to sign: Funding Agreement. Open it here: https://fundhub.ai/contract.html?id=ad327b1c-d3d6-45db-b0ea-8054649fb",
+            "labels": [
+              "UNREAD",
+              "CATEGORY_PERSONAL",
+              "INBOX"
+            ]
+          }
+        ]
+      },
+      {
+        "q": "in:anywhere newer_than:14d {to:stanbridgejchris+sim-12@gmail.com from:stanbridgejchris+sim-12@gmail.com stanbridgejchris",
+        "count": 15,
+        "ids": [
+          "1a0b515e4d832485",
+          "1a0b0f4e016b26f0",
+          "1a0b0f3855c8c6c2",
+          "1a0b0cdcb537ebc0",
+          "1a0b0a222c23f625",
+          "1a0b09466c23ac8b",
+          "1a0b08c89b8f0cb9",
+          "1a0b08b6e0b59d87",
+          "1a0b08b5df02eb57",
+          "1a0b08a6d3a87b24",
+          "1a0b07d91d46326a",
+          "1a0b07d8eb247293",
+          "1a0b0793d2353f55",
+          "1a0ae1caa68c9454",
+          "1a0ae0a4d688e5d9"
+        ],
+        "msgs": [
+          {
+            "id": "1a0b515e4d832485",
+            "subject": "Documents needed before we can start",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Fri, 18 Sep 2026 15:15:05 +0000",
+            "snippet": "Hey Sim, One thing standing between you and Round 1: documents. We need these before anything moves: • Government-issued photo ID • Proof of address • Articles ",
+            "labels": [
+              "CATEGORY_PERSONAL",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0f4e016b26f0",
+            "subject": "Your soft-pull assessment — authorize, then pay",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 20:00:33 +0000",
+            "snippet": "Hi Sim, Next step on our call: your UnderwriteIQ soft-pull assessment (base $32). 1) Approve the soft pull — this is your written permission for a soft inquiry.",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0f3855c8c6c2",
+            "subject": "Capital Academy — $5,000",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 19:59:03 +0000",
+            "snippet": "Hi Sim, Here&#39;s the Capital Academy pay link from our call. Pay $5000 here: https://www.fanbasis.com/agency-checkout/fundhub-1/mPMK0 Stay on the Meet with yo",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0cdcb537ebc0",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:06:36 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=VYBNQHdJIAP17rlYJLJDVQq2219mi78TuNxWSWiRvog The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b0a222c23f625",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:30:10 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=uOD-NHzSSK-chDyk7LaSdUcmlW8PzPsHry-13laBVwk The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b09466c23ac8b",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:15:10 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=iymTQVYC0vVnwHvqHISO4_iHS-1NHacHdQrgbXinkhE The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b08c89b8f0cb9",
+            "subject": "Your Fundhub sign-in link",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:06:35 +0000",
+            "snippet": "Hi Sim, Here is your link to sign in to your Fundhub portal: https://fundhub.ai/portal-login.html?t=TH8-f2tPZsE-Q3TAfH1WN9H0lpuRRUDGozDhIiJjFlA The link works o",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b08b6e0b59d87",
+            "subject": "Please sign: Funding Agreement",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:05:22 +0000",
+            "snippet": "Hi Sim, Chris Stanbridge has sent you a document to sign: Funding Agreement. Open it here: https://fundhub.ai/contract.html?id=c77b9db2-2d01-4689-84dd-42639c75f",
+            "labels": [
+              "UNREAD",
+              "CATEGORY_PERSONAL",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b08b5df02eb57",
+            "subject": "Funding, done-for-you — $3,000",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:05:17 +0000",
+            "snippet": "Hi Sim, Here&#39;s the Funding, done-for-you pay link from our call. Pay $3000 here: https://www.fanbasis.com/agency-checkout/fundhub-1/nPG1l Stay on the Meet w",
+            "labels": [
+              "UNREAD",
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b08a6d3a87b24",
+            "subject": "Your soft-pull assessment — authorize, then pay",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-12@gmail.com",
+            "date": "Thu, 17 Sep 2026 18:04:13 +0000",
+            "snippet": "Hi Sim, Next step on our call: your UnderwriteIQ soft-pull assessment (base $32). 1) Approve the soft pull — this is your written permission for a soft inquiry.",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          }
+        ]
+      },
+      {
+        "q": "in:anywhere newer_than:14d {to:stanbridgejchris+sim-13@gmail.com from:stanbridgejchris+sim-13@gmail.com stanbridgejchris",
+        "count": 2,
+        "ids": [
+          "1a0b503abaccebf7",
+          "1a0ae0a461eb0e29"
+        ],
+        "msgs": [
+          {
+            "id": "1a0b503abaccebf7",
+            "subject": "Your application is in — the call isn't booked yet",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-13@gmail.com",
+            "date": "Fri, 18 Sep 2026 14:55:10 +0000",
+            "snippet": "Hey Sim, Your application is in and we can see your profile. What we can&#39;t do is tell you what it means until we get you on a call. That&#39;s the part wher",
+            "labels": [
+              "CATEGORY_PROMOTIONS",
+              "UNREAD",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0ae0a461eb0e29",
+            "subject": "You're in — here's what happens next",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-13@gmail.com",
+            "date": "Thu, 17 Sep 2026 06:25:03 +0000",
+            "snippet": "Hey Sim, You&#39;re in. Here&#39;s how this works. Fundhub looks at your credit profile the way a lender does — structure, timing, and sequence, not just the sc",
+            "labels": [
+              "CATEGORY_PROMOTIONS",
+              "UNREAD",
+              "INBOX"
+            ]
+          }
+        ]
+      },
+      {
+        "q": "in:anywhere newer_than:14d {to:stanbridgejchris+sim-combo-20260918@gmail.com from:stanbridgejchris+sim-combo-20260918@gm",
+        "count": 4,
+        "ids": [
+          "1a0b515de7c0267a",
+          "1a0b427ed4ff7fff",
+          "1a0b3ba1af0732ea",
+          "1a0b3ba195b6cc29"
+        ],
+        "msgs": [
+          {
+            "id": "1a0b515de7c0267a",
+            "subject": "Documents needed before we can start",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-combo-20260918@gmail.com",
+            "date": "Fri, 18 Sep 2026 15:15:04 +0000",
+            "snippet": "Hey Sim, One thing standing between you and Round 1: documents. We need these before anything moves: • Government-issued photo ID • Proof of address • Articles ",
+            "labels": [
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b427ed4ff7fff",
+            "subject": "Your application is in — the call isn't booked yet",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-combo-20260918@gmail.com",
+            "date": "Fri, 18 Sep 2026 10:55:10 +0000",
+            "snippet": "Hey Sim, Your application is in and we can see your profile. What we can&#39;t do is tell you what it means until we get you on a call. That&#39;s the part wher",
+            "labels": [
+              "CATEGORY_PROMOTIONS",
+              "UNREAD",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b3ba1af0732ea",
+            "subject": "Welcome — here is what happens next in your repair program",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-combo-20260918@gmail.com",
+            "date": "Fri, 18 Sep 2026 08:55:13 +0000",
+            "snippet": "Hi Sim, Welcome to your Fundhub repair program. Here is what happens next. 1. We prepare dispute letters from your credit file when your agreement is on file. 2",
+            "labels": [
+              "UNREAD",
+              "CATEGORY_UPDATES",
+              "INBOX"
+            ]
+          },
+          {
+            "id": "1a0b3ba195b6cc29",
+            "subject": "You're in — here's what happens next",
+            "from": "Fundhub <noreply@fundhub.ai>",
+            "to": "stanbridgejchris+sim-combo-20260918@gmail.com",
+            "date": "Fri, 18 Sep 2026 08:55:12 +0000",
+            "snippet": "Hey Sim, You&#39;re in. Here&#39;s how this works. Fundhub looks at your credit profile the way a lender does — structure, timing, and sequence, not just the sc",
+            "labels": [
+              "CATEGORY_PROMOTIONS",
+              "UNREAD",
+              "INBOX"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "errors": []
+}

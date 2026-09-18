@@ -1376,3 +1376,5 @@ Chris: credit repair letters must come from one brain (UnderwriteIQ / credit-rep
 **FINISH (live, twice):** #9 now has 3 Round 1 letters (Equifax, Experian, TransUnion), stage **Ready to send**, `can_send` true, letters_sent 0. Three client HTML downloads 200. Specialist desk twice: Sim Nine-Repair, Send visible, all three bureaus. Paper Send not pressed. Evidence: `docs/workflows/live-prove-2026-09-18-letter-brain/`.
 
 **Score: PASS** for this hole. Hole 12 / 15 / contract wording untouched.
+
+**Independent tester (2026-09-18):** REAL-FIX on live for #9 Sim Nine-Repair. Two desk clicks. 3 Round 1 letters (Equifax, Experian, TransUnion) with client copies plus bureau queue. `can_send` true. letters_sent 0. Paper Send not pressed. Last live ship `f2713a59` did not have auto-write-on-doc-finish; this chat ships current `main` (letter-brain `073c68e9` is an ancestor). Evidence: `docs/workflows/live-prove-2026-09-18-letter-brain-independent/`.
