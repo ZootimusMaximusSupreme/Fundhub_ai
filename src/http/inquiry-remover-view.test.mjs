@@ -548,7 +548,7 @@ test("VIEW exposes every export the screen calls, so a rename cannot half-land",
     "buildRepairConfirmParseRequest",
     "caseIsReadyToSend", "casesNeedingAPerson", "waitingDays", "waitingLabel", "sortCasesOldestFirst",
     "nextInquiryAction", "docsPacketLabel", "docsMissingWords",
-    "inquiryHeadline", "repairHeadline", "nextRepairAction"
+    "inquiryHeadline", "repairHeadline", "nextRepairAction", "repairQuietLine"
   ]) {
     assert.ok(VIEW[name], name + " is missing from VIEW");
   }
@@ -1005,6 +1005,45 @@ test("nextRepairAction names the first file the rows themselves say needs a pers
   assert.equal(VIEW.nextRepairAction(files, () => ""), null);
   assert.equal(VIEW.nextRepairAction(files), null);
   assert.equal(VIEW.nextRepairAction(null, needs), null);
+});
+
+test("repairQuietLine never says every file is waiting on a bureau when the tiles disagree", () => {
+  // Live 2026-09-18 (hole 14): Need me 0, Waiting 0, Stuck 2, 5 open.
+  const live = VIEW.repairQuietLine({ need_me: 0, ready: 0, waiting: 0, stalled: 2, total: 5, files: new Array(5).fill({}) });
+  assert.doesNotMatch(live, /waiting on a bureau/);
+  assert.equal(live, "Nothing needs you — 2 files are stuck.");
+  // every open file really is waiting: the old sentence is true, so it stays
+  assert.equal(
+    VIEW.repairQuietLine({ waiting: 4, stalled: 0, total: 4 }),
+    "Nothing needs you — every file is waiting on a bureau."
+  );
+  // some waiting, not all: say how many, never "every"
+  assert.equal(
+    VIEW.repairQuietLine({ waiting: 3, stalled: 0, total: 5 }),
+    "Nothing needs you — 3 files are waiting on a bureau."
+  );
+  // the tile counts only the first page: "every" would be a guess
+  assert.equal(
+    VIEW.repairQuietLine({ waiting: 100, stalled: 0, total: 143, files: new Array(100).fill({}) }),
+    "Nothing needs you — 100 files are waiting on a bureau."
+  );
+  assert.equal(
+    VIEW.repairQuietLine({ waiting: 1, stalled: 1, total: 3 }),
+    "Nothing needs you — 1 file is stuck, 1 file is waiting on a bureau."
+  );
+  assert.equal(VIEW.repairQuietLine({ waiting: 0, stalled: 0, total: 3 }), "Nothing needs you right now.");
+  assert.equal(VIEW.repairQuietLine({ files: [] }), "Nothing needs you right now.");
+  assert.equal(VIEW.repairQuietLine(null), "Nothing needs you right now.");
+});
+
+test("the repair headline's quiet line comes from the tile counts, not a fixed sentence", () => {
+  const outsideView = HTML_SRC.replace(/\/\* ==FHVIEW-BEGIN== \*\/[\s\S]*?\/\* ==FHVIEW-END== \*\//, "");
+  assert.doesNotMatch(outsideView, /every file is waiting on a bureau\."\)/,
+    "the Repair pane hands FHDeskHead a fixed 'every file is waiting on a bureau' sentence again");
+  const heads = (outsideView.match(/FHDeskHead\.put\("repair", V\.repairHeadline\(pack\.d\)/g) || []).length;
+  const quiets = (outsideView.match(/V\.repairQuietLine\(pack\.d\)\);/g) || []).length;
+  assert.equal(heads, 2, "expected the two loaded-state repair headline puts");
+  assert.equal(quiets, heads, "every loaded-state repair headline must take its quiet line from repairQuietLine");
 });
 
 /* ── the screen itself ─────────────────────────────────────────────────────── */
