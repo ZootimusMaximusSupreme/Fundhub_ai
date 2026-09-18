@@ -18,7 +18,7 @@ backend work once it is committed. Local git only. No GitHub.
 
 | # | Task | Owner | Status | Waits on |
 |---|------|-------|--------|----------|
-| W1 | `public/slo/index.html` (sales) + `public/slo/pay.html` (pay) | this session | claimed | other session's `api/public/slo-checkout.mjs` edits being committed |
+| W1 | `public/slo/index.html` (sales) + `public/slo/pay.html` (pay) | this session | **done** | other session's `api/public/slo-checkout.mjs` edits being committed |
 | W2 | `public/slo/pull.html` (Commas success URL) | W2 agent | claimed | nothing |
 | SHIP | `npm run ship` once W1, W2 and the other session are all committed | this session | pending | W1, W2, other session |
 
@@ -34,7 +34,15 @@ backend work once it is committed. Local git only. No GitHub.
 
 ## Manifests
 
-_none yet_
+### W1 — done, commit 2259d459
+
+- **Added:** `public/slo/index.html`, `public/slo/pay.html`, `src/http/slo-public-html.test.mjs` (15 tests).
+- **Changed:** `docs/journeys/slo-offer-actual.md`, `docs/journeys/CHANGELOG.md`.
+- **Reads:** GET `/api/public/slo-checkout` → `priceDisplay`, `checkout.ready`, `notices`.
+- **Writes:** POST `/api/public/slo-checkout` `{ email, first_name, last_name }` → `checkoutUrl`.
+- **Routes:** none added. Static pages; `/slo/` and `/slo/pay.html` are served from `public/`.
+- **Not touched:** checkout math, Commas titles, CRS, `/watch`, `/apply`, `api/`, `netlify.toml`.
+- **Cut from the fragment:** layout-preview sample results; empty result placeholders; the video (404).
 
 ## Blockers
 
