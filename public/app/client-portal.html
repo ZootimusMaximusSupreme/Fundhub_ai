@@ -1429,6 +1429,15 @@ document.addEventListener("DOMContentLoaded", async function () {
     { code: "metro2-letter-pack", name: "Metro 2 Dispute Letter Pack", subtype: "metro2_dispute_letter_pack" }
   ];
   var FUNDING_CODE = "funding-snapshot";
+  /* THE COURSE IS OWNED TOO, AND IT IS NOT A FILE.
+     Live look 2026-09-18, hole 11: #12 bought Capital Academy, which grants
+     exactly one code — funding-mastery-course (migration 181). Unlock More said
+     "Included — you own this" while What You Own, right above it, said "Nothing
+     to download yet". The course has no document to hand over; it plays in its
+     own Unlock More card (owner decision 2026-08-21). So its row names it and
+     opens that card. Same code as MAP.FUNDING_MASTERY — keep the two in step. */
+  var COURSE_CODE = "funding-mastery-course";
+  var COURSE_TILE = "FUNDING_MASTERY";
 
   /* ── WHAT EACH READ LEARNED ────────────────────────────────────────────────
      Entitlements and portal-summary are two independent requests and either can
@@ -1620,6 +1629,8 @@ document.addEventListener("DOMContentLoaded", async function () {
       rows.push({ name: granted.entitlement_name || entry.name, doc: doc });
       if (doc && doc.id) claimed[doc.id] = 1;
     }
+    var course = active && active[COURSE_CODE];
+    if (course) rows.push({ name: course.entitlement_name || "Capital Academy", course: COURSE_TILE });
     for (i = 0; i < docsOnFile.length; i++) {
       var d = docsOnFile[i];
       if (!d || d.kind !== "deliverable") continue;
@@ -1675,6 +1686,13 @@ document.addEventListener("DOMContentLoaded", async function () {
           '</div><div class="on-d">Ready. Your ' + r.letters +
           (r.letters === 1 ? ' letter is' : ' letters are') + ' listed just below.</div></div>' +
           '<div class="own-actions"><span class="dr-s have">Ready</span></div></div>';
+      }
+      if (r.course) {
+        return '<div class="own own-real"><div><div class="on-t">' + esc(r.name) +
+          '</div><div class="on-d">Yours. It is a course, not a file — it opens in ' +
+          'the Capital Academy card below.</div></div>' +
+          '<div class="own-actions"><button class="btn-unlock" type="button" data-own-course="' +
+          esc(r.course) + '">Open course</button></div></div>';
       }
       var doc = r.doc;
       var url = doc && doc.download && doc.download.url;
@@ -1911,6 +1929,17 @@ document.addEventListener("DOMContentLoaded", async function () {
   }
 
   document.addEventListener("click", function (e) {
+    /* What You Own's course row: open that course's own card and go to it. */
+    var ownCourse = e.target.closest("[data-own-course]");
+    if (ownCourse) {
+      e.preventDefault();
+      var courseTile = document.querySelector('[data-tile="' + ownCourse.getAttribute("data-own-course") + '"]');
+      if (courseTile && !courseTile.classList.contains("locked")) {
+        setCourseOpen(courseTile, true);
+        courseTile.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+      return;
+    }
     var courseBtn = e.target.closest("[data-course-toggle]");
     if (courseBtn) {
       e.preventDefault();
