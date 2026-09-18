@@ -68,9 +68,14 @@ export const SUBTYPES = Object.freeze({
     "bureau_letter",
     "other"
   ]),
+  // The inquiry door's note asks for proof of address ("a bank statement
+  // counts") when no ID door is on screen, so both address papers must be
+  // nameable here or they land as "other" and the packet never sees them (N20).
   inquiry_doc: Object.freeze([
     "ftc_report",
     "id_document",
+    "proof_of_address",
+    "bank_statement",
     "other"
   ])
 });
