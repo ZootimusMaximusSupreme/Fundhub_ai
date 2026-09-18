@@ -331,3 +331,346 @@ Claim hole 6 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade
 | 4 /progress.html bounce | claimed | fix-run workflow |
 | 5 #9 CCP empty first paint | claimed | fix-run workflow |
 | 6 chris@fundhub.ai password 401 | claimed | fix-run workflow |
+
+---
+
+## New from overnight e2e (after the original six)
+
+Hashed file: `docs/workflows/full-e2e-audit-2026-09-17.md`. New FAIL list count: **8**. That file is law. These are holes **7–14** only. Do not remake holes 1–6.
+
+Not cards (not FAIL): Combo **not-present**. Meet / `said:` **UNRESOLVED**. Send / Apply / Stage / Enroll / AI call / new upload / live Playwright **SKIP**.
+
+**Rank** (collect / fulfill before flicker):
+
+7. #9 says “No step applies” while ID is unread and jobs are still open
+8. Funded numbers lie vs two funded $25k rounds
+9. Staff portal Payments tab hides the $2,500 invoice
+10. Inquiry path is not a full horse
+11. Course #12 What You Own is empty
+12. #8 stored next-action still says Collect Documents
+13. Staff portal `?id=` greets Chris, not Sim, on #11
+14. Specialist header says every file is waiting on a bureau (Stuck 2)
+
+Extra files from overnight (do not remint). Same #8 / #9 / #11 as the first six.
+
+| File | client_id |
+|---|---|
+| #10 Ten-Trial | `22103bca-0ec9-4491-bb75-5d1b6528f116` |
+| #12 Twelve-Academy | `f01cc0e0-c8f6-4343-93e5-6a33f0d3112f` |
+| #13 Thirteen-NoBook | `7ccbeb76-df98-4125-8c14-0d1c9f5e3042` |
+
+Copy **one** box. Paste it into **one** chat. That chat owns that hole only.
+
+Live site: `https://fundhub.ai`. Owner session cookie is ok (same as this look). Do not print tokens.
+
+---
+
+### 7 — #9 says “No step applies” while ID is unread and jobs are still open
+
+```
+THIS THREAD IS ONLY HOLE 7 — #9 says “No step applies” while ID is unread and jobs are still open.
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+Hole 5 is the empty first paint. This hole is the next-step lie after the file loads.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Click twice if it is a screen. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+After Nine-Repair loads, the control panel says No step applies right now. Identity is still unread. Jobs are still open: nobody has read ID / proof, collect photo ID and proof of address, and start the repair program. The screen says there is no next step while work sits under it. Horsemen and fulfillment both scored this FAIL.
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- File #9 Nine-Repair be3dcfd7-faae-4001-b97f-9bc30875bbcd.
+- Open https://fundhub.ai/app/client-control-panel.html?id=be3dcfd7-faae-4001-b97f-9bc30875bbcd
+- Wait until Sim Nine-Repair is on the page (first paint empty is hole 5, not this hole).
+- This look: next line said “No step applies right now.” Blockers still said start the repair program and that nobody has read ID / proof. Identity not verified. Same lie on the Fulfillment list. Open jobs under that line included “nobody has read it” on ID and proof.
+- Do not click Stage. Do not click Send. Do not click Pull.
+
+REAL: after #9 loads, the next-step line still says no step applies while ID is unread and those jobs are still open.
+NOT A PROBLEM: the next-step line names the real open job (read ID / start repair), and it matches the blockers.
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not click Stage · do not bureau Pull
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 7 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 8 — Funded numbers lie vs two funded $25k rounds
+
+```
+THIS THREAD IS ONLY HOLE 8 — Funded numbers lie vs two funded $25k rounds.
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Click twice if it is a screen. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+#8 has two funded card-stacking rounds, $25,000 each. Round 2 also shows approved $10,000. The person row still says not funded, and the funded amount is empty. Ops tile said FUNDED 1 and $50k. Fulfillment TOTAL APPROVED said no bank approval has ever been recorded. Those numbers do not match the file.
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- File #8 Eight-Funding d682c13b-11f3-4bd5-a0c5-232b6a7875c4.
+- Open https://fundhub.ai/app/client-control-panel.html?id=d682c13b-11f3-4bd5-a0c5-232b6a7875c4
+- This look: Round 1 funded $25,000; Round 2 funded $25,000 and approved $10,000. Two funded rounds on the stored file.
+- Open https://fundhub.ai/app/pipeline.html and the Fulfillment tab. This look: TOTAL APPROVED — No bank approval has ever been recorded (also “No honest source yet”).
+- Open Ops Admin Money. This look: FUNDED 1 / Funded files: 1 / Funded dollars: $50k. Person funded was still false.
+- Do not click Apply. Do not click Mark funded.
+
+REAL: the person / Ops tile / Fulfillment approved line still does not match the two funded $25k rounds (and Round 2 approved $10,000).
+NOT A PROBLEM: person funded, Ops tile, and Fulfillment approved all match those two funded rounds.
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not click Apply · do not click Mark funded
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 8 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 9 — Staff portal Payments tab hides the $2,500 invoice
+
+```
+THIS THREAD IS ONLY HOLE 9 — Staff portal Payments tab hides the $2,500 invoice.
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+Evening live-prove scored AR PASS on Ops / Finance. This hole is the portal Payments tab only.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Open the Payments tab twice. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+#8 owes $2,500 (invoice sent, $0 paid). Ops AR and Finance OS show that bill. The staff portal Payments tab does not. It only showed Card Stacking DFY 3000.00 succeeded. No Due now. No $2,500. The portal API for the same file does have the $2,500 bill. The client magic-link view was not proved (would email).
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- File #8 Eight-Funding d682c13b-11f3-4bd5-a0c5-232b6a7875c4.
+- Confirm Ops AR / Finance OS still show invoice INV-B4B9C768 sent, $2,500 due, $0 paid. Finance OS: paid so far $3,000, billed $2,500. Do not email invoices. Do not pay.
+- Open https://fundhub.ai/app/client-portal.html?id=d682c13b-11f3-4bd5-a0c5-232b6a7875c4
+- Open Account & history → Payments. This look: only Card Stacking DFY 3000.00 succeeded. No Due now. No $2,500. No Pay now.
+- Portal API for this file had the $2,500 bill. Do not click Pay now. Do not email a client sign-in link.
+
+REAL: staff Payments tab still hides the $2,500 bill while Ops / Finance / the portal API still show it.
+NOT A PROBLEM: the staff Payments tab shows the $2,500 due, matching Ops / Finance.
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not email invoices · do not click Pay now · do not click Email me a sign-in link
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 9 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 10 — Inquiry path is not a full horse
+
+```
+THIS THREAD IS ONLY HOLE 10 — Inquiry path is not a full horse.
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+There is no inquiry-only horse in this batch. The inquiry desk shows Sim Eight-Funding (Equifax + TransUnion, Ready for Review). #13 is a no-book file, not inquiry removal (Get Consent, 0 credit, 0 inquiry rows). Horsemen scored the inquiry path FAIL. Send was not clicked.
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- Open https://fundhub.ai/app/inquiry-remover.html (Inquiries side). This look: Ready to send 2. Oldest Sim Eight-Funding, Equifax. Rows for Eight-Funding Equifax + TransUnion, Ready for Review. Send visible. Do not click Send.
+- File #13 Thirteen-NoBook 7ccbeb76-df98-4125-8c14-0d1c9f5e3042.
+- Open https://fundhub.ai/app/client-control-panel.html?id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042
+- This look: next step Get Consent. 0 credit file. 0 inquiry rows. This is no-book, not inquiry removal.
+- Do not remint. Do not click Send. Do not paper mail.
+
+REAL: there is still no inquiry-only horse, and the path is still only #8’s cases plus #13 no-book.
+NOT A PROBLEM: there is a real inquiry-only file whose desk, credit, and inquiry rows are inquiry removal (not no-book), and the path matches that file.
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not paper mail
+- no real card charge · no live CRS / bureau pull
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll · do not remint shared people
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 10 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 11 — Course #12 What You Own is empty
+
+```
+THIS THREAD IS ONLY HOLE 11 — Course #12 What You Own is empty.
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Open the portal twice. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+#12 already owns the course. The portal What You Own still says Nothing to download yet. Funding Agreement is signed. Scores were 771 / 778 / 766. Enroll was not clicked.
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- File #12 Twelve-Academy f01cc0e0-c8f6-4343-93e5-6a33f0d3112f.
+- Open https://fundhub.ai/app/client-portal.html?id=f01cc0e0-c8f6-4343-93e5-6a33f0d3112f
+- This look: Welcome back, Sim. Funding Agreement Signed. Pre-qual $212,000. Scores 771 / 778 / 766. What You Own: Nothing to download yet. Course entitlement on file (Funding Mastery course). Documents desk: 2 files (contracts only).
+- Do not click Enroll. Do not click Email me a sign-in link.
+
+REAL: course entitlement is on for #12 and What You Own still says Nothing to download yet.
+NOT A PROBLEM: What You Own shows the course the file already owns.
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not click Enroll · do not click Email me a sign-in link
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 11 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 12 — #8 stored next-action still says Collect Documents
+
+```
+THIS THREAD IS ONLY HOLE 12 — #8 stored next-action still says Collect Documents.
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+The live screen and the fulfillment API both say Remove Inquiries (4 inquiries). The stored employee_next_action field still says Collect Documents. The old field does not match the screen.
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- File #8 Eight-Funding d682c13b-11f3-4bd5-a0c5-232b6a7875c4.
+- Open https://fundhub.ai/app/client-control-panel.html?id=d682c13b-11f3-4bd5-a0c5-232b6a7875c4
+- This look: next step Remove Inquiries (4 inquiries: Capital One EX, Syncb/Paypal EX, Navy Federal CU TU, Citibank NA EQ). Fulfillment list chip: Remove Inquiries. Stored employee_next_action still Collect Documents.
+- Do not click Apply. Do not click Send.
+
+REAL: stored employee_next_action still says Collect Documents while the live screen says Remove Inquiries.
+NOT A PROBLEM: the stored next-action field matches the live screen (Remove Inquiries).
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not click Apply
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 12 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 13 — Staff portal ?id= greets Chris, not Sim, on #11
+
+```
+THIS THREAD IS ONLY HOLE 13 — Staff portal ?id= greets Chris, not Sim, on #11.
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+SLO scored this FAIL. Horsemen wrote “Welcome back, Sim” and did not split ?id= vs ?client_id=. Recreate the SLO door: named ?id=.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Open the portal twice. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+Staff opens #11 with ?id=. The greeting / picker often stayed Welcome back, Chris even while What You Own was Eleven’s files. ?client_id= said Welcome back, Sim. First look (~3s) was empty / Chris. The name on the door is wrong.
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- File #11 Eleven-Blueprint 029964c5-4d8e-47ed-88c9-53ac13863fd4.
+- Open https://fundhub.ai/app/client-portal.html?id=029964c5-4d8e-47ed-88c9-53ac13863fd4
+- This look: named ?id= greeting/picker often stayed Welcome back, Chris. Same What You Own list was Eleven’s files (Roadmap + letters / snapshot / lender list DOWNLOAD). First ~3s empty / Chris.
+- Open https://fundhub.ai/app/client-portal.html?client_id=029964c5-4d8e-47ed-88c9-53ac13863fd4 — this look: Welcome back, Sim (picker Sim Eleven-Blueprint).
+- Do not click Email me a sign-in link. Do not click Open on Capital Blueprint.
+
+REAL: staff ?id= still greets Chris (or the picker stays Chris) while the pack on screen is #11.
+NOT A PROBLEM: staff ?id= greets Sim / Eleven, matching the file in the URL.
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not click Email me a sign-in link
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 13 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 14 — Specialist header says every file is waiting on a bureau (Stuck 2)
+
+```
+THIS THREAD IS ONLY HOLE 14 — Specialist header says every file is waiting on a bureau (Stuck 2).
+From the 2026-09-17 overnight e2e hash. Do not start another hole.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Open the Specialist Repair desk twice. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+The Specialist Repair header says nothing needs you — every file is waiting on a bureau. The tiles say waiting on bureau 0 and Stuck 2. Those cannot all be true.
+
+RECREATE (look only — do not send)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- Open https://fundhub.ai/app/inquiry-remover.html and click Repair.
+- This look: header “Nothing needs you — every file is waiting on a bureau.” Tiles: Need me 0, waiting on bureau 0, Stuck 2. Rows: Ten-Trial trial / 2 Stuck; Nine-Repair full / 6 Stuck.
+- Do not click Stage. Do not click Send.
+
+REAL: the header still says every file is waiting on a bureau while the tiles still show waiting 0 and Stuck 2.
+NOT A PROBLEM: the header matches the tiles (does not say waiting on a bureau when waiting is 0 and Stuck is 2).
+
+HARD STOPS
+- no SMS / no email · do not click Send · do not click Stage
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 14 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
