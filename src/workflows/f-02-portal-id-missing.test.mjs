@@ -79,6 +79,42 @@ test("structure: the follow-up uses its own template, never a repeat of the firs
   assert.deepEqual(emails, [EMAIL_TEMPLATE_KEY, EMAIL_FOLLOWUP_TEMPLATE_KEY]);
 });
 
+// Hole 12 (2026-09-18). On #8 this step wrote "Collect Documents" while three
+// inquiry-removal cases were still open, so the saved line disagreed with the
+// control panel's "Remove Inquiries". The fake answers the same active-case
+// lookup the panel's own read uses.
+function withInquiryCases(db, cases) {
+  const base = db.query.bind(db);
+  db.query = async (sql, params = []) => {
+    if (/FROM inquiry_removal_cases/.test(sql)) {
+      const [, clientId, active] = params;
+      return { rows: cases.filter((c) => c.client_id === clientId && active.includes(c.case_status)) };
+    }
+    return base(sql, params);
+  };
+  return db;
+}
+
+test("saved next action: an open inquiry case keeps Remove Inquiries, not Collect Documents", async () => {
+  const db = withInquiryCases(
+    pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: { id_uploaded: false } }], templates: withTemplates() }),
+    [{ id: "case-1", client_id: "cl-1", case_status: "Queued" }]
+  );
+  await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(db.clients[0].custom_fields.employee_next_action, "Remove Inquiries");
+  assert.deepEqual(db.clients[0].tags, ["docs:missing"], "the paperwork tag is still set");
+  assert.equal(db.messages.length, 3, "the nudge still goes out");
+});
+
+test("saved next action: no open inquiry case still says Collect Documents", async () => {
+  const db = withInquiryCases(
+    pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: { id_uploaded: false } }], templates: withTemplates() }),
+    [{ id: "case-1", client_id: "cl-1", case_status: "Completed" }]
+  );
+  await handle({ event: ev("round.started", {}, { clientId: "cl-1" }), db, step: fakeStep() });
+  assert.equal(db.clients[0].custom_fields.employee_next_action, "Collect Documents");
+});
+
 test("duplicate delivery: replaying the same event does not double-send", async () => {
   const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: { id_uploaded: false } }], templates: withTemplates() });
   const event = ev("round.started", {}, { id: "evt-dup-f02", clientId: "cl-1" });
