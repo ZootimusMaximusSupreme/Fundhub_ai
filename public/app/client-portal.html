@@ -1530,6 +1530,38 @@ document.addEventListener("DOMContentLoaded", async function () {
     return null;
   }
 
+  /* THE CAPITAL BLUEPRINT'S LETTER PACK, ON THE FUNDING PATH.
+     Live look 2026-09-17, hole 2: client 029964c5 bought the Blueprint and her
+     "Metro 2 Dispute Letter Pack" row said "Not ready yet" — forever. It waits
+     for a metro2_dispute_letter_pack document, and none is ever saved for a
+     funding-path buyer, on purpose: HARD RULE 1 in ds-02-diy-letters.mjs and
+     test F41 in src/sales/closer-deck.test.mjs.
+
+     What the Blueprint sells is a "Dispute Letter Pack" — the words are copied
+     from UWIQ_DELIVERABLES_CONTENTS in src/config/offers.mjs. On the funding
+     path that pack is the funding letters the deliverables package saves:
+     inquiry removal and personal info (closer-deck.mjs education branch →
+     persistFundingLetterFiles). So when ALL of these are true —
+       · the client holds the Blueprint's own grant, credit-optimization-roadmap
+         (only the Blueprint grants it — migrations 383 and 384),
+       · no real Metro 2 pack document is on file,
+       · funding letters are on file —
+     the row takes the Blueprint's name, says it is ready, and the letters it
+     counts are listed right under it, each with its own Download.
+     Anything else keeps the Metro 2 row exactly as it was. A real Metro 2 file
+     always wins, and a repair client never holds the roadmap. */
+  var BLUEPRINT_LETTER_PACK = "Dispute Letter Pack";
+  var FUNDING_LETTER_SUBTYPES = { funding_inquiry_removal: 1, funding_personal_info: 1 };
+
+  function fundingLettersOnFile() {
+    var out = [];
+    for (var i = 0; i < docsOnFile.length; i++) {
+      var d = docsOnFile[i];
+      if (d && d.kind === "deliverable" && FUNDING_LETTER_SUBTYPES[d.subtype]) out.push(d);
+    }
+    return out;
+  }
+
   /* THE ROWS THIS LIST IS MADE OF — the union of two true sources.
      MEASURED ON PRODUCTION, 2026-09-17. Client 029964c5 paid in full for the
      Capital Blueprint and ELEVEN deliverables were saved against her file two
@@ -1575,6 +1607,16 @@ document.addEventListener("DOMContentLoaded", async function () {
       var granted = active && active[entry.code];
       if (!granted) continue;
       var doc = ownedDocument(entry.subtype);
+      var letters = (entry.code === "metro2-letter-pack" && !doc &&
+        active["credit-optimization-roadmap"]) ? fundingLettersOnFile() : [];
+      if (letters.length) {
+        rows.push({ name: BLUEPRINT_LETTER_PACK, letters: letters.length });
+        for (var j = 0; j < letters.length; j++) {
+          rows.push({ name: letters[j].title || letters[j].subtype || "Document", doc: letters[j] });
+          if (letters[j].id) claimed[letters[j].id] = 1;
+        }
+        continue;
+      }
       rows.push({ name: granted.entitlement_name || entry.name, doc: doc });
       if (doc && doc.id) claimed[doc.id] = 1;
     }
@@ -1626,6 +1668,14 @@ document.addEventListener("DOMContentLoaded", async function () {
     }
     setOwnVisible(true);
     list.innerHTML = rows.map(function (r) {
+      /* A pack of several letters has no single file to hand over. Its letters
+         are the rows directly below it (ownRows), each in its own state. */
+      if (r.letters) {
+        return '<div class="own own-real"><div><div class="on-t">' + esc(r.name) +
+          '</div><div class="on-d">Ready. Your ' + r.letters +
+          (r.letters === 1 ? ' letter is' : ' letters are') + ' listed just below.</div></div>' +
+          '<div class="own-actions"><span class="dr-s have">Ready</span></div></div>';
+      }
       var doc = r.doc;
       var url = doc && doc.download && doc.download.url;
       if (url) {
