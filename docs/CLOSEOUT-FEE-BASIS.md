@@ -90,9 +90,38 @@ in exactly one place, `createFundingCloseout`, and the argument is named
 | The closeout record | `src/funding/closeout.mjs` — `createFundingCloseout` |
 | The invoice | `src/workflows/f-07-funding-locked.mjs` |
 | The event that carries both to the invoice | `src/funding/card-stacking-rounds.mjs` |
+| A bank answer after the bill: compare, and tell a person | `src/funding/billed-fee-check.mjs` |
 
 Both the closeout record and the invoice read the basis from
 `success-fee.mjs`, so they cannot disagree.
+
+## After the bill — a bank answer that changes later
+
+The fee is worked out once, when the round is funded, and frozen on the bill.
+Bank answers can still be recorded after that. When one changes the confirmed
+approvals on a card-stacking round that already has a success-fee bill, the
+bill and this rule can come apart.
+
+What the code does (2026-09-18, `src/funding/billed-fee-check.mjs`, called from
+`setApplicationStatus` and `setApprovalExclusion` in
+`src/applications/status.mjs`):
+
+* The bank's answer is saved exactly as before.
+* The round's bill is compared with the rule on the rows as they are now.
+* If they differ, a person gets a task (`success-fee-after-bill`, funding
+  advisor) with the bill number, what it bills, what the rule says now, what
+  has been paid, and — when more was paid than the rule now says — the
+  overpayment.
+* The bill is **not** changed. Once a bill leaves draft its amount is locked
+  in the database (`invoices_guard`, `db/migrations/031_invoices.sql`); the
+  way to change it is to void it and raise a new one, and a paid bill cannot
+  be voided. Nothing is sent to the client.
+
+Measured on live 2026-09-18, Sim Eight-Funding round 2: INV-B4B9C768 billed
+10% of $25,000 because Arizona Bank & Trust was Approved at $25,000 when the
+round was funded. The same bank was moved to Denied thirty minutes later and
+Native American Bank was recorded Approved at $10,000, so the rule now says
+$1,000. The $2,500 bill was later paid by a sim receipt.
 
 ## What still requires a funded amount
 
