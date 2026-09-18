@@ -92,7 +92,6 @@ const EXPECTED_WORKFLOW_IDS = [
   "n-03-hot-nurture",
   "n-04-post-funding-nurture",
   "n-06-renewal-second-wave",
-  "next-action-catch-up",
   "paid-checkout-expiry-sweeper",
   "partner-production-floor",
   "repair-bureau-response-reader",
@@ -170,12 +169,6 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      added, in the words of the person who added it. The counts named in it are
      the historical record of what the pin said at the time; the pin itself is
      EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
-
-     Added the next-step catch-up (2026-09-18, hole 12) — every five minutes
-     it puts the saved next step (custom_fields.employee_next_action) back in
-     line with the step the Client Control Panel shows. Measured live: all six
-     saved steps disagreed with the panel. It writes that one key on files that
-     already hold one, and sends, queues and emits nothing.
 
      Added the document-reader retry sweeper (2026-09-17) — the clock that comes
      back for a document the reader could not read. Measured on the live walk

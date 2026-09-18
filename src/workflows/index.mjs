@@ -55,7 +55,6 @@ import { n02WarmNurture } from './n-02-warm-nurture.mjs';
 import { n03HotNurture } from './n-03-hot-nurture.mjs';
 import { n04PostFundingNurture } from './n-04-post-funding-nurture.mjs';
 import { n06RenewalSecondWave } from './n-06-renewal-second-wave.mjs';
-import { nextActionCatchUp } from './next-action-catch-up.mjs';
 import { repairBureauResponseReader } from './repair-bureau-response.mjs';
 import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
@@ -341,16 +340,6 @@ export const functions = [
   n03HotNurture,
   n04PostFundingNurture,
   n06RenewalSecondWave,
-  /* THE SAVED NEXT STEP FOLLOWS THE SCREEN. Registered 2026-09-18 (hole 12).
-     Every five minutes, for files that already hold a saved step
-     (custom_fields.employee_next_action), work out the step the Client Control
-     Panel shows and save it only when it differs. Measured live: all six saved
-     steps disagreed with the panel, because card moves, inquiry cases and
-     credit reports change the panel's step with no save at all.
-
-     REGISTERING IT SENDS NOTHING. It reads, and it writes that one key on
-     files that already have one — no message, no event, no task, no card. */
-  nextActionCatchUp,
   repairBureauResponseReader,
   roundStartedClientNotify,
   s01NewLeadIntake,
