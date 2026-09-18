@@ -421,3 +421,15 @@ The personal-loan section of the book came out of five Notion pages, and those p
 - **The desk still draws only 500 of 1,106 rows** (`public/app/lenders.html` sends `limit=500`). Unchanged by this pass — still needs Chris to name it.
 
 **Sources used (names only):** NerdWallet Best-Of 2026 personal loans, Bankrate, Forbes Advisor, Experian, Credible, LendingTree, WalletHub, CNBC Select, plus each lender's own website and legal/compliance pages for the state lists.
+
+### Live proof — Lenders desk, 2026-09-18
+
+Signed in at `https://fundhub.ai/login.html`, opened `/app/lenders.html`. Look-only — every non-GET blocked except the one sign-in. Script `scripts/tmp/personal-loans-2026-09-18/desk-look.mjs`; marked shots + JSON in `docs/workflows/personal-loans-2026-09-18-evidence/`.
+
+| Search | Rows | Logo drawn | Broken logos | Reads |
+|---|---:|---|---:|---|
+| Happen Bank | 1 | yes | 0 | `PersonalLoans` · All States |
+| Best Egg | 1 | placeholder | 0 | `PersonalLoans` · `AL, AK, AZ, AR, CA…` (47 states) |
+| PenFed Credit Union | 1 | yes | 0 | `PersonalLoans` · All States |
+
+`npm run ship` → **`db10f853`** live. `/api/health`: 296 applied, **pending 0**. All 14 new logo files answer **200** over `https://fundhub.ai/assets/lenders/`.
