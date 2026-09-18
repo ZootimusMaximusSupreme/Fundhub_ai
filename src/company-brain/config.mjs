@@ -20,15 +20,28 @@ function resolveTokenPath(pathRaw) {
   return trimmed;
 }
 
-function parseOAuthTokenJson(parsed) {
+/* Every place a desktop-OAuth token.json can sit, Drive's own key first.
+   scripts/google-oauth-mint.mjs asks for Drive and Gmail in one consent and
+   stores the result under the Gmail key, so that token reads Drive too.
+   Owner rule (2026-09-17): a stored key is never removed. A key Google refuses
+   stays where it is; the Drive client falls through to the next token here
+   (drive-client.mjs). Measured 2026-09-18: the August token under the Drive key
+   gets 401 invalid_client; the Gmail key's token reads the same Drive. */
+export const DRIVE_OAUTH_ENV_KEYS = [
+  ["GOOGLE_DRIVE_OAUTH_TOKEN_PATH", "GOOGLE_DRIVE_OAUTH_TOKEN_JSON"],
+  ["GOOGLE_OAUTH_TOKEN_PATH", "GOOGLE_OAUTH_TOKEN_JSON"],
+  ["GOOGLE_GMAIL_OAUTH_TOKEN_PATH", "GOOGLE_GMAIL_OAUTH_TOKEN_JSON"]
+];
+
+function parseOAuthTokenJson(parsed, label) {
   const missing = [];
   const refreshToken = parsed?.refresh_token ? String(parsed.refresh_token) : "";
   const clientId = parsed?.client_id ? String(parsed.client_id) : "";
   const clientSecret = parsed?.client_secret ? String(parsed.client_secret) : "";
   const tokenUri = parsed?.token_uri ? String(parsed.token_uri) : GOOGLE_TOKEN_URL;
-  if (!refreshToken) missing.push("GOOGLE_DRIVE_OAUTH_TOKEN(refresh_token)");
-  if (!clientId) missing.push("GOOGLE_DRIVE_OAUTH_TOKEN(client_id)");
-  if (!clientSecret) missing.push("GOOGLE_DRIVE_OAUTH_TOKEN(client_secret)");
+  if (!refreshToken) missing.push(`${label}(refresh_token)`);
+  if (!clientId) missing.push(`${label}(client_id)`);
+  if (!clientSecret) missing.push(`${label}(client_secret)`);
   if (missing.length) return { missing, credentials: null };
   return {
     missing: [],
@@ -36,30 +49,49 @@ function parseOAuthTokenJson(parsed) {
   };
 }
 
-function oauthCredentialsFromEnv(env) {
-  const pathRaw = String(env.GOOGLE_DRIVE_OAUTH_TOKEN_PATH || "").trim();
-  const inlineRaw = env.GOOGLE_DRIVE_OAUTH_TOKEN_JSON || "";
+function oauthCredentialsFromKeys(env, pathKey, jsonKey) {
+  const pathRaw = String(env[pathKey] || "").trim();
+  const inlineRaw = env[jsonKey] || "";
   if (!pathRaw && !inlineRaw) return null;
+  const label = jsonKey.replace(/_JSON$/, "");
 
   if (inlineRaw) {
     try {
       const parsed = typeof inlineRaw === "string" ? JSON.parse(inlineRaw) : inlineRaw;
-      return parseOAuthTokenJson(parsed);
+      return { ...parseOAuthTokenJson(parsed, label), tokenSource: jsonKey };
     } catch {
-      return { missing: ["GOOGLE_DRIVE_OAUTH_TOKEN_JSON(invalid_json)"], credentials: null };
+      return { missing: [`${jsonKey}(invalid_json)`], credentials: null, tokenSource: jsonKey };
     }
   }
 
   const resolved = resolveTokenPath(pathRaw);
   if (!resolved || !existsSync(resolved)) {
-    return { missing: ["GOOGLE_DRIVE_OAUTH_TOKEN_PATH(not_found)"], credentials: null };
+    return { missing: [`${pathKey}(not_found)`], credentials: null, tokenSource: pathKey };
   }
   try {
     const parsed = JSON.parse(readFileSync(resolved, "utf8"));
-    return parseOAuthTokenJson(parsed);
+    return { ...parseOAuthTokenJson(parsed, label), tokenSource: pathKey };
   } catch {
-    return { missing: ["GOOGLE_DRIVE_OAUTH_TOKEN_PATH(invalid_json)"], credentials: null };
+    return { missing: [`${pathKey}(invalid_json)`], credentials: null, tokenSource: pathKey };
   }
+}
+
+/** Every usable OAuth token in DRIVE_OAUTH_ENV_KEYS order, or null when none is set. */
+function oauthCandidatesFromEnv(env) {
+  const candidates = [];
+  const missing = [];
+  let anySet = false;
+  for (const [pathKey, jsonKey] of DRIVE_OAUTH_ENV_KEYS) {
+    const oauth = oauthCredentialsFromKeys(env, pathKey, jsonKey);
+    if (!oauth) continue;
+    anySet = true;
+    if (oauth.credentials) {
+      candidates.push({ credentials: oauth.credentials, tokenSource: oauth.tokenSource });
+    } else {
+      missing.push(...oauth.missing);
+    }
+  }
+  return anySet ? { candidates, missing } : null;
 }
 
 /**
@@ -70,6 +102,9 @@ function oauthCredentialsFromEnv(env) {
  * Env (personal Gmail / desktop OAuth — takes precedence when set):
  *   GOOGLE_DRIVE_OAUTH_TOKEN_PATH — path to token.json from desktop OAuth
  *   GOOGLE_DRIVE_OAUTH_TOKEN_JSON — inline token.json string (for hosted deploys)
+ *   then GOOGLE_OAUTH_TOKEN_* and GOOGLE_GMAIL_OAUTH_TOKEN_* as fallbacks
+ *   (DRIVE_OAUTH_ENV_KEYS above). A PATH or JSON key that is set but unreadable
+ *   is skipped when a later key holds a usable token.
  *
  * Env (Workspace service account):
  *   GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON — full service-account JSON string
@@ -77,13 +112,18 @@ function oauthCredentialsFromEnv(env) {
  *     delegation). If unset, the robot reads files shared with it.
  */
 export function driveConfigFromEnv(env = process.env) {
-  const oauth = oauthCredentialsFromEnv(env);
+  const oauth = oauthCandidatesFromEnv(env);
   if (oauth) {
+    const first = oauth.candidates[0] || null;
     return {
-      ready: oauth.missing.length === 0,
-      missing: oauth.missing,
+      ready: !!first,
+      missing: first ? [] : oauth.missing,
       authMode: "oauth",
-      oauthCredentials: oauth.credentials,
+      oauthCredentials: first ? first.credentials : null,
+      // Every usable token, in order. The Drive client moves to the next one
+      // when Google refuses a token or it has no Drive scope.
+      oauthCandidates: oauth.candidates,
+      tokenSource: first ? first.tokenSource : null,
       serviceAccount: null,
       delegateEmail: null,
       excludedFolderIds: []

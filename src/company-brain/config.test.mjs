@@ -10,7 +10,7 @@ import { sniffClientId } from "./client-id.mjs";
 import { unzipEntries, extractDocxText, extractOfficeText } from "./office.mjs";
 import { extractPdfText } from "./pdf-text.mjs";
 import { extractFromDriveFile } from "./extract.mjs";
-import { createDriveClient } from "./drive-client.mjs";
+import { createDriveClient, createDriveClientFromConfig, checkDriveAccess } from "./drive-client.mjs";
 import { walkDriveAndExtract } from "./walk.mjs";
 
 // ── fixtures ───────────────────────────────────────────────────────────────
@@ -388,4 +388,145 @@ test("walkDriveAndExtract fails closed when env missing", async () => {
   const out = await walkDriveAndExtract({ env: {} });
   assert.equal(out.ok, false);
   assert.equal(out.reason, "not_configured");
+});
+
+// ── N26 (2026-09-18): a Drive key Google refuses must not stop the index ────
+// Live had GOOGLE_DRIVE_OAUTH_TOKEN_JSON (August token, its Google client gone:
+// 401 invalid_client) and GOOGLE_GMAIL_OAUTH_TOKEN_JSON (new token, Drive scope).
+// Drive read only the dead one. Keys are never removed, so the client must pass
+// over the refused token and use the one that works.
+
+const DEAD = { refresh_token: "rt-old", client_id: "cid-old", client_secret: "sec-old" };
+const NEW = { refresh_token: "rt-new", client_id: "cid-new", client_secret: "sec-new" };
+const DRIVE_AND_GMAIL =
+  "https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/drive.readonly";
+const REFUSED = { status: 401, body: { error: "invalid_client" } };
+
+function tokenRoutes({ oldReply, newReply }) {
+  const clientOf = (init) => new URLSearchParams(String(init.body || "")).get("client_id");
+  return [
+    {
+      match: (u, init) => u.includes("oauth2.googleapis.com/token") && clientOf(init) === "cid-old",
+      ...oldReply
+    },
+    {
+      match: (u, init) => u.includes("oauth2.googleapis.com/token") && clientOf(init) === "cid-new",
+      ...newReply
+    },
+    {
+      match: (u, init) => u.includes("/changes/startPageToken") &&
+        init.headers?.authorization === "Bearer tok-new",
+      body: { startPageToken: "42" }
+    }
+  ];
+}
+
+test("driveConfigFromEnv lists every usable OAuth token, Drive's own key first", () => {
+  const c = driveConfigFromEnv({
+    GOOGLE_GMAIL_OAUTH_TOKEN_JSON: JSON.stringify(NEW),
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify(DEAD)
+  });
+  assert.equal(c.ready, true);
+  assert.equal(c.authMode, "oauth");
+  assert.equal(c.tokenSource, "GOOGLE_DRIVE_OAUTH_TOKEN_JSON");
+  assert.equal(c.oauthCredentials.refreshToken, "rt-old");
+  assert.deepEqual(
+    c.oauthCandidates.map((x) => x.tokenSource),
+    ["GOOGLE_DRIVE_OAUTH_TOKEN_JSON", "GOOGLE_GMAIL_OAUTH_TOKEN_JSON"]
+  );
+});
+
+test("driveConfigFromEnv skips an unreadable Drive key when the Gmail key holds a token", () => {
+  const c = driveConfigFromEnv({
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: "****************abc}",
+    GOOGLE_GMAIL_OAUTH_TOKEN_JSON: JSON.stringify(NEW)
+  });
+  assert.equal(c.ready, true);
+  assert.equal(c.tokenSource, "GOOGLE_GMAIL_OAUTH_TOKEN_JSON");
+});
+
+test("driveConfigFromEnv still reports an unreadable Drive key when nothing else is set", () => {
+  const c = driveConfigFromEnv({ GOOGLE_DRIVE_OAUTH_TOKEN_JSON: "****************abc}" });
+  assert.equal(c.ready, false);
+  assert.deepEqual(c.missing, ["GOOGLE_DRIVE_OAUTH_TOKEN_JSON(invalid_json)"]);
+});
+
+test("Drive reads with the Gmail key's token when Google refuses the Drive key (invalid_client)", async () => {
+  const config = driveConfigFromEnv({
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify(DEAD),
+    GOOGLE_GMAIL_OAUTH_TOKEN_JSON: JSON.stringify(NEW)
+  });
+  const fetchImpl = mockFetch(tokenRoutes({
+    oldReply: REFUSED,
+    newReply: { body: { access_token: "tok-new", expires_in: 3600, scope: DRIVE_AND_GMAIL } }
+  }));
+  const client = createDriveClientFromConfig(config, { fetchImpl });
+  assert.equal(await client.getStartPageToken(), "42");
+  assert.equal(client.tokenSource(), "GOOGLE_GMAIL_OAUTH_TOKEN_JSON");
+  assert.deepEqual(client.refusedTokens(), [{
+    source: "GOOGLE_DRIVE_OAUTH_TOKEN_JSON",
+    reason: "oauth token refresh failed (401): invalid_client"
+  }]);
+});
+
+test("Drive passes over a token Google grants without any Drive scope", async () => {
+  const config = driveConfigFromEnv({
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify(DEAD),
+    GOOGLE_GMAIL_OAUTH_TOKEN_JSON: JSON.stringify(NEW)
+  });
+  const fetchImpl = mockFetch(tokenRoutes({
+    oldReply: {
+      body: { access_token: "tok-old", expires_in: 3600, scope: "https://www.googleapis.com/auth/gmail.modify" }
+    },
+    newReply: { body: { access_token: "tok-new", expires_in: 3600, scope: DRIVE_AND_GMAIL } }
+  }));
+  const client = createDriveClientFromConfig(config, { fetchImpl });
+  assert.equal(await client.getStartPageToken(), "42");
+  assert.equal(client.tokenSource(), "GOOGLE_GMAIL_OAUTH_TOKEN_JSON");
+});
+
+test("a lone refused Drive token still fails with Google's own error", async () => {
+  const config = driveConfigFromEnv({ GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify(DEAD) });
+  const fetchImpl = mockFetch(tokenRoutes({ oldReply: REFUSED, newReply: REFUSED }));
+  const client = createDriveClientFromConfig(config, { fetchImpl });
+  await assert.rejects(client.getStartPageToken(), /oauth token refresh failed \(401\): invalid_client/);
+});
+
+test("checkDriveAccess names every refused token when none works", async () => {
+  const config = driveConfigFromEnv({
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify(DEAD),
+    GOOGLE_GMAIL_OAUTH_TOKEN_JSON: JSON.stringify(NEW)
+  });
+  const fetchImpl = mockFetch(tokenRoutes({ oldReply: REFUSED, newReply: REFUSED }));
+  const out = await checkDriveAccess(config, { fetchImpl });
+  assert.equal(out.ok, false);
+  assert.equal(out.token_source, null);
+  assert.deepEqual(out.refused.map((r) => r.source), [
+    "GOOGLE_DRIVE_OAUTH_TOKEN_JSON",
+    "GOOGLE_GMAIL_OAUTH_TOKEN_JSON"
+  ]);
+  assert.match(out.error, /oauth token refresh failed for every Google token/);
+});
+
+test("checkDriveAccess reports the working token and only reads", async () => {
+  const config = driveConfigFromEnv({
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify(DEAD),
+    GOOGLE_GMAIL_OAUTH_TOKEN_JSON: JSON.stringify(NEW)
+  });
+  const seen = [];
+  const inner = mockFetch(tokenRoutes({
+    oldReply: REFUSED,
+    newReply: { body: { access_token: "tok-new", expires_in: 3600, scope: DRIVE_AND_GMAIL } }
+  }));
+  const fetchImpl = (u, init = {}) => {
+    seen.push(`${init.method || "GET"} ${new URL(String(u)).pathname}`);
+    return inner(u, init);
+  };
+  const out = await checkDriveAccess(config, { fetchImpl });
+  assert.deepEqual(
+    { ok: out.ok, token_source: out.token_source, error: out.error },
+    { ok: true, token_source: "GOOGLE_GMAIL_OAUTH_TOKEN_JSON", error: null }
+  );
+  // Two token refreshes (the refused one, then the working one) and one Drive read.
+  assert.deepEqual(seen, ["POST /token", "POST /token", "GET /drive/v3/changes/startPageToken"]);
 });

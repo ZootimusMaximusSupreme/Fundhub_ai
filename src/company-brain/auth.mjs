@@ -125,6 +125,8 @@ export async function fetchOAuthAccessToken({
   return {
     accessToken: json.access_token,
     expiresIn: Number(json.expires_in) || 3600,
-    tokenType: json.token_type || "Bearer"
+    tokenType: json.token_type || "Bearer",
+    // Space-separated scopes Google granted this token (null when not returned).
+    scope: json.scope ? String(json.scope) : null
   };
 }
