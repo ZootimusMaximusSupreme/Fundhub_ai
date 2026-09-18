@@ -8,12 +8,45 @@
 //   1. checks the intended group counts still equal that snapshot's counts,
 //   2. diffs the snapshot's route tables against today's generated actual.
 //
-// Read-only. Usage: node scripts/tmp/live-fix-2026-09-18/h24-route-gap.mjs
+//
+// Fix run 2 (2026-09-18): once an intended page NAMES its routes (a
+// "  - `/api/...`" line under each group bullet), those names are the intended
+// list and the snapshot is not used. Then it also checks the page's picture
+// counts against today's actual picture, and that each bullet's "(N routes)"
+// equals the routes listed under it. Optional first argument: a folder to read
+// `<journey>-intended.md` (or `<journey>-intended.proposed.md`) from.
+//
+// Read-only. Usage: node scripts/tmp/live-fix-2026-09-18/h24-route-gap.mjs [intendedDir]
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 
 const BASE = '1ae3eef0';
 const JOURNEYS = ['client', 'role-inquiry-remover'];
+const DIR = process.argv[2] || 'docs/journeys';
+
+/* Route names listed on an intended page, by section, plus any bullet whose
+   stated count differs from the routes listed under it. */
+function intendedTables(md) {
+  const out = { reach: new Map(), blocked: new Map(), badCounts: [] };
+  let section = null;
+  let bullet = null;
+  const close = () => { if (bullet && bullet.said !== bullet.listed) out.badCounts.push(`${bullet.text}: says ${bullet.said}, lists ${bullet.listed}`); };
+  for (const line of md.split('\n')) {
+    if (line.startsWith('## ')) {
+      close(); bullet = null;
+      section = line.startsWith('## Should be able to reach') ? 'reach'
+        : line.startsWith('## Should stay blocked from') ? 'blocked' : null;
+      continue;
+    }
+    if (!section) continue;
+    const b = line.match(/^- \*\*(.+?)\*\* \((\d+) routes?\)/);
+    if (b) { close(); bullet = { text: `${section}:${b[1]}`, said: Number(b[2]), listed: 0 }; continue; }
+    const r = line.match(/^\s+- `(\/api\/[^`]+)`\s*$/);
+    if (r) { out[section].set(r[1], { methods: '', who: '' }); if (bullet) bullet.listed++; }
+  }
+  close();
+  return out;
+}
 
 function tables(md) {
   const out = { reach: new Map(), blocked: new Map() };
@@ -39,17 +72,26 @@ function groups(md) {
 }
 
 for (const j of JOURNEYS) {
-  const intended = readFileSync(`docs/journeys/${j}-intended.md`, 'utf8');
-  const snap = execFileSync('git', ['show', `${BASE}:docs/journeys/${j}-actual.md`], { encoding: 'utf8' });
+  const file = existsSync(`${DIR}/${j}-intended.md`) ? `${DIR}/${j}-intended.md` : `${DIR}/${j}-intended.proposed.md`;
+  const intended = readFileSync(file, 'utf8');
   const now = readFileSync(`docs/journeys/${j}-actual.md`, 'utf8');
+  const named = intendedTables(intended);
+  const usesNames = named.reach.size + named.blocked.size > 0;
+  const sameGroups = (a, b) => a.length === b.length && a.every((x, i) => x === b[i]);
 
-  const gi = groups(intended);
-  const gs = groups(snap);
-  const same = gi.length === gs.length && gi.every((x, i) => x === gs[i]);
-  console.log(`\n==== ${j}`);
-  console.log(`intended group counts == ${BASE} actual snapshot: ${same ? 'YES' : 'NO'}`);
-
-  const I = tables(snap);
+  console.log(`\n==== ${j}   (intended: ${file})`);
+  let I;
+  if (usesNames) {
+    console.log('intended route names: read from the intended page itself');
+    console.log(`intended picture counts == today's actual picture: ${sameGroups(groups(intended), groups(now)) ? 'YES' : 'NO'}`);
+    console.log(`intended bullet counts == routes listed under them: ${named.badCounts.length ? 'NO — ' + named.badCounts.join('; ') : 'YES'}`);
+    I = named;
+  } else {
+    const snap = execFileSync('git', ['show', `${BASE}:docs/journeys/${j}-actual.md`], { encoding: 'utf8' });
+    console.log(`intended route names: none on the page — using the ${BASE} actual snapshot`);
+    console.log(`intended group counts == ${BASE} actual snapshot: ${sameGroups(groups(intended), groups(snap)) ? 'YES' : 'NO'}`);
+    I = tables(snap);
+  }
   const A = tables(now);
   const allI = new Set([...I.reach.keys(), ...I.blocked.keys()]);
   const allA = new Set([...A.reach.keys(), ...A.blocked.keys()]);

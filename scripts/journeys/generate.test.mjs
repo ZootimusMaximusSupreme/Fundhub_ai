@@ -219,6 +219,32 @@ describe("the extraction is faithful to the code", () => {
       "the Specialist must be shown blocked from /api/read/my-numbers");
   });
 
+  test("/api/repair/exceptions is drawn owner, admin, Specialist — not every employee", () => {
+    // Hole 24, fix run 2 (2026-09-18). api/repair/exceptions.mjs lets the staff
+    // kind in, then answers 403 role_forbidden unless the role is in its ALLOWED
+    // set (owner, admin, inquiry_specialist) or is owner/admin. The check is an
+    // && chain of `!ALLOWED.has(role)`, `!SUPER_ROLES.has?.(role)` and
+    // `!["owner", "admin"].includes(role)`, which no earlier shape read, so the
+    // route was labelled "staff" and drawn open to closers and advisors.
+    const e = data.endpoints.find((x) => x.key === "repair/exceptions");
+    assert.ok(e, "/api/repair/exceptions vanished from the routing table");
+    assert.deepEqual([...(e.gate.roles || [])].sort(), ["admin", "inquiry_specialist", "owner"],
+      "/api/repair/exceptions admits owner, admin and the Specialist — nobody else");
+    const row = "| `/api/repair/exceptions` | GET, POST | owner, admin, inquiry_specialist |";
+    const section = (name, heading) => {
+      const body = files[`${name}-actual.md`];
+      const start = body.indexOf(heading);
+      const next = body.indexOf("\n## ", start + heading.length);
+      return body.slice(start, next === -1 ? undefined : next);
+    };
+    for (const name of ["role-owner", "role-inquiry-remover"]) {
+      assert.ok(section(name, "## What they can reach").includes(row), `${name} must be shown reaching /api/repair/exceptions`);
+    }
+    for (const name of ["role-closer", "role-funding-advisor", "role-sales-manager"]) {
+      assert.ok(section(name, "## What they are blocked from").includes(row), `${name} must be shown blocked from /api/repair/exceptions`);
+    }
+  });
+
   test("readHandler endpoints that name principals also admit staff", () => {
     // src/http/read-api.mjs:194 calls requirePrincipal(req, res, ["staff", ...principals]).
     // Reading only the declared list would show these as closed to employees.
