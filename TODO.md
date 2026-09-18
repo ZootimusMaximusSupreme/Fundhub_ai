@@ -1,5 +1,24 @@
 # TODO
 
+## Marketing walk fixes — open items, 2026-09-17
+
+Full write-up: `docs/workflows/marketing-fixes-2026-09-17-board.md`. F1 (the script
+drop-down) is fixed and live. These three are what is left.
+
+- [ ] **Chris — paste the view counter onto the watch page.** The watch page lives in
+  ClickFunnels, so no code here can reach it. Open the page for
+  `apply.fundhub.ai/watch`, paste `clickfunnels-fragments/06-utm-hidden-fields.html`
+  at the top and `clickfunnels-fragments/07-vsl-watch-beacon.html` at the bottom,
+  then Save and Publish. Until then, nobody watching the video is counted.
+- [ ] **Chris — is `ANTHROPIC_API_KEY` on the list?** Netlify → site → Site settings
+  → Environment variables. Just say whether the name is there; do not show the value.
+  Social Studio's "Write 3 posts for me" still writes 0 posts on the live site. The
+  starred-out OpenAI key no longer blocks it (`a91a81f8`), so the only thing left is
+  whether a working writer key exists. **Never remove a key** — CLAUDE.md §11.
+- [ ] **Multiple funnels — waiting on one answer from Chris.** The view counter tells
+  videos apart and pages apart, but it has no funnel name and no link to a partner.
+  See the funnel section of the board.
+
 ## Competitor gaps — MyFundalytics, measured 2026-09-12
 
 Their site is blocked from the agent environment, so this is measured against the
