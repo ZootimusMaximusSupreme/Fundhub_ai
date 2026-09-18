@@ -1336,3 +1336,89 @@ describe("defence in depth: the guards that cannot fire today", () => {
     assert.equal(typeof guardFundingProduct, "function");
   });
 });
+
+/* ══════════════════════════════════════════════════════════════════════════
+   HOLE 7 — "No step applies right now." while the ID sits unread.
+
+   Live 2026-09-17 and 2026-09-18 on #9 Sim Nine-Repair (REPAIR_ONLY): no chip
+   fired, so both screens said there was no next step, while the blocker list
+   right under that line held "nobody has read" the ID and proof of address,
+   "Collect photo identification and proof of address" and "Start the repair
+   program". The blockers below are that file's, in the order live sent them.
+   ══════════════════════════════════════════════════════════════════════════ */
+describe("hole 7: an open paperwork or repair job is named, not 'no step'", () => {
+  const nineBlockers = () => [
+    { kind: "task", severity: "normal", source: "doc-check", id: "a1",
+      label: "Waiting on the document reader — this id document has not been read yet" },
+    { kind: "task", severity: "normal", source: "doc-check", id: "a2",
+      label: "Check this id document by hand — nobody has read it" },
+    { kind: "task", severity: "normal", source: "contract-signed", id: "a3",
+      label: "Contract signed: Credit Repair Agreement — Sim Nine-Repair" },
+    { kind: "task", severity: "normal", source: "repair-enrollment", id: "a4",
+      label: "Collect photo identification and proof of address" },
+    { kind: "task", severity: "normal", source: "repair-enrollment", id: "a5",
+      label: "Start the repair program — confirm the plan with the client" },
+    { kind: "task", severity: "normal", source: "ai-set-04-3way-handoff", id: "a6",
+      label: "3-way handoff — advisor follow-up on UnderwriteIQ results" },
+    { kind: "task", severity: "normal", source: "clickfunnels", id: "a7",
+      label: "Strategy session booked" }
+  ];
+  const nine = (over = {}) => base({
+    outcome_tier: "REPAIR_ONLY",
+    crs_results: [{ is_demo: false }],
+    open_blockers: nineBlockers(),
+    ...over
+  });
+
+  test("the #9 file names the unread ID job, word for word, as its next step", () => {
+    const r = deriveNextAction(nine());
+    assert.equal(r.degraded, false);
+    assert.ok(r.next_action, "the #9 file still says no step applies while its ID sits unread");
+    assert.equal(r.next_action.key, "open_job");
+    assert.equal(r.next_action.label,
+      "Waiting on the document reader — this id document has not been read yet");
+    assert.ok(r.next_action.why && r.next_action.why.length > 0);
+  });
+
+  test("the named job is the first one on the blocker list the same screen shows", () => {
+    const r = deriveNextAction(nine());
+    const first = r.active_blockers.find((b) => b.source === "doc-check" || b.source === "repair-enrollment");
+    assert.equal(r.next_action.label, first.label,
+      "the next-step line and the blocker list under it disagree");
+  });
+
+  test("with only the repair-start jobs open, the next step is to collect the ID and proof", () => {
+    const r = deriveNextAction(nine({
+      open_blockers: nineBlockers().filter((b) => b.source !== "doc-check")
+    }));
+    assert.equal(r.next_action && r.next_action.key, "open_job");
+    assert.equal(r.next_action.label, "Collect photo identification and proof of address");
+  });
+
+  test("a chip on Chris's list still wins over an open job", () => {
+    const r = deriveNextAction(nine({ repair_letters: { letters_ready: 4, letters_sent: 0 } }));
+    assert.equal(r.next_action.key, "send_letters");
+  });
+
+  test("GATE B: a job from any other source — a pre-funding review — is never named", () => {
+    const r = deriveNextAction(nine({
+      open_blockers: [
+        { kind: "task", severity: "normal", source: "c-05-pre-funding-review", label: "Pre-funding review" },
+        { kind: "task", severity: "normal", source: "clickfunnels", label: "Strategy session booked" }
+      ]
+    }));
+    assert.equal(r.next_action, null);
+    assert.equal(r.degraded, false);
+  });
+
+  test("a file nobody could work out is still not worked out", () => {
+    const r = deriveNextAction(nine({ consent: undefined, crs_results: undefined }));
+    assert.equal(r.next_action, null);
+    assert.equal(r.degraded, true);
+  });
+
+  test("a blocker list that could not be read names no job", () => {
+    const r = deriveNextAction(nine({ blockers_unknown: true }));
+    assert.equal(r.next_action, null);
+  });
+});

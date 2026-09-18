@@ -797,6 +797,43 @@ export function guardFundingProduct(action, { outcomeTier } = {}) {
   return action;
 }
 
+/* ── no step on the list, but a paperwork or repair job is still open ─────────
+   Hole 7, live 2026-09-17 and 2026-09-18 on #9 Sim Nine-Repair (REPAIR_ONLY).
+   No chip fired, so the Client Control Panel and the Fulfillment list both said
+   "No step applies right now." — while the blocker list right under that line
+   still held "nobody has read" the ID and proof of address, "Collect photo
+   identification and proof of address" and "Start the repair program". The line
+   said there was nothing to do while the work sat under it.
+
+   So when the walk WORKED THE FILE OUT (not degraded), nothing on Chris's list
+   applied, and an open job raised by one of these sources is on the blocker
+   list, that job is the answer, in its own words — the same words the blocker
+   list shows, so the line and the list can never disagree. The newest one wins,
+   because blockers arrive newest-first.
+
+   Chris's twelve chips and their order are untouched. This only replaces the
+   no-step answer, never a chip.
+
+   A WHITELIST, NOT "ANY BLOCKER", ON PURPOSE. Both sources raise identity
+   paperwork and repair-program jobs only — never a funding job and never a
+   credit pull — so neither gate can be walked around through a task title.
+   GATE B: a repair-only file with an open pre-funding review task still gets
+   no funding job named here. Any source not on this list keeps the old answer. */
+const OPEN_JOB_SOURCES = Object.freeze(["doc-check", "repair-enrollment"]);
+const OPEN_JOB_KEY = "open_job";
+const OPEN_JOB_WHY =
+  "Nothing on the step list fits this file, so this is the newest open paperwork or repair job on it.";
+
+function openPaperworkOrRepairJob(ctx) {
+  if (ctx.blockersUnknown) return null;
+  for (const b of ctx.blockers) {
+    if (!OPEN_JOB_SOURCES.includes(str(b.source))) continue;
+    const label = str(b.label);
+    if (label) return { key: OPEN_JOB_KEY, label, why: OPEN_JOB_WHY };
+  }
+  return null;
+}
+
 /* ── the answer ───────────────────────────────────────────────────────────── */
 
 const FALLBACK = () => ({
@@ -816,6 +853,9 @@ const FALLBACK = () => ({
  * @param {object} signals  see buildContext() above for every key it reads.
  * @returns {{
  *   next_action: { key: string, label: string, why: string } | null,
+ *                  — key is a NEXT_ACTIONS key, or "open_job" when no chip
+ *                    applies and an open paperwork or repair job is named
+ *                    instead (see OPEN_JOB_SOURCES).
  *   active_blockers: Array<{ key: string, label: string, severity: string }>,
  *   funding_round: { number: number|null, status: string|null, hold_reason: string|null,
  *                    approved_amount: unknown, started_at: string|null,
@@ -867,6 +907,10 @@ export function deriveNextAction(signals) {
       chosen = null;
       degraded = true;
     }
+
+    // Worked out, no chip, but a paperwork or repair job sits open under it —
+    // name that job instead of "No step applies". See OPEN_JOB_SOURCES.
+    if (!chosen && !degraded) chosen = openPaperworkOrRepairJob(ctx);
 
     /* GATE B, applied to the MONEY as well as to the chip.
        A funding round carries an approved amount, and an approved amount is
