@@ -30,6 +30,10 @@ const SELECT_COLS = `
   loc_type, external_row_id, created_at, updated_at, is_demo
 `;
 
+/* The book is past a thousand rows. A 500 cap cut the desk list and the CSV
+   export off part way down the alphabet, so banks that exist read as missing. */
+const MAX_LENDER_ROWS = 5000;
+
 function publicLender(row) {
   if (!row) return null;
   const out = { ...row };
@@ -60,7 +64,7 @@ export async function listLenders(db, {
   active = null,
   state = null,
   q = null,
-  limit = 500,
+  limit = MAX_LENDER_ROWS,
   offset = 0,
   includeDemo = null,
   forExport = false
@@ -93,7 +97,7 @@ export async function listLenders(db, {
   }
   const demoOn = forExport ? false : (includeDemo == null ? await orgDemoModeEnabled(db, orgId) : !!includeDemo);
   if (!demoOn) where.push("COALESCE(is_demo, false) = false");
-  params.push(Math.min(Math.max(Number(limit) || 500, 1), 500));
+  params.push(Math.min(Math.max(Number(limit) || MAX_LENDER_ROWS, 1), MAX_LENDER_ROWS));
   params.push(Math.max(Number(offset) || 0, 0));
   const sql = `
     SELECT ${SELECT_COLS}
@@ -242,7 +246,7 @@ export async function importLendersCsv(db, { orgId, text, staff, logoByExternalI
 }
 
 export async function exportLendersCsv(db, { orgId, ...filters }) {
-  const rows = await listLenders(db, { orgId, ...filters, limit: 500, forExport: true });
+  const rows = await listLenders(db, { orgId, ...filters, limit: MAX_LENDER_ROWS, forExport: true });
   return serializeLenderCsv(rows);
 }
 

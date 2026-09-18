@@ -21,8 +21,8 @@ test("lenders.html loads and shows empty-state import guidance", async ({ page }
   await expect(page.getByRole("button", { name: /Bureau mismatch queue/i })).toBeVisible();
 });
 
-test("lenders.html asks for 500 rows and paints the placeholder tile", async ({ page }) => {
-  let seenLimit = "";
+test("lenders.html asks for the whole book and paints the placeholder tile", async ({ page }) => {
+  let seenLimit = "unset";
   await openScreen(page, "/app/lenders.html", OWNER, {
     "/api/read/lenders": function (_route, ctx) {
       seenLimit = new URL(ctx.url).searchParams.get("limit");
@@ -52,7 +52,9 @@ test("lenders.html asks for 500 rows and paints the placeholder tile", async ({ 
   await expect(img).toBeVisible();
   await expect(img).toHaveAttribute("src", "/assets/lenders/placeholder.svg");
   await expect(page.locator("#listMeta")).toContainText("1 lender");
-  expect(seenLimit).toBe("500");
+  // No cap on the request: the book is past a thousand rows, so the page takes
+  // every row the server sends instead of asking for the first 500.
+  expect(seenLimit).toBe(null);
 });
 
 test("lenders.html can switch to mismatch review tab", async ({ page }) => {
