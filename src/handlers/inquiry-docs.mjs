@@ -19,7 +19,10 @@ export const DOC_01_LOCK = "doc_01_request_sent_at";
 
 const ACTIVE_CASE = ["Queued", "Scheduled", "In Progress", "Escalated", "Blocked"];
 
-async function alreadySentDoc01(db, clientId) {
+/* Exported for src/repair/notify.mjs, which asks a repair client for the same
+   two identity documents with the same email. One check, so a client is never
+   asked twice by two paths that disagree about whether they were asked. */
+export async function alreadySentDoc01(db, clientId) {
   const r = await db.query(
     `SELECT 1 FROM messages
       WHERE client_id = $1::uuid
