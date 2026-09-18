@@ -52,43 +52,18 @@ export function computeBusinessConditions({ nfibIndex, unemployment_rate_pct, de
   }, WEIGHTS.business_conditions, 1);
 }
 
-export function rollupFromBanks(stateCode, banks = []) {
-  const relevant = banks.filter((b) => b.state === stateCode);
-  if (!relevant.length) {
-    return { issuance_velocity: 50, avg_approval_odds: 0.5, liquidity_score: 50 };
-  }
-  const avgDirection = relevant.reduce((acc, bank) => acc + (bank.issuance?.direction ?? 0), 0) / relevant.length;
-  const issuance_velocity = Math.round(((avgDirection + 1) / 2) * 100);
-  const avgApproval = relevant.reduce((acc, bank) => acc + (bank.internal_outcomes?.approval_rate ?? 0), 0) / relevant.length;
-  const liquidity_score = relevant.reduce((acc, bank) => acc + (bank.fundamentals?.deposits_cds ?? 0), 0) / relevant.length;
-  return {
-    issuance_velocity,
-    avg_approval_odds: Number(avgApproval.toFixed(3)),
-    liquidity_score: Math.round(liquidity_score)
-  };
-}
-
-export function computeStateScore(stateEntry, banks = [], nfibIndex = 95, history = []) {
+export function computeStateScore(stateEntry, _banks = [], nfibIndex = 95, history = []) {
   const business_conditions = computeBusinessConditions({
     nfibIndex,
     unemployment_rate_pct: stateEntry.unemployment_rate_pct,
     delinquency_rate_pct: stateEntry.delinquency_rate_pct ?? 1.0
   });
-  const rollup = rollupFromBanks(stateEntry.state_code, banks);
-  const composite = weightedComposite({
-    business_conditions,
-    issuance_velocity: rollup.issuance_velocity,
-    liquidity_score: rollup.liquidity_score,
-    approval_odds: normalizeFromConfig(rollup.avg_approval_odds, NORMALIZATION.bank.approval_rate)
-  }, WEIGHTS.state, 1);
+  const composite = weightedComposite({ business_conditions }, WEIGHTS.state, 1);
   const band = bandFromScore(composite);
   return {
     state: stateEntry.state_code,
     score: composite,
     business_conditions,
-    issuance_velocity: rollup.issuance_velocity,
-    avg_approval_odds: rollup.avg_approval_odds,
-    liquidity_score: rollup.liquidity_score,
     trend_30d: computeTrendDelta(composite, history).label,
     color_band: band.color_band,
     color: band.color,

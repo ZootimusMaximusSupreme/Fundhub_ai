@@ -1,3 +1,5 @@
+import { listLenders } from "../lenders/store.mjs";
+import { defaultOrgId } from "../pulse/daily-pulse.mjs";
 import {
   STATE_CENTROIDS,
   STATE_FIPS,
@@ -8,6 +10,52 @@ import {
   mapsServerKey,
   nowIso
 } from "./config.mjs";
+
+/** Public CRM lender row for /api/climate — no staff-only or invented odds. */
+export function mapClimateLender(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    product_name: row.product_name ?? null,
+    lender_table: row.lender_table,
+    eligible_states: row.eligible_states ?? null,
+    application_url: row.application_url ?? null,
+    logo_path: row.logo_path ?? null,
+    priority_tier: row.priority_tier ?? null,
+    bureaus_pulled: row.bureaus_pulled ?? null,
+    type: "lender"
+  };
+}
+
+export async function pullCrmLenders(db) {
+  const now = nowIso();
+  const cacheKey = "connector:crm:lenders";
+  const { entry: cached, expired } = await getCached(cacheKey);
+  const ttl_expires_at = computeTtlExpiry(now, "daily");
+  if (cached && !expired) return { ...cached, stale: false, fetch_status: "cache" };
+  if (!db || typeof db.query !== "function") {
+    return { updated_at: now, ttl_expires_at, lenders: [], fetch_status: "no_db", stale: true };
+  }
+  try {
+    const orgId = await defaultOrgId(db);
+    if (!orgId) throw new Error("default org missing");
+    const rows = await listLenders(db, { orgId, active: true, includeDemo: false });
+    const lenders = rows.map(mapClimateLender).filter(Boolean);
+    const record = {
+      updated_at: now,
+      ttl_expires_at,
+      lenders,
+      fetch_status: "fetched",
+      stale: false
+    };
+    await setCached(cacheKey, record);
+    return record;
+  } catch {
+    if (cached) return { ...cached, stale: true, fetch_status: "lkg" };
+    return { updated_at: now, ttl_expires_at, lenders: [], fetch_status: "fallback", stale: true };
+  }
+}
 
 const memory = new Map();
 
@@ -189,35 +237,6 @@ export async function pullFdic(limit = 50) {
     await setCached(cacheKey, record);
     return record;
   }
-}
-
-function seededNumber(seed, min, max) {
-  const normalized = (Math.sin(seed) + 1) / 2;
-  return min + normalized * (max - min);
-}
-
-export async function pullFundhub(banks = []) {
-  const now = nowIso();
-  const outcomes = banks.map((bank) => {
-    const seed = parseInt(String(bank.institution_id || "1").replace(/\D/g, "").slice(-4) || "1", 10);
-    const loan_volume_30d = Math.round(seededNumber(seed + 17, 20_000_000, 120_000_000));
-    const prior = Math.round(seededNumber(seed + 23, 20_000_000, 120_000_000));
-    const direction = loan_volume_30d > prior * 1.05 ? 1 : loan_volume_30d < prior * 0.95 ? -1 : 0;
-    const raw = [Math.abs(seed * 1.1), Math.abs(seed * 1.3), Math.abs(seed * 1.7)];
-    const total = raw.reduce((a, b) => a + b, 0) || 1;
-    const [card, loc, term] = raw.map((v) => Math.round((v / total) * 100));
-    return {
-      bank_id: bank.bank_id || bank.institution_id,
-      approval_rate: Number(seededNumber(seed, 0.45, 0.85).toFixed(3)),
-      avg_limit: Math.round(seededNumber(seed + 11, 8000, 22000)),
-      issuance: {
-        gross_amount_recent_window: Math.round(seededNumber(seed + 5, 10_000_000, 80_000_000)),
-        mix: { card, loc, term },
-        direction
-      }
-    };
-  });
-  return { updated_at: now, outcomes, fetch_status: "generated", stale: false };
 }
 
 function stateFromText(query) {

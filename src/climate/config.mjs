@@ -71,10 +71,7 @@ export const WEIGHTS = {
   },
   business_conditions: { nfib: 0.34, unemployment: 0.33, delinquency: 0.33 },
   state: {
-    business_conditions: 0.4,
-    issuance_velocity: 0.25,
-    liquidity_score: 0.2,
-    approval_odds: 0.15
+    business_conditions: 1
   },
   bank: {
     composite: { fundamentals: 0.45, issuance: 0.25, internal_outcomes: 0.20, macro_overlay: 0.10 },

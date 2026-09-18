@@ -1,5 +1,6 @@
 import { buildComposite } from "../src/climate/aggregate.mjs";
 import { mapsBrowserKey } from "../src/climate/config.mjs";
+import { db } from "../src/db.mjs";
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "public, s-maxage=900, stale-while-revalidate=600");
@@ -7,7 +8,7 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(204).end();
   if (req.method !== "GET") return res.status(405).json({ ok: false, error: "method_not_allowed" });
   try {
-    const payload = await buildComposite();
+    const payload = await buildComposite(false, db);
     return res.status(200).json({ ok: true, mapsKey: Boolean(mapsBrowserKey()), ...payload });
   } catch (err) {
     return res.status(500).json({

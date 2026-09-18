@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { bandFromScore, normalize, weightedComposite } from "./config.mjs";
 import { computeBusinessConditions, computeNational, computeStateScore } from "./scoring.mjs";
-import { geocode } from "./connectors.mjs";
+import { geocode, mapClimateLender, pullCrmLenders } from "./connectors.mjs";
 
 test("climate: sage band at 80+", () => {
   assert.equal(bandFromScore(86).color_band, "very_favorable");
@@ -33,21 +33,75 @@ test("climate: national weights sum to a 0-100 score", () => {
   assert.ok(national.components.fed_policy > 0);
 });
 
-test("climate: state score includes business conditions and bank rollup", () => {
+test("climate: state score is macro only — no fake approval rollup", () => {
   const scored = computeStateScore(
     { state_code: "AZ", unemployment_rate_pct: 3.5, delinquency_rate_pct: 1.1 },
-    [{
-      state: "AZ",
-      issuance: { direction: 1 },
-      internal_outcomes: { approval_rate: 0.72 },
-      fundamentals: { deposits_cds: 80 }
-    }],
+    [],
     95,
     []
   );
   assert.equal(scored.state, "AZ");
   assert.ok(scored.business_conditions > 50);
-  assert.ok(scored.avg_approval_odds > 0.5);
+  assert.equal(scored.avg_approval_odds, undefined);
+  assert.equal(scored.approval_odds, undefined);
+});
+
+test("climate: public lender map drops staff fields and invented odds", () => {
+  const pub = mapClimateLender({
+    id: "l1",
+    name: "Example Bank",
+    product_name: "LOC",
+    lender_table: "banks",
+    eligible_states: "AZ, CA",
+    application_url: "https://example.com/apply",
+    logo_path: "/logos/x.png",
+    priority_tier: 2,
+    bureaus_pulled: "Experian",
+    insider_tips: "secret",
+    notes: "staff only",
+    stated_requirements: "700+ FICO",
+    approval_rate: 0.88
+  });
+  assert.equal(pub.name, "Example Bank");
+  assert.equal(pub.insider_tips, undefined);
+  assert.equal(pub.notes, undefined);
+  assert.equal(pub.approval_rate, undefined);
+  assert.equal(pub.approval_odds, undefined);
+});
+
+test("climate: CRM pull uses default org lender query", async () => {
+  let lenderSql = "";
+  const db = {
+    query: async (sql) => {
+      if (/is_default/.test(sql)) return { rows: [{ id: "00000000-0000-0000-0000-000000000099" }] };
+      if (/demo_mode_enabled/.test(sql)) return { rows: [{ demo_mode_enabled: false }] };
+      if (/FROM lenders/.test(sql)) {
+        lenderSql = sql;
+        return {
+          rows: [{
+            id: "00000000-0000-0000-0000-000000000001",
+            org_id: "00000000-0000-0000-0000-000000000099",
+            lender_table: "banks",
+            name: "Mock Lender",
+            product_name: null,
+            logo_path: null,
+            application_url: null,
+            eligible_states: "TX",
+            bureaus_pulled: null,
+            priority_tier: null,
+            active: true,
+            is_demo: false
+          }]
+        };
+      }
+      return { rows: [] };
+    }
+  };
+  const pack = await pullCrmLenders(db);
+  assert.match(lenderSql, /FROM lenders/);
+  assert.equal(pack.lenders.length, 1);
+  assert.equal(pack.lenders[0].name, "Mock Lender");
+  assert.equal(pack.lenders[0].approval_rate, undefined);
 });
 
 test("climate: weightedComposite ignores missing keys", () => {
