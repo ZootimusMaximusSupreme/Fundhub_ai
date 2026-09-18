@@ -1458,7 +1458,12 @@ document.addEventListener("DOMContentLoaded", async function () {
     funding_advisor: 1, inquiry_specialist: 1, setter: 1
   };
 
+  /* The role the server gave, once this page has asked. Set only when no role
+     was saved — see "NO SAVED ROLE" below. Once set it wins over the saved hint
+     so every branch on this screen takes the same side for the whole load. */
+  var sessionRole = "";
   function roleHint() {
+    if (sessionRole) return sessionRole;
     try { return String(localStorage.getItem("fh_role") || "").toLowerCase(); }
     catch (e) { return ""; }
   }
@@ -2451,6 +2456,24 @@ document.addEventListener("DOMContentLoaded", async function () {
     showSignInDoor();
     FHData.banner("sample", "We could not load your file. Use the link we sent you, or ask for a new one.");
     return;
+  }
+
+  /* NO SAVED ROLE — ASK THE SESSION BEFORE CHOOSING STAFF OR CLIENT (hole 13,
+     live 2026-09-18). The saved role (fh_role) is written by the sign-in pages
+     and by shell.js once its own session read lands. A browser that holds the
+     staff cookie but no saved role — storage cleared, a fresh tab after a wipe
+     — read "" here, took the CLIENT branch, and greeted the person signed in:
+     "Welcome back, Chris" on #11's file, 4 of 4 first loads. A reload said Sim
+     only because shell.js had saved the role in between.
+     So with no saved role this waits on the same session read the name and the
+     client id already use (one request, shared) and takes its role. A client's
+     session says "client" and nothing changes for them; a stranger's says
+     nothing, so they stay on the client branch and shell.js still sends them
+     to sign in. A saved role still answers instantly, with no wait. */
+  if (!roleHint()) {
+    var who = await session();
+    var whoRole = who && who.staff && who.staff.role;
+    if (whoRole) sessionRole = String(whoRole).trim().toLowerCase();
   }
 
   /* ══ THE PROGRESS LINK HAS TO SAY WHOSE FILE IT MEANS ════════════════════
