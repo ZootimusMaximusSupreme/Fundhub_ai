@@ -1110,7 +1110,7 @@ describe("client-control-panel.html — a sample report says it is a sample (liv
    inquiries; the control is a real pull (environment "production").
    ──────────────────────────────────────────────────────────────────────────── */
 
-describe("client-control-panel.html — the inquiries, Card Use and income off a sample report say sample (live hole N12)", () => {
+describe("client-control-panel.html — the inquiries, Card Use, income, Prequal and Tier off a sample report say sample (live hole N12)", () => {
   const AT = "2026-09-18T08:54:06.344Z";
   const INQ = [
     { creditorName: "CAPITAL ONE", source: "EX" },
@@ -1217,5 +1217,51 @@ describe("client-control-panel.html — the inquiries, Card Use and income off a
     assert.equal(P.isSampleReport([realRow], AT), false);
     assert.equal(P.isSampleReport([sampleRow], null), false,
       "a Card Use figure with no report date (the custom-field fallback) must not be called a sample");
+  });
+
+  /* Prequal "$212,000" and Tier "PREMIUM_STACK" on #13 are not read off the
+     report — decision.rendered stamped them on the client from it. The sample
+     row keeps that decision too (preapprovals.totalCombined, outcome_tier),
+     which is what ties the two figures to it. */
+  test("a Prequal and a Tier set by a sample report's decision say sample; a real pull's never do", () => {
+    const P = loadPanel();
+    const sampleDecided = {
+      id: "fe92316e-ee62-49ff-9990-88f818abe074", outcome_tier: "PREMIUM_STACK", created_at: AT,
+      result: { ...sampleRow.result, preapprovals: { totalCombined: 212000 } }
+    };
+    assert.deepEqual({ ...P.sampleDecision([sampleDecided]) }, { prequal: 212000, tier: "PREMIUM_STACK" });
+    // The row arrives as a JSON string on some paths; same answer.
+    assert.deepEqual({ ...P.sampleDecision([{ ...sampleDecided, result: JSON.stringify(sampleDecided.result) }]) },
+      { prequal: 212000, tier: "PREMIUM_STACK" });
+    // A sample with no pre-approval on it answers a tier only — never a guessed figure.
+    assert.deepEqual({ ...P.sampleDecision([{ ...sampleDecided, result: sampleRow.result }]) },
+      { prequal: null, tier: "PREMIUM_STACK" });
+    // The Colin control: real pulls, no stamp — nothing is a sample.
+    const realDecided = { id: "3745a02c", outcome_tier: "FRAUD_HOLD", created_at: "2026-08-24T23:46:48.040Z",
+      result: { source: "crs", environment: "production", inquiries: INQ } };
+    assert.equal(P.sampleDecision([realDecided]), null);
+    // Only the NEWEST report set today's Prequal / Tier: a sample under a newer real pull is not it.
+    const older = { ...sampleDecided, created_at: "2026-09-01T00:00:00.000Z" };
+    const newerReal = { ...realDecided, created_at: "2026-09-10T00:00:00.000Z" };
+    assert.equal(P.sampleDecision([older, newerReal]), null);
+    // ...and a sample loaded after a real pull is.
+    assert.equal(P.sampleDecision([realDecided, sampleDecided]).tier, "PREMIUM_STACK");
+    assert.equal(P.sampleDecision([]), null);
+    assert.equal(P.sampleDecision(null), null);
+    assert.equal(P.sampleDecision([{ created_at: AT, result: "{not json" }]), null);
+  });
+
+  test("the Prequal tile and the Tier line are wired to sampleDecision()", () => {
+    const code = PANEL_HTML.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    assert.match(PANEL_HTML, /id="ccp-prequal">—<\/div>\s*<p class="fact-note" id="ccp-prequal-sample" hidden><\/p>/,
+      "the sample line is gone from the Prequal tile");
+    assert.match(code, /var sampleDec = FHCP\.sampleDecision\(d\.crs_results\);/);
+    assert.match(code, /String\(c\.outcome_tier\) === sampleDec\.tier;/,
+      "the Tier is no longer matched to the sample report's own tier");
+    assert.match(code, /setText\("ccp-tier", sampleTier \? c\.outcome_tier \+ " · sample" : c\.outcome_tier\);/);
+    assert.match(code, /money\(prequal\) !== "—" && Number\(prequal\) === sampleDec\.prequal;/,
+      "the Prequal is no longer matched to the sample report's own pre-approval");
+    assert.match(code, /prequalNote\.textContent = samplePrequal \? FHCP\.SAMPLE_FIGURE_NOTE : "";/);
+    assert.match(code, /prequalNote\.hidden = !samplePrequal;/);
   });
 });

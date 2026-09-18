@@ -1112,7 +1112,11 @@
         <div class="group-title card-title">Client facts</div>
         <div class="record-fields">
           <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg" id="ccp-status">—</span></div></div>
-          <div class="rf-tile"><div class="rf-label">Prequal</div><div class="rf-num" id="ccp-prequal">—</div></div>
+          <!-- Sample note: shown only when this figure is the pre-approval a
+               sample report was given (live hole N12). See sampleDecision(). -->
+          <div class="rf-tile"><div class="rf-label">Prequal</div>
+            <div class="rf-num" id="ccp-prequal">—</div>
+            <p class="fact-note" id="ccp-prequal-sample" hidden></p></div>
           <!-- WAS "Total Approved", AND WAS NEITHER. It printed the FUNDED
                amount, and when that was missing it printed the analyzer's
                PRE-APPROVAL GUESS — the number in the tile immediately to its
@@ -1672,7 +1676,8 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
   /* The same stamp covers every other figure this screen reads off that
      report — the inquiries list and count, Card Use and the income estimates
      (live hole N12, 2026-09-18). Each one is matched to its own report by the
-     date the server or fileInquiries() says it came from. */
+     date the server or fileInquiries() says it came from. Prequal and Tier,
+     which the decision on that report set, are matched by sampleDecision(). */
   var SAMPLE_FIGURE_NOTE = "From a sample report. Not a real credit pull.";
 
   function isSampleReport(crsResults, asOf) {
@@ -1697,6 +1702,42 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     return false;
   }
 
+  /* Prequal and Tier are not read off a report. decision.rendered stamps them
+     on the client (onDecisionRendered in src/handlers/client-lifecycle.mjs)
+     from the report that was just worked out, so they belong to the NEWEST
+     stored report. Both sample loaders also keep that decision on the sample
+     row itself: the pre-approval total as result.preapprovals.totalCombined
+     and the tier as the row's outcome_tier. So a Prequal or a Tier is the
+     sample's when the newest stored report is a sample AND carries that same
+     figure (live hole N12). Returns { prequal, tier } — either may be null —
+     for a sample, and null for a real pull, no report, or anything
+     unreadable. Like isSampleReport() it only ever ADDS a warning. Never
+     throws. */
+  function sampleDecision(crsResults) {
+    try {
+      var list = (Array.isArray(crsResults) ? crsResults : []).filter(function (r) {
+        return r && typeof r === "object";
+      });
+      if (!list.length) return null;
+      list.sort(function (a, b) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+      var row = list[0];
+      if (!isSampleReport([row], row.created_at)) return null;
+      var r = row.result;
+      if (typeof r === "string") {
+        try { r = JSON.parse(r); } catch (e) { r = null; }
+      }
+      var pre = r && r.preapprovals && typeof r.preapprovals === "object"
+        ? r.preapprovals.totalCombined : null;
+      var preNum = pre === null || pre === undefined || pre === "" ? NaN : Number(pre);
+      return {
+        prequal: isFinite(preNum) ? preNum : null,
+        tier: row.outcome_tier ? String(row.outcome_tier) : null
+      };
+    } catch (e) { return null; }
+  }
+
   window.FHClientPanel = {
     UNKNOWN: UNKNOWN,
     NOT_WORKED_OUT: NOT_WORKED_OUT,
@@ -1713,7 +1754,8 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     displayHold: displayHold,
     SAMPLE_NOTE: SAMPLE_NOTE,
     SAMPLE_FIGURE_NOTE: SAMPLE_FIGURE_NOTE,
-    isSampleReport: isSampleReport
+    isSampleReport: isSampleReport,
+    sampleDecision: sampleDecision
   };
 })();
 /* FH-CCP-END */
@@ -2474,7 +2516,12 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-key", c.email || c.id);
     setText("ccp-email", c.email);
     setText("ccp-phone", c.phone);
-    setText("ccp-tier", c.outcome_tier);
+    /* A Tier or a Prequal set by the decision on a sample report says so —
+       live hole N12. See sampleDecision(). */
+    var sampleDec = FHCP.sampleDecision(d.crs_results);
+    var sampleTier = !!sampleDec && sampleDec.tier !== null && !!c.outcome_tier &&
+      String(c.outcome_tier) === sampleDec.tier;
+    setText("ccp-tier", sampleTier ? c.outcome_tier + " · sample" : c.outcome_tier);
     setText("ccp-path", cf.analyzer_path || cf.product_path);
 
     var status = c.funded ? "Funded"
@@ -2486,6 +2533,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var prequal = cf.analyzer_prequal_amount || cf.total_funding_estimate;
     setText("ccp-prequal", money(prequal));
+    var samplePrequal = !!sampleDec && sampleDec.prequal !== null &&
+      money(prequal) !== "—" && Number(prequal) === sampleDec.prequal;
+    var prequalNote = $("ccp-prequal-sample");
+    if (prequalNote) {
+      prequalNote.textContent = samplePrequal ? FHCP.SAMPLE_FIGURE_NOTE : "";
+      prequalNote.hidden = !samplePrequal;
+    }
     /* THE APPROVED TILE IS NOT PAINTED FROM HERE ANY MORE, and that is the fix.
        It used to be:
 
