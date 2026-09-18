@@ -56,7 +56,7 @@ export function companyEight(kpis) {
   };
 }
 
-async function loadBars(db, { orgId, now }) {
+export async function loadBars(db, { orgId, now }) {
   const { start, end } = monthWindow(now);
   const targets = await db.query(
     `SELECT role, metric, target_value
@@ -94,21 +94,28 @@ async function loadBars(db, { orgId, now }) {
     closerActualMissing = "deposits_not_available";
   }
 
+  // The bar is funded FILES: one client file counts once, however many of its
+  // rounds funded this month. Rounds are kept beside it so the brief can say
+  // both without calling a round a file (two $25k rounds on one file = 1 file).
   let fundedActual = null;
+  let fundedRounds = null;
   let fundedActualMissing = "funded_files_not_read";
   try {
     const fund = await db.query(
-      `SELECT count(*)::int AS n
+      `SELECT count(DISTINCT client_id)::int AS files,
+              count(*)::int AS rounds
          FROM funding_rounds
         WHERE org_id = $1
           AND status = 'funded'
           AND updated_at >= $2 AND updated_at < $3`,
       [orgId, start.toISOString(), end.toISOString()]
     );
-    fundedActual = Number(fund.rows[0]?.n || 0);
+    fundedActual = Number(fund.rows[0]?.files || 0);
+    fundedRounds = Number(fund.rows[0]?.rounds || 0);
     fundedActualMissing = null;
   } catch {
     fundedActual = null;
+    fundedRounds = null;
     fundedActualMissing = "funded_files_not_available";
   }
 
@@ -132,6 +139,7 @@ async function loadBars(db, { orgId, now }) {
       target: faTarget,
       target_per_pod: faTarget,
       actual: fundedActual,
+      rounds: fundedRounds,
       missing: faTarget == null ? "funding_advisor_files_target_missing" : fundedActualMissing
     }
   };

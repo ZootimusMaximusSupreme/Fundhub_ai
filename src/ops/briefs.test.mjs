@@ -87,6 +87,29 @@ describe("briefs", () => {
     assert.doesNotMatch(text, /suspend/);
   });
 
+  // N17 (2026-09-18): the brief said "this month 3 funded files" when live
+  // had 3 funded rounds in 2 files. Files are files; rounds are named rounds.
+  it("CEO voice counts funded files and names funded rounds as rounds", () => {
+    const text = ceoBrief({
+      ...pulse,
+      bars: {
+        closer: { target: 108, actual: 2, missing: null },
+        funding_advisor: { target: 108, actual: 2, rounds: 3, missing: null }
+      }
+    });
+    assert.match(text, /target 108 funded files\. this month 2 funded files \(3 funded rounds\)\./);
+    assert.doesNotMatch(text, /this month 3 funded files/);
+
+    const one = ceoBrief({
+      ...pulse,
+      bars: {
+        closer: { target: 108, actual: 2, missing: null },
+        funding_advisor: { target: 108, actual: 1, rounds: 1, missing: null }
+      }
+    });
+    assert.match(one, /\(1 funded round\)\./);
+  });
+
   it("says a number is missing instead of inventing it", () => {
     const empty = briefsFromPulse({
       company_8: {
