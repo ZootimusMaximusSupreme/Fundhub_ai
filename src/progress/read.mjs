@@ -12,7 +12,7 @@
 // The aim is api/read/portal-summary.mjs:20's rule — numbers, booleans, dates,
 // identifiers and enums, with the words a client reads living in the front end.
 // This endpoint does NOT fully reach it, and an earlier version of this comment
-// claimed it did. It does not, in six places, and every one of them is English a
+// claimed it did. It does not, in seven places, and every one of them is English a
 // client can read:
 //
 //   timeline[].text          chosen from the allowlist in ./timeline.mjs
@@ -22,8 +22,10 @@
 //   waypoints[].title        stored on the waypoint row
 //   waypoints[].paidAlternative.label   stored on the waypoint row
 //   scores.business[].name   the business's own stored name
+//   ownedNotReady[].name     entitlement_catalog.name, else SUBTYPE_TITLES in
+//                            src/documents/kinds.mjs (added 2026-09-18, hole N13)
 //
-// All six are read from somewhere else rather than authored here, but they are
+// All seven are read from somewhere else rather than authored here, but they are
 // still the compliance surface, and saying otherwise understated it for the one
 // person reviewing this. The timeline is the one that matters most, which is why
 // ./timeline.mjs picks its words from a closed list instead of printing a stored
@@ -51,7 +53,7 @@
 //
 // NOTHING HERE SAYS "credit repair" (owner-set). The internal tables, the
 // entitlement codes and the letters keep their names — renaming a stored value
-// breaks the feature silently — and the six client-facing strings above are
+// breaks the feature silently — and the seven client-facing strings above are
 // funding-optimisation and capital-readiness wording.
 //
 // ROUNDS 4 AND 5 ARE NEVER RETURNED AS FILED unless a client said they filed.
@@ -82,6 +84,8 @@ import {
   escalationStates, ESCALATION_LETTERS_SQL, ESCALATION_ROUNDS
 } from "./escalations.mjs";
 import { COMPLAINT_TARGET } from "../metro2/rounds/complaint-filing.mjs";
+import { forClient as entitlementsForClient } from "../entitlements/entitlements.mjs";
+import { titleFor } from "../documents/kinds.mjs";
 /* The one share-link builder in this repository. See readReferral() below. */
 import { shareUrlFor } from "../affiliates/share-link.mjs";
 
@@ -106,6 +110,57 @@ const IN_FLIGHT_STATUSES = new Set(["quoted", "awaiting_payment", "paid", "stage
 /** The self-serve round's service key, as stored in paid_service_requests. */
 export const PAID_ROUND_SERVICE_KIND = "dispute_round";
 
+/* WHICH GRANTS ARE DOCUMENTS, and the document subtype each one becomes.
+   Live look 2026-09-18, hole N13: Sim Twelve-Academy (f01cc0e0) was granted the
+   Funding Snapshot at 15:13 UTC, it had not been built, and "Your documents"
+   said nothing at all — this read listed only documents already saved, so a
+   thing the client owns and is waiting for was invisible.
+
+   The same five rows as OWN_CODES in public/app/client-portal.html's "What You
+   Own" — keep the two in step. The course (funding-mastery-course) is owned too
+   but it is not a document; it plays in the portal's Capital Academy card, so
+   it is deliberately not here. */
+export const DOCUMENT_ENTITLEMENTS = Object.freeze([
+  Object.freeze({ code: "credit-analysis-report", subtype: "credit_analysis_report" }),
+  Object.freeze({ code: "credit-optimization-roadmap", subtype: "credit_optimization_roadmap" }),
+  Object.freeze({ code: "funding-snapshot", subtype: "funding_snapshot" }),
+  Object.freeze({ code: "bank-lender-match-list", subtype: "bank_lender_match_list" }),
+  Object.freeze({ code: "metro2-letter-pack", subtype: "metro2_dispute_letter_pack" })
+]);
+
+/* The funding letters that ARE the Capital Blueprint's letter pack on the
+   funding path — the rule client-portal.html's ownRows() applies (hole 2,
+   2026-09-17). Mirrored so this page never calls a pack "not ready" that the
+   portal, one click away, correctly lists as ready. */
+const FUNDING_LETTER_SUBTYPES = new Set(["funding_inquiry_removal", "funding_personal_info"]);
+
+/**
+ * The documents a client OWNS that are not on file yet: each one a live grant
+ * with no saved deliverable of its subtype. Nothing is invented — no grant, no
+ * row; a saved document, no row.
+ *
+ * @param {Array<{code:string,name?:string}>} held  live grants (forClient().held)
+ * @param {Array<{subtype?:string}>} documentRows    this client's deliverable documents
+ * @returns {Array<{code:string,subtype:string,name:string}>}
+ */
+export function ownedNotReady(held = [], documentRows = []) {
+  const heldBy = new Map();
+  for (const h of held || []) {
+    const code = String((h && h.code) || "").trim().toLowerCase();
+    if (code && !heldBy.has(code)) heldBy.set(code, h);
+  }
+  const onFile = new Set((documentRows || []).map((d) => d && d.subtype).filter(Boolean));
+  const fundingLetters = [...onFile].some((s) => FUNDING_LETTER_SUBTYPES.has(s));
+  const out = [];
+  for (const { code, subtype } of DOCUMENT_ENTITLEMENTS) {
+    const grant = heldBy.get(code);
+    if (!grant || onFile.has(subtype)) continue;
+    if (code === "metro2-letter-pack" && heldBy.has("credit-optimization-roadmap") && fundingLetters) continue;
+    out.push({ code, subtype, name: grant.name || titleFor(subtype) });
+  }
+  return out;
+}
+
 /**
  * @param {object} db
  * @param {{orgId: string, clientId: string, now?: Date}} opts
@@ -118,7 +173,7 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
   const [
     crsRows, businessRows, documentRows, programRow, caseRow, cardRow,
     waypointRows, paidRows, itemCounts, timeline, repairPath, customFields,
-    escalationRows
+    escalationRows, heldEntitlements
   ] = await Promise.all([
     /* EVERY crs_results row, no LIMIT — the same read portal-summary.mjs
        already makes. The newest is the panel and the whole list is the series,
@@ -232,7 +287,13 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
     soft("escalation_letters", [], () => db.query(
       ESCALATION_LETTERS_SQL,
       [clientId, orgId, Object.values(COMPLAINT_TARGET), [...ESCALATION_ROUNDS]]
-    ).then((r) => r.rows))
+    ).then((r) => r.rows)),
+
+    /* What the client owns — the portal's own read (forClient), so "owned" means
+       exactly what it means on /api/read/entitlements: granted, not revoked, not
+       expired. Used only to name owned documents that are not built yet. */
+    soft("entitlements", [], () => entitlementsForClient(db, { orgId, clientId })
+      .then((r) => (r && Array.isArray(r.held) ? r.held : [])))
   ]);
 
   const referral = await readReferral(db, { orgId, clientId, customFields });
@@ -317,6 +378,10 @@ export async function readClientProgress(db, { orgId, clientId, now = new Date()
       title: d.title || null,
       generatedAt: isoOrNull(d.generated_at)
     })),
+    /* ADDITION TO THE CONTRACT (hole N13, 2026-09-18). Documents the client owns
+       that are not built yet, so "Your documents" can say so instead of being
+       empty. `name` is the entitlement catalogue's own name for it. */
+    ownedNotReady: ownedNotReady(heldEntitlements, documentRows),
     paidServices,
     referral
   };

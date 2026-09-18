@@ -142,6 +142,68 @@ export const TIMELINE_WORDS = allowlistFrom(DRAFT_WORDS);
 /** The decision names this module has words for. Read-only; used by the test. */
 export const KNOWN_DECISIONS = Object.freeze(DRAFT_WORDS.map(([k]) => k));
 
+/* ── THE SECOND SOURCE: MILESTONES FROM THE EVENTS TABLE ────────────────────
+ *
+ * Live look 2026-09-18, hole N13: Sim Twelve-Academy (f01cc0e0) signed its
+ * Funding Agreement on 17 Sep, paid twice, and had a funding round started at
+ * 15:13 UTC on 18 Sep. This page said "Nothing has happened on your file yet."
+ * The timeline read ONLY repair_decision_log, and a funding file never writes a
+ * row there — so every funding client was told nothing had happened, whatever
+ * had.
+ *
+ * Those milestones are already recorded, with their real times, as canonical
+ * events (src/events/canonical.mjs):
+ *   payment.received   src/adapters/commas.mjs — every successful payment
+ *   contract.signed    src/contracts/sign.mjs — the client signed
+ *   round.*            src/funding/card-stacking-rounds.mjs STAGE_TO_EVENT and
+ *                      src/adapters/lendflow.mjs — the funding round's steps
+ *
+ * SAME ALLOWLIST DESIGN, ONE DIFFERENCE. The events table carries every internal
+ * event (message.queued, entry.captured, inquiry.gate.raised and the rest), so a
+ * name that is not on this list is not SELECTED at all — it never becomes a
+ * neutral "progress update" line. Only the names below can reach the screen, and
+ * their words go through the same allowlistFrom() scrub as the list above. No
+ * amount, product, lender name or payload field is ever read, let alone printed.
+ *
+ * deposit.paid is deliberately NOT here: it fires for the same money as
+ * payment.received, and listing both would show one payment twice.
+ *
+ * No phrase below may use a filing word ("submitted" included) — the timeline
+ * is held to that by src/http/client-progress.pg.test.mjs.
+ */
+const EVENT_DRAFT_WORDS = [
+  ["payment.received", "payment received"],
+  ["contract.signed", "agreement signed"],
+  ["round.started", "funding round started"],
+  ["round.submitted", "funding applications sent to lenders"],
+  ["round.approved", "funding approval received"],
+  ["round.funded", "funding round funded"],
+  ["round.closeout", "funding round closed"]
+];
+
+export const EVENT_WORDS = allowlistFrom(EVENT_DRAFT_WORDS);
+
+/** The event names the timeline reads. The SQL selects these and nothing else. */
+export const TIMELINE_EVENT_NAMES = Object.freeze(EVENT_DRAFT_WORDS.map(([k]) => k));
+
+const TIMELINE_EVENTS_SQL = `
+  SELECT created_at AS ts, name
+    FROM events
+   WHERE org_id = $1::uuid
+     AND client_id = $2::uuid
+     AND name = ANY($3::text[])
+     AND is_demo IS NOT TRUE
+   ORDER BY created_at DESC
+   LIMIT 40`;
+
+/** One milestone line from an events row, or null when the name has no approved words. */
+export function eventLine(row = {}) {
+  const key = String(row.name == null ? "" : row.name).trim().toLowerCase();
+  const words = EVENT_WORDS.get(key);
+  if (!words) return null;
+  return timelineLine({ action: words, ts: row.ts || row.created_at || null });
+}
+
 /**
  * The words for one stored decision name. Never the stored name itself.
  *
@@ -169,24 +231,50 @@ export function progressLine(row = {}) {
 /**
  * The timeline for one client, newest first, in the contract's shape.
  *
- * FAILS SOFT. gatherRepairDetailSignals() returns `{}` when the decision log
- * cannot be read, and this returns `[]` for that. An empty timeline is a screen
- * with one section missing; a throw is a screen with nothing on it.
+ * TWO SOURCES: repair_decision_log (the list above) and the milestone events
+ * (EVENT_WORDS). Each FAILS SOFT on its own — an unreadable decision log must
+ * not hide the funding round, and the other way round. An empty timeline is a
+ * screen with one section missing; a throw is a screen with nothing on it.
  */
 export async function progressTimeline(db, { orgId, clientId } = {}) {
   if (!db || !orgId || !clientId) return [];
-  let signals = {};
-  try {
-    signals = await gatherRepairDetailSignals(db, { orgId, clientId }) || {};
-  } catch (err) {
-    console.warn("[progress] timeline read failed:", err && err.message);
-    return [];
-  }
-  const rows = Array.isArray(signals.timeline) ? signals.timeline : [];
-  return rows.map((row) => ({
+  const [decisionRows, eventRows] = await Promise.all([
+    (async () => {
+      try {
+        const signals = await gatherRepairDetailSignals(db, { orgId, clientId }) || {};
+        return Array.isArray(signals.timeline) ? signals.timeline : [];
+      } catch (err) {
+        console.warn("[progress] timeline read failed:", err && err.message);
+        return [];
+      }
+    })(),
+    (async () => {
+      try {
+        const r = await db.query(TIMELINE_EVENTS_SQL, [orgId, clientId, [...TIMELINE_EVENT_NAMES]]);
+        return r && Array.isArray(r.rows) ? r.rows : [];
+      } catch (err) {
+        console.warn("[progress] milestone events read failed:", err && err.message);
+        return [];
+      }
+    })()
+  ]);
+  const lines = decisionRows.map((row) => ({
     at: isoOrNull(row.ts),
     text: progressLine(row)
   }));
+  for (const row of eventRows) {
+    const text = eventLine(row);
+    if (text) lines.push({ at: isoOrNull(row.ts), text });
+  }
+  /* Newest first, the order both sources already use. A stable sort, so rows
+     with the same time keep their source order; a row with no usable time sorts
+     last rather than being dropped. */
+  return lines.sort((a, b) => stamp(b.at) - stamp(a.at));
+}
+
+function stamp(iso) {
+  const t = iso ? Date.parse(iso) : NaN;
+  return Number.isFinite(t) ? t : -Infinity;
 }
 
 function isoOrNull(v) {

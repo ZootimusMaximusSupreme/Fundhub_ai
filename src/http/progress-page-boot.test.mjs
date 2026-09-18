@@ -92,3 +92,20 @@ test("an empty checklist does not promise a list that nothing will build", () =>
     "a course buyer's checklist is not late — there is none to set up"
   );
 });
+
+// Live look 2026-09-18, hole N13: Sim Twelve-Academy owned a Funding Snapshot
+// that was not built yet, and "Your documents" said only "Your documents appear
+// here once they are ready." The server now sends `ownedNotReady`; the page must
+// paint each one as a named Not ready yet row — not a link, since there is
+// nothing to open — and must not fall back to the empty sentence while it has one.
+test("an owned document that is not built yet is named, not hidden", () => {
+  const body = fnBody("paintDeliverables");
+  const empty = body.slice(0, body.indexOf("return;"));
+  assert.match(empty, /!list\.length\s*&&\s*!notReady\.length/,
+    "the empty sentence is only for a file with no documents AND nothing owned");
+  assert.match(body, /notReady\.map\(/, "every owned-but-not-built document gets a row");
+  assert.match(body, /Not ready yet/, "each one says Not ready yet");
+  const boot = fnBody("boot");
+  assert.match(boot, /paintDeliverables\([^;]*d\.ownedNotReady/,
+    "boot() must hand the server's ownedNotReady list to paintDeliverables");
+});

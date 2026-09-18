@@ -22,9 +22,10 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   approvedWords, progressLine, claimsFiled, TIMELINE_WORDS, KNOWN_DECISIONS, allowlistFrom,
-  NEUTRAL_WORDS
+  NEUTRAL_WORDS, EVENT_WORDS, TIMELINE_EVENT_NAMES, eventLine
 } from "./timeline.mjs";
 import { timelineLine } from "../repair/lens.mjs";
+import { isCanonical } from "../events/canonical.mjs";
 
 /* Decision strings a future writer could plausibly store. None of these exist
    in the repository today; that is the point. The old denylist printed the
@@ -219,5 +220,43 @@ describe("progressLine reuses timelineLine and never hands it a stored name", ()
 
   test("a row with no timestamp still renders", () => {
     assert.equal(progressLine({ action: "repair.stalled" }), "on hold");
+  });
+});
+
+/* HOLE N13, 2026-09-18. A funding file never writes repair_decision_log, so the
+   timeline told every funding client "Nothing has happened on your file yet."
+   The milestones now also come from the events table — through a closed list. */
+describe("the milestone events are an allowlist too", () => {
+  test("only the named milestones are read, and every one is a canonical event", () => {
+    assert.deepEqual([...TIMELINE_EVENT_NAMES], [
+      "payment.received", "contract.signed",
+      "round.started", "round.submitted", "round.approved", "round.funded", "round.closeout"
+    ]);
+    for (const name of TIMELINE_EVENT_NAMES) assert.ok(isCanonical(name), name);
+  });
+
+  test("an internal event gets no line at all — not even the neutral one", () => {
+    for (const name of ["message.queued", "entry.captured", "inquiry.gate.raised",
+      "deposit.paid", "decision.rendered", "cfpb_complaint_filed", "", null]) {
+      assert.equal(eventLine({ name, ts: "2026-09-18T15:13:27Z" }), null, String(name));
+    }
+  });
+
+  test("a funding round that started reads as that, with its date", () => {
+    const ts = "2026-09-18T15:13:27.565Z";
+    assert.equal(eventLine({ name: "round.started", ts }),
+      timelineLine({ action: "funding round started", ts }));
+  });
+
+  test("no milestone phrase claims a filing, names a regulator, says credit repair or uses a filing word", () => {
+    assert.equal(EVENT_WORDS.size, TIMELINE_EVENT_NAMES.length, "the scrub dropped a phrase");
+    for (const [name, words] of EVENT_WORDS) {
+      assert.equal(claimsFiled(words), false, `${name}: ${words}`);
+      assert.ok(!/cfpb|attorney general|state ag/i.test(words), `${name}: ${words}`);
+      assert.ok(!/credit repair/i.test(words), `${name}: ${words}`);
+      // src/http/client-progress.pg.test.mjs holds every timeline line to this.
+      assert.ok(!/\b(filed|filing|filings|files|submitted|submission|lodged)\b/i.test(words),
+        `${name}: ${words}`);
+    }
   });
 });
