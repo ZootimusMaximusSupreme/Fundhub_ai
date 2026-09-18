@@ -384,6 +384,71 @@ describe("shell.js — remembering the client across a screen that has none", ()
   });
 });
 
+/* ── hole N15: the control panel's Client Portal row ─────────────────────────
+   Live 2026-09-18: on #11's control panel the rail's Client Portal row opened
+   /app/client-portal.html with no client, and the owner landed on "We could
+   not load your file". From a client's control panel that row must open that
+   client's portal. Everywhere else it must stay exactly as it was. */
+
+describe("shell.js — hole N15: Client Portal row on a client's control panel", () => {
+
+  test("on a client's control panel the Client Portal row opens that client's portal", async () => {
+    const a = anchor("client-portal.html", { classes: ["navitem"] });
+    await runShell({ links: [a], page: "client-control-panel.html", search: "?id=" + CID });
+    assert.equal(a.href, "client-portal.html?client_id=" + CID,
+      "the Client Portal row on a client's control panel carries no client, so the " +
+      "portal opens on nobody and says 'We could not load your file'");
+    assert.notEqual(a.li.style.display, "none", "the owner's Client Portal row was hidden");
+  });
+
+  test("it follows the control panel whichever spelling opened it", async () => {
+    for (const key of ["client_id", "client", "contact"]) {
+      const a = anchor("client-portal.html", { classes: ["navitem"] });
+      await runShell({ links: [a], page: "client-control-panel.html", search: "?" + key + "=" + CID });
+      assert.equal(a.href, "client-portal.html?client_id=" + CID, "opened with ?" + key + "=");
+    }
+  });
+
+  test("it is the client on screen, not the one remembered from before", async () => {
+    const a = anchor("client-portal.html", { classes: ["navitem"] });
+    await runShell({ links: [a], page: "client-control-panel.html",
+                     search: "?id=" + CID, remembered: OTHER });
+    assert.equal(a.href, "client-portal.html?client_id=" + CID);
+  });
+
+  test("a control panel with no client open leaves the row as it was", async () => {
+    const a = anchor("client-portal.html", { classes: ["navitem"] });
+    await runShell({ links: [a], page: "client-control-panel.html", search: "", remembered: CID });
+    assert.equal(a.href, "client-portal.html");
+  });
+
+  test("everywhere else the row behaves as before, even with a client remembered", async () => {
+    for (const page of ["pipeline.html", "documents.html", "finance-os.html", "consent-capture.html"]) {
+      const a = anchor("client-portal.html", { classes: ["navitem"] });
+      await runShell({ links: [a], page, search: "?client_id=" + CID, remembered: CID });
+      assert.equal(a.href, "client-portal.html", "the Client Portal row changed on " + page);
+    }
+  });
+
+  test("a portal link that already names its client is left alone", async () => {
+    const a = anchor("client-portal.html?id=" + OTHER);
+    const b = anchor("client-portal.html?client_id=" + OTHER);
+    await runShell({ links: [a, b], page: "client-control-panel.html", search: "?id=" + CID });
+    assert.equal(a.href, "client-portal.html?id=" + OTHER);
+    assert.equal(b.href, "client-portal.html?client_id=" + OTHER);
+  });
+
+  test("the other rows on the control panel are unchanged", async () => {
+    const fos = anchor("finance-os.html");
+    const msg = anchor("messaging.html");
+    const aff = anchor("affiliate.html");
+    await runShell({ links: [fos, msg, aff], page: "client-control-panel.html", search: "?id=" + CID });
+    assert.equal(fos.href, "finance-os.html?client_id=" + CID);
+    assert.equal(msg.href, "messaging.html");
+    assert.equal(aff.href, "affiliate.html");
+  });
+});
+
 /* ── the gate hole ────────────────────────────────────────────────────────── */
 
 describe("shell.js — a query string does not open a hole in the gate", () => {
