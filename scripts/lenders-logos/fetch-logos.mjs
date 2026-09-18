@@ -20,6 +20,16 @@
  *   node scripts/lenders-logos/fetch-logos.mjs --all
  *   node scripts/lenders-logos/fetch-logos.mjs --dry-run  # look, save nothing
  *   node scripts/lenders-logos/fetch-logos.mjs --out /path/to/public/assets/lenders
+ *
+ *   node --env-file=.env scripts/lenders-logos/fetch-logos.mjs --from-db
+ *       Ask the CRM who is still missing a logo instead of using the list
+ *       below. The hand-written list stops at the banks we had before the
+ *       Carl Barton database landed; this covers all of them.
+ *       --limit <n>        stop after n banks
+ *       --skip <n>         skip the first n banks (after stable sort by slug)
+ *       --exclude-slugs <file>  one slug per line — skip these (parallel lanes)
+ *       --concurrency <n>  how many bank sites at once (default 6)
+ *       --org <slug>       a different company
  */
 
 import fs from "node:fs";
@@ -36,8 +46,12 @@ const has = (f) => args.includes(f);
 const valueOf = (f) => (args.includes(f) ? args[args.indexOf(f) + 1] : null);
 
 const dryRun = has("--dry-run");
+const fromDb = has("--from-db");
 const doWrong = has("--wrong") || has("--all");
 const doMissing = has("--all") || !has("--wrong");
+const limit = Number(valueOf("--limit")) || 0;
+const skip = Math.max(0, Number(valueOf("--skip")) || 0);
+const concurrency = Math.max(1, Math.min(Number(valueOf("--concurrency")) || 6, 12));
 
 // The logos are served from the main checkout's public folder. A worktree serves
 // nothing, so the default points at the real asset folder.
@@ -45,18 +59,18 @@ const OUT_DIR = path.resolve(
   valueOf("--out") || path.join(ROOT, "public/assets/lenders")
 );
 
-/** @param {{slug:string,name:string,domain:string}} t @param {"missing"|"wrong"} kind */
-async function handle(t, kind) {
+/** @param {{slug:string,name:string,domain:string}} t @param {string} domain @param {"missing"|"wrong"} kind */
+async function tryDomain(t, domain, kind) {
   const dest = path.join(OUT_DIR, `${t.slug}.png`);
-  const site = await readSiteIcons(t.domain);
+  const site = await readSiteIcons(domain);
 
   if (!site.ok) {
-    return { ...t, kind, result: "no_logo", why: `website did not answer (${site.reason})` };
+    return { ...t, domain, kind, result: "no_logo", why: `website did not answer (${site.reason})` };
   }
 
-  const owns = siteBelongsToBank(t.name, site, t.domain);
+  const owns = siteBelongsToBank(t.name, site, domain);
   if (!owns.ok) {
-    return { ...t, kind, result: "refused", why: owns.reason, title: site.title };
+    return { ...t, domain, kind, result: "refused", why: owns.reason, title: site.title };
   }
 
   for (const url of site.candidates) {
@@ -83,7 +97,25 @@ async function handle(t, kind) {
       };
     }
   }
-  return { ...t, kind, result: "no_logo", why: "the website had no picture big enough to use", title: site.title };
+  return { ...t, domain, kind, result: "no_logo", why: "the website had no picture big enough to use", title: site.title };
+}
+
+/**
+ * Try every address we have for this bank and keep the first one that works.
+ * A bank from the hand-written list has one address; a bank read out of the
+ * database has a few guesses.
+ * @param {{slug:string,name:string,domain:string,domains?:string[]}} t
+ * @param {"missing"|"wrong"} kind
+ */
+async function handle(t, kind) {
+  const domains = t.domains?.length ? t.domains : [t.domain];
+  let last = null;
+  for (const domain of domains) {
+    const r = await tryDomain(t, domain, kind);
+    if (r.result === "saved" || r.result === "saved_unconfirmed" || r.result === "would_save") return r;
+    last = r;
+  }
+  return last;
 }
 
 async function main() {
@@ -93,28 +125,71 @@ async function main() {
   }
 
   /** @type {{slug:string,name:string,domain:string,kind:string}[]} */
-  const targets = [];
-  if (doMissing) targets.push(...MISSING.map((t) => ({ ...t, kind: "missing" })));
-  if (doWrong) targets.push(...WRONG.map((t) => ({ ...t, kind: "wrong" })));
+  let targets = [];
+  if (fromDb) {
+    const { db, close } = await import("../../src/db.mjs");
+    const { targetsFromDb } = await import("./targets-from-db.mjs");
+    const slug = valueOf("--org") || process.env.DEFAULT_ORG_SLUG || "fundhub";
+    try {
+      const org = await db.query(`SELECT id FROM orgs WHERE slug = $1 LIMIT 1`, [slug]);
+      if (!org.rows[0]) {
+        console.error("No company with the short name", slug);
+        process.exit(1);
+      }
+      const found = await targetsFromDb(db, {
+        orgId: org.rows[0].id,
+        exists: (rel) => fs.existsSync(path.join(ROOT, "public", String(rel).replace(/^\//, "")))
+      });
+      targets = found.map((t) => ({ ...t, kind: "missing" }));
+    } finally {
+      await close();
+    }
+  } else {
+    if (doMissing) targets.push(...MISSING.map((t) => ({ ...t, kind: "missing" })));
+    if (doWrong) targets.push(...WRONG.map((t) => ({ ...t, kind: "wrong" })));
+  }
+  if (fromDb || skip > 0) {
+    targets.sort((a, b) => a.slug.localeCompare(b.slug));
+  }
+  const excludePath = valueOf("--exclude-slugs");
+  if (excludePath) {
+    const skipSlugs = new Set(
+      fs
+        .readFileSync(excludePath, "utf8")
+        .split("\n")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    );
+    targets = targets.filter((t) => !skipSlugs.has(t.slug));
+  }
+  if (skip > 0) targets = targets.slice(skip);
+  if (limit > 0) targets = targets.slice(0, limit);
 
   console.log(
     `${dryRun ? "DRY RUN — " : ""}Looking up ${targets.length} banks. Saving into ${OUT_DIR}\n`
   );
 
   const results = [];
-  for (let i = 0; i < targets.length; i++) {
-    const t = targets[i];
-    process.stdout.write(`[${i + 1}/${targets.length}] ${t.name} ... `);
-    let r;
-    try {
-      r = await handle(t, t.kind);
-    } catch (e) {
-      r = { ...t, result: "no_logo", why: `unexpected problem: ${e.message}` };
+  let next = 0;
+  let done = 0;
+  async function worker() {
+    for (;;) {
+      const i = next++;
+      if (i >= targets.length) return;
+      const t = targets[i];
+      let r;
+      try {
+        r = await handle(t, t.kind);
+      } catch (e) {
+        r = { ...t, result: "no_logo", why: `unexpected problem: ${e.message}` };
+      }
+      results.push(r);
+      done++;
+      console.log(`[${done}/${targets.length}] ${t.name} ... ${r.result} — ${r.why}`);
+      await sleep(400); // be polite to the bank's website
     }
-    results.push(r);
-    console.log(`${r.result} — ${r.why}`);
-    await sleep(400); // be polite to the bank's website
   }
+  await Promise.all(Array.from({ length: Math.min(concurrency, targets.length || 1) }, worker));
 
   const by = (k) => results.filter((r) => r.result === k);
   console.log("\n================ WHAT HAPPENED ================");
