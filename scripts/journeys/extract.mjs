@@ -182,7 +182,11 @@ export function wrapperGates() {
  *   "open"           no session gate at all, by design
  *   "unverified"     the parser does not recognise the shape — a finding
  */
-export function gateFor(file, { sets, wrappers }) {
+export function gateFor(file, ctx) {
+  return narrowStaff(primaryGate(file, ctx), file);
+}
+
+function primaryGate(file, { sets, wrappers }) {
   if (!file || !exists(file)) {
     return { kind: "unverified", roles: null, principals: null, note: `handler file ${file || "?"} not found on disk` };
   }
@@ -348,7 +352,11 @@ export function gateFor(file, { sets, wrappers }) {
 
      Both halves are named, because this endpoint has two doors and a journey
      that mentions one is a journey that misleads. */
-  const signedToken = /verify\w*Token\s*\(/.test(src) && /\bsig\b/.test(src) && /\bexp\b/.test(src);
+  /* Same shape, other names: api/contracts/sign.mjs calls verifyContractUrl()
+     and api/public/unsubscribe.mjs calls verifyUnsubscribeRequest(), both over
+     a sig and an exp, both failing closed. Matching only "…Token(" drew both
+     as open to anyone, which understated the gate (hole 24, 2026-09-18). */
+  const signedToken = /verify\w*(Token|Url|Request)\s*\(/.test(src) && /\bsig\b/.test(src) && /\bexp\b/.test(src);
   if (signedToken) {
     const staffBranch = /require(Auth|Role|Principal)/.test(src);
     return {
@@ -360,7 +368,14 @@ export function gateFor(file, { sets, wrappers }) {
               : "")
     };
   }
-  if (/rawBody|signature/i.test(src) && /adapter|provider/i.test(src)) {
+  /* The word "signature" must be in the CODE. "rawBody" alone is not a
+     signature check: four public forms (api/public/education-enroll,
+     funnel-checkout, optimize, survey-submit) read req.rawBody only to parse
+     JSON, and import from src/messaging/providers/ or src/adapters/, so an
+     `rawBody|signature` test drew them as "NOT open — provider signature"
+     when nothing checks one. That is a false claim in the harmful direction
+     (hole 24, 2026-09-18). */
+  if (/signature/i.test(src) && /adapter|provider/i.test(src)) {
     return { kind: "verified-other", roles: null, principals: null, verifiedBy: "provider signature",
       note: "no sign-in — the sender is checked by verifying the provider's signature over the raw bytes, in the adapter" };
   }
@@ -387,6 +402,94 @@ export function gateFor(file, { sets, wrappers }) {
   }
 
   return { kind: "unverified", roles: null, principals: null, note: "a gate is referenced but its shape was not recognised" };
+}
+
+/* A SECOND ROLE CHECK, AFTER THE ENTRY GATE (hole 24, 2026-09-18).
+   Some handlers let the staff kind in at the entry gate and then refuse most
+   roles with a 403 a few lines later. Reading only the entry gate drew those
+   routes as open to every employee — for example the Specialist was shown
+   reaching /api/social/oauth and five /api/partner-marketing/* routes, all of
+   which answer a Specialist 403. Three literal shapes are read here. A check
+   tied to one action or one method (contracts, messages-outbound,
+   message-templates) is NOT one of them and does not narrow the route:
+
+     1. `if (!NAME.has(<the caller's role>))` — the whole condition, nothing
+        else — where NAME is a `new Set([...])` written in the same file.
+        api/call-outcomes.mjs (CLOSER_ROLES), api/social/oauth.mjs (STAFF_OK).
+     2. `if (x !== true && !hasRole(x, [...]))` — the dashboard shared-secret
+        idiom. hasRole passes SUPER_ROLES, so those are added. dashboard/seed.
+     3. canAccessPartnerMarketing(...) — the roles it admits are read from its
+        own source in src/brand/meter.mjs, not written here.
+
+   The result is the INTERSECTION with whatever the entry gate already allowed,
+   so this can only ever remove roles, never add one. */
+function narrowStaff(gate, file) {
+  if (!["role-set", "explicit-roles", "principal", "wrapper"].includes(gate.kind)) return gate;
+  if (gate.principals && !gate.principals.includes("staff")) return gate;
+  const src = code(read(file));
+  const limits = [];
+
+  for (const cond of ifConditions(src)) {
+    const m = /^!\s*(\w+)\.has\(([\s\S]*)\)$/.exec(cond);
+    if (!m || !balanced(m[2]) || !/\.role\b|\brole\b/.test(m[2])) continue;
+    const set = new RegExp(`const\\s+${m[1]}\\s*=\\s*new Set\\(\\[([^\\]]*)\\]\\)`).exec(src);
+    if (set) limits.push({ roles: [...set[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]), by: `${m[1]}.has(role)` });
+  }
+
+  const secretIdiom = /(\w+)\s*!==\s*true\s*&&\s*!hasRole\(\s*\1\s*,\s*\[([^\]]*)\]\s*\)/.exec(src);
+  if (secretIdiom) {
+    const named = [...secretIdiom[2].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+    limits.push({ roles: [...new Set([...named, ...middlewareSuperRoles()])], by: "hasRole" });
+  }
+
+  if (/\bcanAccessPartnerMarketing\s*\(/.test(src)) {
+    const roles = partnerMarketingRoles();
+    if (roles) limits.push({ roles, by: "canAccessPartnerMarketing (src/brand/meter.mjs)" });
+  }
+
+  if (!limits.length) return gate;
+  let roles = gate.anyStaff ? null : gate.roles;
+  for (const l of limits) roles = roles ? roles.filter((r) => l.roles.includes(r)) : [...l.roles];
+  if (gate.roles && roles.length === gate.roles.length) return gate;
+  const { anyStaff, ...rest } = gate;
+  return { ...rest, roles, note: `${gate.note}; staff then limited to ${roles.join(", ")} by ${limits.map((l) => l.by).join(" and ")}` };
+}
+
+/* Every `if (…)` condition in the source, with its parentheses balanced. */
+function ifConditions(src) {
+  const out = [];
+  for (const m of src.matchAll(/\bif\s*\(/g)) {
+    let depth = 1;
+    let i = m.index + m[0].length;
+    const start = i;
+    for (; i < src.length && depth; i++) {
+      if (src[i] === "(") depth++;
+      else if (src[i] === ")") depth--;
+    }
+    if (!depth) out.push(src.slice(start, i - 1).trim());
+  }
+  return out;
+}
+
+/* True when every "(" in s closes before s ends and no ")" closes early — so a
+   `.has(` whose argument is s spans the WHOLE condition, with no `&& …` after. */
+function balanced(s) {
+  let depth = 0;
+  for (const ch of s) {
+    if (ch === "(") depth++;
+    else if (ch === ")" && --depth < 0) return false;
+  }
+  return depth === 0;
+}
+
+/** The staff roles canAccessPartnerMarketing admits, read from its source. */
+function partnerMarketingRoles() {
+  const rel = "src/brand/meter.mjs";
+  if (!exists(rel)) return null;
+  const body = /export function canAccessPartnerMarketing\([^)]*\)\s*\{([\s\S]*?)\n\}/.exec(code(read(rel)));
+  if (!body) return null;
+  const roles = [...body[1].matchAll(/role\s*===\s*"([^"]+)"/g)].map((x) => x[1]);
+  return roles.length ? roles : null;
 }
 
 /* SUPER_ROLES from the middleware, read rather than assumed. Empty if the export

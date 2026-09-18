@@ -28,23 +28,22 @@ flowchart TD
     CAN --> A_content[content — 1 route]
     CAN --> A_contracts[contracts — 1 route]
     CAN --> A_creative[Creative Factory — 7 routes]
-    CAN --> A_dashboard[The dashboard — 7 routes]
+    CAN --> A_dashboard[The dashboard — 6 routes]
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 6 routes]
     CAN --> A_gifts[gifts — 1 route]
     CAN --> A_hiring[Hiring — 1 route]
     CAN --> A_ops[ops — 1 route]
-    CAN --> A_partner_marketing[partner-marketing — 5 routes]
     CAN --> A_public[public — 11 routes]
     CAN --> A_read[Reading data — 49 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_scripts[scripts — 2 routes]
-    CAN --> A_social[social — 6 routes]
+    CAN --> A_social[social — 4 routes]
     CAN --> A_staff[staff — 1 route]
     CAN --> A_top_level[Everything else — 27 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 78 routes]
+    WHO -->|Yes| CANT[Blocked — 86 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 6 blocked]
     CANT --> B_banking[banking — 2 blocked]
@@ -52,18 +51,20 @@ flowchart TD
     CANT --> B_chat[chat — 1 blocked]
     CANT --> B_company_brain[company-brain — 2 blocked]
     CANT --> B_content[content — 2 blocked]
+    CANT --> B_dashboard[The dashboard — 1 blocked]
     CANT --> B_demo[demo — 2 blocked]
     CANT --> B_finance[Finance — 5 blocked]
     CANT --> B_hiring[Hiring — 7 blocked]
     CANT --> B_journeys[journeys — 2 blocked]
     CANT --> B_ops[ops — 1 blocked]
     CANT --> B_partner_brand[partner-brand — 1 blocked]
+    CANT --> B_partner_marketing[partner-marketing — 5 blocked]
     CANT --> B_partners[partners — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_push[push — 3 blocked]
     CANT --> B_read[Reading data — 17 blocked]
-    CANT --> B_social[social — 1 blocked]
+    CANT --> B_social[social — 3 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 16 blocked]
     CANT --> B_trials[trials — 2 blocked]
@@ -71,7 +72,7 @@ flowchart TD
 
 ## What they can reach
 
-**165 of 243 routes.**
+**157 of 243 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -91,7 +92,7 @@ flowchart TD
 | `/api/auth/session` | — | anyone |
 | `/api/banking/accounts` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/bookings` | GET | staff |
-| `/api/call-outcomes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
+| `/api/call-outcomes` | POST | owner, admin, closer, sales_manager |
 | `/api/campaigns/action-log` | GET | partner, staff |
 | `/api/campaigns/connections` | GET | partner, staff |
 | `/api/campaigns/detail` | GET | partner, staff |
@@ -115,7 +116,7 @@ flowchart TD
 | `/api/consent/capture` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/content/welcome-video` | GET, HEAD | staff, client |
 | `/api/contracts` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
-| `/api/contracts/sign` | GET, POST | anyone |
+| `/api/contracts/sign` | GET, POST | **not a sign-in** — signed link |
 | `/api/creative/actions` | POST | partner, staff |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
@@ -130,7 +131,6 @@ flowchart TD
 | `/api/dashboard/kpis` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/pipeline-counts` | — | staff |
-| `/api/dashboard/seed` | — | staff |
 | `/api/documents-download` | GET | staff, client |
 | `/api/documents-upload` | POST | staff, client |
 | `/api/documents/:id` | HEAD | **not a sign-in** — signed link |
@@ -152,24 +152,19 @@ flowchart TD
 | `/api/ops/weekly-brief` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/paid-services` | GET, POST | staff, client |
-| `/api/partner-marketing/copy-history` | GET, POST | staff, partner |
-| `/api/partner-marketing/enable` | GET, POST | staff, partner |
-| `/api/partner-marketing/generate-copy` | POST | staff, partner |
-| `/api/partner-marketing/generate-logo` | POST | staff, partner |
-| `/api/partner-marketing/usage` | GET | staff, partner |
 | `/api/payment-links` | GET, POST | owner, admin, sales_manager, closer |
 | `/api/pipeline-cards` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/pipeline-clients` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/public/affiliate-click` | POST | anyone |
-| `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
+| `/api/public/education-enroll` | POST | anyone |
 | `/api/public/eeo-survey` | GET, POST | anyone |
-| `/api/public/funnel-checkout` | GET, POST | **not a sign-in** — provider signature |
-| `/api/public/optimize` | GET, POST | **not a sign-in** — provider signature |
+| `/api/public/funnel-checkout` | GET, POST | anyone |
+| `/api/public/optimize` | GET, POST | anyone |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/slo-checkout` | GET, POST | anyone |
-| `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
-| `/api/public/unsubscribe` | — | anyone |
+| `/api/public/survey-submit` | POST | anyone |
+| `/api/public/unsubscribe` | — | **not a sign-in** — signed link |
 | `/api/public/vsl-watch` | OPTIONS, POST | anyone |
 | `/api/read/ad-attribution` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/ad-books` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
@@ -230,10 +225,8 @@ flowchart TD
 | `/api/shifts` | GET, POST | staff |
 | `/api/social/channels` | GET | partner, staff |
 | `/api/social/generate` | POST | partner, staff |
-| `/api/social/oauth` | — | staff |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
-| `/api/social/settings` | GET, POST | staff, partner |
 | `/api/soft-pull-approve` | GET, POST | **not a sign-in** — signed link |
 | `/api/staff/avatar` | GET, POST | any signed-in employee |
 | `/api/tasks` | GET, PATCH | staff |
@@ -244,13 +237,13 @@ flowchart TD
 ### Worth knowing
 
 - **1 route is open to any signed-in employee, whatever their role.** That is not a gate on this journey specifically — anyone who can sign in reaches it: `/api/staff/avatar`.
-- **7 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/client-archive`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/pipeline-counts`, `/api/dashboard/seed`.
-- **20 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/hiring/apply`, `/api/public/affiliate-click`, `/api/public/eeo-survey`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/unsubscribe`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
-- **8 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/funnel-checkout` (provider signature), `/api/public/optimize` (provider signature), `/api/public/survey-submit` (provider signature), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
+- **6 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/client-archive`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/pipeline-counts`.
+- **22 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/affiliate-click`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
+- **6 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**78 of 243 routes.**
+**86 of 243 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -272,6 +265,7 @@ flowchart TD
 | `/api/company-brain/sync` | GET, POST | owner, admin, sales_manager |
 | `/api/content/tiles` | GET, POST | owner, admin |
 | `/api/content/upload` | POST | owner, admin |
+| `/api/dashboard/seed` | — | admin, owner |
 | `/api/demo/mode` | DELETE, GET, POST | owner, admin |
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/finance/bank-accounts` | GET, POST | owner, admin, sales_manager |
@@ -297,6 +291,11 @@ flowchart TD
 | `/api/partner-addons` | GET, POST | owner, admin |
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
 | `/api/partner-brand/verify-domain` | POST | owner, admin |
+| `/api/partner-marketing/copy-history` | GET, POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/enable` | GET, POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/generate-copy` | POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/generate-logo` | POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/usage` | GET | employees: owner, admin<br>plus: partner |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
 | `/api/partners/approve` | POST | owner, admin |
 | `/api/pii` | GET, POST | owner, admin, inquiry_specialist, funding_advisor |
@@ -325,7 +324,9 @@ flowchart TD
 | `/api/read/slo-connections` | GET | owner, admin |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
 | `/api/slo-connections` | POST | owner, admin |
+| `/api/social/oauth` | — | owner, admin, partner |
 | `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
+| `/api/social/settings` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/training-progress` | POST | owner, admin |
