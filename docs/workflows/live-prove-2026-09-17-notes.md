@@ -1263,3 +1263,33 @@ Five agents at a time. First five are on different screens.
 | 22 Combo 0 docs, no address | specialist repair | **partial** — REAL; docs half fixed live (data): Combo's 5 UnderwriteIQ reports rebuilt from the credit file on record and saved, 0 → 5, nothing sent; 6 bureau letters held back (no home address). Address half: nobody ever gave Combo one (survey never asks; no ID/proof uploaded) — the red line is true; closes only when the client sends an address. Possible new holes: laptop sample-credit load never saves the pack; repair 'need ID + proof of address' step sends no message; funding letters built with no home address. | **DISPUTED** — documents half real (5 of 5 download, all name Combo, scores match, none sent). Address half wrong: Combo's practice credit pull (08:52 UTC) was sent a full home address (Gilbert, AZ) and all three bureaus returned it; it also sits on an event row — but it never reached the identity record, and the Repair desk still says 'no address on file'. Possible new hole: Combo's 15:13 deposit left a failed step 'duplicate key … payment_links_commas_session'. **Round 2 fixer claimed (address half).** | `fix/live-h22-combo-docs-address` (scripts only) → merged |
 | 23 Consent line says no permission | control panel | **fixed** — REAL, other way round: #13 has 0 permission rows and 0 soft-pull requests, so 'no written permission' is TRUE; the lie was sample scores + 'Last Credit Pull' shown as a real bureau pull (report is marked simulated). Scores tile and System Facts now say 'Sample scores. Not a real credit pull.' Blocker unchanged. Possible new hole: #13 inquiries list, Inquiries count and Card Use 6% come from the same sample and are not labelled. | **PASS** — 2 fresh loads on #13: Scores tile 'EX 771 · EQ 778 · TU 766 — Sample scores. Not a real credit pull.'; System Facts 'Sample report loaded … — not a real credit pull' and '· sample'; permission blocker still shows and matches 0 consent rows. Control: Colin Schmidt (real pull, 2 consent rows) shows no 'sample' wording. Shots `hole-23/review/`. | `fix/live-h23-consent-line` → merged |
 | 24 Intended vs actual route lists | journeys docs | **partial** — REAL. (a) fixed: the generator missed role checks that come after sign-in; 15 actual rows corrected (9 doors drawn open to the Specialist that the code refuses; 4 'signature checked' → anyone; 2 'anyone' → signed link). Specialist now 154 of 243 routes (was 163); client 46. (b)/(c) are Chris's: both intended files are a 2026-08-02 copy (88 routes); code has 243. Client: 31 new doors not in intended (14 own-file portal, 17 public). Specialist: 96 new doors (8 desk, 28 marketing, 43 every-employee, 17 public). Intended lists `dashboard/seed` for the Specialist; code allows only owner/admin since 07-27. Intended files not edited. | **PASS-PARTIAL** — all 15 corrected rows checked against the handler code (true); exactly 15 routes changed across 9 generated files; 3 untouched rows spot-checked (true); live no-login checks match for contracts/sign (404 on bad signature), public/unsubscribe (400), optimize and funnel-checkout (200), survey-submit (no login asked; one empty-body POST that failed validation, nothing saved). Intended files untouched since 08-17. **Miss:** `/api/read/my-numbers` still drawn open to the Specialist; code refuses (closers/owner/admin/sales_manager only) — so Specialist reaches 153, and one of the 96 'new doors' is false. **Round 2 claimed for that row.** | `fix/live-h24-journey-route-lists` → merged |
+
+### New holes found during the 2026-09-18 fix run (carded, not fixed — gate rule)
+
+Seen by a fixer or reviewer on live while proving holes 7–24. Titles only. None of these were fixed in this run. Money and sending first.
+
+| # | Title | Seen by |
+|---|---|---|
+| N1 | Late payment receipts double-count: #8's $3,000 sale shows $8,500 paid (two $3,000 deposits + the $2,500 fee also counted on the invoice); #9's $1,000 sale shows $2,000 | h18 reviewer, h9 reviewer |
+| N2 | Deposit and repair pay links never flip to paid; payment-link step fails on duplicate key `payment_links_commas_session` and never retries (#9, Combo, #12) | h18, h16, h22, h11 reviewers |
+| N3 | Ops Admin fires `POST /api/messages-outbound` on every page load (blocked in review — not proven whether it sends) | h8 reviewer |
+| N4 | Document reader retry clock not running — reads hours past due never retried, none ran after the ship | h16 fixer + reviewer |
+| N5 | All Netlify timed jobs end every run with "Function returned an unsupported value" and re-run up to 3× | h18 fixer + reviewer |
+| N6 | Inngest `commas-inbox-drain` backup has never picked up a receipt | h18 fixer |
+| N7 | #8 invoice bills 10% of $25,000 in approvals; the only confirmed bank approval on file is $10,000 | h8 fixer |
+| N8 | Repair "we need your ID and proof of address" step sends the client no message | h22 fixer |
+| N9 | Funding letters are built with no home address on them | h22 fixer |
+| N10 | Laptop sample-credit load never saves the UnderwriteIQ pack (same cause as hole 1 #8 and hole 22) | h22 fixer |
+| N11 | EMAIL-NOBOOK-01 `{{unsubscribe}}` renders blank in the stored copy (send path adds its own signed footer) | h21 fixer + reviewer |
+| N12 | #13 inquiries list, Inquiries count and Card Use 6% come from the sample report with no sample label | h23 fixer + reviewer |
+| N13 | #12 progress page: "Your documents" empty though Funding Snapshot granted; "What has happened so far" empty though a round started | h19 reviewer |
+| N14 | Staff portal shows "We could not load your file…" for ~1s before the client loads | h13 reviewer |
+| N15 | Sidebar "Client Portal" link from a client's control panel opens a portal with no client picked | h13 reviewer |
+| N16 | Staff Messaging shows emails as raw HTML; side panel says "Last activity: never ago" | h21 reviewer |
+| N17 | Ops CEO brief says "3 funded files this month"; there are 3 funded rounds in 1–2 files | h8 reviewer |
+| N18 | Walk1 demo file has a funded $45k round but its client row says not funded (hole 8 code only syncs on new fundings) | h8 fixer + reviewer |
+| N19 | What You Own shows both footer lines at once when it has rows | h11 fixer |
+| N20 | Inquiry upload note asks for proof of address but the type list has no address choice | h17 reviewer |
+| N21 | Control panel System Facts header says "collapsed" while open | h8, h23 reviewers |
+| N22 | Chris's staff profile photo on live is the sim photo ID (set by the 2026-09-18 audit script) | h17 fixer |
+| N23 | Owner password for chris@fundhub.ai equals the laptop's masked `STAFF_INITIAL_PASSWORD` (16 asterisks + 4 characters) since the hole 6 reset | h20 reviewer; main session measured the .env shape |
