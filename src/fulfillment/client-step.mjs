@@ -56,9 +56,14 @@ export const CLIENT_ROUNDS_SQL =
          FROM funding_rounds WHERE client_id = $1 AND org_id = $2
          ORDER BY round_number DESC`;
 
+/* A void or written-off bill owes nothing. The view's raw balance_due is still
+   amount_due minus what was paid, so a bill voided and reissued at a new fee
+   (src/funding/billed-fee-check.mjs) would read as a balance outstanding — the
+   same rule the view's own open_balance already applies. */
 export const CLIENT_INVOICES_SQL =
   `SELECT invoice_id AS id, status, currency, amount_due, amount_paid,
-                balance_due, due_at, paid_at, created_at
+                CASE WHEN status IN ('void', 'written_off') THEN 0 ELSE balance_due END AS balance_due,
+                due_at, paid_at, created_at
          FROM v_invoice_balance WHERE client_id = $1 AND org_id = $2
          ORDER BY created_at DESC`;
 

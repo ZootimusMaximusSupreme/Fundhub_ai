@@ -90,7 +90,7 @@ in exactly one place, `createFundingCloseout`, and the argument is named
 | The closeout record | `src/funding/closeout.mjs` — `createFundingCloseout` |
 | The invoice | `src/workflows/f-07-funding-locked.mjs` |
 | The event that carries both to the invoice | `src/funding/card-stacking-rounds.mjs` |
-| A bank answer after the bill: compare, and tell a person | `src/funding/billed-fee-check.mjs` |
+| A bank answer after the bill: reissue the bill at the rule fee | `src/funding/billed-fee-check.mjs` |
 
 Both the closeout record and the invoice read the basis from
 `success-fee.mjs`, so they cannot disagree.
@@ -102,26 +102,51 @@ Bank answers can still be recorded after that. When one changes the confirmed
 approvals on a card-stacking round that already has a success-fee bill, the
 bill and this rule can come apart.
 
-What the code does (2026-09-18, `src/funding/billed-fee-check.mjs`, called from
+**The fee follows the approvals (owner-set 2026-09-18, final).** Chris, on the
+bill below: the fee must follow the real approval, not $25k. This supersedes the
+first 2026-09-18 pass, which only made a task and left the bill standing.
+
+What the code does (`src/funding/billed-fee-check.mjs`, called from
 `setApplicationStatus` and `setApprovalExclusion` in
 `src/applications/status.mjs`):
 
 * The bank's answer is saved exactly as before.
 * The round's bill is compared with the rule on the rows as they are now.
-* If they differ, a person gets a task (`success-fee-after-bill`, funding
-  advisor) with the bill number, what it bills, what the rule says now, what
-  has been paid, and — when more was paid than the rule now says — the
-  overpayment.
-* The bill is **not** changed. Once a bill leaves draft its amount is locked
-  in the database (`invoices_guard`, `db/migrations/031_invoices.sql`); the
-  way to change it is to void it and raise a new one, and a paid bill cannot
-  be voided. Nothing is sent to the client.
+* If they differ, the bill is **reissued at the rule fee**, in one transaction.
+  Once a bill leaves draft its amount is locked in the database
+  (`invoices_guard`, `db/migrations/031_invoices.sql`), so the old bill is
+  voided and a new success-fee bill is raised for the same round and sale.
+  Both stay on the record.
+* Money already paid on the old bill is carried to the new one, up to the new
+  fee: a `correction` row on the old bill and a `payment` row on the new one.
+  The total received never changes.
+* Anything paid **over** the new fee stays recorded on the old bill, and the
+  funding advisor gets a task (`success-fee-after-bill`). Whether to refund it
+  is an owner decision. No money moves.
+* The closeout record for the round is refreshed from the same rule.
+* A new bill that is already covered by what was paid is announced
+  `invoice.paid`: nothing chases it and nothing is sent to the client.
+* A new bill that still has money owing is announced `invoice.sent`, exactly
+  as F-07 announces the first bill, so collections
+  (`src/workflows/ar-collections.mjs`, first notice onward) follow the new
+  bill instead of the void one.
+* The void bill owes nothing on screen. Its raw `balance_due` in
+  `v_invoice_balance` is still amount billed minus what stayed paid on it, so
+  the control panel / Finance page read (`CLIENT_INVOICES_SQL`,
+  `src/fulfillment/client-step.mjs`) and the list signals (`BALANCES_SQL`,
+  `src/fulfillment/read-signals.mjs`) count a void or written-off bill as $0
+  owed — the same rule the view's `open_balance` already applies.
+* **Nothing confirmed left** (every approval denied or not counting) is not a
+  $0 fee. The bill is left as it is and the funding advisor gets the task.
+  The same task is the fallback if a reissue fails.
 
 Measured on live 2026-09-18, Sim Eight-Funding round 2: INV-B4B9C768 billed
 10% of $25,000 because Arizona Bank & Trust was Approved at $25,000 when the
 round was funded. The same bank was moved to Denied thirty minutes later and
-Native American Bank was recorded Approved at $10,000, so the rule now says
-$1,000. The $2,500 bill was later paid by a sim receipt.
+Native American Bank was recorded Approved at $10,000, so the rule says
+$1,000. The $2,500 bill was later paid by a sim receipt. It was corrected on
+2026-09-18 by running this same path on that one test client (see
+`scripts/tmp/live-fix-2026-09-18/g-n7-reissue.mjs`).
 
 ## What still requires a funded amount
 

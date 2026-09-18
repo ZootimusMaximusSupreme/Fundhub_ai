@@ -273,11 +273,14 @@ const ROUNDS_SQL = `
      AND COALESCE(is_demo, false) = false
    ORDER BY round_number DESC`;
 
-const BALANCES_SQL = `
+// A void or written-off bill owes nothing, whatever its raw balance_due says
+// (see CLIENT_INVOICES_SQL in ./client-step.mjs).
+export const BALANCES_SQL = `
   SELECT client_id, invoice_id AS id, currency, balance_due, due_at
     FROM v_invoice_balance
    WHERE org_id = $1::uuid
      AND client_id = ANY($2::uuid[])
+     AND status NOT IN ('void', 'written_off')
      AND balance_due > 0`;
 
 const OPEN_PAYMENT_LINK_STATUSES = Object.freeze(["created", "sent"]);
