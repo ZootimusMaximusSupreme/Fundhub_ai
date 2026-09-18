@@ -235,7 +235,7 @@ Chris off phone; Legacy Strong auth confirmed (`token_v2`).
 | merge CRM (with-bureaus) | **327** cells; would-clear **327 → 0** |
 | import merged book `--confirm` | **306 updated**, 0 inserted |
 | import personal `--confirm` | **21 updated**, 0 inserted (rows already in DB) |
-| `npm run ship` | **skipped** — uncommitted changes on `main`; HEAD **`a5de1f0c`** |
+| `npm run ship` | **done** later same day — **`2dc9f1b8`** board + **`816d193d`** inventory; live **`a416303f`** (`/api/health` pending **0**) |
 
 **DB after (live):** **328** banks · **102** with bureau · **303** logos · **37** ranking.
 
@@ -258,3 +258,12 @@ Chris off phone; Legacy Strong auth confirmed (`token_v2`).
 **Everything else (~400 folders):** credit repair courses, ads/SOPs, client portals, funding forum, marketing funnels, etc. — **disk + INDEX only**; intentionally not modeled in CRM unless a future import is added.
 
 **Lenders DB after this scrape + import:** **328** banks · **102** with `bureaus_pulled` · **303** logos · **37** ranking. Business book import: **306 updated**. Personal import: **21 updated** (same slug rows; no new bank count).
+
+## Where comprehensive materials live (2026-09-18)
+
+| Source | What it actually holds |
+|---|---|
+| **Notion scrape** (`credentials/notion-scrape/output/`, **425** pages) | Full Legacy Strong workspace capture: bank bureau hubs, NOV drop, Deep State, funding sequences, application strategy/tips, personal 5, plus ~400 reference pages (disk; strategy prose not in CRM). |
+| **`docs/legacy-strong/`** (git) | 313-row business book CSV, inquiry master (**5,472** rows — bureau hints, not 5k CRM banks), bank-datapoints markdown, state boards. |
+| **Live CRM `lenders`** | **328** structured products (business + personal), **102** with bureau — the operational book, not every Notion paragraph. |
+| **David sent mail** | Checked **2026-09-08** multi-attach: **Accord ISO onboarding PDFs only** — not the bank datapoint book. Carl Barton thread **not** saved as a list file. Do not treat Sent as a second master copy of the lender database. |
