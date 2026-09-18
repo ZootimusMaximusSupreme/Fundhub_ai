@@ -10,9 +10,13 @@
 // have nothing to chase. Proved by running it too: enrolling a client on a
 // scratch database with this call removed leaves client_waypoints empty.
 //
-// WHEN IT RUNS. Off the enrolment that already exists — src/repair/enroll.mjs
-// emits repair.enrolled and calls this beside it. No second trigger was
-// invented, because a second trigger is a second thing to keep in step.
+// WHEN IT RUNS. Two callers, both best-effort:
+//   1. src/repair/enroll.mjs — emits repair.enrolled and calls this beside it.
+//   2. src/waypoints/purchase.mjs, from src/handlers/money-chain.mjs
+//      grantForPurchase() — paying for the Capital Blueprint (owner rule,
+//      Chris 2026-09-17: "paying for the blueprint should create the client
+//      checklist"). Its backfill runs this for people who paid before that.
+// Both call this same function, so there is one seeder to keep in step.
 //
 // IDEMPOTENT, THREE WAYS OVER:
 //   1. client_waypoints has UNIQUE (client_id, key) and upsertWaypoint() is an

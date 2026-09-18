@@ -146,7 +146,8 @@ export async function enrollRepairProgram(db, {
     payload
   });
 
-  /* THE CLIENT'S CHECKLIST, and this is the only place anything creates one.
+  /* THE CLIENT'S CHECKLIST. One of two places that create one — the other is
+     paying for the Capital Blueprint (src/waypoints/purchase.mjs, 2026-09-17).
 
      client_waypoints has existed since migration 330 and nothing outside a test
      had ever written to it, so every client's list was empty and every read of

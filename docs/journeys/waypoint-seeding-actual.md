@@ -106,6 +106,47 @@ Setting them later is one `UPDATE`.
 and a dispute round is not the client's job. The column and the whole path through the seeder are
 built and tested; nothing on the client's list is for sale today.
 
+## Second way in: paying for the Capital Blueprint (added 2026-09-17)
+
+Owner rule, Chris 2026-09-17: "paying for the blueprint should create the client checklist."
+Traced from code on `main` at 1a3f8c96 plus this change.
+
+Before this, enrolling in repair was the ONLY thing that built a checklist. Measured on production
+the same day: the one Capital Blueprint buyer (Sim Eleven-Blueprint) had paid $5,000 and had zero
+waypoints, and all three clients anywhere with a checklist were repair clients.
+
+```mermaid
+flowchart TD
+    P["a payment event<br/>payment.received / deposit.paid / diagnostic.paid / sale.closed"] --> R["money-chain resolves the product<br/>name, then alias, never the dollar amount"]
+    R --> G["grantForPurchase()<br/>src/handlers/money-chain.mjs<br/>the one funnel every purchase path goes through"]
+    G --> E["grantFromTransaction()<br/>entitlements granted FIRST"]
+    E --> Q{"product code = consulting-package?<br/>(the Capital Blueprint, read from src/config/offers.mjs)"}
+    Q -->|"no — DIY letter pack, diagnostic, repair, anything else"| N["no checklist.<br/>returns skipped: not_a_checklist_product"]
+    Q -->|"yes"| S["seedChecklistForPurchase()<br/>src/waypoints/purchase.mjs<br/>-> seedClientWaypoints(), the SAME seeder enrolment uses"]
+    S -->|"it fails"| F["caught and reported as checklist.ok = false,<br/>one warn line in the log.<br/>The payment, sale, commission and entitlement all stand."]
+    S -->|"it works"| W["client_waypoints<br/>(the Seeding diagram above, unchanged)"]
+```
+
+* **Thin credit file.** The seeder reads the client's latest real credit pull itself. A Blueprint
+  buyer nobody has pulled yet gets the five steps that need no file and no card steps at all
+  (no card, no limit, no paydown number is ever made up). Proved on a scratch database.
+* **Paying twice, or the event replaying**, lands on the same rows — the seeder's upsert, unchanged.
+* **The $1,000 DIY letter pack does not create one.** It shared a product code with the Blueprint
+  until migration 384 split them; a test proves the split holds for the checklist too.
+
+### People who already paid
+
+The checklist is written once, when the payment is processed, so shipping this gives nothing to
+anyone who paid earlier. `backfillPurchaseChecklists()` in `src/waypoints/purchase.mjs` walks every
+succeeded transaction, resolves its product the same way the entitlement reconcile does, and seeds
+a checklist for each Blueprint buyer. It is kept separate from `reconcileFromTransactions()` on
+purpose — that one only writes entitlement grants, and an operator fixing one should not rewrite
+the other by surprise.
+
+Run it with `node scripts/backfill-blueprint-checklists.mjs` (a dry run that writes nothing), then
+`--write`. It only adds or refreshes steps and never re-opens a finished one, so a second run
+changes nothing. **UNVERIFIED on production: it has not been run there.**
+
 ## Idempotency
 
 ```mermaid
@@ -190,6 +231,9 @@ on the list moves. Firing the same event again changes nothing.
 | `src/waypoints/verify.mjs` | closing from a re-pull |
 | `src/waypoints/store.mjs` | `verify_kind`/`params` on the upsert, `listVerifiableWaypoints`, `markWaypointState` |
 | `src/repair/enroll.mjs` | calls the seeder beside the `repair.enrolled` emit |
+| `src/waypoints/purchase.mjs` | which product creates a checklist, the best-effort wrapper, and the backfill for people who already paid |
+| `src/handlers/money-chain.mjs` | `grantForPurchase()` calls the wrapper right after the entitlement grant |
+| `scripts/backfill-blueprint-checklists.mjs` | operator run of the backfill; dry run unless `--write` |
 | `src/handlers/client-lifecycle.mjs` | `reviewChecklistAfterPull()` — the credit pull that closes the list |
 
 ## Who may change the checklist

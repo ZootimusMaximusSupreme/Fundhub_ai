@@ -41,6 +41,7 @@ import {
   ledgerInsertParams
 } from "../commissions/index.mjs";
 import { grantFromTransaction } from "../entitlements/entitlements.mjs";
+import { seedChecklistForPurchase } from "../waypoints/purchase.mjs";
 import { createFundingCloseoutSafe } from "../funding/closeout.mjs";
 import { attachGateToRound } from "../inquiry-ops/gate.mjs";
 import { accrueForPaymentSafe, voidForRefund } from "../partners/revenue.mjs";
@@ -691,6 +692,46 @@ async function grantForPurchase(db, event, { clientId, product } = {}) {
       clientId, productCode: out.productCode
     });
   }
+
+  /* THE CLIENT'S CHECKLIST — owner rule, Chris 2026-09-17: "paying for the
+     blueprint should create the client checklist ... the payment process
+     generates waypoints."
+
+     HOOKED HERE, inside grantForPurchase, and not at any of its three callers.
+     This is the ONE funnel every purchase path already goes through —
+     recordPurchase() for diagnostic.paid / deposit.paid / sale.closed, and both
+     branches of onPaymentReceivedMoney(). Hooking the funnel is why a payment
+     cannot arrive down a path that grants the entitlement and forgets the
+     checklist, and why nobody has to remember to add a fourth call site next to
+     a fourth payment event.
+
+     It runs AFTER the grant, deliberately. The entitlement is the thing the
+     customer paid for; the checklist is how they use it.
+
+     BEST-EFFORT, exactly like src/repair/enroll.mjs:166. seedChecklistForPurchase
+     never throws — it catches and reports in its return value. By the time we
+     reach this line the money is taken, the sale row is written, the commission
+     is booked and the entitlement is granted. A checklist that could not be
+     built must never undo any of them.
+
+     IDEMPOTENT THROUGH THIS PATH TOO. Every writer in this module is replay-safe
+     and the events bus replays; the seeder upserts on UNIQUE (client_id, key)
+     and never touches `state` or `completed_at`. So a replayed payment leaves
+     ONE checklist with the client's ticks intact.
+
+     A product that does not create a checklist returns
+     { skipped: 'not_a_checklist_product' } and touches nothing. */
+  out.checklist = await seedChecklistForPurchase(db, {
+    orgId: event.orgId,
+    clientId,
+    productCode: product.code
+  });
+  if (out.checklist.ok === false) {
+    console.warn(
+      `[money-chain] checklist not built for client ${clientId} on ${product.code}: ${out.checklist.error}`
+    );
+  }
+
   return out;
 }
 
