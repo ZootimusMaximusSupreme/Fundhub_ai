@@ -168,7 +168,10 @@ Chris asked: how do we account for multiple funnels? If we don't, add it.
   templates — apply, diag, edu, aff, book (`db/migrations/135_partner_pages.sql`) — but
   **no videos**. So there is nothing for the view counter to count on a partner site today.
 
-The obvious build is a funnel name on every counted view, sent by the page. It should land
-**before** Chris does the ClickFunnels paste, so he pastes the new version once and never
-twice. Not started: CLAUDE.md §3a says ask what a funnel means before touching the schema,
-and "funnel" here could mean several things.
+**Built, `fb49489e` — Chris said yes: a funnel means one of our own sales pages with its
+own video.** Design changed from what was first described, for the better: the funnel is
+worked out on our side from the page address the counter already saves
+(`db/migrations/385_vsl_funnels.sql`), not sent by the page. So the ClickFunnels page script
+does **not** change, the paste in the TODO is still the current one, and a funnel listed later
+names viewings recorded before it. Diagram: `docs/journeys/vsl-watch-flow.md`, "Which funnel
+a viewing belongs to". Test: `src/vsl/vsl-funnels.pg.test.mjs`.

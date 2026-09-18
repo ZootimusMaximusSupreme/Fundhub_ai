@@ -15,9 +15,11 @@ drop-down) is fixed and live. These three are what is left.
   Social Studio's "Write 3 posts for me" still writes 0 posts on the live site. The
   starred-out OpenAI key no longer blocks it (`a91a81f8`), so the only thing left is
   whether a working writer key exists. **Never remove a key** — CLAUDE.md §11.
-- [ ] **Multiple funnels — waiting on one answer from Chris.** The view counter tells
-  videos apart and pages apart, but it has no funnel name and no link to a partner.
-  See the funnel section of the board.
+- [x] **Multiple funnels — built, `fb49489e`.** Every viewing now carries a funnel, worked
+  out from the page address the counter already saves. No change to the paste above, so
+  it is still one paste. The funnel list starts empty on purpose: when a funnel has a name,
+  tell an agent its page address and name and it becomes one row. Until then a viewing
+  shows under its page address — nothing is lost.
 
 ## Competitor gaps — MyFundalytics, measured 2026-09-12
 
