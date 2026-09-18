@@ -5,7 +5,8 @@ import assert from "node:assert";
 import {
   BUCKET_TO_CODE, paymentKindFor, nothingUnlockedReason, NOTHING_UNLOCKED,
   ensureAttributions, ensureSalePayment, resolveProductId,
-  onRoundFundedMoney, syncClientFunded, SQL_SYNC_CLIENT_FUNDED
+  onRoundFundedMoney, syncClientFunded, SQL_SYNC_CLIENT_FUNDED,
+  onPaymentReceivedMoney
 } from "./money-chain.mjs";
 import { OFFERS } from "../config/offers.mjs";
 
@@ -317,5 +318,107 @@ describe("round.funded writes the person row funded (hole 8)", () => {
     assert.equal(await syncClientFunded(db, { clientId: null, orgId: ORG }), null);
     assert.equal(await syncClientFunded(db, { clientId: CLIENT, orgId: null }), null);
     assert.equal(db.queries.length, 0);
+  });
+});
+
+/* N1 — a success-fee receipt is the sale's BACK END, on its invoice's sale.
+   Live 2026-09-18: Sim Eight-Funding paid INV-B4B9C768 ($2,500 success fee)
+   through the pay link src/workflows/ar-collections.mjs mints (purpose
+   'custom'). The receipt arrived as product 'unmatched', was hung on "the
+   newest funding sale" by guess and booked as kind 'installment' — front-end
+   money paid against his $3,000 price — while the same receipt also paid the
+   invoice. One deposit and one fee read as $5,500 paid against a $3,000 price. */
+describe("a success-fee receipt is booked as the invoice's success fee (N1)", () => {
+  const ORG = "00000000-0000-4000-8000-0000000000a1";
+  const CLIENT = "00000000-0000-4000-8000-0000000000c1";
+  const LINK = "00000000-0000-4000-8000-0000000000d1";
+  const INVOICE = "00000000-0000-4000-8000-0000000000e1";
+  const BILLED_SALE = "00000000-0000-4000-8000-0000000000b1"; // the sale the invoice bills
+  const NEWEST_SALE = "00000000-0000-4000-8000-0000000000b2"; // a later funding sale, same client
+  const PRODUCT = "00000000-0000-4000-8000-0000000000f1";
+
+  function feeDb({ invoice = { id: INVOICE, sale_id: BILLED_SALE } } = {}) {
+    const queries = [];
+    const sale = (id) => ({ id, org_id: ORG, client_id: CLIENT, product_id: PRODUCT, sale_motion: null, status: "active" });
+    return {
+      queries,
+      query: async (sql, params = []) => {
+        const text = String(sql);
+        queries.push({ text, params });
+        if (/FROM payment_links/.test(text) && /WHERE id = \$1 AND org_id = \$2 AND client_id = \$3/.test(text)) {
+          return { rows: [{ id: LINK, product_id: null, sale_id: null, sale_motion: null,
+            closer_staff_id: null, sales_manager_staff_id: null }] };
+        }
+        if (/FROM invoices/.test(text)) {
+          const ok = invoice && params[0] === invoice.id && params[1] === ORG && params[2] === CLIENT;
+          return { rows: ok ? [invoice] : [] };
+        }
+        if (/SELECT \* FROM sales WHERE id = \$1 AND org_id = \$2 AND client_id = \$3/.test(text)) {
+          return { rows: params[0] === BILLED_SALE ? [sale(BILLED_SALE)] : [] };
+        }
+        // The old guess: the client's newest active funding sale.
+        if (/pr\.category = 'funding'/.test(text)) return { rows: [sale(NEWEST_SALE)] };
+        if (/FROM transactions/.test(text)) return { rows: [{ id: "tx-fee" }] };
+        if (/INSERT INTO sale_payments/.test(text)) {
+          return { rows: [{ id: "sp-fee", sale_id: params[1], transaction_id: params[2],
+            product_id: params[3], kind: params[6], amount: params[7] }] };
+        }
+        return { rows: [], rowCount: 0 };
+      }
+    };
+  }
+
+  const feeReceipt = (payload = {}) => ({
+    id: "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeee1",
+    name: "payment.received",
+    orgId: ORG,
+    clientId: CLIENT,
+    payload: {
+      product: "unmatched", productName: "Success fee INV-B4B9C768", amount: 2500,
+      providerRef: "sim-pay-fee", paymentId: "sim-pay-fee",
+      paymentLinkId: LINK, invoiceId: INVOICE, purpose: "custom", ...payload
+    }
+  });
+
+  const salePaymentInsert = (db) => db.queries.find((q) => /INSERT INTO sale_payments/.test(q.text));
+
+  test("it is kind success_fee on the invoice's own sale, never front-end money on a guessed sale", async () => {
+    const db = feeDb();
+    const out = await onPaymentReceivedMoney(feeReceipt(), db);
+    assert.equal(out.done, true, JSON.stringify(out));
+    const ins = salePaymentInsert(db);
+    assert.ok(ins, "the success fee was not recorded at all");
+    assert.equal(ins.params[6], "success_fee",
+      `a success-fee receipt was booked as '${ins.params[6]}' — front-end money that counts against ` +
+      "the sale's price, on top of paying the invoice (N1: one deposit and one fee read as $5,500 paid on a $3,000 sale)");
+    assert.equal(ins.params[1], BILLED_SALE,
+      "the success fee landed on the newest funding sale instead of the sale its invoice bills");
+    assert.equal(out.saleId, BILLED_SALE);
+  });
+
+  test("the invoice is looked up inside this client and org only", async () => {
+    const db = feeDb();
+    await onPaymentReceivedMoney(feeReceipt(), db);
+    const inv = db.queries.find((q) => /FROM invoices/.test(q.text));
+    assert.ok(inv, "the receipt's invoice was never read");
+    assert.deepEqual(inv.params, [INVOICE, ORG, CLIENT]);
+    assert.match(inv.text, /success_fee/, "only a success-fee invoice makes a receipt a success fee");
+  });
+
+  test("an invoice id that is not this client's success-fee bill changes nothing", async () => {
+    const db = feeDb({ invoice: null });
+    await onPaymentReceivedMoney(feeReceipt(), db);
+    const ins = salePaymentInsert(db);
+    assert.ok(ins);
+    assert.equal(ins.params[6], "installment", "an unrecognised invoice id must not re-label money");
+  });
+
+  test("a receipt with no invoice never reads invoices and keeps its own kind", async () => {
+    const db = feeDb();
+    await onPaymentReceivedMoney(feeReceipt({ invoiceId: null }), db);
+    assert.ok(!db.queries.some((q) => /FROM invoices/.test(q.text)), "a receipt with no invoice went looking for one");
+    const ins = salePaymentInsert(db);
+    assert.ok(ins);
+    assert.equal(ins.params[6], "installment", "a receipt that names no bill must keep the kind its product gives it");
   });
 });

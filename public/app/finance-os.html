@@ -833,15 +833,27 @@ button,input,select,textarea{font:inherit;color:inherit}
     if (!res.ok) return emptyPanel("Money in", "payments received", whyWords(res, "this client's payments"));
     var txs = (res.data && res.data.transactions) || [];
     var cents = txs.map(function (t) { return toCents(t.amount_paid); });
-    var s = sumKnown(cents);
+    /* ONLY MONEY THAT WAS KEPT IS "PAID SO FAR" (N1, live 2026-09-18). Every
+       row is still listed below with its own status, but a failed card or a
+       refunded payment is not money this client has paid. This total used to
+       add every row whatever its status, so it disagreed with the portal's
+       Payments tab (api/read/portal-summary.mjs readPayments), which counts
+       'succeeded' only. */
+    var paidCents = [];
+    txs.forEach(function (t, i) { if (statusWords(t.status) === "paid") paidCents.push(cents[i]); });
+    var notCounted = txs.length - paidCents.length;
+    // Rows exist and none of them is paid: that is a real $0, not an unknown.
+    var s = paidCents.length ? sumKnown(paidCents) : { total: txs.length ? 0 : null, known: 0, unknown: 0 };
     var partial = s.unknown > 0 && s.total !== null;
+    var n = paidCents.length;
 
     var head = fhRow(
       "Paid so far",
       txs.length
         ? (s.unknown
-            ? s.unknown + " of " + txs.length + " payments have no amount recorded, so the real figure is higher"
-            : "across " + txs.length + " payment" + (txs.length === 1 ? "" : "s"))
+            ? s.unknown + " of " + n + " payments have no amount recorded, so the real figure is higher"
+            : "across " + n + " payment" + (n === 1 ? "" : "s")) +
+          (notCounted ? "; " + notCounted + " more listed but not counted (see status)" : "")
         : "",
       fhNum(fromCents(s.total), true, partial),
       partial

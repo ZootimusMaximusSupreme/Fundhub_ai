@@ -826,6 +826,38 @@ export async function onSaleClosedMoney(event, db) {
   });
 }
 
+/* THE SUCCESS-FEE INVOICE A RECEIPT PAYS, or null. (N1, live 2026-09-18.)
+ *
+ * WHY THIS EXISTS. Sim Eight-Funding paid INV-B4B9C768 — the $2,500 success
+ * fee on his $3,000 Card Stacking DFY sale. The pay link for a bill is minted
+ * by src/workflows/ar-collections.mjs with purpose 'custom', so the receipt
+ * reached this handler as product 'unmatched', was hung on "the newest funding
+ * sale" by guess, and was booked as kind 'installment' — FRONT-END money paid
+ * against the $3,000 price. The same receipt then paid the invoice
+ * (src/invoices/allocate.mjs). One receipt, counted as the sale's price paid
+ * AND as the fee paid.
+ *
+ * 011_sales.sql already has the right shape: 'success_fee' is the sale's BACK
+ * END, a separate kind from the deposit and the installments paid against the
+ * agreed price. A receipt that names a success-fee invoice is that back end,
+ * on the invoice's own sale. Nothing else about it changes — partner accrual
+ * (ACCRUABLE_KINDS), affiliate cash and commissions read success_fee exactly as
+ * they read installment, so no one's pay moves.
+ *
+ * Scoped to the client and org the money was already resolved to: an invoice
+ * id off a payload is never trusted to name somebody else's bill. */
+async function successFeeInvoiceFor(db, { orgId, clientId, invoiceId }) {
+  if (!orgId || !clientId || !asUuid(invoiceId)) return null;
+  const { rows } = await db.query(
+    `SELECT id, sale_id FROM invoices
+      WHERE id = $1 AND org_id = $2 AND client_id = $3
+        AND (source = 'funding_success_fee' OR invoice_type = 'success_fee')
+      LIMIT 1`,
+    [invoiceId, orgId, clientId]
+  );
+  return rows[0] || null;
+}
+
 /**
  * payment.received — attach money to an existing sale, or create one only when
  * our payment link carries durable product identity. Unknown/unlinked products
@@ -876,6 +908,9 @@ export async function onPaymentReceivedMoney(event, db) {
   const paymentEvent = { ...event, payload: paymentPayload };
   const bucket = paymentPayload.product || null;
   const ext = saleExternalRef(event);
+  const feeInvoice = await successFeeInvoiceFor(db, {
+    orgId, clientId, invoiceId: paymentPayload.invoiceId
+  });
 
   let sale = null;
   if (paymentPayload.saleId) {
@@ -915,6 +950,14 @@ export async function onPaymentReceivedMoney(event, db) {
         paymentPayload.productId,
         paymentPayload.saleMotion
       ]
+    )).rows[0] || null;
+  }
+  // A success fee belongs to the sale its invoice bills, not to whichever
+  // funding sale happens to be newest.
+  if (!sale && feeInvoice?.sale_id) {
+    sale = (await db.query(
+      `SELECT * FROM sales WHERE id = $1 AND org_id = $2 AND client_id = $3 LIMIT 1`,
+      [feeInvoice.sale_id, orgId, clientId]
     )).rows[0] || null;
   }
   if (!sale) {
@@ -977,7 +1020,7 @@ export async function onPaymentReceivedMoney(event, db) {
     basisHint: "front_end"
   });
 
-  const kind = paymentKindFor(bucket, "payment.received");
+  const kind = feeInvoice ? "success_fee" : paymentKindFor(bucket, "payment.received");
   const pay = await ensureSalePayment(db, paymentEvent, {
     saleId: sale.id,
     productId: sale.product_id,
