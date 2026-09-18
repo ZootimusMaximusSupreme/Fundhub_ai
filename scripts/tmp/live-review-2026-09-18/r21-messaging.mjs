@@ -97,10 +97,22 @@ async function look(channel) {
     lg.innerHTML = `<b>Hole 21 review (${new Date().toISOString().slice(0, 16)}Z)</b><br>` +
       (made.length ? made.map((m) => `${m}: the owed no-book message on #13's thread`).join("<br>") : "No no-book message found on this thread");
     Object.assign(lg.style, { position: "fixed", right: "16px", bottom: "16px", background: "#fff", border: "3px solid #e00", color: "#111", font: "14px sans-serif", padding: "8px 10px", zIndex: 2147483647, maxWidth: "520px" });
-    document.body.append(lg);
+    lg.dataset.r21 = "1"; document.body.append(lg);
     return made;
   }, nob.map((w) => ({ id: w.id, key: w.template_key })));
   res.marks = marks;
+  // mask full phone numbers and email addresses on screen before the picture is taken
+  await page.evaluate(() => {
+    const EM = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g;
+    const PH = /\+?\d[\d\s().-]{8,}\d/g;
+    const m = (s) => s.replace(EM, (x) => `${x.slice(0, 6)}***@${x.split("@")[1]}`).replace(PH, (x) => `…${x.replace(/\D/g, "").slice(-4)}`);
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = w.nextNode(); n; n = w.nextNode()) { if (n.parentElement && n.parentElement.closest("[data-r21]")) continue; const v = n.nodeValue; const nv = m(v); if (nv !== v) n.nodeValue = nv; }
+    document.querySelectorAll("input,textarea").forEach((el) => {
+      if (el.value) el.value = m(el.value);
+      if (el.placeholder) el.placeholder = m(el.placeholder);
+    });
+  });
   const shot = `${SHOTS}/r21-${TAG}-${channel}.png`;
   await page.screenshot({ path: shot, fullPage: false });
   res.shot = shot.replace("/Users/chrisstanbridge/Developer/fundhub-platform/", "");
