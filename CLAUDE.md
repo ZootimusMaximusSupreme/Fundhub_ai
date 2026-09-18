@@ -105,6 +105,8 @@ If you trip over something broken that I did not ask about, keep it to yourself.
 
 If I want the wider list I will ask for the wider list.
 
+**Hard lock (owner-set 2026-09-18):** This chat owns only the hole named in the paste. If you trip over another break, write one leftover card on the shared board and **STOP**. Do not VERIFY it. Do not FIX it. Do not spawn a fixer. Do not live-walk unnamed holes. Do not write “while proving hole 7 I also found N1–N27.” A dirty leftover on a path that used to work is a leftover, not the headline. See `.cursor/rules/no-extra-holes.mdc`.
+
 ### Commit locally, every session (owner-set 2026-09-08)
 
 A laptop died on 2026-09-07 holding uncommitted work. Four marketing skills and 83 ad scripts were never in git and are gone.
