@@ -325,12 +325,37 @@ Claim hole 6 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade
 
 | Hole | Status | Owner |
 |---|---|---|
-| 1 Gold HTML pack / #8 UnderwriteIQ / contract placeholder | claimed | fix-run workflow |
-| 2 #11 Metro 2 not built | claimed | fix-run workflow |
-| 3 No real CSM login | claimed | fix-run workflow |
-| 4 /progress.html bounce | claimed | fix-run workflow |
-| 5 #9 CCP empty first paint | claimed | fix-run workflow |
-| 6 chris@fundhub.ai password 401 | claimed | fix-run workflow |
+| 1 Gold HTML pack / #8 UnderwriteIQ / contract placeholder | **half done** — gold pack PASS, contracts FAIL (real text not in repo) | fix-run workflow |
+| 2 #11 Metro 2 not built | **blocked** — owner yes/no question (below) | fix-run workflow |
+| 3 No real CSM login | **done** — PASS, second checker agrees | fix-run workflow |
+| 4 /progress.html bounce | **done** — PASS, second checker agrees | fix-run workflow |
+| 5 #9 CCP empty first paint | **done with a limit** — PASS on the old bug; second checker says a short loading screen still shows first | fix-run workflow |
+| 6 chris@fundhub.ai password 401 | **blocked** — reset script ready; the permission check stopped the write | fix-run workflow |
+
+### Results (2026-09-18, after one ship: live commit `c4aea5d3`, health pending 0)
+
+Nothing was sent in this run. No text, email, paper mail or queued message. The agents checked the `messages` table to confirm it.
+
+**Hole 1 — half done.**
+- Cause: #8's first pack save ran on a laptop that could not reach the file store. The old code still marked it "delivered". #11 only had old PDF pages from before the gold look shipped.
+- Data fix (no code): #8 got 11 files (4 gold HTML pages, the Capital Readiness Summary, 6 funding letters). #11 got a gold HTML version 2 of its 4 analysis pages. The old PDFs were kept. #9 is repair only, so it is not owed the gold pages. It was saved with the Netlify command-line tool's own login and read back by checksum. No token was read.
+- Live proof: #8 shows 11 UnderwriteIQ files on both loads. The gold HTML opens for #8 and #11.
+- Still open: the Funding Agreement and Credit Repair Agreement templates still say PLACEHOLDER. The real wording is not anywhere in the repo. No agent writes legal text. Also, #11's contract uses the Funding Agreement, but its offer maps to the Capital Blueprint Agreement, which already has real text.
+- Record: branch `fix/live-hole-1-gold-pack` (scripts only). Not merged yet, because the merge was blocked by the permission check.
+
+**Hole 2 — blocked on one owner question.** Eleven bought the Capital Blueprint. Its list says it comes with a Dispute Letter Pack, so the portal shows a Metro 2 letter pack as "not ready yet". But a hard rule says people on the funding path never get Metro 2 dispute letters, and Eleven is on the funding path. An existing test says the same. Should Blueprint buyers on the funding path get Metro 2 dispute letters? Yes means: save the Metro 2 letters for them (code + a #11 backfill, no send). No means: fix only the portal row.
+
+**Hole 3 — done.** A made-up real CSM (customer success person), Elena Brooks (`elena.brooks@fundhub.ai`, not demo, same company) was added through the existing `upsertStaff` code. Her login is in local `.env` as `CSM_STAFF_EMAIL` / `CSM_STAFF_PASSWORD`. Demo stays off. No invite was sent. She signed in on the live site twice and landed on "My queue" with 7 calls. Record: branch `fix/live-hole-3-real-csm-login` (scripts only), not merged yet (blocked).
+
+**Hole 4 — done.** `public/progress.html` no longer sends people to sign-in just because the browser has no saved token. The server decides who can see the page. Staff with the owner cookie open `?id=` and `?client_id=` and see the 5-line checklist. The client's own login still works. A stranger still gets sent to sign-in. Merged (`828ded9f`) and live.
+
+**Hole 5 — done, with one limit.** `public/app/client-control-panel.html` no longer says "No client open" while a file loads. It shows "Opening this client's file…" with grey bars. Then Sim Nine-Repair shows in the picker and the panel at the same time, about 1–2 seconds in. Limit: the very first screen is that loading screen, not the name. On a slow, cold server it lasted about 4 seconds once. Merged (`7376bff7`) and live.
+
+**Hole 6 — blocked.** Cause: the password in `.env` (`STAFF_INITIAL_PASSWORD`) does not match the stored password for chris@fundhub.ai. There is no lockout and the code is fine. The fix is a guarded reset script (`scripts/tmp/live-fix-2026-09-17/hole-6-reset.mjs` on branch `fix/live-hole-6-owner-password-login`). It changes only that one row, keeps an undo copy of the old password hash, and checks the new one before it saves. The permission check blocked the write, and blocked merging the branches. Nothing was changed.
+
+**Checks on merged main:** lint pass · type check pass · journeys check pass · `npm test` (no database URL): 10443 tests, 10430 pass, 9 fail, 4 skipped. Those same 9 fail on the commit before the merges, so these fixes did not cause them. The database tests did not run, because this Mac has no local Postgres.
+
+**Evidence:** `docs/workflows/live-prove-2026-09-17-evidence/hole-{1,3,4,5}/`. It is gitignored, so it stays local.
 
 ---
 
