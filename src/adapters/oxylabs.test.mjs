@@ -226,6 +226,33 @@ test("launchCredentials matches city when only providers.* have it", async () =>
   assert.equal(out.exit_ip, "203.0.113.9");
 });
 
+test("a masked OXYLABS_PASSWORD counts as not set and is never sent (live hole 15)", async () => {
+  const mask = "*".repeat(16) + "ab1Z";
+  const cfg = oxylabsConfigFromEnv({ OXYLABS_USERNAME: "acct", OXYLABS_PASSWORD: mask });
+  assert.equal(cfg.ready, false);
+  assert.equal(cfg.masked, true);
+  assert.equal(cfg.password, null);
+  assert.deepEqual(cfg.missing, ["OXYLABS_PASSWORD"]);
+
+  let calls = 0;
+  const out = await launchCredentials({
+    city: "Austin",
+    state: "TX",
+    sessid: "sessmask",
+    env: { OXYLABS_USERNAME: "acct", OXYLABS_PASSWORD: mask },
+    fetchFn: async () => { calls++; throw new Error("oxylabs_connect_failed:407"); }
+  });
+  assert.equal(calls, 0);
+  assert.equal(out.ok, false);
+  assert.equal(out.error, "oxylabs_credentials_missing");
+  assert.match(out.message, /hidden copy/);
+
+  // A real password with a lone asterisk is still a password.
+  const real = oxylabsConfigFromEnv({ OXYLABS_USERNAME: "acct", OXYLABS_PASSWORD: "a*b9_Q2x" });
+  assert.equal(real.ready, true);
+  assert.equal(real.masked, false);
+});
+
 test("launchCredentials reports auth failed instead of geo miss on 407", async () => {
   assert.equal(isOxylabsAuthFailure("oxylabs_connect_failed:407"), true);
   const out = await launchCredentials({

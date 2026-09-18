@@ -49,10 +49,23 @@ export function stripCustomerPrefix(username) {
   return s.replace(/^customer-/i, "") || null;
 }
 
+// A MASKED PASSWORD IS NOT A PASSWORD. Measured 2026-09-18 (live hole 15): the
+// stored OXYLABS_PASSWORD, live and in the local .env, was sixteen asterisks and four
+// characters — the hidden form the dashboard shows, copied instead of the value. Every
+// Apply since 2026-09-06 sent that mask to Oxylabs and got 407, and the screen told the
+// owner to fix the username. A run of four asterisks is treated as not set, so Apply
+// names the real fault. The stored value stays where it is (CLAUDE.md §11, never
+// remove a key) — same rule as the masked OpenAI key in src/agents/model.mjs.
+export function isMaskedSecret(value) {
+  return /\*{4,}/.test(String(value ?? ""));
+}
+
 export function oxylabsConfigFromEnv(env = process.env) {
   const rawUser = env.OXYLABS_USERNAME;
   const username = stripCustomerPrefix(rawUser);
-  const password = env.OXYLABS_PASSWORD ? String(env.OXYLABS_PASSWORD) : null;
+  const rawPassword = env.OXYLABS_PASSWORD ? String(env.OXYLABS_PASSWORD) : null;
+  const masked = rawPassword != null && isMaskedSecret(rawPassword);
+  const password = masked ? null : rawPassword;
   const missing = [];
   if (rawUser == null || rawUser === "") missing.push("OXYLABS_USERNAME");
   if (!password) missing.push("OXYLABS_PASSWORD");
@@ -61,6 +74,7 @@ export function oxylabsConfigFromEnv(env = process.env) {
     port: OXYLABS_PORT,
     username,
     password,
+    masked,
     ready: missing.length === 0,
     missing
   };
@@ -385,7 +399,9 @@ export async function launchCredentials({
       // `message || error` on the audit row and throws `message || "Proxy launch
       // failed"`. Without it the row's error_message just repeats error_code and
       // the advisor is told nothing about WHICH credential is absent.
-      message: `Oxylabs credentials are not set (${cfg.missing.join(", ")}). See docs/STILL-MISSING.md.`,
+      message: cfg.masked
+        ? "The saved OXYLABS_PASSWORD is the hidden copy (asterisks) the Oxylabs screen shows, not the real password. Nothing was sent to Oxylabs. See docs/STILL-MISSING.md."
+        : `Oxylabs credentials are not set (${cfg.missing.join(", ")}). See docs/STILL-MISSING.md.`,
       missing: cfg.missing,
       host: cfg.host,
       port: cfg.port
