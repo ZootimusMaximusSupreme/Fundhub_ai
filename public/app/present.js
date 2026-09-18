@@ -255,7 +255,10 @@
     return isPrimaryPayOffer(selectedOfferKey()) ? null : (state.saleMotion || null);
   }
   function resolveContractTemplateKey() {
-    if (state.tier === "FUNDING_PLUS_REPAIR") return "REPAIR-AND-FUNDING-AGREEMENT";
+    /* The combined agreement is for the funding sale only. A Blueprint, Academy
+       or repair-only sale on a funding-plus-repair deck gets its own offer's
+       agreement, the one that matches its pay link (hole 1, 2026-09-18). */
+    if (state.tier === "FUNDING_PLUS_REPAIR" && selectedOfferKey() === "FUNDING_DFY") return "REPAIR-AND-FUNDING-AGREEMENT";
     var o = offer(selectedOfferKey());
     return (o && o.contractTemplateKey) || null;
   }
