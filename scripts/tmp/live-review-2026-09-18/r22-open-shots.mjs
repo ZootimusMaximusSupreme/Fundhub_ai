@@ -34,7 +34,7 @@ for (const [id, title] of ids) {
   await pop.waitForTimeout(1500);
   const info = await pop.evaluate((name) => {
     const found = Boolean(document.body) && document.body.textContent.includes(name);
-    if (!found) return { found: false, ctype: document.contentType };
+    if (!found) return { found: false, ctype: document.contentType, path: location.protocol + "//" + location.host + location.pathname, bodyLen: document.body ? document.body.textContent.length : -1, head: document.body ? document.body.textContent.replace(/\s+/g, " ").slice(0, 160) : null };
     const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let el = null;
     while (w.nextNode()) { if (w.currentNode.nodeValue.includes(name)) { el = w.currentNode.parentElement; break; } }

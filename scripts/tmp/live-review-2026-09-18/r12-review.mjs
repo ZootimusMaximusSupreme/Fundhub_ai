@@ -56,40 +56,42 @@ function hookApis(page, bag, wanted) {
   });
 }
 
-// Red numbered boxes + legend, then a clipped full-page shot of just that region.
+// Red numbered boxes + legend, drawn in viewport space (the page scrolls inside its own column,
+// so a full-page shot comes out blank below the fold). Scroll the first item into view first.
 async function markAndShoot(page, items, file) {
+  await page.evaluate((sel) => document.querySelector(sel)?.scrollIntoView({ block: "center" }), items[0].sel);
+  await page.waitForTimeout(400);
   const clip = await page.evaluate((items) => {
     const layer = document.createElement("div");
     layer.id = "__r12marks";
-    layer.style.cssText = "position:absolute;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2147483647";
+    layer.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;pointer-events:none;z-index:2147483647";
     const legend = []; let top = Infinity, bottom = 0;
     for (const it of items) {
       const el = document.querySelector(it.sel);
       const vis = el && !el.hidden && el.getBoundingClientRect().height > 0;
       if (!vis) { legend.push(`${it.n} = ${it.label}: ${it.missing || "not on the page"}`); continue; }
       const r = el.getBoundingClientRect();
-      const x = r.left + scrollX, y = r.top + scrollY;
       const b = document.createElement("div");
-      b.style.cssText = `position:absolute;left:${x - 5}px;top:${y - 4}px;width:${r.width + 10}px;height:${r.height + 8}px;border:3px solid #e00;border-radius:4px;box-sizing:border-box`;
+      b.style.cssText = `position:fixed;left:${r.left - 5}px;top:${r.top - 4}px;width:${r.width + 10}px;height:${r.height + 8}px;border:3px solid #e00;border-radius:4px;box-sizing:border-box`;
       const tag = document.createElement("div");
       tag.textContent = it.n;
-      tag.style.cssText = `position:absolute;left:${Math.max(0, x - 30)}px;top:${y - 10}px;background:#e00;color:#fff;font:700 14px/22px sans-serif;width:22px;text-align:center;border-radius:11px`;
+      tag.style.cssText = `position:fixed;left:${Math.max(0, r.left - 30)}px;top:${r.top - 10}px;background:#e00;color:#fff;font:700 14px/22px sans-serif;width:22px;text-align:center;border-radius:11px`;
       layer.append(b, tag);
       const words = (el.innerText || "").trim().replace(/\s*\n\s*/g, " / ");
       legend.push(`${it.n} = ${it.label}: "${words.length > 240 ? words.slice(0, 240) + "…" : words}"`);
-      top = Math.min(top, y - 14); bottom = Math.max(bottom, y + r.height + 10);
+      top = Math.min(top, r.top - 14); bottom = Math.max(bottom, r.top + r.height + 10);
     }
-    if (top === Infinity) { top = scrollY; bottom = scrollY + 200; }
+    if (top === Infinity) { top = 0; bottom = 200; }
     const lg = document.createElement("div");
-    lg.style.cssText = `position:absolute;left:240px;top:${bottom + 12}px;width:960px;box-sizing:border-box;background:#fff;color:#111;border:2px solid #e00;font:15px/22px sans-serif;padding:8px 12px`;
+    lg.style.cssText = `position:fixed;left:240px;top:${Math.min(bottom + 12, innerHeight - 130)}px;width:960px;box-sizing:border-box;background:#fff;color:#111;border:2px solid #e00;font:15px/22px sans-serif;padding:8px 12px`;
     lg.innerHTML = legend.map((l) => l.replace(/&/g, "&amp;").replace(/</g, "&lt;")).join("<br>");
     layer.append(lg);
     document.body.append(layer);
-    bottom = Math.max(bottom, lg.getBoundingClientRect().bottom + scrollY + 10);
+    bottom = Math.max(bottom, lg.getBoundingClientRect().bottom + 10);
     const y0 = Math.max(0, top - 60);
-    return { x: 0, y: y0, width: document.documentElement.clientWidth, height: Math.min(4000, bottom - y0 + 20), legend };
+    return { x: 0, y: y0, width: document.documentElement.clientWidth, height: Math.min(innerHeight - y0, bottom - y0 + 10), legend };
   }, items);
-  await page.screenshot({ path: file, fullPage: true, clip: { x: clip.x, y: clip.y, width: clip.width, height: clip.height } });
+  await page.screenshot({ path: file, clip: { x: clip.x, y: clip.y, width: clip.width, height: clip.height } });
   await page.evaluate(() => document.getElementById("__r12marks")?.remove()).catch(() => {});
   return { file, legend: clip.legend };
 }
@@ -135,7 +137,6 @@ async function lookCcp(ctx, n) {
   }
   const before = await page.evaluate(READ);
   // Shot 1: the big line + inquiries under it.
-  await page.evaluate(() => window.scrollTo(0, 0));
   const shotBig = await markAndShoot(page, [
     { sel: "#ccp-next-action", n: 1, label: "Big 'Do this next' line" },
     { sel: "#ccp-next-inquiries", n: 2, label: "Inquiries listed under it", missing: "no inquiry list showing" },
