@@ -23,6 +23,27 @@
 // Profiles are shaped for the path being walked (see PROFILES). The tier engine
 // decides the outcome; nothing here forces a tier.
 //
+// ── THE TWO THINGS A REAL PULL LEAVES BEHIND (fixed 2026-09-18, hole N10) ──
+//
+// 1. AN IDENTITY ROW. A real pull cannot happen without one: the soft-pull form
+//    (api/soft-pull-approve.mjs) saves SSN, date of birth and home address to
+//    pii_identity first, and the pull reads them back from there. This tool used
+//    to send the sim address to the "bureau" and save nothing, so Combo and
+//    Sim Thirteen had a pull with an address on it and a Repair desk saying "no
+//    address on file". It now saves the same three fields the form saves, in the
+//    form's own shape, with the same values the pull carries (the never-issued
+//    SIM_SSN below, the identity file's date of birth and address — measured
+//    2026-09-18: that is exactly what the form holds for Sims #8 to #12). It only
+//    FILLS what is missing. A row that already holds a value keeps it.
+//
+// 2. THE UNDERWRITEIQ PACK. On a funding result, analysis.completed runs C-06 in
+//    this process (src/handlers/crs-deliverables.mjs), which saves the pack to
+//    the document store. From the laptop that store cannot be opened (no Netlify
+//    site id or token), C-06 caught the error, and the run printed success with
+//    no pack saved. Now a funding run checks the store BEFORE writing anything and
+//    stops loudly if it cannot be reached, and checks AFTER the events that the
+//    pack really was saved, exiting non-zero if it was not.
+//
 // ── WHAT THE 2026-09-05 REBUILD CHANGED, AND WHY ──────────────────────────
 //
 // The old profiles were invented. They wrote the tradeline and score sections
@@ -77,6 +98,9 @@ import { ingestCrsLiabilities } from "../../src/liabilities/store.mjs";
 import { mergeCustomFields } from "../../src/workflows/custom-fields.mjs";
 import { runTierEngineFromCrsResult } from "../../src/finance/crs-tier.mjs";
 import { newInquiriesFor } from "../../src/finance/crs-map.mjs";
+import { storeIdentity, encryptSsn } from "../../src/pii/index.mjs";
+import { isFundingPath } from "../../src/config/product-path.mjs";
+import { providerFromEnv } from "../../src/documents/store.mjs";
 
 const BUREAU_NAME = { EX: "Experian", EQ: "Equifax", TU: "TransUnion" };
 const ALL_BUREAUS = Object.freeze(["EX", "EQ", "TU"]);
@@ -999,6 +1023,99 @@ export function buildPayload(profileKey, { email, name, pulledAt = new Date().to
   };
 }
 
+/* ── The identity row, the way the soft-pull form saves it ─────────────────
+   api/soft-pull-approve.mjs refuses without street, city, a two-letter state and
+   ZIP, and a YYYY-MM-DD date of birth, then calls storeIdentity with
+   [{ addressLine1, city, state, postalCode }]. Same rules, same shape here, so a
+   Sim that never saw the form looks exactly like one that did. */
+export function formAddress(current = {}) {
+  const a = {
+    addressLine1: String(current.line1 ?? "").trim(),
+    city: String(current.city ?? "").trim(),
+    state: String(current.state ?? "").trim().toUpperCase(),
+    postalCode: String(current.postal_code ?? "").trim()
+  };
+  if (!a.addressLine1 || !a.city || !/^[A-Z]{2}$/.test(a.state) || !a.postalCode) {
+    throw new Error("the identity file's current_address needs line1, city, a two-letter state and postal_code — the soft-pull form refuses anything less");
+  }
+  return a;
+}
+
+// The same "is there a street" test the Repair desk uses (src/repair/read-repair-signals.mjs ADDRESS_SQL).
+const hasStreet = (a) => Boolean(a && String(a.address_line1 ?? a.addressLine1 ?? a.line1 ?? a.street ?? "").trim());
+
+/* identityPlan — what to save, given the row already on file (or null).
+   FILLS ONLY WHAT IS MISSING. storeIdentity keeps the SSN and the date of birth
+   when passed null (COALESCE), and the address list is handed back whole, so no
+   value already on file is ever replaced or dropped. */
+export function identityPlan(existing, identity) {
+  const address = formAddress(identity?.current);
+  const dob = String(identity?.dob ?? "");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+    throw new Error("the identity file needs a YYYY-MM-DD dob — the soft-pull form refuses without one");
+  }
+  if (!existing) {
+    return { write: true, fills: ["address", "date of birth", "SSN"], ssn: SIM_SSN, dob, addresses: [address] };
+  }
+  const list = Array.isArray(existing.addresses) ? existing.addresses : [];
+  const plan = { fills: [], ssn: null, dob: null, addresses: list };
+  if (!hasStreet(list[0])) { plan.addresses = [address, ...list]; plan.fills.push("address"); }
+  if (!existing.has_dob) { plan.dob = dob; plan.fills.push("date of birth"); }
+  if (!existing.has_ssn) { plan.ssn = SIM_SSN; plan.fills.push("SSN"); }
+  return { write: plan.fills.length > 0, ...plan };
+}
+
+async function readIdentityOnFile(db, clientId) {
+  return (await db.query(
+    `SELECT ssn_enc IS NOT NULL AS has_ssn, dob IS NOT NULL AS has_dob, addresses
+       FROM pii_identity WHERE client_id = $1`, [clientId])).rows[0] || null;
+}
+
+/* packStoreProblem — can the UnderwriteIQ pack be saved from THIS process?
+   Returns null when it can, or a plain sentence saying why not. It only opens
+   the store (the same provider C-06 will use); it writes nothing.
+
+   The netlify-blobs provider opens with NETLIFY_SITE_ID + NETLIFY_BLOBS_TOKEN,
+   or with the context a deployed Netlify function is handed. A laptop has
+   neither unless they are set for the run, and the SDK then throws
+   MissingBlobsEnvironmentError — which C-06 catches, so without this check the
+   run said nothing. A Netlify-masked token opens fine and fails later, so it is
+   caught here too. `makeProvider` is injectable for the test only. */
+export async function packStoreProblem(env = process.env, { makeProvider = providerFromEnv } = {}) {
+  const name = env.DOCUMENT_STORE_PROVIDER || "memory";
+  if (name === "memory") {
+    return "DOCUMENT_STORE_PROVIDER is memory (or not set), so the pack would be kept only in this script's memory and lost when it exits. " +
+      "Run it with DOCUMENT_STORE_PROVIDER=netlify-blobs, NETLIFY_SITE_ID and NETLIFY_BLOBS_TOKEN set";
+  }
+  if (name !== "netlify-blobs") return null;
+  if ((String(env.NETLIFY_BLOBS_TOKEN || "").match(/\*/g) || []).length >= 4) {
+    return "NETLIFY_BLOBS_TOKEN is Netlify's masked copy (asterisks), not the token, so the save would be refused";
+  }
+  try {
+    await makeProvider(env).exists(`netlify-blob://${env.NETLIFY_BLOBS_STORE || "documents"}/push-credit-preflight`);
+  } catch (e) {
+    return "the netlify-blobs document store cannot be opened from this machine " +
+      `(${String(e?.message || e).slice(0, 160)}). Run it with NETLIFY_SITE_ID and ` +
+      "NETLIFY_BLOBS_TOKEN set — the document store reads both (src/documents/store.mjs)";
+  }
+  return null;
+}
+
+/* packSavedFor — did C-06 save the pack for THIS pull? C-06 stamps
+   funding_letters_delivered_event_id with the analysis.completed id only after
+   at least one file is stored (deliverFundingLettersOnce), so the stamp is the
+   honest answer; the file count is printed alongside. */
+export async function packSavedFor(db, clientId, analysisEventId) {
+  const r = (await db.query(
+    `SELECT custom_fields->>'funding_letters_delivered_event_id' AS stamp,
+            (SELECT count(*)::int FROM documents d WHERE d.client_id = c.id AND d.kind = 'deliverable') AS files
+       FROM clients c WHERE c.id = $1`, [clientId])).rows[0] || {};
+  return {
+    saved: Boolean(analysisEventId) && r.stamp === String(analysisEventId),
+    files: Number(r.files || 0)
+  };
+}
+
 function countNegatives(rows) {
   return rows.filter((t) => t.derogatoryDataIndicator === true).length;
 }
@@ -1081,7 +1198,42 @@ async function main() {
   /* Say it out loud so the walkthrough is not surprised by a $0 business figure. */
   console.log(`business $0 — no business credit report is passed, so business_age_months ${p.businessAgeMonths} is never read`);
   console.log(`prior    ${prior} crs_results row(s) already on this client${prior ? " — a new one is added, the newest wins" : ""}`);
+
+  /* BEFORE ANYTHING IS WRITTEN — the identity row and the pack (hole N10; see
+     the header). Every problem is collected and the run stops with none of it
+     written, dry or not, so a dry run says exactly what a real run would do. */
+  const problems = [];
+  let idPlan = null;
+  const idOnFile = await readIdentityOnFile(db, c.id);
+  try {
+    idPlan = identityPlan(idOnFile, identity);
+    if (idPlan.ssn) encryptSsn(idPlan.ssn, { clientId: c.id }); // throws if PII_ENC_KEY cannot encrypt
+    console.log(`identity ${!idOnFile ? "none on file" : "on file"} — ${idPlan.write
+      ? `${dry ? "would save" : "will save"} ${idPlan.fills.join(", ")} the way the soft-pull form does (the simulated SSN is a never-issued 666 number)`
+      : "address, date of birth and SSN all there, left as is"}`);
+  } catch (e) {
+    problems.push(`identity row: ${e.message}`);
+  }
+  const packExpected = isFundingPath(tier.outcome);
+  if (packExpected) {
+    const why = await packStoreProblem(process.env);
+    if (why) problems.push(`UnderwriteIQ pack: ${tier.outcome} is a funding result, so C-06 builds the pack — but ${why}`);
+    else console.log(`pack     ${tier.outcome} is a funding result — the UnderwriteIQ pack ${dry ? "would be" : "will be"} saved and checked`);
+  } else {
+    console.log(`pack     ${tier.outcome} is not a funding result — C-06 builds no UnderwriteIQ pack`);
+  }
+  if (problems.length) {
+    console.error("\nSTOP — nothing was written. A real pull would not get this far without these:");
+    for (const p of problems) console.error(`  - ${p}`);
+    process.exitCode = 1;
+    await close();
+    return;
+  }
   if (dry) { console.log("dry run — nothing written"); await close(); return; }
+
+  if (idPlan.write) {
+    await storeIdentity(db, { orgId, clientId: c.id, ssn: idPlan.ssn, dob: idPlan.dob, addresses: idPlan.addresses });
+  }
 
   const crs = (await db.query(
     `INSERT INTO crs_results (org_id, client_id, result, outcome_tier) VALUES ($1, $2, $3::jsonb, $4) RETURNING *`,
@@ -1113,7 +1265,7 @@ async function main() {
 
   const stamp = { simulated: true, simulatedNotice: payload.simulatedNotice };
   const requestId = `sim-walkthrough:${crs.id}`;
-  await emit(db, "analysis.completed", {
+  const analysis = await emit(db, "analysis.completed", {
     crsResultId: crs.id, requestId, source: "crs",
     // `newInquiries` — the key c-02-inquiry-created reads. Emitting `inquiries`
     // here meant the sim's inquiries were never logged either.
@@ -1133,6 +1285,19 @@ async function main() {
   console.log(`written  crs_results ${crs.id} · ${counts.lines} tradelines · ${counts.liabilities} liabilities on the client`);
   console.log(`client   outcome_tier=${after.outcome_tier} total_funding_estimate=${after.est ?? "none"}`);
   console.log("events   analysis.completed + decision.rendered emitted (card advances to Decision rendered)");
+  if (idPlan.write) console.log(`identity saved ${idPlan.fills.join(", ")}`);
+  if (packExpected) {
+    const pack = await packSavedFor(db, c.id, analysis?.id);
+    if (pack.saved) {
+      console.log(`pack     UnderwriteIQ pack saved for this pull — ${pack.files} deliverable file(s) on the client`);
+    } else {
+      console.error("\nFAILED — the UnderwriteIQ pack was NOT saved for this pull. The credit file above IS written;");
+      console.error("         nothing retries the pack on its own. C-06 ran but stored no file — check the document");
+      console.error("         store settings (DOCUMENT_STORE_PROVIDER, NETLIFY_SITE_ID, NETLIFY_BLOBS_TOKEN) and the");
+      console.error("         client's credit file, then push the credit again.");
+      process.exitCode = 1;
+    }
+  }
   await close();
 }
 
