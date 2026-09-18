@@ -1084,7 +1084,8 @@ async function readIdentityOnFile(db, clientId) {
 export async function packStoreProblem(env = process.env, { makeProvider = providerFromEnv } = {}) {
   const name = env.DOCUMENT_STORE_PROVIDER || "memory";
   if (name === "memory") {
-    return "DOCUMENT_STORE_PROVIDER is memory (or not set), so the pack would be kept only in this script's memory and lost when it exits";
+    return "DOCUMENT_STORE_PROVIDER is memory (or not set), so the pack would be kept only in this script's memory and lost when it exits. " +
+      "Run it with DOCUMENT_STORE_PROVIDER=netlify-blobs, NETLIFY_SITE_ID and NETLIFY_BLOBS_TOKEN set";
   }
   if (name !== "netlify-blobs") return null;
   if ((String(env.NETLIFY_BLOBS_TOKEN || "").match(/\*/g) || []).length >= 4) {
@@ -1208,7 +1209,7 @@ async function main() {
     idPlan = identityPlan(idOnFile, identity);
     if (idPlan.ssn) encryptSsn(idPlan.ssn, { clientId: c.id }); // throws if PII_ENC_KEY cannot encrypt
     console.log(`identity ${!idOnFile ? "none on file" : "on file"} — ${idPlan.write
-      ? `${dry ? "would save" : "saving"} ${idPlan.fills.join(", ")} the way the soft-pull form does (the simulated SSN is a never-issued 666 number)`
+      ? `${dry ? "would save" : "will save"} ${idPlan.fills.join(", ")} the way the soft-pull form does (the simulated SSN is a never-issued 666 number)`
       : "address, date of birth and SSN all there, left as is"}`);
   } catch (e) {
     problems.push(`identity row: ${e.message}`);
