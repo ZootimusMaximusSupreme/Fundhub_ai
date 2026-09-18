@@ -1249,8 +1249,8 @@ Five agents at a time. First five are on different screens.
 |---|---|---|---|---|
 | 7 #9 "No step applies" while ID unread | control panel | claimed | pending | |
 | 8 Funded numbers lie vs two $25k rounds | control panel / pipeline / ops money | claimed | pending | |
-| 9 Staff portal Payments hides $2,500 | client portal | claimed | pending | |
-| 11 #12 What You Own empty | client portal | pending | pending | |
+| 9 Staff portal Payments hides $2,500 | client portal | **fixed** — REAL; staff Payments tab now also paints the bill from portal-summary | pending (after ship) | `fix/live-h9-payments-tab-invoice` → merged |
+| 11 #12 What You Own empty | client portal | claimed | pending | |
 | 12 #8 stored next-action says Collect Documents | control panel | pending | pending | |
 | 13 Staff portal `?id=` greets Chris on #11 | client portal | pending | pending | |
 | 14 Specialist header "waiting on a bureau" | inquiry remover / repair | **fixed** — REAL; line now built from the Stuck/Waiting tiles | pending (after ship) | `fix/live-h14-specialist-stuck-header` → merged `499676fc` |
