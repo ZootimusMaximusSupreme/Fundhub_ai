@@ -6,12 +6,13 @@ import {
   BUCKET_TO_CODE, paymentKindFor, nothingUnlockedReason, NOTHING_UNLOCKED,
   ensureAttributions, ensureSalePayment, resolveProductId
 } from "./money-chain.mjs";
+import { OFFERS } from "../config/offers.mjs";
 
 describe("money-chain helpers", () => {
   test("BUCKET_TO_CODE maps Commas semantic buckets to product codes", () => {
     assert.equal(BUCKET_TO_CODE.crs, "diagnostic");
     assert.equal(BUCKET_TO_CODE.deposit, "card-stacking-dfy");
-    assert.equal(BUCKET_TO_CODE.diy, "consulting-package");
+    assert.equal(BUCKET_TO_CODE.diy, "diy-letter-pack");
     assert.equal(BUCKET_TO_CODE.success_fee, "card-stacking-dfy");
     assert.equal(BUCKET_TO_CODE.unmatched, null);
   });
@@ -22,6 +23,33 @@ describe("money-chain helpers", () => {
     // this entry existed the bucket resolved to nothing and the sale landed on
     // consulting-package.
     assert.equal(BUCKET_TO_CODE.repair, "repair-bundle");
+  });
+
+  /* STRICTER THAN WHAT IT REPLACED, and deliberately so.
+     This test used to assert BUCKET_TO_CODE.diy === "consulting-package" — the
+     SAME code src/config/offers.mjs sells the $5,000 Capital Blueprint on. It
+     passed while the defect it should have caught was live: two products at two
+     prices behind one code, so a payment could not say which had been bought and
+     the entitlement lookup, which is keyed on that code, opened the wrong tile.
+     Sim Eleven-Blueprint paid $5,000 on production and his Capital Blueprint tile
+     stayed locked.
+
+     The old assertion pinned one value. This one pins that value AND the property
+     the old one could not express: the DIY bucket and the Blueprint offer must
+     never resolve to the same product again. A future edit that re-merges them
+     fails here, which the old line would have welcomed. */
+  test("the DIY bucket and the Capital Blueprint are different products", () => {
+    const blueprint = OFFERS.UWIQ_DELIVERABLES;
+    assert.equal(blueprint.name, "Capital Blueprint");
+    assert.equal(blueprint.productCode, "consulting-package");
+    assert.notEqual(
+      BUCKET_TO_CODE.diy, blueprint.productCode,
+      "the DIY letter downsell and the $5,000 Capital Blueprint share a product " +
+      "code again — a payment can no longer say which one it bought"
+    );
+    // And no other offer may quietly take the DIY bucket's code either.
+    const clash = Object.values(OFFERS).filter((o) => o.productCode === BUCKET_TO_CODE.diy);
+    assert.deepEqual(clash, [], "an offer in the catalogue now sells on the DIY bucket's code");
   });
 
   test("paymentKindFor picks sale_payments.kind from event + bucket", () => {

@@ -62,6 +62,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "contract-chaser",
   "daily-pulse",
   "doc-check",
+  "doc-check-retry-sweeper",
   "dpc-01-analyzer-lock",
   "dpc-02-call-outcome-enforcement",
   "dpc-03-inbound-reply-router",
@@ -167,6 +168,15 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      added, in the words of the person who added it. The counts named in it are
      the historical record of what the pin said at the time; the pin itself is
      EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
+
+     Added the document-reader retry sweeper (2026-09-17) — the clock that comes
+     back for a document the reader could not read. Measured on the live walk
+     2026-09-16: eight uploads, eight `openai 429 … no credits remaining`, and
+     nothing holding a note to look again, so funding the account would not have
+     unstuck a single one of them. Registering it reads documents that were
+     already uploaded and nothing else: it claims only failed_events rows whose
+     handler is 'doc-check', and a document it still cannot read leaves the
+     client's verified identity untouched.
 
      Added the Commas inbox drain (2026-09-17) — a SECOND clock under the
      payment queue. netlify/functions/commas-inbox-sweeper.mjs already runs this

@@ -99,8 +99,16 @@ import { isSyntheticRow } from "./synthetic.mjs";
    the clock behind the one soft pull a finance-os subscriber's monthly fee
    includes. It is a cron with no event trigger, so like every sweeper here it
    will always appear in neverFired, which is the correct outcome for a
-   scheduled job rather than a coverage hole. */
-const REGISTERED = 75;
+   scheduled job rather than a coverage hole.
+
+   Was 75 until the doc-check retry sweeper (2026-09-17) was registered — the
+   clock that re-reads an identity document the AI reader could not read because
+   the account had no credit. Before it existed a 429 was written down as a
+   finished job and nothing ever came back, so funding the account fixed nothing
+   and the client had to be asked for the file again. It is a cron with no event
+   trigger, so like every sweeper here it will always appear in neverFired, which
+   is the correct outcome for a scheduled job rather than a coverage hole. */
+const REGISTERED = 76;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

@@ -40,6 +40,16 @@ const COMMAS_TITLE_BY_PRODUCT_CODE = Object.freeze({
   diagnostic: "Consulting Services Assessment",
   "card-stacking-dfy": "Consulting Services Engagement",
   "consulting-package": "Consulting Services Package",
+  /* The $1,000 DIY dispute-letter downsell. It used to share
+     'consulting-package' — and therefore this exact vendor title — with the
+     $5,000 Capital Blueprint, which is how one payment could never be told from
+     the other. db/migrations/384_diy_letter_pack_product.sql gives it its own
+     products row; this is its own vendor title, so an unlinked receipt names
+     which of the two was bought. Nothing mints a link on it today (there is no
+     DIY entry in OFFERS — the DIY invoice is raised by
+     src/workflows/ds-02-diy-letters.mjs and sent by hand), so this line is
+     inert until a "Consulting Services Letters" product exists in Commas. */
+  "diy-letter-pack": "Consulting Services Letters",
   "repair-bundle": "Consulting Services Standard",
   "repair-trial": "Consulting Services Trial",
   "funding-mastery": "Consulting Services Program",
@@ -153,6 +163,23 @@ export const OFFERS = Object.freeze({
     financing: true,
     letters: true,
     paymentPurpose: "custom",
+    /* 'consulting-package' IS the Capital Blueprint and now ONLY the Capital
+       Blueprint. It used to be two products at two prices behind one code: this
+       $5,000 offer, and the $1,000 DIY letter downsell that money-chain's
+       BUCKET_TO_CODE.diy pointed at. A payment could not say which it was, so a
+       $5,000 buyer was granted the DIY letter pack and left locked out of the
+       thing he bought (Sim Eleven-Blueprint, 2026-09-17, measured on
+       production). The DIY downsell moved to its own product code
+       'diy-letter-pack' in db/migrations/384_diy_letter_pack_product.sql.
+
+       Why this offer kept the old code rather than moving: every recorded
+       'Consulting Services Package' payment on production is a $5,000 Blueprint,
+       products.default_price on this row was moved to $5,000 by
+       289_capital_blueprint_price.sql (owner-set), and
+       383_blueprint_entitlement.sql already maps it to the roadmap the tile
+       gates on. Moving the Blueprint instead would have orphaned the buyer who
+       has already paid, and telling his payment from a DIY one would have meant
+       reading the dollar amount — which Hard Rule 4 forbids. */
     productCode: "consulting-package",
     commasProductTitle: "Consulting Services Package",
     /* Added 2026-09-03. Capital Blueprint was the ONLY client offer in this

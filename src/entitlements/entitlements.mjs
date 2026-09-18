@@ -242,6 +242,118 @@ export async function grantFromTransaction(db, {
   return { productCode: code, granted, skipped, unmapped: false, reason: null };
 }
 
+/* THE STATUS A TRANSACTION CARRIES WHEN THE MONEY ARRIVED.
+   src/handlers/client-lifecycle.mjs recordTransaction() writes exactly
+   'succeeded' or 'failed', src/slo/purchase.mjs writes 'succeeded' literally,
+   and nothing anywhere UPDATEs transactions.status afterwards — a refund is a
+   separate event that voids the partner accrual and deliberately leaves the
+   entitlement standing (src/handlers/money-chain.mjs: "A refunded course is
+   still unlocked"). So this one value is the whole set, and it is a constant
+   rather than a string typed twice. */
+export const PAID_TRANSACTION_STATUS = "succeeded";
+
+/* reconcileFromTransactions — make the ledger agree with the mapping table.
+ *
+ * WHY THIS HAS TO EXIST AT ALL. product_entitlements is a LOOKUP. It is read
+ * once, at the moment a payment is processed, and the answer is written into the
+ * entitlements ledger. Adding a row to the lookup afterwards therefore unlocks
+ * NOBODY who has already paid — their grant was written from the mapping as it
+ * stood that day and is never consulted again.
+ *
+ * That is not a theory. Measured on production 2026-09-17:
+ * 383_blueprint_entitlement.sql mapped 'consulting-package' to
+ * 'credit-optimization-roadmap' at 23:13. Sim Eleven-Blueprint's $5,000 payment
+ * had been granted at 17:46 the same day. The row was there, the ledger was not,
+ * and his Capital Blueprint tile was still locked.
+ *
+ * WHAT IT DOES. Walks every succeeded transaction, resolves the product the way
+ * the money chain resolves it — through products.name and product_aliases, never
+ * through the dollar amount (Hard Rule 4) — and re-runs the ordinary purchase
+ * grant for it.
+ *
+ * ADDITIVE, AND NOT NEGOTIABLY SO. It calls grantFromTransaction(), so it is the
+ * same code path a live payment takes and it inherits every rule that path
+ * already has:
+ *   * a grant that already exists conflicts on
+ *     (org, client, code, source_transaction_id) and does nothing;
+ *   * a grant somebody deliberately REVOKED is NOT resurrected — grant() only
+ *     reinstates when a caller passes `reinstate: true`, and this one never
+ *     does, so a refund or chargeback that was acted on stays acted on;
+ *   * a product with no mapping grants nothing and is reported, never guessed.
+ * Nothing is deleted, nothing is revoked, nothing is rewritten. Running it twice
+ * changes nothing the first run did not.
+ *
+ * Scope it to one client with `clientId`, or leave it out for the whole org.
+ * Returns { scanned, granted, byClient, unmapped, unresolved } — `unmapped` and
+ * `unresolved` being the two honest gaps: a product nobody has mapped, and a
+ * product_name that matches no product or alias at all.
+ */
+export async function reconcileFromTransactions(db, {
+  orgId, clientId = null, now = new Date()
+} = {}) {
+  if (!orgId) throw new Error("reconcileFromTransactions: orgId is required");
+
+  /* resolve_product_id() is the shipped resolver (db/migrations/010_products.sql)
+     — current product name first, then any alias. A transaction whose
+     product_name matches neither is counted below and left alone: inventing a
+     product for it would be guessing what somebody bought. */
+  const { rows } = await db.query(
+    `SELECT t.id AS transaction_id,
+            t.client_id,
+            t.product_name,
+            p.code AS product_code
+       FROM transactions t
+       LEFT JOIN products p ON p.id = resolve_product_id(t.org_id, t.product_name)
+      WHERE t.org_id = $1
+        AND lower(btrim(COALESCE(t.status, ''))) = $3
+        AND t.client_id IS NOT NULL
+        AND ($2::uuid IS NULL OR t.client_id = $2::uuid)
+      ORDER BY t.created_at`,
+    [orgId, clientId, PAID_TRANSACTION_STATUS]
+  );
+
+  const out = {
+    scanned: rows.length,
+    granted: [],
+    byClient: {},
+    unmapped: [],
+    unresolved: []
+  };
+
+  for (const r of rows) {
+    if (!r.product_code) {
+      out.unresolved.push({
+        transactionId: r.transaction_id,
+        clientId: r.client_id,
+        productName: r.product_name
+      });
+      continue;
+    }
+    const res = await grantFromTransaction(db, {
+      orgId,
+      clientId: r.client_id,
+      transactionId: r.transaction_id,
+      productCode: r.product_code,
+      now
+    });
+    if (res.unmapped) {
+      if (!out.unmapped.includes(res.productCode)) out.unmapped.push(res.productCode);
+      continue;
+    }
+    for (const code of res.granted) {
+      out.granted.push({
+        clientId: r.client_id,
+        transactionId: r.transaction_id,
+        productCode: res.productCode,
+        entitlementCode: code
+      });
+      const key = String(r.client_id);
+      (out.byClient[key] ||= []).push(code);
+    }
+  }
+  return out;
+}
+
 /* revoke — stamp it, never remove it. */
 export async function revoke(db, {
   orgId, clientId, code, by = null, reason = null, now = new Date()

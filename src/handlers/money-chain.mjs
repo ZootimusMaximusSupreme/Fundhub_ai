@@ -55,7 +55,30 @@ export const BUCKET_TO_CODE = Object.freeze({
   diagnostic: "diagnostic",
   deposit: "card-stacking-dfy",
   success_fee: "card-stacking-dfy",
-  diy: "consulting-package",
+  /* THE DIY LETTER DOWNSELL, AND WHY IT IS NO LONGER 'consulting-package'.
+     Until 2026-09-17 this bucket pointed at the SAME product code that
+     src/config/offers.mjs UWIQ_DELIVERABLES ("Capital Blueprint", $5,000) sells
+     on. Two products, two prices, one code — so nothing downstream could tell
+     which one a payment had bought, and the entitlement that unlocks a tile is
+     looked up BY PRODUCT CODE. Measured on production: Sim Eleven-Blueprint paid
+     $5,000, was granted the DIY letter pack, and the Capital Blueprint tile he
+     had actually paid for stayed locked.
+
+     383_blueprint_entitlement.sql added the missing roadmap row and wrote the
+     collision down as "RECORDED, NOT FIXED". This is the fix it named: the DIY
+     downsell has its own products row now
+     (db/migrations/384_diy_letter_pack_product.sql), so this fallback lands on
+     the $1,000 letter pack and nothing else.
+
+     WHAT THIS DOES NOT CHANGE. resolveProductId() below tries productId, then
+     productName, and only then this bucket — so every payment that carries the
+     Commas title "Consulting Services Package" still resolves to the Capital
+     Blueprint exactly as before, and so does every payment from a link we
+     minted. The only caller that reaches this line is a sale.closed carrying no
+     product at all (onSaleClosedMoney's last-resort default). Before today that
+     default silently minted a $5,000 Capital Blueprint sale and, since 383,
+     unlocked its tile for free. */
+  diy: "diy-letter-pack",
   // 'repair' is offers.mjs' own paymentPurpose for REPAIR_DFY and REPAIR_TRIAL
   // (src/config/offers.mjs), and 'repair-bundle' is the only product with
   // category 'repair' (015_seed_products.sql). Without this entry a repair

@@ -18,3 +18,12 @@ test("staffRoleKey folds labels the screen uses", () => {
   assert.equal(staffRoleKey("closer"), "closer");
   assert.equal(staffRoleKey("wizard"), null);
 });
+
+// The catalog key is "csm" but the printed name is "Client Success Manager",
+// and neither folds onto the other. Both have to resolve or POST
+// /api/auth/invite answers unknown_role and the role cannot be staffed.
+test("staffRoleKey resolves the Client Success Manager role both ways", () => {
+  assert.equal(staffRoleKey("csm"), "csm");
+  assert.equal(staffRoleKey("Client Success Manager"), "csm");
+  assert.equal(staffRoleKey("client_success_manager"), "csm");
+});

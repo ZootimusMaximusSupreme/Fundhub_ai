@@ -14,6 +14,64 @@ export const DEFAULT_MODEL = "claude-sonnet-4-5-20250929";
 export const DEFAULT_OPENAI_MODEL = "gpt-4o-mini";
 export const DEFAULT_MAX_TOKENS = 600;
 
+// ── WHY A FAILURE IS CLASSIFIED AND NOT JUST REPORTED ──────────────────────
+//
+// Measured 2026-09-16 on the live walk: eight document reads in a row came back
+// `openai 429: {"error":{"message":"You have no credits remaining..."}}`. Every
+// caller treated that exactly like "the model read the file and said nothing" —
+// one error string, no verdict, done. An empty wallet is not a verdict and it is
+// not permanent: it is "not right now". Something has to be able to tell those
+// two apart before anything can try again on its own.
+//
+// Same shape as src/company-brain/transcribe.mjs isWhisperCreditsError, which
+// has classified the identical 429 on the Whisper path since 2026-08. Kept here
+// rather than imported from there because that module is about audio files and
+// this one is about the chat/vision call — the two happen to share a vendor.
+export const MODEL_NO_CREDIT = "no_credit";
+export const MODEL_RATE_LIMITED = "rate_limited";
+export const MODEL_SERVER_ERROR = "server_error";
+export const MODEL_UNREACHABLE = "unreachable";
+
+const NO_CREDIT_TEXT =
+  /insufficient_quota|no credits remaining|exceeded your current quota|check your plan and billing|credit balance is too low|billing_hard_limit|quota_exceeded/;
+
+/** The `openai 429: …` / `anthropic 400: …` prefix callOpenAI and callAnthropic write. */
+function statusFromErrorText(text) {
+  const m = /^\s*(?:openai|anthropic)\s+(\d{3})\s*:/i.exec(String(text || ""));
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * classifyModelFailure({ status, error }) → { temporary, reason, status }
+ *
+ * temporary:true means "try this again later and it may well work" — an empty
+ * wallet, a rate limit, a vendor 5xx, or a call that never reached the vendor.
+ * temporary:false means the answer will not change by waiting (a 401 on a bad
+ * key, a 400 on a malformed request), or there was no failure at all.
+ *
+ * NEVER guesses on behalf of the caller. A caller that cannot wait is free to
+ * treat a temporary failure as final; what it must not do is treat a temporary
+ * failure as an ANSWER.
+ */
+export function classifyModelFailure({ status = null, error = null } = {}) {
+  const text = String(error == null ? "" : error);
+  if (!text && status == null) return { temporary: false, reason: null, status: null };
+
+  const code = Number(status) || statusFromErrorText(text) || null;
+  const lower = text.toLowerCase();
+
+  if (NO_CREDIT_TEXT.test(lower)) {
+    return { temporary: true, reason: MODEL_NO_CREDIT, status: code };
+  }
+  if (code === 429) return { temporary: true, reason: MODEL_RATE_LIMITED, status: 429 };
+  if (code != null && code >= 500) return { temporary: true, reason: MODEL_SERVER_ERROR, status: code };
+  // No HTTP status at all means the request never got an answer — fetch threw,
+  // DNS failed, the socket timed out. Bounded retries are the right response;
+  // the caller's attempt ceiling is what stops a genuine code fault looping.
+  if (code == null) return { temporary: true, reason: MODEL_UNREACHABLE, status: null };
+  return { temporary: false, reason: null, status: code };
+}
+
 // A MASKED KEY IS NOT A KEY. Measured 2026-09-17: the live OPENAI_API_KEY was the
 // blanked-out form of one — sixteen asterisks and four characters, i.e. what the
 // screen shows when a password is hidden. Someone copied the mask instead of the
@@ -139,6 +197,9 @@ export async function callModel({
       text: null,
       raw: null,
       request,
+      // No status: the call never reached the vendor. classifyModelFailure
+      // reads that as temporary, which is what a dropped socket is.
+      status: null,
       error: String((err && err.message) || err).slice(0, 300),
       usage: { input_tokens: 0, output_tokens: 0 }
     };
@@ -173,6 +234,9 @@ async function callOpenAI({ env, fetchImpl, request, mediaParts }) {
       text: null,
       raw,
       request,
+      // The status travels with the error. Reading "429" back out of a message
+      // string works until the message changes; the number does not.
+      status: res.status,
       error: `openai ${res.status}: ${JSON.stringify(raw).slice(0, 300)}`,
       usage
     };
@@ -208,6 +272,7 @@ async function callAnthropic({ env, fetchImpl, request, mediaParts }) {
       text: null,
       raw,
       request,
+      status: res.status,
       error: `anthropic ${res.status}: ${JSON.stringify(raw).slice(0, 300)}`,
       usage
     };

@@ -21,7 +21,8 @@
 // src/identity/verified.mjs.
 
 import { byCode } from "../agents/registry.mjs";
-import { callModel } from "../agents/model.mjs";
+import { callModel, classifyModelFailure, MODEL_NO_CREDIT } from "../agents/model.mjs";
+import { record as recordFailedEvent } from "../events/dead-letter.mjs";
 import { recordRun } from "../agents/shadow-log.mjs";
 import { resolveStorageTarget } from "../documents/retrieve.mjs";
 import { storeFromEnv } from "../documents/store.mjs";
@@ -75,6 +76,75 @@ async function loadDocumentBytes(db, { documentId, versionId = null, store = nul
   };
 }
 
+/* ── WHEN THE READER HAS NO CREDIT ─────────────────────────────────────────
+ *
+ * MEASURED 2026-09-16, live walk: eight uploads in a row, eight answers of
+ * `openai 429 … You have no credits remaining`, and every one of them ended
+ * here as "the reader did not answer" — one task for a person and nothing else.
+ * The Inngest run reported SUCCESS, so nothing ever came back to look again.
+ * Repair letters cannot be staged until an ID has been read, so a dry AI account
+ * froze credit repair for every client who uploaded during it, and it would have
+ * stayed frozen after the account was funded: no upload, no event, no retry.
+ *
+ * An empty wallet is "not right now", not "no". So a temporary reader failure
+ * now goes on the dead-letter queue (039_failed_events.sql) as a PENDING row
+ * with a next_attempt_at, and src/workflows/doc-check-retry-sweeper.mjs comes
+ * back for it on a clock. Once there is credit, the next sweep reads the file
+ * and the client's record moves on its own. Nobody has to find it and re-upload.
+ *
+ * WHAT THIS DELIBERATELY DOES NOT DO. It does not invent a reading. No
+ * placeholder name, no address guessed off the credit report, no "we will fix it
+ * later" value written to pii_identity. docs/DELIVERABLES-AND-REPAIR-TRUTH.md is
+ * explicit that identity comes from the client's own documents; a letter sent in
+ * the wrong name is worse than a letter sent late. Until a document is actually
+ * read, the identity packet is left exactly as it was.
+ *
+ * WHY TWELVE ATTEMPTS AND NOT THE DEFAULT SEVEN. dead-letter backs off
+ * 1m, 5m, 15m, 1h, 6h, then 24h for every attempt after that. Seven attempts
+ * run out after about thirty-two hours, which is shorter than "the owner tops up
+ * the account on Monday". Twelve reaches roughly nine days and then stops and
+ * asks for a person. */
+export const RETRY_HANDLER = WORKFLOW_ID;
+export const RETRY_MAX_ATTEMPTS = 12;
+
+/* queueReaderRetry — put this document back in the queue for a later read.
+ *
+ * NEVER THROWS, for the same reason recordRun does not: this hangs off the end
+ * of an upload that has already been stored. A queue write that fails must not
+ * turn "we could not read your file yet" into a request that errors — the
+ * unchecked-document task below is still raised either way, so a person still
+ * hears about it.
+ *
+ * Needs a real event id. failed_events is unique on
+ * (org_id, event_id, handler_name) with NULLS NOT DISTINCT, so queuing two
+ * different documents with a null event id would collapse them into one row and
+ * quietly lose one client's document. Without an id we do not queue, and the
+ * run says so rather than pretending. */
+export async function queueReaderRetry(db, {
+  orgId, clientId, eventId, eventName = "docs.received", payload = {},
+  documentId = null, versionId = null, reason = null, error = null,
+  now = new Date(), recordImpl = recordFailedEvent
+} = {}) {
+  if (!orgId || !eventId) return { queued: false, reason: "no_event_id" };
+  const res = await recordImpl(db, {
+    orgId,
+    eventId,
+    eventName,
+    clientId,
+    // The version actually resolved travels with the payload, so a retry reads
+    // the same bytes this run tried to read rather than whatever is newest.
+    payload: { ...payload, document_id: documentId, version_id: versionId },
+    handler: RETRY_HANDLER,
+    error: { message: `document reader unavailable (${reason || "temporary"}): ${String(error || "").slice(0, 300)}` },
+    maxAttempts: RETRY_MAX_ATTEMPTS,
+    now
+  });
+  if (!res || res.ok !== true) {
+    return { queued: false, reason: "queue_write_failed", error: res && res.error };
+  }
+  return { queued: true, id: res.id, attempts: res.attempts, status: res.status };
+}
+
 /* raiseUncheckedDocumentTask — a person is told when the robot could not read
  * a file.
  *
@@ -87,7 +157,8 @@ async function loadDocumentBytes(db, { documentId, versionId = null, store = nul
  * row or a bad role must not turn "we could not read your file" into a request
  * that fails outright — the document is already stored either way. */
 export async function raiseUncheckedDocumentTask(db, {
-  orgId, clientId, documentId = null, eventId = null, docType = "document", why = ""
+  orgId, clientId, documentId = null, eventId = null, docType = "document", why = "",
+  title = null
 } = {}) {
   if (!orgId || !clientId) return { created: false, reason: "missing_ids" };
   const label = SUBTYPE_TITLES[String(docType)] || "Document";
@@ -95,7 +166,10 @@ export async function raiseUncheckedDocumentTask(db, {
     return await createTask(db, {
       orgId,
       clientId,
-      title: `Check this ${label.toLowerCase()} by hand — nobody has read it`,
+      // The title is overridable for the one case where "by hand" would be a
+      // lie: the reader is coming back by itself, and the task exists so the
+      // wait is visible rather than so somebody types the ID in manually.
+      title: title || `Check this ${label.toLowerCase()} by hand — nobody has read it`,
       sourceWorkflow: WORKFLOW_ID,
       assigneeRole: "closer",
       eventId: eventId ? `${eventId}:unchecked` : null,
@@ -227,7 +301,8 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
     callModelImpl = callModel,
     loadBytesImpl = null,
     recordRunImpl = recordRun,
-    routeImpl = routeDocCheckOutcome
+    routeImpl = routeDocCheckOutcome,
+    queueRetryImpl = queueReaderRetry
   } = deps;
 
   const payload = event?.payload || {};
@@ -321,13 +396,21 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
   });
 
   const json = parseAgentJson(modelResult.text);
+  /* A RETRY RECORDS ITS OWN ROW. agent_runs is unique on
+     (org_id, event_id, agent_code) so that a redelivered event cannot inflate
+     the run counter — which also means a second run on the SAME event is
+     silently dropped. Left alone, a document the reader finally managed to read
+     would still show "openai 429" as its only run, forever. A retry therefore
+     records with no event id (the unique index is partial — it only covers rows
+     that have one) and says in the detail that it is a retry. */
+  const isRetry = event?.isRetry === true;
   await recordRunImpl(db, {
     orgId, agentCode: AGENT_CODE, clientId,
-    triggerEvent: "docs.received", eventId: event.id || null,
+    triggerEvent: "docs.received", eventId: isRetry ? null : (event.id || null),
     channel: "internal",
     mode: modelResult.mode || null,
     outcome: json?.outcome || modelResult.error || "ran",
-    detail: String(modelResult.text || modelResult.error || "").slice(0, 500)
+    detail: `${isRetry ? `retry of ${event.id || documentId}: ` : ""}${String(modelResult.text || modelResult.error || "")}`.slice(0, 500)
   });
 
   /* NO ANSWER IS NOT A PASS.
@@ -342,15 +425,56 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
       orgId, clientId, eventId: event.id || documentId, json, documentId, versionId
     });
   } else {
+    /* NO ANSWER, AND WHICH KIND OF NO ANSWER. "The wallet is empty" and "the
+       model replied with something that is not JSON" both arrive here as a
+       missing verdict, and they need opposite handling: the first will come
+       right on its own once the account has credit, the second will not. */
+    const failure = classifyModelFailure({
+      status: modelResult.status, error: modelResult.error
+    });
+
+    let retry = { queued: false, reason: "not_temporary" };
+    if (failure.temporary) {
+      retry = await queueRetryImpl(db, {
+        orgId, clientId,
+        eventId: event.id || null,
+        eventName: event.name || "docs.received",
+        payload,
+        documentId, versionId,
+        reason: failure.reason,
+        error: modelResult.error
+      });
+    }
+
+    const noCredit = failure.reason === MODEL_NO_CREDIT;
+    const waiting = retry.queued === true;
     const task = await raiseUncheckedDocumentTask(db, {
       orgId, clientId, documentId,
       eventId: event.id || documentId,
       docType,
-      why: modelResult.error
-        ? `the document reader could not finish (${modelResult.error})`
-        : "the document reader did not answer"
+      title: waiting
+        ? `Waiting on the document reader — this ${(SUBTYPE_TITLES[String(docType)] || "Document").toLowerCase()} has not been read yet`
+        : null,
+      why: waiting
+        ? (noCredit
+          ? "the document reader has no credit left on the AI account, so it could not read it. "
+            + "It is queued and will read it by itself once there is credit — nobody needs to re-upload anything. "
+            + "If this is still here in a few days, the reader gave up and a person has to check the file"
+          : `the document reader could not be reached (${failure.reason}). `
+            + "It is queued and will try again by itself")
+        : (modelResult.error
+          ? `the document reader could not finish (${modelResult.error})`
+          : "the document reader did not answer")
     });
-    routed = { routed: false, reason: "no_json", task, gate: "closed" };
+    routed = {
+      routed: false,
+      reason: waiting ? "reader_unavailable_queued" : "no_json",
+      temporary: failure.temporary === true,
+      failure: failure.reason,
+      retry,
+      task,
+      gate: "closed"
+    };
   }
 
   return {

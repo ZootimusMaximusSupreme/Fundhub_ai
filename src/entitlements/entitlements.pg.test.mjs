@@ -4,7 +4,8 @@ import { test, before, beforeEach, after, describe } from "node:test";
 import assert from "node:assert";
 import { db, close } from "../db.mjs";
 import {
-  forClient, has, grant, grantFromTransaction, revoke, catalog, unmappedProducts
+  forClient, has, grant, grantFromTransaction, revoke, catalog, unmappedProducts,
+  reconcileFromTransactions
 } from "./entitlements.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
@@ -391,6 +392,104 @@ describe("entitlements", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     );
     // The letter pack 180 already granted is still granted. Nothing was taken away.
     assert.ok(out.granted.includes("metro2-letter-pack"));
+  });
+
+  /* ── THE RECONCILE PATH ───────────────────────────────────────────────────
+     WHY THIS EXISTS. product_entitlements is a LOOKUP, read once when a payment
+     is processed. Adding a row to it afterwards unlocks nobody who has already
+     paid. Measured on production 2026-09-17:
+     383_blueprint_entitlement.sql mapped 'consulting-package' to
+     'credit-optimization-roadmap' at 23:13; Sim Eleven-Blueprint's $5,000 payment
+     had been granted at 17:46; the row was in the table and his tile was still
+     locked. reconcileFromTransactions() is what closes that gap.
+
+     EVERY CALL BELOW PASSES clientId. Left out, reconcile walks the WHOLE org,
+     which is right in production and wrong in a test file that may be pointed at
+     a database holding real clients. Keep the scope. */
+  describe("reconcileFromTransactions", () => {
+    let paidTx, unknownTx;
+
+    before(async () => {
+      paidTx = (await db.query(
+        `INSERT INTO transactions (org_id, client_id, product_name, amount_paid, status)
+         VALUES ($1,$2,'Credit Repair Bundle',1000,'succeeded') RETURNING id`,
+        [org, clientId])).rows[0].id;
+      // A product string that matches no product and no alias. It must grant
+      // nothing and be REPORTED, never guessed at.
+      unknownTx = (await db.query(
+        `INSERT INTO transactions (org_id, client_id, product_name, amount_paid, status)
+         VALUES ($1,$2,'ent-fixture nothing sells this',999,'succeeded') RETURNING id`,
+        [org, clientId])).rows[0].id;
+    });
+
+    after(async () => {
+      await db.query(`DELETE FROM transactions WHERE id = ANY($1)`, [[paidTx, unknownTx]]);
+    });
+
+    test("a client who paid before the mapping existed ends up unlocked", async () => {
+      assert.equal(await has(db, { orgId: org, clientId, code: CODE }), false);
+      const out = await reconcileFromTransactions(db, { orgId: org, clientId });
+      assert.ok(
+        out.granted.some((g) => g.entitlementCode === CODE),
+        `reconcile granted nothing: ${JSON.stringify(out)}`
+      );
+      assert.equal(await has(db, { orgId: org, clientId, code: CODE }), true);
+    });
+
+    test("running it twice adds nothing the first run did not", async () => {
+      const first = await reconcileFromTransactions(db, { orgId: org, clientId });
+      const again = await reconcileFromTransactions(db, { orgId: org, clientId });
+      assert.ok(first.granted.length > 0);
+      assert.deepEqual(again.granted, [], "a second run wrote grants — it is not idempotent");
+      const { rows } = await db.query(
+        `SELECT count(*)::int AS n FROM entitlements
+          WHERE client_id = $1 AND entitlement_code = $2 AND source_transaction_id = $3`,
+        [clientId, CODE, paidTx]);
+      assert.equal(rows[0].n, 1);
+    });
+
+    /* THE ONE THING A BACKFILL MUST NEVER DO. A grant somebody deliberately
+       revoked after a refund or a chargeback must stay revoked. The revoked row
+       still occupies the unique key, so the insert conflicts and does nothing —
+       the same rule grant() enforces, which reinstates only when a caller asks
+       it to in so many words. */
+    test("a deliberately revoked grant is not resurrected", async () => {
+      await reconcileFromTransactions(db, { orgId: org, clientId });
+      await revoke(db, { orgId: org, clientId, code: CODE, reason: "chargeback" });
+      assert.equal(await has(db, { orgId: org, clientId, code: CODE }), false);
+
+      const out = await reconcileFromTransactions(db, { orgId: org, clientId });
+      assert.deepEqual(out.granted, []);
+      assert.equal(
+        await has(db, { orgId: org, clientId, code: CODE }), false,
+        "reconcile brought back access that had been revoked"
+      );
+    });
+
+    test("a product string nothing sells is reported, never guessed", async () => {
+      const out = await reconcileFromTransactions(db, { orgId: org, clientId });
+      assert.ok(
+        out.unresolved.some((u) => String(u.transactionId) === String(unknownTx)),
+        `the unmatchable transaction was not reported: ${JSON.stringify(out.unresolved)}`
+      );
+    });
+
+    test("a failed payment unlocks nothing", async () => {
+      const failed = (await db.query(
+        `INSERT INTO transactions (org_id, client_id, product_name, amount_paid, status)
+         VALUES ($1,$2,'Card Stacking DFY',3000,'failed') RETURNING id`,
+        [org, clientId])).rows[0].id;
+      try {
+        const out = await reconcileFromTransactions(db, { orgId: org, clientId });
+        assert.ok(
+          !out.granted.some((g) => g.entitlementCode === "funding-snapshot"),
+          "a FAILED payment granted the funding deliverable"
+        );
+        assert.equal(await has(db, { orgId: org, clientId, code: "funding-snapshot" }), false);
+      } finally {
+        await db.query(`DELETE FROM transactions WHERE id = $1`, [failed]);
+      }
+    });
   });
 
   test("replaying a real purchase grants once, not twice", async () => {

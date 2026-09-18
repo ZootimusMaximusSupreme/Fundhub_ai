@@ -48,6 +48,7 @@ import { f09FundingDeclinedNoPath } from './f-09-funding-declined-no-path.mjs';
 import { f10ClientFundingInboxProvisioner } from './f-10-client-funding-inbox-provisioner.mjs';
 import { f11BankEmailEventRouter } from './f-11-bank-email-event-router.mjs';
 import { docCheck } from './doc-check.mjs';
+import { docCheckRetrySweeper } from './doc-check-retry-sweeper.mjs';
 import { inquiryCallSweeper } from './inquiry-call-sweeper.mjs';
 import { n01ColdNurture } from './n-01-cold-nurture.mjs';
 import { n02WarmNurture } from './n-02-warm-nurture.mjs';
@@ -311,6 +312,22 @@ export const functions = [
   f10ClientFundingInboxProvisioner,
   f11BankEmailEventRouter,
   docCheck,
+  /* THE CLOCK THAT COMES BACK FOR AN UNREAD DOCUMENT. Registered 2026-09-17.
+
+     Measured on the live walk 2026-09-16: eight uploads, eight answers of
+     `openai 429 … no credits remaining`, and nothing anywhere holding a note to
+     look again. Topping the account up would not have fixed it — with no new
+     upload there is no docs.received and so no reader. Dispute letters cannot
+     stage until a client's ID has been read, so an empty wallet froze credit
+     repair for everyone who uploaded during it, indefinitely.
+
+     REGISTERING IT READS DOCUMENTS ALREADY UPLOADED AND NOTHING ELSE. It claims
+     only failed_events rows whose handler is 'doc-check' — never another
+     handler's queued failure — and it invents no identity: a document it still
+     cannot read leaves the client's verified name and address exactly as they
+     were, and after twelve tries over about nine days it stops and asks a
+     person. */
+  docCheckRetrySweeper,
   /* Bureau dispute calls, every 15 minutes. Its own header said "not registered
      until owner enables the schedule" — that gate was implemented as "leave it
      out of this array", which made it invisible on the Automations screen and

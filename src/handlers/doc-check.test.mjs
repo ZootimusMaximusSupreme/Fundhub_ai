@@ -293,3 +293,171 @@ test("routeDocCheckOutcome: request_more never records an identity, whatever the
   assert.equal(seen.some((s) => /pii_identity/.test(s)), false,
     "a document the agent refused proves nothing and must not reach pii_identity");
 });
+
+/* ── THE READER WITH NO CREDIT ────────────────────────────────────────────
+ *
+ * Measured in production on 2026-09-17: twelve DOC-CHECK runs, every one of
+ * them `openai 429 … You have no credits remaining`, every one recorded as if
+ * it were the end of the story. These are the tests that say it is not. */
+
+function readerFailureDb() {
+  return {
+    async query(sql) {
+      if (/FROM agents/.test(sql)) {
+        return { rows: [{ code: AGENT_CODE, prompt: "Read the document.", output_schema: null }] };
+      }
+      if (/FROM clients/.test(sql) && /first_name/.test(sql)) {
+        return { rows: [{ first_name: "Chris", last_name: "Stanbridge", custom_fields: {} }] };
+      }
+      return { rows: [] };
+    }
+  };
+}
+
+const READER_PAYLOAD = {
+  kind: "client_upload",
+  subtype: "id_document",
+  document_id: "doc-429",
+  original_filename: "licence.png"
+};
+
+test("an empty AI account is queued for another read, not written off", async () => {
+  const queued = [];
+  const runs = [];
+  const res = await onDocsReceivedDocCheck(readerFailureDb(), event(READER_PAYLOAD), {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png", versionId: "ver-1" }),
+    callModelImpl: async () => ({
+      mode: "live",
+      text: null,
+      status: 429,
+      error: 'openai 429: {"error":{"message":"You have no credits remaining. Add credits to continue"}}'
+    }),
+    recordRunImpl: async (_db, row) => { runs.push(row); return row; },
+    queueRetryImpl: async (_db, spec) => { queued.push(spec); return { queued: true, id: "fe-1", attempts: 1, status: "pending" }; },
+    routeImpl: async () => { throw new Error("must not route a document nobody read"); }
+  });
+
+  assert.equal(res.routed, false, "a 429 is not a verdict, so nothing routes");
+  assert.equal(res.json, null);
+  assert.equal(res.route.reason, "reader_unavailable_queued");
+  assert.equal(res.route.temporary, true);
+  assert.equal(res.route.failure, "no_credit");
+
+  assert.equal(queued.length, 1, "the document goes on the queue for a later read");
+  assert.equal(queued[0].eventId, "evt-doc-1");
+  assert.equal(queued[0].documentId, "doc-429");
+  assert.equal(queued[0].versionId, "ver-1", "the retry reads the same version this run tried");
+  assert.equal(queued[0].payload.subtype, "id_document");
+
+  // The reason stays visible: the run says 429 out loud, it is not swallowed.
+  assert.equal(runs.length, 1);
+  assert.match(runs[0].outcome, /429/);
+});
+
+test("a queued document tells a person it is waiting, and does not claim nobody will read it", async () => {
+  const tasks = [];
+  const db = readerFailureDb();
+  const origQuery = db.query.bind(db);
+  db.query = async (sql, params) => {
+    if (/INSERT INTO tasks/i.test(sql)) { tasks.push({ sql, params }); return { rows: [{ id: "t-1" }] }; }
+    if (/FROM tasks/i.test(sql)) return { rows: [] };
+    return origQuery(sql, params);
+  };
+  const res = await onDocsReceivedDocCheck(db, event(READER_PAYLOAD), {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => ({
+      mode: "live", text: null, status: 429,
+      error: 'openai 429: {"error":{"message":"You have no credits remaining"}}'
+    }),
+    recordRunImpl: async () => null,
+    queueRetryImpl: async () => ({ queued: true, id: "fe-1", attempts: 1, status: "pending" })
+  });
+  assert.equal(res.route.reason, "reader_unavailable_queued");
+  // createTask's INSERT puts the title in the third parameter.
+  const title = String(tasks[0]?.params?.[2] || "");
+  assert.match(title, /Waiting on the document reader/,
+    "a task that says 'check it by hand' would be a lie while the robot is still coming back");
+});
+
+test("a failure that waiting cannot fix is NOT queued — it still goes to a person", async () => {
+  const queued = [];
+  const res = await onDocsReceivedDocCheck(readerFailureDb(), event(READER_PAYLOAD), {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    // A live answer that is simply not the JSON it was asked for. Waiting
+    // changes nothing about that, so it must not sit in a retry queue.
+    callModelImpl: async () => ({ mode: "live", text: "I am not sure what this is.", error: null }),
+    recordRunImpl: async () => null,
+    queueRetryImpl: async (_db, spec) => { queued.push(spec); return { queued: true }; }
+  });
+  assert.equal(queued.length, 0);
+  assert.equal(res.route.reason, "no_json");
+  assert.equal(res.route.temporary, false);
+});
+
+test("a 429 never writes an identity — a wrong name is worse than a late one", async () => {
+  const writes = [];
+  const db = readerFailureDb();
+  const origQuery = db.query.bind(db);
+  db.query = async (sql, params) => {
+    if (/pii_identity/i.test(sql)) writes.push(sql);
+    return origQuery(sql, params);
+  };
+  await onDocsReceivedDocCheck(db, event(READER_PAYLOAD), {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => ({
+      mode: "live", text: null, status: 429,
+      error: 'openai 429: {"error":{"message":"You have no credits remaining"}}'
+    }),
+    recordRunImpl: async () => null,
+    queueRetryImpl: async () => ({ queued: true, id: "fe-1" })
+  });
+  assert.deepEqual(writes, [], "nothing was read, so nothing may be recorded as verified");
+});
+
+test("a retry records its own run row rather than being swallowed by the event unique index", async () => {
+  const runs = [];
+  await onDocsReceivedDocCheck(readerFailureDb(), { ...event(READER_PAYLOAD), isRetry: true }, {
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => ({ mode: "live", text: JSON.stringify({ outcome: "hold", hold_reason: "needs review" }), error: null }),
+    recordRunImpl: async (_db, row) => { runs.push(row); return row; },
+    routeImpl: async () => ({ routed: true, outcome: "hold" })
+  });
+  assert.equal(runs.length, 1);
+  assert.equal(runs[0].eventId, null,
+    "agent_runs is unique on (org, event, agent) — a retry reusing the event id would be dropped");
+  assert.match(runs[0].detail, /^retry of evt-doc-1:/);
+  assert.equal(runs[0].outcome, "hold");
+});
+
+test("queueReaderRetry refuses to queue without an event id, and says so", async () => {
+  const { queueReaderRetry } = await import("./doc-check.mjs");
+  const res = await queueReaderRetry(null, { orgId: ORG, clientId: CLIENT, eventId: null });
+  assert.deepEqual(res, { queued: false, reason: "no_event_id" });
+});
+
+test("queueReaderRetry asks for twelve attempts, not the dead-letter default of seven", async () => {
+  const { queueReaderRetry, RETRY_HANDLER, RETRY_MAX_ATTEMPTS } = await import("./doc-check.mjs");
+  const seen = [];
+  const res = await queueReaderRetry(null, {
+    orgId: ORG, clientId: CLIENT, eventId: "evt-doc-1",
+    payload: { subtype: "id_document" }, documentId: "doc-429", versionId: "ver-1",
+    reason: "no_credit", error: "openai 429",
+    recordImpl: async (_db, spec) => { seen.push(spec); return { ok: true, id: "fe-1", attempts: 1, status: "pending" }; }
+  });
+  assert.equal(res.queued, true);
+  assert.equal(seen[0].handler, RETRY_HANDLER);
+  assert.equal(seen[0].maxAttempts, RETRY_MAX_ATTEMPTS);
+  assert.equal(RETRY_MAX_ATTEMPTS, 12);
+  assert.equal(seen[0].payload.document_id, "doc-429");
+  assert.equal(seen[0].payload.version_id, "ver-1");
+});
+
+test("a queue write that fails does not fail the upload — the person is still told", async () => {
+  const { queueReaderRetry } = await import("./doc-check.mjs");
+  const res = await queueReaderRetry(null, {
+    orgId: ORG, clientId: CLIENT, eventId: "evt-doc-1",
+    recordImpl: async () => ({ ok: false, error: "relation failed_events does not exist" })
+  });
+  assert.equal(res.queued, false);
+  assert.equal(res.reason, "queue_write_failed");
+});

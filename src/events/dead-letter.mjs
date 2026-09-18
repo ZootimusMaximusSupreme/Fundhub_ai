@@ -108,17 +108,25 @@ export async function record(db, {
 }
 
 /* due — rows ready for another attempt. `limit` bounds a batch so a backlog of
-   thousands cannot become one enormous transaction. */
-export async function due(db, { orgId, limit = 50, now = new Date() } = {}) {
+   thousands cannot become one enormous transaction.
+
+   `handler` narrows the batch to one handler's rows. A worker that replays
+   everything pending is a different and much riskier thing than a worker that
+   replays one known-safe handler, and nothing in this repo drives the general
+   case yet — so the only caller today (the document-reader retry sweeper) names
+   its handler and cannot pick up somebody else's queued failure. Omit it and
+   the behaviour is unchanged: every handler's due rows. */
+export async function due(db, { orgId, limit = 50, now = new Date(), handler = null } = {}) {
   const r = await db.query(
     `SELECT id, event_id, event_name, event_version, client_id, payload,
             handler_name, attempts, max_attempts
        FROM failed_events
       WHERE org_id = $1 AND status = 'pending'
         AND next_attempt_at IS NOT NULL AND next_attempt_at <= $2
+        AND ($4::text IS NULL OR handler_name = $4)
       ORDER BY next_attempt_at ASC
       LIMIT $3`,
-    [orgId, now, limit]
+    [orgId, now, limit, handler]
   );
   return r.rows;
 }

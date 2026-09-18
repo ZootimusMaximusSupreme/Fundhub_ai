@@ -25,6 +25,7 @@
 | FIX-3 CSM role end to end | CSM screens under `public/app/`, `src/insights/`, `src/shifts/`, `src/consent/`, `public/app/consent-capture.html`, CSM task creator in `src/workflows/` | GAP 34, 35, 36, 37, 38, 39 | pending | — |
 | FIX-4 Messaging that never landed | `src/messaging/`, reminder + chase workflows in `src/workflows/`, phone normalisation at intake | GAP 22, 23, 27, 21-leftover | pending | — |
 | FIX-5 Money in, docs out, headline | `src/payments/` inbox sweeper, `src/deliverables/` + `src/underwrite/`, apply-site watch page copy | GAP 5, GAP 19, GAP 26 | pending | — |
+| L4 Gmail + the ID reader | `src/gmail/`, `src/agents/model.mjs`, `src/handlers/doc-check.mjs`, `src/events/dead-letter.mjs`, `src/workflows/doc-check-retry-sweeper.mjs`, `scripts/google-oauth-mint.mjs` | Blocked-on-Chris #2 and #3 below | **done — not committed** | L4 |
 
 **Dependencies: none. All five run at the same time.**
 
@@ -37,8 +38,8 @@
 These are credentials and money, not bugs. Naming them so no lane burns time on them.
 
 1. **Bank Apply is dead.** The proxy login is rejected (407). Every Apply click returns `oxylabs_auth_failed`. No bank form can open until the Oxylabs login is fixed. Blocks the whole funding money path.
-2. **The document reader has no credit.** Every ID read returns 429 (no credits on the AI account). Repair letters can never stage, because staging needs the ID read first. Blocks GAP 1, GAP 2, GAP 9, GAP 28.
-3. **Gmail cannot be read.** The token in the environment is a 20-character mask, not a real token. "Prove it landed in Gmail" is impossible until a real token exists.
+2. ~~**The document reader has no credit.**~~ **NO LONGER A HARD BLOCK — fixed by lane L4, 2026-09-17.** The account still has no credit (production, 2026-09-17: twelve DOC-CHECK runs, all `openai 429 — You have no credits remaining`), and no code can put money in it. What changed is that it is no longer permanent: a 429 now parks the document on a queue and a new sweeper re-reads it every 20 minutes for about nine days. **Chris funds the account and the backlog reads itself** — no re-upload, nobody un-wedging anything. Only funding is left for Chris, and after that nothing. Still blocks GAP 1, 2, 9, 28 *until* the account is funded.
+3. **Gmail cannot be read.** The token on this laptop is a 20-character mask, not a real token. **Lane L4, 2026-09-17:** the repo had no way to MAKE a token — the one that worked in August was minted by an external tool ("file-sweep") that is not in this repo and no longer on this Mac. `scripts/google-oauth-mint.mjs` is that missing half: it runs the whole Google sign-in on the loopback address, asks for `gmail.modify` **and** `drive.readonly` in one consent, writes the token file in the exact shape `src/gmail/config.mjs` parses, and prints the single `netlify env:set` line. Proven end to end against Google with a dummy client — the flow ran to the token exchange and stopped only at "The OAuth client was not found". **What is left for Chris: create a Desktop-app OAuth client in the Google Cloud Console, download its JSON, and press Allow once.** Everything either side of that click is built. Undecided from this machine: whether the value on Netlify is genuine or the same pasted mask — either way the fix above is safe, because `GOOGLE_GMAIL_OAUTH_TOKEN_JSON` wins over the Drive keys and rotates nothing.
 4. **No CSM can sign in.** Demo logins are switched off on the live deploy and there is no real `csm@fundhub.ai` staff row. Owner call: mint a real CSM staff row, or turn demo logins on. Agents will not invent a staff user.
 
 ---
@@ -205,4 +206,236 @@ agent sets them with `netlify env:set ... --secret` and re-runs the Apply click.
 
 **Do not** build a workaround, a mock, or a fallback path for this. It is a credentials problem with a
 credentials fix.
+
+---
+
+## L4 change manifest — Gmail + the ID reader (2026-09-17)
+
+**Files added**
+
+* `src/workflows/doc-check-retry-sweeper.mjs` — cron `*/20 * * * *`. Re-reads documents the reader could not read. Claims only `failed_events` rows whose handler is `doc-check`.
+* `src/workflows/doc-check-retry-sweeper.test.mjs` — 13 tests.
+* `scripts/google-oauth-mint.mjs` — the Google consent flow the repo never had.
+
+**Files changed**
+
+* `src/agents/model.mjs` — new export `classifyModelFailure()` + the `MODEL_*` reason constants; `callOpenAI` / `callAnthropic` / the catch now carry `status` out with the error. Nothing about model choice, provider or keys changed.
+* `src/handlers/doc-check.mjs` — new exports `queueReaderRetry`, `RETRY_HANDLER`, `RETRY_MAX_ATTEMPTS`; new `queueRetryImpl` dep; `raiseUncheckedDocumentTask` takes an optional `title`; a retry records its own `agent_runs` row.
+* `src/events/dead-letter.mjs` — `due()` takes an optional `handler` filter. Backward compatible; omitted = unchanged.
+* `src/workflows/index.mjs` — registers `docCheckRetrySweeper`.
+* `src/workflows/index.test.mjs` — `doc-check-retry-sweeper` added to `EXPECTED_WORKFLOW_IDS` with its reason.
+* `src/handlers/doc-check.test.mjs` — 8 tests added. None removed, none weakened.
+* `docs/journeys/doc-check-identity-flow.md` + `docs/journeys/CHANGELOG.md`.
+
+**Routes/props/journeys:** no route added, no endpoint, no UI, no schema change, no migration, no new dependency. One new Inngest cron function.
+
+**Deliberately NOT done:** the 28 pending `failed_events` rows from money and survey handlers (measured on production, 2026-09-17) are still unretried by anything. Draining those is a separate, much larger decision and this sweeper cannot touch them.
+
+**Not run** (five agents share this checkout): `npm run lint`, `npx tsc --noEmit`, the full suite, `npm run ship`. Run here and green: `node --test` on the three lane test files (39 pass / 0 fail / 0 skipped) and on `index.test.mjs` + `registry.test.mjs` (21 pass / 0 fail). **Nothing is committed** — the lane brief forbids git in a shared checkout, so whoever integrates must commit these files (CLAUDE.md "commit locally, every session").
+
+---
+
+## Proof with a real database — 2026-09-17
+
+Written by lane L5. My job was proof, not fixes. I changed no product code.
+
+### What I set up
+
+This Mac had no database on it. I built one just for testing. It is Postgres
+16.14, the same version the notes in CLAUDE.md used on 2026-08-27. I started it
+from nothing and applied all 285 setup files to it. They all applied with no
+errors. I never pointed any test at the live database. I never ran
+`npm run verify:e2e`.
+
+### The biggest thing I found
+
+**`npm test` never runs the database tests. It stops before it gets to them.**
+
+The command runs the tests in two halves. First the plain tests, then the 199
+database tests. If the first half has even one failure, it quits right there.
+The first half has had 4 known failures for a while. So the second half has not
+run. Not here, and not in the automatic checks either.
+
+That means every "the suite is green with a database" claim made from
+`npm test` only ever measured half the suite. I ran the second half by hand so
+it would actually be measured.
+
+### The real numbers
+
+I had to run the two halves separately, and the tree kept changing under me
+while I worked, so these are two readings taken minutes apart. That is honest,
+not tidy.
+
+**Half one — the plain tests** (no database needed). Taken 17:05.
+
+* 9,977 tests. 9,966 passed. 9 failed. 2 skipped.
+
+4 of those 9 are the known old ones you already listed. The other 5 are not
+bugs. They are the footprint of lane L4's work sitting half-finished in the
+shared folder: a new setup file and a new background job that the lists have
+not been told about yet. They will go away when that work is finished and
+saved.
+
+**Half two — the 199 database tests.** Taken on a brand new, empty database
+with nothing else touching it.
+
+* 2,939 tests. 2,897 passed. 31 failed. 10 were cut off. 1 skipped.
+
+I ran this twice, on two different fresh databases. Both runs gave the exact
+same numbers. So the result is steady, not luck.
+
+### Every failure, and who caused it
+
+To answer "did today's work break this?", I took a copy of the code from before
+today's fixes started and ran the same tests against it. That is the only
+honest way to tell.
+
+Old and already broken before today — **not caused by today's work**:
+
+1. `GET /api/read/ad-spine` — a signed-in person with the wrong job gets in
+2. `YouTube analytics connect/sync/read` — same kind of wrong-answer problem
+3. `public decline autopsy` — 12 failures; the page is not wired to a web
+   address, so it cannot be opened at all
+4. `an approval with no amount is not chased on the wrong rail...`
+5. `every waypoint the SQL removes is one the gate would have refused`
+6. `F46 end to end — an ORDINARY client gets five deliverables`
+7. `F46 end to end — an AUTHORIZED-USER-DOMINANT client gets six`
+8. `the RAW seed — no emit step — is readable as a real bureau pull`
+9. `nothing seeds a waypoint — until enrolment does`
+10. `enrolling a client builds their checklist`
+11. `a renamed card, a genuinely new card, and the way back`
+
+Every one of those also failed on the older copy. None is new.
+
+Not a real failure — **a test getting in another test's way**:
+
+12. `replay() over the same event log sends ZERO messages`. This fails when the
+    whole batch runs together. On its own, on a clean database, it passes 8 out
+    of 8. Another test file leaves messages lying around and this one counts
+    them. The code is fine. The tests need tidier housekeeping.
+
+**Caused by today's work — this one is real:**
+
+13. `GET /api/scripts/list` — **one partner can see another partner's saved ad
+    scripts.** Two checks fail: "another partner's script is not in this
+    partner's list" and "a staff session of another role still only gets the
+    partner it named". It fails on its own, on a clean empty database, every
+    time. So it is not a fluke.
+
+    This came in today at 15:53 with the saved-ad-scripts work. The test file
+    did not exist before that. This is one customer seeing another customer's
+    private work. It is the kind of fault CLAUDE.md warns about most.
+
+### PROVEN WORKING
+
+I ran each of these against the real test database and watched what the
+database actually held afterwards. All on a clean, empty database.
+
+* **A round can no longer be marked funded with no bank approval.** 9 out of 9
+  checks passed. Both doors are shut, not just one. The board door refuses and
+  says why in plain words. The behind-the-scenes door also refuses, and I
+  checked the round afterwards — it was still sitting unfunded, with no amount
+  written on it. A round with a real bank yes still funds normally. A repeat of
+  an already-funded round is not blocked, so nothing jams.
+* **CSM calls.** 9 out of 9 checks passed. Paying for repair, trial or academy
+  now creates the halfway call — I tested all three kinds of payment and each
+  one made the call. The results call is no longer made twice: two separate
+  funding events now leave exactly one call, not two. Every call created has a
+  date on it, so none of them fall into the "no date" pile.
+* **Phone numbers and the welcome text.** The number "(661) 605-4248" is turned
+  into "+16616054248" before the text is addressed. I checked the saved message
+  and that is what it holds. Nothing was blocked and nothing errored.
+* **The 2-hour chase for someone who never booked.** It fires. Someone who
+  finished the survey and did not book gets chased. Someone who did book is
+  left alone.
+* **The day-before call reminder.** It works. A call booked 3 days out produces
+  the day-before reminder, and the 2-hour one as well.
+
+### About the day-before reminder claim
+
+The earlier agent said this was "not broken, the walk just measured too early".
+**That agent was right.** I checked it properly instead of taking their word.
+
+Two separate things back it up. First, a booking 3 days out really does produce
+the day-before reminder on a real database — I watched it happen. Second, I
+read the live records: Sim Eight-Funding booked at 06:18 for a call at 17:00
+the same day. That is under 11 hours' notice. There was no "day before" left to
+reach, so no reminder was correct.
+
+One correction to the walk notes. They say Sim Eleven-Blueprint had a booking
+but no reminders. He has **no booking at all** on the live system. So there was
+nothing for a reminder to attach to.
+
+The fix that made these reminders fire properly went in on 2026-09-03, two
+weeks before the walk. So the code was already right when the walk ran.
+
+### PROVEN BROKEN
+
+* **Partners can see each other's saved ad scripts.** See number 13 above. New
+  today. Reproduces every time on a clean database.
+
+### STILL UNPROVEN, and why
+
+* **The 11 old failures above.** I proved they are old. I did not prove what
+  causes any of them. That was not my job today.
+* **Anything on a screen.** I proved what the database does. I did not open a
+  browser. A screen can still show the wrong thing while the data underneath is
+  right.
+* **Anything on the live site.** Everything I proved was on a test copy. None
+  of it proves the live site behaves the same way, because the live site is
+  running older code until somebody ships.
+* **One single clean suite number.** Four other lanes were editing this same
+  folder while I worked. The code moved under me twice. So the two halves were
+  measured minutes apart, not at the same instant.
+
+### What the live records say — read only, nothing changed
+
+I only read. I set the connection to refuse writes before asking anything.
+No row was added, changed or removed.
+
+**Sim Eight-Funding (FH-000392)**
+
+* The $2,500 success-fee invoice is still **unpaid**. It reads "sent", nothing
+  paid against it, no payments recorded at all.
+* Its payment inbox row is still **stuck**: waiting, tried 0 times, never
+  picked up, never finished. It arrived at 19:31 and has not moved.
+* 5 other payment rows are stuck the same way. 6 stuck in total. Every one has
+  been tried zero times. Nothing is draining that inbox.
+* Money owed still shows: **$5,000** outstanding on the deal. But only **$2,500**
+  has been invoiced. Half the fee has never been billed.
+* This is why: they have two funding rounds, both marked funded at $25,000 each.
+  Round 2 has a real bank yes for $10,000 on it. **Round 1 has no bank
+  applications on it at all** — it was marked funded for $25,000 with nothing
+  behind it. That is the exact hole the new guard now closes. The old rows stay
+  as they are; the guard only stops it happening again.
+* **Waypoints: none.** They have zero. Only 3 clients in the whole live system
+  have any waypoints, and they are not one of them.
+* Entitlements: one — "Funding Snapshot", granted when they bought Card
+  Stacking DFY.
+* Tasks: 22 open. Two of them are the **same** "results and what's next" call,
+  created twice. That is the duplicate the fix now prevents. Both have no date
+  on them.
+
+**Sim Eleven-Blueprint (FH-000398)**
+
+* **What they paid:** $5,000. One payment, a deposit, taken 2026-09-17 at
+  17:46. It went through. The deal is the "Consulting Services Package" at an
+  agreed $5,000. Nothing is owed — the balance is zero.
+* **They have no invoices at all.**
+* **What they are entitled to right now:** one thing only — the "Metro 2
+  Dispute Letter Pack", granted because of that purchase.
+* **Waypoints: none.**
+* One task: the halfway check-in call, with a date on it.
+* No booking was ever made for them.
+
+### How to repeat what I did
+
+The test database was built in a scratch folder outside the repo, so nothing
+here changed. Postgres 16.14 came from the `@embedded-postgres/darwin-arm64`
+package and the pgvector add-on came from the `pgserver` Python package, because
+neither one has both pieces on its own. Nothing was added to `package.json`.
+
+To run the database tests without `npm test` cutting them off, run the 199
+`*.pg.test.mjs` files directly with `node --test --test-concurrency=1`. One at a
+time matters — they share tables and tread on each other otherwise.
 

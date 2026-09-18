@@ -719,7 +719,12 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             </div>
           </div>
         </div>
-        <div class="own-foot own-real"><span class="pulse"></span> Files from your package. Nothing here expires.</div>
+        <!-- "Nothing here expires" was a promise this list cannot keep. A
+             document can carry its own expires_at, and a row in that state now
+             says so in plain words instead of offering a link that would be
+             refused. The true sentence is the one below: the file stays on the
+             client's file. -->
+        <div class="own-foot own-real"><span class="pulse"></span> Files from your package. They stay on your file.</div>
         <div class="own-foot own-empty"><span class="pulse"></span> <span id="own-empty-foot">After your call, this list fills in on its own.</span></div>
       </section>
 
@@ -1525,39 +1530,115 @@ document.addEventListener("DOMContentLoaded", async function () {
     return null;
   }
 
+  /* THE ROWS THIS LIST IS MADE OF — the union of two true sources.
+     MEASURED ON PRODUCTION, 2026-09-17. Client 029964c5 paid in full for the
+     Capital Blueprint and ELEVEN deliverables were saved against her file two
+     minutes later: the Credit Analysis Report, the Funding Snapshot, the Bank
+     and Lender Match List, the Credit Optimization Roadmap, the Capital
+     Readiness Summary and six dispute letters. This list showed ONE row —
+     "Metro 2 Dispute Letter Pack … not built yet" — because it was built only
+     from the five entitlement codes in OWN_CODES and she holds exactly one of
+     them. Every real file she had was reachable only inside the collapsed
+     "Account & history" drawer, several clicks away, under a tab.
+
+     Owner rule, 2026-09-17: what a client paid for is unlocked, and the
+     materials already created for them are immediately reachable. So:
+
+       1. THE PACKAGE SHE IS ENTITLED TO. Unchanged — this is what keeps the
+          honest "owned but not built yet" row, the thing a package promises
+          before it exists. The display name prefers `entitlement_name`, which
+          /api/read/entitlements already returns from entitlement_catalog, so
+          the words follow the catalog rather than this file.
+
+       2. EVERY DELIVERABLE ACTUALLY ON HER FILE that step 1 did not already
+          claim, named by its own stored title and linked with the signed URL
+          portal-summary already minted for it.
+
+     NO PRODUCT CODE AND NO ENTITLEMENT CODE IS HARDCODED IN STEP 2. A grant
+     corrected anywhere else flows straight through, and a client whose grant is
+     still wrong can still reach the work we already did for her.
+
+     `kind === "deliverable"` is the whole filter. Her own uploads and her signed
+     agreements are hers too and both already have their own tab; repeating them
+     here would bury the package under photographs of a driving licence.
+
+     ORDER. Entitlement rows first, in OWN_CODES order, then the documents in
+     the order portal-summary gave them — newest first, the same order the
+     Documents tab uses. Nothing is re-ranked, so the two lists cannot disagree
+     about which file is the newest. */
+  function ownRows(active) {
+    var rows = [];
+    var claimed = {};
+    var i;
+    for (i = 0; i < OWN_CODES.length; i++) {
+      var entry = OWN_CODES[i];
+      var granted = active && active[entry.code];
+      if (!granted) continue;
+      var doc = ownedDocument(entry.subtype);
+      rows.push({ name: granted.entitlement_name || entry.name, doc: doc });
+      if (doc && doc.id) claimed[doc.id] = 1;
+    }
+    for (i = 0; i < docsOnFile.length; i++) {
+      var d = docsOnFile[i];
+      if (!d || d.kind !== "deliverable") continue;
+      if (d.id && claimed[d.id]) continue;
+      /* A document with no usable title still gets a row rather than being
+         dropped — the file is hers. `subtype` is the documents table's own
+         name for the thing and is the honest fallback; nothing is invented. */
+      rows.push({ name: d.title || d.subtype || "Document", doc: d });
+    }
+    return rows;
+  }
+
   /* WHAT YOU OWN — and whether you can actually have it.
      Walk finding 19, 2026-09-06: this list promised "always downloadable" and
      then offered a Funding Snapshot with no link and no button, under a line
      telling the client to ask an advisor — on a page whose advisor card says
      nobody is assigned. Three dead ends in one row.
 
-     So each row now says which of the two true states it is in:
+     So each row says which of the THREE true states it is in:
        · the document exists and we can hand it over  → a Download link
+       · the document exists and carries no link      → said plainly
        · it is owned but not built yet                → said plainly, no chase
-     Neither row asks the client to go and find a person. Nothing invents a
-     link: a deliverable with no document, or a document whose signed link has
-     expired, falls to the second state rather than rendering a control that
-     cannot finish. */
+     Neither of the last two asks the client to go and find a person, and
+     nothing invents a link.
+
+     THE MIDDLE STATE USED TO BE FOLDED INTO "not built yet", which was the
+     wrong sentence for a file that exists. portal-summary returns a null
+     `download` for exactly two reasons (api/read/portal-summary.mjs:82-91 and
+     :604-608): the document's own `expires_at` has passed, or
+     DOCUMENT_URL_SECRET is not configured and nothing could be signed. The copy
+     therefore states what is certainly true — the file is on her file and this
+     copy cannot be downloaded — and promises nothing about how to get it, since
+     only one of those two causes is fixed by trying again.
+
+     ENTITLEMENTS MAY BE NULL HERE. This read and portal-summary race, and this
+     function used to return early when entitlements had not landed — so an
+     empty or failed entitlements read hid documents that were sitting right
+     there in the payload. Documents alone are now enough to paint. */
   function paintOwn(active) {
     var list = document.getElementById("own-list");
-    if (!list || !active) return;
-    var rows = [];
-    for (var i = 0; i < OWN_CODES.length; i++) {
-      if (active[OWN_CODES[i].code]) rows.push(OWN_CODES[i]);
-    }
+    if (!list) return;
+    var rows = ownRows(active);
     if (!rows.length) {
       setOwnVisible(false);
       return;
     }
     setOwnVisible(true);
     list.innerHTML = rows.map(function (r) {
-      var doc = ownedDocument(r.subtype);
+      var doc = r.doc;
       var url = doc && doc.download && doc.download.url;
       if (url) {
         return '<div class="own own-real"><div><div class="on-t">' + esc(r.name) +
           '</div><div class="on-d">Ready. It is yours to keep.</div></div>' +
           '<div class="own-actions"><a class="dr-s have" href="' + esc(url) +
           '" target="_blank" rel="noopener">Download</a></div></div>';
+      }
+      if (doc) {
+        return '<div class="own own-real"><div><div class="on-t">' + esc(r.name) +
+          '</div><div class="on-d">On your file. This copy cannot be downloaded ' +
+          'right now.</div></div>' +
+          '<div class="own-actions"><span class="dr-s want">Not available</span></div></div>';
       }
       return '<div class="own own-real"><div><div class="on-t">' + esc(r.name) +
         '</div><div class="on-d">Part of your package. It is not built yet — ' +
