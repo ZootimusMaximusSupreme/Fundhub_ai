@@ -431,7 +431,11 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
     <div class="page fh-maxw">
 
       <div class="welcome" id="greeting">Welcome to your Fundhub portal</div>
-      <div class="welcome-sub precall-only" id="greeting-sub-pre">We could not load your file. Use the link we sent you, or sign in again.</div>
+      <!-- Loading words until the file answers (hole N14, live 2026-09-18): this
+           line used to START as the refusal, so every good load showed "We could
+           not load your file" for about a second. The refusal is now painted only
+           by paintEmptyIdentity(), when there really is no file at this link. -->
+      <div class="welcome-sub precall-only" id="greeting-sub-pre">Loading your file…</div>
       <div class="welcome-sub funding-only" id="greeting-sub">Here's where things stand on your funding.</div>
 
       <!-- ══ 1 · WELCOME VIDEO (hero) ════════════════════════════════════ -->
@@ -2527,7 +2531,12 @@ document.addEventListener("DOMContentLoaded", async function () {
         });
         return;
       }
-      if (res.source === "nodata") paintEmptyIdentity();
+      /* No file at this id — none given, none found, or not an id at all. Say
+         so (hole N14): the line under the greeting no longer STARTS as the
+         refusal, so this is the only place a wrong or stale link learns it. */
+      if (res.source === "nodata" || res.source === "notfound" || res.source === "badrequest") {
+        paintEmptyIdentity();
+      }
     });
   } else {
     nameFromSession().then(function (nm) {
