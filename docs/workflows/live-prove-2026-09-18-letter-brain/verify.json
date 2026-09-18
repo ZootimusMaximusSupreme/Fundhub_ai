@@ -1,0 +1,193 @@
+{
+  "at": "2026-09-18T18:11:21.125Z",
+  "loginStatus": 200,
+  "loginOk": true,
+  "gotCookie": true,
+  "role": "owner",
+  "live": {
+    "dash": {
+      "status": 200,
+      "name": "Sim Nine-Repair"
+    },
+    "docs": {
+      "status": 200,
+      "altStatus": 200,
+      "count": 22,
+      "keys": [
+        "ok",
+        "count",
+        "limit",
+        "offset",
+        "hasMore",
+        "items"
+      ],
+      "titles": [
+        "ID Document",
+        "Bureau Response Letter",
+        "ID Document",
+        "Proof of Address",
+        "ID Document",
+        "Bureau Response Letter",
+        "Bureau Response Letter",
+        "ID Document",
+        "Bureau Response Letter",
+        "Bureau Response Letter",
+        "Proof of Address",
+        "ID Document",
+        "Proof of Address",
+        "ID Document",
+        "Proof of Address",
+        "ID Document",
+        "Credit Repair Agreement (signed)",
+        "Credit Repair Agreement",
+        "Bureau Response Letter",
+        "Bureau Response Letter",
+        "Proof of Address",
+        "ID Document"
+      ],
+      "letterish": [
+        {
+          "id": "0fd98299-09d3-4a4b-a873-3435f73ef695",
+          "title": "Bureau Response Letter",
+          "kind": "bureau_response",
+          "subtype": "bureau_letter",
+          "mime": "image/png"
+        },
+        {
+          "id": "9a62f027-9743-4940-8e21-8dec466031ad",
+          "title": "Bureau Response Letter",
+          "kind": "bureau_response",
+          "subtype": "bureau_letter",
+          "mime": "image/png"
+        },
+        {
+          "id": "6c8bca9c-13c4-4740-afaf-6482fa77ff99",
+          "title": "Bureau Response Letter",
+          "kind": "bureau_response",
+          "subtype": "bureau_letter",
+          "mime": "image/png"
+        },
+        {
+          "id": "e014898e-3307-4482-9eea-355ffa7ec0ff",
+          "title": "Bureau Response Letter",
+          "kind": "bureau_response",
+          "subtype": "bureau_letter",
+          "mime": "image/png"
+        },
+        {
+          "id": "ac384128-5e45-4545-849a-6caafda5f615",
+          "title": "Bureau Response Letter",
+          "kind": "bureau_response",
+          "subtype": "bureau_letter",
+          "mime": "image/png"
+        },
+        {
+          "id": "c15a4fb5-6477-4b85-b665-56b6ab33e9c4",
+          "title": "Bureau Response Letter",
+          "kind": "bureau_response",
+          "subtype": "bureau_letter",
+          "mime": "image/png"
+        },
+        {
+          "id": "f488a4a8-34fa-4430-8176-d70488acf04d",
+          "title": "Bureau Response Letter",
+          "kind": "bureau_response",
+          "subtype": "bureau_letter",
+          "mime": "image/png"
+        }
+      ],
+      "uwiq": []
+    },
+    "underwrite": {
+      "status": 404,
+      "altStatus": 200,
+      "keys": [
+        "ok",
+        "clientId",
+        "tradelineSource",
+        "engine",
+        "underwrite",
+        "suggestions",
+        "utilizationVoices",
+        "dataCompleteness",
+        "caveats"
+      ],
+      "engine": {
+        "name": "underwrite_iq_lite",
+        "upstreamCommit": "71656f0fe1083429f52eeb0aa095cce076a6b33c",
+        "pure": false,
+        "purityNote": "computeUnderwrite reads the system clock to age tradelines; a line with no stored open date reads as unseasoned"
+      },
+      "tradelineSource": "tradelines",
+      "deliverableCount": null
+    },
+    "repairOne": {
+      "status": 200,
+      "keys": [
+        "ok",
+        "file",
+        "letters",
+        "items",
+        "rounds",
+        "can_send",
+        "timeline",
+        "signer_name",
+        "signed_at"
+      ],
+      "files": [],
+      "cases": []
+    },
+    "repairListRow": {
+      "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+      "name": "Sim Nine-Repair",
+      "program": "full",
+      "round": null,
+      "can_send": false
+    },
+    "portal": {
+      "status": 200,
+      "keys": [
+        "ok",
+        "prequal_amount",
+        "prequal_display",
+        "scores",
+        "soft_pull_complete",
+        "doc_agent_message",
+        "inquiry_open",
+        "documents",
+        "repair_path",
+        "dispute_consent",
+        "invoice_due",
+        "payments",
+        "advisor",
+        "stage"
+      ]
+    },
+    "progress": {
+      "status": 200,
+      "deliverables": [],
+      "nextStep": {
+        "waypointId": "cbac6d27-2d61-4480-801d-25ca48bce190",
+        "owner": "client"
+      }
+    },
+    "own": {
+      "status": 404,
+      "keys": [
+        "ok",
+        "error",
+        "path"
+      ]
+    }
+  },
+  "db": {
+    "dispute_letters": "column \"html\" does not exist",
+    "dispute_cases": "current transaction is aborted, commands ignored until end of transaction block",
+    "dispute_items": {
+      "n": null,
+      "error": "current transaction is aborted, commands ignored until end of transaction block"
+    },
+    "documents": "current transaction is aborted, commands ignored until end of transaction block",
+    "program": "current transaction is aborted, commands ignored until end of transaction block"
+  }
+}

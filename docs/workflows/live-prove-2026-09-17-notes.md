@@ -1295,3 +1295,84 @@ Seen by a fixer or reviewer on live while proving holes 7–24. Titles only. Non
 | N24 | **Timed jobs (Inngest) — state unknown since 16:13 UTC.** Before the 16:13 ship, the only visible heartbeat was `watchBlakeLeads` failing every ~5 min (Gmail invalid_client). After it: no such line 16:13:40 → 17:13 in the current deploy, the 16:13 deploy or the 15:13 deploy. Rolled back hole 12 round 3 (ship `f2713a59`, 16:48) — no change. Re-registered the app (`PUT /api/inngest` 17:02:40 → 200 'Successfully registered', `modified: true`) — no error lines by 17:13 either. Successful runs leave no distinct log line and write no heartbeat row, so logs cannot prove jobs are running or stopped. Only the Inngest dashboard can settle it; agents have no Inngest access (keys are masks on the laptop). 0 messages queued, so nothing is stuck waiting to send right now. | main session |
 | N25 | `npm run ship` never re-registers the app with Inngest after a deploy; the 17:02 re-register returned `modified: true`, so Inngest's registered job list did not match the live site | main session |
 | N23 | Owner password for chris@fundhub.ai equals the laptop's masked `STAFF_INITIAL_PASSWORD` (16 asterisks + 4 characters) since the hole 6 reset | h20 reviewer; main session measured the .env shape |
+
+---
+
+## Grok audit 2026-09-18 ~10:20–10:40 AM PT (Claude hole job + send emails + deliverables)
+
+Different tester than the fixer. No product code changed. No HTML/CSS. No new Commas products. No live CRS. No paper mail. No card charge. Outbound switch left **ON**. `src/gmail/` searched All Mail, not Inbox-only.
+
+Claude (session `29675f55`, overnight `9151bb1e`) was **not mid-job** at 10:20. It wrapped ~10:14 AM PT. Hole **12** left with Chris. Hole **20** it called unproven; this pass proved Gmail reads.
+
+### Named holes vs live
+
+| Hole | Claude claimed | Live now | Verdict |
+|---|---|---|---|
+| 1 Gold HTML / contract placeholder | PARTIAL | Gold HTML on #8 and #11 is real (~1.8 MB `text/html`, title “6-Month Business Readiness Roadmap” / “Financial Profile Assessment”). Funding Agreement bytes **1481**, still **PLACEHOLDER. THIS IS NOT THE REAL AGREEMENT TEXT.** | **PARTIAL** (gold PASS, contract still FAIL) |
+| 2 #11 Metro 2 | PASS | Entitlement `metro2-letter-pack` active. Portal no longer says Metro 2 not ready. | **PASS** |
+| 3 Real CSM login | PASS | Not re-typed Elena this hour. Morning independent tester already PASS. | **PASS** (this morning’s live login; not re-clicked) |
+| 4 `/progress.html` bounce | PASS | #12 progress stayed on `/progress.html`. No “email me a sign-in link.” | **PASS** |
+| 5 #9 empty first paint | PASS | Two loads: Sim Nine-Repair on the page. “No client open” never showed. | **PASS** |
+| 6 chris@ password 401 | PASS | `POST /api/auth/login` **200** + token as chris@fundhub.ai. | **PASS** |
+| 7 #9 “No step applies” | PASS | Twice: **Do this next** = Waiting on the document reader — this id document has not been read yet. “No step applies” never showed. | **PASS** |
+| 8 Funded numbers lie | PASS | Client row **funded true**, **$50,000**. Fulfillment next chip Remove Inquiries. Two funded card-stacking rounds still on file. | **PASS** |
+| 9 Payments hides $2,500 | PASS (unpaid path on Walk1) | #8 INV-B4B9C768 is **paid** ($2,500 succeeded 15:13). Portal due now **$0**. Walk1 still due **$5,000** INV-AE12B967. Original unpaid $2,500 on #8 cannot be recreated. | **PASS** (paid on #8; unpaid path was Walk1) |
+| 10 Inquiry horse | closed | Not reopened. | **closed** |
+| 11 #12 What You Own empty | PASS | Entitlement `funding-mastery-course` active. “Nothing to download yet” did not show. | **PASS** |
+| 12 #8 stored next-action | FAKE twice, rolled back, to Chris | Screen: **Remove Inquiries**. Stored `employee_next_action`: **Pull CRS**. Same drift: #11/#12 Pull CRS vs Apply for Funding; Combo Collect Documents vs Apply for Funding. | **FAKE / still open** |
+| 13 Staff portal greets Chris | Round 2 PASS | `?id=` and `?client_id=` on #11 twice: **Welcome back, Sim.** Never Chris. | **PASS** |
+| 14 Specialist header | PASS | Twice: **Nothing needs you — 2 files are stuck.** Old “waiting on a bureau” never showed. | **PASS** |
+| 15 Apply / Oxylabs | REAL, not done | Not re-clicked Apply. Claude left it waiting on the real Oxylabs password. | **unfinished** |
+| 16 Doc reader 429 / no chase | PASS | Next-step still unread ID (honest). Retake SMS already delivered earlier. This hour also drained queued #9 doc-approved mail. | **PASS** |
+| 17 Inquiry upload | NOT A PROBLEM | #13 documents **2**. Not re-uploaded. | **NOT A PROBLEM** |
+| 18 Combo pay / no round | PASS | Combo has a **started** card-stacking round. Pay link `6086cd8e-…` still status **created** (N2 leftover). $3,000 deposit already on file from 15:13. | **PASS** (round exists; link status leftover N2) |
+| 19 #12 empty checklist | PASS (wording) | Progress: “There is no checklist on your file right now.” Old “as soon as your file is reviewed” gone. Waypoints **0**. | **PASS** |
+| 20 Prove Gmail dead | unproven live | `src/gmail/` **ready** (`GOOGLE_GMAIL_OAUTH_TOKEN_PATH`). All Mail search works. New pack emails found by id. | **PASS** |
+| 21 No-book chase | PASS | EMAIL-NOBOOK-01 in Gmail for #13 (`Your application is in — the call isn't booked yet`) and Combo. SMS-NOBOOK-01 delivered earlier. | **PASS** |
+| 22 Combo 0 docs / no address | PASS r2 | Combo docs **5** gold HTML files on file. | **PASS** |
+| 23 Consent vs sample scores | PASS | Not fully in first-paint dump this hour. Morning reviewer PASS still stands; blocker “no permission” is true (0 consent rows). | **PASS** (morning live; this hour first-paint incomplete) |
+| 24 Intended vs actual routes | PASS-PARTIAL | Docs-only. Intended lists still Chris’s leftover. Generator round 2 already reviewed. | **PASS-PARTIAL** (Chris leftover on intended lists) |
+
+### Emails this hour (sent, then read in prove Gmail)
+
+All 5 queued rows were **Sim Nine-Repair** (plus-tag). Dispatch **sent 5**. Then closer “send deliverables” on #8 and Combo.
+
+| What | To | Provider id | Gmail id | Landed? |
+|---|---|---|---|---|
+| EMAIL-DOC-03-APPROVED (×2) | sim-09 | `01a0b592-0325-76d8-9840-18f802c6f69c`, `01a0b592-06a8-7549-89fb-c3df0825118c` | `1a0b5920af28580e` | **yes** (Inbox, Promotions, unread) |
+| SMS-DOC-03-APPROVED (×2) + SMS-DOC-02-REQUEST-MORE | agent `+16616054248` | `SMa85eb42b…`, `SM795763d2…`, `SM1b1bc0d0…` | n/a | Twilio accepted |
+| EMAIL-U02-ANALYZER-FUNDING-DELIVERY | sim-08 | `01a0b592-2cfb-7037-808a-b4edf21cfc53` | `1a0b5922e5ea6849` | **yes** Inbox unread |
+| EMAIL-U02-ANALYZER-FUNDING-DELIVERY | sim-combo-20260918 | `01a0b592-45c7-74ab-beb0-2d7769787573` | `1a0b59248e5ab84f` | **yes** Inbox unread |
+| EMAIL-U02 (already there) | sim-11 | earlier 09-17 | `1a0b07ba8dedfcfa` | **yes** |
+| EMAIL-NOBOOK-01 | sim-13 | earlier 14:55 | in All Mail (“call isn't booked yet”) | **yes** |
+| EMAIL-DOC-01-REQUEST | combo / eight | earlier | `1a0b515de7c0267a` / `1a0b07d80d75e8f6` | **yes** |
+
+Did **not** send: paper letters, new pay links, placeholder contracts, Walk1 invoice, live CRS.
+
+### Deliverables
+
+| Thing | Live | Score |
+|---|---|---|
+| Gold / UnderwriteIQ HTML | #8, #11, Combo: ~1.8 MB HTML each (Roadmap, Snapshot, Analysis, Lender list). #12 course only. #9/#13 none. Delivery emails now in Gmail for #8, #11, Combo. | **PASS** on files that should have them |
+| Credit repair letters | #9 has PNG “Bureau Response Letter” **uploads**, not generated dispute PDFs. Specialist Send (paper) not pressed. | **FAIL** / not produced |
+| Contracts | #8/#9/#11/#12 signed. Body still placeholder. Combo **0** contracts. | **FAIL** (wording); send already happened |
+| Pay links | Keep-title Fanbasis links on file. Combo $3,000 still `created`. #8 $2,500 fee paid. No new catalog products. | **PASS** look; N2 leftover on deposit links |
+| Course / Blueprint | #12 `funding-mastery-course`. #11 `metro2-letter-pack` + roadmap + snapshot. | **PASS** |
+
+Evidence: `docs/workflows/live-prove-2026-09-18-grok-audit/` (`grok-audit-2026-09-18.json`, `grok-audit-sends.json`, `grok-audit-aftersend.json`, `grok-audit-follow.json`, `screens-result.json`). Live URLs: control panel `#9` / `#8` / `#13`, portal `#11` / `#12`, Specialist Repair, `/progress.html` `#12`.
+
+**Still open for Chris:** hole **12** (saved step vs screen), hole **15** (real Oxylabs password), hole **1** contract words (Saturday), intended-list leftover on **24**. Carded leftovers N1–N25 unchanged.
+
+---
+
+## Letter brain (this chat) — 2026-09-18 ~11:09 AM PT
+
+Chris: credit repair letters must come from one brain (UnderwriteIQ / credit-repair). Same letters for the client and for bureau send. Not two systems.
+
+**VERIFY (live, before any write):** REAL. #9 Sim Nine-Repair `be3dcfd7-…` had a signed agreement, verified name, and a credit file. Repair API: Round 1 current, **0 letters**, `can_send` false. Documents: 7 PNG “Bureau Response Letter” uploads, 0 generated letters. Events stopped at `repair.docs.complete` (card sat on analysis). Send was not pressed.
+
+**FIX:** After docs are in, the existing credit-repair writer (`analyzeAndGenerate`) now runs. It writes `dispute_letters` for bureau send and saves the **same letter body** as a client HTML file. Nothing mails until a person presses Send. Files: `src/repair/analyze.mjs`, `src/repair/handlers.mjs`, `api/repair/generate.mjs`, `src/repair/persist-generated-letters.mjs`. No HTML/CSS. No new Commas product.
+
+**FINISH (live, twice):** #9 now has 3 Round 1 letters (Equifax, Experian, TransUnion), stage **Ready to send**, `can_send` true, letters_sent 0. Three client HTML downloads 200. Specialist desk twice: Sim Nine-Repair, Send visible, all three bureaus. Paper Send not pressed. Evidence: `docs/workflows/live-prove-2026-09-18-letter-brain/`.
+
+**Score: PASS** for this hole. Hole 12 / 15 / contract wording untouched.

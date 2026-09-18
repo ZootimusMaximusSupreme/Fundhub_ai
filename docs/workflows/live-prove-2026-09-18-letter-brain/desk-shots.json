@@ -1,0 +1,24 @@
+{
+  "a": {
+    "pass": 1,
+    "hasNine": true,
+    "readyToSend": true,
+    "sendVisible": true,
+    "letterCountHint": [
+      "Equifax",
+      "Experian",
+      "TransUnion"
+    ]
+  },
+  "b": {
+    "pass": 2,
+    "hasNine": true,
+    "readyToSend": true,
+    "sendVisible": true,
+    "letterCountHint": [
+      "Equifax",
+      "Experian",
+      "TransUnion"
+    ]
+  }
+}

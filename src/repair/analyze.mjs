@@ -41,6 +41,7 @@ import { roundAllowed } from "../metro2/rounds/state.mjs";
 import { loadClientReturnAddress } from "../inquiry-ops/call-scheduler.mjs";
 import { hasDisputeAuthorization, hasRepairAgreement } from "./dispute-auth.mjs";
 import { onRepairEvent } from "./handlers.mjs";
+import { persistGeneratedLetters } from "./persist-generated-letters.mjs";
 
 const BUREAU_CODES = Object.freeze(["TU", "EX", "EQ"]);
 
@@ -522,7 +523,8 @@ async function existingFurnisherLetter(db, { orgId, clientId, furnisherAddressId
  *        the client's uploaded government ID and proof of address.
  */
 export async function analyzeAndGenerate(db, {
-  orgId, clientId, round = "R1", staffId = null, verifiedIdentity = null
+  orgId, clientId, round = "R1", staffId = null, verifiedIdentity = null,
+  documentStore = null
 } = {}) {
   if (!db?.query) return { ok: false, reason: "db_required" };
   if (!orgId || !clientId) return { ok: false, reason: "missing_ids" };
@@ -920,6 +922,28 @@ export async function analyzeAndGenerate(db, {
     }));
   }
 
+  /* THE CLIENT COPY OF THE SAME LETTER. dispute_letters is what Specialist
+     Send reads. documents is what the client downloads. One writer, two
+     homes — never a second letter engine. Skip when no store is handed in
+     (unit tests, a caller that only stages the desk). */
+  let documents = null;
+  if (stored.length > 0 && documentStore) {
+    try {
+      documents = await persistGeneratedLetters(db, documentStore, {
+        orgId,
+        clientId,
+        round,
+        letters: stored,
+        generatedBy: "repair_analyze"
+      });
+    } catch (err) {
+      documents = {
+        stored: [],
+        skipped: String(err?.message || err).slice(0, 240)
+      };
+    }
+  }
+
   return {
     ok: true,
     round,
@@ -928,6 +952,7 @@ export async function analyzeAndGenerate(db, {
     skipped,
     warnings,
     letters_stored: stored.length,
+    documents,
     identity_complete: identity.complete,
     /* Whether the one name and the one address in these letters came off the
        client's uploaded documents. FALSE means the letters make no name or

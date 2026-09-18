@@ -19,6 +19,7 @@ import { requireRole, isUuid } from "../../src/http/read-api.mjs";
 import { analyzeAndGenerate, ROUNDS } from "../../src/repair/analyze.mjs";
 import { nextRound } from "../../src/metro2/rounds/state.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
+import { storeFromEnv } from "../../src/documents/store.mjs";
 
 /* Matches the enroll + Present fire path: owner, admin, closer, Specialist.
    Closers must be able to stage letters on the call (repair-build-spec §4.4).
@@ -139,7 +140,8 @@ export default async function handler(req, res, deps = {}) {
       orgId,
       clientId,
       round,
-      staffId: staff.id
+      staffId: staff.id,
+      documentStore: deps.documentStore ?? storeFromEnv(deps.env)
     });
 
     if (!result.ok && !HONEST_REFUSALS.has(result.reason)) {

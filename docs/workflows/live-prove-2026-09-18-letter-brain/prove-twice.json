@@ -1,0 +1,216 @@
+{
+  "pass1": {
+    "pass": 1,
+    "at": "2026-09-18T18:22:13.292Z",
+    "can_send": true,
+    "file": {
+      "name": "Sim Nine-Repair",
+      "stage_key": "ready_to_send",
+      "stage_label": "Ready to send",
+      "letters_ready": 3,
+      "letters_sent": 0,
+      "can_send": true,
+      "program": "full"
+    },
+    "letterCount": 3,
+    "letters": [
+      {
+        "id": "a3706a0f-1013-49b7-93e1-2d840a491102",
+        "bureau": "EQ",
+        "round": "R1",
+        "status": "generated",
+        "target": "bureau",
+        "can_send": true,
+        "htmlChars": 8541
+      },
+      {
+        "id": "d4992478-2460-4fcc-805a-f35061aeae5d",
+        "bureau": "EX",
+        "round": "R1",
+        "status": "generated",
+        "target": "bureau",
+        "can_send": true,
+        "htmlChars": 6675
+      },
+      {
+        "id": "2aedc4eb-3064-465a-a56f-2157a695bfd7",
+        "bureau": "TU",
+        "round": "R1",
+        "status": "generated",
+        "target": "bureau",
+        "can_send": true,
+        "htmlChars": 7088
+      }
+    ],
+    "itemCount": 23,
+    "generatedDocs": [
+      {
+        "id": "2799f46b-65a0-4318-9e0d-248125a371ec",
+        "title": "Metro 2 Dispute Letter Pack — TransUnion R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime": "text/html"
+      },
+      {
+        "id": "c94d29c0-9c82-4692-ba96-f1275a59d58d",
+        "title": "Metro 2 Dispute Letter Pack — Experian R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime": "text/html"
+      },
+      {
+        "id": "d80471eb-c4fe-4201-8219-f51f8dd67337",
+        "title": "Metro 2 Dispute Letter Pack — Equifax R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime": "text/html"
+      }
+    ],
+    "downloads": [
+      {
+        "id": "2799f46b-65a0-4318-9e0d-248125a371ec",
+        "title": "Metro 2 Dispute Letter Pack — TransUnion R1",
+        "http": 200,
+        "bytes": 7287,
+        "html": true,
+        "hasPre": true,
+        "sha8": "1f97091f"
+      },
+      {
+        "id": "c94d29c0-9c82-4692-ba96-f1275a59d58d",
+        "title": "Metro 2 Dispute Letter Pack — Experian R1",
+        "http": 200,
+        "bytes": 6880,
+        "html": true,
+        "hasPre": true,
+        "sha8": "529d4904"
+      },
+      {
+        "id": "d80471eb-c4fe-4201-8219-f51f8dd67337",
+        "title": "Metro 2 Dispute Letter Pack — Equifax R1",
+        "http": 200,
+        "bytes": 8755,
+        "html": true,
+        "hasPre": true,
+        "sha8": "6365b3b8"
+      }
+    ]
+  },
+  "pass2": {
+    "pass": 2,
+    "at": "2026-09-18T18:22:16.594Z",
+    "can_send": true,
+    "file": {
+      "name": "Sim Nine-Repair",
+      "stage_key": "ready_to_send",
+      "stage_label": "Ready to send",
+      "letters_ready": 3,
+      "letters_sent": 0,
+      "can_send": true,
+      "program": "full"
+    },
+    "letterCount": 3,
+    "letters": [
+      {
+        "id": "a3706a0f-1013-49b7-93e1-2d840a491102",
+        "bureau": "EQ",
+        "round": "R1",
+        "status": "generated",
+        "target": "bureau",
+        "can_send": true,
+        "htmlChars": 8541
+      },
+      {
+        "id": "d4992478-2460-4fcc-805a-f35061aeae5d",
+        "bureau": "EX",
+        "round": "R1",
+        "status": "generated",
+        "target": "bureau",
+        "can_send": true,
+        "htmlChars": 6675
+      },
+      {
+        "id": "2aedc4eb-3064-465a-a56f-2157a695bfd7",
+        "bureau": "TU",
+        "round": "R1",
+        "status": "generated",
+        "target": "bureau",
+        "can_send": true,
+        "htmlChars": 7088
+      }
+    ],
+    "itemCount": 23,
+    "generatedDocs": [
+      {
+        "id": "2799f46b-65a0-4318-9e0d-248125a371ec",
+        "title": "Metro 2 Dispute Letter Pack — TransUnion R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime": "text/html"
+      },
+      {
+        "id": "c94d29c0-9c82-4692-ba96-f1275a59d58d",
+        "title": "Metro 2 Dispute Letter Pack — Experian R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime": "text/html"
+      },
+      {
+        "id": "d80471eb-c4fe-4201-8219-f51f8dd67337",
+        "title": "Metro 2 Dispute Letter Pack — Equifax R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime": "text/html"
+      }
+    ],
+    "downloads": [
+      {
+        "id": "2799f46b-65a0-4318-9e0d-248125a371ec",
+        "title": "Metro 2 Dispute Letter Pack — TransUnion R1",
+        "http": 200,
+        "bytes": 7287,
+        "html": true,
+        "hasPre": true,
+        "sha8": "1f97091f"
+      },
+      {
+        "id": "c94d29c0-9c82-4692-ba96-f1275a59d58d",
+        "title": "Metro 2 Dispute Letter Pack — Experian R1",
+        "http": 200,
+        "bytes": 6880,
+        "html": true,
+        "hasPre": true,
+        "sha8": "529d4904"
+      },
+      {
+        "id": "d80471eb-c4fe-4201-8219-f51f8dd67337",
+        "title": "Metro 2 Dispute Letter Pack — Equifax R1",
+        "http": 200,
+        "bytes": 8755,
+        "html": true,
+        "hasPre": true,
+        "sha8": "6365b3b8"
+      }
+    ]
+  },
+  "sameBrain": [
+    {
+      "bureau": "EQ",
+      "letter_chars": 8541,
+      "doc_bytes": "8755",
+      "title": "Metro 2 Dispute Letter Pack — Equifax R1"
+    },
+    {
+      "bureau": "EX",
+      "letter_chars": 6675,
+      "doc_bytes": "6880",
+      "title": "Metro 2 Dispute Letter Pack — Experian R1"
+    },
+    {
+      "bureau": "TU",
+      "letter_chars": 7088,
+      "doc_bytes": "7287",
+      "title": "Metro 2 Dispute Letter Pack — TransUnion R1"
+    }
+  ]
+}

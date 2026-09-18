@@ -1,0 +1,53 @@
+{
+  "at": "2026-09-18T18:20:47.961Z",
+  "client": "Sim Nine-Repair",
+  "store": "netlify-blobs",
+  "ok": true,
+  "reason": null,
+  "already_generated": false,
+  "round": "R1",
+  "letters_stored": 3,
+  "letters": [
+    {
+      "bureau": "TU",
+      "target": "bureau",
+      "letterId": "2aedc4eb-3064-465a-a56f-2157a695bfd7",
+      "itemCount": 7,
+      "bodyChars": 7088
+    },
+    {
+      "bureau": "EX",
+      "target": "bureau",
+      "letterId": "d4992478-2460-4fcc-805a-f35061aeae5d",
+      "itemCount": 7,
+      "bodyChars": 6675
+    },
+    {
+      "bureau": "EQ",
+      "target": "bureau",
+      "letterId": "a3706a0f-1013-49b7-93e1-2d840a491102",
+      "itemCount": 9,
+      "bodyChars": 8541
+    }
+  ],
+  "skipped": [
+    {
+      "bureau": "TU",
+      "target": "furnisher",
+      "creditor": "MIDLAND CREDIT MGMT",
+      "reason": "no_furnisher_address"
+    },
+    {
+      "bureau": "TU",
+      "target": "furnisher",
+      "creditor": "PORTFOLIO RECOVERY",
+      "reason": "no_furnisher_address"
+    }
+  ],
+  "documents": {
+    "stored": [],
+    "skipped": "The environment has not been configured to use Netlify Blobs. To use it manually, supply the following properties when creating a store: siteID, token"
+  },
+  "identity_complete": true,
+  "verified_identity": true
+}

@@ -220,6 +220,28 @@ export async function onRepairEvent(db, event) {
     }).catch((err) => ({ emitted: false, reason: String(err?.message || err) }));
   }
 
+  /* LETTERS FROM THE CREDIT-REPAIR BRAIN. docs.complete used to park the card
+     on analysis and wait for a human Stage click that nobody pressed, so a
+     paid repair file could sit forever with zero letters. The same writer
+     Specialist Stage already uses (analyzeAndGenerate) runs here. It mails
+     nothing. A refusal (no credit file, ID unread) leaves the card on analysis. */
+  let letters = null;
+  if (name === "repair.docs.complete") {
+    try {
+      const { analyzeAndGenerate } = await import("./analyze.mjs");
+      const { storeFromEnv } = await import("../documents/store.mjs");
+      letters = await analyzeAndGenerate(db, {
+        orgId,
+        clientId,
+        round: "R1",
+        staffId: event.payload?.staffId || null,
+        documentStore: storeFromEnv()
+      });
+    } catch (err) {
+      letters = { ok: false, reason: String(err?.message || err).slice(0, 240) };
+    }
+  }
+
   let reassess = null;
   if (name === "repair.program.complete") {
     reassess = await requestFreshReassessment(db, {
@@ -228,7 +250,7 @@ export async function onRepairEvent(db, event) {
       eventId: event.id || event.payload?.eventId
     }).catch((err) => ({ ok: false, reason: String(err?.message || err) }));
   }
-  return { ok: !!moved?.moved, moved, stageKey, email, reassess, docState };
+  return { ok: !!moved?.moved, moved, stageKey, email, reassess, docState, letters };
 }
 
 export function evaluateSlaBreach(card) {

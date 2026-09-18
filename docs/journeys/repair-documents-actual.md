@@ -44,7 +44,11 @@ flowchart TD
     GUARD -->|"only one of the two is in"| STOP3["ignored — says which is missing"]
     GUARD -->|"both are in"| EV3
 
-    EV3 --> ANALYSIS["card → analysis<br/>the letters can now be built"]
+    EV3 --> ANALYSIS["card → analysis"]
+    ANALYSIS --> BRAIN["src/repair/analyze.mjs<br/>analyzeAndGenerate — the credit-repair brain"]
+    BRAIN -->|"letters stored"| COPY["same letter body saved twice:<br/>dispute_letters (bureau send)<br/>and documents (client copy)"]
+    COPY --> READY["card → letters_generated then ready_to_send<br/>Specialist Send is still a human click"]
+    BRAIN -->|"refused (no credit file, ID unread)"| STAY["card stays on analysis"]
 ```
 
 ## What each piece is, and where it lives
@@ -61,6 +65,8 @@ flowchart TD
 | The upload doors | `src/repair/upload-doors.mjs` | the identity door opens for repair AND funding |
 | A texted photo | `src/handlers/inbound-mms-docs.mjs` | classified before it is filed |
 | Reads the images | `src/handlers/doc-check.mjs` | seeded in `db/migrations/114_ghl_agent_seed.sql` |
+| Builds the letters | `src/repair/analyze.mjs` | `analyzeAndGenerate` on `repair.docs.complete` and on POST `/api/repair/generate`. Mails nothing. |
+| Client copy of the same letter | `src/repair/persist-generated-letters.mjs` | Same `body_text` as `dispute_letters`, saved as an HTML deliverable |
 
 ## What was broken until 2026-09-04
 

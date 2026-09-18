@@ -1,0 +1,85 @@
+{
+  "at": "2026-09-18T18:21:35.391Z",
+  "store": "netlify-blobs",
+  "letterRows": [
+    {
+      "id": "a3706a0f-1013-49b7-93e1-2d840a491102",
+      "bureau": "EQ",
+      "round": "R1",
+      "status": "generated",
+      "target": "bureau",
+      "bodyChars": 8541
+    },
+    {
+      "id": "d4992478-2460-4fcc-805a-f35061aeae5d",
+      "bureau": "EX",
+      "round": "R1",
+      "status": "generated",
+      "target": "bureau",
+      "bodyChars": 6675
+    },
+    {
+      "id": "2aedc4eb-3064-465a-a56f-2157a695bfd7",
+      "bureau": "TU",
+      "round": "R1",
+      "status": "generated",
+      "target": "bureau",
+      "bodyChars": 7088
+    }
+  ],
+  "persist": {
+    "stored": [
+      {
+        "bureau": "EQ",
+        "round": "R1",
+        "target": "bureau",
+        "documentId": "d80471eb-c4fe-4201-8219-f51f8dd67337",
+        "documentKey": "deliverable|metro2_dispute_letter_pack|be3dcfd7-faae-4001-b97f-9bc30875bbcd|repair-letter/R1/EQ/bureau/a3706a0f-1013-49b7-93e1-2d840a491102"
+      },
+      {
+        "bureau": "EX",
+        "round": "R1",
+        "target": "bureau",
+        "documentId": "c94d29c0-9c82-4692-ba96-f1275a59d58d",
+        "documentKey": "deliverable|metro2_dispute_letter_pack|be3dcfd7-faae-4001-b97f-9bc30875bbcd|repair-letter/R1/EX/bureau/d4992478-2460-4fcc-805a-f35061aeae5d"
+      },
+      {
+        "bureau": "TU",
+        "round": "R1",
+        "target": "bureau",
+        "documentId": "2799f46b-65a0-4318-9e0d-248125a371ec",
+        "documentKey": "deliverable|metro2_dispute_letter_pack|be3dcfd7-faae-4001-b97f-9bc30875bbcd|repair-letter/R1/TU/bureau/2aedc4eb-3064-465a-a56f-2157a695bfd7"
+      }
+    ],
+    "skipped": null
+  },
+  "documents": [
+    {
+      "id": "d80471eb-c4fe-4201-8219-f51f8dd67337",
+      "title": "Metro 2 Dispute Letter Pack — Equifax R1",
+      "kind": "deliverable",
+      "subtype": "metro2_dispute_letter_pack",
+      "mime_type": "text/html",
+      "byte_size": "8755",
+      "generated_by": "repair_analyze"
+    },
+    {
+      "id": "c94d29c0-9c82-4692-ba96-f1275a59d58d",
+      "title": "Metro 2 Dispute Letter Pack — Experian R1",
+      "kind": "deliverable",
+      "subtype": "metro2_dispute_letter_pack",
+      "mime_type": "text/html",
+      "byte_size": "6880",
+      "generated_by": "repair_analyze"
+    },
+    {
+      "id": "2799f46b-65a0-4318-9e0d-248125a371ec",
+      "title": "Metro 2 Dispute Letter Pack — TransUnion R1",
+      "kind": "deliverable",
+      "subtype": "metro2_dispute_letter_pack",
+      "mime_type": "text/html",
+      "byte_size": "7287",
+      "generated_by": "repair_analyze"
+    }
+  ]
+}
