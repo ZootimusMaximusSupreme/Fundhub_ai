@@ -1378,3 +1378,19 @@ Chris: credit repair letters must come from one brain (UnderwriteIQ / credit-rep
 **Score: PASS** for this hole. Hole 12 / 15 / contract wording untouched.
 
 **Independent tester (2026-09-18):** REAL-FIX on live for #9 Sim Nine-Repair. Two desk clicks. 3 Round 1 letters (Equifax, Experian, TransUnion) with client copies plus bureau queue. `can_send` true. letters_sent 0. Paper Send not pressed. Last live ship `f2713a59` did not have auto-write-on-doc-finish; this chat ships current `main` (letter-brain `073c68e9` is an ancestor). Evidence: `docs/workflows/live-prove-2026-09-18-letter-brain-independent/`.
+
+---
+
+## Fix run 2 — 2026-09-18 evening (Chris: "ask me questions, then fix the rest")
+
+**Owner answers (2026-09-18, logged as owner-set):**
+- Hole 12: ship the fix again (round 3 re-applied on main as `4746c2dc`; ship + re-register timed jobs + new reviewer).
+- Hole 24: make the two intended journey files match the code (owner OK for an agent to edit `client-intended.md` and `role-inquiry-remover-intended.md`).
+- Hole 1: leave for now.
+- New holes: "get it fixed. idc needs to be 100%" — agents may send test messages to test contacts only (agent phone …4248, sim inboxes), change Sim/test data, and remove the fake ID from Chris's staff profile photo.
+
+**Timed jobs are running:** F-02 sent SMS-F02-ID-PORTAL-NEEDED at 18:20:59 UTC (a 3-hour delayed step from the 15:13 rounds). N24 closed.
+
+**Not agent work:** N23 (owner password reset — the permission check blocks agents from password resets; Chris runs it). Hole 1 (left by Chris).
+
+Same protocol: one fixer per hole (own worktree, no merge/ship), main session merges + ships once + re-registers timed jobs, then a different reviewer per hole on live. FAKE → one more try.
