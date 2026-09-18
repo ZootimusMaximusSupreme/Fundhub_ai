@@ -1137,8 +1137,12 @@
                it says so; it never prints 0, because 0 would be a claim. -->
           <div class="rf-tile"><div class="rf-label">Inquiries on the credit file</div><div class="rf-num" id="ccp-inquiries">—</div></div>
           <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-num" data-ir-case id="ccp-ir">—</div></div>
+          <!-- A SAMPLE REPORT SAYS IT IS A SAMPLE (live hole 23, 2026-09-18).
+               Shown only when the scores above came from a walkthrough's sample
+               report, never a bureau. See isSampleReport() in FH-CCP. -->
           <div class="rf-tile"><div class="rf-label">Scores</div>
-            <div class="rf-num" id="ccp-scores">—</div></div>
+            <div class="rf-num" id="ccp-scores">—</div>
+            <p class="fact-note" id="ccp-scores-sample" hidden></p></div>
           <!-- Card Use is the utilisation figure the client endpoint has always
                returned and this screen never showed (src/http/client-detail.mjs:310,
                spelt the British way there). It reads "not measured" whenever the
@@ -1635,6 +1639,49 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     return h;
   }
 
+  /* ── A SAMPLE REPORT SAYS IT IS A SAMPLE (live hole 23, 2026-09-18) ──────
+     A walkthrough can load a SAMPLE credit report onto a file that nobody has
+     pulled (scripts/sim/push-credit.mjs, src/demo/simulate-client.mjs). It is
+     stamped environment "simulated" — and push-credit also sets
+     simulated:true — on purpose, so the scores still paint and everything
+     after a pull still runs. Those scripts say the stamp is there "so every
+     screen can tell it was never a bureau pull". This screen did not tell.
+
+     #13 Sim Thirteen-NoBook showed "EX 771 · EQ 778 · TU 766" and a Last
+     Credit Pull date right beside "No written permission on file — we cannot
+     pull their credit yet". The live rows had no permission and no pull, so
+     the permission line was TRUE. The lie was the scores: sample data shown as
+     real (UI-STANDARDS §6).
+
+     One question: did the tri-merge scores come from a sample report? The
+     report is found by tri_merge.asOf, which the server sets to that row's
+     created_at (triMerge in src/http/client-detail.mjs). Anything unreadable
+     answers false, which is how the screen read before this: it only ever ADDS
+     a warning, it never hides a score. Never throws. */
+  var SAMPLE_NOTE = "Sample scores. Not a real credit pull.";
+
+  function isSampleReport(crsResults, asOf) {
+    try {
+      if (!asOf) return false;
+      var at = new Date(asOf).getTime();
+      if (!isFinite(at)) return false;
+      var list = Array.isArray(crsResults) ? crsResults : [];
+      for (var i = 0; i < list.length; i++) {
+        var row = list[i];
+        if (!row || typeof row !== "object") continue;
+        if (new Date(row.created_at).getTime() !== at) continue;
+        var r = row.result;
+        if (typeof r === "string") {
+          try { r = JSON.parse(r); } catch (e) { r = null; }
+        }
+        if (!r || typeof r !== "object") continue;
+        if (r.simulated === true) return true;
+        if (String(r.environment || "").toLowerCase() === "simulated") return true;
+      }
+    } catch (e) { /* unreadable is not a sample */ }
+    return false;
+  }
+
   window.FHClientPanel = {
     UNKNOWN: UNKNOWN,
     NOT_WORKED_OUT: NOT_WORKED_OUT,
@@ -1648,7 +1695,9 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     summariseApprovals: summariseApprovals,
     nextAction: nextAction,
     displayStatus: displayStatus,
-    displayHold: displayHold
+    displayHold: displayHold,
+    SAMPLE_NOTE: SAMPLE_NOTE,
+    isSampleReport: isSampleReport
   };
 })();
 /* FH-CCP-END */
@@ -2445,9 +2494,16 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var tm = d.tri_merge || {};
     var scores = scoreLine(tm);
+    /* Sample scores say they are a sample — live hole 23. See isSampleReport(). */
+    var sampleScores = FHCP.isSampleReport(d.crs_results, tm.asOf);
     setText("ccp-card-use", cardUse(d.utilisation));
     setText("ccp-scores", scores);
-    setText("ccp-facts-scores", scores);
+    setText("ccp-facts-scores", sampleScores ? scores + " · sample" : scores);
+    var sampleNote = $("ccp-scores-sample");
+    if (sampleNote) {
+      sampleNote.textContent = sampleScores ? FHCP.SAMPLE_NOTE : "";
+      sampleNote.hidden = !sampleScores;
+    }
 
     var rounds = d.funding_rounds || [];
     var latestRound = rounds[0];
@@ -2465,7 +2521,10 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-facts-funded",
       c.funded === true ? ("Yes" + (fundedMoney === "—" ? "" : " · " + fundedMoney))
         : c.funded === false ? "No" : "");
-    setText("ccp-last-pull", when(tm.asOf || (d.crs_results && d.crs_results[0] && d.crs_results[0].created_at)));
+    /* A sample report is not a pull, so it is never printed as the last one. */
+    setText("ccp-last-pull", sampleScores
+      ? "Sample report loaded " + when(tm.asOf) + " — not a real credit pull"
+      : when(tm.asOf || (d.crs_results && d.crs_results[0] && d.crs_results[0].created_at)));
 
     /* The worked-out step drives this slot, and only ever the worked-out step,
        so this line and the control panel below can never say different things.
