@@ -340,3 +340,20 @@ New Carl-era logo files fetched over the live site: `connex.png` **200**, `congr
 **Ship — blocked, not run.** `cd652e28` is the tip of `main` and holds the board, the `--from-db` logo work and the last logo file (`universal-bank.png`). `npm run ship` refused: between the commit and the ship another session moved the main checkout onto `claude/slo-offer-financial-model-fo8uy1`, where `scripts/ship.mjs` does not exist. Not worked around — switching the branch back would have pulled it out from under that session. Everything else in this pass is already live via `87a72b67`; the only live gap is `universal-bank.png` (404 on live, 1 logo of 584). Next ship from `main` carries it.
 
 **States + live filter (`src/lenders/match.mjs`):** Carl **`Eligible States`** pulled (**885**/921 rows filled). CRM already filters suggestions on **client home state + business state** vs each lender's `eligible_states` (empty = still show). Before backfill: normalize Carl → book (`depa`→PA; **`Nationwide`→`All States`** — matcher does not treat the word Nationwide as national-only). No second filter; same column once merged.
+
+## 2026-09-18 — Lane 3 live cleanup + CSV sync (follow-up)
+
+**Live DB (already done):** `scripts/lenders-cleanup-dedupe.mjs --confirm` — **1,086** card-book rows after cleanup (**1,106** total once personal-loan rows landed in a separate lane). Verify Bank **gone**. **One** Elan row, **46** states. **Fourteen** Carl banks on **`PersonalCC`**, not **`OnlineBizCC`**. Second dry run on live: **0** test rows, **0** misfiled consumer links, Elan **already one row**.
+
+**Branch merged on `main`:** `fix/lane3-lender-cleanup` (cleanup script + lane-3 prove scripts). The full batch board above is unchanged — lane 3 is appended here, not a rewrite of this file.
+
+**CSV sync (so re-import does not undo lane 3):** `scripts/lenders-sync-csv-after-cleanup.mjs --write`
+
+| Source | Change |
+|---|---|
+| `docs/legacy-strong/lenders-legacy-strong.csv` | **7** duplicate Elan rows removed; keeper **`LEGACY-ONLINEBIZCC-ELAN-FINANCIAL`** → name **`Elan Financial`**, product **`0% for 20 Months — No Business Checking Required`**, **46** states |
+| `credentials/lenders-audit/lenders-unified-carl-merged.csv` (gitignored) | Same Elan fold; **14** rows **`OnlineBizCC` → `PersonalCC`** (consumer apply URL rule); then **`lenders-merge-crm-into-csv.mjs`** backfilled **27** cells from live CRM so the import guard stays clean |
+
+**Dry-run import after sync:** `node --env-file=.env scripts/lenders-import-alec.mjs --file credentials/lenders-audit/lenders-unified-carl-merged.csv` → **Nothing would be blanked out** (clearing guard **0**). File **1,086** banks — no eighth Elan row to insert.
+
+**Still noted, not fixed:** **Five** of the fourteen **`PersonalCC`** rows still carry **`D&B/SBFE`** in **`business_bureau_pulled`** on live (bureau pass keys on bank name, not product). CSV matches live on those cells after CRM backfill; clearing them needs a named bureau fix.
