@@ -676,12 +676,68 @@
     return new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", timeZone: "America/Phoenix" });
   }
 
+  /* "Last activity" in the side panel (hole N16, 2026-09-18). It used to be
+     shortWhen() + " ago", which read "never ago" when the row carried no time,
+     "now ago" inside a minute, and "Sep 17 ago" after a day. It is a sentence
+     now: "12m ago" / "Just now" under a day, the Arizona date and time after
+     (UI-STANDARDS §7), and "No messages yet" only when there is truly no time. */
+  function lastActivity(iso, nowMs) {
+    var w = shortWhen(iso, nowMs);
+    if (!w) return "No messages yet";
+    if (w === "now") return "Just now";
+    if (/^\d+[mh]$/.test(w)) return w + " ago";
+    return new Date(iso).toLocaleString("en-US", {
+      month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Phoenix"
+    });
+  }
+
+  /* EMAILS ARE STORED AS THE WHOLE HTML PAGE WE SENT (hole N16). Escaping that
+     put "<!DOCTYPE html> <html lang=…" in the bubble and in the list preview.
+     So an email that is HTML is turned into its readable text first: the head,
+     styles and scripts are dropped, paragraphs and line breaks become new
+     lines, every other tag is removed and entities are decoded. The result is
+     STILL escaped before it reaches the page, so nothing in an email can ever
+     run or render as markup here — the tag stripping is for reading, the
+     escaping is what keeps it safe. A text message is left exactly as it is:
+     "I <3 you" is not HTML. */
+  var HTML_TAG = /<\s*(!doctype|html|head|body|table|tbody|tr|td|p|div|br|span|a|img|meta|style|center|font|h[1-6]|ul|ol|li|strong|em|b|i)\b[^>]*>/i;
+  var NAMED = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ", mdash: "—", ndash: "–",
+                hellip: "…", rsquo: "’", lsquo: "‘", rdquo: "”", ldquo: "“", bull: "•", middot: "·", copy: "©" };
+
+  function looksLikeHtmlEmail(body, channel) {
+    return String(channel || "").toLowerCase() === "email" && HTML_TAG.test(String(body == null ? "" : body));
+  }
+
+  function emailText(html) {
+    var s = String(html == null ? "" : html)
+      .replace(/<!--[\s\S]*?-->/g, " ")
+      .replace(/<(head|style|script|title|noscript|template|svg|iframe|object)\b[\s\S]*?<\/\1\s*>/gi, " ")
+      .replace(/\s+/g, " ")
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|h[1-6]|blockquote)\s*>/gi, "\n\n")
+      .replace(/<\/(div|tr|li|table|ul|ol)\s*>/gi, "\n")
+      .replace(/<[^>]*>/g, "")
+      .replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, function (m, name) {
+        if (name.charAt(0) === "#") {
+          var code = /^#x/i.test(name) ? parseInt(name.slice(2), 16) : parseInt(name.slice(1), 10);
+          return code > 0 && code <= 0x10FFFF ? String.fromCodePoint(code) : m;
+        }
+        var k = name.toLowerCase();
+        return Object.prototype.hasOwnProperty.call(NAMED, k) ? NAMED[k] : m;
+      });
+    return s.split("\n").map(function (line) { return line.replace(/[ \t ]+/g, " ").trim(); })
+      .join("\n").replace(/\n{3,}/g, "\n\n").trim();
+  }
+
   /* The one-line preview. A thread with no messages says so rather than
      rendering an empty quote — a conversation row can exist before any message
      lands on it, and a blank line reads as a rendering bug. */
   function previewOf(row) {
     var body = row && row.last_body;
     if (body == null || String(body).trim() === "") return "No messages on this thread yet.";
+    if (looksLikeHtmlEmail(body, row.channel)) {
+      return emailText(body).replace(/\s*\n+\s*/g, " ") || "An email with no text in it.";
+    }
     return String(body);
   }
 
@@ -803,7 +859,9 @@
         "</div>" +
         '<div class="bubble ' + (inbound ? "in" : (msg.sender_name ? "out-human" : "out-agent")) + '">' +
           (msg.subject ? '<div class="email-subj">' + esc(msg.subject) + "</div>" : "") +
-          esc(msg.rendered_body == null ? "" : msg.rendered_body) +
+          (looksLikeHtmlEmail(msg.rendered_body, msg.channel)
+            ? esc(emailText(msg.rendered_body)).replace(/\n/g, "<br>")
+            : esc(msg.rendered_body == null ? "" : msg.rendered_body)) +
         "</div>" +
         '<div class="msg-time">' + esc(shortWhen(msg.created_at, o.now)) + "</div>" +
         /* A held or failed message says so ON the message. This is the one
@@ -959,6 +1017,9 @@
     initialsFromName: initialsFromName,
     displayName: displayName,
     shortWhen: shortWhen,
+    lastActivity: lastActivity,
+    looksLikeHtmlEmail: looksLikeHtmlEmail,
+    emailText: emailText,
     previewOf: previewOf,
     countsFor: countsFor,
     filterRows: filterRows,
@@ -1251,6 +1312,7 @@
       if (state.selected !== row) return; // they moved on while this was in flight
       if (!res.ok) {
         $("thread").innerHTML = '<div class="empty-box">We could not load this conversation.</div>';
+        if (!(row.last_at || row.last_pulse_at) && $("ctxLast")) $("ctxLast").textContent = "Not known";
         FHData.explain(res, "this conversation");
         return;
       }
@@ -1260,6 +1322,12 @@
 
   function paintThread(items) {
     var row = state.selected;
+    /* The row had no time (see paintContext): the newest message is the truth.
+       The endpoint answers newest-first, so that is items[0]. */
+    if (row && !(row.last_at || row.last_pulse_at)) {
+      row.last_at = items.length ? items[0].created_at : null;
+      if ($("ctxLast")) $("ctxLast").textContent = V.lastActivity(row.last_at, Date.now());
+    }
     if (!items.length) {
       $("thread").innerHTML = '<div class="empty-box">Nothing has been said on this thread yet. ' +
         "Your reply below would be the first message.</div>";
@@ -1285,9 +1353,13 @@
       return;
     }
     $("ctxRole").textContent = "Talking to us on " + String(row.channel || "").toLowerCase() + ".";
+    /* A thread opened with no time on it (a ?conversation_id= link older than
+       the loaded list) says "Loading…" until paintThread reads its newest
+       message — not "No messages yet" for a second, which would be untrue. */
+    var when = row.last_at || row.last_pulse_at;
     $("ctxRows").innerHTML =
-      '<div class="ctx-row"><span class="k">Last activity</span><span class="v">' +
-        V.esc(V.shortWhen(row.last_at || row.last_pulse_at, Date.now()) || "never") + " ago</span></div>" +
+      '<div class="ctx-row"><span class="k">Last activity</span><span class="v" id="ctxLast">' +
+        V.esc(when || !row.id ? V.lastActivity(when, Date.now()) : "Loading…") + "</span></div>" +
       '<div class="ctx-row"><span class="k">Waiting on us</span><span class="v">' +
         (row.needs_reply === true ? "yes" : "no") + "</span></div>";
     if (row.client_id && FHData.client) {
@@ -1487,7 +1559,10 @@
           channel: (pick && pick.channel) || deepChannel || "sms",
           first_name: cl.first_name || null,
           last_name: cl.last_name || null,
-          needs_reply: false
+          needs_reply: false,
+          /* Without this the side panel read "Last activity: never ago" on
+             every pipeline link (hole N16). */
+          last_pulse_at: (pick && pick.last_pulse_at) || null
         };
         if (row.id) {
           openThread(row);

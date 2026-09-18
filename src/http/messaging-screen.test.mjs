@@ -226,6 +226,103 @@ describe("messaging.html — who sent a message", () => {
   });
 });
 
+/* HOLE N16 (2026-09-18). Staff Messaging showed #13's two emails as the raw
+   HTML page we sent — "<!DOCTYPE html> <html lang=…" in the bubble and in the
+   list preview — and the side panel read "Last activity: never ago" on the
+   pipeline deep link. The email below is the shape every outbound email is
+   stored in (the branded wrapper around <p> paragraphs). */
+const SENT_EMAIL = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>You're in</title>
+<style>p{margin:0}</style>
+</head>
+<body style="margin:0;padding:0;">
+<table role="presentation" width="100%"><tr><td>
+  <p style="margin:0 0 16px 0;">Hey Sim,</p>
+  <p style="margin:0 0 16px 0;">You&#39;re in. Here&rsquo;s how this works &amp; what&nbsp;next.</p>
+  <p style="margin:0 0 16px 0;">1. Finish your application<br>
+  2. Book a call</p>
+  <p>Start here: https://apply.fundhub.ai/funding-book-call</p>
+</td></tr></table>
+</body>
+</html>`;
+
+describe("messaging.html — an email reads as text, never as raw HTML (N16)", () => {
+
+  test("the stored HTML page becomes its readable words, line by line", () => {
+    const V = loadViewModel();
+    assert.equal(V.emailText(SENT_EMAIL),
+      "Hey Sim,\n\nYou're in. Here’s how this works & what next.\n\n1. Finish your application\n2. Book a call\n\n" +
+      "Start here: https://apply.fundhub.ai/funding-book-call");
+  });
+
+  test("the bubble shows the words, not the tags, the title or the styles", () => {
+    const V = loadViewModel();
+    const html = V.messageRow({ id: "e1", direction: "outbound", channel: "email", status: "delivered",
+      subject: "You're in — here's what happens next", rendered_body: SENT_EMAIL }, {});
+    assert.ok(!/&lt;|DOCTYPE|<html|<table|<p\b|<style|margin:0/i.test(html), "raw email HTML reached the bubble");
+    // The body starts at the greeting — the <title> did not leak in ahead of it.
+    assert.match(html, /<\/div>Hey Sim,<br><br>You&#39;re in\. Here’s how this works &amp; what next\./);
+    assert.match(html, /1\. Finish your application<br>2\. Book a call/);
+  });
+
+  test("nothing inside an email can run or render — the text is still escaped", () => {
+    const V = loadViewModel();
+    const evil = "<html><body><p>hi</p><script>window.__x=1</script>" +
+      "<img src=x onerror=alert(1)><p>&lt;script&gt;alert(2)&lt;/script&gt;</p></body></html>";
+    const html = V.messageRow({ id: "e2", direction: "inbound", channel: "email", rendered_body: evil }, {});
+    assert.ok(!/<script|<img|onerror=alert\(1\)|window\.__x/i.test(html), "active markup survived");
+    // An entity that spells a tag is decoded to text and then escaped again.
+    assert.match(html, /&lt;script&gt;alert\(2\)&lt;\/script&gt;/);
+  });
+
+  test("the list preview is the email's words on one line", () => {
+    const V = loadViewModel();
+    const prev = V.previewOf({ channel: "email", last_body: SENT_EMAIL });
+    assert.ok(prev.startsWith("Hey Sim, You're in."), prev);
+    assert.ok(!/[<>\n]/.test(prev));
+    const row = V.conversationRow({ id: "c9", first_name: "Sim", channel: "email", last_body: SENT_EMAIL }, {});
+    assert.ok(!/DOCTYPE|&lt;html/i.test(row), "the list row still previews raw HTML");
+    assert.equal(V.previewOf({ channel: "email", last_body: "<html><body><img src=x></body></html>" }),
+      "An email with no text in it.");
+  });
+
+  test("a text message that merely contains '<' is left exactly as it was", () => {
+    const V = loadViewModel();
+    assert.equal(V.looksLikeHtmlEmail("I <3 you <br>", "sms"), false);
+    assert.equal(V.previewOf({ channel: "sms", last_body: "I <3 you <b>" }), "I <3 you <b>");
+    assert.equal(V.looksLikeHtmlEmail("see you at 3 < 4", "email"), false);
+    const html = V.messageRow({ id: "s1", direction: "inbound", channel: "sms", rendered_body: "I <3 <b>you</b>" }, {});
+    assert.match(html, /I &lt;3 &lt;b&gt;you&lt;\/b&gt;/);
+  });
+});
+
+describe("messaging.html — Last activity is a real time or a plain word (N16)", () => {
+
+  test("it never reads 'never ago', 'now ago' or '<date> ago'", () => {
+    const V = loadViewModel();
+    assert.equal(V.lastActivity(null, NOW), "No messages yet");
+    assert.equal(V.lastActivity("not a date", NOW), "No messages yet");
+    assert.equal(V.lastActivity(ago(20 * 1000), NOW), "Just now");
+    assert.equal(V.lastActivity(ago(12 * 60 * 1000), NOW), "12m ago");
+    assert.equal(V.lastActivity(ago(4 * 3600 * 1000), NOW), "4h ago");
+    // After a day it is the Arizona date and time (UI-STANDARDS §7), no "ago".
+    assert.equal(V.lastActivity("2026-07-31T01:30:00Z", NOW), "Jul 30, 6:30 PM");
+  });
+
+  test("the side panel uses it, and no longer glues ' ago' onto a word", () => {
+    assert.ok(!/\|\|\s*"never"\)\s*\+\s*" ago/.test(HTML), "the old 'never' + ' ago' line is back");
+    assert.match(HTML, /id="ctxLast"/);
+    assert.match(HTML, /V\.lastActivity\(when, Date\.now\(\)\)/);
+  });
+
+  test("the pipeline deep link carries the thread's time into the side panel", () => {
+    assert.match(HTML, /last_pulse_at: \(pick && pick\.last_pulse_at\) \|\| null/);
+  });
+});
+
 describe("messaging.html — what the screen says after a send", () => {
 
   test("accepted is not delivered: each outcome is a different sentence", () => {
