@@ -275,3 +275,29 @@ Chris off phone; Legacy Strong auth confirmed (`token_v2`).
 - **Vs our book:** **98** name overlaps with live **328**; **~767** names not in CRM (mostly CUs / regionals). Not a duplicate of Legacy Strong Notion scrape (`calbarton` vs `legacystrong`).
 - **Intel:** 10 public Google Sheets (Chase, Amex, WF, USB, BofA, CapOne, Truist, Citi, PNC, Citizens) saved as `.xlsx` under credentials (pattern/reference — not imported).
 - **CRM import:** **not run** — needs name-match + state-field cleanup (`depa`-style typos) before merge/import. Next: map columns to `lenders` (`bureaus_pulled`, `application_url`, `eligible_states`, etc.) with merge guard clearing **0**.
+
+## Carl Barton name match — 2026-09-18 (Cursor subagent)
+
+Full pull re-run: the first scrape stopped at Notion's **500**-row page while `sizeHint` said **921**. Paginated `queryCollection` returns all **921** offer rows (**867** unique bank names after the alias-map clean).
+
+**Match rule:** `scripts/lenders-alias-map.json` `how_to_use` exactly — clean, whole-name lookup, **no fuzzy matching**. Baseline = live CRM `lenders` + `lenders-legacy-strong.csv` + `lenders-audited.csv` (**273** unique names).
+
+| | Count |
+|---|---:|
+| Offer rows | 921 |
+| Unique bank names | 867 |
+| **Already in the book (duplicate)** | **101** |
+| **Not in the book (new)** | **766** |
+| Resolved by alias map | 105 |
+| Rows carrying an apply URL | 919 |
+| “new” names that read as credit unions | 65 |
+
+**Artifact:** `docs/legacy-strong/carl-barton-book-match.csv` (867 rows — `status` / `carl_name` / `canonical_name` / `book_name` / `offer_rows` / `bureaus` / `has_url`). Gitignored copy at `credentials/lenders-audit/carl-barton-vs-book.csv`.
+
+**Data quality in the source:** 69 names padded with stray whitespace/newlines · 1 row has a URL sitting in the `Bureau Pulled` cell · 2 rows have no link · `Eligible States` holds the `depa` typo already noted above.
+
+**DB import: NO.** `lenders-import-alec.mjs` matches only on `external_row_id`, and this source has none — every one of the **867** would land as a fresh INSERT, taking the book from 328 to ~1,100 rows of unvetted card offers. The merge guard would report clearing 0 only because nothing matches to clear, which is a false green, not a pass. The 766 also have no alias-map entry, and the map's own rule is “if it is not in `lookup`, stop — do not fuzzy-match and do not guess.”
+
+**Recommended next step (needs Chris to name it):** treat the **101** duplicates as a *bureau + apply-URL + eligible_states backfill* onto existing rows only — join through `carl-barton-book-match.csv` `book_name` → `external_row_id`, fill empty cells, run the merge guard, import. Leave the **766** as a sourced prospect list in `docs/legacy-strong/` until he decides whether small CUs and regionals belong in the operational book.
+
+**States + live filter (`src/lenders/match.mjs`):** Carl **`Eligible States`** pulled (**885**/921 rows filled). CRM already filters suggestions on **client home state + business state** vs each lender's `eligible_states` (empty = still show). Before backfill: normalize Carl → book (`depa`→PA; **`Nationwide`→`All States`** — matcher does not treat the word Nationwide as national-only). No second filter; same column once merged.
