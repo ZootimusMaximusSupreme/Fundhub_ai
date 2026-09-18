@@ -425,9 +425,16 @@ export function formatCents(cents) {
   });
 }
 
-/** Which contract wording matches the deck path (offer + tier). */
+/** Which contract wording matches the deck path (offer + tier).
+ *  The combined agreement is for the funding sale only (or a caller that knows
+ *  just the tier). Any other offer on a funding-plus-repair deck keeps its own
+ *  agreement, so a Blueprint buyer gets CAPITAL-BLUEPRINT-AGREEMENT — the
+ *  wording that matches the pay link. public/app/present.js mirrors this;
+ *  src/http/present-contract-pick.test.mjs fails if the two drift. */
 export function resolveContractTemplateKey({ offerKey = null, tier = null } = {}) {
-  if (tier === "FUNDING_PLUS_REPAIR") return "REPAIR-AND-FUNDING-AGREEMENT";
+  if (tier === "FUNDING_PLUS_REPAIR" && (!offerKey || offerKey === "FUNDING_DFY")) {
+    return "REPAIR-AND-FUNDING-AGREEMENT";
+  }
   const o = getOffer(offerKey);
   return (o && o.contractTemplateKey) || null;
 }
