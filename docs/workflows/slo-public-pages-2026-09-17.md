@@ -19,7 +19,7 @@ backend work once it is committed. Local git only. No GitHub.
 | # | Task | Owner | Status | Waits on |
 |---|------|-------|--------|----------|
 | W1 | `public/slo/index.html` (sales) + `public/slo/pay.html` (pay) | this session | **done** | other session's `api/public/slo-checkout.mjs` edits being committed |
-| W2 | `public/slo/pull.html` (Commas success URL) | W2 agent | claimed | nothing |
+| W2 | `public/slo/pull.html` (Commas success URL) | W2 agent | **done** | nothing |
 | SHIP | `npm run ship` once W1, W2 and the other session are all committed | this session | pending | W1, W2, other session |
 
 ## Shared context
@@ -43,6 +43,37 @@ backend work once it is committed. Local git only. No GitHub.
 - **Routes:** none added. Static pages; `/slo/` and `/slo/pay.html` are served from `public/`.
 - **Not touched:** checkout math, Commas titles, CRS, `/watch`, `/apply`, `api/`, `netlify.toml`.
 - **Cut from the fragment:** layout-preview sample results; empty result placeholders; the video (404).
+
+### W2 — done, commit 0bc3ff8f
+
+- **Added:** `public/slo/pull.html`, `src/http/slo-pull-html.test.mjs` (14 tests).
+- **Reads from URL:** `?ref=` and optional `&client_id=`, via `URLSearchParams` on load.
+  Kept in memory-only JS variables (`orderRef`, `orderClientId`); never re-written to the
+  URL, never displayed, never invented when missing — the form still renders with `ref`
+  absent.
+- **Never stores:** SSN and date of birth never reach the address bar, `localStorage`,
+  `sessionStorage`, a cookie, or the console. SSN input is `autocomplete="off"`,
+  `inputmode="numeric"`, and its value is cleared from the DOM immediately after a valid
+  submit reads it locally.
+- **No pull API in this task.** No `fetch`, `XMLHttpRequest`, or `sendBeacon` anywhere on
+  the page — the soft-pull endpoint is explicitly out of scope here (code comment says so).
+  Valid submit only clears the SSN field and shows a calm "Building your pack" state.
+- **Consent gate:** checkbox authorizing Fundhub Credit Solutions LLC to run a soft pull;
+  submit is refused with a plain-word message until it is ticked. All eight fields (legal
+  first/last name, DOB, SSN, street address, city, state, ZIP) are validated with
+  plain-word messages naming what's missing.
+- **Trust copy:** reuses fragment wording verbatim — "$297 credits toward your $3,000
+  deposit" (`clickfunnels-fragments/slo/slo-01-sales.html:406`), "Soft pull only. Zero
+  score impact.", "We never sell your data." No invented claims, no testimonials, no SIM
+  MODE, no earnings or score-increase promises.
+- **Not touched:** `/watch`, `/apply`, checkout math, Commas titles, CRS, `api/`,
+  `netlify.toml`, and nothing under `src/slo/` or `db/migrations/385_*` (the other
+  session's in-flight files).
+- **Tests:** `npm run lint` clean (2038 files), `npx tsc --noEmit` clean, `node --test
+  src/http/slo-pull-html.test.mjs` — 14/14 pass. Live Playwright pass against `public/`
+  served with `python3 -m http.server` at 375px and default width: consent refusal shown,
+  valid submit shows the building state, URL never gained `ssn`, zero console errors, no
+  horizontal scroll at 375px. Server killed after.
 
 ## Blockers
 
