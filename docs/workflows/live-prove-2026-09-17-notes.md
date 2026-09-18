@@ -1223,3 +1223,10 @@ Opus said 2–5 were done, hole 1 gold live with contract wording still waiting,
 Shots: `docs/workflows/live-prove-2026-09-17-evidence/independent-tester-2026-09-18/`.
 JSON: `/tmp/independent-tester-2026-09-18-morning/result.json`.
 
+
+**Hole 15 — fixer notes (2026-09-18 ~13:40 UTC). NOT marked done. Waiting on a different tester.**
+- VERIFY: REAL. One Apply click on #8 (Comerica Bank row) → `POST /api/proxy/launch` 422 `oxylabs_auth_failed`, attempt reason `oxylabs_connect_failed:407`. No bank page, no pop-up. `messages` for #8: 48 before, 48 after. Audit row `proxy_sessions` 856ff866… status failed. Script: `scripts/tmp/live-fix-2026-09-18/h15-verify.mjs`.
+- History: all 9 Apply tries since 2026-09-06 failed with the same code. Apply has never worked on live.
+- Cause: the stored `OXYLABS_PASSWORD` is a mask. On Netlify production it is 20 characters, 16 asterisks and 4 characters: the hidden copy the dashboard shows. The local `.env` copy is a mask too. One proxy check with the local login also got 407. The username is fine (no `customer-` prefix, no spaces). The real password is not saved anywhere on Netlify, in `.env`, or in the repo.
+- Code change (merge `e470af69`): `src/adapters/oxylabs.mjs` now treats a run of 4+ asterisks as "not set". It does not send the mask to Oxylabs, and the Apply modal says the saved password is the hidden copy, where before it blamed the username. Same rule as the masked OpenAI key (`src/agents/model.mjs`). The stored value was left as it is. Test added in `src/adapters/oxylabs.test.mjs`; it fails on the old code and passes on the new. Lint and tsc pass. The full suite shows only the same 9 old failures by name.
+- **This does NOT make Apply open the bank page.** After the ship, Apply answers 503 `oxylabs_credentials_missing` with the true reason. The hole closes only when the real Oxylabs residential-proxy password is saved. That input exists only in Chris's Oxylabs account.
