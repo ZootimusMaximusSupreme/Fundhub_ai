@@ -17,7 +17,7 @@ came out in plain A-to-Z order by bank name. It was doing nothing at all.
 
 | | Before | After |
 |---|---|---|
-| Banks that say which bureau they check | 3 | 34 |
+| Banks that say which bureau they check | 3 | 46 |
 | Banks with a good/fair/poor ranking | 0 | 37 |
 | Banks with a minimum deposit written down | 0 | 35 |
 | Banks that say whether you must open an account | 41 | 59 |
@@ -58,9 +58,9 @@ the rows would get the wrong bureau. So these are left blank until you say which
 
 | Bank | Rows | Which rows | A source says |
 |---|---|---|---|
-| First National Bank | 2 | InBranchBizCC (MD, NC, PA); OnlineBizCC (IL) | nothing |
+| First National Bank | 2 | InBranchBizCC (MD, NC, PA); OnlineBizCC (IL) | EQ/TU |
 | First American Bank | 2 | InBranchBizCC (FL, IL, NM); OnlineBizCC (WI) | nothing |
-| First Bank | 2 | InBranchBizCC (KS); OnlineBizCC (TN, WY) | nothing |
+| First Bank | 2 | InBranchBizCC (KS); OnlineBizCC (TN, WY) | EX |
 | First Bank & Trust | 1 | InBranchBizCC (SD) | nothing |
 | Peoples Bank | 1 | InBranchBizCC (MD) | nothing |
 | The People’s Bank | 1 | OnlineBizCC (MS) | nothing |
@@ -75,7 +75,10 @@ the rows would get the wrong bureau. So these are left blank until you say which
 Here the solid sources agreed, so the bank got filled in. A written-up Notion page
 mentions a bureau on top of that. Not enough to block anything, but you should see it.
 
-None.
+| Bank | Written in | The page says | Which page |
+|---|---|---|---|
+| M&T Bank | TU | EX | November datapoint drop |
+| PNC Bank | EX/EQ | EX/TU | November datapoint drop |
 
 ## Banks that the book lists more than once
 
@@ -124,11 +127,11 @@ This script does not delete anything.
 
 ## Banks that still have no bureau, and why
 
-279 of the 313 rows still have nothing. Grouped by the reason:
+267 of the 313 rows still have nothing. Grouped by the reason:
 
-**251 rows — No bureau in any source we hold.**
+**239 rows — No bureau in any source we hold.**
 
-1st Source Bank, Alpine Bank, Altabank, American Bank Center (Bravera), American National (0%, American Savings Bank, AmTrust / FNBO, AmTrust Bank (0% - FNBO), ANB Bank, Apple Creek Bank, Arizona Bank & Trust (0% - HTLF), Artisans’ Bank, Arvest Bank, Associated Bank, Atlantic Union Bank, BancFirst, BancorpSouth Bank, Bank Forward, Bank Iowa, Bank of Albuquerque, Bank of Blue Valley, Bank of Blue Valley (0%, Bank of Colorado, Bank of Hawaii, Bank of Hope, Bank of New Hampshire, Bank of New Hampshire, Bank of Oklahoma, Bank of Tennessee, Bank of the West, Bank of the West, Bank of Utah, BankNewport, BankPlus, BankWest, Banner Bank, BBVA, Berkshire Bank, Berkshire Bank, BOK Financial, and 211 more.
+1st Source Bank, Alpine Bank, Altabank, American Bank Center (Bravera), American National (0%, AmTrust / FNBO, AmTrust Bank (0% - FNBO), ANB Bank, Apple Creek Bank, Arizona Bank & Trust (0% - HTLF), Artisans’ Bank, Arvest Bank, Associated Bank, Atlantic Union Bank, BancFirst, BancorpSouth Bank, Bank Forward, Bank Iowa, Bank of Albuquerque, Bank of Blue Valley, Bank of Blue Valley (0%, Bank of Colorado, Bank of Hawaii, Bank of Hope, Bank of New Hampshire, Bank of New Hampshire, Bank of Oklahoma, Bank of Tennessee, Bank of the West, Bank of the West, BankNewport, BankPlus, BankWest, Banner Bank, BBVA, Berkshire Bank, Berkshire Bank, BOK Financial, Bremer Bank, Bryant Bank, and 199 more.
 
 **14 rows — Two different banks share this name — filling it in would be a coin flip.**
 
@@ -177,7 +180,7 @@ Four kinds of source, ranked. Higher beats lower.
    A bank is only given a bureau here when we have seen at least 10 of its checks, and
    the bureau accounts for at least 30% of them and at least 5 checks. The full split is below.
 3. **The written-up Notion pages** (four of them) and the state funding boards table.
-   10 statements found. These can raise a question but never overrule the two above.
+   88 statements found. These can raise a question but never overrule the two above.
 
 ### What the credit checks we have seen actually show
 
@@ -309,7 +312,15 @@ copy the full links out. There are about 8 different links behind those 29 rows.
 
 Left alone rather than guessed at.
 
-None.
+- Independent Financial (Elan) (November datapoint drop) — mentioned 1 time
+- First Financial Bank (November datapoint drop) — mentioned 1 time
+- Calbank (November datapoint drop) — mentioned 1 time
+- LA Financial (November datapoint drop) — mentioned 1 time
+- Bank Rhode Island (November datapoint drop) — mentioned 1 time
+- Evans Bank (November datapoint drop) — mentioned 1 time
+- SalemFive Bank (Elan Financial) (November datapoint drop) — mentioned 1 time
+- BMO Harris Bank (November datapoint drop) — mentioned 1 time
+- Machias Savings Bank (November datapoint drop) — mentioned 1 time
 
 And from the name map, already known:
 

@@ -192,3 +192,9 @@ Also reads: `docs/legacy-strong/bank-datapoints-active-banks.md`, `inquiry-maste
 **Import stats:** `updated` 306, `imported` 0, errors 0.
 
 **Ship:** not run (no tracked asset change required for DB load).
+
+## Status 2026-09-18
+
+- **Gmail:** Token minted 2026-09-18 (`~/.config/fundhub/google-token.json`). Probe OK (oauth via path). **7 sent** threads to `daramirez10171@gmail.com` (e.g. Fwd ISO Onboarding Sep 2026, Carl Barton list Dec 2025, Fwd BAG Aug 2025). Netlify `GOOGLE_GMAIL_OAUTH_TOKEN_JSON` still masked — set from file + ship when owner wants live functions to read mail.
+- **Notion pull:** `npm run notion:pull` still running (~180 output folders). Bureau hubs `nov-datapoint-drop`, `the-perfect-funding-sequence`, `details-aged-corp` on disk; `crafting-the-perfect-funding-sequence--acf9a724` and all five personal-card dirs **not** yet.
+- **Lenders:** Task D import done (306 updated) — **no redo**.
