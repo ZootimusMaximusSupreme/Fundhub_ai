@@ -1333,7 +1333,7 @@
       <div class="group">
         <button class="group-title card-title tog" type="button" aria-expanded="false" aria-controls="facts-body">
           <span>System Facts</span>
-          <span class="chev">collapsed <span class="cg">⌄</span></span>
+          <span class="chev"><span class="tog-state" data-open="open" data-shut="collapsed">collapsed</span> <span class="cg">⌄</span></span>
         </button>
         <div class="group-body" id="facts-body" hidden>
           <div class="facts-list">
@@ -1372,6 +1372,9 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     var open = t.getAttribute('aria-expanded') === 'true';
     t.setAttribute('aria-expanded', open ? 'false' : 'true');
     body.hidden = open;
+    /* A header that names its state says the state it is in now (hole N21). */
+    var state = t.querySelector('.tog-state');
+    if (state) state.textContent = state.getAttribute(open ? 'data-shut' : 'data-open');
   });
 });
 </script>
