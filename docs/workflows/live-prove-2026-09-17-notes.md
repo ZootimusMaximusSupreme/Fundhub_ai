@@ -1250,9 +1250,9 @@ Five agents at a time. First five are on different screens.
 | 7 #9 "No step applies" while ID unread | control panel | **fixed** — REAL; when no step fits, the line names the newest open doc-check / repair-start job | pending (after ship) | `fix/live-h7-no-step-applies` → merged |
 | 8 Funded numbers lie vs two $25k rounds | control panel / pipeline / ops money | claimed | pending | |
 | 9 Staff portal Payments hides $2,500 | client portal | **fixed** — REAL; staff Payments tab now also paints the bill from portal-summary | pending (after ship) | `fix/live-h9-payments-tab-invoice` → merged |
-| 11 #12 What You Own empty | client portal | claimed | pending | |
+| 11 #12 What You Own empty | client portal | **fixed** — REAL; What You Own said nothing while Unlock More said Capital Academy owned; now shows a Funding Mastery course row with Open course | pending (after ship) | `fix/live-h11-what-you-own` → merged |
 | 12 #8 stored next-action says Collect Documents | control panel | claimed | pending | |
-| 13 Staff portal `?id=` greets Chris on #11 | client portal | pending | pending | |
+| 13 Staff portal `?id=` greets Chris on #11 | client portal | claimed | pending | |
 | 14 Specialist header "waiting on a bureau" | inquiry remover / repair | **fixed** — REAL; line now built from the Stuck/Waiting tiles | pending (after ship) | `fix/live-h14-specialist-stuck-header` → merged `499676fc` |
 | 16 Document reader 429, no chase | doc reader | **fixed** — REAL; on OpenAI 'no credit' the same file is read once by Anthropic; stored OpenAI key untouched. Possible new hole: reader retry clock not running (3 reads still on try 1, 5h past due). | pending (after ship) | `fix/live-h16-doc-reader-429` → merged |
 | 17 Inquiry upload never lands | client portal upload | pending | pending | |
