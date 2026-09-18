@@ -89,7 +89,7 @@ export async function listLenders(db, {
   }
   if (state) {
     params.push(`%${String(state).trim()}%`);
-    where.push(`(eligible_states ILIKE $${params.length} OR eligible_states IS NULL OR btrim(eligible_states) = '')`);
+    where.push(`(eligible_states ILIKE $${params.length} OR eligible_states IS NULL OR btrim(eligible_states) = '' OR btrim(eligible_states) ~* '^all(\\s+states)?$' OR btrim(eligible_states) = '*')`);
   }
   if (q) {
     params.push(`%${String(q).trim()}%`);
