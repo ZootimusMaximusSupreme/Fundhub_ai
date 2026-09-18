@@ -12,6 +12,26 @@ import { cleanBureaus, lenderBuckets } from "./derive.mjs";
 import { BASE_CSS, COVER_CSS, PAGE_CSS } from "./css.mjs";
 import { fontFaceCss } from "./fonts.mjs";
 
+/**
+ * THE LOOK SWITCH (2026-09-17). Every builder and the three pieces of chrome
+ * below take `opts` last. `{ look: "gold" }` draws the gold pack
+ * (docs/workflows/gold-deliverables-v5/*.pdf, printed by fundhub_pdf_template.py
+ * and fh_charts.py). Anything else draws the markup the older printer,
+ * scripts/black-reports/fundhub_gen.py, emits — byte for byte, because
+ * port-parity.test.mjs pins it and no test is weakened to make room.
+ * renderDeliverableHtml() always asks for gold, so every hosted page is gold.
+ * The words never change between the two looks; only the drawing does.
+ */
+export const GOLD = "gold";
+export const isGold = (opts) => opts?.look === GOLD;
+
+/**
+ * Where the closing panel sends a client. Owner-set 2026-09-17: the booking
+ * link is this page, on every document. The gold pack printed
+ * www.fundhubbookingurl.template, a placeholder that went nowhere.
+ */
+export const BOOK_CALL_URL = "https://apply.fundhub.ai/schedule/phonecall";
+
 /** Python PB — was a page break, is now the gap that opened the next sheet. */
 export const PB = '<div class="pagebreak"></div>';
 
@@ -26,8 +46,9 @@ export function qrHtml() {
 }
 
 /** Python cover(). `footer_label` was an unused parameter there and is dropped. */
-export function cover(client, doctype, title) {
+export function cover(client, doctype, title, opts = {}) {
   const med = median(client?.scores || {});
+  if (isGold(opts)) return goldCover(client, doctype, title, med);
   return `
 <div class="cover">
   <div><span class="brand">fundhub.</span>
@@ -59,21 +80,9 @@ export function cover(client, doctype, title) {
  * file: the clean bureaus if there are any, otherwise the lenders already open
  * today, otherwise no claim about either.
  */
-export function ctaPage(client) {
-  const clean = cleanBureaus(client);
-  const [openNow] = lenderBuckets(client);
-  let lead;
-  if (clean.length) {
-    lead = `You have ${clean.length === 1 ? "a clean bureau" : "clean bureaus"} ready for `
-      + `funding now - ${clean.join(", ")}. Apply on ${clean.length === 1 ? "it" : "those"} `
-      + "while we repair the rest in parallel.";
-  } else if (openNow.length) {
-    lead = `You have ${openNow.length} lender${openNow.length === 1 ? "" : "s"} you can apply `
-      + "to today. Book the call and we will work the list in the right order.";
-  } else {
-    lead = "Book the call and we will put the fixes in this pack in the order that unlocks the "
-      + "most money.";
-  }
+export function ctaPage(client, opts = {}) {
+  if (isGold(opts)) return goldCtaPage(client);
+  const lead = ctaLead(client);
   return `
 <div class="cta-page">
   <div><span class="brand">fundhub.</span>
@@ -93,6 +102,27 @@ export function ctaPage(client) {
 </div>`;
 }
 
+/**
+ * The closing panel's first sentence, off the file (F53). Shared by both looks.
+ */
+export function ctaLead(client) {
+  const clean = cleanBureaus(client);
+  const [openNow] = lenderBuckets(client);
+  let lead;
+  if (clean.length) {
+    lead = `You have ${clean.length === 1 ? "a clean bureau" : "clean bureaus"} ready for `
+      + `funding now - ${clean.join(", ")}. Apply on ${clean.length === 1 ? "it" : "those"} `
+      + "while we repair the rest in parallel.";
+  } else if (openNow.length) {
+    lead = `You have ${openNow.length} lender${openNow.length === 1 ? "" : "s"} you can apply `
+      + "to today. Book the call and we will work the list in the right order.";
+  } else {
+    lead = "Book the call and we will put the fixes in this pack in the order that unlocks the "
+      + "most money.";
+  }
+  return lead;
+}
+
 /** Python section(): the numbered eyebrow, the heading, the rainbow rule. */
 export function section(num, label, heading) {
   return `<div class="eyebrow">${esc(num)} / ${esc(spaced(label))}</div>`
@@ -104,8 +134,9 @@ export function section(num, label, heading) {
  * a caller can pass a `<span class="tag">` — which means every caller escapes
  * its own client data before it gets here.
  */
-export function table(headers, rows, numericCols = []) {
+export function table(headers, rows, numericCols = [], opts = {}) {
   const num = new Set(numericCols);
+  if (isGold(opts)) return goldTable(headers, rows, num);
   const th = headers.map((h, i) =>
     `<th class="${num.has(i) ? "num" : ""}">${esc(spaced(h))}</th>`).join("");
   const trs = rows.map((r) => {
@@ -114,6 +145,102 @@ export function table(headers, rows, numericCols = []) {
     return `<tr>${tds}</tr>`;
   }).join("");
   return `<table><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+/* ------------------------------------------------------------ gold look -- */
+
+/**
+ * The gold cover (fundhub_pdf_template.py cover_html()): a spectrum hairline
+ * across the top, wordmark and tag, the title a third of the way down with a
+ * short spectrum rule under it, four meta cells with left hairlines and mono
+ * values, and the green-dot foot. The outer element stays `<div class="cover">`.
+ */
+function goldCover(client, doctype, title, med) {
+  const meta = [
+    ["applicant", client?.applicant],
+    ["date", client?.date],
+    ["outcome", client?.outcome],
+    ["median score", med]
+  ].map(([k, v]) => {
+    const shown = v === null || v === undefined || v === "" ? "-" : v;
+    return `<div class="cm"><div class="l">${esc(spaced(k))}</div><div class="v">${esc(shown)}</div></div>`;
+  }).join("");
+  return `
+<div class="cover"><div class="spec-top"></div><div class="cov-in">
+  <div class="cov-head"><div class="wordmark">fundhub.</div>
+    <div class="cov-tag">${spaced("underwriteiq")} / ${spaced("client deliverable")}</div></div>
+  <div class="cov-mid"><div class="cov-eyebrow">${esc(spaced(doctype))}</div>
+    <h1 class="cov-title">${esc(title)}</h1><div class="cov-rule"></div></div>
+  <div class="cov-meta">${meta}</div>
+  <div class="cov-foot"><div><span class="dot">&#9679;</span>&nbsp; diagnostic complete &#183; underwriteiq</div>
+    <div>fundhub confidential</div></div>
+</div></div>`;
+}
+
+/**
+ * The gold closing panel (fundhub_pdf_template.py CLOSING), with two changes the
+ * owner made: the first sentence is the honest one off the file (ctaLead), not
+ * the gold pack's "You have clean bureaus ready for funding now" on every file;
+ * and the link is BOOK_CALL_URL, a real button and a real link, not the dead
+ * www.fundhubbookingurl.template. The QR box is kept as the gold pack drew it
+ * (no QR package is added) and it is itself a link to the same page, so the
+ * caption says tap, not scan.
+ */
+function goldCtaPage(client) {
+  const url = esc(BOOK_CALL_URL);
+  const shown = esc(BOOK_CALL_URL.replace(/^https:\/\//, ""));
+  return `
+<div class="cta-page"><div class="spec-top"></div><div class="clo-in">
+  <div class="cov-head"><div class="wordmark">fundhub.</div><div class="cov-tag">${spaced("next steps")}</div></div>
+  <div class="clo-mid">
+    <h2 class="clo-title">Let Us Build Your Game Plan Together</h2>
+    <div class="clo-rule"></div>
+    <p class="clo-sub">${esc(ctaLead(client))}</p>
+    <div class="clo-cta"><a class="book-btn" href="${url}">Book your strategy call</a></div>
+    <a class="qr-link" href="${url}" aria-label="Book your strategy call">${qrHtml()}</a>
+    <div class="qr-cap">${spaced("tap to book your call")}</div>
+    <a class="clo-url" href="${url}">${shown}</a>
+    <div class="clo-alt">Or copy this link into your browser</div>
+  </div>
+  <div class="clo-foot"><div><span class="dot">&#9679;</span>&nbsp; systems nominal &#183; fundhub.ai</div>
+    <div>fundhub confidential</div></div>
+</div></div>`;
+}
+
+/**
+ * A cell the gold sheet sets in JetBrains Mono: its whole text is one number, a
+ * dollar amount, a percent, a dollar range, or the "-" that stands for unknown.
+ * Only the <td> gets a class. The cell's content is never wrapped or changed,
+ * so every sentence and row shape the tests grep for survives.
+ */
+const NUMERIC_CELL = /^(?:-|[~+-]?\$?\d[\d,]*(?:\.\d+)?[KM]?%?\+?(?:\s*-\s*\$?\d[\d,]*(?:\.\d+)?[KM]?\+?)?)$/;
+
+function goldTable(headers, rows, num) {
+  const th = headers.map((h, i) =>
+    `<th class="${num.has(i) ? "num" : ""}">${esc(spaced(h))}</th>`).join("");
+  const trs = rows.map((r) => {
+    const tds = r.map((cell, i) => {
+      const cls = [num.has(i) ? "num" : "", NUMERIC_CELL.test(String(cell ?? "").trim()) ? "m" : ""]
+        .filter(Boolean).join(" ");
+      return `<td class="${cls}">${cell}</td>`;
+    }).join("");
+    return `<tr>${tds}</tr>`;
+  }).join("");
+  return `<table class="fh"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+/**
+ * A status chip. `kind` is "solid" (the worst states), "mid" (high / medium) or
+ * "line" (everything else), the three weights the gold sheet uses.
+ */
+export function chip(text, kind = "line") {
+  const k = ["solid", "mid", "line"].includes(kind) ? kind : "line";
+  return `<span class="chip ${k}">${esc(spaced(text))}</span>`;
+}
+
+/** An inline book-the-call button for the body of a document. */
+export function bookButton(label = "Book your strategy call") {
+  return `<a class="book-btn ink" href="${esc(BOOK_CALL_URL)}">${esc(label)}</a>`;
 }
 
 /** Python util_bar(). The dashed mark sits at the 10% threshold. */

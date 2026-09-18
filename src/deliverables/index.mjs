@@ -18,7 +18,7 @@
 // COMPLIANCE REVIEW REQUIRED — credit-repair / projected-score adjacent, the
 // same label src/underwrite/black-report-client.mjs carries.
 
-import { renderDocument } from "./chrome.mjs";
+import { renderDocument, GOLD } from "./chrome.mjs";
 import { buildCreditAnalysis } from "./credit-analysis.mjs";
 import { buildFundingSnapshot } from "./funding-snapshot.mjs";
 import { buildLenderList } from "./lender-list.mjs";
@@ -106,7 +106,10 @@ export function renderDeliverableHtml({ client, doc, fontsHref = "" } = {}) {
     throw new Error("renderDeliverableHtml: client is required");
   }
   const html = renderDocument({
-    body: spec.build(client),
+    // Every hosted page is the gold look. The builders' default (no opts) is
+    // the older fundhub_gen.py markup, kept only because port-parity.test.mjs
+    // pins it. See the look switch in chrome.mjs.
+    body: spec.build(client, { look: GOLD }),
     client,
     footerLabel: spec.footerLabel,
     title: spec.title,
