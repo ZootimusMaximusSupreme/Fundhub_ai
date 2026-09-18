@@ -238,3 +238,23 @@ Chris off phone; Legacy Strong auth confirmed (`token_v2`).
 | `npm run ship` | **skipped** — uncommitted changes on `main`; HEAD **`a5de1f0c`** |
 
 **DB after (live):** **328** banks · **102** with bureau · **303** logos · **37** ranking.
+
+## Notion scrape inventory 2026-09-18
+
+**Pull script scope (`notion-legacy-pull.mjs`):** Starts from saved Legacy Strong URL (The Vault). Collects **every** `/p/legacystrong/` link visible in the sidebar **plus** every in-page child link, BFS until the queue is empty — **not** Vault-only. Does **not** use the Notion API. Hub database tables may be thin in `page.md` unless `notion-rescrape-datapoints.mjs` is run (Load more + row extract).
+
+**On disk:** `credentials/notion-scrape/output/` — **425** page folders (each: `page.md`, `meta.json`, `FULL.md` after organize). Index: `INDEX.md`, `manifest.json` (425 pages, 208 video embeds, 0 transcripts). Rescrape log: `rescrape-datapoints-log.json` (Deep State **50** table rows; Bank Datapoints / Bankers / State Boards **0** rows this run — full text still in crawl folders).
+
+| Bucket | Folder(s) | In CRM lenders DB? |
+|---|---|---|
+| Deep State Datapoints | `deep-state-datapoints--253c3aa7/` (~1.7K `FULL.md` + rescrape `database-table.*`) | **No** — narrative/datapoint hub; not an import source |
+| Perfect Funding Sequence | `the-perfect-funding-sequence--2edc3aa7/`, `the-perfect-funding-sequence-aged-corps--2edc3aa7/`, `crafting-the-perfect-funding-sequence--acf9a724/` | **Partial** — bureau extract reads crafting + aged-corp + sequence `FULL.md` for **bank bureau** fields only; sequence copy stays on disk |
+| Application strategy / tips | `application-tips--24f78953/`, `submitting-applications--1e5c3aa7/`, `multiple-partner-llc-applications--7f178633/`, plus dispute/BBB pages in INDEX | **No** — no import script for strategy prose |
+| NOV datapoint drop | `nov-datapoint-drop-cca-network--29ac3aa7/` (~10K `FULL.md`) | **Yes (bureau only)** — used by `lenders-extract-bureaus.mjs` |
+| Bank datapoints hub | `bank-datapoints--0f247723/` | **Yes (legacy)** — git copy also in `docs/legacy-strong/bank-datapoints-active-banks.md` |
+| Personal 5 (extract script) | `alec-s-favorite-personal-cards--26a2ec40`, `high-limit-personal-cards--9cafa36e`, `best-balance-transfer-cards--f9e698f9`, `personal-loans--677b0a52`, `balance-transfers--6aaef26e` | **Yes** — `lenders-personal.csv` → **21** personal product rows loaded |
+| State boards / RMs / Bankers | `state-funding-boards--409f6157`, `rms--d42db2db`, `bankers--58819778` | **Partial** — boards/inquiries via `docs/legacy-strong/` + bureau extract; hub pages on disk for staff reference |
+
+**Everything else (~400 folders):** credit repair courses, ads/SOPs, client portals, funding forum, marketing funnels, etc. — **disk + INDEX only**; intentionally not modeled in CRM unless a future import is added.
+
+**Lenders DB after this scrape + import:** **328** banks · **102** with `bureaus_pulled` · **303** logos · **37** ranking. Business book import: **306 updated**. Personal import: **21 updated** (same slug rows; no new bank count).
