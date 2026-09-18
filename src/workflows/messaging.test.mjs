@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert";
 import { sendTemplated, formatAppointmentStart } from "./messaging.mjs";
+import { verifyUnsubscribeRequest } from "../messaging/unsubscribe.mjs";
 
 // In-memory DB fake covering message_templates, messages, opt_outs, conversations
 // and the client record sendTemplated reads merge-tag context from.
@@ -544,4 +545,92 @@ test("sendTemplated: an email destination is left alone", async () => {
   const res = await sendTemplated(db, { ...BASE, channel: "email", templateKey: "N-01-EMAIL" });
   assert.equal(res.sent, true);
   assert.equal(db.messages[0].to_address, "ten@example.com");
+});
+
+/* N11, measured on live 2026-09-18. EMAIL-NOBOOK-01 and 21 other live email
+ * templates end with a line holding {{unsubscribe}}. Nothing supplied that
+ * tag, so every send logged "unknown token: {{unsubscribe}}" and the stored
+ * copy had a blank line where the link belongs (all 70 stored EMAIL-NOBOOK-01
+ * rows, 0 with a link). The tag must render the client's own signed link. */
+const UNSUB_SECRET = "unit-test-unsub-secret-0123456789abcdef0123456789";
+const NOBOOK_HTML = `<!DOCTYPE html>
+<html lang="en"><body style="margin:0;background-color:#F4F4F5;">
+<table role="presentation" width="100%"><tr><td>
+            <p style="margin:0 0 16px 0;">Hey {{contact.first_name}},</p>
+            <p style="margin:0 0 16px 0;">fundhub.ai • Funding Intelligence for Entrepreneurs<br>
+            {{unsubscribe}}</p>
+</td></tr></table></body></html>`;
+const AX07_PLAIN = " Hi {{contact.first_name}},\n\n fundhub.ai • Funding Intelligence for Entrepreneurs\n\n {{unsubscribe}}";
+
+async function withEnv(vars, fn) {
+  const saved = {};
+  for (const k of Object.keys(vars)) {
+    saved[k] = process.env[k];
+    if (vars[k] == null) delete process.env[k]; else process.env[k] = vars[k];
+  }
+  const realWarn = console.warn;
+  const warnings = [];
+  console.warn = (...a) => warnings.push(a.join(" "));
+  try { return { value: await fn(), warnings }; } finally {
+    console.warn = realWarn;
+    for (const k of Object.keys(saved)) {
+      if (saved[k] === undefined) delete process.env[k]; else process.env[k] = saved[k];
+    }
+  }
+}
+
+const EMAIL = { ...BASE, channel: "email" };
+const linkIn = (body) => {
+  const m = String(body).match(/https:\/\/fundhub\.ai\/unsubscribe\.html\?[^"\s<]+/);
+  return m ? m[0].replace(/&amp;/g, "&") : null;
+};
+
+test("REGRESSION N11: {{unsubscribe}} in an HTML email renders the client's signed link", async () => {
+  const db = pgFake({ templates: [tpl("EMAIL-NOBOOK-01", NOBOOK_HTML)], clients: [client()] });
+  const { value: res, warnings } = await withEnv(
+    { UNSUBSCRIBE_TOKEN_SECRET: UNSUB_SECRET, APP_BASE_URL: "https://fundhub.ai" },
+    () => sendTemplated(db, { ...EMAIL, templateKey: "EMAIL-NOBOOK-01" }));
+  assert.equal(res.sent, true);
+  const body = db.messages[0].rendered_body;
+  assert.ok(!body.includes("{{"), "no merge tag may survive");
+  assert.match(body, /Entrepreneurs<br>\s*<a href="https:\/\/fundhub\.ai\/unsubscribe\.html\?[^"]+"[^>]*>Unsubscribe<\/a><\/p>/,
+    "the token's own line must carry a real Unsubscribe link, not a blank");
+  const v = verifyUnsubscribeRequest(linkIn(body), { secret: UNSUB_SECRET });
+  assert.ok(v, "the link must verify against the signing secret");
+  assert.deepEqual([v.orgId, v.clientId, v.channel], ["org-1", "cl-1", "email"]);
+  assert.deepEqual(warnings.filter((w) => /unsubscribe/.test(w)), [], `no unknown-token warning: ${warnings}`);
+});
+
+test("N11: {{unsubscribe}} in a plain-text email renders 'Unsubscribe: <link>'", async () => {
+  const db = pgFake({ templates: [tpl("EMAIL-AX07-FUNDING-PAUSED", AX07_PLAIN)], clients: [client()] });
+  await withEnv({ UNSUBSCRIBE_TOKEN_SECRET: UNSUB_SECRET, APP_BASE_URL: "https://fundhub.ai" },
+    () => sendTemplated(db, { ...EMAIL, templateKey: "EMAIL-AX07-FUNDING-PAUSED" }));
+  const body = db.messages[0].rendered_body;
+  assert.match(body, /\n\n Unsubscribe: https:\/\/fundhub\.ai\/unsubscribe\.html\?\S+$/);
+  assert.ok(!body.includes("<a "), "plain copy is escaped later, so no HTML tag goes in");
+  assert.ok(verifyUnsubscribeRequest(linkIn(body), { secret: UNSUB_SECRET }));
+});
+
+test("N11: a text message never gets an email unsubscribe link", async () => {
+  const db = pgFake({ templates: [tpl("N-01-SMS", "Hey {{unsubscribe}}")], clients: [client()] });
+  await withEnv({ UNSUBSCRIBE_TOKEN_SECRET: UNSUB_SECRET },
+    () => sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" }));
+  assert.equal(db.messages[0].rendered_body, "Hey ");
+});
+
+test("N11: an email template without the tag is rendered exactly as before", async () => {
+  const db = pgFake({ templates: [tpl("N-01-EMAIL", "Hi {{contact.first_name}}")], clients: [client()] });
+  await withEnv({ UNSUBSCRIBE_TOKEN_SECRET: UNSUB_SECRET },
+    () => sendTemplated(db, { ...EMAIL, templateKey: "N-01-EMAIL" }));
+  assert.equal(db.messages[0].rendered_body, "Hi Alice");
+});
+
+test("N11: no signing secret — the email still queues, the gap is logged", async () => {
+  const db = pgFake({ templates: [tpl("EMAIL-NOBOOK-01", NOBOOK_HTML)], clients: [client()] });
+  const { value: res, warnings } = await withEnv(
+    { UNSUBSCRIBE_TOKEN_SECRET: null, DOCUMENT_URL_SECRET: null },
+    () => sendTemplated(db, { ...EMAIL, templateKey: "EMAIL-NOBOOK-01" }));
+  assert.equal(res.sent, true, "a missing secret must not stop the email");
+  assert.ok(!db.messages[0].rendered_body.includes("{{"));
+  assert.ok(warnings.some((w) => /\{\{unsubscribe\}\} left blank in EMAIL-NOBOOK-01/.test(w)), String(warnings));
 });

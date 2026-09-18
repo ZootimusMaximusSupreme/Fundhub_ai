@@ -27,6 +27,7 @@ import { resolveShiftId } from "../shifts/attribution.mjs";
 import { emit } from "../events/bus.mjs";
 import { isDraftTemplateRow } from "../messaging/draft-guard.mjs";
 import { threadMessage } from "../conversations/store.mjs";
+import { UNSUBSCRIBE_TAG_RE, unsubscribeTagValue } from "../messaging/unsubscribe.mjs";
 // The one E.164 converter in the repo. Reused, not re-written (CLAUDE.md §8).
 import { normalizePhone } from "../messaging/providers/bland-voice.mjs";
 
@@ -183,8 +184,23 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   // Loaded only once a real template exists — a template_pending no-op costs no query.
   // An explicitly-passed `context` wins over the record, so a caller can still override.
   const base = await clientContext(db, clientId);
+
+  /* {{unsubscribe}} — the client's own signed unsubscribe link (N11). Only
+     for an email to a known client whose template actually holds the tag, so
+     no other message changes. If the link cannot be signed (no secret) the
+     tag is left out, the renderer blanks it and logs it, same as before. */
+  let unsubscribe = null;
+  if (channel === "email" && orgId && clientId && UNSUBSCRIBE_TAG_RE.test(String(row.body ?? ""))) {
+    try {
+      unsubscribe = unsubscribeTagValue({ orgId, clientId, body: row.body });
+    } catch (err) {
+      console.warn(`[sendTemplated] {{unsubscribe}} left blank in ${templateKey}: ${String(err?.message || err)}`);
+    }
+  }
+
   const mergeContext = {
     ...base,
+    ...(unsubscribe ? { unsubscribe } : {}),
     ...context,
     contact: { ...(base.contact || {}), ...(context.contact || {}) },
     appointment: { ...(base.appointment || {}), ...(context.appointment || {}) }
