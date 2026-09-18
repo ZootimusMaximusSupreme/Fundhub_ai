@@ -170,6 +170,12 @@ main::-webkit-scrollbar-thumb{background:#D4D4D8;border-radius:5px}
 .dl-btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:7px 13px;font-size:var(--fs-body);font-weight:700;color:var(--blue);transition:background .12s,border-color .12s}
 .dl-btn:hover{background:var(--blue-bg);border-color:var(--blue-line)}
 .own-foot{display:flex;align-items:center;gap:8px;margin-top:14px;padding-top:13px;border-top:1px solid var(--line);font-size:var(--fs-caption);color:var(--text-faint)}
+/* Hole N19, 2026-09-18: the display:flex above comes after .own-empty{display:none}
+   at the same weight, so the empty-list line showed under a full list as well.
+   One footer line at a time: rows → "Files from your package", empty → this one
+   (flex, so its dot stays a dot). src/http/portal-own-footer.test.mjs */
+.own-foot.own-empty{display:none}
+body.no-own .own-foot.own-empty{display:flex}
 
 /* ── 4 · what we still need ─────────────────────────────────────────────── */
 .action-card{background:var(--amber-bg);border:1px solid var(--amber-line);border-radius:14px;padding:18px 20px;margin-bottom:16px}
