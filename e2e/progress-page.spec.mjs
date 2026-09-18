@@ -102,6 +102,47 @@ async function openProgress(page, body, { status = 200, extra } = {}) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   0. WHO MAY OPEN THE PAGE. The server decides, not localStorage.
+
+   Live walk 2026-09-17, hole 4: staff signed in with the httpOnly
+   fundhub_session cookie have no fh_token in localStorage, and the page used to
+   send them to the "Email me a sign-in link" page before it asked the server
+   anything. These two tests set NO token on purpose.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+test("a staff cookie with no fh_token opens the page, it does not bounce to sign-in", async ({ page }) => {
+  const reads = [];
+  await page.route("**/api/**", async (route) => {
+    const url = route.request().url();
+    if (url.includes("/api/read/client-progress")) {
+      reads.push(url);
+      return json(route, payload());
+    }
+    return json(route, { ok: true });
+  });
+
+  for (const param of ["id", "client_id"]) {
+    reads.length = 0;
+    await page.goto(`/progress.html?${param}=${CLIENT_ID}`);
+    await expect(page.locator("#hSub")).toHaveText("Everything on your file, as it stands today.");
+    await expect(page.locator("#main")).toBeVisible();
+    await expect(page.locator("#fatal")).toBeHidden();
+    expect(page.url()).toContain("/progress.html");
+    expect(page.url()).not.toContain("portal-login");
+    expect(reads.length).toBe(1);
+    expect(reads[0]).toContain(`client_id=${CLIENT_ID}`);
+  }
+});
+
+test("no sign-in at all still goes to sign-in", async ({ page }) => {
+  /* No cookie and no token: the server answers 401 to everything. */
+  await page.route("**/api/**", (route) => json(route, { ok: false, error: "unauthorized" }, 401));
+  await page.goto(`/progress.html?id=${CLIENT_ID}`);
+  await page.waitForURL("**/portal-login.html**", { timeout: 5000 });
+  expect(page.url()).toContain("/portal-login.html");
+});
+
+/* ═══════════════════════════════════════════════════════════════════════════
    1. THE LINK. Clicked, not looked at.
    ═════════════════════════════════════════════════════════════════════════ */
 

@@ -177,6 +177,27 @@ today, so the score itself is also `null` for every real client.
 | `paidServices[]` | prices from `src/waypoints/pricing.mjs`; `inFlight` from an open `paid_service_requests` row | `available: false` |
 | `referral` | `clients.custom_fields.referral_affiliate_id` → `affiliates.tracking_id` | `enrolled: false` |
 
+## Opening the page (public/progress.html, changed 2026-09-17)
+
+Traced from `boot()` in `public/progress.html`. The page does no sign-in check
+of its own. It asks the server, and only the server's 401 sends a visitor to
+sign in. Before 2026-09-17 the page sent anyone with no `fh_token` in
+localStorage to `/portal-login.html` first, which bounced staff signed in by
+the httpOnly `fundhub_session` cookie (live walk hole 4).
+
+```mermaid
+flowchart TD
+    A[Open /progress.html, with or without ?id= or ?client_id=] --> B[Back link points at that client's portal when an id is in the address]
+    B --> C[GET /api/read/client-progress, plus ?client_id= when the address names one. Sends Bearer fh_token if stored, and always the session cookie]
+    C -->|network error| X[Could not reach the server]
+    C -->|401| L[Go to /portal-login.html]
+    C -->|403| F3[Your sign-in does not open this file]
+    C -->|404| F4[Nearly ready, not connected yet]
+    C -->|400 client_id_required| F0[Staff, no client named - open the client from the CRM]
+    C -->|any other failure| F5[Could not load your file just now]
+    C -->|200| P[Paint stage, scores, movement, next step, checklist, paid services, deliverables, timeline, referral]
+```
+
 ## Ticking a step off (POST /api/waypoint-tick, added 2026-09-17)
 
 Traced from `api/waypoint-tick.mjs` and `src/waypoints/self-attest.mjs`.
