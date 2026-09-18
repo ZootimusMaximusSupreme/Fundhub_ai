@@ -657,3 +657,60 @@ does not.
 Nothing needs to be built to put a real report on the roadmap. One row already in the
 database has thirteen real tradelines in exactly the right shape. What is missing is a
 logged-in door that reads it, and an answer to whether that client is on a repair path.
+
+---
+
+## W1 verification of W3 (this session, 2026-09-17)
+
+W3's headline holds: **the roadmap engine reads a real bureau file with no new engine code.**
+Two of its specific numbers do not, and one is stated more strongly than the evidence.
+
+### What I re-measured myself
+
+Ran `buildOptimizeRoadmap()` over `vendor/underwriteiq-crs/sandbox/exp.json` — a real-shaped
+Experian file already in this repo, 13 tradelines, 23 inquiries. No production data touched.
+
+| Fed as | `source` | findings | accounts | card use |
+|---|---|---|---|---|
+| bureau block only (`bureaus.EX`) | `file` | **16** | **0** | `""` |
+| bureau block **plus top-level `tradelines`** | `file` | **16** | **4** | **93%** |
+
+Real creditor names came through both times — SIGNET BANK/VIRGINIA, CAPITAL ONE, SYNCB/LEVITZ.
+
+### The correction that matters
+
+**The engine has two halves and they read from two different places.**
+
+- The **findings** half (`violationsByBureauFromMergedCrs`) reads `crsResult.bureaus.<BUREAU>`.
+- The **money** half (`buildBlackReportClient` → `tradelinesOf`, `black-report-client.mjs:230`)
+  reads `crsResult.normalized.tradelines` **or** top-level `crsResult.tradelines` — and does
+  NOT look inside `bureaus`.
+
+Feed a stored file that only has the `bureaus` block and you get findings with an empty account
+table and no card-use figure. That is a real gap and it is the actual work item. W3 reported
+"8 real card rows and 23% credit usage" from its own run; I could not reproduce those figures
+and got 4 rows and 93% from the repo's own Experian fixture. Neither run is production data,
+so treat both as shape proof, not as anyone's numbers.
+
+`preapprovalKnown` stayed **false** in every run. W3 is right that the pre-approval figure is
+never stored. `/roadmap` already prints "Not known yet" rather than a false $0.
+
+### What I could NOT verify
+
+**Production reads are blocked for this session** by the permission classifier. I confirmed by
+count only:
+
+- `crs_results` holds **21 rows**, and **`is_demo` is TRUE on none of them** — so the flag
+  `latestCreditFile` filters on does not separate them.
+
+W3 reported "19 fake, 2 real, both from 24 August" and a 13-tradeline Experian row with a score
+of 811. **I could not confirm any of that**, and the `is_demo` count contradicts the 19/2 split,
+so W3 was likely judging by content rather than by the flag. The five newest rows are dated
+2026-09-17, not 24 August. **Do not build on those specifics until someone with read access
+checks them.**
+
+### Confirmed with no caveat
+
+- `latestCreditFile` exists — `src/waypoints/seed.mjs:49`, one query, already written.
+- `buildOptimizeRoadmap` has exactly **one** non-test caller: the public referral door, which
+  passes nothing. No logged-in version was ever written. That is why everyone sees the example.
