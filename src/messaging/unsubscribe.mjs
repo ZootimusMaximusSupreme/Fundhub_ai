@@ -398,6 +398,36 @@ export function ensureHtmlEmailBody(body, footerHtml = "") {
   );
 }
 
+/* ── The {{unsubscribe}} merge tag (N11, 2026-09-18) ──────────────────────
+   22 live email templates (EMAIL-NOBOOK-01..03, EMAIL-S00-WELCOME, the
+   no-show, offer, document, billing and funding-paused emails) end with a
+   line that holds {{unsubscribe}}. Nothing supplied that tag, so the renderer
+   logged "unknown token: {{unsubscribe}}" and left a blank line where the link
+   should be. The footer above still went out, but the template's own line
+   was empty in the stored copy and in the email.
+
+   This is the value that tag renders to: the same signed link the footer
+   uses, minted for this client. An HTML template gets a real
+   <a>Unsubscribe</a>; plain copy gets "Unsubscribe: <url>", because
+   ensureHtmlEmailBody escapes plain copy later and a tag would show as text.
+   `body` is the template body, read only to tell the two apart.
+
+   Throws exactly when signUnsubscribeUrl does (no secret) — the caller
+   decides what a missing link means. */
+export const UNSUBSCRIBE_TAG_RE = /\{\{\s*unsubscribe\s*\}\}/;
+
+export function unsubscribeTagValue({ orgId, clientId, body = "", env = process.env, now = Date.now } = {}) {
+  const baseUrl = String(env.APP_BASE_URL || env.URL || "https://fundhub.ai").replace(/\/+$/, "");
+  const { url } = signUnsubscribeUrl({ orgId, clientId, channel: "email", baseUrl, env, now });
+  if (HTML_SNIFF.test(String(body ?? ""))) {
+    return (
+      `<a href="${escapeHtml(url)}" target="_blank" rel="noopener noreferrer" ` +
+      `style="color:#18181B;text-decoration:underline">Unsubscribe</a>`
+    );
+  }
+  return `Unsubscribe: ${url}`;
+}
+
 /** Append the professional footer. Always ships HTML so the button can render. */
 export function withUnsubscribeFooter(body, url, env = process.env) {
   const text = String(body ?? "");
