@@ -59,6 +59,25 @@ describe("discoveries", () => {
     assert.match(t.detail, /not overwritten/);
   });
 
+  // N17 (2026-09-18): the CEO brief's discovery said "funded files: 1" with no
+  // window, beside a bar that says "this month 2 funded files".
+  it("says the window on the funded-files count", () => {
+    const out = discoveriesFromFacts({
+      kpis: { period: "7d", new_clients: 10, booked_count: 4, showed_count: 5, funded_count: 1 },
+      deposits: 2,
+      timedCalls: 0,
+      allCalls: 6
+    });
+    const fund = out.all.find((d) => d.id === "deposit_to_fund");
+    assert.match(fund.detail, /funded files in the last 7 days: 1\./);
+
+    const month = discoveriesFromFacts({
+      kpis: { period: "30d", funded_count: 3 },
+      deposits: 2
+    }).all.find((d) => d.id === "deposit_to_fund");
+    assert.match(month.detail, /funded files in the last 30 days: 3\./);
+  });
+
   it("keeps three top discoveries and a pod finding", () => {
     const out = discoveriesFromFacts({
       kpis: { new_clients: 2, booked_count: 1, showed_count: 0, funded_count: 0 },

@@ -4,7 +4,7 @@
 // CEO: “What needs doing today?”
 // Chris / owner: “What will be done.”
 
-import { formatCents, formatRate } from "../dashboard/kpis.mjs";
+import { formatCents, formatRate, periodWords } from "../dashboard/kpis.mjs";
 
 function missing(label) {
   return `${label} is missing`;
@@ -53,7 +53,9 @@ export function ceoBrief(pulse) {
     eight.show_rate?.missing ? missing("Show rate") : `Show rate: ${formatRate(k.show_rate)}`,
     eight.close_rate?.missing ? missing("Close rate") : `Close rate: ${formatRate(k.close_rate)}`,
     `Cash: ${formatCents(k.cash_collected_cents)}`,
-    countLine("Funded files", eight.funded_count?.value),
+    // Same unit as the bar below (distinct files), different window. Say the
+    // window so "1" here and "this month 2" there do not read as one number.
+    countLine(`Funded files ${periodWords(pulse?.period ?? k.period)}`, eight.funded_count?.value),
     `Funded dollars: ${formatCents(k.funded_amount_cents)}`,
     eight.cost_per_funded_cents?.missing
       ? `Cost per funded is missing${eight.cost_per_funded_cents?.reason ? ` (${eight.cost_per_funded_cents.reason})` : ""}`

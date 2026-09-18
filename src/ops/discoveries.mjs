@@ -5,6 +5,7 @@
 // Below that, the finding is "not enough data" — that is still a discovery.
 
 import { CLOSER_LOGGED_CALL_MINUTES } from "./role-unit-times.mjs";
+import { periodWords } from "../dashboard/kpis.mjs";
 
 export const MIN_N_RATE = 10;
 export const MIN_N_TIME = 20;
@@ -102,7 +103,7 @@ export function discoveriesFromFacts({
     from: deposits,
     to: kpis.funded_count,
     fromName: "deposits",
-    toName: "funded files"
+    toName: `funded files ${periodWords(kpis.period)}`
   }));
 
   const timed = num(timedCalls) || 0;

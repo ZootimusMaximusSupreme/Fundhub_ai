@@ -110,6 +110,27 @@ describe("briefs", () => {
     assert.match(one, /\(1 funded round\)\./);
   });
 
+  // N17 (2026-09-18, second pass): live showed "Funded files: 1" (last 7 days)
+  // and "this month 2 funded files" in the same brief. Same unit, different
+  // window, and only one of them said its window. Both must say it.
+  it("every funded-files count in the CEO brief says its window", () => {
+    const text = ceoBrief({
+      ...pulse,
+      period: "7d",
+      bars: {
+        closer: { target: 108, actual: 2, missing: null },
+        funding_advisor: { target: 108, actual: 2, rounds: 3, missing: null }
+      }
+    });
+    assert.match(text, /^Funded files in the last 7 days: 1$/m);
+    assert.match(text, /this month 2 funded files \(3 funded rounds\)\./);
+    assert.doesNotMatch(text, /^Funded files: /m, "a funded count with no window");
+
+    assert.match(ceoBrief({ ...pulse, period: "30d" }), /^Funded files in the last 30 days: 1$/m);
+    assert.match(ceoBrief({ ...pulse, period: "today" }), /^Funded files today: 1$/m);
+    assert.match(ceoBrief({ ...pulse, period: "qtd" }), /^Funded files this quarter so far: 1$/m);
+  });
+
   it("says a number is missing instead of inventing it", () => {
     const empty = briefsFromPulse({
       company_8: {
