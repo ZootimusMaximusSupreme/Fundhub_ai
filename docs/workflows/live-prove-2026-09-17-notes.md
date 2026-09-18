@@ -1411,3 +1411,10 @@ Chris: extra-hole hunting breaks the named-fix gate; this run should not have ca
 - **Not merged, not shipped (17 fixer branches, left as branches):** N6, N9, N10, N12, N13, N14, N15, N16, N17, N18, N19, N20, N21, N22 (blocked — photo clear refused by the permission check), N25, N26, H24.
 - Reviewer test writes on Sim files only: two test sign-ups (N11), one test repair enrollment on Sim SloEighteen (N8), two sim payments on #10 (N2), one re-save of #8's bank approval with the same values (N7).
 - Cursor's validation of the N-holes: `docs/workflows/live-prove-2026-09-18-n-holes-validate.md`. Any further fix = Chris pastes one hole.
+
+### 12-fixer run (Chris, 2026-09-18 evening) — done
+
+No live verification by agents (Grok proves). No extra holes. Leftover branches not merged; 8 extra ships not rolled back.
+- No code change needed (already on main + live since the 14:45 PT ship of main; the misses were caught while old SLO-branch deploys 14:26/14:29/14:36 PT were live): hole 11, hole 19, N9, N11 (emails saved before 19:47 UTC keep old body), N12, N13, N15, N18, N19.
+- Merged + shipped once from the private main tree (packages present) as `c6d38b09` at 23:09 UTC, Inngest re-registered, health 200: **N7** (bill follows confirmed approvals; #8 INV-B4B9C768 void, INV-CCA200DF $1,000 paid, $1,500 over the fee left as a staff task), **N17** (funded-file counts name their period), **hole 23 on all score screens** (portal, progress, pipeline drawer, closer call, closer deck).
+- Skipped: N23 (Chris's password).
