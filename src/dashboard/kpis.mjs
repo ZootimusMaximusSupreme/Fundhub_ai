@@ -25,6 +25,22 @@ export function daysForPeriod(period) {
 }
 
 /**
+ * periodWords(period) → the same window as daysForPeriod, in plain words, so a
+ * count can say which window it covers ("in the last 7 days" vs "this month").
+ * An unknown period is the 7-day window there, so it is here too.
+ */
+export function periodWords(period) {
+  switch (String(period || "7d")) {
+    case "today": return "today";
+    case "30d": return "in the last 30 days";
+    case "qtd": return "this quarter so far";
+    case "7d":
+    default:
+      return "in the last 7 days";
+  }
+}
+
+/**
  * computeKpis(db, { orgId, period }) → plain object of KPI values.
  * Money fields are integer cents. Rates are 0–1 floats or null.
  */
