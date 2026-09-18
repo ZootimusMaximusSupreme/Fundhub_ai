@@ -8,7 +8,12 @@ import { toCents } from "../commissions/money.mjs";
 export async function onPaymentReceivedForLink(event, db) {
   const p = event.payload || {};
   const paidAmountCents = p.amount != null ? toCents(p.amount) : null;
-  const sessionId = p.itemId || p.productId || p.commasSessionId || null;
+  /* Commas ids only. p.productId is OUR products.id, copied off the link by
+     processCommasInboxRow — every deposit link shares one. Writing it into
+     commas_session_id let the first payment per product claim it, and every
+     later payment for that product hit the unique index
+     payment_links_commas_session and left its link unpaid (N2, 2026-09-18). */
+  const sessionId = p.itemId || p.commasSessionId || null;
 
   if (p.ref) {
     const byRef = await markPaid(db, {
