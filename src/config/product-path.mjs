@@ -3,7 +3,9 @@
 //   FRAUD_HOLD → MANUAL_REVIEW → REPAIR_ONLY → FUNDING_PLUS_REPAIR → FULL_FUNDING → PREMIUM_STACK
 // Funding path = the three funding tiers. Anything else (including unrecognized / null) is NOT
 // a funding path — fail closed. (Chris-confirmed 2026-07-27: pull the real strings, don't guess.)
-const FUNDING_TIERS = ["FUNDING_PLUS_REPAIR", "FULL_FUNDING", "PREMIUM_STACK"];
+// Exported (frozen) so a SQL rollup can pass the SAME list as a parameter
+// instead of hand-typing a second copy — src/fulfillment/read-signals.mjs.
+export const FUNDING_TIERS = Object.freeze(["FUNDING_PLUS_REPAIR", "FULL_FUNDING", "PREMIUM_STACK"]);
 const REPAIR_TIERS = ["REPAIR_ONLY"];
 
 export function isFundingPath(tier) {

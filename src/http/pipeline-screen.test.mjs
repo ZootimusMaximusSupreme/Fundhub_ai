@@ -645,11 +645,36 @@ describe("public/app/pipeline.html — fulfillment lens, the six rollup tiles", 
     assert.match(out.note, /false claim/i);
   });
 
-  test("Total Approved has no honest source — dash and a sentence, never $0", () => {
+  test("Total Approved with no approval recorded — dash and a sentence, never $0", () => {
     const L = loadLens();
     const out = L.rollupText({ total_approved: null }, "total_approved");
     assert.equal(out.value, "—");
     assert.match(out.note, /false claim/i);
+    assert.doesNotMatch(out.note, /no honest source/i,
+      "the rounds ARE the honest source now — a dash means nothing is recorded, not that nothing can be");
+  });
+
+  /* HOLE 8. Sim Eight-Funding on live, 2026-09-17: two funded $25,000 rounds,
+     one $10,000 bank yes on round 2 and none on round 1. The tile read
+     "No bank approval has ever been recorded". It must now show the $10,000
+     and say why it is below the funded money. */
+  test("Total Approved shows the recorded approvals and says why they are below the funded money", () => {
+    const L = loadLens();
+    const out = L.rollupText({
+      total_approved: "10000.00", total_approved_rounds: 1, funded_rounds_no_approval: 1
+    }, "total_approved");
+    assert.equal(out.value, "$10,000");
+    assert.match(out.note, /From 1 round with a bank approval on file\./);
+    assert.match(out.note, /1 funded round has no approval recorded\./);
+  });
+
+  test("Total Approved says nothing extra when every funded round has an approval", () => {
+    const L = loadLens();
+    const out = L.rollupText({
+      total_approved: "105000.00", total_approved_rounds: 3, funded_rounds_no_approval: 0
+    }, "total_approved");
+    assert.equal(out.value, "$105,000");
+    assert.equal(out.note, "From 3 rounds with a bank approval on file.");
   });
 
   /* The fixture is the STRING listRollups() really sends — SUM(...)::numeric

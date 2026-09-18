@@ -2996,9 +2996,10 @@ restore();
   }
 
   /* THE SIX TILES. `unknownNote` is the sentence a tile carries when it has no
-     number — Phase 0 §5 proved "Ready" and "Total Approved" have no honest
-     source today, and a 0 in either would be a false statement, so they say
-     what they are instead. */
+     number — Phase 0 §5 proved "Ready" has no honest source today, and a 0
+     would be a false statement, so it says what it is instead. "Total
+     Approved" is now counted from the bank approvals on the rounds (hole 8);
+     it is a dash only when no approval has been recorded at all. */
   var TILES = {
     total_clients:  { kind: "count",
       unknownNote: "Not measured yet." },
@@ -3011,7 +3012,7 @@ restore();
     total_prequal:  { kind: "money",
       unknownNote: "Not measured yet." },
     total_approved: { kind: "money",
-      unknownNote: "No honest source yet. No bank approval has ever been recorded. A zero here would be a false claim." }
+      unknownNote: "No bank approval has been recorded yet. A zero here would be a false claim." }
   };
 
   /* How many clients contributed to Total Prequal. It is one client's number
@@ -3054,6 +3055,24 @@ restore();
           ? "This is not a company total. We could not tell how many clients it came from."
           : ("From " + n + " client" + (n === 1 ? "" : "s") + ". This is not a company total.")
       };
+    }
+
+    /* Total Approved is the bank yeses on the rounds, which is not the money
+       that funded. On a file with two $25,000 funded rounds and one $10,000
+       bank yes, this tile says $10,000 — so it says where that came from and
+       how many funded rounds have no approval on them, rather than reading as
+       if it disagreed with the funded total (hole 8). */
+    if (id === "total_approved") {
+      var bits = [];
+      var rounds = rollups.total_approved_rounds;
+      if (typeof rounds === "number" && isFinite(rounds) && rounds > 0) {
+        bits.push("From " + rounds + " round" + (rounds === 1 ? "" : "s") + " with a bank approval on file.");
+      }
+      var unapproved = rollups.funded_rounds_no_approval;
+      if (typeof unapproved === "number" && isFinite(unapproved) && unapproved > 0) {
+        bits.push(unapproved + " funded round" + (unapproved === 1 ? " has" : "s have") + " no approval recorded.");
+      }
+      return { value: value, note: bits.join(" ") };
     }
 
     /* "Needs Pull" counts only clients whose written permission is live, the

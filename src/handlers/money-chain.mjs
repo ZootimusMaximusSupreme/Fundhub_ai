@@ -1116,6 +1116,41 @@ export async function onRoundStartedMoney(event, db) {
   };
 }
 
+/* THE PERSON ROW FOLLOWS THE ROUNDS (hole 8).
+   clients.funded and clients.funded_amount are the outcome labels every other
+   screen reads — the Client Control Panel's "Funded" line, the pipeline
+   board, the sales metrics, the agent context. Nothing ever wrote them, so on
+   the 2026-09-17 live walk Sim Eight-Funding had two funded $25,000 rounds and
+   the person row still said funded = false with no amount.
+
+   Called right after a round is written funded, so it runs on every path that
+   funds a round (the board's Funded drag and any replay of round.funded both
+   arrive here). funded_amount is the total of the client's funded rounds. If
+   any funded round has no amount on it the total is unknown and stays NULL —
+   never a partial sum, never 0. Only ever sets funded to true; it never
+   un-funds a client. Idempotent. */
+export const SQL_SYNC_CLIENT_FUNDED = `
+  UPDATE clients c
+     SET funded = true,
+         funded_amount = s.total
+    FROM (
+      SELECT CASE WHEN bool_and(fr.funded_amount IS NOT NULL)
+                  THEN SUM(fr.funded_amount) END AS total
+        FROM funding_rounds fr
+       WHERE fr.client_id = $1
+         AND fr.org_id = $2
+         AND fr.status = 'funded'
+      HAVING count(*) > 0
+    ) s
+   WHERE c.id = $1
+     AND c.org_id = $2
+  RETURNING c.id, c.funded, c.funded_amount`;
+
+export async function syncClientFunded(db, { clientId, orgId } = {}) {
+  if (!clientId || !orgId) return null;
+  return (await db.query(SQL_SYNC_CLIENT_FUNDED, [clientId, orgId])).rows[0] || null;
+}
+
 export async function onRoundFundedMoney(event, db) {
   const p = event.payload || {};
   let round = null;
@@ -1239,6 +1274,9 @@ export async function onRoundFundedMoney(event, db) {
     [round.id, fundedAmount, approvedAmountToWrite]
   );
   round = updated.rows[0] || round;
+
+  // The person row says funded too, from the rounds (hole 8).
+  await syncClientFunded(db, { clientId: round.client_id, orgId: round.org_id });
 
   let link = await db.query(SQL_SALE_FOR_ROUND, [round.id]);
   if (!link.rows[0]) {
