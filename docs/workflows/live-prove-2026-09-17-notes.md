@@ -1394,3 +1394,8 @@ Chris: credit repair letters must come from one brain (UnderwriteIQ / credit-rep
 **Not agent work:** N23 (owner password reset — the permission check blocks agents from password resets; Chris runs it). Hole 1 (left by Chris).
 
 Same protocol: one fixer per hole (own worktree, no merge/ship), main session merges + ships once + re-registers timed jobs, then a different reviewer per hole on live. FAKE → one more try.
+
+**Fix run 2 progress (main session):**
+- 18:47 UTC: hole 12 round 3 re-shipped as `87a72b67`; app re-registered with Inngest at 18:47:52 (`PUT /api/inngest` → 200, `modified: true`). Final hole 12 reviewer claimed (reads after 19:00 UTC).
+- Hole 20: live-proof reviewer claimed (timed jobs running + Gmail failures in logs since 18:48).
+- 25 fixers (N1–N22, N25, N26, H24) running as workflow `wf_900b1204-dc1`, 5 at a time, each in its own worktree.
