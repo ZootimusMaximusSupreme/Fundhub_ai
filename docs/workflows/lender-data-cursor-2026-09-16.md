@@ -357,3 +357,67 @@ New Carl-era logo files fetched over the live site: `connex.png` **200**, `congr
 **Dry-run import after sync:** `node --env-file=.env scripts/lenders-import-alec.mjs --file credentials/lenders-audit/lenders-unified-carl-merged.csv` → **Nothing would be blanked out** (clearing guard **0**). File **1,086** banks — no eighth Elan row to insert.
 
 **Still noted, not fixed:** **Five** of the fourteen **`PersonalCC`** rows still carry **`D&B/SBFE`** in **`business_bureau_pulled`** on live (bureau pass keys on bank name, not product). CSV matches live on those cells after CRM backfill; clearing them needs a named bureau fix.
+
+## Personal loans — national lenders added 2026-09-18
+
+The personal-loan section of the book came out of five Notion pages, and those pages only ever named seven places. The lenders a funding advisor reaches for first were simply never written down. This pass researched them on the open web, checked each one on the lender's own website, and loaded them.
+
+**Script (tracked, carries every source):** `scripts/lenders-add-personal-loans.mjs` → `credentials/lenders-audit/lenders-personal-loans-web.csv` (gitignored). `external_row_id` pattern **`PERSONAL-LOAN-<slug>`**.
+
+| | Before | After |
+|---|---:|---:|
+| `PersonalLoans` rows | **7** | **26** |
+| Whole book | 1,087 | **1,106** |
+| With a bureau | 940 | **948** |
+| With a logo | 639 | **656** |
+
+**Import:** dry run first — clearing guard **0**, nothing blanked out. Then **19 inserted**, 0 updated, 0 errors. Logo pass, then a second confirm run: **19 updated** (that is what put `logo_path` on the rows).
+
+### The 19 added
+
+| Lender | Apply URL verified | States | Bureau | Soft-pull prequal | Logo |
+|---|---|---|---|---|---|
+| Best Egg | bestegg.com | 47 (not IA, VT, WV) | — | yes | **no** |
+| Upgrade | upgrade.com | *(left empty — sources disagree)* | TU | yes | yes |
+| Happen Bank | happen.com | All States | — | yes | yes |
+| Discover | discover.com | All States | EX | yes | yes |
+| Prosper | prosper.com | 47 (not IA, ND, WV) | TU | yes | yes |
+| Universal Credit | universal-credit.com | *(not published)* | TU | yes | yes |
+| PenFed Credit Union | penfed.org | All States | — | yes | yes |
+| Navy Federal Credit Union | navyfederal.org | All States | TU | no | yes |
+| Avant | avant.com | *(left empty — sources disagree)* | — | yes | yes |
+| OneMain Financial | onemainfinancial.com | 44 (not AK, AR, CT, MA, RI, VT) | EX/TU | yes | **no** |
+| LendingPoint | lendingpoint.com | 42 | — | yes | yes |
+| Rocket Loans | rocketloans.com | 46 (not IA, MD, NV, WV) | — | yes | yes |
+| Reach Financial | reach.com | 42 | — | yes | yes |
+| Achieve | achieve.com | 38 + DC | — | yes | yes |
+| US Bank | usbank.com | All States | TU | yes | yes |
+| Citi | citi.com | *(not published)* | EQ | yes | yes |
+| Alliant Credit Union | alliantcreditunion.org | *(not published)* | — | no | yes ⚠ |
+| First Tech Federal Credit Union | firsttechfed.com | *(not published)* | — | no | yes |
+| We Florida Financial | wefloridafinancial.com | FL | — | no | yes |
+
+**Already in the book, not duplicated:** Bank of America, Chase, Happy Money, LightStream, SoFi, Upstart, Wells Fargo.
+
+**Looked at and deliberately NOT written — these have stopped lending.** A row would send an advisor to a dead end:
+
+- **Marcus by Goldman Sachs** — stopped taking new personal loan applications January 2023, never reopened. `marcus.com` is savings and CDs now.
+- **Laurel Road** — stopped new personal loan applications during its 2026 move into KeyBank. `laurelroad.com/personal-loans` now **301s to `key.com`**.
+- **Figure** — the consumer site sells home equity lines only. Personal loans survive in its servicing and terms pages but there is no way to apply.
+
+**Also skipped:** Oportun (8 states — not national); Truist (already in the book as business rows; its personal-loan state footprint could not be verified, so no row rather than a guessed one).
+
+### Rules this pass held to
+
+- **No guessed bureaus.** `bureaus_pulled` comes from `docs/legacy-strong/inquiry-master-database.csv` through the same reader the bureau pass uses — 8 of 19 had a firm opinion, the other 11 are blank because blank means unknown.
+- **No guessed state lists.** Filled only where the lender publishes the list or every source agrees. Where published lists disagreed (Upgrade, Avant) the cell is **empty on purpose** — the matcher shows an empty cell to everyone, which is the safe direction to be wrong in.
+- **No new Commas products, no deletes.** Nothing existing was touched.
+
+### Left open
+
+- **Best Egg and OneMain Financial still have no logo.** Both sites block the fetcher (`site_unreachable`), and `fetch-logos.mjs` refuses to guess rather than save a wrong picture. Needs a hand-saved PNG.
+- **Alliant Credit Union's logo is `saved_unconfirmed`** — matched on the web address only because the site blocks automated visits. Worth a human glance.
+- **APR, loan amount and funding-speed data was found but not loaded.** Chris named `bank_name`, `application_url`, `eligible_states`, `bureaus_pulled` and logo; those columns were left alone.
+- **The desk still draws only 500 of 1,106 rows** (`public/app/lenders.html` sends `limit=500`). Unchanged by this pass — still needs Chris to name it.
+
+**Sources used (names only):** NerdWallet Best-Of 2026 personal loans, Bankrate, Forbes Advisor, Experian, Credible, LendingTree, WalletHub, CNBC Select, plus each lender's own website and legal/compliance pages for the state lists.
