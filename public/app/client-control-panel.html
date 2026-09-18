@@ -271,6 +271,8 @@
   .na-inq{margin:10px 0 0;}
   .na-inq-head{font-weight:700;letter-spacing:1px;text-transform:uppercase;
     color:var(--text-dim);margin-bottom:5px;}
+  /* A list off a sample report says so under its head (live hole N12). */
+  .na-inq .na-inq-sample{margin:0 0 5px;}
   .na-inq-row{display:flex;align-items:baseline;gap:8px;padding:4px 0;
     border-top:1px solid var(--line);}
   .na-inq-row:first-of-type{border-top:none;}
@@ -1110,7 +1112,11 @@
         <div class="group-title card-title">Client facts</div>
         <div class="record-fields">
           <div class="rf-tile"><div class="rf-label">Main Status</div><div><span class="status-badge-lg" id="ccp-status">—</span></div></div>
-          <div class="rf-tile"><div class="rf-label">Prequal</div><div class="rf-num" id="ccp-prequal">—</div></div>
+          <!-- Sample note: shown only when this figure is the pre-approval a
+               sample report was given (live hole N12). See sampleDecision(). -->
+          <div class="rf-tile"><div class="rf-label">Prequal</div>
+            <div class="rf-num" id="ccp-prequal">—</div>
+            <p class="fact-note" id="ccp-prequal-sample" hidden></p></div>
           <!-- WAS "Total Approved", AND WAS NEITHER. It printed the FUNDED
                amount, and when that was missing it printed the analyzer's
                PRE-APPROVAL GUESS — the number in the tile immediately to its
@@ -1135,7 +1141,11 @@
                It reads the stored credit report now, and names the banks
                underneath. When the stored report carries no inquiry list at all
                it says so; it never prints 0, because 0 would be a claim. -->
-          <div class="rf-tile"><div class="rf-label">Inquiries on the credit file</div><div class="rf-num" id="ccp-inquiries">—</div></div>
+          <!-- Sample note: shown only when the report these inquiries came off
+               is a walkthrough's sample (live hole N12). See paintInquiries(). -->
+          <div class="rf-tile"><div class="rf-label">Inquiries on the credit file</div>
+            <div class="rf-num" id="ccp-inquiries">—</div>
+            <p class="fact-note" id="ccp-inquiries-sample" hidden></p></div>
           <div class="rf-tile"><div class="rf-label">Inquiry Removal</div><div class="rf-num" data-ir-case id="ccp-ir">—</div></div>
           <!-- A SAMPLE REPORT SAYS IT IS A SAMPLE (live hole 23, 2026-09-18).
                Shown only when the scores above came from a walkthrough's sample
@@ -1148,7 +1158,11 @@
                spelt the British way there). It reads "not measured" whenever the
                stored report carried no figure — which for a real bureau pull is the
                ordinary case today, not an error. Never 0%: see cardUse() below. -->
-          <div class="rf-tile"><div class="rf-label">Card Use</div><div class="rf-num" id="ccp-card-use">—</div></div>
+          <!-- Sample note: shown only when the figure came off a sample report
+               (utilisation.asOf is that row's date) — live hole N12. -->
+          <div class="rf-tile"><div class="rf-label">Card Use</div>
+            <div class="rf-num" id="ccp-card-use">—</div>
+            <p class="fact-note" id="ccp-card-use-sample" hidden></p></div>
           <div class="rf-tile"><div class="rf-label">Funding Round</div><div class="rf-num" id="ccp-round">—</div></div>
         </div>
         <!-- The banks that pulled this person's credit, by name, so nobody has
@@ -1659,6 +1673,12 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
      answers false, which is how the screen read before this: it only ever ADDS
      a warning, it never hides a score. Never throws. */
   var SAMPLE_NOTE = "Sample scores. Not a real credit pull.";
+  /* The same stamp covers every other figure this screen reads off that
+     report — the inquiries list and count, Card Use and the income estimates
+     (live hole N12, 2026-09-18). Each one is matched to its own report by the
+     date the server or fileInquiries() says it came from. Prequal and Tier,
+     which the decision on that report set, are matched by sampleDecision(). */
+  var SAMPLE_FIGURE_NOTE = "From a sample report. Not a real credit pull.";
 
   function isSampleReport(crsResults, asOf) {
     try {
@@ -1682,6 +1702,42 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     return false;
   }
 
+  /* Prequal and Tier are not read off a report. decision.rendered stamps them
+     on the client (onDecisionRendered in src/handlers/client-lifecycle.mjs)
+     from the report that was just worked out, so they belong to the NEWEST
+     stored report. Both sample loaders also keep that decision on the sample
+     row itself: the pre-approval total as result.preapprovals.totalCombined
+     and the tier as the row's outcome_tier. So a Prequal or a Tier is the
+     sample's when the newest stored report is a sample AND carries that same
+     figure (live hole N12). Returns { prequal, tier } — either may be null —
+     for a sample, and null for a real pull, no report, or anything
+     unreadable. Like isSampleReport() it only ever ADDS a warning. Never
+     throws. */
+  function sampleDecision(crsResults) {
+    try {
+      var list = (Array.isArray(crsResults) ? crsResults : []).filter(function (r) {
+        return r && typeof r === "object";
+      });
+      if (!list.length) return null;
+      list.sort(function (a, b) {
+        return new Date(b.created_at || 0) - new Date(a.created_at || 0);
+      });
+      var row = list[0];
+      if (!isSampleReport([row], row.created_at)) return null;
+      var r = row.result;
+      if (typeof r === "string") {
+        try { r = JSON.parse(r); } catch (e) { r = null; }
+      }
+      var pre = r && r.preapprovals && typeof r.preapprovals === "object"
+        ? r.preapprovals.totalCombined : null;
+      var preNum = pre === null || pre === undefined || pre === "" ? NaN : Number(pre);
+      return {
+        prequal: isFinite(preNum) ? preNum : null,
+        tier: row.outcome_tier ? String(row.outcome_tier) : null
+      };
+    } catch (e) { return null; }
+  }
+
   window.FHClientPanel = {
     UNKNOWN: UNKNOWN,
     NOT_WORKED_OUT: NOT_WORKED_OUT,
@@ -1697,7 +1753,9 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
     displayStatus: displayStatus,
     displayHold: displayHold,
     SAMPLE_NOTE: SAMPLE_NOTE,
-    isSampleReport: isSampleReport
+    SAMPLE_FIGURE_NOTE: SAMPLE_FIGURE_NOTE,
+    isSampleReport: isSampleReport,
+    sampleDecision: sampleDecision
   };
 })();
 /* FH-CCP-END */
@@ -1812,9 +1870,11 @@ document.addEventListener("DOMContentLoaded", function () {
    *   { known:false }                 no usable stored report — say so
    *   { known:true, rows:[] }         a report with no inquiry list on it
    *   { known:true, rows:[{name,bureau}] }
+   * `asOf` is the created_at of the report the rows came off, so the paint
+   * can ask FHCP.isSampleReport() about THAT report (live hole N12).
    */
   function fileInquiries(crsResults) {
-    var out = { known: false, rows: [] };
+    var out = { known: false, rows: [], asOf: null };
     var list = Array.isArray(crsResults) ? crsResults.slice() : [];
     list.sort(function (a, b) {
       return new Date((b && b.created_at) || 0) - new Date((a && a.created_at) || 0);
@@ -1831,6 +1891,7 @@ document.addEventListener("DOMContentLoaded", function () {
       if (env === "sandbox") continue;
 
       out.known = true;
+      out.asOf = row.created_at || null;
       var seen = {};
       var rows = [];
       function take(items) {
@@ -1881,7 +1942,7 @@ document.addEventListener("DOMContentLoaded", function () {
      the instruction to act on it is. Built as DOM nodes with textContent, never
      an HTML string — a creditor name comes off a credit report and is not ours
      to trust. */
-  function paintNextInquiries(rows) {
+  function paintNextInquiries(rows, sample) {
     var box = $("ccp-next-inquiries");
     if (!box) return;
     box.textContent = "";
@@ -1892,6 +1953,14 @@ document.addEventListener("DOMContentLoaded", function () {
       ? "The 1 inquiry on this file"
       : "The " + rows.length + " inquiries on this file";
     box.appendChild(head);
+    /* Straight under the head, before the names: a list off a sample report
+       says so first (live hole N12). */
+    if (sample) {
+      var note = document.createElement("p");
+      note.className = "fact-note na-inq-sample";
+      note.textContent = FHCP.SAMPLE_FIGURE_NOTE;
+      box.appendChild(note);
+    }
     rows.forEach(function (r) {
       var row = document.createElement("div");
       row.className = "na-inq-row";
@@ -1918,6 +1987,14 @@ document.addEventListener("DOMContentLoaded", function () {
   function paintInquiries(crsResults) {
     var found = fileInquiries(crsResults);
     var names = $("ccp-inquiry-names");
+    /* The count and the list came off one report. When that report is a
+       walkthrough's sample, both say so — live hole N12. */
+    var sample = found.known && FHCP.isSampleReport(crsResults, found.asOf);
+    var tileNote = $("ccp-inquiries-sample");
+    if (tileNote) {
+      tileNote.textContent = sample ? FHCP.SAMPLE_FIGURE_NOTE : "";
+      tileNote.hidden = !sample;
+    }
     if (!found.known) {
       setText("ccp-inquiries", "no report yet");
       if (names) { names.textContent = ""; names.hidden = true; }
@@ -1943,7 +2020,7 @@ document.addEventListener("DOMContentLoaded", function () {
        them, so keeping this was duplication in the worse of the two formats.
        The count tile beside it still answers "how many". */
     if (names) { names.textContent = ""; names.hidden = true; }
-    paintNextInquiries(found.rows);
+    paintNextInquiries(found.rows, sample);
   }
 
   /* WHY A REMOVAL CASE SAYS BLOCKED, AND WHERE IT GETS UNBLOCKED.
@@ -2439,7 +2516,12 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-key", c.email || c.id);
     setText("ccp-email", c.email);
     setText("ccp-phone", c.phone);
-    setText("ccp-tier", c.outcome_tier);
+    /* A Tier or a Prequal set by the decision on a sample report says so —
+       live hole N12. See sampleDecision(). */
+    var sampleDec = FHCP.sampleDecision(d.crs_results);
+    var sampleTier = !!sampleDec && sampleDec.tier !== null && !!c.outcome_tier &&
+      String(c.outcome_tier) === sampleDec.tier;
+    setText("ccp-tier", sampleTier ? c.outcome_tier + " · sample" : c.outcome_tier);
     setText("ccp-path", cf.analyzer_path || cf.product_path);
 
     var status = c.funded ? "Funded"
@@ -2451,6 +2533,13 @@ document.addEventListener("DOMContentLoaded", function () {
 
     var prequal = cf.analyzer_prequal_amount || cf.total_funding_estimate;
     setText("ccp-prequal", money(prequal));
+    var samplePrequal = !!sampleDec && sampleDec.prequal !== null &&
+      money(prequal) !== "—" && Number(prequal) === sampleDec.prequal;
+    var prequalNote = $("ccp-prequal-sample");
+    if (prequalNote) {
+      prequalNote.textContent = samplePrequal ? FHCP.SAMPLE_FIGURE_NOTE : "";
+      prequalNote.hidden = !samplePrequal;
+    }
     /* THE APPROVED TILE IS NOT PAINTED FROM HERE ANY MORE, and that is the fix.
        It used to be:
 
@@ -2497,6 +2586,16 @@ document.addEventListener("DOMContentLoaded", function () {
     /* Sample scores say they are a sample — live hole 23. See isSampleReport(). */
     var sampleScores = FHCP.isSampleReport(d.crs_results, tm.asOf);
     setText("ccp-card-use", cardUse(d.utilisation));
+    /* Card Use off a sample report says so — live hole N12. utilisation.asOf
+       is the created_at of the report the figure came off (utilisation() in
+       src/http/client-detail.mjs); null when it came from anywhere else, and
+       null never adds the note. */
+    var sampleCardUse = FHCP.isSampleReport(d.crs_results, d.utilisation && d.utilisation.asOf);
+    var cardUseNote = $("ccp-card-use-sample");
+    if (cardUseNote) {
+      cardUseNote.textContent = sampleCardUse ? FHCP.SAMPLE_FIGURE_NOTE : "";
+      cardUseNote.hidden = !sampleCardUse;
+    }
     setText("ccp-scores", scores);
     setText("ccp-facts-scores", sampleScores ? scores + " · sample" : scores);
     var sampleNote = $("ccp-scores-sample");
@@ -2543,8 +2642,16 @@ document.addEventListener("DOMContentLoaded", function () {
     setText("ccp-hold-reason", hold);
     setText("ccp-credit-status", cf.crs_status || cf.analyzer_status);
     var inc = d.income_estimates || {};
-    setText("ccp-income-ex", moneyYr(inc.experian));
-    setText("ccp-income-eq", moneyYr(inc.equifax));
+    /* Income estimates off a sample report say so — live hole N12. inc.asOf is
+       the created_at of the report both came off (incomeEstimates() in
+       src/http/client-detail.mjs). A dash stays a dash. */
+    var sampleIncome = FHCP.isSampleReport(d.crs_results, inc.asOf);
+    function incomeLine(row) {
+      var v = moneyYr(row);
+      return sampleIncome && v !== "—" ? v + " · sample" : v;
+    }
+    setText("ccp-income-ex", incomeLine(inc.experian));
+    setText("ccp-income-eq", incomeLine(inc.equifax));
 
     paintBlockers(d.open_blockers, hold);
     paintControlPanel(fx, d, cf);
