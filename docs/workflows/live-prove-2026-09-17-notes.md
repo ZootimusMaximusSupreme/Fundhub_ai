@@ -325,12 +325,28 @@ Claim hole 6 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade
 
 | Hole | Status | Owner |
 |---|---|---|
-| 1 Gold HTML pack / #8 UnderwriteIQ / contract placeholder | **half done** — gold pack PASS, contracts FAIL (real text not in repo) | fix-run workflow |
-| 2 #11 Metro 2 not built | **blocked** — owner yes/no question (below) | fix-run workflow |
+| 1 Gold HTML pack / #8 UnderwriteIQ / contract placeholder | **partial** — gold pack PASS; contract picker fixed and live; contract wording waits on Chris | fix-run workflow |
+| 2 #11 Metro 2 not built | **done** — PASS, second checker agrees (kept the written hard rule) | fix-run workflow |
 | 3 No real CSM login | **done** — PASS, second checker agrees | fix-run workflow |
 | 4 /progress.html bounce | **done** — PASS, second checker agrees | fix-run workflow |
-| 5 #9 CCP empty first paint | **done with a limit** — PASS on the old bug; second checker says a short loading screen still shows first | fix-run workflow |
-| 6 chris@fundhub.ai password 401 | **blocked** — reset script ready; the permission check stopped the write | fix-run workflow |
+| 5 #9 CCP empty first paint | **done** — name shows from the fastest reply; no faster source exists | fix-run workflow |
+| 6 chris@fundhub.ai password 401 | **blocked** — reset script ready; the permission check blocks agents from running it | fix-run workflow |
+
+### Finish run (2026-09-18, one ship: live commit `2907ff56`, health pending 0)
+
+Nothing was sent. No letters were made. The main session merged the hole 1, 3 and 6 script branches (`551e511e`, `f740062b`, `6b41866c`). The hole 6 reset was tried once more, even as a dry run, and the permission check blocked it again ("secret-store writes").
+
+**Hole 1 (partial).**
+- Three independent searches covered every file, the git history, branches, stashes, and the PDF and Word files. The real Funding Agreement and Credit Repair Agreement wording is not in the repo. Only the Capital Blueprint, Capital Academy and White Label agreements are real.
+- Code fix (merge `76d22c35`, live): on a "funding + repair" deck, a closer selling the Capital Blueprint got the combined funding + repair agreement. Now the combined agreement only goes with the funding offer. A Blueprint sale gets the Blueprint agreement on every deck. Files: `public/app/present.js`, `src/config/offers.mjs`, new test `src/http/present-contract-pick.test.mjs`.
+- #8, #9 and #11 contracts are signed. The database locks signed contracts, so they keep the placeholder. A preview (saves nothing) of #11 on the Blueprint agreement comes out clean.
+- Waits on Chris: (1) the real Funding Agreement wording and the real Credit Repair Agreement wording, as files in `docs/contracts/`; (2) a yes/no on sending #11 a fresh Blueprint contract. That emails #11's test inbox, which fits the messaging prove.
+
+**Hole 2 (done).** Chris did not answer the yes/no, so the written hard rule was kept: no Metro 2 dispute letters on the funding path. A panel of three judges went 2 to 1 for the portal-only fix. For a Blueprint buyer with no Metro 2 file but with funding letters on file, the row now reads "Dispute Letter Pack — Ready", which is the offer's own wording, with the letters listed under it. A real Metro 2 file always wins. Repair buyers see no change. Merge `2907ff56`, live. File: `public/app/client-portal.html`, new test `src/http/portal-own-letter-pack.test.mjs`.
+
+**Hole 5 (done, no change).** Three fresh live loads: the name showed at 0.75–1.1 seconds, from the fastest reply that carries it (the client list). "No client open" never showed. The heavy file read no longer holds the name up. The grey loading bars before that are what `docs/UI-STANDARDS.md` §6.1 asks for.
+
+**Checks on merged main:** lint pass · type check pass · journeys check pass · tests 10451, 10438 pass, same 9 old failures by name, 0 new. The database tests did not run (no local Postgres).
 
 ### Results (2026-09-18, after one ship: live commit `c4aea5d3`, health pending 0)
 
