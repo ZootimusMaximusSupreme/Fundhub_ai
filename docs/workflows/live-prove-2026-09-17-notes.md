@@ -699,3 +699,432 @@ HARD STOPS
 
 Claim hole 14 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
 ```
+
+---
+
+## New from 2026-09-18 better e2e
+
+Hashed file: `docs/workflows/full-e2e-audit-2026-09-18.md`. New FAIL list count: **10**. That file is law. These are holes **15–24** only. Do not remake holes 1–14.
+
+Not cards (not FAIL): Meet / `said:` **UNRESOLVED**. AI call **SKIP** / **not-live**. Simulated letter send **not-live**. Inquiry Send / paper mail **SKIP**. ClickFunnels **SKIP**. Live CRS **SKIP**. Live Playwright **SKIP**. Beta send buttons **SKIP**. Blueprint `/blueprint` desk **SKIP**. FTC png in the sim pack **not-present**. Do not recard holes 1–14. Do not recard hole 4 / 5 / 10.
+
+**Rank** (fulfill / collect before flicker):
+
+15. Apply dies — proxy login failed (Oxylabs 407)
+16. Document reader out of credit (429) — no chase text
+17. Inquiry upload door open, file did not land
+18. Combo funding pay still pending — no round
+19. #12 progress page has no checklist
+20. Prove Gmail cannot be read (token dead)
+21. No-book chase never sent
+22. Combo has 0 documents and no address
+23. Consent line says no permission while scores already show
+24. Intended vs actual route lists do not match
+
+Extra file from this send pass (do not remint). Same #8 / #9 / #11 / #12 / #13 as before.
+
+| File | client_id |
+|---|---|
+| Combo-20260918 | `567c12ce-64de-4043-aa98-d842434bd267` |
+
+Copy **one** box. Paste it into **one** chat. That chat owns that hole only.
+
+Live site: `https://fundhub.ai`. Owner session cookie is ok. Do not print tokens.
+
+Sends: only if needed to prove **that one hole**. No extra SMS or email. No real card. No live CRS. No new Commas products.
+
+---
+
+### 15 — Apply dies — proxy login failed (Oxylabs 407)
+
+```
+THIS THREAD IS ONLY HOLE 15 — Apply dies — proxy login failed (Oxylabs 407).
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Hole 8 is the funded-number lie. This hole is Apply itself.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Click Apply twice after the fix. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+Staff clicked Apply once on #8. The bank page never opened. The proxy login failed (Oxylabs 407). No new bank notice. The person still is not marked funded from this click. That is the hole.
+
+RECREATE (live — one Apply on VERIFY only)
+- Live site https://fundhub.ai. Owner session cookie is ok.
+- File #8 Eight-Funding d682c13b-11f3-4bd5-a0c5-232b6a7875c4.
+- Open https://fundhub.ai/app/client-control-panel.html?id=d682c13b-11f3-4bd5-a0c5-232b6a7875c4
+- Click Apply once. This look: POST /api/proxy/launch HTTP 422, error oxylabs_auth_failed. Modal: “Oxylabs rejected the proxy login (407). Username is the account id without the customer- prefix.” Browser routing NOT active. Bank page not opened. Did not click again on that walk.
+- Tonight: 0 new bank notices. Old rows unchanged (Arizona Denied, Native American Approved $10,000).
+
+REAL: Apply still dies with the Oxylabs 407 / proxy login fail, and the bank page still does not open.
+NOT A PROBLEM: Apply opens the bank page (no 422 / no 407).
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed
+- VERIFY: one Apply click only · do not hammer
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 15 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 16 — Document reader out of credit (429) — no chase text
+
+```
+THIS THREAD IS ONLY HOLE 16 — Document reader out of credit (429) — no chase text.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Hole 7 is the next-step lie. This hole is the reader with no credit, so no chase.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+ID photos landed on #9. The document reader woke. The vendor said no credits left (429). Nobody got a chase text. Nobody got a retake email. Stage still cannot finish because the ID was never read. That is the hole.
+
+RECREATE (live — do not extra-text unless FINISH needs that one chase)
+- Live site https://fundhub.ai. Owner session cookie is ok.
+- File #9 Nine-Repair be3dcfd7-faae-4001-b97f-9bc30875bbcd.
+- This look: DOC-CHECK woke on the ID / proof uploads. Vendor 429 — no credits remaining. Staff tasks: “Waiting on the document reader — this id document has not been read yet.” No SMS-DOC-02. No retake email. No chase to +16616054248 that night.
+- Stage once already refused identity_not_verified because ID is unread. Do not hammer Stage. Do not paper mail.
+
+REAL: the document reader still has no credit (429), and there is still no chase text / retake email from that read.
+NOT A PROBLEM: the reader can read the ID, and the one chase this hole owns can fire (or ID is already read so no chase is due).
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed (one chase max)
+- do not click Send · do not paper mail · do not hammer Stage
+- no real card charge · no live CRS / bureau pull
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens · never unset or delete a stored key
+
+Claim hole 16 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 17 — Inquiry upload door open, file did not land
+
+```
+THIS THREAD IS ONLY HOLE 17 — Inquiry upload door open, file did not land.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Hole 10 was “inquiry is not a horse.” #13 now has cases. This hole is the upload that never saved.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Upload twice if it is a screen. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+The inquiry portal shows a place to upload inquiry docs and an FTC box. The tester set a sim photo. Send 1 file never appeared. The file count stayed 0. The picture never landed.
+
+RECREATE (live — try the upload door; do not send inquiry letters)
+- Live site https://fundhub.ai. Owner session cookie is ok.
+- File #13 Thirteen-NoBook 7ccbeb76-df98-4125-8c14-0d1c9f5e3042.
+- Open the client portal for this file. This look: Inquiry documents + FTC identity theft report. “Upload inquiry docs” is there.
+- Set a sim photo. This look: Send 1 file never appeared. Documents API still 0.
+- Do not click Specialist Send. Do not paper mail. Do not invent an FTC png (the sim pack has none — that is not-present, not this card).
+
+REAL: the inquiry / FTC upload door is still open and the file still does not land (count stays 0 / Send 1 file never appears).
+NOT A PROBLEM: an inquiry / FTC upload on #13 saves and the documents count is no longer 0.
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed
+- do not click Specialist Send · do not paper mail
+- no real card charge · no live CRS / bureau pull
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not Enroll · do not remint shared people
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 17 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 18 — Combo funding pay still pending — no round
+
+```
+THIS THREAD IS ONLY HOLE 18 — Combo funding pay still pending — no round.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Combo is present (id below). This hole is the unpaid funding receipt that never landed.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+Combo already got welcome texts. A $3,000 pay link was made. The fake receipt is still pending. No deposit paid. Zero funding rounds. Treat as already paid. Do not charge a real card.
+
+RECREATE (live — do not pay a card)
+- Live site https://fundhub.ai. Owner session cookie is ok.
+- File Combo-20260918 567c12ce-64de-4043-aa98-d842434bd267.
+- This look: pay link pl_bd696468da1b9126a2afc9cc $3,000 still created. Inbox row sim-pay-1789721627413 still pending, attempts 0. No deposit.paid. 0 funding rounds.
+- Welcome SMS and email already ran. Do not send another pay text. Do not click Pay. Do not mint a new Commas product.
+
+REAL: Combo’s $3,000 funding pay is still pending / created, and there is still no funding round.
+NOT A PROBLEM: the receipt is no longer pending and Combo has a funding round, with no real card charge.
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed
+- no real card charge · do not click Pay · do not mint a new pay product
+- no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not remint Combo
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 18 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 19 — #12 progress page has no checklist
+
+```
+THIS THREAD IS ONLY HOLE 19 — #12 progress page has no checklist.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Hole 4 was the bounce to “email me a link.” Hole 11 is What You Own empty. This hole is the empty checklist on the progress page.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Open the progress page twice. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+#12 already owns the Academy course. The progress page opens. It says the checklist has not been set up yet. Stored waypoints are 0. #11 has five checklist lines. #12 has none.
+
+RECREATE (live — do not email a sign-in link)
+- Live site https://fundhub.ai. Owner session cookie is ok.
+- File #12 Twelve-Academy f01cc0e0-c8f6-4343-93e5-6a33f0d3112f.
+- Open https://fundhub.ai/progress.html?client_id=f01cc0e0-c8f6-4343-93e5-6a33f0d3112f
+- This look: page opens. Copy: “Your checklist has not been set up yet.” Stored waypoints 0.
+- Do not click Email me a sign-in link. Do not click Enroll. Hole 11 owns What You Own empty — do not start that hole.
+
+REAL: #12 progress page still has no checklist (waypoints 0 / “not been set up yet”).
+NOT A PROBLEM: #12 progress page shows a real checklist for this course buyer.
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed
+- do not click Email me a sign-in link · do not click Enroll
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 19 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 20 — Prove Gmail cannot be read (token dead)
+
+```
+THIS THREAD IS ONLY HOLE 20 — Prove Gmail cannot be read (token dead).
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Database “delivered” is not a Gmail read. This hole is the dead token.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove you can read prove Gmail yourself (src/gmail/). Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+Testers could not open prove Gmail. The token in env is not real JSON. The inbox was not opened. The database still says some mail was delivered. That is not a Gmail read.
+
+RECREATE (live — read, do not send)
+- Live site / laptop env. Do not send SMS or email.
+- This look: src/gmail/ is not ready. GOOGLE_DRIVE_OAUTH_TOKEN_JSON is a 20-character mask, not a real token (invalid_json). No token file on disk. Inbox was not opened.
+- Funding, Repair, and Combo all scored this FAIL. Stored Resend rows still say delivered. That is not a Gmail read.
+- Do not ask Chris to paste a token. Do not print it. Do not unset or delete the stored key.
+
+REAL: prove Gmail still cannot be read (token still not real JSON / inbox still not opened).
+NOT A PROBLEM: src/gmail/ can search prove Gmail (not Inbox-only) without asking Chris.
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed
+- do not send a test blast to prove mail · read the inbox
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products
+- do not unset or delete a stored key · do not ask Chris to paste a token
+- do not start e2e
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never print tokens
+
+Claim hole 20 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 21 — No-book chase never sent
+
+```
+THIS THREAD IS ONLY HOLE 21 — No-book chase never sent.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. #13 is survey-done / never booked. This hole is S-nobook never sent.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself. That one chase only if needed. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+#13 finished the survey and never booked. The no-book chase (S-nobook) still never sent. That chase is this hole. Do not send other texts.
+
+RECREATE (live — no extra SMS beyond this one chase if FINISH needs it)
+- Live site https://fundhub.ai. Owner session cookie is ok.
+- File #13 Thirteen-NoBook 7ccbeb76-df98-4125-8c14-0d1c9f5e3042.
+- This look: original path is survey-done / never booked. S-nobook still never sent. After sample credit + cases, #13 still had only yesterday’s S-00 email + SMS. No new text that hour.
+- Agent phone only: +16616054248. Do not use a personal prove phone. Do not paper mail. Do not click inquiry Send.
+
+REAL: S-nobook still never sent on #13.
+NOT A PROBLEM: the no-book chase this file is owed has been sent (Twilio accepted to the agent phone), and no extra texts went out.
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed (S-nobook only)
+- do not click Specialist Send · do not paper mail
+- no real card charge · no live CRS / bureau pull
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not remint #13
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 21 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 22 — Combo has 0 documents and no address
+
+```
+THIS THREAD IS ONLY HOLE 22 — Combo has 0 documents and no address.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Combo is present. This hole is empty docs and no address, not the next-step lie (hole 7) and not the unpaid receipt (hole 18).
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Click twice if it is a screen. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+Combo is on the Repair desk and still has no address. The documents desk is 0. There is no UnderwriteIQ pack. Staff cannot collect what is not on the file.
+
+RECREATE (live — do not extra-text)
+- Live site https://fundhub.ai. Owner session cookie is ok.
+- File Combo-20260918 567c12ce-64de-4043-aa98-d842434bd267.
+- Open Specialist Repair. This look: Sim Combo-20260918 full / 6, awaiting documents, red “no address on file.” Ready to send 0.
+- Documents desk 0. UnderwriteIQ class 0.
+- Do not click Send. Do not remint Combo. Do not start hole 18 (pay pending) or hole 7 (no step applies).
+
+REAL: Combo still has 0 documents and no address on file.
+NOT A PROBLEM: Combo has an address on file and documents on the desk (count no longer 0).
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed
+- do not click Send · do not paper mail
+- no real card charge · no live CRS / bureau pull
+- no new Commas products · reuse keep titles only
+- do not start e2e · do not remint Combo
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 22 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 23 — Consent line says no permission while scores already show
+
+```
+THIS THREAD IS ONLY HOLE 23 — Consent line says no permission while scores already show.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. This is the consent lie. Do not live-pull credit.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate on the live site. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove it yourself on the live site. Open the control panel twice. Write PASS/FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+#13 already shows sample scores. The blocker still says there is no written permission and they cannot pull. Scores are on the screen. The consent line is a lie.
+
+RECREATE (look only — do not Pull)
+- Live site https://fundhub.ai. Owner session cookie is ok. Do not send SMS or email.
+- File #13 Thirteen-NoBook 7ccbeb76-df98-4125-8c14-0d1c9f5e3042.
+- Open https://fundhub.ai/app/client-control-panel.html?id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042
+- This look: sample scores 771 / 778 / 766. Blocker still says No written permission / cannot pull.
+- Do not press Pull. Do not live CRS.
+
+REAL: the consent line still says no permission while sample scores already show.
+NOT A PROBLEM: the consent line matches the file (it does not say no permission while scores are already on screen).
+
+HARD STOPS
+- no extra SMS / no extra email beyond proving this one hole if needed
+- do not click Pull · no live CRS / bureau pull
+- no real card charge · no paper mail
+- no new Commas products · reuse keep titles only
+- do not start e2e
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 23 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
+
+---
+
+### 24 — Intended vs actual route lists do not match
+
+```
+THIS THREAD IS ONLY HOLE 24 — Intended vs actual route lists do not match.
+From the 2026-09-18 better e2e hash. Do not start another hole.
+Live. Meet / said: is UNVERIFIED / UNRESOLVED — not this hole. Talk order doors-only is UNVERIFIED — not this hole. This hole is the route lists.
+
+STEPS (same chat, in order)
+1. VERIFY — recreate from the journey files. If it is not real, write NOT A PROBLEM and STOP. Do not fix.
+2. FIX — only if VERIFY said the hole is real. Only this hole. Smallest diff. Isolated worktree off origin/main. Load .cursor/skills/fundhub-fixer/SKILL.md.
+3. FINISH — prove the lists match, or write FAIL. STOP. Do not start another hole.
+
+WHAT IS WRONG
+The intended journey lists and the actual route lists do not match. Client intended lists a small set of doors. Actual lets a client reach more groups. Specialist intended lists fewer groups than actual (this look: actual 163 of 243 routes). That mismatch is the hole.
+
+RECREATE
+- Compare docs/journeys/client-intended.md with docs/journeys/client-actual.md.
+- Compare docs/journeys/role-inquiry-remover-intended.md with docs/journeys/role-inquiry-remover-actual.md.
+- This look: those lists do not match. Combo + Inquiry scored that FAIL.
+- Do not edit the intended file to hide the gap. Do not start a second hole.
+
+REAL: intended vs actual route lists still do not match.
+NOT A PROBLEM: those intended and actual route lists match.
+
+HARD STOPS
+- no extra SMS / no extra email
+- do not edit the intended journey file to match the code
+- no real card charge · no live CRS / bureau pull · no paper mail
+- no new Commas products
+- do not start e2e
+- one hole only · smallest diff · stop after this hole
+- never verify:e2e on the live database · INNGEST_EVENT_KEY stays ON
+- never ask Chris for secrets · never print tokens
+
+Claim hole 24 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
+```
