@@ -124,7 +124,12 @@ export async function sweepStaffMessages(db, options = {}) {
    It answers 200 even on a failed pass, deliberately: a non-2xx from a
    scheduled function is a deploy-level alarm, and a single failed sweep is not
    one — the next pass five minutes later is the retry. The outcome is in the
-   body and in the log line. */
+   body and in the log line.
+
+   A web Response, not { statusCode, body }: the default export makes this
+   Netlify's newer function style, which rejects the old object and re-runs
+   the pass. See commas-inbox-sweeper.mjs and
+   src/http/scheduled-functions-return.test.mjs. */
 export async function handler() {
   const result = await sweepStaffMessages(db);
   if (!result.ok) {
@@ -133,7 +138,10 @@ export async function handler() {
     console.log(`[staff-message-sweeper] released ${result.claimed} held message(s): ` +
       JSON.stringify(result.counts));
   }
-  return { statusCode: 200, body: JSON.stringify(result) };
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
 }
 
 export default handler;
