@@ -96,7 +96,7 @@ async function findRect(reSrc, flags = "i", within = null) {
 const result = { look: LOOK, at: new Date().toISOString(), signedIn, portal: null, board: null };
 
 // ---------- Combo's client portal (tall viewport so the whole page fits) ----------
-await page.setViewportSize({ width: 1440, height: 3600 });
+await page.setViewportSize({ width: 1440, height: 4400 });
 await page.goto(`${BASE}/app/client-portal.html?id=${COMBO}`, { waitUntil: "domcontentloaded" });
 await page.waitForTimeout(8000);
 await page.click("#acct > summary").catch((e) => console.log("drawer click failed", e.message)); // local toggle only
@@ -130,6 +130,16 @@ await mark([
   { n: 4, rect: pN.paid || pN.payPane, caption: pN.paid ? "Payments: Card Stacking DFY 3000.00 succeeded." : "Payments: no $3,000 line found." },
 ], `Hole 18 review ${LOOK} (${result.at.slice(11, 19)} UTC) — Combo client portal, staff view`);
 await page.screenshot({ path: `${OUT}/${LOOK}-portal-marked.png` });
+
+// ---------- Same session, read the APIs behind staff screens (GET only) ----------
+result.api = await page.evaluate(async (id) => {
+  let t = ""; try { t = localStorage.getItem("fh_token") || ""; } catch {}
+  const h = t ? { Authorization: "Bearer " + t, accept: "application/json" } : { accept: "application/json" };
+  const out = {};
+  try { const r = await fetch("/api/payment-links?client_id=" + id, { headers: h }); const j = await r.json(); const items = j.items || j.links || j.payment_links || (Array.isArray(j) ? j : []); out.paymentLinks = { status: r.status, items: items.map((x) => ({ link_ref: x.link_ref, status: x.status, amount_cents: x.amount_cents, paid_amount_cents: x.paid_amount_cents, paid_at: x.paid_at })) }; } catch (e) { out.paymentLinks = { error: String(e) }; }
+  try { const r = await fetch("/api/dashboard/client?id=" + id, { headers: h }); const j = await r.json(); out.client = { status: r.status, funding_rounds: (j.funding_rounds || []).map((x) => ({ round_number: x.round_number, status: x.status, product: x.product })), funding_round: j.funding_round ? { round_number: j.funding_round.round_number, status: j.funding_round.status } : null, transactions: (j.transactions || []).map((x) => ({ amount: x.amount, status: x.status, kind: x.kind || x.type || null, product: x.product || x.description || null })).slice(0, 10), next_action: j.next_action ? (j.next_action.label || j.next_action.title || j.next_action.key || null) : null }; } catch (e) { out.client = { error: String(e) }; }
+  return out;
+}, COMBO);
 
 // ---------- Funding board (Pipeline, R-02 Funding: Card Stacking) ----------
 await page.setViewportSize({ width: 1440, height: 1000 });
