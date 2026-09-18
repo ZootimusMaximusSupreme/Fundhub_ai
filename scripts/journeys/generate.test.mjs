@@ -170,6 +170,39 @@ describe("the extraction is faithful to the code", () => {
     }
   });
 
+  test("a route is never called signature-checked when nothing checks a signature", () => {
+    // Hole 24 (2026-09-18). These four public forms read req.rawBody only to
+    // parse JSON. The old test (rawBody OR signature) drew them as "NOT open —
+    // provider signature", a false claim of protection.
+    for (const key of ["public/education-enroll", "public/funnel-checkout", "public/optimize", "public/survey-submit"]) {
+      const e = data.endpoints.find((x) => x.key === key);
+      assert.ok(e, `/api/${key} vanished from the routing table`);
+      assert.notEqual(e.gate.kind, "verified-other", `/api/${key} has no signature check but is drawn as having one`);
+    }
+    const hook = data.endpoints.find((x) => x.key === "webhooks/:provider");
+    assert.equal(hook.gate.verifiedBy, "provider signature", "the webhook door must still read as signature-checked");
+  });
+
+  test("a second role check after the entry gate narrows who reaches the route", () => {
+    // Hole 24 (2026-09-18). Each of these lets the staff kind in, then answers
+    // 403 to most roles. The Specialist journey drew all nine as reachable.
+    const spec = JOURNEYS.find((j) => j.name === "role-inquiry-remover");
+    const body = files["role-inquiry-remover-actual.md"];
+    const blocked = body.slice(body.indexOf("## What they are blocked from"));
+    for (const key of ["dashboard/seed", "call-outcomes", "social/oauth", "social/settings",
+      "partner-marketing/enable", "partner-marketing/generate-logo", "partner-marketing/usage",
+      "partner-marketing/copy-history", "partner-marketing/generate-copy"]) {
+      const e = data.endpoints.find((x) => x.key === key);
+      assert.ok(e, `/api/${key} vanished from the routing table`);
+      assert.ok(e.gate.roles && !e.gate.roles.includes(spec.subject), `/api/${key} refuses ${spec.subject} in code`);
+      assert.ok(blocked.includes(`\`/api/${key}\``), `the Specialist must be shown blocked from /api/${key}`);
+    }
+    // A role check on ONE action is not a route gate: message-copy approval is
+    // owner/admin only, the route itself is every employee.
+    const templates = data.endpoints.find((x) => x.key === "message-templates");
+    assert.ok(templates.gate.roles.includes(spec.subject), "an action-only check must not close the whole route");
+  });
+
   test("readHandler endpoints that name principals also admit staff", () => {
     // src/http/read-api.mjs:194 calls requirePrincipal(req, res, ["staff", ...principals]).
     // Reading only the declared list would show these as closed to employees.

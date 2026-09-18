@@ -90,7 +90,7 @@ flowchart TD
 | `/api/climate` | OPTIONS | anyone |
 | `/api/climate/config` | — | anyone |
 | `/api/climate/geocode` | OPTIONS | anyone |
-| `/api/contracts/sign` | GET, POST | anyone |
+| `/api/contracts/sign` | GET, POST | **not a sign-in** — signed link |
 | `/api/creative/actions` | POST | partner, staff |
 | `/api/creative/approvals` | GET | partner, staff |
 | `/api/creative/brand-kits` | GET | partner, staff |
@@ -105,22 +105,22 @@ flowchart TD
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/org-brand` | GET, PUT | staff, partner, affiliate, client |
 | `/api/partner-brand` | GET, PUT | employees: owner, admin<br>plus: partner |
-| `/api/partner-marketing/copy-history` | GET, POST | staff, partner |
-| `/api/partner-marketing/enable` | GET, POST | staff, partner |
-| `/api/partner-marketing/generate-copy` | POST | staff, partner |
-| `/api/partner-marketing/generate-logo` | POST | staff, partner |
-| `/api/partner-marketing/usage` | GET | staff, partner |
+| `/api/partner-marketing/copy-history` | GET, POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/enable` | GET, POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/generate-copy` | POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/generate-logo` | POST | employees: owner, admin<br>plus: partner |
+| `/api/partner-marketing/usage` | GET | employees: owner, admin<br>plus: partner |
 | `/api/partner-pages` | GET, PATCH, POST | employees: owner, admin<br>plus: partner |
 | `/api/public/affiliate-click` | POST | anyone |
-| `/api/public/education-enroll` | POST | **not a sign-in** — provider signature |
+| `/api/public/education-enroll` | POST | anyone |
 | `/api/public/eeo-survey` | GET, POST | anyone |
-| `/api/public/funnel-checkout` | GET, POST | **not a sign-in** — provider signature |
-| `/api/public/optimize` | GET, POST | **not a sign-in** — provider signature |
+| `/api/public/funnel-checkout` | GET, POST | anyone |
+| `/api/public/optimize` | GET, POST | anyone |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/slo-checkout` | GET, POST | anyone |
-| `/api/public/survey-submit` | POST | **not a sign-in** — provider signature |
-| `/api/public/unsubscribe` | — | anyone |
+| `/api/public/survey-submit` | POST | anyone |
+| `/api/public/unsubscribe` | — | **not a sign-in** — signed link |
 | `/api/public/vsl-watch` | OPTIONS, POST | anyone |
 | `/api/read/company-brain-affiliate` | POST | employees: affiliate, partner<br>plus: affiliate, partner |
 | `/api/read/partner-home-tiles` | GET | partner, staff |
@@ -133,7 +133,7 @@ flowchart TD
 | `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/social/publish` | POST | partner, staff |
 | `/api/social/schedule` | POST | partner, staff |
-| `/api/social/settings` | GET, POST | staff, partner |
+| `/api/social/settings` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/soft-pull-approve` | GET, POST | **not a sign-in** — signed link |
 | `/api/trials/dashboard` | GET | partner, staff |
 | `/api/trials/eligibility` | POST | anyone |
@@ -141,8 +141,8 @@ flowchart TD
 
 ### Worth knowing
 
-- **20 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/contracts/sign`, `/api/health`, `/api/hiring/apply`, `/api/public/affiliate-click`, `/api/public/eeo-survey`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/unsubscribe`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
-- **8 routes need no sign-in but are NOT open.** `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/education-enroll` (provider signature), `/api/public/funnel-checkout` (provider signature), `/api/public/optimize` (provider signature), `/api/public/survey-submit` (provider signature), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
+- **22 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/affiliate-click`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
+- **6 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
@@ -169,7 +169,7 @@ flowchart TD
 | `/api/banking/revoke` | GET, POST | owner, admin |
 | `/api/banking/sync-accounts` | POST | owner, admin, sales_manager |
 | `/api/bookings` | GET | staff |
-| `/api/call-outcomes` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
+| `/api/call-outcomes` | POST | owner, admin, closer, sales_manager |
 | `/api/chat/ask` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/chat/messages` | GET, POST | staff |
 | `/api/chat/peers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
@@ -194,7 +194,7 @@ flowchart TD
 | `/api/dashboard/kpis` | — | staff |
 | `/api/dashboard/pipeline` | — | staff |
 | `/api/dashboard/pipeline-counts` | — | staff |
-| `/api/dashboard/seed` | — | staff |
+| `/api/dashboard/seed` | — | admin, owner |
 | `/api/demo/mode` | DELETE, GET, POST | owner, admin |
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/documents-download` | GET | staff, client |
@@ -315,7 +315,7 @@ flowchart TD
 | `/api/scripts/write` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/shifts` | GET, POST | staff |
 | `/api/slo-connections` | POST | owner, admin |
-| `/api/social/oauth` | — | staff |
+| `/api/social/oauth` | — | owner, admin, partner |
 | `/api/staff/avatar` | GET, POST | any signed-in employee |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
