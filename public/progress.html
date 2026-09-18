@@ -171,6 +171,11 @@ a.btn{text-decoration:none}
 .docs a:last-child{border-bottom:0}
 .docs a:hover .dt{text-decoration:underline}
 .docs .dd{font-family:var(--mono);font-size:11px;color:var(--gray2);white-space:nowrap}
+.docs .dp{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:11px 0;
+     border-bottom:1px solid var(--line);font-size:13px}
+.docs .dp:last-child{border-bottom:0}
+.docs .dp .dn{display:block;font-size:12px;color:var(--gray);margin-top:2px}
+.docs .dp .badge{flex:0 0 auto;white-space:nowrap}
 .share{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
 .share input{flex:1 1 240px;min-width:0;padding:9px 11px;border:1px solid var(--line);border-radius:7px;
      font-family:var(--mono);font-size:12px;background:var(--soft)}
@@ -1490,9 +1495,16 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
   /* ═══════════════════════════════════════════════════════════════════════
      6. DOCUMENTS, TIMELINE, REFERRAL
      ═════════════════════════════════════════════════════════════════════ */
-  function paintDeliverables(list) {
+  /* OWNED BUT NOT BUILT YET (hole N13, 2026-09-18). Sim Twelve-Academy was
+     granted a Funding Snapshot that had not been built, and this card said
+     nothing at all because it listed only saved documents. `notReady` is the
+     server's list of documents the client owns with nothing saved yet
+     (ownedNotReady in src/progress/read.mjs); each one is named and marked Not
+     ready yet. It is a row, not a link — there is nothing to open yet. */
+  function paintDeliverables(list, notReady) {
     var el = $("cDocs");
-    if (!list.length) {
+    notReady = notReady || [];
+    if (!list.length && !notReady.length) {
       el.innerHTML = '<div class="empty">Your documents appear here once they are ready.</div>';
       return;
     }
@@ -1501,6 +1513,11 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       return '<a href="#" data-doc="' + esc(d.documentId) + '">'
            + '<span class="dt">' + esc(d.title || d.subtype || "Document") + '</span>'
            + '<span class="dd">' + esc(when || "") + '</span></a>';
+    }).join("") + notReady.map(function (d) {
+      return '<div class="dp"><span><span class="dt">' + esc(d.name || d.subtype || "Document") + '</span>'
+           + '<span class="dn">Part of your package. It is not built yet. It shows up here, '
+           + 'ready to open, as soon as it is.</span></span>'
+           + '<span class="badge b-gray">Not ready yet</span></div>';
     }).join("");
     el.addEventListener("click", function (ev) {
       var a = ev.target.closest ? ev.target.closest("a[data-doc]") : null;
@@ -1695,7 +1712,8 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       paintNext(d.nextStep, waypoints);
       paintWaypoints(waypoints);
       paintPaidServices(Array.isArray(d.paidServices) ? d.paidServices : [], d.stage);
-      paintDeliverables(Array.isArray(d.deliverables) ? d.deliverables : []);
+      paintDeliverables(Array.isArray(d.deliverables) ? d.deliverables : [],
+                        Array.isArray(d.ownedNotReady) ? d.ownedNotReady : []);
       paintTimeline(Array.isArray(d.timeline) ? d.timeline : []);
       paintReferral(d.referral);
     }, function () {

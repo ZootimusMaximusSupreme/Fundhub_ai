@@ -3,7 +3,11 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert";
-import { nextStepOf, waitingOn, paidRoundOffer, roundNumber, PAID_ROUND_SERVICE_KIND } from "./read.mjs";
+import {
+  nextStepOf, waitingOn, paidRoundOffer, roundNumber, PAID_ROUND_SERVICE_KIND,
+  readClientProgress, ownedNotReady, DOCUMENT_ENTITLEMENTS
+} from "./read.mjs";
+import { isKnownSubtype } from "../documents/kinds.mjs";
 import { ROUND_BASE_CENTS, CREDITOR_LETTER_CENTS, ESCALATION_FILINGS_CENTS } from "../waypoints/pricing.mjs";
 
 const wp = (over = {}) => ({
@@ -132,5 +136,143 @@ describe("roundNumber", () => {
     assert.strictEqual(roundNumber(""), null);
     assert.strictEqual(roundNumber("R0"), null);
     assert.strictEqual(roundNumber("banana"), null);
+  });
+});
+
+/* ── HOLE N13, 2026-09-18 ──────────────────────────────────────────────────
+   Live, Sim Twelve-Academy (f01cc0e0) held a live funding-snapshot grant from
+   15:13 UTC with no Funding Snapshot saved, had signed its Funding Agreement,
+   had paid twice, and had a funding round started at 15:13. /progress.html said
+   "Your documents appear here once they are ready." and "Nothing has happened
+   on your file yet." — both empty, because the read never looked at grants or
+   at the milestone events.
+
+   The fake database below answers with #12's own live shape (names and times
+   only): two live grants (the snapshot and the course) and one lapsed one, no
+   deliverable documents, and #12's real event names — the milestones among the
+   internal ones. Every other read answers empty. */
+describe("hole N13 — what a funding client owns and what has happened", () => {
+  const TWELVE_EVENTS = [
+    { ts: "2026-09-18T18:20:59.394Z", name: "message.queued" },
+    { ts: "2026-09-18T15:13:33.171Z", name: "inquiry.gate.raised" },
+    { ts: "2026-09-18T15:13:32.110Z", name: "inquiry.docs.needed" },
+    { ts: "2026-09-18T15:13:28.390Z", name: "deposit.paid" },
+    { ts: "2026-09-18T15:13:27.565Z", name: "round.started" },
+    { ts: "2026-09-18T15:13:24.830Z", name: "payment.received" },
+    { ts: "2026-09-17T18:53:56.552Z", name: "contract.signed" },
+    { ts: "2026-09-17T18:05:22.089Z", name: "contract.sent" },
+    { ts: "2026-09-17T17:46:32.205Z", name: "payment.received" },
+    { ts: "2026-09-17T17:44:32.204Z", name: "decision.rendered" },
+    { ts: "2026-09-17T06:23:29.931Z", name: "booking.created" },
+    { ts: "2026-09-17T06:23:28.701Z", name: "entry.captured" }
+  ];
+
+  function twelveDb({ documents = [] } = {}) {
+    return {
+      async query(sql, params = []) {
+        const s = String(sql);
+        if (/FROM entitlement_catalog/i.test(s)) {
+          return { rows: [
+            { code: "funding-snapshot", name: "Funding Snapshot", kind: "deliverable",
+              sort_order: 30, active: true, granted_at: "2026-09-18T15:13:26.904Z" },
+            { code: "funding-mastery-course", name: "Funding Mastery course (A to Z)",
+              kind: "deliverable", sort_order: 60, active: true,
+              granted_at: "2026-09-17T17:46:33.615Z" },
+            { code: "credit-analysis-report", name: "Credit Analysis Report",
+              kind: "deliverable", sort_order: 10, active: false, granted_at: null }
+          ] };
+        }
+        if (/FROM documents/i.test(s) && /kind = 'deliverable'/.test(s)) return { rows: documents };
+        if (/FROM events/i.test(s)) {
+          const names = Array.isArray(params[2]) ? params[2] : [];
+          return { rows: TWELVE_EVENTS.filter((e) => names.includes(e.name)) };
+        }
+        return { rows: [] };
+      }
+    };
+  }
+
+  const ids = {
+    orgId: "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+    clientId: "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f"
+  };
+
+  test("an owned Funding Snapshot with nothing built is named, not hidden", async () => {
+    const payload = await readClientProgress(twelveDb(), ids);
+    assert.deepEqual(payload.deliverables, [], "no document is invented");
+    assert.deepEqual(payload.ownedNotReady, [
+      { code: "funding-snapshot", subtype: "funding_snapshot", name: "Funding Snapshot" }
+    ], "the grant shows as owned and not ready; the course is not a document and a lapsed grant is not owned");
+  });
+
+  test("what happened is on the timeline, newest first, and nothing internal is", async () => {
+    const payload = await readClientProgress(twelveDb(), ids);
+    const got = payload.timeline.map((l) => [l.at, l.text.replace(/^.* · /, "")]);
+    assert.deepEqual(got, [
+      ["2026-09-18T15:13:27.565Z", "funding round started"],
+      ["2026-09-18T15:13:24.830Z", "payment received"],
+      ["2026-09-17T18:53:56.552Z", "agreement signed"],
+      ["2026-09-17T17:46:32.205Z", "payment received"]
+    ]);
+    for (const line of payload.timeline) {
+      assert.doesNotMatch(line.text, /message|queued|deposit|inquiry|gate|entry|decision|booking|sent/i,
+        `an internal event reached the client: ${line.text}`);
+    }
+  });
+
+  test("once the document is saved it is a deliverable and no longer 'not ready'", async () => {
+    const payload = await readClientProgress(twelveDb({ documents: [
+      { id: "d1", subtype: "funding_snapshot", title: "Funding Snapshot",
+        generated_at: "2026-09-19T00:00:00Z" }
+    ] }), ids);
+    assert.equal(payload.deliverables.length, 1);
+    assert.deepEqual(payload.ownedNotReady, []);
+  });
+
+  test("an unreadable grants table costs the not-ready list and nothing else", async () => {
+    const base = twelveDb();
+    const db = { async query(sql, params) {
+      if (/FROM entitlement_catalog/i.test(String(sql))) throw new Error("boom");
+      return base.query(sql, params);
+    } };
+    const payload = await readClientProgress(db, ids);
+    assert.deepEqual(payload.ownedNotReady, []);
+    assert.equal(payload.timeline.length, 4);
+  });
+});
+
+describe("ownedNotReady", () => {
+  const held = (...codes) => codes.map((code) => ({ code, name: null }));
+
+  test("no grant, no row — nothing is invented", () => {
+    assert.deepEqual(ownedNotReady([], []), []);
+    assert.deepEqual(ownedNotReady(held("funding-mastery-course"), []), []);
+  });
+
+  test("a grant with its document on file is not listed", () => {
+    assert.deepEqual(ownedNotReady(held("funding-snapshot"), [{ subtype: "funding_snapshot" }]), []);
+  });
+
+  test("with no catalogue name the document's own title is used", () => {
+    assert.deepEqual(ownedNotReady(held("bank-lender-match-list"), []), [
+      { code: "bank-lender-match-list", subtype: "bank_lender_match_list",
+        name: "Bank and Lender Match List" }
+    ]);
+  });
+
+  test("every document grant maps to a known deliverable subtype", () => {
+    for (const { subtype } of DOCUMENT_ENTITLEMENTS) {
+      assert.ok(isKnownSubtype("deliverable", subtype), subtype);
+    }
+  });
+
+  test("the Blueprint's letter pack is ready when its funding letters are on file (hole 2 rule)", () => {
+    const docs = [{ subtype: "funding_inquiry_removal" }, { subtype: "credit_optimization_roadmap" }];
+    assert.deepEqual(ownedNotReady(held("metro2-letter-pack", "credit-optimization-roadmap"), docs), []);
+  });
+
+  test("a letter pack with no letters of any kind is not ready", () => {
+    assert.deepEqual(ownedNotReady(held("metro2-letter-pack"), []).map((r) => r.code),
+      ["metro2-letter-pack"]);
   });
 });

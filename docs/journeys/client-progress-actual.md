@@ -65,6 +65,8 @@ flowchart LR
     R --> H[paid_service_requests]
     R --> I[dispute_items — counts]
     R --> J[repair_decision_log via gatherRepairDetailSignals]
+    R --> JE[events — only the 7 milestone names in TIMELINE_EVENT_NAMES, is_demo excluded]
+    R --> EN[entitlements via forClient — live grants]
     R --> K[onRepairPath — entitlement or tier]
     R --> L[clients.custom_fields — referral_affiliate_id and escalation_filings]
     R --> M[readRepairStage — the card's stage key]
@@ -73,6 +75,11 @@ flowchart LR
     B --> B1[businessPanels — one per business row]
     E --> E1[clientRepairView decides if an expected date is honest]
     J --> J1[approvedWords from the allowlist, then timelineLine]
+    JE --> J2[eventLine from EVENT_WORDS, then timelineLine]
+    J1 --> J3[merged, newest first]
+    J2 --> J3
+    EN --> O1[ownedNotReady — a document grant with no saved deliverable of its subtype]
+    C --> O1
     R --> N[dispute_letters — R4/R5, target cfpb or state_ag]
     N --> N1[escalationStates — prepared / sent / filed]
     L --> N1
@@ -171,9 +178,10 @@ today, so the score itself is also `null` for every real client.
 | `waypoints[]` | `client_waypoints`, `overdue` computed from `due_at` and never stored | `[]` |
 | `waypoints[].closedBy` | `closedBy()` in `src/waypoints/self-attest.mjs`: `client` when `owner_kind='client'` and `verify_kind IS NULL`, `credit_report` for `paydown`, `ongoing` for `no_new_credit`, else `fundhub` | never null |
 | `nextStep` | exactly one open waypoint — the client's first, else FundHub's | `null` when nothing is open |
-| `timeline[]` | `repair_decision_log` → the `TIMELINE_WORDS` allowlist → `timelineLine()`. An unknown decision name reads `progress update` | `[]` |
+| `timeline[]` | Two sources merged newest first. (1) `repair_decision_log` → the `TIMELINE_WORDS` allowlist → `timelineLine()`; an unknown decision name reads `progress update`. (2) Added 2026-09-18 (hole N13): `events` rows whose name is one of `payment.received`, `contract.signed`, `round.started`, `round.submitted`, `round.approved`, `round.funded`, `round.closeout` → `EVENT_WORDS` → `timelineLine()`; any other event name is not selected at all. Each source fails soft on its own | `[]` |
 | `escalations[]` | `dispute_letters` rows for R4/R5 with target `cfpb`/`state_ag`, plus `clients.custom_fields.escalation_filings` for the client's own report | `[]` when that rung was never reached; `filed: false` for every client today |
 | `deliverables[]` | `documents` where `kind = 'deliverable'` | `[]` |
+| `ownedNotReady[]` | Added 2026-09-18 (hole N13). Live grants from `forClient()` for the five document codes (`credit-analysis-report`, `credit-optimization-roadmap`, `funding-snapshot`, `bank-lender-match-list`, `metro2-letter-pack`) that have no saved deliverable of the matching subtype. The letter pack is skipped when the client holds the roadmap and funding letters are on file (the portal's hole 2 rule). The course grant is not a document and is never listed. `name` is `entitlement_catalog.name` | `[]` — also when the grants read fails |
 | `paidServices[]` | prices from `src/waypoints/pricing.mjs`; `inFlight` from an open `paid_service_requests` row | `available: false` |
 | `referral` | `clients.custom_fields.referral_affiliate_id` → `affiliates.tracking_id` | `enrolled: false` |
 
@@ -196,6 +204,12 @@ flowchart TD
     C -->|400 client_id_required| F0[Staff, no client named - open the client from the CRM]
     C -->|any other failure| F5[Could not load your file just now]
     C -->|200| P[Paint stage, scores, movement, next step, checklist, paid services, deliverables, timeline, referral]
+    P --> D1{deliverables or ownedNotReady non-empty?}
+    D1 -->|no| D2[Your documents appear here once they are ready.]
+    D1 -->|yes| D3[One link per saved deliverable, then one Not ready yet row per owned document not built yet]
+    P --> T1{timeline non-empty?}
+    T1 -->|no| T2[Nothing has happened on your file yet.]
+    T1 -->|yes| T3[One row per timeline line, newest first]
 ```
 
 ## Ticking a step off (POST /api/waypoint-tick, added 2026-09-17)
