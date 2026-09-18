@@ -107,6 +107,25 @@
   .row .pair{margin-top:8px;font-family:var(--mono);font-size:11.5px;color:var(--ink);
     background:var(--soft);border-radius:7px;padding:9px 11px;line-height:1.7;
     overflow-wrap:anywhere}
+  /* The law behind an item. Every finding the engine returns carries `citations`
+     (FCRA sections and case law) and `metro2Ref` (the exact reporting field).
+     Showing them is the point — it is what tells a person we know the rule that
+     was broken, not just that something looks wrong. */
+  .law{margin-top:10px;border-top:1px solid var(--line);padding-top:10px}
+  .law .h{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--gray)}
+  .law ul{margin:7px 0 0;list-style:none}
+  .law li{font-size:12.5px;line-height:1.65;color:var(--ink);padding-left:15px;position:relative;
+    overflow-wrap:anywhere}
+  .law li::before{content:"§";position:absolute;left:0;color:var(--gray2);font-weight:600}
+  .law li.field::before{content:"#"}
+
+  .lawbook{margin-top:16px;display:grid;gap:9px}
+  .lawbook .item{border:1px solid var(--line);border-radius:10px;padding:12px 14px;
+    background:var(--paper)}
+  .lawbook .cite{font-size:14px;font-weight:600;letter-spacing:-.01em;overflow-wrap:anywhere}
+  .lawbook .plain{margin-top:6px;font-size:13px;color:var(--gray);line-height:1.6}
+
   .tag{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
     text-transform:uppercase;border:1px solid var(--line);border-radius:5px;padding:3px 7px;
     color:var(--gray)}
@@ -219,10 +238,20 @@
       <div class="rows" id="findings"></div>
     </section>
 
+    <section class="panel" id="lawpanel" hidden>
+      <span class="rule"></span>
+      <h2>The law behind it</h2>
+      <p class="sub">These are the rules the credit bureaus and the companies reporting
+        on you have to follow. Every item above is tied to one of them.</p>
+      <div class="lawbook" id="lawbook"></div>
+    </section>
+
     <section class="panel" id="stepspanel" hidden>
       <span class="rule"></span>
       <h2>The order we work in</h2>
-      <p class="sub">What happens, and when.</p>
+      <p class="sub">Six rounds. Each one waits on the answer to the one before it,
+        so how long the whole thing runs depends on how fast they write back and
+        what they say. We will not guess a finish date for you.</p>
       <div class="steps" id="steps"></div>
     </section>
   </div>
@@ -376,7 +405,8 @@
       drawStats(data);
       drawAccounts(data.accounts || []);
       drawFindings(data.findings || []);
-      drawSteps(data.rounds || []);
+      drawLawbook(data.findings || []);
+      drawSteps(data.rounds || [], data.findings || []);
 
       document.getElementById("plan").hidden = false;
       document.getElementById("close").hidden = false;
@@ -449,20 +479,105 @@
           if (expected) pair.appendChild(el("div", null, "What it should say: " + expected));
           row.appendChild(pair);
         }
+
+        /* THE POINT OF THIS PAGE. Every finding the engine returns carries the
+           rule that was broken. Showing the section number next to the item is
+           what separates "something looks wrong" from "here is the law that
+           says it is wrong". Printed exactly as the engine wrote it — nothing
+           here paraphrases a statute. */
+        var cites = (f.citations || []).slice();
+        if (cites.length || f.metro2Ref) {
+          var law = el("div", "law");
+          law.appendChild(el("span", "h", "The rule this breaks"));
+          var ul = document.createElement("ul");
+          cites.forEach(function (c) { ul.appendChild(el("li", null, c)); });
+          if (f.metro2Ref) ul.appendChild(el("li", "field", f.metro2Ref));
+          law.appendChild(ul);
+          row.appendChild(law);
+        }
+
         box.appendChild(row);
       });
       document.getElementById("findpanel").hidden = false;
     }
 
-    function drawSteps(rounds) {
+    /* Every distinct rule cited across the whole file, once each. The engine
+       writes its citations as "FCRA § 1681e(b) (maximum possible accuracy)" —
+       the part in brackets is its own plain-words gloss, authored in the repo.
+       It is split out and shown as the explanation. NOTHING here writes its own
+       description of a law. */
+    function drawLawbook(findings) {
+      var seen = {};
+      var order = [];
+      findings.forEach(function (f) {
+        (f.citations || []).forEach(function (c) {
+          if (seen[c]) return;
+          seen[c] = true;
+          order.push(c);
+        });
+      });
+      if (!order.length) return;
+
+      var box = document.getElementById("lawbook");
+      order.forEach(function (c) {
+        var item = el("div", "item");
+        var open = c.indexOf(" (");
+        var head = open > -1 ? c.slice(0, open) : c;
+        var gloss = open > -1 ? c.slice(open + 2).replace(/\)$/, "") : "";
+        item.appendChild(el("div", "cite", head));
+        if (gloss) item.appendChild(el("div", "plain", "What it covers: " + gloss + "."));
+        box.appendChild(item);
+      });
+      document.getElementById("lawpanel").hidden = false;
+    }
+
+    /* The engine's `when` is written for staff — internal operating shorthand
+       about which letter pack to send and on what condition. It is not something
+       to put in front of a person who is deciding whether to trust us. These are
+       the same six steps in plain words.
+
+       A step id that is NOT in here shows no timing line at all rather than
+       leaking the staff wording. src/http/roadmap-html.test.mjs fails if the
+       engine ever returns a step this map does not cover, so a new round is
+       caught in the suite instead of on someone's screen.
+
+       NO DURATION IS INVENTED HERE. Nothing says how many months anything takes,
+       because nothing in the engine knows that. The only number below is the
+       30-day answer window, and it is printed ONLY when the findings actually
+       cite the section that grants it. */
+    var STEP_WORDS = {
+      R1: "We challenge every item listed above, in writing, with the bureau.",
+      R2: "If they say an item is correct, or never write back, we make them show " +
+          "how they checked it.",
+      R3: "If the item still stands, we send a final written notice.",
+      R4: "If that does not work, we file a complaint with the Consumer Financial " +
+          "Protection Bureau, the federal agency that oversees them.",
+      R5: "We file with your state attorney general as well.",
+      R6: "We send the final notice again."
+    };
+
+    function drawSteps(rounds, findings) {
       if (!rounds.length) return;
+
+      /* Grounded, not assumed: only say "30 days" when the file actually cites
+         the section that gives them 30 days. */
+      var grants30 = (findings || []).some(function (f) {
+        return (f.citations || []).some(function (c) { return /1681i\(a\)\(1\)/.test(c); });
+      });
+
       var box = document.getElementById("steps");
       rounds.forEach(function (r) {
         var now = r.status === "current";
         var step = el("div", now ? "step now" : "step");
         step.appendChild(el("span", "no", r.step || ""));
         step.appendChild(el("h3", null, r.title || ""));
-        if (r.when) step.appendChild(el("p", "when", r.when));
+        var words = STEP_WORDS[r.step];
+        if (words) {
+          if (r.step === "R1" && grants30) {
+            words += " By law they have 30 days to answer.";
+          }
+          step.appendChild(el("p", "when", words));
+        }
         if (now) {
           var tag = el("span", "tag now", "We start here");
           step.appendChild(tag);

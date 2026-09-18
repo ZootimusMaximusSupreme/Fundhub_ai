@@ -107,3 +107,59 @@ test("what the person typed carries across without going in the web address", ()
   assert.doesNotMatch(html, /location\.search|URLSearchParams/,
     "personal data must never be read from or put in the web address");
 });
+
+// ── the law, and the client wording on the rounds ────────────────────────────
+
+test("every finding's law is drawn, not just the complaint", () => {
+  assert.match(html, /f\.citations \|\| \[\]/, "the FCRA citations must be rendered");
+  assert.match(html, /f\.metro2Ref/, "the Metro 2 field reference must be rendered");
+  assert.match(html, /The rule this breaks/, "the law block needs a heading a person understands");
+});
+
+test("the law summary quotes the engine and writes no law of its own", () => {
+  assert.match(html, /function drawLawbook\(/, "a whole-file law list must exist");
+  // The gloss shown is the parenthetical the engine already authored. If this page
+  // ever starts describing a statute in its own words, that is a different review.
+  assert.match(html, /What it covers: /, "the gloss comes from the citation string");
+  assert.doesNotMatch(
+    html,
+    /Fair Credit Reporting Act means|the law says you can|entitles you to/i,
+    "the page must not paraphrase a statute in its own words"
+  );
+});
+
+test("no duration is invented, and 30 days is only claimed when the file cites it", () => {
+  assert.match(html, /grants30/, "the 30-day line must be conditional");
+  assert.match(html, /1681i\\\(a\\\)\\\(1\\\)/, "conditioned on the section that grants it");
+  assert.match(
+    html,
+    /will not guess a finish date/,
+    "the page must say plainly that it does not predict a finish date"
+  );
+  assert.doesNotMatch(
+    html,
+    /takes about \d|within \d+ months|\d+ ?- ?\d+ months|done in \d/i,
+    "no invented timeline"
+  );
+});
+
+test("staff operating notes never reach a client's screen", async () => {
+  // The engine's own `when` strings are written for staff. Assert the page covers
+  // every step the engine can return, so a new round shows plain words or nothing
+  // — never "DIY pack as SEND ONLY IF Round 3 failed".
+  const { buildOptimizeRoadmap } = await import("../optimize-page/roadmap.mjs");
+  const steps = buildOptimizeRoadmap().rounds.map((r) => r.step);
+  assert.ok(steps.length > 0, "the engine must return rounds at all");
+  for (const step of steps) {
+    assert.match(
+      html,
+      new RegExp(`\\b${step}:`),
+      `STEP_WORDS has no client wording for round ${step} — add it before shipping`
+    );
+  }
+  // Scoped to the operating shorthand this page authors or could leak. Round
+  // TITLES still come from the engine at runtime and remain technical — see the
+  // note in docs/workflows/smartcredit-api-2026-09-17.md.
+  assert.doesNotMatch(html, /DIY pack|SEND ONLY IF/i,
+    "staff letter-pack shorthand must not be in the page");
+});
