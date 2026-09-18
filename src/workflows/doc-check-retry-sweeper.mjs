@@ -62,7 +62,9 @@ import { due, markResolved, reschedule } from "../events/dead-letter.mjs";
 import {
   onDocsReceivedDocCheck,
   raiseUncheckedDocumentTask,
-  RETRY_HANDLER
+  RETRY_HANDLER,
+  WAITING_TASK_TITLE_PREFIX,
+  WORKFLOW_ID
 } from "../handlers/doc-check.mjs";
 
 /* Every twenty minutes. The first retry dead-letter schedules is one minute
@@ -166,6 +168,52 @@ export async function retryOne(database, row, {
   return { id: row.id, outcome: "rescheduled" };
 }
 
+/* closeAnsweredWaits — the reader came back, so stop saying it has not.
+ *
+ * MEASURED 2026-09-18 on live, file #9 Sim Nine-Repair (hole N4 on
+ * docs/workflows/live-prove-2026-09-17-notes.md): this sweeper read all three
+ * queued documents at 17:20 UTC — two accepted, one "please retake it" — and
+ * resolved their queue rows. The three tasks doc-check raised when it queued
+ * them, "Waiting on the document reader — this id document has not been read
+ * yet", stayed open. So the Client Control Panel went on telling staff the ID
+ * was unread after it had been read, and to anyone looking at the file the
+ * retry clock looked as if it had never run.
+ *
+ * So every pass closes the waiting task of each document whose queue row is
+ * resolved. It runs whether or not anything was due, which also heals a task
+ * left open by a pass that resolved its row and then died, and the ones left
+ * open before this existed.
+ *
+ * It touches ONLY an open doc-check task whose title is the waiting title and
+ * whose body names that exact document. A "check it by hand" task, a hold task
+ * and a task for another document are left exactly as they are. It sends
+ * nothing and changes nothing a client sees.
+ *
+ * NEVER THROWS, for the same reason the pass never does. */
+export async function closeAnsweredWaits(database) {
+  try {
+    const r = await database.query(
+      `UPDATE tasks t
+          SET done = true, updated_at = now()
+         FROM failed_events f
+        WHERE f.handler_name = $1
+          AND f.status = 'resolved'
+          AND f.payload->>'document_id' IS NOT NULL
+          AND t.org_id = f.org_id
+          AND t.client_id = f.client_id
+          AND t.source_workflow = $2
+          AND t.done = false
+          AND t.title LIKE $3
+          AND strpos(t.body, 'Document: ' || (f.payload->>'document_id')) > 0
+        RETURNING t.id`,
+      [RETRY_HANDLER, WORKFLOW_ID, `${WAITING_TASK_TITLE_PREFIX}%`]
+    );
+    return { closed: (r.rows || []).length };
+  } catch (err) {
+    return { closed: 0, error: String((err && err.message) || err).slice(0, 300) };
+  }
+}
+
 /* sweep — one pass over every company. Never throws; the error is returned so a
    caller can log it, exactly as message-dispatch-sweeper does. */
 export async function sweep(database, options = {}) {
@@ -184,6 +232,9 @@ export async function sweep(database, options = {}) {
         results.push(await retryOne(database, { ...row, org_id: orgId }, { now, runImpl, taskImpl }));
       }
     }
+    // After the reads, so a document answered in this pass loses its
+    // "waiting" task in this same pass.
+    const waits = await closeAnsweredWaits(database);
     return {
       ok: true,
       orgs: orgs.length,
@@ -191,6 +242,8 @@ export async function sweep(database, options = {}) {
       resolved: results.filter((r) => r.outcome === "resolved").length,
       rescheduled: results.filter((r) => r.outcome === "rescheduled").length,
       exhausted: results.filter((r) => r.outcome === "exhausted").length,
+      waitsClosed: waits.closed,
+      ...(waits.error ? { waitsError: waits.error } : {}),
       results
     };
   } catch (err) {
@@ -201,6 +254,7 @@ export async function sweep(database, options = {}) {
       resolved: 0,
       rescheduled: 0,
       exhausted: 0,
+      waitsClosed: 0,
       results: [],
       error: String((err && err.message) || err).slice(0, 300)
     };

@@ -5,7 +5,8 @@ import {
   DOC_CHECK_TYPES,
   shouldRunDocCheck,
   onDocsReceivedDocCheck,
-  parseAgentJson
+  parseAgentJson,
+  WAITING_TASK_TITLE_PREFIX
 } from "./doc-check.mjs";
 import { onDocsReceivedFlipInquiryGate } from "./inquiry-docs.mjs";
 
@@ -377,6 +378,13 @@ test("a queued document tells a person it is waiting, and does not claim nobody 
   const title = String(tasks[0]?.params?.[2] || "");
   assert.match(title, /Waiting on the document reader/,
     "a task that says 'check it by hand' would be a lie while the robot is still coming back");
+  // The retry sweeper closes this task by its title once the reader answers
+  // (closeAnsweredWaits). If the two drift apart the task never closes and the
+  // file says "not read yet" forever — hole N4 on live, 2026-09-18.
+  assert.ok(title.startsWith(WAITING_TASK_TITLE_PREFIX), title);
+  // …and it finds the task by the document it names.
+  const body = String(tasks[0]?.params?.[3] || "");
+  assert.match(body, /Document: doc-429/);
 });
 
 test("a failure that waiting cannot fix is NOT queued — it still goes to a person", async () => {
