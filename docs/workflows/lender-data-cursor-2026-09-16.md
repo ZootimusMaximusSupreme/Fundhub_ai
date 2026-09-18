@@ -264,6 +264,14 @@ Chris off phone; Legacy Strong auth confirmed (`token_v2`).
 | Source | What it actually holds |
 |---|---|
 | **Notion scrape** (`credentials/notion-scrape/output/`, **425** pages) | Full Legacy Strong workspace capture: bank bureau hubs, NOV drop, Deep State, funding sequences, application strategy/tips, personal 5, plus ~400 reference pages (disk; strategy prose not in CRM). |
-| **`docs/legacy-strong/`** (git) | 313-row business book CSV, inquiry master (**5,472** rows — bureau hints, not 5k CRM banks), bank-datapoints markdown, state boards. |
+| **`docs/legacy-strong/`** (git) | 313-row business book CSV, inquiry master (**5,472** rows — bureau hints, not 5k CRM banks), **`carl-barton-0apr-business-cards.csv`** (**921** rows / **865** unique names), bank-datapoints markdown, state boards. |
 | **Live CRM `lenders`** | **328** structured products (business + personal), **102** with bureau — the operational book, not every Notion paragraph. |
-| **David sent mail** | Checked **2026-09-08** multi-attach: **Accord ISO onboarding PDFs only** — not the bank datapoint book. Carl Barton thread **not** saved as a list file. Do not treat Sent as a second master copy of the lender database. |
+| **David sent mail** | **2026-09-08:** Accord ISO PDFs only (not the bank book). **2025-12-01:** Carl Barton list — PDF link → public Notion DB (see **Carl Barton source** below). |
+| **Carl Barton (gitignored raw)** | `credentials/carl-barton-2026-09-18/` — email, PDF, full JSON/CSV, 10 intel `.xlsx`. Organized copy in git: `docs/legacy-strong/carl-barton-0apr-business-cards.csv`. |
+
+## Carl Barton source (2026-09-18)
+
+- **Link:** Sent PDF → `https://offers.calbartoncashback.com/Database-Download` → public Notion **0% APR Business Credit Card Database** (**921** rows).
+- **Vs our book:** **98** name overlaps with live **328**; **~767** names not in CRM (mostly CUs / regionals). Not a duplicate of Legacy Strong Notion scrape (`calbarton` vs `legacystrong`).
+- **Intel:** 10 public Google Sheets (Chase, Amex, WF, USB, BofA, CapOne, Truist, Citi, PNC, Citizens) saved as `.xlsx` under credentials (pattern/reference — not imported).
+- **CRM import:** **not run** — needs name-match + state-field cleanup (`depa`-style typos) before merge/import. Next: map columns to `lenders` (`bureaus_pulled`, `application_url`, `eligible_states`, etc.) with merge guard clearing **0**.
