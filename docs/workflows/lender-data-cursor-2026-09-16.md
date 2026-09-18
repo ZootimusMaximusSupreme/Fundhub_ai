@@ -433,3 +433,65 @@ Signed in at `https://fundhub.ai/login.html`, opened `/app/lenders.html`. Look-o
 | PenFed Credit Union | 1 | yes | 0 | `PersonalLoans` · All States |
 
 `npm run ship` → **`db10f853`** live. `/api/health`: 296 applied, **pending 0**. All 14 new logo files answer **200** over `https://fundhub.ai/assets/lenders/`.
+
+## Merge to main — 2026-09-18
+
+Chris: "Finish up and merge everything to main — all branches to main." Every branch holding real
+unmerged work is now on `main`, merged locally (no push gate).
+
+**Merged, in this order (19 merges):** `origin/main` (the SLO chat prompt doc, 1 file) ·
+`fix/lane1-lender-personal` (the lender lane — real apply links and national state lists on the 21
+personal rows) · then the run-2 fixes: `r2-n6-inbox-drain-b`, `r2-n9-letter-address-b`,
+`r2-n10-sim-push-credit-b`, `r2-n12-sample-labels-b`, `r2-n13-progress-docs-b`,
+`r2-n14-portal-loading-b`, `r2-n15-sidebar-portal-link-b`, `r2-n16-messaging-html-b`,
+`r2-n17-ceo-funded-count`, `r2-n18-funded-backfill`, `r2-n19-what-you-own-footer`,
+`r2-n20-inquiry-address-type`, `r2-n21-system-facts-label`, `r2-n22-staff-photo`,
+`r2-n25-ship-reregister`, `r2-n26-drive-token`, `r2-h24-intended-match`.
+
+**Not merged, on purpose — nothing lost.** `fix/r2-n9-letter-address`, `fix/r2-n10-sim-push-credit`
+and `fix/r2-n12-sample-labels` are the *first* rounds of three holes whose **round b** branch is a
+strict superset and is merged above. Checked line by line: every line unique to a non-b branch is
+older wording the round-b commit replaced (e.g. non-b N12 has no sample note on the Prequal tile).
+Merging them too would only re-open a conflict and put the older text back.
+
+**The SLO financial model is already on main** — `main..claude/slo-offer-financial-model-fo8uy1`
+is 0 commits, so there was nothing separate to merge and no conflict to weigh.
+
+**One conflict, resolved as a union.** `src/http/client-panel-screen.test.mjs` — N12 (sample labels)
+and N21 (System Facts header) each appended their own `describe` block at the end of the file. Both
+kept, neither edited. That file: **74 tests, 74 pass.**
+
+**Gates.** `npm run lint` clean (2,499 files). `npx tsc --noEmit` clean. Suite **10,678 tests,
+10,665 pass, 9 fail, 4 skipped** with `DATABASE_URL` unset. Those same **9 failures are pre-existing** —
+measured on pre-merge `main` (`34e6090c`) in a throwaway worktree: 10,580 tests, same 9 names. So the
+merge added 98 tests and broke nothing. Not fixed here — unnamed holes (`no-extra-holes.mdc`).
+
+### Leftover cards (NOT verified, NOT fixed — named for Chris)
+
+The 9 standing suite failures, unchanged by this merge: control-panel live-URL client ·
+Arizona clocks on staff screens · id-shaped handlers org-scoped · read endpoints company-scoped ·
+three workflow-registry coverage tests · pulse registry lists every routed handler/desk ·
+client document-pack baseline.
+
+## Where the empty lender approval columns should get their numbers
+
+Owner note (2026-09-18): these fill from the **Underwrite IQ learning that already exists** —
+approvals and credit files tracked over time. **Do not build a new model.**
+
+- **The empty columns** are on `lenders` (`db/migrations/138_lenders.sql`): `typical_approval_range`,
+  `average_starting_loc`, `max_known_loc`, `approval_speed`, `minimum_deposit`.
+- **The truth already lands next door.** `applications` carries both `lender_id` (138) and
+  `approved_amount`, and `fundhub_round_approved_amount_from_confirmed()`
+  (`db/migrations/382_round_approved_amount_from_confirmed.sql`) already keeps the confirmed
+  approved total in step. Grouping confirmed `applications.approved_amount` by `lender_id` **is** the
+  observed approval range — no new capture path needed.
+- **The pattern to copy is `lender_bureau_observations`** (same migration, written by
+  `src/lenders/store.mjs`): one observed row per application, `mismatch_flag` + `review_status`
+  gating it against the book's stated value. Approval amounts want the same shape — observed, human
+  reviewed, never silently overwriting a hand-entered cell.
+- **The credit-file side is `src/underwrite/`** — `prior-outcome.mjs` is the existing
+  record → engine wire (`loadPriorOutcomes`, read-only, never writes), and `engine.mjs` /
+  `report.mjs` do the scoring. An approval-limit read belongs behind that same boundary.
+- **Read it, do not guess it.** Blank means unknown across the lender book
+  (`src/lenders/store.mjs`, `match.mjs` line 683). An empty cell stays empty until a confirmed
+  observation fills it — never a modelled guess written into the book.
