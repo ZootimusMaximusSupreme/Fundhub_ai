@@ -175,3 +175,10 @@ worked out on our side from the page address the counter already saves
 does **not** change, the paste in the TODO is still the current one, and a funnel listed later
 names viewings recorded before it. Diagram: `docs/journeys/vsl-watch-flow.md`, "Which funnel
 a viewing belongs to". Test: `src/vsl/vsl-funnels.pg.test.mjs`.
+
+**Live, ship `125d20c5`.** The ship applied 385 (296 database changes, 0 pending).
+`src/vsl/vsl-funnels.pg.test.mjs` then ran against the live database: **7/7 pass, 0 skipped,
+three clean runs in a row.** Two earlier runs were cancelled partway, with 0 pass and 0 fail —
+most likely the way their output was piped cut the process short, not the code. Checked
+afterwards: 0 test funnels and 0 test viewings left on the live database. The funnel list holds
+0 rows, as intended.
