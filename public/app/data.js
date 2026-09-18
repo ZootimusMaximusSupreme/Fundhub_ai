@@ -186,6 +186,12 @@ window.FHData = (function () {
     opsPulse: function (period) {
       return get("/api/read/ops-pulse?period=" + encodeURIComponent(period || "7d"));
     },
+    /* GET /api/messages-outbound → the outbound queue's status. Read only.
+       Loading a page must only read, so the Outbound Mail panel asks with a
+       GET; sending and settings stay on write() as POSTs (hole N3). */
+    outboxStatus: function () {
+      return get("/api/messages-outbound");
+    },
     /* POST /api/ops/hire-closer — hire task + LinkedIn when the calendar is packed. */
     hireCloser: function () {
       return this.write("/api/ops/hire-closer", {});

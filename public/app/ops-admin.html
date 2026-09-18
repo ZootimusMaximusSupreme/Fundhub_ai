@@ -971,8 +971,10 @@
     });
   }
 
+  /* A READ, SO A GET. This runs on every page load; it used to be a POST
+     {action:"status"}, which made opening the page look like a write (hole N3). */
   function refresh() {
-    return FHData.write("/api/messages-outbound", { action: "status" }).then(function (res) {
+    return FHData.outboxStatus().then(function (res) {
       if (res.ok) { paint(res.data); return; }
       /* The queue could not be read, so nothing here can say what would go out
          or what would stop. Buttons that cannot name their consequence do not

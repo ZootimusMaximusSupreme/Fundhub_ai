@@ -9,8 +9,9 @@
 // nobody's design changes, only the route path. See docs/MERGE-LOG.md
 // section 3 for the full account.
 //
+//   GET (no body)                                   the same as "status" — the page-load read
 //   { action: "status"   }                          what is waiting, and can it go
-//   { action: "dispatch" }                          send what is due, now
+//   { action: "dispatch" }                        send what is due, now
 //   { action: "settings", outbound_enabled, daily_send_cap, alert_email }
 //   { action: "email_invoice", invoice_id }         send one invoice
 //   { action: "email_invoice_backlog" }             send the ones never sent
@@ -65,8 +66,14 @@ const ALL_ACTIONS = [
 ];
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+  /* GET IS THE READ, AND ONLY THE READ (hole N3, 2026-09-18). Ops Admin used
+     to ask "what is waiting?" with a POST on every page load, so opening the
+     page looked like a write. A GET answers `status` and nothing else — any
+     `action` in the query or body is ignored, so no GET can send, drain or
+     change a setting. Every action that does something stays POST. */
+  const isRead = req.method === "GET";
+  if (req.method !== "POST" && !isRead) {
+    res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
@@ -85,8 +92,8 @@ export default async function handler(req, res) {
     });
   }
 
-  const body = req.body || {};
-  const action = String(body.action || "status").trim().toLowerCase();
+  const body = isRead ? {} : (req.body || {});
+  const action = isRead ? "status" : String(body.action || "status").trim().toLowerCase();
   if (!ALL_ACTIONS.includes(action)) {
     return res.status(400).json({ ok: false, error: "unknown_action", allowed: ALL_ACTIONS });
   }
