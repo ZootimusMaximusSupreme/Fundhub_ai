@@ -40,8 +40,7 @@ export default async function handler(req, res, deps = {}) {
         priority_tier: q.priority_tier || null,
         active: q.active == null || q.active === "" ? null : q.active,
         state: q.state || null,
-        q: q.q || null,
-        limit: 500
+        q: q.q || null
       });
       res.setHeader("content-type", "text/csv; charset=utf-8");
       res.setHeader("content-disposition", 'attachment; filename="lenders.csv"');
@@ -56,7 +55,7 @@ export default async function handler(req, res, deps = {}) {
       active: q.active == null || q.active === "" ? null : q.active,
       state: q.state || null,
       q: q.q || null,
-      limit: q.limit == null || q.limit === "" ? 500 : q.limit,
+      limit: q.limit == null || q.limit === "" ? undefined : q.limit,
       offset: q.offset
     });
 

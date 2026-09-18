@@ -8,7 +8,7 @@ import {
   matchLenders,
   lenderMatchCount
 } from "./match.mjs";
-import { matchForClient } from "./store.mjs";
+import { matchForClient, listLenders, exportLendersCsv } from "./store.mjs";
 import { isBureauMismatch, buildObservation } from "./observations.mjs";
 import { LENDER_TABLES } from "./tables.mjs";
 
@@ -205,6 +205,26 @@ test("matchForClient with no identity row loses no lender — unknown home is no
   assert.equal(r.summary.home_state, null, "unknown stays unknown");
   assert.equal(r.summary.client_state, "FL");
   assert.deepEqual(r.matches.map((m) => m.name), ["Florida Local"]);
+});
+
+test("the list and the CSV export reach the whole book, not the first 500", async () => {
+  const seen = [];
+  const db = {
+    async query(sql, params) {
+      seen.push({ sql: String(sql), params });
+      return { rows: [] };
+    }
+  };
+  const limitOf = (i) => Number(seen[i].params[seen[i].params.length - 2]);
+
+  await listLenders(db, { orgId: "o1", includeDemo: false });
+  assert.ok(limitOf(0) >= 1095, `default list limit ${limitOf(0)} cuts the book off`);
+
+  await listLenders(db, { orgId: "o1", includeDemo: false, limit: 1200 });
+  assert.equal(limitOf(1), 1200, "an asked-for limit above 500 is not clamped down");
+
+  await exportLendersCsv(db, { orgId: "o1" });
+  assert.ok(limitOf(2) >= 1095, `export limit ${limitOf(2)} cuts the book off`);
 });
 
 test("CSV round-trip keeps lender_table and name", () => {
