@@ -33,7 +33,7 @@ for (const [id, title] of ids) {
   await pop.waitForLoadState("load", { timeout: 30_000 }).catch(() => {});
   await pop.waitForTimeout(1500);
   const info = await pop.evaluate((name) => {
-    const found = document.body && document.body.innerText.includes(name);
+    const found = Boolean(document.body) && document.body.textContent.includes(name);
     if (!found) return { found: false, ctype: document.contentType };
     const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let el = null;
