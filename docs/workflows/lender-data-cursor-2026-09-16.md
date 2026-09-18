@@ -509,3 +509,72 @@ approvals and credit files tracked over time. **Do not build a new model.**
 | Worktree/branch cleanup | **done** — **57** merged fix worktrees removed; **3** unmerged kept (`fix/r2-n9-letter-address`, `fix/r2-n10-sim-push-credit`, `fix/r2-n12-sample-labels`). **56** local merged branches deleted; **5** locals left (`main`, current SLO branch, those three). |
 | Primary repo on **`main` @ `49fbbcc3`** | **not switched** — primary still on **`claude/slo-offer-financial-model-fo8uy1`** with local WIP. Clean **`main`** checkout: **`/private/tmp/claude-501/-Users-chrisstanbridge-Developer-fundhub-platform/29675f55-19d2-4df6-b763-23603c0bbb05/scratchpad/main-wt`**. To move primary: stash/commit SLO work, **`git checkout main`** (local **`main`** already **`49fbbcc3`**). **`origin/main`** tip differs (**`45372eda`** SLO prompt) — do not blind **`git pull`** until Chris picks which line wins. |
 
+## Full merge import — 2026-09-18
+
+Chris: "add the entire lenders list to the CRM, merge it with existing data." Every source was
+re-run against live and checked row by row. **Nothing was missing** — the book was already whole.
+The import re-asserted all 1,106 rows and picked up what was still outstanding.
+
+| Source | Rows | Already in CRM | Added |
+|---|---:|---:|---:|
+| `docs/legacy-strong/lenders-legacy-strong.csv` | 299 | 299 | 0 |
+| `credentials/lenders-audit/lenders-audited-with-bureaus.csv` (bureau extract, re-run) | 306 | 306 | 0 |
+| Carl Barton database (921 offers → 867 banks) | 867 | 867 | 0 |
+| `lenders-personal.csv` (Notion personal 5, re-run) | 23 | 23 | 0 |
+| `lenders-personal-loans-web.csv` | 19 | 19 | 0 |
+
+**Guard:** `lenders-merge-crm-into-csv.mjs` → would-clear **0 before, 0 after**. Import dry run →
+"Nothing would be blanked out." No `--allow-clearing`. Then `--confirm`: **1,106 updated, 0 inserted, 0 errors.**
+
+| Live `lenders` | Before | After |
+|---|---:|---:|
+| Banks | 1,106 | **1,106** |
+| With a logo | 656 | **661** |
+| With a bureau | 948 | 948 |
+| With an apply URL | 1,058 | 1,058 |
+| With eligible states | 1,067 | 1,067 |
+| Business (`OnlineBizCC` 862 + `InBranchBizCC` 189) | 1,051 | 1,051 |
+| Personal (`PersonalCC` 29 + `PersonalLoans` 26) | 55 | 55 |
+
+Carl filled 2 remaining empty cells (`double_pull`, `underwriter_interaction` on one bank) and the
+loader resolved 5 more logo files. Everything else was already there.
+
+**Two files were deliberately NOT loaded** — the CRM already holds 100% of their data, and loading
+them would have gone backwards:
+
+- `lenders-audited-with-bureaus.csv` carries the **7 split Elan rows** the lane-3 cleanup folded into
+  `LEGACY-ONLINEBIZCC-ELAN-FINANCIAL`. All 7 match the keeper on name, none on id, so an import
+  would re-insert the duplicates.
+- `lenders-personal.csv` ids Best Egg and We Florida Financial as `PERSONAL-PERSONALLOANS-*`; the CRM
+  holds them as `PERSONAL-LOAN-*` with every field already filled. An import would add two copies.
+
+### Live proof — Lenders desk, 2026-09-18 (looked twice)
+
+Signed in at `https://fundhub.ai/login.html`, opened `/app/lenders.html`. Look-only — every non-GET
+blocked except the one sign-in. Scripts in `scripts/tmp/lenders-full-merge-2026-09-18/`; marked shots
++ JSON in `docs/workflows/lender-full-merge-2026-09-18-evidence/`.
+
+| Check | Load 1 | Load 2 |
+|---|---|---|
+| Sign-in | 200 | 200 |
+| Header count | 1106 lenders | 1106 lenders |
+| Rows drawn | **1,106** | **1,106** |
+| Logo pictures drawn | 1,106 | 1,106 |
+| Broken logo pictures | **0** | **0** |
+
+Searched one bank per source: Elan Financial **4** (the keeper + 3 partner banks named
+"(0% - Elan Financial)" — not 8), CONNEX 3, Congressional Bank 1, Chase Sapphire Preferred 1,
+Best Egg 1, We Florida Financial 1, PenFed Credit Union 1. No duplicates.
+
+**Lenders desk 500-row cap — now CLOSED.** The desk drew all **1,106** rows on both loads and the
+header reads "1106 lenders". The cap listed open above is gone on live.
+
+**Ship:** not run. Database and scripts only — no tracked app code changed.
+
+### Leftover card (not verified, not fixed)
+
+`lenders-sync-csv-after-cleanup.mjs` patches `lenders-legacy-strong.csv` and
+`lenders-unified-carl-merged.csv`, but **not** `credentials/lenders-audit/lenders-audited.csv`, which
+the bureau extract reads and rewrites. That file still holds the 7 split Elan rows, so a future
+`lenders-import-alec.mjs` run with **no `--file`** would pick `lenders-audited-with-bureaus.csv` by
+default and re-split Elan on live. Named for Chris — not touched in this pass.
