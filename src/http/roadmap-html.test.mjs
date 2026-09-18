@@ -163,3 +163,10 @@ test("staff operating notes never reach a client's screen", async () => {
   assert.doesNotMatch(html, /DIY pack|SEND ONLY IF/i,
     "staff letter-pack shorthand must not be in the page");
 });
+
+test("a court case is labelled as a case, not given its court as 'what it covers'", () => {
+  // Live 2026-09-17 the page read "Davenport v. Capio Partners, LLC — What it covers:
+  // M.D. Pa. 2021." The bracket on a case is the court and year, not its subject.
+  assert.match(html, /\/ v\\\. \/\.test\(head\)/, "cases must be detected");
+  assert.match(html, /A court case that ruled on this/, "cases get their own wording");
+});

@@ -525,7 +525,15 @@
         var head = open > -1 ? c.slice(0, open) : c;
         var gloss = open > -1 ? c.slice(open + 2).replace(/\)$/, "") : "";
         item.appendChild(el("div", "cite", head));
-        if (gloss) item.appendChild(el("div", "plain", "What it covers: " + gloss + "."));
+        /* A statute's bracket says what it covers. A court case's bracket is the
+           court and the year ("M.D. Pa. 2021") — printing that as "what it
+           covers" is nonsense, so a case is labelled as a case. */
+        var isCase = / v\. /.test(head);
+        if (gloss) {
+          item.appendChild(el("div", "plain",
+            isCase ? "A court case that ruled on this. Decided by " + gloss + "."
+                   : "What it covers: " + gloss + "."));
+        }
         box.appendChild(item);
       });
       document.getElementById("lawpanel").hidden = false;
