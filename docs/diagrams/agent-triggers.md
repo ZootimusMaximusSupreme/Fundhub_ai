@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 76 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 77 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -16,6 +16,7 @@ flowchart LR
   e_analysis_completed --> w_c_02_inquiry_created["c-02-inquiry-created"]
   e_analysis_completed --> w_c_06_crs_results_router["c-06-crs-results-router"]
   e_analysis_completed --> w_dpc_01_analyzer_lock["dpc-01-analyzer-lock"]
+  e_analysis_completed --> w_slo_pack_delivery["slo-pack-delivery"]
   e_analysis_completed --> w_u_02_analyzer_complete_delivery["u-02-analyzer-complete-delivery"]
   e_analysis_completed --> w_u_03_crs_snapshot_sync["u-03-crs-snapshot-sync"]
   e_analysis_completed --> w_u_04_promote_crs_primary["u-04-promote-crs-primary"]
@@ -99,7 +100,7 @@ flowchart LR
 
 | event | functions | triggered |
 |---|---|---|
-| `analysis.completed` | 8 | `af-02-referral-ownership-capture`, `c-02-inquiry-created`, `c-06-crs-results-router`, `dpc-01-analyzer-lock`, `u-02-analyzer-complete-delivery`, `u-03-crs-snapshot-sync`, `u-04-promote-crs-primary`, `u-05-data-health-monitor` |
+| `analysis.completed` | 9 | `af-02-referral-ownership-capture`, `c-02-inquiry-created`, `c-06-crs-results-router`, `dpc-01-analyzer-lock`, `slo-pack-delivery`, `u-02-analyzer-complete-delivery`, `u-03-crs-snapshot-sync`, `u-04-promote-crs-primary`, `u-05-data-health-monitor` |
 | `booking.created` | 9 | `ai-set-01-josh-setter`, `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `s-04-call-booked`, `s-04b-booking-reminders`, `s-04c-staff-booked-alert`, `s-portal-invite` |
 | `booking.noshow` | 1 | `s-05a-no-show-recovery` |
 | `booking.rescheduled` | 2 | `bs-01-precall-launcher`, `s-04b-booking-reminders` |
