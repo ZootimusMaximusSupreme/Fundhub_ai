@@ -322,4 +322,21 @@ Merged file: `credentials/lenders-audit/lenders-unified-carl-merged.csv` (**1,09
 
 **Noted, not touched:** `Verify Bank` exists **twice** in `lenders`, both rows with a null `external_row_id`. Not a real bank name — it reads like a leftover placeholder. Left alone; deleting rows needs Chris to name it.
 
+### Live proof — Lenders desk, 2026-09-18 (looked twice)
+
+Signed in at `https://fundhub.ai/login.html`, opened `/app/lenders.html` in **two** fresh browsers. Look-only — every non-GET blocked except the one sign-in. Script `scripts/tmp/carl-barton-2026-09-18/lenders-desk-look.mjs`; shots + JSON in `docs/workflows/lender-book-2026-09-18-evidence/`.
+
+| Check | Load 1 | Load 2 |
+|---|---|---|
+| Sign-in | 200 | 200 |
+| Rows drawn | 500 | 500 |
+| Logo pictures drawn | 500 | 500 |
+| **Broken logo pictures** | **0** | **0** |
+
+New Carl-era logo files fetched over the live site: `connex.png` **200**, `congressional-bank.png` **200**, `community-state-bank.png` **200**, `citizens-state-bank.png` **200**. `/api/health` → `pending 0`.
+
+**FINDING — the desk shows 500 of 1,095.** `public/app/lenders.html` line 315 sends `limit=500`, and the header reads "500 lenders". Before Carl the book was 328, so the cap never showed. Now **595 banks are not reachable** by scrolling — only by filter or search. Not fixed here (a screen change, and this pass was the merge, not a UI fix). Needs Chris to name it.
+
+**Ship — blocked, not run.** `cd652e28` is the tip of `main` and holds the board, the `--from-db` logo work and the last logo file (`universal-bank.png`). `npm run ship` refused: between the commit and the ship another session moved the main checkout onto `claude/slo-offer-financial-model-fo8uy1`, where `scripts/ship.mjs` does not exist. Not worked around — switching the branch back would have pulled it out from under that session. Everything else in this pass is already live via `87a72b67`; the only live gap is `universal-bank.png` (404 on live, 1 logo of 584). Next ship from `main` carries it.
+
 **States + live filter (`src/lenders/match.mjs`):** Carl **`Eligible States`** pulled (**885**/921 rows filled). CRM already filters suggestions on **client home state + business state** vs each lender's `eligible_states` (empty = still show). Before backfill: normalize Carl → book (`depa`→PA; **`Nationwide`→`All States`** — matcher does not treat the word Nationwide as national-only). No second filter; same column once merged.
