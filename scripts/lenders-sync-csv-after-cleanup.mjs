@@ -19,6 +19,11 @@ const WRITE = process.argv.includes("--write");
 
 const LEGACY_CSV = path.join(ROOT, "docs/legacy-strong/lenders-legacy-strong.csv");
 const CARL_CSV = path.join(ROOT, "credentials/lenders-audit/lenders-unified-carl-merged.csv");
+const AUDITED_CSV = path.join(ROOT, "credentials/lenders-audit/lenders-audited.csv");
+const AUDITED_BUREAUS_CSV = path.join(
+  ROOT,
+  "credentials/lenders-audit/lenders-audited-with-bureaus.csv"
+);
 
 const PLACEHOLDER_NAME = "Verify Bank";
 const CONSUMER_LINK = /(consumer-platinum|consumer-credit|consumer\/web-visa|#consumer|consumer-products)/i;
@@ -135,14 +140,20 @@ function save(path, rows) {
 
 const legacyIn = load(LEGACY_CSV);
 const carlIn = load(CARL_CSV);
+const auditedIn = load(AUDITED_CSV);
+const auditedBureausIn = load(AUDITED_BUREAUS_CSV);
 
 const legacy = patchRows(legacyIn, "legacy-strong");
 const carl = patchRows(carlIn, "carl-merged");
+const audited = patchRows(auditedIn, "lenders-audited");
+const auditedBureaus = patchRows(auditedBureausIn, "lenders-audited-with-bureaus");
 
 if (WRITE) {
   save(LEGACY_CSV, legacy.rows);
   save(CARL_CSV, carl.rows);
-  console.log("\nWrote both CSV files.");
+  save(AUDITED_CSV, audited.rows);
+  save(AUDITED_BUREAUS_CSV, auditedBureaus.rows);
+  console.log("\nWrote legacy, carl-merged, lenders-audited, lenders-audited-with-bureaus.");
 } else {
   console.log("\nDry run only — pass --write to save.");
 }

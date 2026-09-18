@@ -353,6 +353,7 @@ New Carl-era logo files fetched over the live site: `connex.png` **200**, `congr
 |---|---|
 | `docs/legacy-strong/lenders-legacy-strong.csv` | **7** duplicate Elan rows removed; keeper **`LEGACY-ONLINEBIZCC-ELAN-FINANCIAL`** → name **`Elan Financial`**, product **`0% for 20 Months — No Business Checking Required`**, **46** states |
 | `credentials/lenders-audit/lenders-unified-carl-merged.csv` (gitignored) | Same Elan fold; **14** rows **`OnlineBizCC` → `PersonalCC`** (consumer apply URL rule); then **`lenders-merge-crm-into-csv.mjs`** backfilled **27** cells from live CRM so the import guard stays clean |
+| `credentials/lenders-audit/lenders-audited.csv` + `lenders-audited-with-bureaus.csv` (gitignored) | **Closed 2026-09-18:** same sync script — **7** split Elan rows removed (**8 → 1**), keeper **46** states; default import book no longer re-splits Elan (**0** Elan inserts) |
 
 **Dry-run import after sync:** `node --env-file=.env scripts/lenders-import-alec.mjs --file credentials/lenders-audit/lenders-unified-carl-merged.csv` → **Nothing would be blanked out** (clearing guard **0**). File **1,086** banks — no eighth Elan row to insert.
 
