@@ -22,6 +22,15 @@
  * not require switching on the whole workflow engine.
  */
 
+/* Keep fontkit in THIS function's zip — the same line api.mjs carries.
+   register-all reaches vendor/underwriteiq-full/api/lite/letter-generator.js,
+   which require()s @pdf-lib/fontkit when it loads. Nothing else in this
+   function names the package, so the bundler left it out of the zip, and on
+   live (2026-09-17 → 09-18) every pass died at load with
+   "Cannot find module '@pdf-lib/fontkit'". Nothing drained the payment queue:
+   a $3,000 deposit receipt sat pending, tried 0 times, and never reached the
+   money chain. */
+import "@pdf-lib/fontkit";
 import { db } from "../../src/db.mjs";
 import { drain } from "../../src/payments/commas-inbox.mjs";
 import { processCommasInboxRow } from "../../src/adapters/commas.mjs";
