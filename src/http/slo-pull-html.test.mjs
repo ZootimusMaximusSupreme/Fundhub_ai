@@ -171,3 +171,10 @@ test("reads ?ref= and optional ?client_id= but invents no ref when missing", () 
 test("no horizontal-scroll traps: html/body overflow-x is hidden", () => {
   assert.match(html, /html,body\{overflow-x:hidden\}/);
 });
+
+test("the soft-pull consent names Fundhub Credit Solutions LLC (owner-set 2026-09-17)", () => {
+  // Owner decision: the entity that runs the SLO soft pull is Fundhub Credit
+  // Solutions LLC — not Fundhub LLC, which is named on the sales and pay pages
+  // as the funding advisory service. Do not "fix" the mismatch.
+  assert.match(html, /authorize Fundhub Credit Solutions LLC to run a soft pull/);
+});

@@ -75,6 +75,13 @@ backend work once it is committed. Local git only. No GitHub.
   valid submit shows the building state, URL never gained `ssn`, zero console errors, no
   horizontal scroll at 375px. Server killed after.
 
+## Owner decisions
+
+- **2026-09-17 — the soft pull on `/slo/pull.html` is run by Fundhub Credit Solutions LLC.** Owner-set.
+  The sales and pay pages name Fundhub LLC (the funding advisory service); the pull consent names
+  Fundhub Credit Solutions LLC. That difference is deliberate. Pinned by
+  `src/http/slo-pull-html.test.mjs`.
+
 ## Blockers
 
-_none yet_
+_none_
