@@ -359,6 +359,10 @@ const ESCALATED_R4 = Object.freeze([
   Object.freeze({ bureau: "EX", creditor: "EXAMPLE BANK NA", account_last4: "1234", round: "R4" })
 ]);
 
+// The home address sits on the identity record, where the letters read it
+// (letter-pack.mjs NO_HOME_ADDRESS). Same address the fixture always used.
+const FIXTURE_HOME = [{ addressLine1: "100 Test Ave", city: "Denton", state: "TX", postalCode: "76205" }];
+
 function fakeClientDb(storedCrs, priorOutcomes = []) {
   return {
     async query(sql) {
@@ -367,11 +371,12 @@ function fakeClientDb(storedCrs, priorOutcomes = []) {
           rows: [{
             first_name: "Fixture",
             last_name: "Client",
-            custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+            custom_fields: {},
             outcome_tier: "REPAIR_ONLY"
           }]
         };
       }
+      if (/FROM pii_identity/i.test(sql)) return { rows: [{ addresses: FIXTURE_HOME }] };
       if (/FROM crs_results/i.test(sql)) return { rows: storedCrs ? [{ result: storedCrs }] : [] };
       // The confirmed bureau answers on file. Empty is the default and means the
       // client is still on Round 1, which is where every client starts.

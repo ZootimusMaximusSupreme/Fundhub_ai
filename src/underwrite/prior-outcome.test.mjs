@@ -44,7 +44,7 @@ const SIGNET_LAST4 = "4443";
 const CLIENT = Object.freeze({
   first_name: "Fixture",
   last_name: "Client",
-  custom_fields: { address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205" },
+  custom_fields: {},
   outcome_tier: "REPAIR_ONLY"
 });
 
@@ -56,11 +56,16 @@ function bureausWithSignet() {
   };
 }
 
+// The home address sits on the identity record, where the letters read it
+// (letter-pack.mjs NO_HOME_ADDRESS). Same address the fixture always used.
+const FIXTURE_HOME = [{ addressLine1: "100 Test Ave", city: "Denton", state: "TX", postalCode: "76205" }];
+
 /** The three reads buildLetterPackForClient makes. Nothing is written. */
 function fakeDb(disputeRows = [], sink = {}) {
   return {
     async query(sql, params) {
       if (/FROM clients/i.test(sql)) return { rows: [CLIENT] };
+      if (/FROM pii_identity/i.test(sql)) return { rows: [{ addresses: FIXTURE_HOME }] };
       if (/FROM crs_results/i.test(sql)) return { rows: [{ result: { ok: true } }] };
       if (/FROM dispute_items/i.test(sql)) {
         sink.sql = sql;
