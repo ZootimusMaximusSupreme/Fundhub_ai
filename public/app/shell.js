@@ -694,9 +694,10 @@
     } catch (e) { return ""; }
   }
 
-  /* withClient — one href, with the client on it if that screen reads one. */
-  function withClient(href, cid) {
-    var key = CLIENT_SCREENS[screenOf(href)];
+  /* withClient — one href, with the client on it if that screen reads one.
+     `key` is optional; only withPortalClient() below passes it. */
+  function withClient(href, cid, key) {
+    key = key || CLIENT_SCREENS[screenOf(href)];
     if (!cid || !key) return href;
     var h = String(href);
     var hash = "";
@@ -708,6 +709,24 @@
     if (new RegExp("[?&]" + key + "=").test(h)) return href;
     return h + (h.indexOf("?") === -1 ? "?" : "&") +
            key + "=" + encodeURIComponent(cid) + hash;
+  }
+
+  /* withPortalClient — hole N15 (live, 2026-09-18). On a client's control
+     panel the rail's Client Portal row opened client-portal.html with no
+     client, so the owner landed on "We could not load your file". gateLinks()
+     hands this the control panel's OWN client — its address bar only, never
+     the remembered one — and the portal link carries it as ?client_id= (the
+     portal reads ?id= or ?client_id=).
+
+     Deliberately NOT a CLIENT_SCREENS entry. That map also carries the
+     remembered client onto every other screen's rail and into the client
+     role's bounce-home redirect; the portal row everywhere else must behave
+     exactly as it did. A link that already names its client (either spelling)
+     is left alone, same rule as withClient(). */
+  function withPortalClient(href, cid) {
+    if (!cid || screenOf(href) !== "client-portal.html") return href;
+    if (/[?&]id=/.test(String(href).split("#")[0])) return href;
+    return withClient(href, cid, "client_id");
   }
 
   /* urlEntity/currentEntity/withEntity — the entity (personal vs. a business)
@@ -1326,6 +1345,9 @@
        repeat the same write for every anchor on the page. */
     var cid = currentClient();
     var eid = currentEntity();
+    /* Hole N15: the client this control panel is open on, for its Client
+       Portal link. Empty on every other screen — see withPortalClient(). */
+    var panelCid = PAGE === "client-control-panel.html" ? urlClient() : "";
     var links = document.querySelectorAll("a[href]");
     for (var i = 0; i < links.length; i++) {
       var a = links[i];
@@ -1354,7 +1376,7 @@
       // screens that read a client — see CLIENT_SCREENS. The entity rides the
       // same way, one step later, so a link ends up with both query params
       // when the target screen reads both.
-      if (allowed) a.setAttribute("href", withEntity(withClient(h, cid), eid));
+      if (allowed) a.setAttribute("href", withPortalClient(withEntity(withClient(h, cid), eid), panelCid));
       var box = a.closest("li") || a.closest(".card") || a;
       if (!allowed || hideNav) {
         box.style.display = "none";
