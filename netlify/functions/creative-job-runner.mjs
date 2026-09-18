@@ -28,6 +28,9 @@ export async function sweepCreativeJobs(dbConn, options = {}) {
   }
 }
 
+// Returns a web Response: the default export makes this Netlify's newer
+// function style, which rejects a { statusCode, body } object and re-runs the
+// pass. See src/http/scheduled-functions-return.test.mjs.
 export async function handler() {
   const result = await sweepCreativeJobs(db);
   if (!result.ok) {
@@ -38,7 +41,10 @@ export async function handler() {
         `ok=${result.succeeded} fail=${result.failed} requeue=${result.requeued}`
     );
   }
-  return { statusCode: 200, body: JSON.stringify(result) };
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
 }
 
 export default handler;

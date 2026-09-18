@@ -99,7 +99,13 @@ export async function sweepCommasInbox(db, options = {}) {
 
    Answers 200 even on a failed pass, deliberately: a non-2xx from a scheduled
    function is a deploy-level alarm, and one failed sweep is not one — the next
-   pass a minute later is the retry. The outcome is in the body and the log. */
+   pass a minute later is the retry. The outcome is in the body and the log.
+
+   A web Response, NOT { statusCode, body }. The default export below makes
+   Netlify run this as its newer function style, which accepts only a Response
+   or undefined. The old object made every pass end in "Function returned an
+   unsupported value", and Netlify re-ran each pass twice (live, 2026-09-18:
+   30 runs in 10 minutes instead of 10). src/http/scheduled-functions-return.test.mjs */
 export async function handler() {
   const result = await sweepCommasInbox(db);
   if (!result.ok) {
@@ -110,7 +116,10 @@ export async function handler() {
       JSON.stringify(result.counts)
     );
   }
-  return { statusCode: 200, body: JSON.stringify(result) };
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
 }
 
 export default handler;

@@ -12,6 +12,9 @@ export async function sweepHubstaffPoll(dbConn, options = {}) {
   }
 }
 
+// Returns a web Response: the default export makes this Netlify's newer
+// function style, which rejects a { statusCode, body } object and re-runs the
+// pass. See src/http/scheduled-functions-return.test.mjs.
 export async function handler() {
   const result = await sweepHubstaffPoll(db);
   if (!result.ok) console.error(`[hubstaff-poll-sweeper] pass failed: ${result.error}`);
@@ -19,7 +22,10 @@ export async function handler() {
   else if (result.merged > 0 || (result.fetch_errors && result.fetch_errors.length)) {
     console.log(`[hubstaff-poll-sweeper] merged=${result.merged} candidates=${result.candidates ?? 0}`);
   }
-  return { statusCode: 200, body: JSON.stringify(result) };
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
 }
 
 export default handler;

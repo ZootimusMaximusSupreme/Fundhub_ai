@@ -30,6 +30,9 @@ export async function sweepSocialPublish(dbConn, options = {}) {
   }
 }
 
+// Returns a web Response: the default export makes this Netlify's newer
+// function style, which rejects a { statusCode, body } object and re-runs the
+// pass. See src/http/scheduled-functions-return.test.mjs.
 export async function handler() {
   const result = await sweepSocialPublish(db);
   if (!result.ok) {
@@ -39,7 +42,10 @@ export async function handler() {
       `[social-publish-sweeper] partners=${result.partners} posted=${result.posted} failed=${result.failed}`
     );
   }
-  return { statusCode: 200, body: JSON.stringify(result) };
+  return new Response(JSON.stringify(result), {
+    status: 200,
+    headers: { "content-type": "application/json" }
+  });
 }
 
 export default handler;
