@@ -1,5 +1,5 @@
 // N26 VERIFY — does the live Company Brain Drive index actually work? READ ONLY.
-// 1) Signs in as the owner (POST /api/auth/login) and GETs /api/company-brain/sync
+// 1) Signs in as the owner (POST /api/auth/login) and GETs /api/company-brain/sync, then ?check=1 twice
 //    (drive_ready, last_sync_at, last_error). No POST sync.
 // 2) Live DB: BEGIN READ ONLY → brain_drive_sync rows + newest brain_files index
 //    times + Meet files still waiting for words → ROLLBACK. No SET.
@@ -31,10 +31,11 @@ const headers = {};
 if (token) headers.authorization = `Bearer ${token}`;
 if (cookie) headers.cookie = cookie;
 
-for (let i = 1; i <= 2; i += 1) {
-  const r = await fetch(`${BASE}/api/company-brain/sync`, { headers });
+// Plain GET, then the read-only Google check (?check=1, after the N26 fix ships) twice.
+for (const [name, q] of [["get_sync", ""], ["get_check_1", "?check=1"], ["get_check_2", "?check=1"]]) {
+  const r = await fetch(`${BASE}/api/company-brain/sync${q}`, { headers });
   const j = await r.json().catch(() => null);
-  out.api[`get_sync_${i}`] = { status: r.status, body: j };
+  out.api[name] = { status: r.status, body: j };
 }
 
 const c = new pg.Client({ connectionString: process.env.DATABASE_URL });
