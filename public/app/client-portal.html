@@ -2270,7 +2270,8 @@ document.addEventListener("DOMContentLoaded", async function () {
    *
    * `undefined` is a third thing again: the caller did not have that answer to
    * give. The staff read (/api/dashboard/client) passes transactions only, so
-   * it leaves the invoice out rather than claiming there is none.
+   * it leaves the invoice out rather than claiming there is none; staff get the
+   * bill from portal-summary through paintStaffPays below.
    */
   function paintPays(rows, invoiceDue) {
     var pane = document.getElementById("tp-pay");
@@ -2322,6 +2323,21 @@ document.addEventListener("DOMContentLoaded", async function () {
         '<div class="pd">They show here after you pay</div></div><div class="pv">—</div></div>';
     }
     pane.innerHTML = html;
+  }
+  /* STAFF SEE THE BILL TOO (hole 9, live 2026-09-18). Staff paint the paid list
+     from /api/dashboard/client, which carries no bill, so #8's sent success-fee
+     invoice never showed on the staff view while Ops AR and portal-summary both
+     had it (amounts stay out of this file — see the note in #tp-pay). The bill
+     now comes from portal-summary's invoice_due. Two reads, and either can land
+     first, so each one records its half and the pane is painted from both —
+     same screen in either order, no race.
+     Held back only when it would print a false "No payments yet": the paid list
+     has not answered and nothing is owed (or the bill read failed). */
+  var staffPay = { rows: undefined, due: undefined };
+  function paintStaffPays(part, value) {
+    staffPay[part] = value;
+    if (staffPay.rows === undefined && !(staffPay.due && staffPay.due.count > 0)) return;
+    paintPays(staffPay.rows, staffPay.due);
   }
   /* ONE SESSION READ, SHARED BY BOTH THINGS THAT NEED IT. Two questions on this
      screen have the same answer: what is this person called, and which client
@@ -2449,7 +2465,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         paintIdentity(name, advisorFromClient(c));
         paintBooking(res.data.latest_booking);
         paintMessages(res.data.messages);
-        paintPays(res.data.transactions);
+        paintStaffPays("rows", res.data.transactions);
         return;
       }
       paintIdentity("", "");
@@ -2493,6 +2509,9 @@ document.addEventListener("DOMContentLoaded", async function () {
           Array.isArray(data.payments) || data.payments === null ? data.payments : undefined,
           data.invoice_due === undefined ? undefined : data.invoice_due
         );
+      } else {
+        // Staff keep their paid list; this read adds the bill. See paintStaffPays.
+        paintStaffPays("due", data.invoice_due);
       }
       setInquiryCaseOpen(data.inquiry_open);
       stage = data.stage || null;
