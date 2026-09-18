@@ -214,6 +214,24 @@ test.describe("client portal go-live UX", () => {
     await expect(tile.locator(".tile-course")).toContainText(/Funding Mastery/i);
   });
 
+  test("What You Own lists an owned course and Open course opens its card (hole 11)", async ({ page }) => {
+    await openPortal(page, CLIENT_SESSION, [
+      { entitlement_code: "funding-mastery-course", entitlement_name: "Funding Mastery course (A to Z)", active: true }
+    ]);
+
+    await expect(page.locator("#own-empty")).toBeHidden();
+    const row = page.locator("#own-list .own", { hasText: "Funding Mastery course (A to Z)" });
+    await expect(row).toBeVisible();
+    await expect(row).toContainText(/It is a course, not a file/);
+
+    const tile = page.locator('[data-tile="FUNDING_MASTERY"]');
+    await expect(tile).not.toHaveClass(/is-open/);
+    await row.getByRole("button", { name: "Open course" }).click();
+    await expect(tile).toHaveClass(/is-open/);
+    await expect(tile.locator(".tile-course")).toBeVisible();
+    await expect(tile.locator(".tile-course")).toContainText(/Funding Mastery/i);
+  });
+
   test("pay stays hidden when no checkout exists", async ({ page }) => {
     await openPortal(page, CLIENT_SESSION, []);
 
