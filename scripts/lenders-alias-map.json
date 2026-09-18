@@ -229,8 +229,11 @@
     "sofi bank na": "SoFi",
     "sofi bank": "SoFi",
     "best egg": "Best Egg",
+    "bestegg": "Best Egg",
     "crb best egg": "Best Egg",
     "best egg first bk and tr m": "Best Egg",
+    "we florida financial": "We Florida Financial",
+    "we florida financial in south florida": "We Florida Financial",
     "bankers healthcare group": "Bankers Healthcare Group",
     "bhg": "Bankers Healthcare Group",
     "brb bhg": "Bankers Healthcare Group",
@@ -1017,6 +1020,13 @@
         "BEST EGG",
         "CRB/BEST EGG",
         "BEST EGG/FIRST BK&TR/M"
+      ]
+    },
+    "We Florida Financial": {
+      "legal_name": "We Florida Financial Credit Union",
+      "in_book": false,
+      "aliases": [
+        "We Florida Financial in South Florida"
       ]
     },
     "Bankers Healthcare Group": {

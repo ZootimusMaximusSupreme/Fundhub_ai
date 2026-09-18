@@ -495,3 +495,17 @@ approvals and credit files tracked over time. **Do not build a new model.**
 - **Read it, do not guess it.** Blank means unknown across the lender book
   (`src/lenders/store.mjs`, `match.mjs` line 683). An empty cell stays empty until a confirmed
   observation fills it — never a modelled guess written into the book.
+## Follow-up run — 2026-09-18 (Cursor coordinator)
+
+| Item | Status |
+|---|---|
+| Tasks A–G (table top) | **done** |
+| Carl merge + lane 3 CSV sync | **done** (live) |
+| Lenders desk 500-row cap | **open** — needs Chris to name a UI fix |
+| Personal extract name gaps | **closed (2026-09-18)** — alias map: `bestegg` → Best Egg (already present), `we florida financial` + `we florida financial in south florida` → **We Florida Financial**; extract skips **`Page ID:`** metadata lines; personal CSV **23** rows; gap import **2 updated** (Notion notes on existing `PERSONAL-LOAN-BEST-EGG` + `PERSONAL-LOAN-WE-FLORIDA-FINANCIAL`). Full-file import still blocked on clearing guard for the other 21 rows — no `--allow-clearing`. |
+| Verify Bank duplicate rows | **open** — delete needs Chris to name it |
+| Five PersonalCC rows with business bureau | **open** — named bureau fix |
+| Approval-limit learning loop | **not built** — columns + manual CSV/API edit exist; only **`lender_bureau_observations`** is wired (bureau). No table/job rolls **`applications.approved_amount`** by **`lender_id`** into book columns yet. Design on **`main`** at **`cb2e4394`** (see section below on main worktree). |
+| Worktree/branch cleanup | **done** — **57** merged fix worktrees removed; **3** unmerged kept (`fix/r2-n9-letter-address`, `fix/r2-n10-sim-push-credit`, `fix/r2-n12-sample-labels`). **56** local merged branches deleted; **5** locals left (`main`, current SLO branch, those three). |
+| Primary repo on **`main` @ `49fbbcc3`** | **not switched** — primary still on **`claude/slo-offer-financial-model-fo8uy1`** with local WIP. Clean **`main`** checkout: **`/private/tmp/claude-501/-Users-chrisstanbridge-Developer-fundhub-platform/29675f55-19d2-4df6-b763-23603c0bbb05/scratchpad/main-wt`**. To move primary: stash/commit SLO work, **`git checkout main`** (local **`main`** already **`49fbbcc3`**). **`origin/main`** tip differs (**`45372eda`** SLO prompt) — do not blind **`git pull`** until Chris picks which line wins. |
+

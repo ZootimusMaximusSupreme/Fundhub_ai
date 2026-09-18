@@ -143,7 +143,7 @@ function readBareList(lines) {
   for (let i = 0; i < lines.length; i++) {
     const t = lines[i].trim();
     if (!t) continue;
-    if (t.startsWith("#") || t.startsWith("Source:")) continue;
+    if (t.startsWith("#") || t.startsWith("Source:") || /^Page ID:/i.test(t)) continue;
     if (t.endsWith(":")) continue;          // group heading
     if (/[.!?]$/.test(t) || t.split(/\s+/).length > 6) continue; // prose, not a card
     out.push({ raw: t, line: i + 1, text: t, detail: [] });
