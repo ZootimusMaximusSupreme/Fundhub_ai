@@ -1146,3 +1146,80 @@ Claim hole 24 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grad
 ```
 
 **Hole 6 (2026-09-18 12:54 UTC).** Chris ran `hole-6-reset.mjs --apply` himself, because the permission check blocks agents from password resets. Result: the reset worked; the new password matches `STAFF_INITIAL_PASSWORD`; name, role, status and demo flag are unchanged. An undo copy of the old hash is at `/tmp/live-fix-2026-09-17/hole-6/`. A read-only check after: owner, active, 0 failed sign-ins in the last 15 minutes, login page 200. The agent did not type the password into the live login. Chris's one sign-in is the live proof.
+
+---
+
+## Now what / hard gate
+
+AI must not make shit up. AI must not ship a fix that is not real.
+
+**Rule:** `.cursor/rules/named-fix-regression-gate.mdc`
+
+This gate is only: is this hole real, and is this fix real. It is not a 26-path sweep. It is not full e2e.
+
+### How a hole gets done
+
+1. **VERIFY on the live site first.** Recreate the named hole. If you cannot see it, write **NOT A PROBLEM** and **STOP**. Do not “fix” a story.
+2. A finding is not real until you looked at the live screen (or the live API that screen uses). Reading code and guessing is not a hole. Do not invent extra holes.
+3. After FIX, a **different tester** than the fixer must try to recreate the **same** hole on live. Click twice. If the bug is still there, the fix is **FAKE**. Not done. Do not start the next hole. Do not mark PASS from unit tests, a comment, or “I changed the file.”
+4. Script green ≠ done. Playwright green ≠ done unless that spec is the live path. Desk-load ≠ sequence.
+
+The fixer cannot mark done. Smallest diff. No “while I was in there.”
+
+If live prove of this hole turns up a new break on a path that used to work, card it as a **new hole**. Stop. Do not fix it here. That is not the headline.
+
+Do not flip `outbound_enabled`. Do not run `verify:e2e` on the live database. Do not start full e2e as the per-hole prove.
+
+### Frozen PASS list (26) — leftover carding only, not the gate
+
+**Source:** `docs/workflows/full-e2e-audit-2026-09-18.md` heading **PASS freeze (regression gate)**. Count: 26 PASS paths. Not SKIP. Not FAIL. Not UNRESOLVED. Mixed rows: only the PASS slice.
+
+1. `/api/health` — 200. Database up. Pending 0.
+2. Owner session on live CRM (cookie inject).
+3. Extra SMS — none extra.
+4. #8 queue look — Sim Eight-Funding on the list. Next chip Remove Inquiries.
+5. #8 next action — screen and engine both say Remove Inquiries.
+6. #8 docs vs stored — 28 = 28. 11 UnderwriteIQ files on file.
+7. #8 rounds / lenders vs stored — two $25k funded rounds. Six banks fit.
+8. Portal ID / proof / repair upload — #9 uploads Sent (200).
+9. #9 Specialist Repair queue look — tiles Nine-Repair full / 6 Stuck. (Header lie is not frozen.)
+10. Fulfillment repair queue look. (Stage is not frozen.)
+11. Inquiry upload door open. (File land / FTC is not frozen.)
+12. Gold HTML pack on #11 and #8 exists. (Contract HTML is not frozen.)
+13. #11 portal as client — Welcome back, Sim. DOWNLOAD mint 200. Blueprint Open + module 1.
+14. `/progress.html` #11 — staff and client both open. Five checklist lines. No magic-link bounce.
+15. `/progress.html` #12 opens. (Empty checklist is not frozen.)
+16. Present #8 / Combo look — names match. (Send is not frozen.)
+17. Invoice / pay link #8 look — INV-B4B9C768 sent, $2,500 due, $0 paid. (New mint / pay is not frozen.)
+18. Finance OS / Ops AR #8 look — paid $3,000. Billed $2,500. Unpaid $7,500.
+19. `/app/csm-queue.html` as owner look — 200, 7 calls. Eight owes $2,500.
+20. CSM Claim once — sticks after reload.
+21. GET `/api/public/slo-checkout` — 200. $297.
+22. `/slo/` · `/slo/pay.html` · `/slo/pull.html` look — $297. (Pay / Build My Pack is not frozen.)
+23. POST `/api/public/slo-checkout` once — unpaid mint. Keep title Consulting Services Assessment.
+24. SMS this file asked for — Twilio accepted to +16616054248.
+25. GET `/api/auth/login` — demo off. No demo button.
+26. Ops Admin / Agent Editor / other ops desks open. (Send / Pause / Save is not frozen.)
+
+---
+
+## Independent tester 2026-09-18 morning (Opus claims vs live)
+
+Different tester than the fixer. Live site only. Clicked twice on screens. Did not change product code. Did not send texts. Did not send #11 a Blueprint contract. Did not ask Chris to click.
+
+Staff pages used the password login from hole 6 (no session inject). Demo logins are off.
+
+| Hole | Verdict | What live showed |
+|---|---|---|
+| 1 Gold HTML / #8 UnderwriteIQ / contract placeholder | **PARTIAL** | Gold pages are on #8 and #11 and they download. #8 documents card: **11** UnderwriteIQ files. Credit Analysis HTML opened (real gold page, Sim Eight-Funding). Same gold HTML on #11. Signed Funding Agreement HTML on #8 and #11 still says **PLACEHOLDER. THIS IS NOT THE REAL AGREEMENT TEXT. DO NOT SEND THIS.** |
+| 2 #11 Metro 2 not built | **PASS** | Opened the portal twice as `?client_id=` (Welcome back, Sim) and twice as `?id=`. What You Own no longer says Not ready yet. Row is **Dispute Letter Pack — READY**, with 6 letter downloads under it. Old Metro 2 “not built” line is gone. |
+| 3 Real CSM login | **PASS** | Demo is off. `csm@fundhub.ai` does not exist. Elena Brooks (`elena.brooks@fundhub.ai`, role csm, not demo) signed in twice on the live form and landed on **My queue**. Queue showed. Did not click Claim or Start shift. |
+| 4 `/progress.html` bounce | **PASS** | Staff cookie. Opened `?id=` and `?client_id=` for #11, twice each. Page stayed on `/progress.html`. Five checklist lines. No bounce to “Email me a sign-in link.” |
+| 5 #9 CCP empty first paint | **PASS** | Opened the control panel twice. Old line **No client open** never showed. First screen: Loading / Opening this client’s file. Name **Sim Nine-Repair** and the picker matched at about 0.9–1.3 seconds. |
+| 6 `chris@fundhub.ai` password 401 | **PASS** | POST `/api/auth/login` twice with `STAFF_INITIAL_PASSWORD` from `.env`: **200** and a token both times. Form login twice: landed on Pipeline as Chris, owner. Password not printed. |
+
+Opus said 2–5 were done, hole 1 gold live with contract wording still waiting, hole 6 waiting on a typed login. Live check: **2, 3, 4, 5, 6 PASS. Hole 1 PARTIAL** (gold real, contract still placeholder). No FAKE.
+
+Shots: `docs/workflows/live-prove-2026-09-17-evidence/independent-tester-2026-09-18/`.
+JSON: `/tmp/independent-tester-2026-09-18-morning/result.json`.
+

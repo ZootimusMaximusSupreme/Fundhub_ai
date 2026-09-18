@@ -198,3 +198,40 @@ Phone on these files: agent number `+16616054248`. Emails are plus-tags.
 ## Stop
 
 Tester only. No product code changed. No extra SMS. No extra email. No second hole. No HTML / CSS / public/app change.
+
+---
+
+## PASS freeze (regression gate)
+
+Frozen from the merged path table above. **SKIP / FAIL / UNRESOLVED are not frozen.** Mixed rows: only the PASS slice is frozen. Count: **26**.
+
+Gate: `.cursor/rules/named-fix-regression-gate.mdc`. After a named fix, a **different tester** than the fixer proves that hole live (click twice), then re-checks **only this list**. If any old PASS is now FAIL, the fix is **DIRTY**. Stop. Do not start the next hole. Do not fix the new break in the same chat. Write it on the board as a new hole.
+
+Full e2e is **not** the per-hole gate. Full e2e only after these money-path holes prove: **15 Apply/Oxylabs**, **16 ID reader**, **9 portal Payments $2,500**, **3 real CSM login**, **2 Metro 2 built**.
+
+1. `/api/health` — 200. Database up. Pending migrations 0.
+2. Owner session on live CRM (cookie inject).
+3. Extra SMS — none extra (only what that file asked for).
+4. #8 queue look — Sim Eight-Funding on the fulfillment list. Next chip: Remove Inquiries.
+5. #8 next action (screen vs engine) — both say Remove Inquiries.
+6. #8 docs vs stored — Documents 28 = API 28. 11 UnderwriteIQ files on file.
+7. #8 rounds / lenders vs stored — Round 1 funded $25,000. Round 2 funded $25,000, approved $10,000. Six banks fit.
+8. Portal ID / proof / repair upload — #9 good ID, good proof, blurry ID, bureau letter all Sent (200).
+9. #9 Specialist Repair queue look — Nine-Repair full / 6 Stuck on the tiles. (Header lie is **not** frozen.)
+10. Fulfillment repair queue look — Repair toggle matches stored programs. (Stage is **not** frozen.)
+11. Inquiry upload door open. (File land / FTC is **not** frozen.)
+12. Gold HTML pack exists on #11 and #8. (Contract HTML placeholder is **not** frozen.)
+13. #11 portal as client — chip Sim Eleven-Blueprint · client. Greeting Welcome back, Sim. DOWNLOAD mint 200. Blueprint Open + module 1 clicked.
+14. `/progress.html` #11 — staff `?client_id=` and client sign-in both open. Five checklist lines. No “Email me a sign-in link.”
+15. `/progress.html` #12 opens. (Empty checklist is **not** frozen.)
+16. Present #8 / Combo look — names match. (Send is **not** frozen.)
+17. Invoice / pay link #8 look — INV-B4B9C768 sent, $2,500 due, $0 paid. (New mint / pay is **not** frozen.)
+18. Finance OS / Ops AR #8 look — paid so far $3,000. Billed $2,500. Ops AR unpaid $7,500.
+19. `/app/csm-queue.html` as owner look — queue 200, 7 calls. Eight owes $2,500.
+20. CSM Claim once — sticks. Assignee = owner after reload.
+21. GET `/api/public/slo-checkout` — 200. $297. Next `/slo/pull.html`.
+22. `/slo/` · `/slo/pay.html` · `/slo/pull.html` look — price $297. (Pay / Build My Pack is **not** frozen.)
+23. POST `/api/public/slo-checkout` once — unpaid mint. Keep title Consulting Services Assessment.
+24. SMS this file asked for — Twilio accepted to +16616054248. Combo welcome SM99bb42fb. No 401.
+25. GET `/api/auth/login` — demo enabled false. Login page has no demo button row.
+26. Ops Admin / Agent Editor / other ops desks open as owner. (Send / Pause / Email invoices / Save is **not** frozen.)
