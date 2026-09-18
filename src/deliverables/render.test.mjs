@@ -57,8 +57,12 @@ describe("the set", () => {
   });
 });
 
-describe("27 numbered sections across the four documents, same as the Python", () => {
-  const EXPECTED = { credit_analysis: 8, funding_snapshot: 6, lender_match: 4, roadmap: 9 };
+// 28, the gold pack's count (docs/workflows/gold-deliverables-v5/compare/gold-*.txt).
+// The older fundhub_gen.py printed 27: its lender list had no 04 / STRATEGY
+// section. The owner listed five sections for the Capital Partner Shortlist
+// (2026-09-17), so the hosted page carries five.
+describe("28 numbered sections across the four documents, same as the gold pack", () => {
+  const EXPECTED = { credit_analysis: 8, funding_snapshot: 6, lender_match: 5, roadmap: 9 };
   const count = (html) => (html.match(/<div class="eyebrow">\d\d \//g) || []).length;
 
   for (const [key, n] of Object.entries(EXPECTED)) {
@@ -68,10 +72,10 @@ describe("27 numbered sections across the four documents, same as the Python", (
     });
   }
 
-  test("27 in total", () => {
-    assert.equal(Object.values(EXPECTED).reduce((a, b) => a + b, 0), 27);
+  test("28 in total", () => {
+    assert.equal(Object.values(EXPECTED).reduce((a, b) => a + b, 0), 28);
     const total = pages(JORDAN).reduce((sum, d) => sum + count(d.html), 0);
-    assert.equal(total, 27);
+    assert.equal(total, 28);
   });
 });
 

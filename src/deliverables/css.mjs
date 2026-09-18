@@ -1,6 +1,6 @@
 // The deliverables stylesheet.
 //
-// 2026-09-17: restyled to the GOLD PACK — the approved print system in
+// 2026-09-17: restyled to the GOLD PACK - the approved print system in
 // docs/workflows/gold-deliverables-v5/fundhub_pdf_template.py (css()), the
 // sheet that printed docs/workflows/gold-deliverables-v5/*.pdf. Same tokens,
 // same type scale, same sizes in pt, so a hosted page sits next to the gold PDF
@@ -13,13 +13,13 @@
 //   * .cover and .cta-page are ordinary elements with min-height: 100vh, since
 //     WeasyPrint painted the @page background and a browser will not
 //   * the running footers left the @page margin boxes for normal web flow, and
-//     page numbers stop existing — counter(page) is not faked
+//     page numbers stop existing - counter(page) is not faked
 //   * .pagebreak was `break-after: page`; pages are gone, so it is now the
 //     vertical gap that used to sit at the top of the next sheet
 //
 // Design lock (DIAGRAM_SPEC.md section 7): ink #0C0C0D, track #E8E8EB,
 // hairline #DDDDE1, label #6E6E76, muted #9A9AA1. The spectrum is a THIN ACCENT
-// ONLY — a hairline, a card's top edge — never a fill. Every number is
+// ONLY - a hairline, a card's top edge - never a fill. Every number is
 // JetBrains Mono, every name is Inter.
 //
 // NOTHING FROM A CLIENT IS INTERPOLATED INTO THIS FILE. esc() does not escape
@@ -33,7 +33,10 @@ export const BASE_CSS = `
 * { box-sizing: border-box; }
 body { font-family: "Inter", "Arial", sans-serif; font-size: 9.75pt;
        color: #0C0C0D; line-height: 1.6; margin: 0;
-       font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased; }
+       -webkit-font-smoothing: antialiased; }
+/* Tabular figures on the numbers only. Set on body, Inter's tabular set also
+   widens the hyphen, so "Pre-Approval" and "6-Month" printed with gaps. */
+td.m, td.num, .mval, .bs-val, .card .big, .hero .amount, span.m { font-variant-numeric: tabular-nums; }
 h1 { font-size: 21pt; font-weight: 800; letter-spacing: -.6pt; margin: 0 0 4pt; }
 h2 { font-weight: 800; font-size: 16pt; letter-spacing: -.4pt; line-height: 1.2;
      margin: 6pt 0 0; color: #0C0C0D; }
@@ -51,10 +54,10 @@ a { color: inherit; }
 span.m, td.m, .m-num { font-family: ${MONO}; font-weight: 500; font-size: .93em; }
 .small { font-size: 8pt; color: #6E6E76; line-height: 1.5; margin: 6pt 0 10pt; }
 .note, .monoline { font-family: ${MONO}; font-size: 6.6pt; letter-spacing: 1pt;
-        color: #9A9AA1; margin: 4pt 0 14pt; }
+        color: #9A9AA1; margin: 4pt 0 14pt; text-transform: lowercase; }
 .lead { font-size: 11pt; line-height: 1.68; color: #1B1B1E; margin: 6pt 0 12pt; }
 
-/* callouts — the gold .co: grey panel, a heavy ink bar on the left */
+/* callouts - the gold .co: grey panel, a heavy ink bar on the left */
 .callout, .co { background: #F6F6F8; padding: 11pt 13pt; margin: 4pt 0 13pt;
                 border-left: 2.6pt solid #0C0C0D; font-size: 9.3pt; line-height: 1.58;
                 color: #2A2A2F; break-inside: avoid; }
@@ -66,10 +69,8 @@ span.m, td.m, .m-num { font-family: ${MONO}; font-weight: 500; font-size: .93em;
 .cb { font-size: 9.3pt; line-height: 1.58; color: #2A2A2F; }
 .callout p:last-child, .co p:last-child { margin-bottom: 0; }
 
-/* tables — gold table.fh: a spectrum hairline on top, an ink rule under the head */
+/* tables - gold table.fh: an ink rule under the mono head, hairlines between rows */
 table { width: 100%; border-collapse: collapse; margin: 2pt 0 13pt; }
-table, table.fh { border-top: 2pt solid transparent; border-image: ${SPEC} 1;
-                  border-left: none; border-right: none; border-bottom: none; }
 th { font-family: ${MONO}; font-weight: 500; font-size: 6.6pt; letter-spacing: 1.1pt;
      text-transform: uppercase; color: #6E6E76; text-align: left;
      padding: 7pt 9pt 6pt 0; border-bottom: 1.1pt solid #0C0C0D; vertical-align: bottom; }
@@ -80,7 +81,7 @@ td.num, th.num { text-align: right; padding-right: 0; }
 .cellrest { display: block; margin-top: 3pt; font-size: 8.1pt; color: #55555C; }
 .table-wrap { overflow-x: auto; }
 
-/* status chips — .tag is the old name, .chip the gold one; same three weights */
+/* status chips - .tag is the old name, .chip the gold one; same three weights */
 .tag, .chip { font-family: ${MONO}; font-weight: 500; font-size: 6.4pt; letter-spacing: .9pt;
               padding: 2pt 5.5pt; border-radius: 2.5pt; white-space: nowrap;
               border: .9pt solid #0C0C0D; color: #0C0C0D; text-transform: uppercase;
@@ -89,7 +90,7 @@ td.num, th.num { text-align: right; padding-right: 0; }
 .tag.grey, .chip.mid { background: #6A6A72; color: #fff; border-color: #6A6A72; }
 .tag.open, .chip.line { background: #fff; color: #0C0C0D; border-color: #0C0C0D; }
 
-/* stat cards — gold .mrow/.mc; the old .cards/.card is the same object */
+/* stat cards - gold .mrow/.mc; the old .cards/.card is the same object */
 .cards, .mrow { display: flex; gap: 8pt; margin: 4pt 0 13pt; break-inside: avoid; }
 .card, .mc { flex: 1; border: .9pt solid #E3E3E7; border-top: 2pt solid #0C0C0D;
              padding: 11pt; background: #fff; min-width: 0; }
@@ -101,7 +102,7 @@ td.num, th.num { text-align: right; padding-right: 0; }
                     text-transform: uppercase; color: #0C0C0D; margin-top: 5pt; }
 .card .body, .mnote { font-size: 7.6pt; line-height: 1.5; color: #55555C; margin-top: 6pt; }
 
-/* one big number — gold .bigstat; the old .hero is the same object */
+/* one big number - gold .bigstat; the old .hero is the same object */
 .hero, .bigstat { break-inside: avoid; border: .9pt solid #E3E3E7; border-top: 2.6pt solid #0C0C0D;
                   padding: 16pt 18pt 15pt; margin: 4pt 0 13pt; }
 .hero .amount, .bs-val { font-family: ${MONO}; font-weight: 700; font-size: 33pt;
@@ -137,7 +138,7 @@ td.num, th.num { text-align: right; padding-right: 0; }
 .tl .m .h { font-weight: 700; font-size: 9pt; margin: 2pt 0 3pt; color: #0C0C0D; }
 .tl .m .b { font-size: 7.6pt; color: #55555C; line-height: 1.45; }
 
-/* checklists and lists — gold .fh-check / .fh-ul / .fh-ol */
+/* checklists and lists - gold .fh-check / .fh-ul / .fh-ol */
 .check { position: relative; padding-left: 17pt; margin: 0 0 4.5pt; font-size: 9.3pt;
          line-height: 1.5; color: #26262A; }
 .check::before { content: ""; position: absolute; left: 0; top: 2.6pt; width: 7pt; height: 7pt;
@@ -169,7 +170,7 @@ ul.plain li::before, .fh-ul li::before { content: ""; position: absolute; left: 
 .mquote { font-family: ${MONO}; font-size: 8.4pt; letter-spacing: .4pt; color: #6E6E76;
           margin: 2pt 0 12pt; }
 
-/* lender card — gold .lender; .nm/.why are the old names for .lname/.fit */
+/* lender card - gold .lender; .nm/.why are the old names for .lname/.fit */
 .lender { break-inside: avoid; border: .9pt solid #E3E3E7; border-top: 2pt solid #0C0C0D;
           padding: 11pt 13pt 12pt; margin: 0 0 9pt; background: #fff; }
 .lender .nm, .lname { font-weight: 700; font-size: 10.6pt; letter-spacing: -.2pt; color: #0C0C0D;
@@ -189,7 +190,11 @@ ul.plain li::before, .fh-ul li::before { content: ""; position: absolute; left: 
 .pagebreak { height: 0; margin: 26pt 0 0; }
 
 /* --- diagrams --- */
-svg text { font-family: ${MONO}; }
+/* The older charts set no font-family on their <text>, so they inherit mono
+   here. The gold charts set one on every <text> (Inter for names, mono for
+   numbers), and a stylesheet rule would beat that attribute, so they are left
+   alone. */
+svg text:not([font-family]) { font-family: ${MONO}; }
 .chart { break-inside: avoid; margin: 8pt 0 15pt; }
 .chart svg { display: block; width: 100%; height: auto; max-width: 508pt; }
 .diagram { margin: 14pt 0 16pt; }
@@ -228,7 +233,7 @@ svg text { font-family: ${MONO}; }
 .side { display: flex; gap: 20pt; align-items: flex-start; }
 .side .grow { flex: 1; min-width: 0; }
 
-/* the book-a-call button — used on the closing panel and inside the body */
+/* the book-a-call button - used on the closing panel and inside the body */
 .book-btn { display: inline-block; background: #fff; color: #0C0C0D; text-decoration: none;
             font-family: ${MONO}; font-weight: 700; font-size: 8.4pt; letter-spacing: 1.4pt;
             text-transform: uppercase; padding: 11pt 18pt; border-radius: 2.5pt;
@@ -303,7 +308,7 @@ export const COVER_CSS = `
 .clo-url:hover { text-decoration-color: #fff; }
 .clo-alt { font-size: 8pt; color: #6E6E76; margin-top: 7pt; }
 
-/* the older cover markup (the look the parity test pins) — kept presentable */
+/* the older cover markup (the look the parity test pins) - kept presentable */
 .cover > div:first-child:not(.spec-top), .cta-page > div:first-child:not(.spec-top) { padding: 44pt 52pt 0; }
 .cover .brand, .cta-page .brand { font-size: 15pt; font-weight: 800; letter-spacing: -.02em; color: #fff; }
 .cover .kicker { font-family: ${MONO}; font-size: 6.5pt; letter-spacing: .3em; color: #7d7d7d; margin-left: 10px; }
@@ -333,8 +338,8 @@ export const COVER_CSS = `
 /**
  * The page frame. @page carried the Letter sheet and its 58/52/66/52pt margins;
  * a scrolling document needs a measure of its own or the lines run the width of
- * the monitor. The text column is 508pt — Letter's 612pt less the gold sheet's
- * two 52pt side margins — so a line of body text and every chart are the same
+ * the monitor. The text column is 508pt - Letter's 612pt less the gold sheet's
+ * two 52pt side margins - so a line of body text and every chart are the same
  * size they are in the gold PDF. box-sizing is border-box, so the padding is
  * ADDED to the 508pt, not taken out of it.
  *
@@ -369,6 +374,10 @@ img, svg { max-width: 100%; }
   .cards, .mrow, .flowrow, .side, .tl { flex-wrap: wrap; }
   .card, .mc { flex: 1 1 40%; }
   table { display: block; overflow-x: auto; }
+  /* A gold chart is drawn for a 508pt column. On a phone it runs edge to edge
+     and shows the whole picture; it is vector, so a pinch-zoom stays sharp. A
+     chart that scrolled sideways cut its own sentences off at the screen edge. */
+  .chart { margin-left: -12px; margin-right: -12px; }
   .kv .k, .lender .kv .k { width: 88pt; }
 }
 

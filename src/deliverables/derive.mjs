@@ -136,6 +136,44 @@ export function openRevolving(client) {
   return (client?.revolving || []).filter((r) => r && r[0] && r[6] !== "CLOSED");
 }
 
+/**
+ * The cards a paydown plan names, from a list of open revolving rows the caller
+ * has already cut to one row per account: the cards with a balance, and of
+ * those the ones with a 10% target to pay down to (when none has a target,
+ * every card with a balance). The credit analysis and the funding snapshot
+ * both count this list, so "Pay down your N open revolving cards" says the same
+ * N on both pages.
+ */
+export function paydownCards(rows) {
+  const owed = (rows || []).filter((r) => (parseMoney(r?.[2]) ?? 0) > 0);
+  const withTarget = owed.filter((r) => (paydownAmt(r) ?? 0) > 0);
+  return withTarget.length ? withTarget : owed;
+}
+
+/* The engine's rating codes, in plain words ("Late30Days" -> "30 days late").
+   Same words as the pdf-lib printer's RATING_WORDS
+   (src/underwrite/black-report-node.mjs), which does not export its copy. Only
+   a single code token is translated: a cell the file already wrote in words
+   ("Charge-Off", "60-Day Lates (28x)") is printed as the file wrote it. */
+const RATING_WORDS = Object.freeze({
+  asagreed: "Paying on time",
+  chargeoff: "Charge-off",
+  collectionorchargeoff: "Collection or charge-off",
+  bankruptcyorwageearnerplan: "Bankruptcy or wage earner plan",
+  toonew: "Too new",
+  nodataavailable: "No data available"
+});
+
+export function plainRating(v) {
+  const s = String(v ?? "");
+  const t = s.trim();
+  if (!/^[A-Za-z0-9]+$/.test(t)) return s;
+  const key = t.toLowerCase();
+  if (RATING_WORDS[key]) return RATING_WORDS[key];
+  const late = /^late(\d+)days?$/.exec(key);
+  return late ? `${late[1]} days late` : s;
+}
+
 /** How many open cards the file cannot produce a 10% target for. */
 export function cardsWithNoTarget(client) {
   return openRevolving(client).filter((r) => targetBal(r) === null).length;
