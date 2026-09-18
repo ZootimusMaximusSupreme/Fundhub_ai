@@ -7,6 +7,7 @@ import { pool, close } from "../../../src/db.mjs";
 const IDS = {
   "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f": "Twelve-Academy #12",
   "7ccbeb76-df98-4125-8c14-0d1c9f5e3042": "Thirteen-NoBook #13",
+  "ab277630-8309-4c02-b187-f244e7e369e8": "Walk1 Funding",
 };
 const c = await pool().connect();
 try {
