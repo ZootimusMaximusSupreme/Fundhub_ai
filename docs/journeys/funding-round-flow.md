@@ -3,6 +3,7 @@
      src/funding/success-fee.mjs, src/handlers/money-chain.mjs,
      db/migrations/382_round_approved_amount_from_confirmed.sql,
      src/workflows/s-doc-collection.mjs, src/handlers/inquiry-docs.mjs,
+     src/funding/billed-fee-check.mjs, src/applications/status.mjs (2026-09-18),
      src/handlers/doc-check.mjs, src/inquiry-ops/doc-gate.mjs,
      api/dashboard/client.mjs, public/app/client-control-panel.html. -->
 
@@ -147,6 +148,37 @@ exactly what would let a $0 bill be produced. That holds on every path above.
 
 **This column is still not a billing source.** The invoice and the closeout read the
 application rows through `src/funding/success-fee.mjs`.
+
+---
+
+## A bank answer that changes after the bill
+
+The success fee is worked out once, when the round is funded (F-07,
+`src/workflows/f-07-funding-locked.mjs`), and frozen on the bill. A bank answer recorded
+after that — Approved, Denied, a new amount, or "doesn't count" — can leave the bill
+disagreeing with the rule. `src/funding/billed-fee-check.mjs` compares them straight after the
+answer is saved.
+
+```mermaid
+flowchart TD
+    SAVE[Bank answer saved<br/>setApplicationStatus / setApprovalExclusion<br/>src/applications/status.mjs] --> R{Card-stacking round<br/>with a success-fee bill<br/>that is not void?}
+    R -->|No| DONE[Nothing more]
+    R -->|Yes| CMP{Bill amount equals<br/>agreed % x confirmed approvals now?<br/>resolveSuccessFee, src/funding/success-fee.mjs}
+    CMP -->|Yes| DONE
+    CMP -->|"No — or nothing confirmed is left"| TASK[Task for the funding advisor<br/>source success-fee-after-bill<br/>bill number, billed, rule fee now, paid, any overpayment]
+    TASK --> LOCK[The bill itself is NOT changed<br/>locked once sent — invoices_guard, 031<br/>nothing is sent to the client]
+```
+
+* **The answer is always saved first.** A fault in the comparison is logged
+  (`[billed-fee-check]`) and never turns the button press into an error.
+* **One task per state.** Pressing the same answer twice does not stack a second task.
+* **Alt-fin rounds are skipped**, the same scope as the funded guard: that rail bills off the
+  Lendflow figure on the event, not per-bank rows.
+
+Measured on live 2026-09-18, Sim Eight-Funding round 2: the bill billed 10% of $25,000
+(Arizona Bank & Trust, Approved when the round was funded). Arizona was moved to Denied
+thirty minutes later and Native American Bank was recorded Approved at $10,000. The rule says
+$1,000; the $2,500 bill stood, was later paid by a sim receipt, and no person was told.
 
 ---
 

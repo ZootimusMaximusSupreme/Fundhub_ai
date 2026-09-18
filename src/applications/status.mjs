@@ -2,6 +2,7 @@
 
 import { APPLICATION_STATUS_SET } from "../lenders/tables.mjs";
 import { toCents, fromCents } from "../commissions/money.mjs";
+import { flagBilledFeeDrift } from "../funding/billed-fee-check.mjs";
 
 export class ApplicationStatusError extends Error {
   constructor(message, { code = "application_status_error", status = 400 } = {}) {
@@ -157,6 +158,10 @@ export async function setApplicationStatus(db, {
       cleanPlayName(playName)
     ]
   );
+
+  // A bank answer that changes after the round was billed can leave the bill
+  // disagreeing with the fee rule. Saved first, then a person is told (N7).
+  await flagBilledFeeDrift(db, { orgId, application: row });
 
   return row;
 }
@@ -366,6 +371,9 @@ export async function setApprovalExclusion(db, {
           : "Approval put back — it counts toward the round again")
     ]
   );
+
+  // Excluding or putting back an approval moves the fee basis too (N7).
+  await flagBilledFeeDrift(db, { orgId, application: row });
 
   return row;
 }
