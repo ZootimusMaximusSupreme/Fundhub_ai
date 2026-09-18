@@ -107,8 +107,13 @@ import { isSyntheticRow } from "./synthetic.mjs";
    finished job and nothing ever came back, so funding the account fixed nothing
    and the client had to be asked for the file again. It is a cron with no event
    trigger, so like every sweeper here it will always appear in neverFired, which
-   is the correct outcome for a scheduled job rather than a coverage hole. */
-const REGISTERED = 76;
+   is the correct outcome for a scheduled job rather than a coverage hole.
+
+   Moved 76 -> 77 on 2026-09-18 with the next-step catch-up (hole 12), a cron
+   with no event trigger like every sweeper here. The pin was ALREADY one
+   behind before this move (src/workflows/index.mjs served 77 against a pin of
+   76), so this still reads one short; that older gap is not this change's. */
+const REGISTERED = 77;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
