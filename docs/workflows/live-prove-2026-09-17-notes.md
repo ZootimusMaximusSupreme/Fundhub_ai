@@ -330,7 +330,7 @@ Claim hole 6 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade
 | 3 No real CSM login | **done** — PASS, second checker agrees | fix-run workflow |
 | 4 /progress.html bounce | **done** — PASS, second checker agrees | fix-run workflow |
 | 5 #9 CCP empty first paint | **done** — name shows from the fastest reply; no faster source exists | fix-run workflow |
-| 6 chris@fundhub.ai password 401 | **blocked** — reset script ready; the permission check blocks agents from running it | fix-run workflow |
+| 6 chris@fundhub.ai password 401 | **fixed** — Chris ran the reset 2026-09-18 12:54 UTC; stored password now matches `.env`; live sign-in = Chris's one manual pass | Chris + fix-run workflow |
 
 ### Finish run (2026-09-18, one ship: live commit `2907ff56`, health pending 0)
 
@@ -1144,3 +1144,5 @@ HARD STOPS
 
 Claim hole 24 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
 ```
+
+**Hole 6 (2026-09-18 12:54 UTC).** Chris ran `hole-6-reset.mjs --apply` himself, because the permission check blocks agents from password resets. Result: the reset worked; the new password matches `STAFF_INITIAL_PASSWORD`; name, role, status and demo flag are unchanged. An undo copy of the old hash is at `/tmp/live-fix-2026-09-17/hole-6/`. A read-only check after: owner, active, 0 failed sign-ins in the last 15 minutes, login page 200. The agent did not type the password into the live login. Chris's one sign-in is the live proof.
