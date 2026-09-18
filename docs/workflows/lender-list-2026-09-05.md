@@ -48,6 +48,7 @@ writes nothing and puts the bank here for you to settle.
 |---|---|
 | Fifth Third Bank | **EX** — Active bank list<br>**TU** — Inquiries we have seen (TU 10 (100%)) |
 | First Citizens Bank | **EQ** — Active bank list<br>**EX/EQ** — Inquiries we have seen (EQ 7 (58%), EX 5 (42%)) |
+| Flagstar Bank | **EQ** — November datapoint drop<br>**EX** — Aged corp details |
 
 ## Banks held back because two companies share the name
 
@@ -77,8 +78,11 @@ mentions a bureau on top of that. Not enough to block anything, but you should s
 
 | Bank | Written in | The page says | Which page |
 |---|---|---|---|
+| Citizens Bank | EQ | EX | Aged corp details |
 | M&T Bank | TU | EX | November datapoint drop |
 | PNC Bank | EX/EQ | EX/TU | November datapoint drop |
+| US Bank | EQ/TU | EX | Aged corp details |
+| US Bank | EQ/TU | EX | Crafting the Perfect Funding Sequence |
 
 ## Banks that the book lists more than once
 
@@ -129,21 +133,21 @@ This script does not delete anything.
 
 267 of the 313 rows still have nothing. Grouped by the reason:
 
-**239 rows — No bureau in any source we hold.**
+**238 rows — No bureau in any source we hold.**
 
-1st Source Bank, Alpine Bank, Altabank, American Bank Center (Bravera), American National (0%, AmTrust / FNBO, AmTrust Bank (0% - FNBO), ANB Bank, Apple Creek Bank, Arizona Bank & Trust (0% - HTLF), Artisans’ Bank, Arvest Bank, Associated Bank, Atlantic Union Bank, BancFirst, BancorpSouth Bank, Bank Forward, Bank Iowa, Bank of Albuquerque, Bank of Blue Valley, Bank of Blue Valley (0%, Bank of Colorado, Bank of Hawaii, Bank of Hope, Bank of New Hampshire, Bank of New Hampshire, Bank of Oklahoma, Bank of Tennessee, Bank of the West, Bank of the West, BankNewport, BankPlus, BankWest, Banner Bank, BBVA, Berkshire Bank, Berkshire Bank, BOK Financial, Bremer Bank, Bryant Bank, and 199 more.
+1st Source Bank, Alpine Bank, Altabank, American Bank Center (Bravera), American National (0%, AmTrust / FNBO, AmTrust Bank (0% - FNBO), ANB Bank, Apple Creek Bank, Arizona Bank & Trust (0% - HTLF), Artisans’ Bank, Arvest Bank, Associated Bank, Atlantic Union Bank, BancFirst, BancorpSouth Bank, Bank Forward, Bank Iowa, Bank of Albuquerque, Bank of Blue Valley, Bank of Blue Valley (0%, Bank of Colorado, Bank of Hawaii, Bank of Hope, Bank of New Hampshire, Bank of New Hampshire, Bank of Oklahoma, Bank of Tennessee, Bank of the West, Bank of the West, BankNewport, BankPlus, BankWest, Banner Bank, BBVA, Berkshire Bank, Berkshire Bank, BOK Financial, Bremer Bank, Bryant Bank, and 198 more.
 
 **14 rows — Two different banks share this name — filling it in would be a coin flip.**
 
 First American Bank, First American Bank, First Bank, First Bank, First Bank & Trust, First Citizens National, First National Bank, First National Bank, FNBO Evergreen, Peoples Bank, The People’s Bank, The Peoples Bank, Union Bank, Union Bank & Trust
 
+**8 rows — Sources disagree — needs Chris to rule.**
+
+Fifth Third, Fifth Third Bank, First Citizens, First Citizens Bank, First Citizens Bank, First Citizens Bank (0% for 9 months), First Citizens Bank (Apply in-branch), Flagstar Bank
+
 **7 rows — Bank name not recognised, so no source could be attached to it.**
 
 Amex often approves a second 0% card if the first gets approved, Apply at one Elan bank, then apply to a second with consistent info, Apply to one bank first, then a second Elan bank with same data, Apply to one Elan bank first, then submit to a second, Apply to one first, then a second Elan bank once approved, Apply with one bank first, then a second Elan partner, Apply with one bank, then a second with matching data
-
-**7 rows — Sources disagree — needs Chris to rule.**
-
-Fifth Third, Fifth Third Bank, First Citizens, First Citizens Bank, First Citizens Bank, First Citizens Bank (0% for 9 months), First Citizens Bank (Apply in-branch)
 
 Almost all of these are small local banks that appear on exactly one row and are
 named in no other source we hold. There is no honest way to fill them in from what
@@ -180,7 +184,7 @@ Four kinds of source, ranked. Higher beats lower.
    A bank is only given a bureau here when we have seen at least 10 of its checks, and
    the bureau accounts for at least 30% of them and at least 5 checks. The full split is below.
 3. **The written-up Notion pages** (four of them) and the state funding boards table.
-   88 statements found. These can raise a question but never overrule the two above.
+   144 statements found. These can raise a question but never overrule the two above.
 
 ### What the credit checks we have seen actually show
 
@@ -312,6 +316,9 @@ copy the full links out. There are about 8 different links behind those 29 rows.
 
 Left alone rather than guessed at.
 
+- Chase Ink Unlimited (30k -> 40k) (Aged corp details) — mentioned 2 times
+- AMEX Biz Gold (charge) / Personal (15k) (Aged corp details) — mentioned 2 times
+- 5/3rd Bank (10K) (Aged corp details) — mentioned 2 times
 - Independent Financial (Elan) (November datapoint drop) — mentioned 1 time
 - First Financial Bank (November datapoint drop) — mentioned 1 time
 - Calbank (November datapoint drop) — mentioned 1 time
@@ -321,6 +328,7 @@ Left alone rather than guessed at.
 - SalemFive Bank (Elan Financial) (November datapoint drop) — mentioned 1 time
 - BMO Harris Bank (November datapoint drop) — mentioned 1 time
 - Machias Savings Bank (November datapoint drop) — mentioned 1 time
+- GM (Crafting the Perfect Funding Sequence) — mentioned 1 time
 
 And from the name map, already known:
 
