@@ -21,6 +21,8 @@ const FILES = {
   "567c12ce-64de-4043-aa98-d842434bd267": "Sim Combo-20260918 (identity address, no typed address)",
   "d682c13b-11f3-4bd5-a0c5-232b6a7875c4": "Sim Eight-Funding #8 (identity address + typed street)",
   "7ccbeb76-df98-4125-8c14-0d1c9f5e3042": "Thirteen-NoBook #13 (no address anywhere)",
+  "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f": "Twelve-Academy #12 (identity address, no letters saved yet)",
+  "029964c5-4d8e-47ed-88c9-53ac13863fd4": "Eleven-Blueprint #11 (identity address + typed street)",
 };
 const norm = (s) => String(s || "").toUpperCase().replace(/[^A-Z0-9]+/g, " ").trim();
 const z5 = (z) => String(z ?? "").replace(/\D/g, "").slice(0, 5);

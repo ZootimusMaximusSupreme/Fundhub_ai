@@ -333,6 +333,24 @@ test("N9: an identity row with no street line is no home address", async () => {
   assert.equal(out.letterSkip, NO_HOME_ADDRESS);
 });
 
+test("N9: a street with no city, state or ZIP is no home address — no letter prints a part-address", async () => {
+  // Sim Eight's saved letters printed a street and no city line. That is not
+  // an address a bureau can answer, so it builds no letter at all.
+  for (const partial of [
+    { addressLine1: "5815 Knoll Krest St" },
+    { addressLine1: "5815 Knoll Krest St", city: "San Antonio", state: "TX" },
+    { addressLine1: "5815 Knoll Krest St", city: "San Antonio", postalCode: "78242" },
+    { addressLine1: "5815 Knoll Krest St", state: "TX", postalCode: "78242" }
+  ]) {
+    const out = await buildLetterPackForClient(
+      fakePackDb({ client: SANDBOX_CLIENT, crs: mergedSandboxPull(), identity: [partial] }),
+      { clientId: "cl-n9-partial", pack: "funding" }
+    );
+    assert.deepEqual(letterFilesOf(out).map((f) => f.filename), [], `built letters for ${Object.keys(partial)}`);
+    assert.equal(out.letterSkip, NO_HOME_ADDRESS);
+  }
+});
+
 test("N9: buildLetterPack withholds every letter, funding and repair, for a named client with no home address", async () => {
   for (const pack of ["funding", "repair"]) {
     const out = await buildLetterPack({ crsResult: ENGINE, personal: { name: "Jordan Sample", address: "" }, pack });
@@ -353,4 +371,6 @@ test("homeAddressFromIdentity reads the shape the credit form saves, and a missi
   assert.deepEqual(homeAddressFromIdentity([]), { address: "", city: "", state: "", zip: "" });
   assert.deepEqual(homeAddressFromIdentity(null), { address: "", city: "", state: "", zip: "" });
   assert.deepEqual(homeAddressFromIdentity([{ city: "Mesa", zip: "85201" }]), { address: "", city: "", state: "", zip: "" });
+  // All four parts or none: a street with no ZIP is empty too.
+  assert.deepEqual(homeAddressFromIdentity([{ addressLine1: "1 Elm", city: "Mesa", state: "AZ" }]), { address: "", city: "", state: "", zip: "" });
 });

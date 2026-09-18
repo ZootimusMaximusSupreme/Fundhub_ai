@@ -148,6 +148,12 @@ export function personalFromClient(row) {
  * letters built from them printed a street with no city or ZIP (Sim Eight). They
  * stay in personalFromClient() for its other callers and are overridden here.
  *
+ * A HOME ADDRESS IS ALL FOUR PARTS: street, city, state and ZIP. A street with no
+ * city or ZIP is what Sim Eight's letters printed, and a bureau cannot match or
+ * answer it, so a part-address counts as no address and no letter is built.
+ * (The Repair desk's "address on file" tick asks only for the street; every
+ * identity address on live carried all four parts when this was written.)
+ *
  * A company address is never used. That fallback belongs to an envelope's return
  * address (../repair/analyze.mjs loadIdentity), not to "my address is" in a
  * letter signed by the client. */
@@ -155,7 +161,7 @@ export const NO_HOME_ADDRESS = "missing_home_address";
 
 const EMPTY_HOME = Object.freeze({ address: "", city: "", state: "", zip: "" });
 
-/** pii_identity.addresses → the four address fields a letter prints. */
+/** pii_identity.addresses → the four address fields a letter prints. All four, or none. */
 export function homeAddressFromIdentity(addresses) {
   let list = addresses;
   if (typeof list === "string") {
@@ -170,6 +176,7 @@ export function homeAddressFromIdentity(addresses) {
   const city = text(a.city || a.address_city);
   const state = text(a.state || a.address_state);
   const zip = text(a.postalCode || a.postal_code || a.zip || a.zip5 || a.address_zip || a.postal);
+  if (!city || !state || !zip) return { ...EMPTY_HOME };
   const cityLine = [city, [state, zip].filter(Boolean).join(" ")].filter(Boolean).join(", ");
   return { address: [street, line2, cityLine].filter(Boolean).join("\n"), city, state, zip };
 }

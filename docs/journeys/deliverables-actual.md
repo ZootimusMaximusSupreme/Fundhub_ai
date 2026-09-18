@@ -30,7 +30,8 @@ Every pack built for this page carried zero letters — see "Things this page do
 
 **No home address, no letters (N9, 2026-09-18).** A letter is built only when the client has a
 real name AND a home address on the saved identity record (`pii_identity.addresses[0]` with a
-street line — the same record the credit form writes and the Repair desk checks). The address
+street, city, state and ZIP — all four; a street with no city line counts as no address — the same
+record the credit form writes and the Repair desk checks). The address
 printed on the letter comes from that record, never from the typed `clients.custom_fields`
 keys. With no home address the pack still carries the analysis pages and reports
 `letterSkip: "missing_home_address"`. Code: `src/underwrite/letter-pack.mjs` (`NO_HOME_ADDRESS`,
@@ -68,7 +69,7 @@ flowchart TD
     THIN -->|no| ONLY5[no sixth document — this is the ordinary client]
     THIN -->|yes| P6[business_prep_summary spec<br/>Business-Readiness-Guide.pdf]
 
-    TIER --> HOME{real name AND a home address<br/>on the identity record?<br/>pii_identity.addresses 0 has a street}
+    TIER --> HOME{real name AND a home address<br/>on the identity record?<br/>pii_identity.addresses 0 has street, city, state and ZIP}
     HOME -->|no name| NONAME[no letters — letterSkip missing_consumer_name]
     HOME -->|no home address| NOHOME[no letters — letterSkip missing_home_address<br/>analysis pages still built]
     HOME -->|yes| LET[inquiry-removal + personal-info letters<br/>home address printed from pii_identity]
