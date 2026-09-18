@@ -8,7 +8,7 @@
 | D | Import + ship | done | **2026-09-16:** `scripts/lenders-merge-crm-into-csv.mjs` → `credentials/lenders-audit/lenders-audited-merged-for-import.csv`. Clearing **172 → 0** (import guard; 457 CRM cells backfilled incl. logos). **Confirmed import:** 306 updated, 0 inserted. **DB after:** 307 banks, **287** logos (+2), **216** apply URLs (+1), 81 bureau, 37 ranking. Ship skipped (DB-only; logo PNGs already on disk). |
 | E | Apply links + logos audit | done | Manifest `credentials/lenders-audit/manifest.json` · report `credentials/lenders-audit/AUDIT-REPORT.md` · apply → `lenders-audited.csv` (2026-09-16 run: 152 complete, 90 needs_research, ~17 min) |
 | F | Logo fetch (bank sites) | done | Missing-only run 2026-09-16 ~21:46 PT — see **Task F report** below |
-| G | Notion re-scrape | done | **2026-09-18:** pull finished — **425** folders, organize wrote 425 `FULL.md`. All 9 extract paths on disk. **2026-09-17:** Profile + Cookies present after `notion:login`. Pull hits **“Sign in to see this page in Legacy Strong”** (headless + `NOTION_HEADFUL=1`); **0** sidebar seeds; only junk folder `notion--8f2a819d` (login interstitial). `start-url.txt` written (Vault). Pull script now uses `channel: "chrome"`. **Fix:** re-run `npm run notion:login`, open Legacy Strong sidebar, Enter; then `npm run notion:pull` → `npm run notion:organize` (skip transcribe if no ffmpeg). |
+| G | Notion re-scrape | done | **2026-09-18 (verify):** `token_v2` OK; pull **exit 1** on `Bank-Phone-Database` (navigation destroyed context); **425** folders on disk; organize OK → all **9** extract paths. Transcribe skipped (no ffmpeg). **2026-09-18:** pull finished — **425** folders, organize wrote 425 `FULL.md`. All 9 extract paths on disk. **2026-09-17:** Profile + Cookies present after `notion:login`. Pull hits **“Sign in to see this page in Legacy Strong”** (headless + `NOTION_HEADFUL=1`); **0** sidebar seeds; only junk folder `notion--8f2a819d` (login interstitial). `start-url.txt` written (Vault). Pull script now uses `channel: "chrome"`. **Fix:** re-run `npm run notion:login`, open Legacy Strong sidebar, Enter; then `npm run notion:pull` → `npm run notion:organize` (skip transcribe if no ffmpeg). |
 
 ## Scrape locate — 2026-09-16 (subagent)
 
@@ -195,6 +195,7 @@ Also reads: `docs/legacy-strong/bank-datapoints-active-banks.md`, `inquiry-maste
 
 ## Status 2026-09-18
 
+- **David sent-mail docs (checked):** Sent **Fwd: ISO Onboarding** (2026-09-08) — four Accord ISO PDFs in `credentials/david-email-docs-2026-09-18/`. **Not duplicate** of lender book / Notion / legacy-strong. **Skip re-ingest** for lender pipeline.
 - **Gmail:** Token minted 2026-09-18 (`~/.config/fundhub/google-token.json`). Probe OK (oauth via path). **7 sent** threads to `daramirez10171@gmail.com` (e.g. Fwd ISO Onboarding Sep 2026, Carl Barton list Dec 2025, Fwd BAG Aug 2025). Netlify `GOOGLE_GMAIL_OAUTH_TOKEN_JSON` **set** (secret, production + deploy-preview + branch-deploy) from the token file; live refresh + `users/me/profile` 200 before setting. `GOOGLE_DRIVE_OAUTH_TOKEN_JSON` left untouched.
 - **Notion pull:** **finished.** **425** output folders, `npm run notion:organize` written → **425** `FULL.md` + `INDEX.md`. All **9** paths the extracts need are now on disk (4 bureau `FULL.md`, 5 personal `page.md`).
 - **Lenders:** pipeline finished on the completed pull — see **Pipeline run — 2026-09-18** below.
@@ -219,3 +220,21 @@ Ran only after `notion-legacy-pull.mjs --pull` exited. Task **G unblocked**, whi
 **Left for Chris to name (not written — no bank-name match):** `BestEgg`, `We Florida Financial in South Florida`, and one stray `Page ID: 9cafa36e…` line on High limit personal cards. 3 business cards on the balance-transfer page were left alone on purpose (already business rows).
 
 **Task status now:** B **done** · C **done** (was blocked) · G **done** (was blocked auth).
+
+## Pipeline run — 2026-09-18 (verify session dd5618df)
+
+Chris off phone; Legacy Strong auth confirmed (`token_v2`).
+
+| Step | Result |
+|---|---|
+| `npm run notion:pull` | **exit 1** once — `page.evaluate: Execution context was destroyed` on Bank-Phone-Database (~38 min in). **425** output folders on disk. Token/auth not the blocker. |
+| `npm run notion:organize` | **PASS** — 425 pages → `INDEX.md` + `FULL.md` |
+| 9 required paths | **9/9** — 4 bureau `FULL.md` + 5 personal `page.md` |
+| `lenders-extract-bureaus.mjs --confirm` | Book bureaus **3 → 46** (same as prior run) |
+| `lenders-extract-personal.mjs --confirm` | **21 rows** (15 PersonalCC, 6 PersonalLoans) |
+| merge CRM (with-bureaus) | **327** cells; would-clear **327 → 0** |
+| import merged book `--confirm` | **306 updated**, 0 inserted |
+| import personal `--confirm` | **21 updated**, 0 inserted (rows already in DB) |
+| `npm run ship` | **skipped** — uncommitted changes on `main`; HEAD **`a5de1f0c`** |
+
+**DB after (live):** **328** banks · **102** with bureau · **303** logos · **37** ranking.
