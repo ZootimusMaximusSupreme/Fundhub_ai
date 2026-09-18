@@ -153,11 +153,11 @@ application rows through `src/funding/success-fee.mjs`.
 
 ## A bank answer that changes after the bill
 
-The success fee is worked out once, when the round is funded (F-07,
-`src/workflows/f-07-funding-locked.mjs`), and frozen on the bill. A bank answer recorded
-after that — Approved, Denied, a new amount, or "doesn't count" — can leave the bill
-disagreeing with the rule. `src/funding/billed-fee-check.mjs` compares them straight after the
-answer is saved.
+The success fee is worked out when the round is funded (F-07,
+`src/workflows/f-07-funding-locked.mjs`). A bank answer recorded after that — Approved,
+Denied, a new amount, or "doesn't count" — can leave the bill disagreeing with the rule.
+`src/funding/billed-fee-check.mjs` compares them straight after the answer is saved, and
+**the bill follows the rule** (owner-set 2026-09-18: the fee must follow the real approval).
 
 ```mermaid
 flowchart TD
@@ -165,20 +165,36 @@ flowchart TD
     R -->|No| DONE[Nothing more]
     R -->|Yes| CMP{Bill amount equals<br/>agreed % x confirmed approvals now?<br/>resolveSuccessFee, src/funding/success-fee.mjs}
     CMP -->|Yes| DONE
-    CMP -->|"No — or nothing confirmed is left"| TASK[Task for the funding advisor<br/>source success-fee-after-bill<br/>bill number, billed, rule fee now, paid, any overpayment]
-    TASK --> LOCK[The bill itself is NOT changed<br/>locked once sent — invoices_guard, 031<br/>nothing is sent to the client]
+    CMP -->|"No — nothing confirmed is left"| TASK[Bill left as it is — no $0 fee<br/>task for the funding advisor<br/>source success-fee-after-bill]
+    CMP -->|"No — the rule has a fee"| RE[One transaction: old bill VOID,<br/>new success-fee bill at the rule fee<br/>same round and sale — followRuleFee]
+    RE --> CARRY[Paid on the old bill carried to the new one, up to the new fee<br/>correction row on old, payment row on new]
+    CARRY --> ST{New bill covered?}
+    ST -->|Yes| PAID[New bill PAID<br/>invoice.voided, invoice.created, invoice.paid<br/>nothing chases it, nothing sent to the client]
+    ST -->|No| SENT[New bill SENT or PARTIALLY PAID<br/>invoice.voided, invoice.created, invoice.sent<br/>collections follow the new bill — ar-collections]
+    PAID --> OVER{Paid more than the new fee?}
+    OVER -->|Yes| OTASK[Task for the funding advisor<br/>overpayment stays on the old bill<br/>refund is an owner decision — no money moves]
+    OVER -->|No| CO
+    OTASK --> CO[Closeout record refreshed from the same rule<br/>createFundingCloseoutSafe]
+    SENT --> CO
+    RE -.->|reissue fails| TASK
 ```
 
-* **The answer is always saved first.** A fault in the comparison is logged
+* **The answer is always saved first.** A fault in the comparison or the reissue is logged
   (`[billed-fee-check]`) and never turns the button press into an error.
-* **One task per state.** Pressing the same answer twice does not stack a second task.
+* **One reissue per bill.** The new bill's key names the old one, so pressing the same answer
+  twice, or two presses at once, cannot reissue twice; the second press finds the new bill
+  already matches.
+* **A void bill owes nothing on screen.** The control panel blockers, the Finance page and the
+  list signals read a void or written-off bill as $0 owed (`CLIENT_INVOICES_SQL`,
+  `BALANCES_SQL`), so the old bill does not show as a balance outstanding.
 * **Alt-fin rounds are skipped**, the same scope as the funded guard: that rail bills off the
   Lendflow figure on the event, not per-bank rows.
 
 Measured on live 2026-09-18, Sim Eight-Funding round 2: the bill billed 10% of $25,000
 (Arizona Bank & Trust, Approved when the round was funded). Arizona was moved to Denied
 thirty minutes later and Native American Bank was recorded Approved at $10,000. The rule says
-$1,000; the $2,500 bill stood, was later paid by a sim receipt, and no person was told.
+$1,000; the $2,500 bill stood and was later paid by a sim receipt. Corrected 2026-09-18 by
+running this path on that one test client.
 
 ---
 
