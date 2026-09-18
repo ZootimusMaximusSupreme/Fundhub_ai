@@ -50,27 +50,39 @@ test("parseSloCheckoutBody needs a real email", () => {
   assert.equal(ok.name, "Pat Lee");
 });
 
+function sloDeps(over = {}) {
+  const links = [];
+  return {
+    env: LIVE_ENV,
+    orgId: "org-1",
+    db: { query() { throw new Error("slo checkout must not query through the runner"); } },
+    resolveBuyer: async () => "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    ensureAccount: async () => "acct-1",
+    resolveProduct: async () => "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    recordLink: async (_db, row) => { links.push(row); return { id: "pl-1" }; },
+    stampSlo: async () => {},
+    emit: async () => ({ id: "evt-1" }),
+    checkoutConfig: () => ({ ok: true }),
+    links,
+    ...over
+  };
+}
+
 test("runSloCheckout mints Assessment at $297 and sends them to the pull form", async () => {
   const sent = [];
   const events = [];
-  const out = await runSloCheckout(
-    { email: "buyer@example.com", name: "Pat Lee" },
-    {
-      env: LIVE_ENV,
-      orgId: "org-1",
-      ref: "slo_test_ref_1",
-      db: { query() { throw new Error("slo checkout must not query through the runner"); } },
-      emit(_db, name, payload) {
-        events.push({ name, payload });
-        return { id: "evt-1" };
-      },
-      checkoutConfig: () => ({ ok: true }),
-      createCheckoutSession: async (opts) => {
-        sent.push(opts);
-        return { ok: true, paymentLink: "https://pay.example.test/slo" };
-      }
+  const deps = sloDeps({
+    ref: "slo_test_ref_1",
+    emit(_db, name, payload) {
+      events.push({ name, payload });
+      return { id: "evt-1" };
+    },
+    createCheckoutSession: async (opts) => {
+      sent.push(opts);
+      return { ok: true, paymentLink: "https://pay.example.test/slo", productId: "cs_slo_1" };
     }
-  );
+  });
+  const out = await runSloCheckout({ email: "buyer@example.com", name: "Pat Lee" }, deps);
 
   assert.equal(out.ok, true);
   assert.equal(out.checkoutUrl, "https://pay.example.test/slo");
@@ -83,24 +95,36 @@ test("runSloCheckout mints Assessment at $297 and sends them to the pull form", 
   assert.equal(sent[0].successUrl, "https://fundhub.ai/slo/pull.html");
   assert.equal(sent[0].metadata.source, SLO_SOURCE);
   assert.equal(sent[0].metadata.link_ref, "slo_test_ref_1");
+  assert.equal(sent[0].metadata.client_id, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   assert.equal(events[0].name, "slo.checkout_started");
   assert.equal(events[0].payload.email, "buyer@example.com");
+  assert.equal(deps.links[0].ref, "slo_test_ref_1");
+  assert.equal(deps.links[0].clientId, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  assert.equal(deps.links[0].commasSessionId, "cs_slo_1");
+});
+
+test("runSloCheckout writes a diagnostic payment link so the UnderwriteIQ pull fires", async () => {
+  const deps = sloDeps({
+    ref: "slo_wire_1",
+    createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo" })
+  });
+  const out = await runSloCheckout({ email: "buyer@example.com", name: "Pat Lee" }, deps);
+  assert.equal(out.ok, true);
+  assert.equal(deps.links.length, 1);
+  assert.equal(deps.links[0].amountCents, 29700);
+  assert.equal(deps.links[0].ref, "slo_wire_1");
 });
 
 test("runSloCheckout does not mint a new catalog title", async () => {
   let title = null;
   await runSloCheckout(
     { email: "buyer@example.com", name: null },
-    {
-      env: LIVE_ENV,
-      orgId: "org-1",
-      emit: async () => ({ id: "evt-1" }),
-      checkoutConfig: () => ({ ok: true }),
+    sloDeps({
       createCheckoutSession: async (opts) => {
         title = opts.productTitle;
         return { ok: true, paymentLink: "https://pay.example.test/slo" };
       }
-    }
+    })
   );
   assert.equal(title, "Consulting Services Assessment");
   assert.equal(/slo|diagnostic pack|funding diagnostic/i.test(title), false);

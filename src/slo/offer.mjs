@@ -15,6 +15,13 @@ export const SLO_KEEP_TITLE = "Consulting Services Assessment";
 
 export const SLO_SOURCE = "slo";
 
+/* purpose + products.code the Commas webhook already knows. That is what
+   fires diagnostic.paid → C-00 (the pull) → analysis.completed (the pack).
+   Do not guess this offer by dollar amount. */
+export const SLO_PURPOSE = "diagnostic";
+
+export const SLO_PRODUCT_CODE = "diagnostic";
+
 export const SLO_PULL_PATH = "/slo/pull.html";
 
 export const SLO_BOOK_URL = "https://apply.fundhub.ai/schedule/phonecall";

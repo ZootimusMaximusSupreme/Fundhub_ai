@@ -70,6 +70,7 @@ import { s06PostCallFundingPurchased } from './s-06-post-call-funding-purchased.
 import { sDocCollection } from './s-doc-collection.mjs';
 import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mjs';
 import { sOfferBucket } from './s-offer-bucket.mjs';
+import { sloPackDelivery } from './slo-pack-delivery.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
 import { sys01LtvCalculator } from './sys-01-ltv-calculator.mjs';
 import { u02AnalyzerCompleteDelivery } from './u-02-analyzer-complete-delivery.mjs';
@@ -358,6 +359,7 @@ export const functions = [
   sDocCollection,
   s08PostCallFundingDeclined,
   sOfferBucket,
+  sloPackDelivery,
   sys01ClientValueCalculator,
   sys01LtvCalculator,
   u02AnalyzerCompleteDelivery,

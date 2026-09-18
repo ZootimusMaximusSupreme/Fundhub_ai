@@ -6,20 +6,26 @@ Generated from the code in this worktree. Not from the spec.
 
 ```mermaid
 flowchart TD
-  A["GET /api/public/slo-checkout"] --> B["Price $297, next /slo/pull.html, checkout ready"]
-  C["POST /api/public/slo-checkout email"] --> D["emit slo.checkout_started"]
-  D --> E["createCheckoutSession $297 Assessment"]
-  E --> F["success_url = /slo/pull.html + ref"]
-  F --> G["Return checkoutUrl"]
+  A["GET /api/public/slo-checkout"] --> B["Price $297, next /slo/pull.html"]
+  C["POST email"] --> D["Find or create client + portal account"]
+  D --> E["Mint Commas $297 Assessment"]
+  E --> F["payment_links purpose=diagnostic"]
+  F --> G["success_url = /slo/pull.html"]
+  H["Commas paid webhook"] --> I["diagnostic.paid"]
+  I --> J["C-00 CRS pull — needs identity + consent"]
+  J --> K["analysis.completed"]
+  K --> L["slo-pack-delivery"]
+  L --> M["Funding letter pack + EMAIL-U02-ANALYZER-FUNDING-DELIVERY"]
 ```
 
 ## Traced paths
 
-- `src/slo/offer.mjs` — $297, keep title Consulting Services Assessment, pull path `/slo/pull.html`.
-- `api/public/slo-checkout.mjs` — public GET/POST. No auth. Records the ask, then mints. Success URL is the pull form, not `/app/payment-success.html`.
-- `netlify/functions/api.mjs` — `public/slo-checkout`.
-- `src/pulse/registry.mjs` — same key, same change.
+- `api/public/slo-checkout.mjs` — mint + write a diagnostic payment link so the existing Commas adapter emits `diagnostic.paid`.
+- `src/slo/buyer.mjs` — client, portal account, `slo_ref` stamp.
+- `src/slo/deliver.mjs` — same UnderwriteIQ funding pack and email the closer deck uses.
+- `src/workflows/slo-pack-delivery.mjs` — on `analysis.completed`, only if `slo_ref` is on the client.
+- C-00 / C-06 / U-03 / U-04 are unchanged. ClickFunnels adapter is unchanged.
 
 ## Not in this code
 
-The sales/pay/pull HTML. Identity submit. CRS pull after this pay. Pack build. Book widget. ClickFunnels paste.
+The sales/pay/pull HTML (Claude Code). Identity submit on `/slo/pull.html`. ClickFunnels paste. The live `/watch` funnel.

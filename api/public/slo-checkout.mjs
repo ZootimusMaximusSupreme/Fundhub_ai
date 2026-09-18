@@ -26,6 +26,13 @@ import {
   SLO_SOURCE,
   sloPullSuccessUrl
 } from "../../src/slo/offer.mjs";
+import {
+  ensureSloAccount,
+  recordSloPaymentLink,
+  resolveDiagnosticProductId,
+  resolveSloBuyer,
+  stampSloRef
+} from "../../src/slo/buyer.mjs";
 
 function readBody(req) {
   if (req?.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -86,6 +93,16 @@ export async function runSloCheckout(parsed, deps = {}) {
   const orgId = deps.orgId || (await resolveDefaultOrg(dbh));
   const successUrl = (deps.successUrl || sloPullSuccessUrl)(env);
 
+  const clientId = await (deps.resolveBuyer || resolveSloBuyer)(dbh, {
+    orgId, email: parsed.email, name: parsed.name
+  });
+  if (!clientId) return { ok: false, error: "buyer_missing" };
+
+  await (deps.ensureAccount || ensureSloAccount)(dbh, {
+    orgId, clientId, email: parsed.email, name: parsed.name
+  });
+  const productId = await (deps.resolveProduct || resolveDiagnosticProductId)(dbh, orgId);
+
   await (deps.emit || emit)(
     dbh,
     "slo.checkout_started",
@@ -96,13 +113,15 @@ export async function runSloCheckout(parsed, deps = {}) {
       currency: "USD",
       email: parsed.email,
       name: parsed.name,
+      client_id: clientId,
       occurredAt: new Date().toISOString()
     },
-    { orgId, allowNonCanonical: true, idempotencyKey: `slo-checkout:${ref}` }
+    { orgId, clientId, allowNonCanonical: true, idempotencyKey: `slo-checkout:${ref}` }
   );
 
   const metadata = {
     link_ref: ref,
+    client_id: clientId,
     source: SLO_SOURCE
   };
 
@@ -120,9 +139,18 @@ export async function runSloCheckout(parsed, deps = {}) {
     return { ok: false, error: "checkout_failed", ref };
   }
 
+  const checkoutUrl = String(minted.paymentLink);
+  const commasSessionId = minted.productId != null
+    ? String(minted.productId)
+    : (minted.checkoutSessionId != null ? String(minted.checkoutSessionId) : null);
+  await (deps.recordLink || recordSloPaymentLink)(dbh, {
+    orgId, clientId, productId, ref, checkoutUrl, amountCents, commasSessionId
+  });
+  await (deps.stampSlo || stampSloRef)(dbh, clientId, ref);
+
   return {
     ok: true,
-    checkoutUrl: String(minted.paymentLink),
+    checkoutUrl,
     ref,
     priceCents: amountCents,
     next: SLO_PULL_PATH
