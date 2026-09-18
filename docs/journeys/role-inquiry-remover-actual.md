@@ -34,7 +34,7 @@ flowchart TD
     CAN --> A_hiring[Hiring — 1 route]
     CAN --> A_ops[ops — 1 route]
     CAN --> A_public[public — 11 routes]
-    CAN --> A_read[Reading data — 50 routes]
+    CAN --> A_read[Reading data — 49 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_scripts[scripts — 2 routes]
     CAN --> A_social[social — 4 routes]
@@ -42,7 +42,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 26 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 89 routes]
+    WHO -->|Yes| CANT[Blocked — 90 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 6 blocked]
     CANT --> B_banking[banking — 2 blocked]
@@ -63,7 +63,7 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_push[push — 3 blocked]
-    CANT --> B_read[Reading data — 16 blocked]
+    CANT --> B_read[Reading data — 17 blocked]
     CANT --> B_social[social — 3 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 17 blocked]
@@ -72,7 +72,7 @@ flowchart TD
 
 ## What they can reach
 
-**154 of 243 routes.**
+**153 of 243 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -197,7 +197,6 @@ flowchart TD
 | `/api/read/message-templates` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/messages` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/money-map` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
-| `/api/read/my-numbers` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/partner-home-tiles` | GET | partner, staff |
 | `/api/read/partner-production` | GET | partner, staff |
 | `/api/read/partner-training` | GET | partner, staff |
@@ -240,7 +239,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**89 of 243 routes.**
+**90 of 243 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -317,6 +316,7 @@ flowchart TD
 | `/api/read/invoices` | GET | owner, admin, sales_manager |
 | `/api/read/lender-observations` | GET | owner, admin, funding_advisor |
 | `/api/read/lenders` | GET | owner, admin, funding_advisor |
+| `/api/read/my-numbers` | GET | owner, admin, closer, sales_manager |
 | `/api/read/ops-pulse` | GET | owner, admin |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
