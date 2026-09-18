@@ -1,6 +1,7 @@
 // Hole 18 reviewer — look-only screen pass on live. Signs in with the real password form,
 // then opens Combo's client portal and the Funding: Card Stacking board. Blocks every
-// non-GET request except the sign-in POST. Draws red numbered boxes + legend, saves shots.
+// non-GET request except the sign-in POST. Masks phones/emails in the headless page before
+// each shot, draws red numbered boxes + a legend, and saves the shots.
 // Usage: node --env-file=<.env> r18-screen.mjs <lookN>
 import { chromium } from "playwright";
 import { mkdirSync, writeFileSync } from "node:fs";
@@ -29,32 +30,50 @@ page.on("response", (res) => { try { const u = new URL(res.url()); if (u.hostnam
 await page.goto(`${BASE}/login.html`, { waitUntil: "domcontentloaded" });
 await page.fill("#email", "chris@fundhub.ai");
 await page.fill("#pw", pw);
-await Promise.all([page.waitForLoadState("domcontentloaded").catch(() => {}), page.click("#go")]);
-await page.waitForTimeout(4000);
-const afterLogin = page.url();
-const signedIn = !/login\.html/.test(afterLogin);
-console.log("sign-in:", signedIn ? "ok" : "FAILED", "landed on", new URL(afterLogin).pathname);
+await page.click("#go");
+await page.waitForTimeout(5000);
+const signedIn = !/login\.html/.test(page.url());
+console.log("sign-in:", signedIn ? "ok" : "FAILED", "landed on", new URL(page.url()).pathname);
+if (!signedIn) { await browser.close(); process.exit(2); }
 
+// Hide phones and emails in the headless page only (nothing is sent anywhere).
+async function maskPage() {
+  await page.evaluate(() => {
+    const w = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    const em = /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]*…?\.{0,3}$/g;
+    const ph = /\+?\d[\d\s().-]{8,}\d/g;
+    let n; while ((n = w.nextNode())) {
+      const t = n.nodeValue; if (!t) continue;
+      let v = t.replace(em, "[email hidden]").replace(ph, "[phone hidden]");
+      if (/^\s*[A-Za-z0-9._%+-]+\+sim[^\s]*/.test(v)) v = "[email hidden]";
+      if (v !== t) n.nodeValue = v;
+    }
+  });
+}
+
+// Rects are viewport coords; boxes are position:fixed so inner scroll areas do not matter.
 async function mark(boxes, legendTitle) {
-  // boxes: [{n, rect:{x,y,w,h}, caption}] in page coords
   await page.evaluate(({ boxes, legendTitle }) => {
     document.querySelectorAll(".r18-mark").forEach((e) => e.remove());
     for (const b of boxes) {
       if (!b.rect) continue;
       const d = document.createElement("div"); d.className = "r18-mark";
-      Object.assign(d.style, { position: "absolute", left: b.rect.x - 4 + "px", top: b.rect.y - 4 + "px", width: b.rect.w + 8 + "px", height: b.rect.h + 8 + "px", border: "3px solid #e00000", zIndex: 2147483646, pointerEvents: "none", boxSizing: "border-box" });
+      Object.assign(d.style, { position: "fixed", left: b.rect.x - 4 + "px", top: b.rect.y - 4 + "px", width: b.rect.w + 8 + "px", height: b.rect.h + 8 + "px", border: "3px solid #e00000", zIndex: 2147483646, pointerEvents: "none", boxSizing: "border-box" });
       const t = document.createElement("div");
       Object.assign(t.style, { position: "absolute", left: "-3px", top: "-26px", background: "#e00000", color: "#fff", font: "bold 15px/22px Arial", padding: "0 8px", borderRadius: "3px" });
       t.textContent = String(b.n); d.appendChild(t); document.body.appendChild(d);
     }
     const lg = document.createElement("div"); lg.className = "r18-mark";
-    Object.assign(lg.style, { position: "fixed", right: "12px", bottom: "12px", maxWidth: "560px", background: "#fff", color: "#111", border: "3px solid #e00000", font: "14px/20px Arial", padding: "8px 12px", zIndex: 2147483647, boxShadow: "0 2px 8px rgba(0,0,0,.3)" });
+    Object.assign(lg.style, { position: "fixed", right: "12px", bottom: "12px", maxWidth: "600px", background: "#fff", color: "#111", border: "3px solid #e00000", font: "14px/20px Arial", padding: "8px 12px", zIndex: 2147483647, boxShadow: "0 2px 8px rgba(0,0,0,.3)" });
     lg.innerHTML = `<b>${legendTitle}</b><br>` + boxes.map((b) => `<b style="color:#e00000">${b.n}</b> ${b.caption}${b.rect ? "" : " <i>(not found on screen)</i>"}`).join("<br>");
     document.body.appendChild(lg);
   }, { boxes, legendTitle });
 }
 
-// Find the smallest visible element whose text matches a regex; return page-coord rect.
+async function rectOf(selector) {
+  return page.evaluate((sel) => { const el = document.querySelector(sel); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height, text: (el.innerText || "").trim().slice(0, 200) }; }, selector);
+}
+// Smallest visible element whose text matches the regex.
 async function findRect(reSrc, flags = "i", within = null) {
   return page.evaluate(({ reSrc, flags, within }) => {
     const re = new RegExp(reSrc, flags);
@@ -68,7 +87,7 @@ async function findRect(reSrc, flags = "i", within = null) {
       const r = el.getBoundingClientRect();
       if (r.width < 2 || r.height < 2) continue;
       const st = getComputedStyle(el); if (st.visibility === "hidden" || st.display === "none") continue;
-      if (!best || r.width * r.height < best.a) best = { a: r.width * r.height, x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height, text: txt.slice(0, 160) };
+      if (!best || r.width * r.height < best.a) best = { a: r.width * r.height, x: r.left, y: r.top, w: r.width, h: r.height, text: txt.slice(0, 200) };
     }
     return best;
   }, { reSrc, flags, within });
@@ -76,64 +95,69 @@ async function findRect(reSrc, flags = "i", within = null) {
 
 const result = { look: LOOK, at: new Date().toISOString(), signedIn, portal: null, board: null };
 
-// ---------- Combo's client portal ----------
+// ---------- Combo's client portal (tall viewport so the whole page fits) ----------
+await page.setViewportSize({ width: 1440, height: 3600 });
 await page.goto(`${BASE}/app/client-portal.html?id=${COMBO}`, { waitUntil: "domcontentloaded" });
-await page.waitForTimeout(7000);
+await page.waitForTimeout(8000);
+await page.click("#acct > summary").catch((e) => console.log("drawer click failed", e.message)); // local toggle only
+await page.waitForTimeout(2500);
+await page.evaluate(() => { const m = document.querySelector("main"); if (m) m.scrollTop = 0; });
+await page.waitForTimeout(500);
 const portalText = await page.evaluate(() => document.body.innerText.replace(/\s+/g, " ").trim());
 writeFileSync(`${OUT}/${LOOK}-portal-text.txt`, mask(portalText));
-// Open the "Account & history" drawer (a local toggle; Payments tab is the default pane).
-await page.click("#acct > summary").catch((e) => console.log("drawer click failed", e.message));
-await page.waitForTimeout(2500);
 const payText = await page.evaluate(() => { const el = document.querySelector("#tp-pay"); return el ? el.innerText.replace(/\s+/g, " ").trim() : null; });
-const payRect = await page.evaluate(() => { const el = document.querySelector("#tp-pay"); if (!el) return null; const r = el.getBoundingClientRect(); return { x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height }; });
-const pNeedles = {
+await maskPage();
+const pN = {
   name: await findRect("^Sim Combo-20260918$"),
   status: await findRect("CURRENT STATUS[\\s\\S]*round", "i"),
   funding: await findRect("Funding, done-for-you[\\s\\S]*Included", "i"),
-  paid3000: await findRect("\\$3,000", "", "#tp-pay"),
+  paid: await findRect("Card Stacking DFY[\\s\\S]*3,?000\\.00[\\s\\S]*succeeded", "i", "#tp-pay"),
+  payPane: await rectOf("#tp-pay"),
 };
 result.portal = {
-  url: page.url().replace(BASE, ""), title: await page.title(),
-  has3000: /\$3,000/.test(portalText + " " + (payText || "")), paymentsPane: payText ? mask(payText).slice(0, 600) : null,
-  snippets: Object.fromEntries(Object.entries(pNeedles).map(([k, v]) => [k, v ? mask(v.text) : null])),
+  url: page.url().replace(BASE, ""),
+  paymentsPane: payText ? mask(payText).slice(0, 600) : null,
+  has3000Paid: /3,?000\.00\s*succeeded/i.test(payText || ""),
+  statusCard: pN.status ? mask(pN.status.text) : null,
+  fundingCard: pN.funding ? mask(pN.funding.text) : null,
+  mentionsPendingOrUnpaid: /\bpending\b|unpaid|not paid|awaiting payment/i.test(portalText + " " + (payText || "")),
+  mentionsPayLink: /pay(ment)? link|pay now/i.test(portalText),
 };
-await page.screenshot({ path: `${OUT}/${LOOK}-portal-raw.png`, fullPage: true });
-const pBoxes = [
-  { n: 1, rect: pNeedles.name, caption: "Client on screen is Sim Combo-20260918." },
-  { n: 2, rect: pNeedles.status, caption: "Current status: funding file open, round moving." },
-  { n: 3, rect: pNeedles.funding, caption: "Funding, done-for-you now reads Included — you own this." },
-  { n: 4, rect: pNeedles.paid3000 || payRect, caption: pNeedles.paid3000 ? "Payments tab: the $3,000 payment." : "Payments tab: no $3,000 line found." },
-];
-await mark(pBoxes, `Hole 18 review ${LOOK} — Combo client portal (staff view)`);
-await page.screenshot({ path: `${OUT}/${LOOK}-portal-marked.png`, fullPage: true });
+await mark([
+  { n: 1, rect: pN.name, caption: "Client on screen is Sim Combo-20260918." },
+  { n: 2, rect: pN.status, caption: "Current status: funding file is open, round will move." },
+  { n: 3, rect: pN.funding, caption: "Funding, done-for-you reads Included — you own this." },
+  { n: 4, rect: pN.paid || pN.payPane, caption: pN.paid ? "Payments: Card Stacking DFY 3000.00 succeeded." : "Payments: no $3,000 line found." },
+], `Hole 18 review ${LOOK} (${result.at.slice(11, 19)} UTC) — Combo client portal, staff view`);
+await page.screenshot({ path: `${OUT}/${LOOK}-portal-marked.png` });
 
 // ---------- Funding board (Pipeline, R-02 Funding: Card Stacking) ----------
+await page.setViewportSize({ width: 1440, height: 1000 });
 await page.goto(`${BASE}/app/pipeline.html`, { waitUntil: "domcontentloaded" });
 await page.waitForTimeout(5000);
-await page.click('.rail-tab[data-rail="R-02"]').catch((e) => console.log("rail click failed", e.message));
+await page.click('.rail-tab[data-rail="R-02"]').catch((e) => console.log("rail click failed", e.message)); // switches board view (GET only)
 await page.waitForTimeout(6000);
-const tab = await findRect("Funding: Card Stacking", "i", ".railbar");
-const card = await page.evaluate(() => {
-  const els = [...document.querySelectorAll(".board *")].filter((el) => /Combo/i.test(el.innerText || ""));
-  let best = null;
-  for (const el of els) { const r = el.getBoundingClientRect(); if (r.width < 40 || r.height < 20) continue; if (!best || r.width * r.height < best.a) best = { a: r.width * r.height, x: r.left + scrollX, y: r.top + scrollY, w: r.width, h: r.height, text: (el.innerText || "").trim().slice(0, 200) }; }
-  // column the card sits in
-  let col = null;
-  if (best) { const el = els.find((e) => (e.innerText || "").trim().slice(0, 200) === best.text); const c = el && el.closest(".col, .column, [data-stage-key], [data-stage]"); if (c) { const h = c.querySelector("h2,h3,h4,.col-h,.col-title,header"); col = (h ? h.innerText : c.getAttribute("data-stage-key") || "").trim().slice(0, 80); } }
-  return best ? { ...best, col } : null;
-});
-const colRect = card && card.col ? await findRect(card.col.split("\n")[0].replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i", ".board") : null;
 const boardText = await page.evaluate(() => (document.querySelector(".board") || document.body).innerText.replace(/\s+/g, " ").trim());
 writeFileSync(`${OUT}/${LOOK}-board-text.txt`, mask(boardText));
-result.board = { activeTab: tab ? tab.text : null, comboCard: card ? mask(card.text) : null, column: card ? card.col : null, boardHasCombo: /Combo/i.test(boardText) };
-if (card) await page.evaluate(({ y }) => window.scrollTo(0, Math.max(0, y - 300)), { y: card.y });
-await page.screenshot({ path: `${OUT}/${LOOK}-board-raw.png`, fullPage: true });
+const cardInfo = await page.evaluate(() => {
+  const card = [...document.querySelectorAll(".board .card")].find((el) => /Combo-20260918/.test(el.innerText || ""));
+  if (!card) return null;
+  card.scrollIntoView({ block: "center" });
+  const col = card.closest("section.col");
+  return { text: (card.innerText || "").trim().slice(0, 300), colName: col ? (col.querySelector(".col-name") || {}).innerText : null, colKey: col ? col.dataset.stageKey : null };
+});
+await page.waitForTimeout(500);
+await maskPage();
+const tabR = await rectOf('.rail-tab[data-rail="R-02"]');
+const cardR = await page.evaluate(() => { const c = [...document.querySelectorAll(".board .card")].find((el) => /Combo-20260918/.test(el.innerText || "")); if (!c) return null; const r = c.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+const colR = await page.evaluate(() => { const c = [...document.querySelectorAll(".board .card")].find((el) => /Combo-20260918/.test(el.innerText || "")); const h = c && c.closest("section.col") && c.closest("section.col").querySelector(".col-head"); if (!h) return null; const r = h.getBoundingClientRect(); return { x: r.left, y: r.top, w: r.width, h: r.height }; });
+result.board = { activeTabActive: await page.evaluate(() => { const t = document.querySelector('.rail-tab[data-rail="R-02"]'); return !!(t && t.classList.contains("active")); }), comboCard: cardInfo ? mask(cardInfo.text) : null, column: cardInfo ? `${cardInfo.colName} (${cardInfo.colKey})` : null };
 await mark([
-  { n: 1, rect: tab, caption: "Board shown is R-02 Funding: Card Stacking." },
-  { n: 2, rect: colRect, caption: `Column the Combo card sits in${card && card.col ? `: ${card.col.split("\n")[0]}` : ""}.` },
-  { n: 3, rect: card, caption: card ? "Sim Combo-20260918 card is on the funding board." : "No Combo card found on the funding board." },
-], `Hole 18 review ${LOOK} — Funding board`);
-await page.screenshot({ path: `${OUT}/${LOOK}-board-marked.png`, fullPage: true });
+  { n: 1, rect: tabR, caption: "Board shown is R-02 Funding: Card Stacking." },
+  { n: 2, rect: colR, caption: `Column: ${cardInfo ? cardInfo.colName : "?"}.` },
+  { n: 3, rect: cardR, caption: cardR ? "Sim Combo-20260918 card is on the funding board." : "No Combo card on the funding board." },
+], `Hole 18 review ${LOOK} (${new Date().toISOString().slice(11, 19)} UTC) — Funding board`);
+await page.screenshot({ path: `${OUT}/${LOOK}-board-marked.png` });
 
 result.blockedRequests = [...new Set(blocked)];
 result.apiSeen = [...new Set(apiSeen)];
