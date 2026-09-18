@@ -1,6 +1,5 @@
 // In-repo Underwrite IQ pack. Letters from letter-generator. Analysis docs
-// from the WeasyPrint black-report printer (credit analysis, roadmap,
-// funding snapshot, lender list) filled from UnderwriteIQ data. No Claude JSON dump.
+// from src/deliverables/ (the gold HTML pages). No Python printer. No Claude JSON dump.
 
 import letterGenMod from "./vendor/letter-generator.cjs";
 import { realConsumerName, NO_CONSUMER_NAME } from "../metro2/letters/consumer-name.mjs";
@@ -10,7 +9,7 @@ import generateDeliverablesMod from "./vendor/generate-deliverables.cjs";
 import { runTierEngineFromCrsResult } from "../finance/crs-tier.mjs";
 import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
 import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
-import { printBlackReports } from "./black-report-pdf.mjs";
+import { renderAllDeliverables } from "../deliverables/index.mjs";
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { resolveBusinessAges } from "./business-funding.mjs";
 import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
@@ -226,15 +225,17 @@ async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generat
   if (!hasBlackReportSource(source)) return { files: [], skip: "no_scores" };
   try {
     const client = buildBlackReportClient({ crsResult: source, personal, business });
-    const printed = await printBlackReports({ client });
-    const files = printed.files || [];
-    // Which printer actually ran, carried out of here on purpose. For six weeks
-    // the WeasyPrint printer was silently replaced by the short pdf-lib one and
-    // nothing recorded it, so nobody could tell a client who got the designed
-    // documents from one who did not. See src/underwrite/black-report-pdf.mjs.
-    const engine = printed.engine || null;
-    const engineReason = printed.engineReason || null;
-    if (!files.length) return { files: [], skip: printed.skip || "render_empty", engine, engineReason };
+    const rendered = renderAllDeliverables({ client });
+    const files = (rendered || []).map((doc) => ({
+      filename: doc.filename,
+      contentType: "text/html",
+      content: Buffer.from(String(doc.html || ""), "utf8"),
+      type: doc.key,
+      engine: "html"
+    })).filter((f) => f.content.length);
+    const engine = "html";
+    const engineReason = "html_pages";
+    if (!files.length) return { files: [], skip: "render_empty", engine, engineReason };
     return { files, skip: null, engine, engineReason };
   } catch (err) {
     return { files: [], skip: String(err && err.message || err).slice(0, 240), engine: null, engineReason: null };

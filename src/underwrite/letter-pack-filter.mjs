@@ -8,6 +8,12 @@ export const FUNDING_ANALYSIS_FILENAMES = {
   funding_snapshot: "Funding-Snapshot.pdf",
   lender_match: "Bank-Lender-Match-List.pdf"
 };
+export const FUNDING_ANALYSIS_HTML_FILENAMES = {
+  credit_analysis: "credit_analysis_report.html",
+  roadmap: "optimization_roadmap.html",
+  funding_snapshot: "funding_snapshot.html",
+  lender_match: "lender_match_list.html"
+};
 export const FUNDING_LETTER_TYPES = new Set(["personal_info", "inquiry_removal"]);
 export const REPAIR_LETTER_TYPES = new Set(["dispute", "personal_info"]);
 
@@ -152,5 +158,8 @@ export function hasFundingAnalysisPdfs(files = []) {
     if (f.docType) types.add(f.docType);
     if (f.filename) names.add(String(f.filename));
   }
-  return FUNDING_DOC_TYPES.every((t) => types.has(t) || names.has(FUNDING_ANALYSIS_FILENAMES[t]));
+  return FUNDING_DOC_TYPES.every((t) =>
+    types.has(t)
+    || names.has(FUNDING_ANALYSIS_FILENAMES[t])
+    || names.has(FUNDING_ANALYSIS_HTML_FILENAMES[t]));
 }

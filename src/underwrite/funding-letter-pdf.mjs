@@ -223,6 +223,14 @@ function fileLabel(file) {
   return String(file?.filename || file?.name || file?.path || "").trim() || "<unnamed>";
 }
 
+function analysisMime(file) {
+  const ct = String(file?.contentType || "").toLowerCase();
+  if (ct.includes("html")) return "text/html";
+  const name = String(file?.filename || file?.name || "").toLowerCase();
+  if (name.endsWith(".html")) return "text/html";
+  return "application/pdf";
+}
+
 /**
  * Which deliberate-exclusion bucket this file falls in, or null if the saver is
  * supposed to be interested in it. Never returns a bucket for a file the saver
@@ -389,7 +397,7 @@ export async function persistFundingLetterFiles(db, store, {
       subtype,
       title: ANALYSIS_TITLES[analysisType],
       body,
-      mimeType: "application/pdf",
+      mimeType: analysisMime(file),
       filename: file.filename || file.name || `${analysisType}.pdf`,
       generatedBy,
       sourceEventId: sourceEventId ? `${sourceEventId}:${subtype}` : null,

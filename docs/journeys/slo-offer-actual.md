@@ -24,14 +24,14 @@ flowchart TD
   I --> J["C-00 CRS pull — needs identity + consent"]
   J --> K["analysis.completed"]
   K --> L["slo-pack-delivery"]
-  L --> M["Funding letter pack + EMAIL-U02-ANALYZER-FUNDING-DELIVERY"]
+  L --> M["Gold HTML pack saved + EMAIL-U02-ANALYZER-FUNDING-DELIVERY"]
 ```
 
 ## Traced paths
 
 - `api/public/slo-checkout.mjs` — mint + write a diagnostic payment link so the existing Commas adapter emits `diagnostic.paid`.
 - `src/slo/buyer.mjs` — client, portal account, `slo_ref` stamp.
-- `src/slo/deliver.mjs` — same UnderwriteIQ funding pack and email the closer deck uses.
+- `src/slo/deliver.mjs` — same UnderwriteIQ funding pack and email the closer deck uses. The four analysis docs are the gold HTML pages (`src/deliverables/`), not the short PDFs.
 - `src/workflows/slo-pack-delivery.mjs` — on `analysis.completed`, only if `slo_ref` is on the client.
 - C-00 / C-06 / U-03 / U-04 are unchanged. ClickFunnels adapter is unchanged.
 - `public/slo/index.html` — sales copy verbatim from `clickfunnels-fragments/slo/slo-01-sales.html`. Every

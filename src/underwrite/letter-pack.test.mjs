@@ -223,6 +223,10 @@ test("a stored pull WITH result.bureaus builds real letters through the tier eng
     const buf = Buffer.isBuffer(f.content) ? f.content : Buffer.from(f.content);
     assert.equal(buf.subarray(0, 4).toString(), "%PDF");
   }
+  const html = out.files.filter((f) => f.contentType === "text/html");
+  assert.equal(html.length, 4, `expected four HTML pages, got ${html.map((f) => f.filename)}`);
+  assert.equal(out.deliverableEngine, "html");
+  assert.ok(html.every((f) => String(f.content).includes("<")));
 });
 
 // The exact failure the demo seed hit: crs_results.result had no `bureaus` key,

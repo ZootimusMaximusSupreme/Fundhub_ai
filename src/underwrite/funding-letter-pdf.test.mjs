@@ -118,6 +118,22 @@ describe("F46 — the Capital Readiness Summary reaches the documents table", ()
     assert.equal(row.mime_type, "application/pdf");
   });
 
+  test("the gold HTML analysis pages save as text/html", async () => {
+    const { rows } = await saveAll([
+      {
+        type: "credit_analysis",
+        filename: "credit_analysis_report.html",
+        contentType: "text/html",
+        content: Buffer.from("<html><body>Financial Profile Assessment</body></html>"),
+        engine: "html"
+      }
+    ]);
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].subtype, "credit_analysis_report");
+    assert.equal(rows[0].mime_type, "text/html");
+    assert.equal(rows[0].metadata.engine, "html");
+  });
+
   test("each of the five gets its OWN row — none collapses onto another", async () => {
     const { rows } = await saveAll(PACK_FILES);
     const keys = new Set(rows.map((r) => r.document_key));
