@@ -150,3 +150,25 @@ committing another lane's in-flight, self-declared UNVERIFIED work. Held.
 Also named as broken on the walk and left alone from the start: no picture/video maker switched
 on, house partner has no Meta ad account, YouTube not connected, `docs/ads/scripts/` holds only a
 README. 21 of 24 ads untitled is not a defect (CLAUDE.md §3c — ads are identified by id).
+
+## Multiple funnels — measured 2026-09-17, waiting on Chris
+
+Chris asked: how do we account for multiple funnels? If we don't, add it.
+
+**Answer: partly.** Measured, not assumed:
+
+- **Video views** (`vsl_watch_sessions`, `db/migrations/379_vsl_watch.sql`) record which
+  **video** (`video_key`) and which **page** (`page_url`), plus the ad number. So two
+  funnels on two different pages *can* be told apart — but only by raw web address. There
+  is **no funnel name** on a view, and **no partner** on it at all.
+- **Leads** carry the page they landed on (`landing_path`,
+  `db/migrations/286_client_ad_attribution.sql`) and two old free-text fields,
+  `cf_funnel_family` and `cf_funnel_version` (`db/schema/005_client_custom_fields.sql`).
+- **Partner sites** (`/sites/*`, `netlify/functions/partner-site.mjs`) have funnel
+  templates — apply, diag, edu, aff, book (`db/migrations/135_partner_pages.sql`) — but
+  **no videos**. So there is nothing for the view counter to count on a partner site today.
+
+The obvious build is a funnel name on every counted view, sent by the page. It should land
+**before** Chris does the ClickFunnels paste, so he pastes the new version once and never
+twice. Not started: CLAUDE.md §3a says ask what a funnel means before touching the schema,
+and "funnel" here could mean several things.
