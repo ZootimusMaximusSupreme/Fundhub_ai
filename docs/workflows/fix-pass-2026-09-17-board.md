@@ -439,3 +439,30 @@ To run the database tests without `npm test` cutting them off, run the 199
 `*.pg.test.mjs` files directly with `node --test --test-concurrency=1`. One at a
 time matters — they share tables and tread on each other otherwise.
 
+
+---
+
+## Owner decision — paying creates the checklist (owner-set 2026-09-17)
+
+Chris, asked whether a paid Capital Blueprint should create the client's waypoint checklist:
+
+> "I think paying for the blueprint should create the client checklist. In my opinion, once you've paid for
+> it, the payment process generates waypoints — essentially step-by-step instructions like 'do this, do this,
+> do this.' It's a process where clients check things off before moving forward. Otherwise, they'll get
+> overwhelmed. We'll refine this as time goes on."
+
+**Decided: yes.** Payment creates the checklist. The reason he gave is the part to keep: the checklist exists
+so a client is not overwhelmed — it is a sequencing tool, one step at a time, not a progress bar.
+
+Why the question arose: `seedClientWaypoints` had exactly one caller in the whole product,
+`src/repair/enroll.mjs:166`, so only a repair enrolment ever produced a checklist. Measured on production
+2026-09-17: only 3 clients had any waypoints at all, all 3 repair. Sim Eleven-Blueprint had paid $5,000 and
+had none, and nothing would ever have created them.
+
+**"We'll refine this as time goes on" is part of the decision.** Do not gold-plate this, do not build
+configuration for products nobody has asked about, and do not treat the current task list as final. Extending
+it to another product later is expected.
+
+Standing rule this does NOT change: a card with no reported limit still gets NO waypoint
+(`src/waypoints/definitions.mjs`). A thin credit file means FEWER steps, never invented ones.
+
