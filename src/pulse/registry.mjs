@@ -187,6 +187,10 @@ const API_KEYS = [
   "public/optimize",
   "public/partner-apply",
   "public/partner-page",
+  /* The $297 SLO diagnostic till. A plain GET answers 200 with the price and
+     whether Commas checkout is on, so it is a real uptime door: if this is
+     down the sales page has no price and the pay button cannot mint a link. */
+  "public/slo-checkout",
   "public/survey-submit",
   "public/unsubscribe",
   /* Web push for the client portal. Both answer a plain GET — push/key with the

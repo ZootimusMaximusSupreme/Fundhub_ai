@@ -184,6 +184,7 @@ import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicOptimize from "../../api/public/optimize.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicFunnelCheckout from "../../api/public/funnel-checkout.mjs";
+import publicSloCheckout from "../../api/public/slo-checkout.mjs";
 import trialsEligibility from "../../api/trials/eligibility.mjs";
 import trialsProvision from "../../api/trials/provision.mjs";
 import trialsDashboard from "../../api/trials/dashboard.mjs";
@@ -733,6 +734,9 @@ export const ROUTES = {
      review call, so its CTA stays the application above. No auth: same class
      as public/survey-submit. COMPLIANCE REVIEW REQUIRED — fee timing. */
   "public/funnel-checkout": publicFunnelCheckout,
+  /* The $297 SLO diagnostic. Pay on Commas, then land on /slo/pull.html.
+     No auth — same class as public/optimize. Keep title Assessment. */
+  "public/slo-checkout": publicSloCheckout,
   /* The Live Trial. $297, seven days, docs/specs/W4-live-trial.md.
      eligibility is PUBLIC and runs in front of the pay button — Meta will not
      run a money-related ad from an unverified business, and finding that out
