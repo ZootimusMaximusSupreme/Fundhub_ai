@@ -311,3 +311,23 @@ HARD STOPS
 Claim hole 6 on docs/workflows/live-prove-2026-09-17-notes.md. Talk at 5th grade.
 ```
 
+
+---
+
+## Fix run — 2026-09-17 evening (one Opus session, one workflow)
+
+**Owner-set (Chris, 2026-09-17):**
+- Hole 1: agent figures it out. No question back. No email still holds.
+- Hole 3: agent makes up the real CSM person. No question back.
+- Hole 6: agent does the fix, including a password reset, without asking.
+
+**Plan:** check all six at once (look only) → fix the real ones, each in its own worktree off local `main` → merge into local `main` → one `npm run ship` → prove each on the live site.
+
+| Hole | Status | Owner |
+|---|---|---|
+| 1 Gold HTML pack / #8 UnderwriteIQ / contract placeholder | claimed | fix-run workflow |
+| 2 #11 Metro 2 not built | claimed | fix-run workflow |
+| 3 No real CSM login | claimed | fix-run workflow |
+| 4 /progress.html bounce | claimed | fix-run workflow |
+| 5 #9 CCP empty first paint | claimed | fix-run workflow |
+| 6 chris@fundhub.ai password 401 | claimed | fix-run workflow |
