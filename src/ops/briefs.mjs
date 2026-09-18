@@ -18,9 +18,13 @@ function countLine(label, value, unit) {
 function barLine(bar, seatLabel, unit) {
   if (!bar) return missing(`${seatLabel} bar`);
   const target = bar.target == null ? "target is missing" : `target ${bar.target} ${unit}`;
+  // A funded file can hold several funded rounds. Say rounds as rounds.
+  const rounds = bar.actual != null && bar.rounds != null
+    ? ` (${bar.rounds} funded round${bar.rounds === 1 ? "" : "s"})`
+    : "";
   const actual = bar.actual == null
     ? (bar.missing ? `this month is missing (${bar.missing})` : "this month is missing")
-    : `this month ${bar.actual} ${unit}`;
+    : `this month ${bar.actual} ${unit}${rounds}`;
   return `${seatLabel}: ${target}. ${actual}.`;
 }
 

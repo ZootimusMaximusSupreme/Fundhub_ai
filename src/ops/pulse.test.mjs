@@ -6,6 +6,7 @@ import {
   diagnoseGaps,
   hireProfileFromGaps,
   loadAdSpend,
+  loadBars,
   actOnBrain
 } from "./pulse.mjs";
 import { marketingSnapshot } from "./meta-marketing.mjs";
@@ -20,6 +21,57 @@ describe("funded this month bar", () => {
     assert.match(bar, /status = 'funded'/);
     assert.doesNotMatch(bar, /FROM clients/);
     assert.doesNotMatch(bar, /funded IS TRUE/);
+  });
+
+  // N17 (2026-09-18): live had 3 funded rounds in 2 files this month — two
+  // $25k rounds on #8 and one on Walk1 — and the CEO brief said "3 funded
+  // files". A file counts once however many of its rounds funded.
+  it("counts distinct funded files, and keeps the round count beside it", async () => {
+    const seen = [];
+    const db = {
+      async query(sql) {
+        seen.push(sql);
+        if (/FROM staff_targets/.test(sql)) {
+          return { rows: [{ role: "funding_advisor", metric: "files", target_value: 27 }] };
+        }
+        if (/FROM call_outcomes/.test(sql)) return { rows: [{ n: 0 }] };
+        if (/FROM funding_rounds/.test(sql)) {
+          // What Postgres returns for those three rounds: 3 rows, 2 files.
+          // `n` is what the old count(*) query read.
+          return { rows: [{ n: 3, files: 2, rounds: 3 }] };
+        }
+        throw new Error(`unexpected query: ${sql}`);
+      }
+    };
+    const bars = await loadBars(db, { orgId: "org-1", now: new Date("2026-09-18T19:00:00Z") });
+    assert.equal(bars.funding_advisor.actual, 2, "files, not rounds");
+    assert.equal(bars.funding_advisor.rounds, 3);
+    const fundSql = seen.find((s) => /FROM funding_rounds/.test(s));
+    assert.match(fundSql, /count\(DISTINCT client_id\)/);
+
+    const gaps = diagnoseGaps({
+      bars: { closer: { target: 27, actual: 27 }, funding_advisor: bars.funding_advisor },
+      calendar: { packed: false },
+      company_8: { booked_calls: { value: 1, missing: false } }
+    });
+    assert.match(gaps.notes.join(" "), /funded files this month 2 are under/);
+    assert.doesNotMatch(gaps.notes.join(" "), /funded files this month 3/);
+  });
+
+  it("says missing, not zero, when the funded read fails", async () => {
+    const db = {
+      async query(sql) {
+        if (/FROM staff_targets/.test(sql)) {
+          return { rows: [{ role: "funding_advisor", metric: "files", target_value: 27 }] };
+        }
+        if (/FROM call_outcomes/.test(sql)) return { rows: [{ n: 0 }] };
+        throw new Error("boom");
+      }
+    };
+    const bars = await loadBars(db, { orgId: "org-1", now: new Date("2026-09-18T19:00:00Z") });
+    assert.equal(bars.funding_advisor.actual, null);
+    assert.equal(bars.funding_advisor.rounds, null);
+    assert.equal(bars.funding_advisor.missing, "funded_files_not_available");
   });
 });
 
