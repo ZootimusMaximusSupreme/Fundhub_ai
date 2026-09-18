@@ -579,3 +579,7 @@ header reads "1106 lenders". The cap listed open above is gone on live.
 the bureau extract reads and rewrites. That file still holds the 7 split Elan rows, so a future
 `lenders-import-alec.mjs` run with **no `--file`** would pick `lenders-audited-with-bureaus.csv` by
 default and re-split Elan on live. Named for Chris — not touched in this pass.
+
+## Climate API — CRM lenders — 2026-09-18
+
+**PASS.** Shipped `35273b92`. Live `GET /api/climate`: **1106** lenders (default org, active, no demo). Removed FDIC-50 bank list, `pullFundhub` seeded approval/issuance, per-bank `score`/`internal_outcomes`/`issuance`/`fundamentals`, state `avg_approval_odds`/`issuance_velocity`/`liquidity_score`. National + state macro (FRED/BLS) unchanged.
