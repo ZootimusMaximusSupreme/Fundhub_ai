@@ -1,7 +1,9 @@
 <!-- Hand-authored from the code in src/handlers/doc-check.mjs and
      src/identity/verified.mjs, 2026-09-04. Traced line by line, not from a spec.
      Updated 2026-09-17 with the "the reader had no credit" branch and the retry
-     sweeper (src/workflows/doc-check-retry-sweeper.mjs), traced the same way. -->
+     sweeper (src/workflows/doc-check-retry-sweeper.mjs), traced the same way.
+     Updated 2026-09-18 with the backup reader (readWithBackupReader in
+     src/handlers/doc-check.mjs), traced the same way. -->
 
 # The identity chain — from a photo of an ID to the name on a dispute letter
 
@@ -37,7 +39,11 @@ flowchart TD
     ST -->|live| BY[Load the exact file version's bytes]
     BY -->|no bytes| MISS[agent_runs: document_bytes_missing — stop]
     BY --> MODEL[The agent reads the image]
-    MODEL --> ANS{Did it come back with a verdict?}
+    MODEL --> NC{Did OpenAI say 'no credit'<br/>and is an Anthropic key set?}
+    NC -->|Yes| BACKUP[Backup reader: Anthropic reads<br/>the same file once more]
+    NC -->|No| ANS
+    BACKUP -->|it answered: its answer is used<br/>it failed too: the first answer stands| ANS
+    ANS{Did it come back with a verdict?}
 
     ANS -->|No, and waiting will not help| HAND[Open a task — a person has to read it]
     ANS -->|No, the AI account has no credit<br/>or the vendor was unreachable| QUEUE[Queue it on failed_events,<br/>pending, with a next_attempt_at]
@@ -66,6 +72,7 @@ flowchart TD
 | Rule | Where |
 |---|---|
 | An empty AI account is **not a verdict**. A 429, a vendor 5xx or a call that never landed queues the document for another read; the client's verified identity is left exactly as it was. | `classifyModelFailure` in `src/agents/model.mjs`, `queueReaderRetry` in `src/handlers/doc-check.mjs` |
+| An empty **OpenAI** wallet is not the end of the read. When OpenAI says "no credit" and an Anthropic key is set, the same file is read once more by Anthropic and that verdict routes as usual. The stored OpenAI key is never removed — it is only left out of that one call. If the backup fails too, the document is queued exactly as before. | `readWithBackupReader` in `src/handlers/doc-check.mjs` |
 | A queued document is read again **without anybody doing anything** — no re-upload, no button. Twelve tries, backing off to daily, then it stops and asks a person. | `src/workflows/doc-check-retry-sweeper.mjs` |
 | The retry sweeper claims **only** rows whose handler is `doc-check`. It cannot replay another handler's queued failure. | `due(db, { handler })`, `src/events/dead-letter.mjs` |
 | A document that is still unread **never** gets a stand-in identity — not a placeholder, not a value off the credit report. Late beats wrong. | the `!json` branch, `src/handlers/doc-check.mjs` |
@@ -106,6 +113,20 @@ read after the account has credit finishes the job and the client's record moves
 on by itself. The reason stays on the client's file the whole time — an
 `agent_runs` row saying `openai 429 …` and an open task saying what is being
 waited on.
+
+### The backup reader (2026-09-18)
+
+Measured on live, 2026-09-18 (hole 16): the queue was not enough on its own.
+OpenAI still had no credit, so file #9's ID was never read — no "documents
+approved" text, no "please retake it" text, and the dispute letters could not
+be staged. The Anthropic key production holds was working the whole time, but
+the model call only turns to Anthropic when no OpenAI key is set at all.
+
+Now a "no credit" answer from OpenAI gets one more read of the same file from
+Anthropic, inside the same run. Its verdict routes exactly like any other:
+accept sends the approval, request_more sends the retake text (SMS-DOC-02).
+The agent_runs row says `read by the backup reader (anthropic) because openai
+has no credit`, so it is plain which reader gave the answer.
 
 ## Still open
 

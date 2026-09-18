@@ -414,6 +414,103 @@ test("a 429 never writes an identity — a wrong name is worse than a late one",
   assert.deepEqual(writes, [], "nothing was read, so nothing may be recorded as verified");
 });
 
+/* ── THE BACKUP READER ────────────────────────────────────────────────────
+ *
+ * Measured on live 2026-09-18, hole 16: OpenAI had no credit, the Anthropic key
+ * production holds worked, and the ID still sat unread with no chase text,
+ * because nothing asked the second reader. */
+
+const OPENAI_NO_CREDIT = {
+  mode: "live", text: null, status: 429,
+  request: { provider: "openai" },
+  error: 'openai 429: {"error":{"message":"You have no credits remaining. Add credits to continue"}}'
+};
+const BOTH_KEYS = { OPENAI_API_KEY: "sk-test-openai", ANTHROPIC_API_KEY: "sk-ant-test" };
+
+test("an empty OpenAI wallet is read by the backup reader, and its verdict routes", async () => {
+  const calls = [];
+  const routed = [];
+  const queued = [];
+  const runs = [];
+  const res = await onDocsReceivedDocCheck(readerFailureDb(), event(READER_PAYLOAD), {
+    env: BOTH_KEYS,
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png", versionId: "ver-1" }),
+    callModelImpl: async (args) => {
+      calls.push(args);
+      return calls.length === 1
+        ? OPENAI_NO_CREDIT
+        : { mode: "live", text: JSON.stringify({ outcome: "request_more", message_to_client: "Retake it" }), error: null, request: { provider: "anthropic" } };
+    },
+    recordRunImpl: async (_db, row) => { runs.push(row); return row; },
+    queueRetryImpl: async (_db, spec) => { queued.push(spec); return { queued: true }; },
+    routeImpl: async (_db, spec) => { routed.push(spec); return { routed: true, outcome: spec.json.outcome }; }
+  });
+
+  assert.equal(calls.length, 2, "the same file is read a second time");
+  assert.equal(calls[0].env.OPENAI_API_KEY, "sk-test-openai");
+  assert.equal(calls[1].env.OPENAI_API_KEY, undefined, "the second read goes to the other reader");
+  assert.equal(calls[1].env.ANTHROPIC_API_KEY, "sk-ant-test");
+  assert.equal(calls[1].media, calls[0].media, "it reads the same picture");
+  assert.equal(BOTH_KEYS.OPENAI_API_KEY, "sk-test-openai", "the stored key is never removed");
+
+  assert.equal(res.routed, true, "a verdict means the chase (or the approval) can go out");
+  assert.equal(routed.length, 1);
+  assert.equal(routed[0].json.outcome, "request_more");
+  assert.equal(queued.length, 0, "a document that was read is not queued");
+  assert.equal(runs[0].outcome, "request_more");
+  assert.match(runs[0].detail, /backup reader \(anthropic\) because openai has no credit/);
+});
+
+test("a backup reader that also fails leaves the document queued exactly as before", async () => {
+  const queued = [];
+  let n = 0;
+  const res = await onDocsReceivedDocCheck(readerFailureDb(), event(READER_PAYLOAD), {
+    env: BOTH_KEYS,
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => (++n === 1
+      ? OPENAI_NO_CREDIT
+      : { mode: "live", text: null, status: 529, error: "anthropic 529: overloaded", request: { provider: "anthropic" } }),
+    recordRunImpl: async () => null,
+    queueRetryImpl: async (_db, spec) => { queued.push(spec); return { queued: true }; },
+    routeImpl: async () => { throw new Error("must not route a document nobody read"); }
+  });
+  assert.equal(n, 2);
+  assert.equal(res.route.reason, "reader_unavailable_queued");
+  assert.equal(res.route.failure, "no_credit", "the first reason stands");
+  assert.equal(queued.length, 1);
+});
+
+test("with no Anthropic key there is no second read — the document is queued", async () => {
+  const queued = [];
+  let n = 0;
+  const res = await onDocsReceivedDocCheck(readerFailureDb(), event(READER_PAYLOAD), {
+    env: { OPENAI_API_KEY: "sk-test-openai" },
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => { n++; return OPENAI_NO_CREDIT; },
+    recordRunImpl: async () => null,
+    queueRetryImpl: async (_db, spec) => { queued.push(spec); return { queued: true }; }
+  });
+  assert.equal(n, 1);
+  assert.equal(res.route.reason, "reader_unavailable_queued");
+  assert.equal(queued.length, 1);
+});
+
+test("the backup reader is only for an EMPTY wallet, not for a key OpenAI refused", async () => {
+  let n = 0;
+  const res = await onDocsReceivedDocCheck(readerFailureDb(), event(READER_PAYLOAD), {
+    env: BOTH_KEYS,
+    loadBytesImpl: async () => ({ buffer: Buffer.from("img"), mimeType: "image/png" }),
+    callModelImpl: async () => {
+      n++;
+      return { mode: "live", text: null, status: 400, request: { provider: "openai" }, error: "openai 400: bad request" };
+    },
+    recordRunImpl: async () => null,
+    queueRetryImpl: async () => ({ queued: true })
+  });
+  assert.equal(n, 1);
+  assert.equal(res.route.reason, "no_json");
+});
+
 test("a retry records its own run row rather than being swallowed by the event unique index", async () => {
   const runs = [];
   await onDocsReceivedDocCheck(readerFailureDb(), { ...event(READER_PAYLOAD), isRetry: true }, {
