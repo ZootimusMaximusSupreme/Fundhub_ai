@@ -599,21 +599,23 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
 
   var businessIndex = 0;   // which business the business panel is showing
 
-  /** A score, or the honest absence of one. Never 0 for "no pull". */
-  function scoreCell(score, pulledAt) {
+  /** A score, or the honest absence of one. Never 0 for "no pull".
+      A score off a sample report was never pulled, so its date says the sample
+      was loaded, not pulled (live hole 23). */
+  function scoreCell(score, pulledAt, sample) {
     if (score == null) {
       return { html: '<div class="val unk">Not pulled yet</div>', unknown: true };
     }
     var when = longDate(pulledAt);
     return {
       html: '<div class="val">' + esc(Number(score)) + '</div>'
-          + (when ? '<div class="when">Pulled ' + esc(when) + '</div>' : ''),
+          + (when ? '<div class="when">' + (sample ? "Sample report loaded " : "Pulled ") + esc(when) + '</div>' : ''),
       unknown: false
     };
   }
 
-  function panelHtml(label, score, pulledAt, docId, extra) {
-    var cell = scoreCell(score, pulledAt);
+  function panelHtml(label, score, pulledAt, docId, extra, sample) {
+    var cell = scoreCell(score, pulledAt, sample === true);
     var openable = !!docId;
     return '<button class="panel" type="button"'
          + (openable ? ' data-doc="' + esc(docId) + '"' : ' disabled')
@@ -637,11 +639,16 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
 
     if (personal.length) {
       html += '<div class="panels">';
+      var anySample = false;
       for (var i = 0; i < personal.length; i++) {
         var p = personal[i] || {};
-        html += panelHtml(bureauName(p.bureau), p.score, p.pulledAt, p.reportDocumentId, "");
+        if (p.sample === true && p.score != null) anySample = true;
+        html += panelHtml(bureauName(p.bureau), p.score, p.pulledAt, p.reportDocumentId, "", p.sample);
       }
       html += '</div>';
+      /* Sample scores say they are a sample (live hole 23). Only a true from
+         the server shows it, so a real pull is never labelled. */
+      if (anySample) html += '<div class="note">Sample scores. Not a real credit pull.</div>';
     } else {
       html += '<div class="card empty">Your personal report has not been pulled yet.</div>';
     }

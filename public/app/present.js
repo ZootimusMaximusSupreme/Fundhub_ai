@@ -349,6 +349,11 @@
       return '<div class="score"><span class="mono">' + r[0] + '</span><div class="v">' + dash(r[1]) + "</div></div>";
     }).join("") + "</div>";
   }
+  /* Scores off a sample report say so (live hole 23). engine.sample is set by
+     buildCloserDeck() in src/sales/closer-deck.mjs; only true labels. */
+  function sampleLine(d) {
+    return d && d.sample === true ? fine("Sample scores. Not a real credit pull.") : "";
+  }
   function scoreBars(fico) {
     var stops = ["var(--alert)", "var(--ok)", "var(--info)"];
     var rows = [["Experian", fico && fico.ex], ["TransUnion", fico && fico.tu], ["Equifax", fico && fico.eq]];
@@ -497,9 +502,9 @@
            engine estimate, the same one the client's portal shows, and the line
            under it says out loud what the money covers so nobody has to guess
            whether business funding is in it. */
-        return slide("S-07", "Your results", kicker("Pre-approved for approximately") + h1(money(d.total), "clamp(32px,5.2vw,64px)") + sub("Across multiple credit lines with 0 percent introductory rates.") + fine(basisLine(d)) + scores(d.fico));
+        return slide("S-07", "Your results", kicker("Pre-approved for approximately") + h1(money(d.total), "clamp(32px,5.2vw,64px)") + sub("Across multiple credit lines with 0 percent introductory rates.") + fine(basisLine(d)) + scores(d.fico) + sampleLine(d));
       }
-      return slide("S-07", "Your results", kicker(dash(d.negItems) + " negative items found · read the way lenders read it") + h1("Here's what the AI found.") + scoreBars(d.fico) + '<div style="margin-top:8px">' + reasonsList(d, false) + "</div>" + sub("All fixable. Cleaned up, this file projects to " + money(d.afterFix) + " in approvals."));
+      return slide("S-07", "Your results", kicker(dash(d.negItems) + " negative items found · read the way lenders read it") + h1("Here's what the AI found.") + scoreBars(d.fico) + sampleLine(d) + '<div style="margin-top:8px">' + reasonsList(d, false) + "</div>" + sub("All fixable. Cleaned up, this file projects to " + money(d.afterFix) + " in approvals."));
     }
     if (c === "S-08") {
       if (edu) {
@@ -982,7 +987,7 @@
           var basis = d.totalBasis === "personal_plus_business"
             ? " personal+business"
             : (d.totalBasis === "personal_only" ? " personal only" : "");
-          html += "<div>" + esc(state.tier || "—") + (state.edu ? " · route EDU" : state.forceRepair ? " · DESCENT" : "") + " · " + money(d.total) + basis + " · " + dash(d.fico.ex) + "/" + dash(d.fico.tu) + "/" + dash(d.fico.eq) + "</div>";
+          html += "<div>" + esc(state.tier || "—") + (state.edu ? " · route EDU" : state.forceRepair ? " · DESCENT" : "") + " · " + money(d.total) + basis + " · " + dash(d.fico.ex) + "/" + dash(d.fico.tu) + "/" + dash(d.fico.eq) + (d.sample === true ? " · sample" : "") + "</div>";
           html += "<div>afterFix " + money(d.afterFix) + " · beliefs " + beliefs + "/7" + (state.temp > 0 ? " · temp " + state.temp + "/10" : "") + "</div>";
         }
         html += "</div></div>";

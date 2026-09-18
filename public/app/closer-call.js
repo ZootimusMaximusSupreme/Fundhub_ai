@@ -311,6 +311,10 @@
             rows += "<tr><td>Scores</td><td class='hi'>EX " + (ex == null ? "—" : ex) +
               " · EQ " + (eq == null ? "—" : eq) +
               " · TU " + (tu == null ? "—" : tu) + "</td></tr>";
+            /* A sample report says it is a sample (live hole 23). */
+            if (credit.sample === true) {
+              rows += "<tr><td>Sample</td><td>Sample scores. Not a real credit pull.</td></tr>";
+            }
           } else {
             rows += "<tr><td>Scores</td><td class='hi'>—</td></tr>";
           }
@@ -320,7 +324,7 @@
         rows += "<tr><td>Utilization</td><td>" + (credit.utilization != null ? credit.utilization + "%" : "—") + "</td></tr>";
         rows += "<tr><td>Inquiries · 6mo</td><td>" + (credit.inquiries_6mo != null ? credit.inquiries_6mo : "—") + "</td></tr>";
         rows += "<tr><td>Derogatories</td><td>" + (credit.derogatories != null ? credit.derogatories : "—") + "</td></tr>";
-        rows += "<tr><td>Pulled</td><td>" + (credit.pulled_at ? new Date(credit.pulled_at).toLocaleString() : "—") + "</td></tr>";
+        rows += "<tr><td>" + (credit.sample === true ? "Sample report loaded" : "Pulled") + "</td><td>" + (credit.pulled_at ? new Date(credit.pulled_at).toLocaleString() : "—") + "</td></tr>";
         tables[0].innerHTML = rows;
       }
     }

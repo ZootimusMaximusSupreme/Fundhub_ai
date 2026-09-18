@@ -21,7 +21,9 @@ export function formatPrequalUsd(amount) {
   return "$" + amount.toLocaleString("en-US");
 }
 
-/** Client-safe scores. Null stays null. Nothing is invented. */
+/** Client-safe scores. Null stays null. Nothing is invented.
+    `sample` is true when the three FICOs came off a sample report, never a
+    bureau pull, so the portal can say so (live hole 23). */
 export function portalCreditScores({ client = {}, crsResults = [], businesses = [] } = {}) {
   const tri = triMerge(crsResults);
   const biz = businessCredit({ client, businesses });
@@ -29,7 +31,8 @@ export function portalCreditScores({ client = {}, crsResults = [], businesses = 
     experian: tri.experian,
     equifax: tri.equifax,
     transunion: tri.transunion,
-    experian_business: biz.intelliscore
+    experian_business: biz.intelliscore,
+    sample: tri.sample === true
   };
 }
 
