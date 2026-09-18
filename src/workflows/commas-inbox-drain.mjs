@@ -98,22 +98,51 @@ export async function handle({ db: handleDb, step } = {}) {
   return step && typeof step.run === "function" ? step.run("sweep", run) : run();
 }
 
+/* scheduledPass — what the timer runs: one pass, then ONE log line, EVERY pass.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * WHY EVERY PASS SPEAKS — hole N6, measured on live 2026-09-18.
+ *
+ * This drain shipped at 23:14 UTC on 2026-09-17 and claimed nothing for the
+ * next sixteen hours. Seven receipts sat pending, tried zero times, until the
+ * Netlify sweeper was repaired at 15:13 UTC; all seven were claimed by that
+ * one sweeper pass. The code here was not the fault. Inngest only runs the
+ * functions it was told about the last time the app was synced with it
+ * (PUT /api/inngest), and nothing synced after the deploy that added this
+ * one. The api function's log shows it: overnight (03:00–03:10 UTC) the
+ * five-minute jobs arrived on time, and whole minutes went by with no call
+ * at all — a once-a-minute job Inngest knew about cannot leave that gap.
+ * The re-sync at 18:47:52 UTC on 2026-09-18 registered it: from 19:49 to
+ * 19:59 UTC the queue's claim ran 11 more times than the Netlify sweeper
+ * accounts for — this drain, about once a minute. Any deploy that adds or
+ * changes an Inngest function needs a sync after it, or Inngest never calls
+ * the new one.
+ *
+ * It went unseen that long because a pass that found nothing said nothing, so
+ * "running with an empty queue" and "never running" left the same empty log.
+ * Now every pass leaves a line, and `netlify logs --function api` answers
+ * "is the backup running?" on its own: a line a minute means yes, a gap means
+ * Inngest is not calling it. `log` is an argument so the tests can read it. */
+export async function scheduledPass(passDb = db, log = console) {
+  const result = await sweep(passDb);
+  if (!result.ok) {
+    log.error(`[commas-inbox-drain] pass failed: ${result.error}`);
+  } else if (result.claimed > 0) {
+    log.log(
+      `[commas-inbox-drain] processed ${result.claimed} payment event(s): ` +
+      JSON.stringify(result.counts)
+    );
+  } else {
+    log.log("[commas-inbox-drain] pass ok: nothing waiting");
+  }
+  return result;
+}
+
 /* The scheduled definition. Registered in src/workflows/index.mjs. */
 export const commasInboxDrain = inngest.createFunction(
   { id: "commas-inbox-drain", name: "Commas payment inbox drain" },
   { cron: SWEEP_CRON },
-  async () => {
-    const result = await sweep(db);
-    if (!result.ok) {
-      console.error(`[commas-inbox-drain] pass failed: ${result.error}`);
-    } else if (result.claimed > 0) {
-      console.log(
-        `[commas-inbox-drain] processed ${result.claimed} payment event(s): ` +
-        JSON.stringify(result.counts)
-      );
-    }
-    return result;
-  }
+  () => scheduledPass(db)
 );
 
 export default sweep;
