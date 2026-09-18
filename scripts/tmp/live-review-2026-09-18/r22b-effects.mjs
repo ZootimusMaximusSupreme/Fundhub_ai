@@ -22,7 +22,7 @@ try {
     const where = tc.map((x) => `${x} >= $2`).join(" or ");
     await c.query("SAVEPOINT s");
     try {
-      const rows = (await c.query(`select id, ${tc.join(",")}${label.length ? "," + label.join(",") : ""} from public."${t.table_name}" where client_id=$1 and (${where}) order by ${tc[0]}`, [COMBO, SINCE])).rows;
+      const rows = (await c.query(`select ${t.cols.includes("id") ? "id" : "ctid::text as id"}, ${tc.join(",")}${label.length ? "," + label.join(",") : ""} from public."${t.table_name}" where client_id=$1 and (${where}) order by ${tc[0]}`, [COMBO, SINCE])).rows;
       await c.query("RELEASE SAVEPOINT s");
       for (const r of rows) {
         hits++;
