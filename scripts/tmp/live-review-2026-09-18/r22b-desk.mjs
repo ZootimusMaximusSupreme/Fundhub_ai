@@ -65,12 +65,18 @@ if (!(loginResp.status() === 200 && sess.http === 200 && sess.authed)) {
 for (const pass of [1, 2]) {
   const p = await ctx.newPage();
   const rec = { pass, at: new Date().toISOString() };
+  const qResps = [];
+  p.on("response", (r) => { if (r.url().includes("/api/read/repair-cases")) qResps.push(r); });
   await p.goto(`${BASE}/app/inquiry-remover.html`, { waitUntil: "domcontentloaded" });
-  await p.waitForTimeout(1500);
-  const [qResp] = await Promise.all([
-    p.waitForResponse((r) => r.url().includes("/api/read/repair-cases"), { timeout: 30000 }),
-    p.click("#tab-repair"),
-  ]);
+  await p.waitForTimeout(2500);
+  rec.url = new URL(p.url()).pathname;
+  rec.repair_tab_visible = await p.locator("#tab-repair").isVisible().catch(() => false);
+  rec.repair_queue_fetched_before_click = qResps.length;
+  await p.click("#tab-repair");
+  for (let i = 0; i < 60 && !qResps.length; i++) await p.waitForTimeout(500);
+  if (!qResps.length) { rec.error = "no /api/read/repair-cases response"; await p.screenshot({ path: `${SHOTS}/debug-pass${pass}.png` }); out.passes.push(rec); console.log(JSON.stringify(out, null, 2)); process.exit(1); }
+  const qResp = qResps[qResps.length - 1];
+  await qResp.finished().catch(() => {});
   const q = await qResp.json();
   rec.queue = { http: qResp.status(), ok: q.ok, files: (q.files || []).length, need_me: q.need_me, ready: q.ready, waiting: q.waiting, stalled: q.stalled, trial_ending: q.trial_ending };
   const f = (q.files || []).find((x) => x.client_id === COMBO);
