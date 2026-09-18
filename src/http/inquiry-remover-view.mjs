@@ -836,6 +836,28 @@ export function nextRepairAction(files, needLabelOf) {
   return null;
 }
 
+/* The line under the repair headline when no row needs her. Built from the
+   same tile counts the pane paints, so it cannot say every file is waiting on
+   a bureau while the Waiting tile says 0 and the Stuck tile says 2. "Every
+   file" is only said when the waiting count covers the whole open queue. */
+export function repairQuietLine(payload) {
+  const p = payload || {};
+  const stuck = Number(p.stalled);
+  const waiting = Number(p.waiting);
+  const total = Number(p.total);
+  const open = Number.isFinite(total) ? total : (Array.isArray(p.files) ? p.files.length : 0);
+  const parts = [];
+  if (Number.isFinite(stuck) && stuck > 0) {
+    parts.push(stuck + (stuck === 1 ? " file is stuck" : " files are stuck"));
+  }
+  if (Number.isFinite(waiting) && waiting > 0) {
+    if (!parts.length && waiting === open) return "Nothing needs you — every file is waiting on a bureau.";
+    parts.push(waiting + (waiting === 1 ? " file is" : " files are") + " waiting on a bureau");
+  }
+  if (!parts.length) return "Nothing needs you right now.";
+  return "Nothing needs you — " + parts.join(", ") + ".";
+}
+
 export function repairStagePill(stageKey) {
   const k = String(stageKey || "");
   if (k === "stalled") return { cls: "noanswer", text: "Stuck" };
@@ -934,6 +956,7 @@ export const VIEW = {
   inquiryHeadline: inquiryHeadline,
   repairHeadline: repairHeadline,
   nextRepairAction: nextRepairAction,
+  repairQuietLine: repairQuietLine,
   repairStagePill: repairStagePill,
   buildRepairSendRequest: buildRepairSendRequest,
   buildRepairConfirmParseRequest: buildRepairConfirmParseRequest
