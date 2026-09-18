@@ -28,7 +28,7 @@ import { consentStatus } from "../consent/index.mjs";
 import { composeAndSend } from "../messaging/compose.mjs";
 import { dispatchMessage } from "../messaging/dispatch.mjs";
 import { secretFromEnv } from "../documents/signed-url.mjs";
-import { incomeEstimates } from "../http/client-detail.mjs";
+import { incomeEstimates, isSampleResult } from "../http/client-detail.mjs";
 /* The client portal's own pre-qual reader. Deck and portal quote one number
    (F15) because they call the same function, not because someone kept two
    calculations in step. */
@@ -369,6 +369,9 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
     ? null
     : (bizRes.rows.length > 0 ? "personal_plus_business" : "personal_only");
   engine.totalSource = "stored engine estimate";
+  /* A sample report's scores say they are a sample on the client's own
+     "Your results" slide (live hole 23). */
+  engine.sample = isSampleResult(crsRes.rows[0]?.result);
 
   const softPull = await softPullStatus(db, { orgId, clientId });
   const income = incomeEstimates(crsRes.rows);

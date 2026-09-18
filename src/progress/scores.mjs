@@ -36,7 +36,7 @@
 // this repository has ever stored a business credit score, so today every
 // business panel returns `score: null`. Measured 2026-09-05, not assumed.
 
-import { triMerge } from "../http/client-detail.mjs";
+import { isSampleResult, triMerge } from "../http/client-detail.mjs";
 
 /** The three personal bureaus, in the order the panel draws them. */
 export const PERSONAL_BUREAUS = Object.freeze(["experian", "equifax", "transunion"]);
@@ -118,11 +118,14 @@ export function personalPanels(crsResults = [], { reportDocumentId = null } = {}
           bureau,
           score: s[bureau],
           pulledAt: isoOrNull(row.created_at),
-          reportDocumentId: reportDocumentId || null
+          reportDocumentId: reportDocumentId || null,
+          /* True when this number came off a sample report, never a bureau
+             pull, so the page says "sample" and not "Pulled" (live hole 23). */
+          sample: isSampleResult(row.result)
         };
       }
     }
-    return { bureau, score: null, pulledAt: null, reportDocumentId: null };
+    return { bureau, score: null, pulledAt: null, reportDocumentId: null, sample: false };
   });
 }
 

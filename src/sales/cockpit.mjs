@@ -5,7 +5,7 @@ import { countUnlogged, listUnloggedCalls } from "./call-outcomes.mjs";
 import { formatUsdFromCents, monthWindow } from "./metrics.mjs";
 import { toCents } from "../commissions/money.mjs";
 import { matchForClient } from "../lenders/store.mjs";
-import { triMerge } from "../http/client-detail.mjs";
+import { isSampleResult, triMerge } from "../http/client-detail.mjs";
 import { toBureaus } from "../underwrite/adapter.mjs";
 import { computeUnderwrite } from "../underwrite/engine.mjs";
 import { applyStackedBusinessFunding } from "../underwrite/business-funding.mjs";
@@ -539,6 +539,9 @@ function summarizeCrs(row) {
     pulled_at: merge.asOf || row.created_at,
     raw_keys: Object.keys(result).slice(0, 40),
     scores,
+    /* True when this row is a sample report, never a bureau pull, so the
+       closer never reads a sample out loud as a real pull (live hole 23). */
+    sample: isSampleResult(result),
     utilization: money(utilPct),
     inquiries_6mo: money(
       result.inquiries_6mo

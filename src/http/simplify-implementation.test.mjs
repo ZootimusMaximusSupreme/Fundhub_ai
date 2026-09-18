@@ -347,7 +347,8 @@ test("client portal summary ignores requested client ids and returns only sessio
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.documents[0].title, "Bank statement");
   assert.deepEqual(res.body.scores, {
-    experian: null, equifax: null, transunion: null, experian_business: null
+    experian: null, equifax: null, transunion: null, experian_business: null,
+    sample: false
   });
   const clientRead = calls.find((call) => /SELECT id, custom_fields FROM clients/i.test(call.sql));
   const documentRead = calls.find((call) => /FROM documents/i.test(call.sql));

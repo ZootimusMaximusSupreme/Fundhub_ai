@@ -2275,7 +2275,14 @@ restore();
     creditMore.appendChild(rowAlways("Experian", tm.experian));
     creditMore.appendChild(rowAlways("Equifax", tm.equifax));
     creditMore.appendChild(rowAlways("TransUnion", tm.transunion));
-    creditMore.appendChild(rowAlways("Scores pulled", fmtWhen(tm.asOf)));
+    /* A sample report was never pulled, and says so (live hole 23). tm.sample
+       is set by triMerge() in src/http/client-detail.mjs; only true labels. */
+    if (tm.sample === true) {
+      creditMore.appendChild(rowAlways("Sample report loaded", fmtWhen(tm.asOf)));
+      creditMore.appendChild(rowAlways("Scores", "Sample scores. Not a real credit pull."));
+    } else {
+      creditMore.appendChild(rowAlways("Scores pulled", fmtWhen(tm.asOf)));
+    }
     creditMore.appendChild(rowAlways("They said", said));
     /* These two are the bureau's GUESS at a yearly income, worked out from the
        credit file (Experian Income Insight / Equifax IncomeView). They are not

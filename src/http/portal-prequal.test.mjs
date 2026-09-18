@@ -67,7 +67,8 @@ test("portalCreditScores reads 3-bureau FICO and Experian business 1-100", () =>
     experian: 720,
     equifax: 710,
     transunion: 705,
-    experian_business: 72
+    experian_business: 72,
+    sample: false
   });
   assert.equal(portalHasScore(scores), true);
 });
@@ -78,7 +79,8 @@ test("portalCreditScores leaves missing numbers null", () => {
     experian: null,
     equifax: null,
     transunion: null,
-    experian_business: null
+    experian_business: null,
+    sample: false
   });
   assert.equal(portalHasScore(scores), false);
 });

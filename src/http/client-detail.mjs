@@ -49,12 +49,25 @@ function ficoFromBureau(report) {
   return ficoOf(value, model);
 }
 
+/* isSampleResult — was this stored report a walkthrough's SAMPLE, never a
+   bureau pull? scripts/sim/push-credit.mjs and src/demo/simulate-client.mjs
+   stamp it environment "simulated" (push-credit also sets simulated:true) so
+   every screen can tell. The same test as isSampleReport() in
+   public/app/client-control-panel.html (live hole 23). Unreadable answers
+   false, so a real pull is never labelled. Never throws. */
+export function isSampleResult(result) {
+  const r = safeObject(result);
+  if (!r || typeof r !== "object") return false;
+  return r.simulated === true || String(r.environment || "").toLowerCase() === "simulated";
+}
+
 /* triMerge — the three bureau FICOs from the most recent CRS result that
-   actually has one. Returns { experian, equifax, transunion, spread, asOf, source }
-   with nulls where the analyzer sent nothing usable. */
+   actually has one. Returns { experian, equifax, transunion, spread, asOf,
+   source, sample } with nulls where the analyzer sent nothing usable.
+   `sample` is true when that result is a sample report (isSampleResult). */
 export function triMerge(crsResults = []) {
   const empty = { experian: null, equifax: null, transunion: null,
-                  spread: null, asOf: null, source: null };
+                  spread: null, asOf: null, source: null, sample: false };
   const latest = latestWithScores(crsResults);
   if (!latest) return empty;
 
@@ -64,7 +77,8 @@ export function triMerge(crsResults = []) {
     experian, equifax, transunion,
     spread: present.length >= 2 ? Math.max(...present) - Math.min(...present) : null,
     asOf: latest.created_at || null,
-    source: present.length ? "crs_results" : null
+    source: present.length ? "crs_results" : null,
+    sample: isSampleResult(latest.result)
   };
 }
 
