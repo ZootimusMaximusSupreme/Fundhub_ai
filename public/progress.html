@@ -1017,8 +1017,15 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
   function paintWaypoints(waypoints) {
     var el = $("cWaypoints");
     if (!waypoints.length) {
-      el.innerHTML = '<div class="empty">Your checklist has not been set up yet. '
-                   + 'It appears here as soon as your file is reviewed.</div>';
+      /* HOLE 19 (live, 2026-09-18). This used to promise a checklist once the
+         file was looked over. Nothing builds one on review. Only
+         two things do: buying the Capital Blueprint (src/waypoints/purchase.mjs)
+         and enrolling in a program (src/repair/enroll.mjs). A Capital Academy
+         buyer was promised a list that would never come. */
+      el.innerHTML = '<div class="empty">There is no checklist on your file right now. '
+                   + 'Some of our services come with a list of steps for you to do. '
+                   + 'If yours does, the steps show up here. '
+                   + 'If you think you should have a list, say so in the chat on your portal.</div>';
       return;
     }
     var sorted = waypoints.slice().sort(function (a, b) {

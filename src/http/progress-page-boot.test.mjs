@@ -70,3 +70,25 @@ test("every read sends the session cookie", () => {
     "api() must send credentials so the fundhub_session cookie reaches the server"
   );
 });
+
+// Live walk 2026-09-18, hole 19: Sim Twelve-Academy owns only the Capital
+// Academy course. The page told them "Your checklist has not been set up yet. It
+// appears here as soon as your file is reviewed." Nothing builds a checklist on
+// review. Only buying the Capital Blueprint (src/waypoints/purchase.mjs) or
+// enrolling in a program (src/repair/enroll.mjs) does, so that promise was never
+// going to be kept for a course buyer.
+test("an empty checklist does not promise a list that nothing will build", () => {
+  const body = fnBody("paintWaypoints");
+  const empty = body.slice(0, body.indexOf("return;"));
+  assert.match(empty, /class="empty"/, "the empty checklist must still say something");
+  assert.doesNotMatch(
+    empty,
+    /as soon as your file is reviewed/i,
+    "no code builds a checklist when a file is reviewed, so the page must not say it will"
+  );
+  assert.doesNotMatch(
+    empty,
+    /has not been set up yet/i,
+    "a course buyer's checklist is not late — there is none to set up"
+  );
+});
