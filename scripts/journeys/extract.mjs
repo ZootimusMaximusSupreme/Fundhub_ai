@@ -427,7 +427,15 @@ function primaryGate(file, { sets, wrappers }) {
         roles and sets. api/read/my-numbers.mjs ("My numbers is for closers.",
         hole 24 round 2). A lone `!allowsRole(...)` is NOT read: in that same
         file it guards only the ?staff_id= branch, and in api/finance/alerts.mjs
-        only one action. Any term not in those two forms skips the whole check.
+        only one action. Any term not in those forms skips the whole check.
+        Three more term forms are read the same way (hole 24, fix run 2 —
+        api/repair/exceptions.mjs was drawn open to every employee):
+          `!NAME.has(<role>)`, NAME a `new Set([...])` in the same file; a
+            `...SUPER_ROLES` spread inside it adds the middleware's super roles.
+          `!["a", "b"].includes(<role>)` — the listed roles.
+          `!SUPER_ROLES.includes(<role>)` — the middleware's super roles. Its
+            `.has(...)` / `.has?.(...)` lets NOBODY through: SUPER_ROLES is an
+            array, so `.has?.()` is undefined and the term is always true.
 
    The result is the INTERSECTION with whatever the entry gate already allowed,
    so this can only ever remove roles, never add one. */
@@ -462,7 +470,18 @@ function narrowStaff(gate, file, { sets } = {}) {
       const lit = /^(?:String\(\s*)?[\w.]*\brole\s*\)?(?:\.toLowerCase\(\))?\s*!==\s*"([^"]+)"$/.exec(t);
       if (lit) return [lit[1]];
       const inSet = /^!\s*allowsRole\(\s*ROLE_SETS\.(\w+)\s*,\s*[\w.]*\brole\s*\)$/.exec(t);
-      return inSet && sets && sets[inSet[1]] ? sets[inSet[1]] : null;
+      if (inSet) return sets && sets[inSet[1]] ? sets[inSet[1]] : null;
+      const quoted = (s) => [...s.matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+      const supers = /^!\s*SUPER_ROLES\.(has|includes)(?:\?\.)?\(\s*[\w.]*\brole\s*\)$/.exec(t);
+      if (supers) return supers[1] === "includes" ? middlewareSuperRoles() : [];
+      const localHas = /^!\s*(\w+)\.has(?:\?\.)?\(\s*[\w.]*\brole\s*\)$/.exec(t);
+      if (localHas) {
+        const set = new RegExp(`const\\s+${localHas[1]}\\s*=\\s*new Set\\(\\[([^\\]]*)\\]\\)`).exec(src);
+        if (!set) return null;
+        return [...quoted(set[1]), ...(/\.\.\.SUPER_ROLES\b/.test(set[1]) ? middlewareSuperRoles() : [])];
+      }
+      const listed = /^!\s*\[([^\]]*)\]\.includes\(\s*[\w.]*\brole\s*\)$/.exec(t);
+      return listed ? quoted(listed[1]) : null;
     });
     if (allowed.every(Boolean)) {
       limits.push({ roles: [...new Set(allowed.flat())], by: `if (${terms.join(" && ")})` });

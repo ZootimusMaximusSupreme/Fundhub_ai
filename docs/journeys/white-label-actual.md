@@ -308,7 +308,7 @@ flowchart TD
 | `/api/read/video-stats` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/workflows` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/repair/enroll` | POST | owner, admin, closer, inquiry_specialist |
-| `/api/repair/exceptions` | GET, POST | staff |
+| `/api/repair/exceptions` | GET, POST | owner, admin, inquiry_specialist |
 | `/api/repair/generate` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/inbound-mail` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/send` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
