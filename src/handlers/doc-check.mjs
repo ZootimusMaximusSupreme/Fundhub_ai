@@ -107,6 +107,43 @@ async function loadDocumentBytes(db, { documentId, versionId = null, store = nul
 export const RETRY_HANDLER = WORKFLOW_ID;
 export const RETRY_MAX_ATTEMPTS = 12;
 
+/* THE BACKUP READER — WAITING WAS NOT THE ONLY WAY OUT.
+ *
+ * MEASURED 2026-09-18 on live, file #9 (hole 16 on
+ * docs/workflows/live-prove-2026-09-17-notes.md): the OpenAI account had no
+ * credit, so every read of the client's ID came back `openai 429 … no credits
+ * remaining`. No verdict meant no "documents approved" text and no "please
+ * retake it" text, and the ID stayed unread, so the dispute letters could not
+ * be staged. Meanwhile the Anthropic key production holds was working the whole
+ * time. callModel only turns to it when no OpenAI key is set AT ALL, so an
+ * empty OpenAI wallet blocked a reader that was right there.
+ *
+ * So when the first read went to OpenAI and OpenAI said "no credit", the same
+ * file is read once more by Anthropic. The stored OpenAI key is not touched: it
+ * is only left out of this one call's copy of the environment (owner rule,
+ * CLAUDE.md §11 — route around a bad credential, never remove one).
+ *
+ * The backup's answer is used only when it actually answered. If it failed
+ * too, the first result stands and the document is queued for a later read
+ * exactly as before — this never turns "not right now" into a verdict. */
+export const BACKUP_READER_NOTE = "read by the backup reader (anthropic) because openai has no credit";
+
+export async function readWithBackupReader(first, {
+  env = process.env, modelArgs = {}, callModelImpl = callModel
+} = {}) {
+  if (!first || first.text) return null;
+  if (first.request?.provider !== "openai") return null;
+  if (!env || !env.ANTHROPIC_API_KEY) return null;
+  const failure = classifyModelFailure({ status: first.status, error: first.error });
+  if (failure.reason !== MODEL_NO_CREDIT) return null;
+  const backupEnv = { ...env };
+  delete backupEnv.OPENAI_API_KEY;
+  delete backupEnv.COMPANY_BRAIN_OPENAI_API_KEY;
+  const second = await callModelImpl({ ...modelArgs, env: backupEnv });
+  if (!second || !second.text) return null;
+  return { ...second, backupReader: true };
+}
+
 /* queueReaderRetry — put this document back in the queue for a later read.
  *
  * NEVER THROWS, for the same reason recordRun does not: this hangs off the end
@@ -380,7 +417,7 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
     ? (typeof agent.output_schema === "string" ? agent.output_schema : JSON.stringify(agent.output_schema))
     : '{"outcome":"accept|request_more|hold"}';
   const docType = payload.subtype || payload.kind;
-  const modelResult = await callModelImpl({
+  const modelArgs = {
     system: String(agent.prompt),
     user: [
       `A client uploaded a ${docType} document.`,
@@ -390,10 +427,12 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
       schema
     ].filter(Boolean).join("\n"),
     media: mediaFromBytes(loaded.mimeType, loaded.buffer),
-    env,
     fetchImpl,
     maxTokens: 2000
-  });
+  };
+  let modelResult = await callModelImpl({ ...modelArgs, env });
+  const backupResult = await readWithBackupReader(modelResult, { env, modelArgs, callModelImpl });
+  if (backupResult) modelResult = backupResult;
 
   const json = parseAgentJson(modelResult.text);
   /* A RETRY RECORDS ITS OWN ROW. agent_runs is unique on
@@ -410,7 +449,7 @@ export async function onDocsReceivedDocCheck(db, event, deps = {}) {
     channel: "internal",
     mode: modelResult.mode || null,
     outcome: json?.outcome || modelResult.error || "ran",
-    detail: `${isRetry ? `retry of ${event.id || documentId}: ` : ""}${String(modelResult.text || modelResult.error || "")}`.slice(0, 500)
+    detail: `${isRetry ? `retry of ${event.id || documentId}: ` : ""}${modelResult.backupReader ? `${BACKUP_READER_NOTE}: ` : ""}${String(modelResult.text || modelResult.error || "")}`.slice(0, 500)
   });
 
   /* NO ANSWER IS NOT A PASS.
