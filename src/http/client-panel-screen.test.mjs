@@ -1040,3 +1040,63 @@ describe("client-control-panel.html — opening a file shows loading, never the 
       "ccp-next-action is being set directly; only paintNextAction may write it");
   });
 });
+
+/* ────────────────────────────────────────────────────────────────────────────
+   LIVE HOLE 23 (2026-09-18) — A SAMPLE REPORT SAYS IT IS A SAMPLE
+   #13 Sim Thirteen-NoBook: no permission row, no pull row, and one crs_results
+   row loaded by the walkthrough script, stamped environment "simulated". The
+   screen showed its scores and a Last Credit Pull date as if a bureau had been
+   asked, right beside a true "No written permission on file". The fixtures
+   below are that live row's own stamp, and src/demo/simulate-client.mjs's.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+describe("client-control-panel.html — a sample report says it is a sample (live hole 23)", () => {
+  const AT = "2026-09-18T08:54:06.344Z";
+  const push = {
+    id: "fe92316e", created_at: AT,
+    result: {
+      source: "crs", environment: "simulated", simulated: true,
+      simulatedNotice: "SIMULATED — fulfillment walkthrough. Not a bureau pull.",
+      scores: { ex: 771, eq: 778, tu: 766 }
+    }
+  };
+  const demo = { id: "d", created_at: AT, result: { environment: "simulated", scores: { ex: 718 } } };
+  const real = { id: "r", created_at: AT, result: { source: "crs", environment: "production", scores: { ex: 700 } } };
+
+  test("the walkthrough's sample report is named as a sample", () => {
+    const P = loadPanel();
+    assert.equal(P.isSampleReport([push], AT), true);
+    assert.equal(P.isSampleReport([demo], AT), true);
+    assert.equal(P.isSampleReport([{ ...push, result: JSON.stringify(push.result) }], AT), true,
+      "a report stored as a string is still read");
+    assert.match(P.SAMPLE_NOTE, /sample/i);
+    assert.match(P.SAMPLE_NOTE, /not a real credit pull/i);
+  });
+
+  test("a real pull is never called a sample", () => {
+    const P = loadPanel();
+    assert.equal(P.isSampleReport([real], AT), false);
+    // Only the row the scores came from counts: an older sample is not this one.
+    const older = { ...push, created_at: "2026-09-01T00:00:00.000Z" };
+    assert.equal(P.isSampleReport([real, older], AT), false);
+  });
+
+  test("anything unreadable adds no label and never throws", () => {
+    const P = loadPanel();
+    for (const [rows, asOf] of [
+      [[push], null], [[push], ""], [[push], "not a date"], [null, AT], ["rows", AT],
+      [[null, 7, "x", { created_at: AT }, { created_at: AT, result: "{broken" }], AT]
+    ]) {
+      assert.equal(P.isSampleReport(rows, asOf), false);
+    }
+  });
+
+  test("the screen paints the label on the Scores tile, the facts row and the last-pull line", () => {
+    assert.match(PANEL_HTML, /id="ccp-scores"[^>]*>—<\/div>\s*<p class="fact-note" id="ccp-scores-sample" hidden><\/p>/,
+      "the sample line is gone from the Scores tile");
+    assert.match(PANEL_HTML, /var sampleScores = FHCP\.isSampleReport\(d\.crs_results, tm\.asOf\);/);
+    assert.match(PANEL_HTML, /setText\("ccp-facts-scores", sampleScores \?/);
+    assert.match(PANEL_HTML, /setText\("ccp-last-pull", sampleScores\s*\?\s*"Sample report loaded "/,
+      "a sample report is being printed as the last credit pull again");
+  });
+});
