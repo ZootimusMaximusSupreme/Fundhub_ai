@@ -19,12 +19,14 @@
   data.js, which attaches a STAFF bearer token to every request. Neither belongs
   on a page a customer opens.
 
-  ITS CREDENTIAL IS THE CLIENT'S OWN SESSION TOKEN, the `fh_token` that
-  public/portal-login.html:147 writes to localStorage after a magic link. It is
-  sent as an Authorization header, exactly as client-portal.html:2065 does it.
-  No token, or a token the server refuses, and this page sends the visitor to
-  /portal-login.html. It never guesses a client id from the address bar: the
-  server pins a client principal to itself.
+  THE SERVER DECIDES WHO IS SIGNED IN. Every read sends the `fh_token` from
+  localStorage as an Authorization header when there is one (a client's magic
+  link writes it, public/portal-login.html:147), and always sends the
+  fundhub_session cookie (credentials: same-origin). Staff signed in by cookie
+  have no fh_token, and page code cannot read that httpOnly cookie, so this page
+  never checks for a sign-in itself. A 401 from the server, and only that, sends
+  the visitor to /portal-login.html. It never guesses a client id from the
+  address bar: the server pins a client principal to itself.
 
   IT HOLDS NO SERVER-RENDERED HTML AND NEVER WILL. Everything below the fold is
   built here, in the browser, from the JSON facts described in
@@ -1633,7 +1635,10 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
   }
 
   function boot() {
-    if (!token()) return toLogin();
+    /* NO LOCAL SIGN-IN CHECK HERE (live walk 2026-09-17, hole 4). Staff sign in
+       with the httpOnly fundhub_session cookie, which page code cannot read, so
+       a missing fh_token does not mean "signed out". The server decides: its
+       401 below is the only thing that sends a visitor to sign in. */
     paintBackLink();
 
     api(progressPath()).then(function (r) {
