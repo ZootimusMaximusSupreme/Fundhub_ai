@@ -28,6 +28,7 @@
  *       --limit <n>        stop after n banks
  *       --skip <n>         skip the first n banks (after stable sort by slug)
  *       --exclude-slugs <file>  one slug per line — skip these (parallel lanes)
+ *       --only-slugs <file>     fetch only these slugs (disjoint parallel lanes)
  *       --concurrency <n>  how many bank sites at once (default 6)
  *       --org <slug>       a different company
  */
@@ -151,15 +152,21 @@ async function main() {
   if (fromDb || skip > 0) {
     targets.sort((a, b) => a.slug.localeCompare(b.slug));
   }
-  const excludePath = valueOf("--exclude-slugs");
-  if (excludePath) {
-    const skipSlugs = new Set(
+  const readSlugFile = (p) =>
+    new Set(
       fs
-        .readFileSync(excludePath, "utf8")
+        .readFileSync(p, "utf8")
         .split("\n")
         .map((s) => s.trim())
         .filter(Boolean)
     );
+  const onlyPath = valueOf("--only-slugs");
+  const excludePath = valueOf("--exclude-slugs");
+  if (onlyPath) {
+    const allow = readSlugFile(onlyPath);
+    targets = targets.filter((t) => allow.has(t.slug));
+  } else if (excludePath) {
+    const skipSlugs = readSlugFile(excludePath);
     targets = targets.filter((t) => !skipSlugs.has(t.slug));
   }
   if (skip > 0) targets = targets.slice(skip);

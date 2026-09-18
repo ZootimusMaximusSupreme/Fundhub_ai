@@ -274,7 +274,7 @@ Chris off phone; Legacy Strong auth confirmed (`token_v2`).
 - **Link:** Sent PDF → `https://offers.calbartoncashback.com/Database-Download` → public Notion **0% APR Business Credit Card Database** (**921** rows).
 - **Vs our book:** **98** name overlaps with live **328**; **~767** names not in CRM (mostly CUs / regionals). Not a duplicate of Legacy Strong Notion scrape (`calbarton` vs `legacystrong`).
 - **Intel:** 10 public Google Sheets (Chase, Amex, WF, USB, BofA, CapOne, Truist, Citi, PNC, Citizens) saved as `.xlsx` under credentials (pattern/reference — not imported).
-- **CRM import:** **not run** — needs name-match + state-field cleanup (`depa`-style typos) before merge/import. Next: map columns to `lenders` (`bureaus_pulled`, `application_url`, `eligible_states`, etc.) with merge guard clearing **0**.
+- **CRM import:** **DONE 2026-09-18** — merged and loaded. See **Carl Barton merge + import — DONE** below for the unified counts.
 
 ## Carl Barton name match — 2026-09-18 (Cursor subagent)
 
@@ -296,8 +296,30 @@ Full pull re-run: the first scrape stopped at Notion's **500**-row page while `s
 
 **Data quality in the source:** 69 names padded with stray whitespace/newlines · 1 row has a URL sitting in the `Bureau Pulled` cell · 2 rows have no link · `Eligible States` holds the `depa` typo already noted above.
 
-**DB import: NO.** `lenders-import-alec.mjs` matches only on `external_row_id`, and this source has none — every one of the **867** would land as a fresh INSERT, taking the book from 328 to ~1,100 rows of unvetted card offers. The merge guard would report clearing 0 only because nothing matches to clear, which is a false green, not a pass. The 766 also have no alias-map entry, and the map's own rule is “if it is not in `lookup`, stop — do not fuzzy-match and do not guess.”
+**DB import: NO.** *(Superseded 2026-09-18 — Chris named the merge. See below.)* `lenders-import-alec.mjs` matches only on `external_row_id`, and this source has none — every one of the **867** would land as a fresh INSERT, taking the book from 328 to ~1,100 rows of unvetted card offers. The merge guard would report clearing 0 only because nothing matches to clear, which is a false green, not a pass. The 766 also have no alias-map entry, and the map's own rule is “if it is not in `lookup`, stop — do not fuzzy-match and do not guess.”
 
-**Recommended next step (needs Chris to name it):** treat the **101** duplicates as a *bureau + apply-URL + eligible_states backfill* onto existing rows only — join through `carl-barton-book-match.csv` `book_name` → `external_row_id`, fill empty cells, run the merge guard, import. Leave the **766** as a sourced prospect list in `docs/legacy-strong/` until he decides whether small CUs and regionals belong in the operational book.
+**Recommended next step (needs Chris to name it):** *(done — this is what ran.)* treat the **101** duplicates as a *bureau + apply-URL + eligible_states backfill* onto existing rows only — join through `carl-barton-book-match.csv` `book_name` → `external_row_id`, fill empty cells, run the merge guard, import. Leave the **766** as a sourced prospect list in `docs/legacy-strong/` until he decides whether small CUs and regionals belong in the operational book.
+
+## Carl Barton merge + import — DONE 2026-09-18
+
+One book, not two. `scripts/lenders-import-carl-barton.mjs` builds the merged file (database is the base, Carl fills empty cells only, a bank Carl has and we do not is added, whole-name alias match only). `scripts/lenders-import-alec.mjs` loads it — merge guard reported **0** values blanked out.
+
+**Unified lenders DB (live, after logos):**
+
+| | Count |
+|---|---:|
+| Banks | **1,095** |
+| With an apply URL | **1,028** |
+| With a bureau | **947** |
+| With eligible states | **1,049** |
+| **With a logo** | **651** |
+| With a ranking | **37** |
+| Carl rows (`lender_table` = OnlineBizCC) | 885 |
+
+Merged file: `credentials/lenders-audit/lenders-unified-carl-merged.csv` (**1,093** rows — gitignored). Load result: **0** inserted, **1,093** updated, 0 errors. The two rows the file leaves out are the `Verify Bank` pair, which carry no `external_row_id` and so cannot be matched by the loader.
+
+**Logos.** `scripts/lenders-logos/fetch-logos.mjs --from-db` (new `--from-db`, `--limit`, `--concurrency` flags + `targets-from-db.mjs`) asks the database who is missing a picture instead of using the hand-written list, which stopped at the pre-Carl banks. Two passes over **782** banks: **338** new PNGs saved (**247** confirmed by name, **25** saved unconfirmed — the site either blocks robots or draws itself with code, so the picture was matched on the web address alone and is worth a human glance: CREDIT UNION ONE, Dime Bank, Elevations, First Credit Union, First Port City Bank, FIRST PRIORITY, Gateway Bank, Ives Bank, Journey Bank, Lake Central Bank, Lakeland Bank, LEE, Little Horn State Bank, MidCountry Bank, National Bank of Middlebury, Nebraska State Bank, Northern Lights Credit Union, Pinnacle Credit Union, SoFi, Southbridge Credit Union, Southern Hills Community Bank, Spencer Savings Bank, VANTAGE WEST, Wayne Bank, Westbury Bank). **5** refused because the page named a different company. **439** still have none — almost all small credit unions whose site did not answer. Files on disk went **246 → 584**; `logo_path` in the database went **319 → 651**.
+
+**Noted, not touched:** `Verify Bank` exists **twice** in `lenders`, both rows with a null `external_row_id`. Not a real bank name — it reads like a leftover placeholder. Left alone; deleting rows needs Chris to name it.
 
 **States + live filter (`src/lenders/match.mjs`):** Carl **`Eligible States`** pulled (**885**/921 rows filled). CRM already filters suggestions on **client home state + business state** vs each lender's `eligible_states` (empty = still show). Before backfill: normalize Carl → book (`depa`→PA; **`Nationwide`→`All States`** — matcher does not treat the word Nationwide as national-only). No second filter; same column once merged.
