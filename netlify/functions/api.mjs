@@ -182,6 +182,7 @@ import publicPartnerPage from "../../api/public/partner-page.mjs";
 import publicSurveySubmit from "../../api/public/survey-submit.mjs";
 import publicEducationEnroll from "../../api/public/education-enroll.mjs";
 import publicOptimize from "../../api/public/optimize.mjs";
+import publicClimateMatch from "../../api/public/climate-match.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicFunnelCheckout from "../../api/public/funnel-checkout.mjs";
 import publicSloCheckout from "../../api/public/slo-checkout.mjs";
@@ -726,6 +727,12 @@ export const ROUTES = {
   /* Hidden referral page at /optimize. GET = Smart Credit gate. POST = Audit
      checkout on the keep Assessment title. No auth — same class as survey-submit. */
   "public/optimize": publicOptimize,
+  /* The lending-climate lead magnet at /climate/. GET = how big the lender book
+     is. POST = the REAL staff matcher over the same active rows /api/climate
+     publishes, returning a count, the lane counts and a few names. No odds, no
+     amounts, no credit pull, no new catalog product — the $32 unlock reuses
+     public/optimize. No auth — same class as survey-submit. */
+  "public/climate-match": publicClimateMatch,
   "public/partner-apply": publicPartnerApply,
   /* The self-serve till for the /partner/ funnel pages. GET returns every
      price those pages render (nothing is typed into the HTML); POST mints a

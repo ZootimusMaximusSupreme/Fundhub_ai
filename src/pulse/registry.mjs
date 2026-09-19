@@ -177,6 +177,11 @@ const API_KEYS = [
   /* The Decline Autopsy sales page. A plain GET answers 200 with the price, the
      row cap and the field list, so it is a real uptime door. Its two siblings
      are not — see ALLOWED_UNMONITORED. */
+  /* The lending-climate lead magnet's match count, behind the /climate/ page. A
+     plain GET answers 200 with how many active lenders the book holds, so it is
+     a real uptime door: if this is down the page shows the map and can never
+     give a visitor their number, which is the whole offer. */
+  "public/climate-match",
   "public/decline-autopsy",
   "public/education-enroll",
   /* The self-serve till for the /partner/ funnel pages. A plain GET answers 200
