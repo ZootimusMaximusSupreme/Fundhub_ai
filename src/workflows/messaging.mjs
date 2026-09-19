@@ -22,6 +22,7 @@
 // with an invented actor. See src/shifts/TELEMETRY-CALLSITES.md.
 import { isOptedOut } from "../lib/opt-out.mjs";
 import { renderTemplate, stripEmptyWhereRow } from "../lib/render-template.mjs";
+import { signUnsubscribeUrl } from "../messaging/unsubscribe.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 import { resolveShiftId } from "../shifts/attribution.mjs";
 import { emit } from "../events/bus.mjs";
@@ -213,6 +214,18 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
         resolveAppointmentTimeZone(mergeContext)
       )
     };
+  }
+  // {{unsubscribe}} in a template footer had nothing to resolve against and
+  // rendered blank (N11). Fill it with the same signed link dispatch uses.
+  if (channel === "email" && clientId && mergeContext.unsubscribe == null) {
+    try {
+      mergeContext.unsubscribe = signUnsubscribeUrl({
+        orgId, clientId, channel: "email",
+        baseUrl: String(process.env.APP_BASE_URL || process.env.URL || "https://fundhub.ai").replace(/\/+$/, "")
+      }).url;
+    } catch (err) {
+      console.warn(`[sendTemplated] {{unsubscribe}} left blank — ${String(err?.message || err)}`);
+    }
   }
   const rendered = stripEmptyWhereRow(renderTemplate(row.body, mergeContext));
 
