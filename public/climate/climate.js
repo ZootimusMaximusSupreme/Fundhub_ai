@@ -149,8 +149,16 @@
       })
       .then(drawMap)
       .catch(function () {
+        /* The error state. An empty bordered box is not one — the frame says what
+           happened and what still works, and the state card stops telling them to
+           click a map that is not there. */
         $("map-skel").style.display = "none";
+        $("map-msg").classList.add("on");
         $("nat-word").textContent = "Today's reading did not load. The bank count below still works.";
+        $("st-name").textContent = "Pick your state below";
+        $("st-word").textContent = "Map unavailable";
+        $("st-note").textContent = "The map is not loading right now. Use the state picker in the form below and we"
+          + " will still count the banks in our book that serve you.";
       });
   }
 

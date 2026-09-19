@@ -335,6 +335,10 @@ test("climate page: all four states are built — loading, empty, error, full", 
   assert.match(PAGE, /class="skel"/, "loading: a skeleton in the real layout");
   assert.match(PAGE, /Nothing picked yet/, "empty: says what will appear and what to do");
   assert.match(PAGE, /id="err"/, "error: a real message, in the visitor's words");
+  /* An empty bordered box is not an error state. When the map fails, the frame
+     says what happened and what still works. */
+  assert.match(PAGE, /id="map-msg"/, "error: the map frame says something when it fails");
+  assert.match(PAGE_JS, /map-msg["']\)\.classList\.add\("on"\)/, "error: the map message is actually shown");
   assert.match(PAGE, /id="count"/, "full: the number");
   assert.doesNotMatch(PAGE_JS, /Math\.random/, "no sample rows, no invented figures");
 });

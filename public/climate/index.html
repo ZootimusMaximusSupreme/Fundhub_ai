@@ -76,6 +76,10 @@
   /* The picked state is named in words on the card beside the map; this outline
      is the second signal, and it is --ink so it survives any brand ramp. */
   svg.usmap path.on{stroke:var(--ink);stroke-width:2.4;paint-order:stroke}
+  /* The error state for the map. An empty bordered box is not an error state —
+     the frame has to say what happened and what still works. */
+  .mapmsg{display:none;font-size:14px;color:var(--gray);padding:28px 12px;max-width:46ch}
+  .mapmsg.on{display:block}
   .legend{display:flex;flex-direction:column;gap:8px;margin-top:16px}
   .legend div{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--gray)}
   .legend i{width:14px;height:14px;border-radius:3px;border:1px solid var(--line);flex:0 0 auto}
@@ -173,6 +177,7 @@
       <div class="mapbox">
         <div id="map-skel" class="skel" style="height:300px"></div>
         <svg class="usmap" id="usmap" viewBox="0 0 959 593" role="img" aria-label="United States lending climate by state" style="display:none"></svg>
+        <p class="mapmsg" id="map-msg">Today's map did not load. Nothing is wrong with your file — this is only the wider picture. Scroll down and we will still count the banks in our book that serve your state.</p>
         <div class="legend" id="legend"></div>
       </div>
       <div class="statecard" id="statecard">
