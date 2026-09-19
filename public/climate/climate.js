@@ -224,11 +224,6 @@
       var nm = document.createElement("span");
       nm.textContent = b.name;
       li.appendChild(nm);
-      if (b.product_name) {
-        var pn = document.createElement("span");
-        pn.className = "pn"; pn.textContent = b.product_name;
-        li.appendChild(pn);
-      }
       list.appendChild(li);
     });
 

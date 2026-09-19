@@ -36,7 +36,7 @@
 | National number | equals `national.score` exactly, or an em dash when the API did not send one | `GET /api/climate` |
 | The count | equals `matchLenders().summary.match_count` over the active, non-demo rows of the `lenders` table | `POST /api/public/climate-match` |
 | The book size | equals the same row count `/api/climate` publishes as `banks` — 1,106 on 2026-09-18 | `GET /api/public/climate-match` |
-| The names | are real `lenders.name` values, in the matcher's own tier-and-rotation order | `POST /api/public/climate-match` → `teaser[]` |
+| The names | are real `lenders.name` values, in the matcher's own tier-and-rotation order — the bank's name, its logo and its lane, and nothing else | `POST /api/public/climate-match` → `teaser[]` |
 | Held-back business cards | when they answer "personal funding only", every business-table lender is held back and the page says so in words | `summary.held_for_no_business.message` |
 | The lead | a `clients` row with `channel_source = website:climate`, plus `entry.captured` and `survey.submitted` events | `clients`, `events` |
 | The states and ad tags | `clients.custom_fields.home_state`, `.business_state`, and any `utm_*` that was on the URL | `clients.custom_fields` |
@@ -59,8 +59,12 @@ Set by the owner and enforced by `src/http/climate-match.test.mjs`:
 - No dollar amount a bank will give. The only price on the page is **$32**.
 - No "pre-approved", "guaranteed funding", "no denials", "we'll get you funded".
 - No "your score will go up".
-- Lender dollar bands (`typical_approval_range`, `max_known_loc`) and insider tips are
-  staff-only and never leave the endpoint.
+- Lender dollar bands (`typical_approval_range`, `max_known_loc`), stated requirements and
+  insider tips are staff-only and never leave the endpoint.
+- **A lender's own `product_name` is not on the free teaser.** Some are the bank's
+  promotional terms — "0% for 20 Months — No Business Checking Required" is a real one in
+  the live book — and on a public funding page that reads as our claim about credit terms.
+  Names on the teaser; product names on the gated list.
 - Soft-pull wording is attached to the $32 assessment and to nothing else.
 
 ## The honest limit, written on the page

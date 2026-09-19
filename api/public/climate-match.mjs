@@ -117,12 +117,25 @@ export function parseClimateMatchBody(body) {
   };
 }
 
-/** Public shape of one matched lender. Names and logos only — no staff fields,
- *  no dollar bands, no odds. Brief §7: hide lender dollar ranges on the free teaser. */
+/**
+ * Public shape of one matched lender: the bank's NAME, its logo, and which lane
+ * it is in. Nothing else.
+ *
+ * product_name is deliberately NOT here even though the matcher carries it.
+ * Brief §2 Model A says the free teaser shows bank names; product names belong
+ * to the gated list. And some of those names are the bank's own promotional
+ * terms — "0% for 20 Months — No Business Checking Required" is a real
+ * product_name in the live book — which on a public funding page reads as our
+ * claim about credit terms rather than as a bank's product title. Nothing on
+ * this page may say that (brief §7, docs/ads/RULES.md Part 1).
+ *
+ * The staff money columns (typical_approval_range, average_starting_loc,
+ * max_known_loc, insider_tips, stated_requirements) are absent for the same
+ * reason and are never added here.
+ */
 function publicLender(m) {
   return {
     name: m.name,
-    product_name: m.product_name ?? null,
     logo_path: m.logo_path ?? null,
     lane: m.lane
   };

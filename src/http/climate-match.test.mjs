@@ -139,6 +139,25 @@ test("climate-match: no business on file holds back the business cards and says 
   assert.match(d.held_for_no_business, /no business on file/i);
 });
 
+test("climate-match: a lender's own promotional product name never reaches the free teaser", async () => {
+  /* "0% for 20 Months — No Business Checking Required" is a real product_name in
+     the live book. On a public funding page that reads as our claim about credit
+     terms, which is banned outright (docs/ads/RULES.md Part 1). The brief's free
+     teaser is bank NAMES; product names belong to the gated list. */
+  const promo = [{
+    id: "9", name: "Elan Financial", product_name: "0% for 20 Months — No Business Checking Required",
+    lender_table: "OnlineBizCC", eligible_states: "All States", logo_path: null,
+    priority_tier: 1, bureaus_pulled: "EX", type: "lender"
+  }];
+  const d = await runClimateMatch(
+    parseClimateMatchBody({ home_state: "AZ" }),
+    { pullCrmLenders: async () => ({ lenders: promo }), db: {} }
+  );
+  assert.equal(d.teaser[0].name, "Elan Financial");
+  assert.equal(d.teaser[0].product_name, undefined);
+  assert.doesNotMatch(JSON.stringify(d), /0%/);
+});
+
 test("climate-match: the teaser is capped and carries names only — no money, no odds", async () => {
   const many = [];
   for (let i = 0; i < 40; i++) {
@@ -157,10 +176,10 @@ test("climate-match: the teaser is capped and carries names only — no money, n
   assert.equal(d.teaser.length, TEASER_LIMIT);
   assert.ok(TEASER_LIMIT >= 4 && TEASER_LIMIT <= 5, "the brief teases four to five names");
   for (const t of d.teaser) {
-    assert.deepEqual(Object.keys(t).sort(), ["lane", "logo_path", "name", "product_name"]);
+    assert.deepEqual(Object.keys(t).sort(), ["lane", "logo_path", "name"]);
   }
   const json = JSON.stringify(d);
-  assert.doesNotMatch(json, /approval_range|max_known_loc|insider_tips/);
+  assert.doesNotMatch(json, /approval_range|max_known_loc|insider_tips|stated_requirements/);
   assert.doesNotMatch(json, /\$\s?\d/, "no dollar figure may reach the public page");
 });
 
