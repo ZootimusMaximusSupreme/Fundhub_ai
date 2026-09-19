@@ -360,7 +360,12 @@ export const PULSE_REGISTRY = [
     id: file.replace(/\.html$/, ""),
     kind: "desk",
     path: `/app/${file}`
-  }))
+  })),
+  {
+    id: "climate-lead-magnet",
+    kind: "desk",
+    path: "/climate/"
+  }
 ];
 
 export function coverageKey(row) {
