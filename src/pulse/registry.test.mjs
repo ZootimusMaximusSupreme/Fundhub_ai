@@ -19,6 +19,16 @@ import {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const API_DIR = path.resolve(HERE, "../../api");
 const APP_DIR = path.resolve(HERE, "../../public/app");
+const PUBLIC_DIR = path.resolve(HERE, "../../public");
+
+function publicStaticFiles() {
+  return fs
+    .readdirSync(PUBLIC_DIR, { recursive: true })
+    .filter((name) => typeof name === "string" && name.endsWith(".html") && !name.startsWith("app/"))
+    .map((name) => name.replace(/\\/g, "/"))
+    .filter((name) => name !== "index.html" && !name.startsWith("app/"))
+    .sort();
+}
 
 function handlerKeys(dir = API_DIR, prefix = "") {
   const out = [];
@@ -36,6 +46,7 @@ function deskFiles() {
 
 const KEYS = handlerKeys();
 const DESKS = deskFiles();
+const PUBLIC_STATICS = publicStaticFiles();
 
 test("registry: every routed api/ handler and live public/app desk is listed or explicitly unmonitored", () => {
   const missing = missingFromRegistry({
@@ -65,7 +76,7 @@ test("registry: omitting a known live route fails coverage", () => {
 });
 
 test("registry: no ALLOWED_UNMONITORED entry is stale", () => {
-  const live = new Set([...KEYS, ...DESKS]);
+  const live = new Set([...KEYS, ...DESKS, ...PUBLIC_STATICS]);
   const covered = new Set(PULSE_REGISTRY.map(coverageKey));
   for (const key of Object.keys(ALLOWED_UNMONITORED)) {
     assert.ok(live.has(key), `ALLOWED_UNMONITORED names "${key}" but that file is gone — drop the entry.`);
@@ -83,7 +94,7 @@ test("registry: every ALLOWED_UNMONITORED entry carries a written reason", () =>
 });
 
 test("registry: every registry row names a real handler or desk file", () => {
-  const live = new Set([...KEYS, ...DESKS]);
+  const live = new Set([...KEYS, ...DESKS, ...PUBLIC_STATICS]);
   for (const row of PULSE_REGISTRY) {
     const key = coverageKey(row);
     assert.ok(live.has(key), `PULSE_REGISTRY has "${key}" (${row.path}) but that file is gone.`);

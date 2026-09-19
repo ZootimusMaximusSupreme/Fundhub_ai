@@ -350,6 +350,9 @@ const DESK_FILES = [
   "staff-teams.html"
 ];
 
+/** Static HTML under public/ (not public/app desks). */
+const PUBLIC_STATIC_FILES = ["climate/index.html"];
+
 export const PULSE_REGISTRY = [
   ...API_KEYS.map((key) => ({
     id: key,
@@ -361,15 +364,17 @@ export const PULSE_REGISTRY = [
     kind: "desk",
     path: `/app/${file}`
   })),
-  {
-    id: "climate-lead-magnet",
-    kind: "desk",
-    path: "/climate/"
-  }
+  ...PUBLIC_STATIC_FILES.map((file) => ({
+    id: file.replace(/\.html$/, "").replace(/\//g, "-"),
+    kind: "public_static",
+    file,
+    path: file === "climate/index.html" ? "/climate/" : `/${file}`
+  }))
 ];
 
 export function coverageKey(row) {
   if (!row || !row.path) return "";
+  if (row.kind === "public_static") return row.file || "";
   if (row.kind === "desk") return row.path.replace(/^.*\//, "");
   return String(row.path).replace(/^\/api\//, "").replace(/\?.*$/, "");
 }
@@ -406,7 +411,7 @@ function checkRow(row, status, detail, suggestedFix = null) {
 }
 
 function isUp(row, httpStatus) {
-  if (row.kind === "desk") return httpStatus >= 200 && httpStatus < 300;
+  if (row.kind === "desk" || row.kind === "public_static") return httpStatus >= 200 && httpStatus < 300;
   return (
     (httpStatus >= 200 && httpStatus < 300) ||
     httpStatus === 400 ||
