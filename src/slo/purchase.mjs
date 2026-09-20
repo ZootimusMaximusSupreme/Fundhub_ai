@@ -6,7 +6,38 @@
 // Email, phone, product name, and price never choose the offer or the person.
 
 import { defaultOrgId } from "../events/bus.mjs";
+import { createTask } from "../lib/create-task.mjs";
+import {
+  ASSIGNEE_ROLE,
+  MID_SOURCE_WORKFLOW
+} from "../handlers/customer-insights.mjs";
+import { BOOKING_STATUS } from "../bookings/store.mjs";
 import { asUuid, findActiveConnection, normCfId } from "./connections.mjs";
+import { stampSloRef } from "./buyer.mjs";
+
+/** ClickFunnels post-purchase only (stamp, CSM chase, booking chase-complete).
+ *  Unset / false / anything else = off. Same fail-closed grammar as
+ *  DEMO_LOGINS_ENABLED: only true / 1 / yes turn it on. */
+export const SLO_POST_PURCHASE_ENABLED = "SLO_POST_PURCHASE_ENABLED";
+const POST_PURCHASE_ON = new Set(["true", "1", "yes"]);
+
+export function isSloPostPurchaseEnabled(env = process.env) {
+  const raw = env && env[SLO_POST_PURCHASE_ENABLED];
+  if (typeof raw !== "string") return false;
+  return POST_PURCHASE_ON.has(raw.trim().toLowerCase());
+}
+
+/** Existing CSM outbound kind (`customer-insights-mid`). Copy is the $297
+ *  cultivate-and-close job, not the 90-day halfway check-in. CSM can close.
+ *  Booking a closer is not the goal. */
+export const SLO_NURTURE_TITLE = "SLO paid — walk portal / close";
+/** Same prefix as comms.mjs closer booking tasks. Bound as a LIKE param. */
+const CLOSER_BOOKING_TITLE_LIKE = "Strategy session%";
+const ACTIVE_CLOSER_BOOKING_STATUSES = [
+  BOOKING_STATUS.BOOKED,
+  BOOKING_STATUS.RESCHEDULED,
+  BOOKING_STATUS.COMPLETED
+];
 
 const PAID_TYPES = new Set([
   "order.completed",
@@ -290,7 +321,80 @@ export async function recordSloPurchase(db, {
   return { ok: true, created: !!saleIns.rows[0], sale, transaction };
 }
 
-export async function handleSloPaidWebhook(db, body) {
+export function sloNurtureTaskBody(ref) {
+  return [
+    "They paid SLO. They did not inbound-book a call.",
+    "Call or text now. Walk the dashboards with them. Help them. You can close or upsell on this file.",
+    "This is not a Google Meet and not a halfway check-in.",
+    "Do not hand this file to a closer unless they book a call themselves.",
+    "",
+    `[event:${ref}]`
+  ].join("\n");
+}
+
+async function hasOpenCloserBooking(db, { orgId, clientId }) {
+  if (!orgId || !clientId) return false;
+  const booked = await db.query(
+    `SELECT 1 FROM bookings
+      WHERE org_id = $1::uuid AND client_id = $2::uuid
+        AND status = ANY($3::text[])
+      LIMIT 1`,
+    [orgId, clientId, ACTIVE_CLOSER_BOOKING_STATUSES]
+  );
+  if (booked.rows[0]) return true;
+  const closer = await db.query(
+    `SELECT 1 FROM tasks
+      WHERE org_id = $1::uuid AND client_id = $2::uuid
+        AND assignee_role = $3
+        AND done = false
+        AND title LIKE $4
+      LIMIT 1`,
+    [orgId, clientId, "closer", CLOSER_BOOKING_TITLE_LIKE]
+  );
+  return Boolean(closer.rows[0]);
+}
+
+/** Same slo_ref / slo_source as the Fundhub till. Reuses the existing CSM
+ *  outbound kind with SLO cultivate-and-close title/notes. Due immediately.
+ *  Does not emit deposit.paid. Does not create a closer task. Skips if they
+ *  already inbound-booked (closer owns that file). */
+async function afterSloPaid(db, { orgId, clientId, ref }) {
+  await stampSloRef(db, clientId, ref);
+  if (!orgId || !clientId || !ref) return;
+  if (await hasOpenCloserBooking(db, { orgId, clientId })) return;
+  await createTask(db, {
+    orgId,
+    clientId,
+    title: SLO_NURTURE_TITLE,
+    sourceWorkflow: MID_SOURCE_WORKFLOW,
+    assigneeRole: ASSIGNEE_ROLE,
+    eventId: ref,
+    body: sloNurtureTaskBody(ref),
+    dueAt: new Date(),
+    dedupeOn: "title"
+  });
+}
+
+/** Drop the SLO nurture off the CSM outbound queue once they inbound-book.
+ *  Closer work still comes only from booking.created, never from this chase. */
+export async function completeSloNurtureTasks(db, { orgId, clientId, env = process.env }) {
+  if (!isSloPostPurchaseEnabled(env)) return { closed: 0 };
+  if (!db || !clientId) return { closed: 0 };
+  const r = await db.query(
+    `UPDATE tasks SET done = true, updated_at = now()
+      WHERE client_id = $1
+        AND ($2::uuid IS NULL OR org_id = $2::uuid)
+        AND assignee_role = $3
+        AND source_workflow = $4
+        AND title = $5
+        AND done = false
+      RETURNING id`,
+    [clientId, orgId || null, ASSIGNEE_ROLE, MID_SOURCE_WORKFLOW, SLO_NURTURE_TITLE]
+  );
+  return { closed: r.rows.length };
+}
+
+export async function handleSloPaidWebhook(db, body, { env = process.env } = {}) {
   const extracted = extractSloPaidPurchase(body);
   if (!extracted.ok) {
     return { written: [], reason: extracted.reason };
@@ -316,6 +420,13 @@ export async function handleSloPaidWebhook(db, body) {
     });
     if (!rec.ok) {
       return { written, reason: rec.reason };
+    }
+    if (isSloPostPurchaseEnabled(env)) {
+      await afterSloPaid(db, {
+        orgId,
+        clientId: extracted.clientId,
+        ref: providerRef
+      });
     }
     written.push({
       sale_id: rec.sale?.id || null,

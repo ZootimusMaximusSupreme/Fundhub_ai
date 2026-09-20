@@ -33,6 +33,32 @@ import { incomeEstimates, isSampleResult } from "../http/client-detail.mjs";
    (F15) because they call the same function, not because someone kept two
    calculations in step. */
 import { prequalFromCustomFields } from "../http/portal-prequal.mjs";
+import { getLatestPull } from "../finance/soft-pulls.mjs";
+import { isSloPostPurchaseEnabled } from "../slo/purchase.mjs";
+
+/* COMPLIANCE REVIEW REQUIRED — credit-pull type/reuse.
+   Owner-set 2026-09-19: when SLO_POST_PURCHASE_ENABLED is on, a closer does
+   not send another $32 / C-00 pull when crs_results is younger than 30 days.
+   Flag off (unset) keeps the existing send. Age ≥ 30 days, or no file, uses
+   the existing send path either way. */
+export const SOFT_PULL_REUSE_DAYS = 30;
+const SOFT_PULL_REUSE_MS = SOFT_PULL_REUSE_DAYS * 24 * 60 * 60 * 1000;
+
+export function freshSoftPullSkip(latest, now = new Date()) {
+  if (!latest || latest.created_at == null || latest.created_at === "") return null;
+  const pulledAt = new Date(latest.created_at);
+  if (Number.isNaN(pulledAt.getTime())) return null;
+  const ageMs = now.getTime() - pulledAt.getTime();
+  if (ageMs >= SOFT_PULL_REUSE_MS) return null;
+  const ageDays = ageMs < 0 ? 0 : Math.floor(ageMs / (24 * 60 * 60 * 1000));
+  return {
+    skipped: true,
+    reason: "fresh_pull_on_file",
+    last_pull_at: latest.created_at,
+    crs_result_id: latest.id || null,
+    pull_age_days: ageDays
+  };
+}
 
 function jsonSafeLink(link, extra = {}) {
   if (!link) return null;
@@ -378,6 +404,10 @@ export async function buildCloserDeck(db, { orgId, clientId }) {
 
   return {
     client_id: client.id,
+    slo_ref: cf(client, "slo_ref"),
+    slo_source: cf(client, "slo_source"),
+    slo_pack_status: cf(client, "slo_pack_status"),
+    last_pull_at: softPull.last_pull_at,
     survey: {
       name,
       entity: client.business_name || cf(client, "business_name") || cf(client, "cf_business_name"),
@@ -461,7 +491,8 @@ async function softPullStatus(db, { orgId, clientId }) {
       : (pull ? "soft_pull_request" : null),
     pull_id: pull ? pull.id : null,
     crs_result_id: result ? result.id : (pull?.crs_result_id || null),
-    outcome_tier: result ? result.outcome_tier : null
+    outcome_tier: result ? result.outcome_tier : null,
+    last_pull_at: result ? result.created_at : null
   };
 }
 
@@ -479,6 +510,12 @@ function publicBaseUrl(env = process.env) {
 export async function sendDeckSoftPull(db, {
   orgId, clientId, staffId, staffRole = null, checkoutBaseUrl, env = process.env
 }) {
+  const latest = await getLatestPull(db, { clientId });
+  if (isSloPostPurchaseEnabled(env)) {
+    const skip = freshSoftPullSkip(latest);
+    if (skip) return skip;
+  }
+
   const offer = getOffer("SOFT_PULL");
   if (!offer) {
     throw new CloserDeckError("Soft-pull offer missing from catalog.", { status: 500, code: "offer_missing" });

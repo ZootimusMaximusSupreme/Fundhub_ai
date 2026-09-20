@@ -428,6 +428,10 @@ export async function buildCockpit(db, { orgId, staffId, clientId, now = new Dat
          it looks like a name in a 32px h1. This says out loud that nobody
          typed one, so the closer knows to ask rather than to trust it. */
       name: [client.first_name, client.last_name].filter(Boolean).join(" ") || client.email || "Name not on file",
+      slo_ref: (client.custom_fields && client.custom_fields.slo_ref) || null,
+      slo_source: (client.custom_fields && client.custom_fields.slo_source) || null,
+      slo_pack_status: (client.custom_fields && client.custom_fields.slo_pack_status) || null,
+      last_pull_at: credit.pulled_at || null,
       business_name: client.business_name,
       city: null,
       state: null,

@@ -41,6 +41,7 @@ import {
   upsertBooking, setStatusByProviderUid, normalizeProviderUid,
   BOOKING_STATUS, UNKNOWN_SOURCE
 } from "../bookings/store.mjs";
+import { completeSloNurtureTasks, isSloPostPurchaseEnabled } from "../slo/purchase.mjs";
 
 // TCPA standard opt-out and opt-in keyword sets (case-insensitive, trimmed).
 const STOP_KEYWORDS  = new Set(["STOP", "STOPALL", "UNSUBSCRIBE", "CANCEL", "END", "QUIT"]);
@@ -488,6 +489,9 @@ export async function onBookingCreated(event, db) {
       pipelineKey: "sales",
       stageKey: "booked"
     });
+  }
+  if (isSloPostPurchaseEnabled()) {
+    await completeSloNurtureTasks(db, { orgId: event.orgId, clientId });
   }
 }
 

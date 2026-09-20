@@ -164,6 +164,67 @@ describe("POST /api/closer-deck", () => {
     assert.equal(res.body.error, "commas_not_configured");
   });
 
+  test("soft pull with a fresh file is 200 skip when post-purchase is on", async () => {
+    const prev = process.env.SLO_POST_PURCHASE_ENABLED;
+    process.env.SLO_POST_PURCHASE_ENABLED = "true";
+    try {
+      const createdAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      const res = await post({
+        action: "send_soft_pull",
+        client_id: CID
+      }, {
+        db: {
+          async query(sql) {
+            const s = String(sql);
+            if (/SELECT 1 FROM clients/i.test(s)) return { rows: [{ "?column?": 1 }] };
+            if (/FROM crs_results/i.test(s)) {
+              return { rows: [{ id: "crs-fresh", created_at: createdAt, result: {} }] };
+            }
+            return { rows: [] };
+          }
+        }
+      });
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.body.ok, true);
+      assert.equal(res.body.action, "send_soft_pull");
+      assert.equal(res.body.skipped, true);
+      assert.equal(res.body.reason, "fresh_pull_on_file");
+      assert.equal(res.body.error, undefined);
+    } finally {
+      if (prev === undefined) delete process.env.SLO_POST_PURCHASE_ENABLED;
+      else process.env.SLO_POST_PURCHASE_ENABLED = prev;
+    }
+  });
+
+  test("soft pull with a fresh file still sends when post-purchase is off", async () => {
+    const prev = process.env.SLO_POST_PURCHASE_ENABLED;
+    delete process.env.SLO_POST_PURCHASE_ENABLED;
+    try {
+      const createdAt = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+      const res = await post({
+        action: "send_soft_pull",
+        client_id: CID
+      }, {
+        db: {
+          async query(sql) {
+            const s = String(sql);
+            if (/SELECT 1 FROM clients/i.test(s)) return { rows: [{ "?column?": 1 }] };
+            if (/FROM crs_results/i.test(s)) {
+              return { rows: [{ id: "crs-fresh", created_at: createdAt, result: {} }] };
+            }
+            return { rows: [] };
+          }
+        }
+      });
+      assert.equal(res.statusCode, 503);
+      assert.equal(res.body.error, "commas_not_configured");
+      assert.equal(res.body.skipped, undefined);
+    } finally {
+      if (prev === undefined) delete process.env.SLO_POST_PURCHASE_ENABLED;
+      else process.env.SLO_POST_PURCHASE_ENABLED = prev;
+    }
+  });
+
   test("ebook without amount is 400", async () => {
     process.env.COMMAS_CHECKOUT_BASE_URL = "https://pay.example/checkout";
     const res = await post({

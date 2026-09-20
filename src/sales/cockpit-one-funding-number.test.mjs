@@ -191,3 +191,25 @@ describe("the shift chip stops counting when nobody clocked out", () => {
     assert.match(out.staff.shift.reason, /never clocked out/);
   });
 });
+
+test("closer-call JSON includes stored SLO fields and last pull at", async () => {
+  const out = await buildCockpit(
+    stubDb({
+      clients: [{
+        id: CLIENT, first_name: "Ada", last_name: "Byron", email: "ada@example.com",
+        custom_fields: {
+          slo_ref: "clickfunnels:order:evt-slo-1:cf-prod-slo-1",
+          slo_source: "slo",
+          slo_pack_status: "Delivered"
+        },
+        tags: [], business_name: null, age_months: null
+      }],
+      crs_results: [WALK1_CRS]
+    }),
+    { orgId: ORG, staffId: STAFF, clientId: CLIENT }
+  );
+  assert.equal(out.client.slo_ref, "clickfunnels:order:evt-slo-1:cf-prod-slo-1");
+  assert.equal(out.client.slo_source, "slo");
+  assert.equal(out.client.slo_pack_status, "Delivered");
+  assert.equal(out.client.last_pull_at, WALK1_CRS.created_at);
+});

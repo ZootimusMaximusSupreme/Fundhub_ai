@@ -4,6 +4,7 @@ import {
   onMessageInbound, onCallCompleted, onMailResponse, onBookingCreated,
   onBookingRescheduled, onBookingCancelled, onBookingNoshow
 } from "./comms.mjs";
+import { SLO_NURTURE_TITLE, SLO_POST_PURCHASE_ENABLED } from "../slo/purchase.mjs";
 
 // Fake pg covering the queries comms.mjs + resolveClient issue. Messages dedup is
 // DB-level (ON CONFLICT) and proven in the pg integration test; the guard-based
@@ -28,6 +29,18 @@ import {
 /* The only LIKE form the real queries bind is a trailing '%'. */
 const likeMatches = (value, like) =>
   String(value ?? "").startsWith(String(like ?? "").replace(/%$/, ""));
+
+async function withSloPostPurchase(value, fn) {
+  const prev = process.env[SLO_POST_PURCHASE_ENABLED];
+  if (value === undefined) delete process.env[SLO_POST_PURCHASE_ENABLED];
+  else process.env[SLO_POST_PURCHASE_ENABLED] = value;
+  try {
+    await fn();
+  } finally {
+    if (prev === undefined) delete process.env[SLO_POST_PURCHASE_ENABLED];
+    else process.env[SLO_POST_PURCHASE_ENABLED] = prev;
+  }
+}
 
 function pgFake() {
   const clients = [], messages = [], bank = [], tasks = [], optOuts = [], bookings = [];
@@ -115,6 +128,26 @@ function pgFake() {
         t.done = false;
         return { rows: [{ id: t.id }] };
       }
+      // --- SLO nurture close-out from booking.created (purchase.mjs) ---
+      // Real WHERE: client_id, optional org_id, assignee_role, source_workflow, title.
+      if (/UPDATE tasks SET done = true/.test(sql) && /source_workflow/.test(sql)) {
+        const [clientId, orgId, role, sourceWorkflow, title] = params;
+        const hits = [];
+        for (const t of tasks) {
+          if (
+            t.client_id === clientId
+            && (orgId == null || t.org_id === orgId)
+            && t.assignee_role === role
+            && t.source_workflow === sourceWorkflow
+            && t.title === title
+            && !t.done
+          ) {
+            t.done = true;
+            hits.push({ id: t.id });
+          }
+        }
+        return { rows: hits };
+      }
       // --- tasks: cancel/no-show close-out (mark the open task done) ---
       // Real WHERE: client_id = $1 AND body = $2 AND title LIKE $3 AND done = false.
       if (/UPDATE tasks SET done = true/.test(sql)) {
@@ -171,7 +204,9 @@ function pgFake() {
         const row = {
           id: "task-" + (tasks.length + 1),
           org_id: params[0], client_id: params[1], title: params[2], body: params[3],
-          due_at: params[4], source_workflow: params[5], meeting_url: params[8] ?? null,
+          due_at: params[4], source_workflow: params[5],
+          assignee_role: params[6] ?? null,
+          meeting_url: params[8] ?? null,
           done: false
         };
         tasks.push(row);
@@ -499,6 +534,79 @@ test("booking.created: a booking id with stray spaces is ONE booking and ONE tas
   assert.equal(db.tasks.length, 1, "the same booking id produced two closer follow-ups");
   assert.equal(db.tasks[0].body, "AbC-1", "the task stored an untrimmed booking id");
   assert.equal(db.bookings.length, 1);
+});
+
+test("booking.created: inbound book closes SLO CSM nurture and still makes only a closer task", async () => {
+  await withSloPostPurchase("true", async () => {
+    const db = pgFake();
+    db.clients.push({
+      id: "cl-slo-nurture", org_id: "org-1", email: "slo-nurture@x.com",
+      tags: [], custom_fields: {}
+    });
+    db.tasks.push({
+      id: "task-slo-nurture",
+      org_id: "org-1",
+      client_id: "cl-slo-nurture",
+      title: SLO_NURTURE_TITLE,
+      body: "slo-nurture-notes",
+      source_workflow: "customer-insights-mid",
+      assignee_role: "csm",
+      done: false
+    });
+    db.tasks.push({
+      id: "task-halfway",
+      org_id: "org-1",
+      client_id: "cl-slo-nurture",
+      title: "Accountability call — halfway check-in",
+      body: "halfway-notes",
+      source_workflow: "customer-insights-mid",
+      assignee_role: "csm",
+      done: false
+    });
+    await onBookingCreated(ev("booking.created", {
+      email: "slo-nurture@x.com",
+      bookingUid: "bk_slo_nurture",
+      startTime: "2026-08-01T15:00:00Z",
+      source: "clickfunnels"
+    }, { clientId: "cl-slo-nurture" }), db);
+    const nurture = db.tasks.find((t) => t.id === "task-slo-nurture");
+    const halfway = db.tasks.find((t) => t.id === "task-halfway");
+    const closer = db.tasks.find((t) => t.title === "Strategy session booked");
+    assert.equal(nurture.done, true);
+    assert.equal(halfway.done, false);
+    assert.equal(closer.assignee_role, "closer");
+    assert.equal(db.tasks.filter((t) => t.assignee_role === "closer").length, 1);
+  });
+});
+
+test("booking.created: flag off leaves the SLO CSM nurture and still makes a closer task", async () => {
+  await withSloPostPurchase(undefined, async () => {
+    const db = pgFake();
+    db.clients.push({
+      id: "cl-slo-nurture", org_id: "org-1", email: "slo-nurture@x.com",
+      tags: [], custom_fields: {}
+    });
+    db.tasks.push({
+      id: "task-slo-nurture",
+      org_id: "org-1",
+      client_id: "cl-slo-nurture",
+      title: SLO_NURTURE_TITLE,
+      body: "slo-nurture-notes",
+      source_workflow: "customer-insights-mid",
+      assignee_role: "csm",
+      done: false
+    });
+    await onBookingCreated(ev("booking.created", {
+      email: "slo-nurture@x.com",
+      bookingUid: "bk_slo_off",
+      startTime: "2026-08-01T15:00:00Z",
+      source: "clickfunnels"
+    }, { clientId: "cl-slo-nurture" }), db);
+    const nurture = db.tasks.find((t) => t.id === "task-slo-nurture");
+    const closer = db.tasks.find((t) => t.title === "Strategy session booked");
+    assert.equal(nurture.done, false);
+    assert.equal(closer.assignee_role, "closer");
+  });
 });
 
 // TCPA STOP/START keyword handling

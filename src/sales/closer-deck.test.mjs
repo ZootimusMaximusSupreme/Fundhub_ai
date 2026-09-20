@@ -12,11 +12,16 @@ import {
   selectedOfferKey,
   generateDeckLetters,
   sendDeckPayLink,
+  sendDeckSoftPull,
+  freshSoftPullSkip,
+  SOFT_PULL_REUSE_DAYS,
   CloserDeckError
 } from "./closer-deck.mjs";
+import { SLO_POST_PURCHASE_ENABLED } from "../slo/purchase.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CID = "22222222-2222-4222-8222-222222222222";
+const ENV_ON = { [SLO_POST_PURCHASE_ENABLED]: "true" };
 
 function fakeDb({
   client = null,
@@ -282,6 +287,122 @@ test("a stored credit result is a finished pull, whatever the request row says",
   assert.equal(out.soft_pull.pull_status, "complete");
   assert.equal(out.soft_pull.pull_status_source, "crs_result");
   assert.equal(out.soft_pull.outcome_tier, "FULL_FUNDING");
+  assert.equal(out.soft_pull.last_pull_at, "2026-09-03T00:00:00Z");
+  assert.equal(out.last_pull_at, "2026-09-03T00:00:00Z");
+  assert.equal(out.slo_ref, null);
+  assert.equal(out.slo_pack_status, null);
+});
+
+test("deck JSON includes stored slo_ref and pack status without inventing them", async () => {
+  const client = {
+    ...CLIENT,
+    custom_fields: {
+      ...CLIENT.custom_fields,
+      slo_ref: "clickfunnels:order:evt-slo-1:cf-prod-slo-1",
+      slo_source: "slo",
+      slo_pack_status: "Delivered"
+    }
+  };
+  const out = await buildCloserDeck(fakeDb({ client }), { orgId: ORG, clientId: CID });
+  assert.equal(out.slo_ref, "clickfunnels:order:evt-slo-1:cf-prod-slo-1");
+  assert.equal(out.slo_source, "slo");
+  assert.equal(out.slo_pack_status, "Delivered");
+  assert.equal(out.last_pull_at, null);
+});
+
+test("freshSoftPullSkip: younger than 30 days is a skip; 30 days or older is not", () => {
+  const now = new Date("2026-09-20T00:00:00.000Z");
+  const day = 24 * 60 * 60 * 1000;
+  assert.equal(SOFT_PULL_REUSE_DAYS, 30);
+  assert.equal(freshSoftPullSkip(null, now), null);
+  assert.equal(freshSoftPullSkip({ created_at: null }, now), null);
+  const fresh = freshSoftPullSkip({
+    id: "crs-fresh",
+    created_at: new Date(now.getTime() - 5 * day).toISOString()
+  }, now);
+  assert.equal(fresh.skipped, true);
+  assert.equal(fresh.reason, "fresh_pull_on_file");
+  assert.equal(fresh.crs_result_id, "crs-fresh");
+  assert.equal(fresh.pull_age_days, 5);
+  assert.equal(freshSoftPullSkip({
+    id: "crs-edge",
+    created_at: new Date(now.getTime() - 30 * day).toISOString()
+  }, now), null);
+  assert.equal(freshSoftPullSkip({
+    id: "crs-stale",
+    created_at: new Date(now.getTime() - 40 * day).toISOString()
+  }, now), null);
+});
+
+test("sendDeckSoftPull skips a fresh file when post-purchase is on", async () => {
+  const createdAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (/FROM crs_results/i.test(s)) {
+        return { rows: [{ id: "crs-fresh", created_at: createdAt, result: {} }] };
+      }
+      throw new Error("send must not write when the file is fresh: " + s.slice(0, 80));
+    }
+  };
+  const out = await sendDeckSoftPull(db, {
+    orgId: ORG,
+    clientId: CID,
+    staffId: "s1",
+    env: ENV_ON
+  });
+  assert.equal(out.skipped, true);
+  assert.equal(out.reason, "fresh_pull_on_file");
+  assert.equal(out.crs_result_id, "crs-fresh");
+  assert.equal(out.last_pull_at, createdAt);
+});
+
+test("sendDeckSoftPull with a fresh file still uses the existing send path when the flag is off", async () => {
+  const createdAt = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString();
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (/FROM crs_results/i.test(s)) {
+        return { rows: [{ id: "crs-fresh", created_at: createdAt, result: {} }] };
+      }
+      throw new Error("unexpected sql: " + s.slice(0, 80));
+    }
+  };
+  await assert.rejects(
+    () => sendDeckSoftPull(db, { orgId: ORG, clientId: CID, staffId: "s1", env: {} }),
+    (e) => e instanceof CloserDeckError && e.code === "commas_not_configured" && e.status === 503
+  );
+});
+
+test("sendDeckSoftPull with no file still uses the existing send path", async () => {
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (/FROM crs_results/i.test(s)) return { rows: [] };
+      throw new Error("unexpected sql: " + s.slice(0, 80));
+    }
+  };
+  await assert.rejects(
+    () => sendDeckSoftPull(db, { orgId: ORG, clientId: CID, staffId: "s1", env: {} }),
+    (e) => e instanceof CloserDeckError && e.code === "commas_not_configured" && e.status === 503
+  );
+});
+
+test("sendDeckSoftPull with a stale file still uses the existing send path", async () => {
+  const createdAt = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString();
+  const db = {
+    async query(sql) {
+      const s = String(sql);
+      if (/FROM crs_results/i.test(s)) {
+        return { rows: [{ id: "crs-stale", created_at: createdAt, result: {} }] };
+      }
+      throw new Error("unexpected sql: " + s.slice(0, 80));
+    }
+  };
+  await assert.rejects(
+    () => sendDeckSoftPull(db, { orgId: ORG, clientId: CID, staffId: "s1", env: {} }),
+    (e) => e instanceof CloserDeckError && e.code === "commas_not_configured" && e.status === 503
+  );
 });
 
 test("with no credit result at all the pull status stays honest", async () => {
