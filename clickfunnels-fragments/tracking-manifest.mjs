@@ -148,11 +148,14 @@ export const PUSH_MANIFEST = [
   },
   {
     key: "slo-297-sales",
-    liveUrl: null,
-    path: null,
-    fragment: "clickfunnels-fragments/slo/slo-01-sales.html",
-    vslBeacon: true,
+    liveUrl: "https://apply.fundhub.ai/roadmap",
+    path: "/roadmap",
+    pageId: "25426320",
+    fragment:
+      "clickfunnels-fragments/slo/preview/shareable-2026-09-20/preview-01-sales-page.html",
+    vslBeacon: false,
     strategy: "custom_html",
+    note: "Funnel step path /roadmap — deliverables list from 2026-09-20 zip",
   },
   {
     key: "slo-297-booking",

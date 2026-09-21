@@ -158,6 +158,26 @@ Chris decides; agents operate. Run bash, lint, tests, `npm run ship`, env reads 
 
 **Exceptions only:** Mac permission dialogs he alone can approve (mic, Accessibility); explicit product gates he must answer (yes/no, live vs sandbox on Full E2E); the two §11 ask-first items (delete data, repoint `DATABASE_URL`).
 
+### Direct URL only (owner-set 2026-09-21)
+
+When Chris asks where to go, or asks for a link, the reply is the direct URL. Same law: `.cursor/rules/ux-guidance-urls-first.mdc` and `.claude/rules/ux-guidance-urls-first.md`.
+
+### Rules and skills for both (owner-set 2026-09-21)
+
+When Chris asks for a rule, a skill, or a law, write it for Claude and for Cursor in the same change. Cursor rules live in `.cursor/rules/`. Claude rules live in `.claude/rules/`. Skills live in `.cursor/skills/<name>/` with a symlink at `.claude/skills/<name>`. Same law: `.cursor/rules/rules-for-claude-and-cursor.mdc` and `.claude/rules/rules-for-claude-and-cursor.md`.
+
+### Company name is Fundhub (owner-set 2026-09-21)
+
+The company is **Fundhub**. Never write FundHub. Domain stays `fundhub.ai`. Same law: `.cursor/rules/fundhub-company-name.mdc` and `.claude/rules/fundhub-company-name.md`.
+
+### Fresh thread when the chat gets long (owner-set 2026-09-21)
+
+When a chat gets long, or the named task is done, remind Chris once: the loud `/summarize` line, then the hash middle-finger picture. A long chat resends the whole history every reply. Same law: `.cursor/rules/fresh-thread-when-long.mdc` and `.claude/rules/fresh-thread-when-long.md`.
+
+### Chris never clicks ClickFunnels (owner-set 2026-09-21)
+
+Chris never logs into ClickFunnels admin. Agents push funnel HTML via API using `CLICKFUNNELS_API_KEY`. Same law: `.cursor/rules/chris-never-clickfunnels.mdc` and `.claude/rules/chris-never-clickfunnels.md`.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
