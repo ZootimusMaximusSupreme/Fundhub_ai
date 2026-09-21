@@ -1,7 +1,7 @@
-// public/slo/index.html (sales) and public/slo/pay.html (pay) — the $297 SLO
-// door on fundhub.ai. Owner lines, 2026-09-17: trust first, no fake
-// testimonials, no SIM MODE, no earnings claims, the price is never typed in
-// the HTML, and the pay page says what the person is agreeing to.
+// public/roadmap/index.html (sales) and public/roadmap/pay.html (pay) — the
+// $297 Capital Playbook door on fundhub.ai. Owner lines, 2026-09-17: trust
+// first, no fake testimonials, no SIM MODE, no earnings claims, the price is
+// never typed in the HTML, and the pay page says what the person is agreeing to.
 import { test } from "node:test";
 import assert from "node:assert";
 import fs from "node:fs";
@@ -9,7 +9,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const read = (p) => fs.readFileSync(path.resolve(HERE, "../../public/slo", p), "utf8");
+const read = (p) => fs.readFileSync(path.resolve(HERE, "../../public/roadmap", p), "utf8");
 const sales = read("index.html");
 const pay = read("pay.html");
 
@@ -35,7 +35,7 @@ for (const [name, html] of [["index.html", sales], ["pay.html", pay]]) {
 test("sales page: every call to action goes to the pay page", () => {
   const ctas = sales.match(/class="btn" href="[^"]+"/g) || [];
   assert.ok(ctas.length >= 4, "the copy's calls to action are all present");
-  for (const c of ctas) assert.match(c, /href="\/slo\/pay\.html"/, c);
+  for (const c of ctas) assert.match(c, /href="\/roadmap\/pay\.html"/, c);
 });
 
 test("sales page: no video box that cannot play", () => {

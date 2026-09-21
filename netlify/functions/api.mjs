@@ -186,6 +186,7 @@ import publicClimateMatch from "../../api/public/climate-match.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicFunnelCheckout from "../../api/public/funnel-checkout.mjs";
 import publicSloCheckout from "../../api/public/slo-checkout.mjs";
+import publicSloPull from "../../api/public/slo-pull.mjs";
 import trialsEligibility from "../../api/trials/eligibility.mjs";
 import trialsProvision from "../../api/trials/provision.mjs";
 import trialsDashboard from "../../api/trials/dashboard.mjs";
@@ -741,9 +742,12 @@ export const ROUTES = {
      review call, so its CTA stays the application above. No auth: same class
      as public/survey-submit. COMPLIANCE REVIEW REQUIRED — fee timing. */
   "public/funnel-checkout": publicFunnelCheckout,
-  /* The $297 SLO diagnostic. Pay on Commas, then land on /slo/pull.html.
+  /* The $297 SLO diagnostic. Pay on Commas, then land on /roadmap/pull.html.
      No auth — same class as public/optimize. Keep title Assessment. */
   "public/slo-checkout": publicSloCheckout,
+  /* POST only. Identity + checkbox consent, then diagnostic.paid. GET 405.
+     Do not ping with a body — that would store an SSN and fire C-00. */
+  "public/slo-pull": publicSloPull,
   /* The Live Trial. $297, seven days, docs/specs/W4-live-trial.md.
      eligibility is PUBLIC and runs in front of the pay button — Meta will not
      run a money-related ad from an unverified business, and finding that out

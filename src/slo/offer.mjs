@@ -22,7 +22,7 @@ export const SLO_PURPOSE = "diagnostic";
 
 export const SLO_PRODUCT_CODE = "diagnostic";
 
-export const SLO_PULL_PATH = "/slo/pull.html";
+export const SLO_PULL_PATH = "/roadmap/pull.html";
 
 export const SLO_BOOK_URL = "https://apply.fundhub.ai/schedule/phonecall";
 

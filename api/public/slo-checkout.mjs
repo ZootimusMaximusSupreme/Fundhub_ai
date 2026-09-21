@@ -1,7 +1,7 @@
 // GET/POST /api/public/slo-checkout — the $297 SLO diagnostic till.
 //
 // Owner-set 2026-09-17: pay, then pull, then pack, then book.
-// Commas is the card API. Success URL is /slo/pull.html so they never land
+// Commas is the card API. Success URL is /roadmap/pull.html so they never land
 // on a generic thank-you and wonder what to do next.
 //
 // NO AUTH. A stranger off an ad, same class as api/public/optimize.mjs.

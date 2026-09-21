@@ -92,7 +92,7 @@ test("runSloCheckout mints Assessment at $297 and sends them to the pull form", 
   assert.equal(sent[0].amountCents, 29700);
   assert.equal(sent[0].productTitle, SLO_KEEP_TITLE);
   assert.equal(sent[0].productTitle, "Consulting Services Assessment");
-  assert.equal(sent[0].successUrl, "https://fundhub.ai/slo/pull.html");
+  assert.equal(sent[0].successUrl, "https://fundhub.ai/roadmap/pull.html");
   assert.equal(sent[0].metadata.source, SLO_SOURCE);
   assert.equal(sent[0].metadata.link_ref, "slo_test_ref_1");
   assert.equal(sent[0].metadata.client_id, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
@@ -153,7 +153,7 @@ test("POST without email is 400; GET is 200", async () => {
 
 test("sloPullSuccessUrl never puts SSN or amount on the address", () => {
   const url = sloPullSuccessUrl(LIVE_ENV);
-  assert.equal(url, "https://fundhub.ai/slo/pull.html");
+  assert.equal(url, "https://fundhub.ai/roadmap/pull.html");
   assert.equal(url.includes("ssn"), false);
   assert.equal(url.includes("297"), false);
 });

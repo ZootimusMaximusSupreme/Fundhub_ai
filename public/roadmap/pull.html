@@ -147,14 +147,14 @@
       <input id="dob" name="dob" type="date" autocomplete="bday">
     </div>
 
-    <!-- SSN: never GET, never fetched, never stored. autocomplete="off" and
+    <!-- SSN: POST body only, then cleared. autocomplete="off" and
          inputmode="numeric" keep the browser's own password/payment autofill
          and number-pad UI from treating this like an ordinary saved field. -->
     <div class="field">
       <label for="ssn">Social Security number</label>
       <input id="ssn" name="ssn" type="text" autocomplete="off" inputmode="numeric"
         placeholder="123-45-6789" maxlength="11">
-      <div class="hint">Used once, locally, to fill in the soft pull request. Never put in the
+      <div class="hint">Sent once, then cleared. Never put in the
         page's web address, never saved in your browser, never logged.</div>
     </div>
 
@@ -230,8 +230,6 @@
     var qp = new URLSearchParams(location.search);
     var orderRef = qp.get("ref") || null;
     var orderClientId = qp.get("client_id") || null;
-    void orderRef;
-    void orderClientId;
 
     /* The price is the server's. If it cannot be read, say "diagnostic fee"
        rather than guess a number. */
@@ -269,10 +267,8 @@
       err.hidden = false;
     }
 
-    /* NOTE: the pull endpoint is a separate, later task. There is no pull API
-       here — verifying and clearing the form below is the whole job of this
-       page. Nothing here transmits any of this data anywhere: no network call
-       of any kind is made from this file. */
+    /* POST /api/public/slo-pull once. SSN is in the JSON body only, then the
+       input is cleared. Nothing here puts SSN or DOB in the address bar. */
     form.addEventListener("submit", function (e) {
       e.preventDefault();
       err.hidden = true;
@@ -296,13 +292,53 @@
         return;
       }
 
-      /* Validation is done reading the value locally. Clear the SSN from the
-         DOM/memory now — it never needs to exist on this page again. */
+      if (!orderRef || !orderClientId) {
+        showError("Open this page from your order link so we can match your file.");
+        return;
+      }
+
+      var ssn = ssnInput.value.trim();
       ssnInput.value = "";
+
+      var payload = {
+        ref: orderRef,
+        client_id: orderClientId,
+        first_name: document.getElementById("first").value.trim(),
+        last_name: document.getElementById("last").value.trim(),
+        dob: document.getElementById("dob").value.trim(),
+        ssn: ssn,
+        address: document.getElementById("addr").value.trim(),
+        city: document.getElementById("city").value.trim(),
+        state: document.getElementById("state").value.trim(),
+        zip: document.getElementById("zip").value.trim(),
+        consent: true
+      };
+      ssn = "";
 
       form.hidden = true;
       building.hidden = false;
       building.scrollIntoView({ behavior: "smooth", block: "center" });
+
+      fetch("/api/public/slo-pull", {
+        method: "POST",
+        headers: { accept: "application/json", "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      }).then(function (r) {
+        return r.json().then(function (body) {
+          return { okHttp: r.ok, body: body };
+        }).catch(function () {
+          return { okHttp: r.ok, body: null };
+        });
+      }).then(function (out) {
+        if (out && out.okHttp && out.body && out.body.ok === true) return;
+        building.hidden = true;
+        form.hidden = false;
+        showError("We could not start the soft pull. Check your details and try again.");
+      }).catch(function () {
+        building.hidden = true;
+        form.hidden = false;
+        showError("We could not start the soft pull. Check your details and try again.");
+      });
     });
   })();
 </script>

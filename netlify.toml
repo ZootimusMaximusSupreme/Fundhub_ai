@@ -210,6 +210,17 @@
   to = "/optimize.html"
   status = 200
 
+# Old $297 diagnostic URL. Customer name is Capital Playbook at /roadmap.
+[[redirects]]
+  from = "/slo"
+  to = "/roadmap/"
+  status = 301
+
+[[redirects]]
+  from = "/slo/*"
+  to = "/roadmap/:splat"
+  status = 301
+
 [[redirects]]
   from = "/api/*"
   to = "/.netlify/functions/api/:splat"

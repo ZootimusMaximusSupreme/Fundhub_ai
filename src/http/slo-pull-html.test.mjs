@@ -1,8 +1,6 @@
-// public/slo/pull.html is the Commas success URL for the $297 SLO diagnostic.
-// It collects legal name, date of birth, SSN and address so a later, separate
-// task can run the soft pull. There is no pull API here — this page must never
-// transmit SSN or DOB anywhere, and must never let either one reach the
-// address bar, browser storage, a cookie, or the console.
+// public/roadmap/pull.html is the Commas success URL for the $297 Capital Playbook.
+// Submit POSTs identity + consent to /api/public/slo-pull. SSN and DOB must
+// never reach the address bar, browser storage, a cookie, or the console.
 import { test } from "node:test";
 import assert from "node:assert";
 import fs from "node:fs";
@@ -10,7 +8,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const PAGE = path.resolve(HERE, "../../public/slo/pull.html");
+const PAGE = path.resolve(HERE, "../../public/roadmap/pull.html");
 const html = fs.readFileSync(PAGE, "utf8");
 
 test("the consent gate exists and names the right thing", () => {
@@ -68,22 +66,14 @@ test("submit is handled in JS with preventDefault, never a real submission", () 
   assert.match(html, /e\.preventDefault\(\)/, "must call preventDefault on submit");
 });
 
-test("no pull API is called from this page", () => {
-  // The ONE network call allowed is the plain GET for the price — no body, no
-  // method, nothing the person typed. Anything else is a transmission.
-  const fetches = html.match(/fetch\([^)]*\)/g) || [];
-  assert.equal(fetches.length, 1, "exactly one fetch: the price read");
-  assert.match(fetches[0], /\/api\/public\/slo-checkout/, "it reads the price endpoint");
-  assert.doesNotMatch(html, /method:\s*["']POST/i, "nothing is POSTed from this page");
+test("submit POSTs the pull once, and the price read stays a GET", () => {
+  assert.match(html, /fetch\("\/api\/public\/slo-checkout"/, "price is still a GET");
   const submit = html.slice(html.indexOf('form.addEventListener("submit"'));
-  assert.doesNotMatch(submit, /fetch\(/, "the submit handler sends nothing anywhere");
+  assert.match(submit, /fetch\("\/api\/public\/slo-pull"/, "submit posts the pull");
+  assert.match(submit, /method:\s*"POST"/, "the pull call is POST");
+  assert.doesNotMatch(submit, /\/api\/public\/slo-pull\?/, "SSN must not go on the pull URL");
   assert.doesNotMatch(html, /XMLHttpRequest/, "no XMLHttpRequest may exist");
   assert.doesNotMatch(html, /navigator\.sendBeacon/, "no sendBeacon may exist");
-  assert.match(
-    html,
-    /pull endpoint is a separate|separate,?\s*later task/i,
-    "a code comment must say the pull endpoint is separate work"
-  );
 });
 
 test("SSN and DOB never reach the address bar, storage, a cookie, or the console", () => {
