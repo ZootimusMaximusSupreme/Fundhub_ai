@@ -43,6 +43,7 @@ const DELIBERATELY_UNSERVED = {
 const EXPECTED_WORKFLOW_IDS = [
   "af-01-affiliate-drip",
   "af-02-referral-ownership-capture",
+  "affiliate-payout-run",
   "ai-set-01-josh-setter",
   "ai-set-03-no-answer-cadence",
   "ai-set-04-3way-handoff",
@@ -171,6 +172,22 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      the historical record of what the pin said at the time; the pin itself is
      EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
 
+     Added the affiliate payout run (2026-09-21) — the first thing in this
+     repository that ever turned an affiliate's accrued commission into a payout
+     object. Commission had been accruing correctly onto
+     affiliate_referrals.commission_due since 2026-08-31 and nothing batched a
+     penny of it: measured 2026-09-20, EVERY insert into affiliate_payouts or
+     affiliate_payout_lines anywhere in this repo was a test fixture or demo
+     seed. So the balance grew for ever and there was no object that could be
+     paid.
+     Registering it MOVES NO MONEY. It writes 'pending' and 'held' rows and
+     stops. 'processing' and 'paid' are a human action against a payment rail
+     this repo does not contain, and affiliate_payouts_guard() in
+     033_affiliates.sql refuses that move outright for an affiliate with no
+     signed partner license. Paying the same referral twice is prevented by
+     affiliate_payout_lines_commission_once — a unique index — and not by the
+     new code being careful.
+
      Added the next-step catch-up (2026-09-18, hole 12) — every five minutes
      it puts the saved next step (custom_fields.employee_next_action) back in
      line with the step the Client Control Panel shows. Measured live: all six
@@ -224,6 +241,7 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      soft_pull_consent is skipped, not pulled. 380_finance_os_monthly_pull.sql
      is the migration that made 'system' an allowed requester kind for exactly
      this row.
+
      Was 72 since the paid checkout expiry sweeper (2026-09-06) — the clock that
      ends a hosted checkout invitation nobody accepted. Nothing in this
      repository ever moved a paid_service_requests row off 'awaiting_payment' on

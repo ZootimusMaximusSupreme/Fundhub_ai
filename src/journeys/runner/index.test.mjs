@@ -78,7 +78,12 @@ import { isSyntheticRow } from "./synthetic.mjs";
    It is a cron with no event trigger, so no journey can ever reach it and it
    will always appear in neverFired — the same note the sweepers above carry,
    and the correct outcome for a scheduled job rather than a coverage hole. */
-/* 75 since the Commas payment inbox drain (2026-09-17) was registered — a
+/* 78 since the affiliate payout run (2026-09-21) was registered — the first
+   thing here that ever turned an affiliate's accrued commission into a payout
+   object. It is a monthly cron with no event trigger, so it too will always
+   sit in neverFired, for the same reason and not because anything is missing.
+
+   Was 75 since the Commas payment inbox drain (2026-09-17) was registered — a
    SECOND clock under the payment queue, because the Netlify cron that had been
    the only one under it stopped firing and nobody was told. It is a cron with
    no event trigger, so like every sweeper here it can never be reached by a
@@ -113,7 +118,7 @@ import { isSyntheticRow } from "./synthetic.mjs";
    with no event trigger like every sweeper here. The pin was ALREADY one
    behind before this move (src/workflows/index.mjs served 77 against a pin of
    76), so this still reads one short; that older gap is not this change's. */
-const REGISTERED = 77;
+const REGISTERED = 78;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
