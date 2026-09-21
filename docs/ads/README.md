@@ -3,6 +3,13 @@
 Everything for FundHub advertising lives here. If it's about ads and it isn't in this folder, it's
 in the wrong place.
 
+## Fast path (write ads without waiting on Claude Code)
+
+Open **`WRITE-ADS-FROM-HERE.md`** — or load `.cursor/skills/fundhub-ad-writer/SKILL.md` **fast path** only.  
+Locked batch index: **`fundhub-297/INDEX.md`**. Ad id = leading digits of `utm_content`; titles optional.
+
+The shoot workflow below is for **new concept generation**, not for every hook edit.
+
 ## Read in this order
 
 | File | What it's for | When you open it |

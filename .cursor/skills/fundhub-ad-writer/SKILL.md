@@ -13,6 +13,23 @@ description: >-
 
 # Fundhub Ad Writer
 
+## Fast path (default — use this unless Chris asked for net-new concepts)
+
+Chris wants **ads**, not a company audit.
+
+- **Do not** run `CLAUDE.md` section 0 (no split, no workflow board, no parallel agent prompts).
+- **Do not** read journeys, CRM code, Creative Factory UI, or run the full repo test suite to write a hook.
+- **Do read** only:
+  1. `docs/ads/RULES.md`
+  2. `docs/ads/VOICE.md`
+  3. `docs/ads/fundhub-297/INDEX.md` — then **one** pack file for the ad id Chris named (do **not** regenerate locked 297 scripts)
+  4. `docs/ads/CONTROLS.md` — voice reference only; **never** rewrite those five ads
+- **Optional** (only when Chris named a lane, concept, or new angle): `docs/ads/registry.json`, `docs/ads/CONCEPTS.md`, `docs/ads/ASSET-BANK.md`
+- **$297 SLO only:** `docs/ads/SLO-CHAT-PROMPT.md` — not the general cold-ad path
+- Paste brief for Chris / lightweight agents: **`docs/ads/WRITE-ADS-FROM-HERE.md`**
+
+Run the checker (below) before every handoff. That is the required gate — not reading the whole repo.
+
 ## How you write to Chris
 
 5th grade reading level. Short sentences. One idea each. No jargon — if you
@@ -50,26 +67,17 @@ it applies to every message you send him, not just the finished script.
 
 ## What you read before writing
 
-In this order:
+**Default:** follow **Fast path** above. The list below is **full path** — only when Chris is generating **new concepts from scratch** (wide concept pass, new mechanism sheet), not for editing one ad or writing the next script in a named batch.
 
-1. **`docs/ads/RULES.md`** — the SOP. Hard no's, the two measurements
-   (word count, cause-first hook), and the three ad-type formats.
-2. **`docs/ads/VOICE.md`** — the voice reference. Real rewritten lines,
-   paired before/after.
-3. **`docs/ads/CONTROLS.md`** — the seed. The five ads that are filmed,
-   running, and booking calls right now. **Never rewrite this file.** It is
-   locked. Match its voice; do not touch its words.
-4. **`docs/ads/CONCEPTS.md`** — the angle sheet. Which enemy, mechanism,
-   and audience a concept is already built around.
-5. **`docs/ads/ASSET-BANK.md`** — mechanisms and proof. The offer, the
-   prices, the two proof points Chris has actually given in writing
-   (close to a decade in business, over $25 million secured, and Koi Poke).
-6. **`docs/ads/registry.json`** — the vocabulary. Five real lane values:
-   `funding600`, `premium`, `sorting`, `uwiq`, `wl`. Each lane fixes a gate
-   (`600`, `720`, `780`, or `none`), an entry (`direct` or `sorting`), and
-   an offer (`funding_dfy`, `credit_optimization`, `capital_blueprint`,
-   `capital_academy`, `white_label`, or `none`). Use the real value for the
-   lane you are writing, never a made-up one.
+Full path, in order:
+
+1. **`docs/ads/RULES.md`** — the SOP.
+2. **`docs/ads/VOICE.md`** — the voice reference.
+3. **`docs/ads/fundhub-297/INDEX.md`** — locked 297 pack; lookup before writing any numbered ad.
+4. **`docs/ads/CONTROLS.md`** — five live ads. **Never rewrite.** Match voice only.
+5. **`docs/ads/CONCEPTS.md`** — angle sheet (full path only).
+6. **`docs/ads/ASSET-BANK.md`** — mechanisms and proof (full path only).
+7. **`docs/ads/registry.json`** — lane vocabulary (`funding600`, `premium`, `sorting`, `uwiq`, `wl`); use real values only.
 
 ## The format per ad type
 
@@ -120,6 +128,8 @@ how the voice reference gets better over time instead of going stale.
 
 ## Never
 
+- Never run `CLAUDE.md` §0 or load the whole company to write one script.
+- Never regenerate a script that already lives under `docs/ads/fundhub-297/` unless Chris explicitly asked to rewrite that id.
 - Never invent an ad title. Only Chris names an ad.
 - Never seed `docs/ads/VOICE.md` from anything but real Chris rewrites.
   Do not invent example pairs to fill it out.
