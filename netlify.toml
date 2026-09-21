@@ -210,6 +210,9 @@
   to = "/optimize.html"
   status = 200
 
+# apply.fundhub.ai is a Netlify domain alias on this site (same public/ as fundhub.ai).
+# External DNS: CNAME apply → transcendent-wisp-888771.netlify.app (see docs/ops/apply-fundhub-netlify.md).
+
 # $297 diagnostic pages live in public/roadmap/. A sibling public/roadmap.html
 # used to steal /roadmap (same class as the old /app.html stub). That file is now
 # /optimize-plan. These rules make the folder the public URL.
