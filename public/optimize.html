@@ -283,7 +283,7 @@
          is set, and it is not set, so everyone who clicks the button above leaves
          for smartcredit.com and never comes back. A door that only opens on a path
          nobody is on is a door nobody uses. -->
-    <a class="btn" id="roadmap" href="/roadmap">See my roadmap</a>
+    <a class="btn" id="roadmap" href="/optimize-plan">See my roadmap</a>
     <a class="btn btn-ghost" id="book" href="https://apply.fundhub.ai/schedule/phonecall">Or book a call first</a>
   </section>
 </main>
@@ -356,7 +356,7 @@
       roadmap.addEventListener("click", function (e) {
         e.preventDefault();
         remember();
-        location.assign("/roadmap");
+        location.assign("/optimize-plan");
       });
 
       /* The signup destination comes from the server, never hardcoded here.
@@ -540,12 +540,12 @@
       function roadmapButton(label) {
         var a = document.createElement("a");
         a.className = "btn";
-        a.href = "/roadmap";
+        a.href = "/optimize-plan";
         a.textContent = label;
         a.addEventListener("click", function (e) {
           e.preventDefault();
           remember();
-          location.assign("/roadmap");
+          location.assign("/optimize-plan");
         });
         return a;
       }

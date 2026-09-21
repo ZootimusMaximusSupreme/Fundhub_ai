@@ -1,4 +1,4 @@
-// public/roadmap.html is the second step of the /optimize referral door: the
+// public/optimize-plan.html is the second step of the /optimize referral door: the
 // person says who they are, and the page draws the plan we walk them through.
 //
 // The guards that matter here are honesty guards. The roadmap engine runs on a
@@ -12,7 +12,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const PAGE = path.resolve(HERE, "../../public/roadmap.html");
+const PAGE = path.resolve(HERE, "../../public/optimize-plan.html");
 const OPTIMIZE = path.resolve(HERE, "../../public/optimize.html");
 
 const html = fs.readFileSync(PAGE, "utf8");
@@ -89,7 +89,7 @@ test("/optimize has a door to the roadmap that works on the path people are actu
   // roadmap link has to live on the page itself, not only behind the success state.
   assert.match(
     optimize,
-    /id="roadmap" href="\/roadmap"/,
+    /id="roadmap" href="\/optimize-plan"/,
     "the roadmap link must be on the page, not only in the post-signup state"
   );
   assert.match(
@@ -100,10 +100,10 @@ test("/optimize has a door to the roadmap that works on the path people are actu
 });
 
 test("what the person typed carries across without going in the web address", () => {
-  assert.match(optimize, /remember\(\);\s*\n\s*location\.assign\("\/roadmap"\)/,
+  assert.match(optimize, /remember\(\);\s*\n\s*location\.assign\("\/optimize-plan"\)/,
     "/optimize must save the typed values before handing off");
   assert.match(html, /sessionStorage\.getItem\("fh_opt"\)/,
-    "/roadmap must read the same key /optimize writes");
+    "/optimize-plan must read the same key /optimize writes");
   assert.doesNotMatch(html, /location\.search|URLSearchParams/,
     "personal data must never be read from or put in the web address");
 });

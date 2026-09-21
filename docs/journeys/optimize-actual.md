@@ -1,8 +1,10 @@
 # optimize — actual
 
-> **2026-09-17 — the roadmap has a screen again, on its own page at `/roadmap`.** Owner
+> **2026-09-20 — this plan page moved to `/optimize-plan`.** `/roadmap` is the $297 diagnostic folder. `public/optimize-plan.html` is this page (was `public/roadmap.html`).
+>
+> **2026-09-17 — the plan has a screen again, on its own page.** Owner
 > asked for the second step back: sign up, then a page where the person puts their details
-> in, then the plan, then the close. `public/roadmap.html` is that page. It draws the
+> in, then the plan, then the close. It draws the
 > roadmap endpoint that has been live and unused since 2026-08-28. The Pay-for-Audit
 > checkout stays removed — it was not asked for and nothing calls `POST /api/public/optimize`.
 >
@@ -24,7 +26,7 @@
 > decision. The FCRA rights ticker was removed — ConsumerDirect's checklist bans wording that
 > suggests credit repair, and disputing / deletion / 30-day-investigation lines do exactly that.
 
-Traced from `public/optimize.html`, `public/roadmap.html`, `api/public/optimize.mjs`, and
+Traced from `public/optimize.html`, `public/optimize-plan.html`, `api/public/optimize.mjs`, and
 `netlify.toml`. Not from the spec.
 
 ## In one picture
@@ -39,7 +41,7 @@ flowchart TD
     FHBOX --> CAL["apply.fundhub.ai/schedule/phonecall"]
     FHBOX --> RMLINK["See my roadmap — on the page, works on every path"]
     RMLINK --> SAVE2["remember() writes name/email to sessionStorage"]
-    SAVE2 --> RM["/roadmap serves public/roadmap.html"]
+    SAVE2 --> RM["/optimize-plan serves public/optimize-plan.html"]
 
     RM --> INTAKE["Intake card — first, last, email, goal. First name REQUIRED"]
     INTAKE --> FETCH["GET /api/public/optimize?view=roadmap"]

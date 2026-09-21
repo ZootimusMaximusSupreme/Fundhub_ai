@@ -210,6 +210,19 @@
   to = "/optimize.html"
   status = 200
 
+# $297 diagnostic pages live in public/roadmap/. A sibling public/roadmap.html
+# used to steal /roadmap (same class as the old /app.html stub). That file is now
+# /optimize-plan. These rules make the folder the public URL.
+[[redirects]]
+  from = "/roadmap"
+  to = "/roadmap/"
+  status = 301
+
+[[redirects]]
+  from = "/roadmap.html"
+  to = "/optimize-plan"
+  status = 301
+
 # Old $297 diagnostic URL. Public pages now live at /roadmap.
 [[redirects]]
   from = "/slo"
