@@ -48,6 +48,31 @@ test("parseSloCheckoutBody needs a real email", () => {
   assert.equal(ok.ok, true);
   assert.equal(ok.email, "pat@example.com");
   assert.equal(ok.name, "Pat Lee");
+  assert.equal(ok.attribution, null);
+});
+
+test("parseSloCheckoutBody keeps Creative Factory UTMs and drops junk", () => {
+  const ok = parseSloCheckoutBody({
+    email: "buyer@example.com",
+    utm_source: "fb",
+    utm_medium: "paid",
+    utm_campaign: "funding600",
+    utm_content: "42-ringlights",
+    utm_term: "sun",
+    landing_path: "/roadmap/",
+    referrer_domain: "l.facebook.com",
+    fbclid: "DROPME"
+  });
+  assert.equal(ok.ok, true);
+  assert.deepEqual(ok.attribution, {
+    utm_source: "fb",
+    utm_medium: "paid",
+    utm_campaign: "funding600",
+    utm_content: "42-ringlights",
+    utm_term: "sun",
+    landing_path: "/roadmap/",
+    referrer_domain: "l.facebook.com"
+  });
 });
 
 function sloDeps(over = {}) {
@@ -113,6 +138,27 @@ test("runSloCheckout writes a diagnostic payment link so the UnderwriteIQ pull f
   assert.equal(deps.links.length, 1);
   assert.equal(deps.links[0].amountCents, 29700);
   assert.equal(deps.links[0].ref, "slo_wire_1");
+});
+
+test("runSloCheckout writes ad tags onto the buyer, first touch, no email guess beyond find-or-create", async () => {
+  const attrCalls = [];
+  const fieldCalls = [];
+  const parsed = parseSloCheckoutBody({
+    email: "buyer@example.com",
+    utm_content: "42-ringlights",
+    utm_source: "fb"
+  });
+  const out = await runSloCheckout(parsed, sloDeps({
+    createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo" }),
+    upsertAttribution: async (_db, row) => { attrCalls.push(row); return row; },
+    mergeFields: async (_db, clientId, patch) => { fieldCalls.push({ clientId, patch }); }
+  }));
+  assert.equal(out.ok, true);
+  assert.equal(attrCalls.length, 1);
+  assert.equal(attrCalls[0].clientId, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+  assert.equal(attrCalls[0].attribution.utm_content, "42-ringlights");
+  assert.equal(attrCalls[0].attribution.utm_source, "fb");
+  assert.equal(fieldCalls[0].patch.utm_content, "42-ringlights");
 });
 
 test("runSloCheckout does not mint a new catalog title", async () => {

@@ -9,7 +9,7 @@
 // Never POST /public-api/products/create. Title is the keep Assessment string.
 //
 // GET  — price, next path, whether checkout is on. No earnings figure.
-// POST — { email, first_name, last_name } → Commas checkout URL + ref.
+// POST — { email, first_name, last_name, optional utm_* } → Commas checkout URL + ref.
 
 import crypto from "node:crypto";
 import { db } from "../../src/db.mjs";
@@ -33,6 +33,9 @@ import {
   resolveSloBuyer,
   stampSloRef
 } from "../../src/slo/buyer.mjs";
+import { pickAttribution } from "../../src/ads/attribution-keys.mjs";
+import { upsertClientAdAttribution } from "../../src/ads/store.mjs";
+import { mergeCustomFields } from "../../src/workflows/custom-fields.mjs";
 
 function readBody(req) {
   if (req?.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -74,7 +77,14 @@ export function parseSloCheckoutBody(body) {
   const first = cleanStr(body.first_name ?? body.firstName, 80);
   const last = cleanStr(body.last_name ?? body.lastName, 80);
   const name = [first, last].filter(Boolean).join(" ").trim() || null;
-  return { ok: true, email, name, firstName: first || null, lastName: last || null };
+  return {
+    ok: true,
+    email,
+    name,
+    firstName: first || null,
+    lastName: last || null,
+    attribution: pickAttribution(body)
+  };
 }
 
 /**
@@ -101,6 +111,12 @@ export async function runSloCheckout(parsed, deps = {}) {
   await (deps.ensureAccount || ensureSloAccount)(dbh, {
     orgId, clientId, email: parsed.email, name: parsed.name
   });
+  if (parsed.attribution) {
+    await (deps.upsertAttribution || upsertClientAdAttribution)(dbh, {
+      orgId, clientId, attribution: parsed.attribution
+    });
+    await (deps.mergeFields || mergeCustomFields)(dbh, clientId, parsed.attribution);
+  }
   const productId = await (deps.resolveProduct || resolveDiagnosticProductId)(dbh, orgId);
 
   await (deps.emit || emit)(

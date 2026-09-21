@@ -53,6 +53,14 @@ test("pay page: posts the owner's exact body shape", () => {
   assert.match(pay, /email: addr/);
   assert.match(pay, /first_name:/);
   assert.match(pay, /last_name:/);
+  assert.match(pay, /utm_content/);
+});
+
+test("sales and pay pages load the Creative Factory UTM catcher", () => {
+  assert.match(sales, /\/funnel\/fh-attribution\.js/);
+  assert.match(pay, /\/funnel\/fh-attribution\.js/);
+  assert.doesNotMatch(sales, /Capital Playbook/);
+  assert.doesNotMatch(pay, /Capital Playbook/);
 });
 
 test("pay page: email is required before anything is sent", () => {

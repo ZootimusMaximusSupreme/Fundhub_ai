@@ -195,14 +195,22 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
       }
 
       busy(true);
+      var body = {
+        email: addr,
+        first_name: document.getElementById("first").value.trim(),
+        last_name: document.getElementById("last").value.trim()
+      };
+      var keys = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_term", "landing_path", "referrer_domain"];
+      for (var i = 0; i < keys.length; i++) {
+        var k = keys[i];
+        var el = form.querySelector('input[name="' + k + '"]');
+        var v = (el && el.value || "").trim();
+        if (v) body[k] = v.slice(0, 200);
+      }
       fetch("/api/public/slo-checkout", {
         method: "POST",
         headers: { "content-type": "application/json", accept: "application/json" },
-        body: JSON.stringify({
-          email: addr,
-          first_name: document.getElementById("first").value.trim(),
-          last_name: document.getElementById("last").value.trim()
-        })
+        body: JSON.stringify(body)
       })
         .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
         .then(function (res) {
@@ -227,5 +235,6 @@ body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;ba
     });
   })();
 </script>
+<script src="/funnel/fh-attribution.js"></script>
 </body>
 </html>

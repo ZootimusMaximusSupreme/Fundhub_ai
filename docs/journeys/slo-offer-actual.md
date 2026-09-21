@@ -15,8 +15,9 @@ flowchart TD
   P -->|"valid email"| C
   P -->|"empty / bad email"| P
   P -->|"checkout.ready false"| PAUSE["'Checkout is paused' — button hidden, nothing charged"]
-  C["POST email, first_name, last_name"] --> D["Find or create client + portal account"]
-  D --> E["Mint Commas $297 Assessment"]
+  C["POST email, first_name, last_name, utm_*"] --> D["Find or create client + portal account"]
+  D --> ATTR["First-touch UTMs onto client_ad_attribution"]
+  ATTR --> E["Mint Commas $297 Assessment"]
   E --> F["payment_links purpose=diagnostic"]
   F --> G["success_url = /roadmap/pull.html?ref + client_id"]
   E -->|"ok, https checkoutUrl"| CARD["location.assign(checkoutUrl) — Commas card page"]
@@ -46,10 +47,18 @@ flowchart TD
   and a line saying the exact price is on the next page. Every call to action goes to `/roadmap/pay.html`.
 - `public/roadmap/pay.html` — email required before any POST. Leaves only for an `https` `checkoutUrl` the server
   returned. The charge / soft-pull / keep lines are the server's `notices`, plus "We do not sell your data."
-  Every failure path says nothing was charged. Back link is `/roadmap/`.
+  Every failure path says nothing was charged. Back link is `/roadmap/`. Pay POST also sends the five `utm_*`
+  tags plus `landing_path` and `referrer_domain` from hidden fields the existing catcher stamps
+  (`clickfunnels-fragments/06-utm-hidden-fields.html` / `public/funnel/fh-attribution.js`). First touch is
+  written onto the client (`client_ad_attribution` + custom fields). No email guessing beyond find-or-create.
+- `public/roadmap/index.html` and `pay.html` load `/funnel/fh-attribution.js` so an ad link to `/roadmap/`
+  keeps `utm_content` (ad id) through checkout. Pull form does not; the tags are already on the file.
+- ClickFunnels paste of `clickfunnels-fragments/slo/slo-01-sales.html`, `slo-02-order.html`,
+  `slo-03-thank-you.html` loads the same script from `https://fundhub.ai/funnel/fh-attribution.js`.
+  Sales and thank-you also load the VSL watch beacon. A third funnel is not built yet.
 - `public/roadmap/pull.html` — reads `?ref=` and `?client_id=`. Submit POSTs `/api/public/slo-pull`, then clears SSN.
 - `netlify.toml` — `/slo` and `/slo/*` 301 to `/roadmap/` and `/roadmap/:splat`.
 
 ## Not in this code
 
-ClickFunnels paste. The live `/watch` funnel. `SLO_POST_PURCHASE_ENABLED` stays unset (off).
+ClickFunnels builder still has to publish the apply.fundhub.ai paste (fragments now include the tracking tags). `SLO_POST_PURCHASE_ENABLED` stays unset (off). A third funnel is not built yet.
