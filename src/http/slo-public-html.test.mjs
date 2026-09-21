@@ -1,7 +1,7 @@
 // public/roadmap/index.html (sales) and public/roadmap/pay.html (pay) — the
-// $297 Capital Playbook door on fundhub.ai. Owner lines, 2026-09-17: trust
-// first, no fake testimonials, no SIM MODE, no earnings claims, the price is
-// never typed in the HTML, and the pay page says what the person is agreeing to.
+// $297 diagnostic door on fundhub.ai. Owner lines, 2026-09-17: trust first, no
+// fake testimonials, no SIM MODE, no earnings claims, the price is never typed
+// in the HTML, and the pay page says what the person is agreeing to.
 import { test } from "node:test";
 import assert from "node:assert";
 import fs from "node:fs";

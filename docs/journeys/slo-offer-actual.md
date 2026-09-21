@@ -2,7 +2,7 @@
 
 Generated from the code in this worktree. Not from the spec.
 
-Customer name: **Capital Playbook**. Public folder is `public/roadmap/`. Old `/slo` URLs 301 to `/roadmap`. APIs stay `/api/public/slo-*`.
+Public folder is `public/roadmap/`. Old `/slo` URLs 301 to `/roadmap`. APIs stay `/api/public/slo-*`. The live pages do not use a new product name.
 
 ## What the code does
 

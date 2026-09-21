@@ -1,4 +1,4 @@
-// public/roadmap/pull.html is the Commas success URL for the $297 Capital Playbook.
+// public/roadmap/pull.html is the Commas success URL for the $297 diagnostic.
 // Submit POSTs identity + consent to /api/public/slo-pull. SSN and DOB must
 // never reach the address bar, browser storage, a cookie, or the console.
 import { test } from "node:test";
