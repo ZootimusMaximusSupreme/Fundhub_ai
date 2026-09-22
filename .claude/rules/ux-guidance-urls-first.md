@@ -1,15 +1,10 @@
----
-description: When Chris asks where to go, the reply is the direct URL
-alwaysApply: true
----
-
 # UX guidance — the reply is the URL
 
 **Owner law (2026-09-21):** When Chris asks where to go, or asks for a link, the reply is the direct URL. That is the whole answer for that ask.
 
 **Owner law (2026-08-24), corrected same day:** Two modes. Do not mix them.
 
-Applies to Meta Business Suite, Facebook developers, Google Ads, Netlify, GHL, fundhub.ai CRM, and any other dashboard.
+Applies to Meta Business Suite, Facebook developers, Google Ads, Netlify, GHL, fundhub.ai CRM, ClickFunnels, and any other dashboard.
 
 ## Default — he did **not** ask for a walkthrough
 
@@ -31,16 +26,8 @@ These **are** button-by-button click instructions on the UI. That is correct.
 
 | Chris said… | Mode |
 |---|---|
-| “Where do I find X?”, “give me the link”, “open …” | **Default** — URL(s) first |
+| “Where do I find X?”, “give me the link”, “open …” | **Default** — the reply is the URL |
 | “walk me through”, “3 steps at a time”, click-path coaching | **Walkthrough** — clicks; URL only for start screen |
-
-## With one-step-adhd
-
-`one-step-adhd.mdc` still applies in both modes: one next action, then stop.
-
-## Why
-
-Saves tokens when he only needs a destination. Walkthroughs stay real click coaching when he asked for them. Owner corrected 2026-08-24.
 
 ## Examples
 

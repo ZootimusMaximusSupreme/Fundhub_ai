@@ -1,8 +1,3 @@
----
-description: Grok and Composer never touch websites or design HTML — only Claude
-alwaysApply: true
----
-
 # Grok and Composer do not touch websites or design code
 
 **Owner law (2026-08-28, extended 2026-09-21):** Only Claude may change what people see on a screen or on the web. Grok (Cursor Grok / any Grok session) and Composer do not touch websites or design code.

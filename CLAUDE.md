@@ -172,11 +172,19 @@ The company is **Fundhub**. Never write FundHub. Domain stays `fundhub.ai`. Same
 
 ### Fresh thread when the chat gets long (owner-set 2026-09-21)
 
-When a chat gets long, or the named task is done, remind Chris once: the loud `/summarize` line, then the hash middle-finger picture. A long chat resends the whole history every reply. Same law: `.cursor/rules/fresh-thread-when-long.mdc` and `.claude/rules/fresh-thread-when-long.md`.
+When a chat gets long, or the named task is done, remind Chris once: the loud `/summarize` line, then the picture that spells BITCH in hash letters. A long chat resends the whole history every reply. Same law: `.cursor/rules/fresh-thread-when-long.mdc` and `.claude/rules/fresh-thread-when-long.md`.
 
 ### Chris never clicks ClickFunnels (owner-set 2026-09-21)
 
 Chris never logs into ClickFunnels admin. Agents push funnel HTML via API using `CLICKFUNNELS_API_KEY`. Same law: `.cursor/rules/chris-never-clickfunnels.mdc` and `.claude/rules/chris-never-clickfunnels.md`.
+
+### Proof cards come from the picture (owner-set 2026-09-21)
+
+Approval cards, client wins, and testimonials are built from the source screenshot only — real crop, real amount, real quote if any. Never invent faces, names, or dollars. Same law: `.cursor/rules/proof-cards-from-source.mdc` and `.claude/rules/proof-cards-from-source.md`.
+
+### Grok and Composer do not touch websites (owner-set 2026-09-21)
+
+Grok and Composer do not touch websites or design HTML. Claude does that work. Same law: `.cursor/rules/grok-no-displays.mdc` and `.claude/rules/grok-no-displays.md`.
 
 ## 3. Before writing any code
 
