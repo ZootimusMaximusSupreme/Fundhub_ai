@@ -20,10 +20,9 @@ import {
   metaPixelHeadHtml,
   directRoasHeadHtml,
   wrapCustomHtmlDocument,
-  FH_ATTRIBUTION_SRC,
-  VSL_WATCH_BEACON_SRC,
   DO_NOT_FULL_REPLACE_PATHS,
   PUSH_MANIFEST,
+  trackingFooterScripts,
 } from "../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -168,15 +167,8 @@ function trackingHeadScripts({ skipMeta, skipDirectRoas, env = process.env }) {
   return parts.join("\n");
 }
 
-function trackingFooterScripts({ includeVslBeacon, skipAttribution }) {
-  const parts = [];
-  if (!skipAttribution) {
-    parts.push(`<script src="${FH_ATTRIBUTION_SRC}"></script>`);
-  }
-  if (includeVslBeacon) {
-    parts.push(`<script src="${VSL_WATCH_BEACON_SRC}"></script>`);
-  }
-  return parts.join("\n");
+function footerSrcs(footBits) {
+  return [...String(footBits).matchAll(/src="([^"]+)"/g)].map((m) => m[1]);
 }
 
 function injectIntoCustomHtmlDocument(html, { headBits = "", footBits = "" } = {}) {
@@ -230,6 +222,20 @@ async function listPages(creds, workspaceId, ctx) {
   return pages;
 }
 
+/** The public page as a visitor gets it (no auth). Empty string when it cannot be read. */
+async function fetchLiveHtml(url, ctx = {}) {
+  if (!url) return "";
+  const doFetch = ctx.fetch || globalThis.fetch;
+  try {
+    const res = await doFetch(url, {
+      headers: { "user-agent": "Fundhub-CF-Push/1.0 (+https://fundhub.ai)" },
+    });
+    return res.ok ? await res.text() : "";
+  } catch {
+    return "";
+  }
+}
+
 async function getPage(creds, pageId, ctx) {
   const { body } = await cfApi({
     url: `${baseUrl(creds.subdomain)}/pages/${pageId}`,
@@ -255,7 +261,14 @@ async function isCustomHtmlPage(creds, pageId, ctx) {
 
 async function appendHeadFooter(creds, pageId, headSnippet, footerSnippet, ctx, dryRun) {
   if (dryRun) {
-    return { ok: true, dryRun: true, pageId, mode: "head_footer_append" };
+    return {
+      ok: true,
+      dryRun: true,
+      pageId,
+      mode: "head_footer_append",
+      would_append_footer_srcs: footerSrcs(footerSnippet),
+      would_append_head: Boolean(headSnippet),
+    };
   }
   if (!headSnippet && !footerSnippet) {
     return { ok: true, pageId, mode: "head_footer_append", skipped: true, reason: "tracking_already_present" };
@@ -378,6 +391,8 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       const foot = trackingFooterScripts({
         includeVslBeacon: !!row.vslBeacon,
         skipAttribution: existing.includes("fh-attribution.js"),
+        extraSrcs: row.extraFooterScripts ?? [],
+        existing,
       });
       const html = injectIntoCustomHtmlDocument(existing, { headBits: head, footBits: foot });
       const r = await putCustomHtml(creds, page.id, html, ctx, dryRun);
@@ -408,6 +423,8 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       const foot = trackingFooterScripts({
         includeVslBeacon: !!row.vslBeacon,
         skipAttribution: liveHasAttr,
+        extraSrcs: row.extraFooterScripts ?? [],
+        existing: `${liveHead}\n${liveFoot}`,
       });
       await snapshotCustomHtml(creds, page.id, ctx, snapDir);
       const r = await appendHeadFooter(creds, page.id, head, foot, ctx, dryRun);
@@ -452,12 +469,17 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       const livePage = await getPage(creds, page.id, ctx);
       const liveHead = String(livePage.head_code ?? "");
       const liveFoot = String(livePage.footer_code ?? "");
-      const liveHasAttr =
-        liveHead.includes("fh-attribution.js") || liveFoot.includes("fh-attribution.js");
+      // GET /pages/{id} does not return head_code or footer_code, so the API alone
+      // cannot see what the footer already loads. That blind spot is how
+      // vsl-watch-beacon.js ended up on /watch three times. Read the public page too.
+      const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);
+      const existing = `${liveHead}\n${liveFoot}\n${liveHtml}`;
       const head = "";
       const foot = trackingFooterScripts({
         includeVslBeacon: !!row.vslBeacon,
-        skipAttribution: liveHasAttr,
+        skipAttribution: existing.includes("fh-attribution.js"),
+        extraSrcs: row.extraFooterScripts ?? [],
+        existing,
       });
       const r = await appendHeadFooter(creds, page.id, head, foot, ctx, dryRun);
       results.push({
@@ -465,10 +487,11 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
         page_id: page.id,
         path: row.path,
         liveUrl: row.liveUrl,
-        mode: "builder_page_tracking_inject_only",
-        note: "Not a custom HTML page yet — injected pixel + attribution; fragment body unchanged",
+        note: "Not a custom HTML page — footer scripts appended (srcs already on the page skipped); fragment body unchanged",
         pixel_env: pixel.envName,
+        live_html_read: liveHtml.length > 0,
         ...r,
+        mode: "builder_page_tracking_inject_only",
       });
     }
   }
