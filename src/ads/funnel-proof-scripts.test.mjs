@@ -171,6 +171,49 @@ describe("/watch is one organized column: approvals, video testimonials, three r
   });
 });
 
+describe("the card sizes the owner set on 2026-09-22", () => {
+  // "You see how the padding on the testimonials is too much? Fix that by making the
+  // video testimonial cards larger. And then make the approvals 20% larger."
+  //
+  // Measured on the live page (apply.fundhub.ai/watch, headless Chromium, 2026-09-22):
+  //   approvals  1280: 180x229 -> 216x273     390: 150x207 -> 180x246
+  //   video slot 1280: 169x300 -> 257x458     390: 106x188 -> 109x193
+  //   the video row went from 531px of an 852px column (160px of air each side) to 804px
+  //   (24px each side), which lines it up with the approval cards above it.
+
+  test("every approval card is 20% wider, and the padding and type inside grow with it", () => {
+    assert.ok(WATCH.includes('"#fh-watch-proof .fhx-track>.fh-card{flex:0 0 180px;width:180px}"'), "phone card 150 -> 180");
+    assert.ok(WATCH.includes('"#fh-watch-proof .fhx-track>.fh-card{flex-basis:216px;width:216px}"'), "desktop card 180 -> 216");
+    // Height follows width only if every length inside the card grows too.
+    const card = cssBody(WATCH, "#fh-watch-proof .fh-card");
+    for (const decl of ["--fh-pad:12px", "--fh-gap:7px", "--fh-radius-card:14px", "--fh-radius-frame:10px", "--fh-radius-img:5px"]) {
+      assert.ok(card.includes(decl), `the card keeps ${decl}`);
+    }
+    assert.ok(cssBody(WATCH, "#fh-watch-proof .fh-card>.fh-eyebrow").includes("font-size:12px"));
+    assert.ok(cssBody(WATCH, "#fh-watch-proof .fh-card>.fh-headline").includes("font-size:14px"));
+    assert.ok(cssBody(WATCH, "#fh-watch-proof .fh-card .fh-amount").includes("font-size:24px"));
+    assert.ok(cssBody(WATCH, "#fh-watch-proof .fh-card>.fh-shot").includes("padding:5px"));
+    assert.ok(cssBody(WATCH, "#fh-watch-proof .fh-card>.fh-mark").includes("--fh-mark-h:14px"));
+  });
+
+  test("the screenshot inside a card is still the whole picture, at the deck's own size", () => {
+    // Bigger card, same source crop: nothing is cut off and nothing is blown up past its pixels.
+    assert.ok(TEMPLATE_CSS.includes("object-fit: contain"), "the template never crops a screenshot");
+    for (const w of arrayLiteral(WATCH, "WINS")) assert.equal(w.w > 1000 && w.h > 700, true, `${w.id} is a full-size crop`);
+  });
+
+  test("the video testimonials fill the row instead of floating in the middle of it", () => {
+    const slot = cssBody(WATCH, "#fh-watch-proof .fhx-vgrid>.fhx-vslot");
+    assert.ok(slot.includes("flex:1 1 0"), "the slots share the row");
+    assert.ok(slot.includes("max-width:300px"), "the 169px cap is gone");
+    assert.ok(slot.includes("max-height:none"), "/roadmap's 300px height cap is what held them small");
+    assert.ok(cssBody(WATCH, "#fh-watch-proof .fhx-vgrid").includes("gap:8px"), "phone gap 12 -> 8");
+    assert.ok(WATCH.includes('"#fh-watch-proof .fhx-vgrid{margin-top:20px;gap:16px;padding:0 24px}"'), "desktop: the row is the approvals band, 24px in");
+    // The shape and the dark look are untouched: the test above holds the slot to /roadmap.
+    assert.ok(cssBody(WATCH, "#fh-watch-proof .fhx-vslot").includes("aspect-ratio:9/16"));
+  });
+});
+
 describe("/watch approvals row slides right as the page scrolls down, and never holds the page", () => {
   const START = "CAROUSEL MATH START";
   const END = "CAROUSEL MATH END";
