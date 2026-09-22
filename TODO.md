@@ -1,5 +1,9 @@
 # TODO
 
+## Tomorrow 9/23 — video
+
+- [ ] Run Colin's testimonial through Submagic: `~/Downloads/Fundhub Roadmap Testimonial Colin 1.mp4` (seen 2026-09-22). Copy it into the Drive "SLO Ads" folder (13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ) first so it is not only on this laptop. Submagic key is not in .env yet (Chris pasted it in chat 2026-09-21; the .env write was blocked).
+
 ## Marketing walk fixes — open items, 2026-09-17
 
 Full write-up: `docs/workflows/marketing-fixes-2026-09-17-board.md`. F1 (the script
