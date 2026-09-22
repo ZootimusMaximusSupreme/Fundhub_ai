@@ -187,6 +187,8 @@ import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicFunnelCheckout from "../../api/public/funnel-checkout.mjs";
 import publicSloCheckout from "../../api/public/slo-checkout.mjs";
 import publicSloPull from "../../api/public/slo-pull.mjs";
+import publicSloStatus from "../../api/public/slo-status.mjs";
+import publicSloRepairCheckout from "../../api/public/slo-repair-checkout.mjs";
 import trialsEligibility from "../../api/trials/eligibility.mjs";
 import trialsProvision from "../../api/trials/provision.mjs";
 import trialsDashboard from "../../api/trials/dashboard.mjs";
@@ -748,6 +750,18 @@ export const ROUTES = {
   /* POST only. Identity + checkbox consent, then diagnostic.paid. GET 405.
      Do not ping with a body — that would store an SSN and fire C-00. */
   "public/slo-pull": publicSloPull,
+  /* GET only, read only. Same ref + client_id credential as slo-pull. The
+     /roadmap widget polls it: running / done / failed, the bucket (funding or
+     repair), the pre-approval dollars on the funding path, per-bureau status
+     words, and the repair plans only on the repair path after the pull. Never
+     the tier name, a score, or the email. Answers OPTIONS for the widget's
+     origin (apply.fundhub.ai) — never "*". */
+  "public/slo-status": publicSloStatus,
+  /* POST only. The repair plan the buyer picks in the widget (REPAIR_TRIAL or
+     REPAIR_DFY, prices and Commas titles from src/config/offers.mjs). Refused
+     unless slo-status would show the repair offer now. DEMO pay records it and
+     charges nothing. Answers OPTIONS for the widget's origin — never "*". */
+  "public/slo-repair-checkout": publicSloRepairCheckout,
   /* The Live Trial. $297, seven days, docs/specs/W4-live-trial.md.
      eligibility is PUBLIC and runs in front of the pay button — Meta will not
      run a money-related ad from an unverified business, and finding that out

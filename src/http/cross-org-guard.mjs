@@ -46,7 +46,20 @@ export const SESSIONLESS_ALLOWLIST = new Set([
      "client_id" in its own header comment explaining why it is NOT
      api/documents-upload.mjs. There is no client id in this flow and there must
      never be one: decline_autopsy_rows has no client_id column. */
-  "public/decline-autopsy-upload.mjs"
+  "public/decline-autopsy-upload.mjs",
+  /* The $297 SLO doors behind the /roadmap widget. SESSIONLESS BY DESIGN: the
+     buyer is a stranger off an ad with no login. slo-checkout creates the
+     buyer and hands back its own ref + client_id; slo-pull, slo-status and
+     slo-repair-checkout accept a client_id ONLY together with the ref already
+     stamped on that same client, checked by findSloOrder (src/slo/pull.mjs).
+     A client_id without its own ref answers 404, identical to a made-up pair.
+     The org is taken from the matched client row, never from the request, and
+     every read and write after that binds it (src/slo/status.mjs,
+     src/slo/repair-offer.mjs, src/slo/buyer.mjs). */
+  "public/slo-checkout.mjs",
+  "public/slo-pull.mjs",
+  "public/slo-status.mjs",
+  "public/slo-repair-checkout.mjs"
 ]);
 
 /** Markers that prove the handler binds tenancy to the session (or partner

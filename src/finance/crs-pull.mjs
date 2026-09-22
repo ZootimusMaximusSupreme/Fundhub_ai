@@ -364,7 +364,8 @@ export async function loadClientIdentity(db, {
   clientId, env = process.env, accessedBy = PULL_ACTOR
 } = {}) {
   const row = (await db.query(
-    `SELECT c.first_name, c.last_name, c.email, p.dob, p.addresses
+    `SELECT c.first_name, c.last_name, c.email, p.dob, p.addresses,
+            p.middle_name, p.name_suffix
        FROM clients c
        LEFT JOIN pii_identity p ON p.client_id = c.id
       WHERE c.id = $1`,
@@ -388,8 +389,10 @@ export async function loadClientIdentity(db, {
   return {
     firstName: row.first_name ?? "",
     lastName: row.last_name ?? "",
-    middleName: "",
-    suffix: "",
+    /* Migration 387. Sent blank on every pull before the $297 form asked for
+       them. The request builder decides what each bureau can take. */
+    middleName: row.middle_name ?? "",
+    suffix: row.name_suffix ?? "",
     birthDate: isoBirthDate(row.dob) || "",
     ssn,
     email: row.email ?? undefined,
@@ -567,6 +570,10 @@ export async function runCrsPull(db, {
   const reports = {};
   const errors = {};
   const requestIds = {};
+  /* file_returned | frozen | no_file | error, per bureau asked. Only a
+     returned file goes into `reports`; a frozen or empty answer is an error
+     for that bureau with its status kept beside it (crs-client reportResult). */
+  const statuses = {};
 
   for (const bureau of order) {
     let bureauIdentity;
@@ -619,17 +626,20 @@ export async function runCrsPull(db, {
           || (e instanceof CrsError && e.code === "not_configured")) {
         return finishFailed(db, { requestId, code: e.code, reason: e.message, simulated });
       }
-      if (e instanceof CrsError) { errors[bureau] = e.message; continue; }
+      if (e instanceof CrsError) { errors[bureau] = e.message; statuses[bureau] = "error"; continue; }
       throw e;
     }
 
     if (out.requestId) requestIds[bureau] = out.requestId;
     if (out.ok && out.report) reports[bureau] = out.report;
     else errors[bureau] = out.error || `no report returned by ${bureau}`;
+    statuses[bureau] = out.fileStatus || (out.ok && out.report ? "file_returned" : "error");
   }
 
   if (Object.keys(reports).length === 0) {
-    const detail = Object.entries(errors).map(([b, e]) => `${b}: ${e}`).join(" | ");
+    const detail = Object.entries(errors)
+      .map(([b, e]) => `${b}: ${statuses[b] && statuses[b] !== "error" ? `[${statuses[b]}] ` : ""}${e}`)
+      .join(" | ");
     return finishFailed(db, {
       requestId,
       code: "no_reports",
@@ -654,12 +664,12 @@ export async function runCrsPull(db, {
      byte-for-byte the shape it has always had. */
   const merged = simulated
     ? {
-        ...mergeBureauReports({ reports, errors, requestIds, environment }),
+        ...mergeBureauReports({ reports, errors, statuses, requestIds, environment }),
         simulated: true,
         simulatedNotice: SIMULATED_MARKER,
         hostEnvironment
       }
-    : mergeBureauReports({ reports, errors, requestIds, environment });
+    : mergeBureauReports({ reports, errors, statuses, requestIds, environment });
 
   /* ONE ROW, ONE TRANSACTION. Storing the result, closing the request and
      ingesting the tradelines either all land or none do. A replay of the same

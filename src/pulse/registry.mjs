@@ -23,6 +23,7 @@ export const ALLOWED_UNMONITORED = {
   "analytics/youtube-sync": "POST only, same reasoning as analytics/clickfunnels-sync — it refreshes a real Google OAuth token and calls the YouTube Analytics API. The monitored door is read/video-stats.",
   "scripts/write": "POST only, staff. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would file a junk ad script against the FundHub house partner and teach the label dictionary whatever words the pinger sent — every one of those rows then shows up in the ad spine as a real script nobody wrote. The monitored door for this surface is read/ad-spine, which reports the scripts and labels that actually landed.",
   "ops/weekly-brief": "POST only. A GET answers 405 by design, and pinging it with a body would generate a real brief every time — a real model call, a real write into Company Brain (brain_files/brain_chunks) — on whatever schedule the pulse runs, not the weekly cadence Chris actually wants. This is meant to be run when a person (or a job Chris explicitly schedules) asks for it, not pinged for uptime.",
+  "public/slo-repair-checkout": "POST only. A GET answers 405 by design, and pinging it with a body would record a repair plan choice (and, off demo, mint a real Commas link) for a buyer. It also refuses anyone slo-status would not show the repair offer to. The monitored doors for this offer are public/slo-checkout and public/slo-status.",
   "public/slo-pull": "POST only. A GET answers 405 by design, and pinging it with a body would store identity (including SSN) against a paid SLO file and emit diagnostic.paid, which starts C-00. The monitored door for this offer is public/slo-checkout, which answers GET with the price."
 };
 
@@ -197,6 +198,9 @@ const API_KEYS = [
      whether Commas checkout is on, so it is a real uptime door: if this is
      down the sales page has no price and the pay button cannot mint a link. */
   "public/slo-checkout",
+  /* The /roadmap widget's status read after the soft pull. A plain GET with no
+     ref or client_id answers 400, which counts as up, and reads nothing. */
+  "public/slo-status",
   "public/survey-submit",
   "public/unsubscribe",
   /* Web push for the client portal. Both answer a plain GET — push/key with the

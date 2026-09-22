@@ -122,9 +122,35 @@ export function maskSsn(digits) {
  * One row per client: a person has one SSN and one date of birth, and a second
  * row would make "which is current" a question nobody wants to answer live.
  */
-export async function storeIdentity(db, { orgId, clientId, ssn, dob = null, addresses = [], env } = {}) {
+export async function storeIdentity(db, {
+  orgId, clientId, ssn, dob = null, addresses = [], nameParts, env
+} = {}) {
   if (!orgId || !clientId) throw new PiiError("orgId and clientId are required");
   const enc = ssn == null || ssn === "" ? null : encryptSsn(ssn, { clientId, env });
+
+  /* Middle name and suffix (migration 387). Only a caller that ASKED for them
+     writes them: the $297 pull form passes `nameParts`, and a blank there is a
+     real answer ("I have no middle name") that clears an old value. Every other
+     caller (the staff approve form, the PII endpoint, the sim scripts) never
+     asked, so its write leaves whatever is on file alone. */
+  if (nameParts && typeof nameParts === "object") {
+    const middle = String(nameParts.middleName ?? "").trim() || null;
+    const suffix = String(nameParts.suffix ?? "").trim().toUpperCase() || null;
+    const res = await db.query(
+      `INSERT INTO pii_identity (org_id, client_id, ssn_enc, dob, addresses, middle_name, name_suffix)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)
+       ON CONFLICT (client_id) DO UPDATE SET
+         ssn_enc     = COALESCE(EXCLUDED.ssn_enc, pii_identity.ssn_enc),
+         dob         = COALESCE(EXCLUDED.dob, pii_identity.dob),
+         addresses   = EXCLUDED.addresses,
+         middle_name = EXCLUDED.middle_name,
+         name_suffix = EXCLUDED.name_suffix,
+         updated_at  = now()
+       RETURNING id, org_id, client_id, dob, addresses, middle_name, name_suffix, created_at, updated_at`,
+      [orgId, clientId, enc, dob, JSON.stringify(addresses ?? []), middle, suffix]
+    );
+    return res.rows[0];
+  }
 
   const res = await db.query(
     `INSERT INTO pii_identity (org_id, client_id, ssn_enc, dob, addresses)

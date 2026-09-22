@@ -261,57 +261,128 @@ function stateFromText(query) {
   return null;
 }
 
-async function geocodeGoogle(query) {
+/* The two geocoder calls. One fetch per provider, shared by geocode() below
+   and by verifyStreetAddress(). Each answers:
+     { status: "hit", hit }  the provider returned a first result
+     { status: "none" }      the provider answered and found nothing
+     { status: "error" }     the provider did not answer usably (down, slow,
+                             refused, bad body)
+     { status: "off" }       Google only: no key set */
+async function googleLookup(query, timeoutMs = 6000) {
   const key = mapsServerKey();
-  if (!key) return null;
+  if (!key) return { status: "off" };
   const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&components=country:US&key=${encodeURIComponent(key)}`;
-  const { signal, cancel } = withTimeout(6000);
+  const { signal, cancel } = withTimeout(timeoutMs);
   try {
     const res = await fetch(url, { signal });
     cancel();
-    if (!res.ok) return null;
+    if (!res.ok) return { status: "error" };
     const json = await res.json();
+    if (json.status === "ZERO_RESULTS") return { status: "none" };
+    if (json.status && json.status !== "OK") return { status: "error" };
     const hit = json.results?.[0];
-    if (!hit) return null;
-    const stateComp = (hit.address_components || []).find((c) => c.types.includes("administrative_area_level_1"));
-    const stateCode = stateComp?.short_name;
-    return {
-      ok: true,
-      provider: "google",
-      stateCode: STATE_CENTROIDS[stateCode] ? stateCode : stateFromText(query),
-      lat: hit.geometry?.location?.lat,
-      lng: hit.geometry?.location?.lng,
-      formatted: hit.formatted_address
-    };
+    return hit ? { status: "hit", hit } : { status: "none" };
   } catch {
     cancel();
-    return null;
+    return { status: "error" };
   }
 }
 
-async function geocodeCensus(query) {
+async function censusLookup(query, timeoutMs = 6000) {
   const url = `https://geocoding.geo.census.gov/geocoder/locations/onelineaddress?address=${encodeURIComponent(query)}&benchmark=Public_AR_Current&format=json`;
-  const { signal, cancel } = withTimeout(6000);
+  const { signal, cancel } = withTimeout(timeoutMs);
   try {
     const res = await fetch(url, { signal, headers: { "User-Agent": "fundhub-climate/1.0" } });
     cancel();
-    if (!res.ok) return null;
+    if (!res.ok) return { status: "error" };
     const json = await res.json();
-    const match = json.result?.addressMatches?.[0];
-    if (!match) return null;
-    const stateCode = match.addressComponents?.state;
-    return {
-      ok: true,
-      provider: "census",
-      stateCode: STATE_CENTROIDS[stateCode] ? stateCode : stateFromText(query),
-      lat: match.coordinates?.y,
-      lng: match.coordinates?.x,
-      formatted: match.matchedAddress
-    };
+    const matches = json.result?.addressMatches;
+    if (!Array.isArray(matches)) return { status: "error" };
+    return matches[0] ? { status: "hit", hit: matches[0] } : { status: "none" };
   } catch {
     cancel();
-    return null;
+    return { status: "error" };
   }
+}
+
+async function geocodeGoogle(query) {
+  const found = await googleLookup(query);
+  if (found.status !== "hit") return null;
+  const hit = found.hit;
+  const stateComp = (hit.address_components || []).find((c) => c.types.includes("administrative_area_level_1"));
+  const stateCode = stateComp?.short_name;
+  return {
+    ok: true,
+    provider: "google",
+    stateCode: STATE_CENTROIDS[stateCode] ? stateCode : stateFromText(query),
+    lat: hit.geometry?.location?.lat,
+    lng: hit.geometry?.location?.lng,
+    formatted: hit.formatted_address
+  };
+}
+
+async function geocodeCensus(query) {
+  const found = await censusLookup(query);
+  if (found.status !== "hit") return null;
+  const match = found.hit;
+  const stateCode = match.addressComponents?.state;
+  return {
+    ok: true,
+    provider: "census",
+    stateCode: STATE_CENTROIDS[stateCode] ? stateCode : stateFromText(query),
+    lat: match.coordinates?.y,
+    lng: match.coordinates?.x,
+    formatted: match.matchedAddress
+  };
+}
+
+/* A Google hit proves a street address only at street level. A hit on the
+   road, the ZIP or the town is Google guessing near a place that is not there. */
+const GOOGLE_STREET_TYPES = new Set(["street_address", "premise", "subpremise"]);
+
+function googleHitIsStreet(hit) {
+  return Array.isArray(hit?.types) && hit.types.some((t) => GOOGLE_STREET_TYPES.has(t));
+}
+
+/**
+ * verifyStreetAddress — does this typed US street address exist?
+ * For the $297 pull form (src/slo/address-check.mjs, owner-set 2026-09-22).
+ *
+ * The same two lookups as geocode(), no new outbound call: Google when
+ * GOOGLE_MAPS_API_KEY is set, then the free US Census geocoder. Never falls
+ * back to a state centroid — a centroid proves nothing about a street.
+ *
+ *   "match"        either provider found the street address
+ *   "no_match"     a provider answered and neither found it
+ *   "unavailable"  no provider answered (down, slow, refused)
+ *
+ * Answers of "match" / "no_match" are remembered in the same in-memory cache
+ * as geocode(), under their own key.
+ */
+export async function verifyStreetAddress(query, { timeoutMs = 4000 } = {}) {
+  const q = String(query || "").trim();
+  if (!q) return "unavailable";
+  const cacheKey = `verify:${q.toLowerCase()}`;
+  if (memory.has(cacheKey)) return memory.get(cacheKey);
+
+  let answered = false;
+  const google = await googleLookup(q, timeoutMs);
+  if (google.status === "hit" && googleHitIsStreet(google.hit)) {
+    memory.set(cacheKey, "match");
+    return "match";
+  }
+  if (google.status === "hit" || google.status === "none") answered = true;
+
+  const census = await censusLookup(q, timeoutMs);
+  if (census.status === "hit") {
+    memory.set(cacheKey, "match");
+    return "match";
+  }
+  if (census.status === "none") answered = true;
+
+  if (!answered) return "unavailable";
+  memory.set(cacheKey, "no_match");
+  return "no_match";
 }
 
 export async function geocode(query) {

@@ -44,6 +44,11 @@ import {
   markExpired,
   markSent
 } from "../src/payment-links/index.mjs";
+import {
+  ageMonthsFromIncorporated,
+  normalizeSoftPullEin,
+  parseIncorporatedDate
+} from "../src/slo/businesses.mjs";
 
 const KIND = "soft_pull_consent";
 const BIZ_SOURCE = "soft_pull_approve";
@@ -105,55 +110,10 @@ function tokenFrom(req) {
   };
 }
 
-/** Store EIN as XX-XXXXXXX. Accepts 9 digits or XX-XXXXXXX. */
-export function normalizeSoftPullEin(raw) {
-  const digits = String(raw == null ? "" : raw).replace(/\D/g, "");
-  if (digits.length !== 9) return null;
-  return `${digits.slice(0, 2)}-${digits.slice(2)}`;
-}
-
-/** YYYY-MM or YYYY-MM-DD. No invented day. Invalid or empty → null. */
-export function parseIncorporatedDate(raw) {
-  const s = String(raw == null ? "" : raw).trim();
-  if (/^\d{4}-\d{2}$/.test(s)) {
-    const y = Number(s.slice(0, 4));
-    const m = Number(s.slice(5, 7));
-    if (y < 1800 || y > 2100 || m < 1 || m > 12) return null;
-    return s;
-  }
-  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
-    const y = Number(s.slice(0, 4));
-    const m = Number(s.slice(5, 7));
-    const d = Number(s.slice(8, 10));
-    const dt = new Date(Date.UTC(y, m - 1, d));
-    if (
-      dt.getUTCFullYear() !== y
-      || dt.getUTCMonth() + 1 !== m
-      || dt.getUTCDate() !== d
-      || y < 1800
-      || y > 2100
-    ) {
-      return null;
-    }
-    return s;
-  }
-  return null;
-}
-
-/** Months from the stored date to `now`. Future or bad date → null. No default age. */
-export function ageMonthsFromIncorporated(raw, now = new Date()) {
-  const parsed = parseIncorporatedDate(raw);
-  if (!parsed) return null;
-  const y = Number(parsed.slice(0, 4));
-  const m = Number(parsed.slice(5, 7));
-  const day = parsed.length >= 10 ? Number(parsed.slice(8, 10)) : 1;
-  const months =
-    (now.getUTCFullYear() - y) * 12
-    + (now.getUTCMonth() + 1 - m)
-    - (now.getUTCDate() < day ? 1 : 0);
-  if (!Number.isFinite(months) || months < 0) return null;
-  return months;
-}
+/* normalizeSoftPullEin, parseIncorporatedDate and ageMonthsFromIncorporated
+   moved to src/slo/businesses.mjs so the $297 pull form can share them
+   (src/ does not import from api/). Re-exported here unchanged. */
+export { normalizeSoftPullEin, parseIncorporatedDate, ageMonthsFromIncorporated };
 
 /** Parse 0–20 businesses: name + street + city + state + ZIP + EIN + incorporated date; extra owner optional. */
 export function parseSoftPullBusinesses(raw) {
