@@ -65,11 +65,11 @@ describe("the state table", () => {
 });
 
 describe("staging", () => {
-  test("with no staging port the row WAITS and says the gap out loud", async () => {
+  test("with no staging port the row WAITS and says which port is missing", async () => {
     const out = await stage(row(), {});
     assert.equal(out.ok, false);
     assert.equal(out.retryable, true);
-    assert.match(out.error, /staging is not built/);
+    assert.match(out.error, /staging port was not supplied/);
     assert.match(out.error, /nothing was lost/);
   });
 
@@ -77,6 +77,44 @@ describe("staging", () => {
     const out = await stage(row(), { staging: { publicUrlFor: async () => ({ ok: true, url: "https://draft.test/a.mp4" }) } });
     assert.equal(out.patch.status, "staged");
     assert.equal(out.patch.source_url, "https://draft.test/a.mp4");
+  });
+
+  /* The default route. Nothing is published, so there is deliberately no
+     source_url — and staged_at is what stops the step running twice. */
+  test("direct staging moves the row WITHOUT putting a link on it", async () => {
+    const out = await stage(row(), {
+      staging: { publicUrlFor: async () => ({ ok: true, mode: "direct", storageKey: "drive:drv1" }) }
+    });
+    assert.equal(out.patch.status, "staged");
+    assert.equal(out.patch.source_url, undefined, "direct staging must not publish a link");
+    assert.ok(out.patch.staged_at, "staged_at is the only thing stopping a second pass");
+    assert.equal(out.patch.storage_raw_key, "drive:drv1");
+  });
+
+  test("a take with no Drive file FAILS rather than waiting forever", async () => {
+    const out = await stage(row({ drive_raw_file_id: null }), {
+      staging: { publicUrlFor: async () => ({ ok: true, mode: "direct" }) }
+    });
+    assert.equal(out.ok, false);
+    assert.equal(out.retryable, false);
+    assert.equal(out.patch.status, "failed");
+  });
+
+  test("a stager that refuses for good is a failure, not a retry", async () => {
+    const out = await stage(row(), {
+      staging: { publicUrlFor: async () => ({ ok: false, retryable: false, error: "no Drive file id" }) }
+    });
+    assert.equal(out.retryable, false);
+    assert.equal(out.patch.status, "failed");
+  });
+
+  test("a row staged directly is not staged again", async () => {
+    let called = false;
+    const out = await stage(row({ staged_at: "2026-09-22T10:00:00Z" }), {
+      staging: { publicUrlFor: async () => { called = true; return { ok: true, mode: "direct" }; } }
+    });
+    assert.equal(called, false);
+    assert.equal(out.skipped, true);
   });
 });
 
@@ -87,6 +125,80 @@ describe("Submagic", () => {
     });
     assert.equal(out.patch.status, "editing");
     assert.equal(out.patch.submagic_project_id, "proj9");
+  });
+
+  /* ── THE UPLOAD ROUTE ──────────────────────────────────────────────────
+     No source_url on the row means the bytes go over instead of a link. This
+     is the whole point of the staging build: the take is never world-readable
+     and Submagic never has to fetch anything from us. */
+  describe("the upload route — bytes, not a link", () => {
+    const staged = row({ status: "staged", staged_at: "2026-09-22T10:00:00Z", drive_raw_name: "IMG_4471.mov" });
+    const bytes = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]); // an MP4 `ftyp` header
+
+    test("the take is pulled from Drive and pushed to Submagic", async () => {
+      let asked = null;
+      let sent = null;
+      const out = await submagicCreate(staged, {
+        drive: {
+          downloadFile: async (id) => { asked = id; return okish({ bytes, byteLength: bytes.byteLength, contentType: "video/quicktime" }); }
+        },
+        submagic: {
+          createProject: async () => { throw new Error("the link route must not run when there is no link"); },
+          createProjectFromFile: async (args) => { sent = args; return okish({ projectId: "proj-upload" }); }
+        },
+        env: {}
+      });
+      assert.equal(asked, "drv1");
+      assert.equal(sent.file, bytes);
+      assert.equal(sent.fileName, "IMG_4471.mov");
+      assert.equal(sent.contentType, "video/quicktime");
+      assert.equal(out.patch.status, "editing");
+      assert.equal(out.patch.submagic_project_id, "proj-upload");
+    });
+
+    test("a Drive read that failed for good takes the row to failed, not a retry loop", async () => {
+      const out = await submagicCreate(staged, {
+        drive: { downloadFile: async () => ({ ok: false, retryable: false, error: "the take is bigger than the cap" }) },
+        submagic: { createProject: async () => okish({}), createProjectFromFile: async () => okish({ projectId: "x" }) },
+        env: {}
+      });
+      assert.equal(out.ok, false);
+      assert.equal(out.retryable, false);
+      assert.equal(out.patch.status, "failed");
+    });
+
+    test("a phone still uploading is a WAIT — no project, no paid minute", async () => {
+      let created = false;
+      const out = await submagicCreate(staged, {
+        drive: { downloadFile: async () => ({ ok: false, retryable: true, error: "Drive returned an empty file" }) },
+        submagic: {
+          createProject: async () => okish({}),
+          createProjectFromFile: async () => { created = true; return okish({ projectId: "x" }); }
+        },
+        env: {}
+      });
+      assert.equal(created, false);
+      assert.equal(out.retryable, true);
+      assert.deepEqual(out.patch, {});
+    });
+
+    test("no link and no Drive file is a dead end, said out loud", async () => {
+      const out = await submagicCreate(row({ status: "staged", staged_at: "t", drive_raw_file_id: null }), {
+        submagic: { createProject: async () => okish({}) }, env: {}
+      });
+      assert.equal(out.patch.status, "failed");
+      assert.match(out.error, /nothing to hand to Submagic/);
+    });
+
+    test("a provider with no upload route WAITS and names the way out", async () => {
+      const out = await submagicCreate(staged, {
+        submagic: { createProject: async () => okish({}) },
+        drive: {},
+        env: {}
+      });
+      assert.equal(out.retryable, true);
+      assert.match(out.error, /AD_VIDEO_STAGING_MODE=link/);
+    });
   });
 
   test("Submagic still listening is a WAIT, not a failure", async () => {

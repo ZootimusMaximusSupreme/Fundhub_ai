@@ -85,7 +85,23 @@ const PATCHABLE = new Set([
   "drive_raw_file_id", "drive_raw_name", "width", "height", "duration_seconds",
   "storage_raw_key", "source_url", "transcript", "match_confidence",
   "submagic_project_id", "finished_url", "storage_final_key", "finished_version",
-  "paul_folder_id", "drive_final_file_id", "failure_reason", "rejected_reason"
+  "paul_folder_id", "drive_final_file_id", "failure_reason", "rejected_reason",
+
+  /* THE MARKS A WORKER LEAVES — added 2026-09-22 with the staging build.
+     Every name below is a column 390_ad_video_worker_marks.sql created, and
+     every one of them is an idempotency key, a count or a note. They were
+     missing from this list, which meant a step that wrote one got
+     `unpatchable_column` thrown at it — and store.patch() is called from
+     inside the sweeper's walk(), so one throw ended the whole pass.
+
+     exported_at is the expensive one. src/ad-videos/pipeline.mjs skips the
+     export when it is set, and a mark that cannot be written is a guard that
+     never bites: the same take would be re-rendered every five minutes
+     against a 50-an-hour ceiling, billed by the minute, forever. */
+  "staged_at", "renamed_at", "broll_placed_at", "broll_count", "broll_notes",
+  "exported_at", "rendered_at", "notified_at", "delivered_at",
+  "save_note", "notify_error", "delivery_note", "drive_brief_file_id",
+  "transcript_words"
 ]);
 
 function buildPatch(patch, startIndex) {

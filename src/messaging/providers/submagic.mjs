@@ -27,23 +27,32 @@
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // ═══════════════════════════════════════════════════════════════════════════
-// TWO THINGS HERE ARE UNVERIFIED. THEY ARE CONFIGURABLE FOR THAT REASON.
+// THE THREE THINGS THAT USED TO BE GUESSES ARE NOW MEASURED.
 //
-// docs/specs/video-pipeline-api-verification-2026-09-22.md is the ground truth
-// for this vendor. It documents the PATHS (`POST /v1/projects`,
-// `GET /v1/projects/{id}`, `PUT /v1/projects/{id}`, an Export Project POST), the
-// request fields, the webhook payload and the rate limits. It does NOT record:
+// docs/specs/video-pipeline-unknowns-settled-2026-09-22.md mapped this API with
+// live calls on 2026-09-22 and spent nothing doing it: the server checks the
+// ROUTE before it checks the key, so `401 UNAUTHORIZED` means the path exists
+// and `404 NOT_FOUND` means it does not.
 //
-//   1. The API HOST. Nothing in that research names it, so the default below is
-//      a guess and is overridable by SUBMAGIC_API_BASE without a code change.
-//   2. The AUTH HEADER NAME. Same — overridable by SUBMAGIC_API_AUTH_HEADER.
+//   * HOST — `https://api.submagic.co` answers. `api.submagic.com` does not
+//     resolve at all. CONFIRMED. Still overridable by SUBMAGIC_API_BASE.
+//   * AUTH HEADER — `x-api-key`, quoted verbatim in Submagic's own docs on
+//     create-project and user-media-upload. CONFIRMED, not a guess.
+//   * EXPORT PATH — `POST /v1/projects/{id}/export` answers 401, so the route
+//     is real. CONFIRMED. SUBMAGIC_EXPORT_PATH still overrides it.
 //
-// The research also says outright that the export path "/v1/projects/{id}/export"
-// is inferred rather than documented; SUBMAGIC_EXPORT_PATH overrides it.
+// Two corrections from the same measurement, both of which cost money if
+// ignored:
 //
-// Nothing here pretends those three are confirmed. A 401 or a 404 from this
-// module is far more likely to be one of them than a real fault, and the error
-// text says so.
+//   1. `POST /v1/projects/{id}/user-media` DOES NOT EXIST — it is a 404, not a
+//      401, so it was never going to start working once a key landed. The real
+//      route is `POST /v1/user-media` (and `POST /v1/user-media/upload` for
+//      raw bytes), and a userMediaId is not scoped to a project.
+//   2. Creates are **30 an hour**, not the 500 an earlier document recorded.
+//
+// WHAT IS STILL UNKNOWN: the key itself has never been exercised. It is stored
+// on Netlify with `--secret`, so a laptop reads a mask and gets a 401 that
+// proves nothing. The first live call has to come from a deployed function.
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // WHAT THIS MODULE WILL NOT DO, EVER:
@@ -60,7 +69,7 @@
 //     header or a credential at any level.
 
 import {
-  transmit, postJsonTo, ADAPTERS, redact
+  transmit, postJsonTo, postBinaryTo, ADAPTERS, redact
 } from "../../lib/outbound-fetch.mjs";
 import { classify, success, failure, rejection } from "./http.mjs";
 
@@ -88,11 +97,17 @@ export const TRANSMITS = true;
    tight one — 50 an hour — and an update always costs a re-export, so a pass
    that re-edits the same take twice costs two of them. */
 export const RATE_LIMITS = Object.freeze({
-  create: 500,
+  /* 30, measured off https://docs.submagic.co/rate-limits.md on 2026-09-22.
+     An earlier document said 500 and that number was wrong by a factor of
+     sixteen — a sweeper that believed it would run into 429s it was told
+     could not happen. */
+  create: 30,
+  upload: 30,
+  userMedia: 500,
   get: 100,
   update: 100,
   export: 50,
-  languages: 6000
+  languages: 1000
 });
 
 /** Per the research: no more than 12 seconds between an item's start and end. */
@@ -333,6 +348,81 @@ export async function createProject({
   return { ...v2, projectId: String(projectId) };
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   createProjectFromFile — POST /v1/projects/upload
+
+   THE PREFERRED ROUTE, and the one that makes the whole staging problem go
+   away. Submagic takes the media itself as a multipart upload, up to 2 GB, so
+   there is no public URL anywhere: no virus-scan page, no link that expires,
+   no bet on whether the vendor's downloader likes our host, and the take never
+   has to be readable by the world in order to be captioned.
+
+   Same four switches as createProject and for the same reasons — they are sent
+   as strings because a multipart field is text on the wire.
+
+   Rate limit 30 an hour, same as the URL route. A failed upload costs one of
+   them, so the size check happens before a byte is sent.
+   ───────────────────────────────────────────────────────────────────────── */
+export async function createProjectFromFile({
+  title, language = "en", file, fileName = "take.mp4", contentType = "video/mp4",
+  webhookUrl, dictionary = [], templateName, hookTitle, cleanAudio,
+  env = process.env, fetchImpl, timeoutMs, signal, maxBytes = MAX_FILE_BYTES
+} = {}) {
+  const t = String(title || "").trim();
+  if (!t) return { ok: false, retryable: false, error: "createProjectFromFile needs a title" };
+  if (!file || typeof file.byteLength !== "number" || file.byteLength <= 0) {
+    return { ok: false, retryable: false, error: "createProjectFromFile needs the file's bytes" };
+  }
+  /* Checked against BOTH ceilings here, before a byte is sent. The chokepoint
+     has its own cap and would refuse too, but it reports that as "nothing was
+     sent", which a caller reads as retryable — and a file that is too big will
+     be exactly as big on the next pass. This says never, once. */
+  const cap = Math.min(Number(maxBytes) || MAX_FILE_BYTES, MAX_FILE_BYTES);
+  if (file.byteLength > cap) {
+    return { ok: false, retryable: false,
+      error: `this take is ${file.byteLength} bytes and the ceiling for an upload is ${cap}` };
+  }
+
+  const cfg = submagicConfig(env);
+  if (!cfg.ok) {
+    return { ok: false, retryable: true, error: `Submagic is not configured: ${cfg.missing.join(", ")} is not set` };
+  }
+
+  const form = new FormData();
+  form.append("title", t);
+  form.append("language", String(language || "en"));
+  /* THE FOUR SWITCHES THAT ARE NOT NEGOTIABLE. See the file header. */
+  form.append("autoRender", "false");
+  form.append("magicBrolls", "false");
+  form.append("removeBadTakes", "false");
+  form.append("dictionary", JSON.stringify(buildDictionary(dictionary)));
+  if (webhookUrl) form.append("webhookUrl", String(webhookUrl));
+  if (templateName) form.append("templateName", String(templateName));
+  if (hookTitle) form.append("hookTitle", String(hookTitle));
+  if (cleanAudio === true) form.append("cleanAudio", "true");
+  form.append("file", new Blob([file], { type: contentType }), String(fileName || "take.mp4"));
+
+  /* No Content-Type header: FormData writes its own boundary, and setting one
+     by hand splits the request in the middle of the video. */
+  const res = await postBinaryTo(`${cfg.apiBase}/v1/projects/upload`, {
+    headers: authHeaders(cfg),
+    body: form,
+    byteLength: file.byteLength,
+    maxBytes,
+    fence: ADAPTERS, env, fetchImpl, timeoutMs, signal,
+    what: "submagic upload project"
+  });
+
+  const v = verdictOf(res, "submagic upload project");
+  if (!v.ok) return v;
+  const projectId = v.body?.id || v.body?.projectId || null;
+  if (!projectId) {
+    return { ...v, ok: false, retryable: false,
+      error: "Submagic accepted the upload but returned no id — nothing downstream can find this edit" };
+  }
+  return { ...v, projectId: String(projectId), byteLength: file.byteLength };
+}
+
 /* getProject — GET /v1/projects/{id}
 
    The word-level transcript lives here and nowhere else, and it only exists
@@ -356,11 +446,19 @@ export async function getProject(projectId, { env = process.env, fetchImpl, time
   };
 }
 
-/* uploadUserMedia — put one of OUR b-roll clips on the project.
+/* uploadUserMedia — put one of OUR b-roll clips in the account's media library.
 
-   The clip is handed over as a URL, never as bytes: src/lib/outbound-fetch.mjs
-   reads every response as text, so it cannot carry a video body in either
-   direction. See docs/journeys/ad-video-flow.md for where the bytes move. */
+   THE PATH CHANGED ON 2026-09-22 AND THE OLD ONE WAS A 404.
+   `POST /v1/projects/{id}/user-media` does not exist — measured, and a 404 not
+   a 401, so it would never have started working once the key landed. The real
+   route is `POST /v1/user-media`, and a userMediaId belongs to the ACCOUNT, not
+   to a project: the same clip can be placed on every ad without re-uploading.
+   The projectId argument is kept so existing callers are unchanged, and is used
+   only to label the call.
+
+   The clip is handed over as a URL. For raw bytes Submagic has a separate
+   `POST /v1/user-media/upload`; b-roll already lives at a link, so nothing
+   here needs it. */
 export async function uploadUserMedia(projectId, { url, name, env = process.env, fetchImpl, timeoutMs, signal } = {}) {
   const id = String(projectId || "").trim();
   const mediaUrl = String(url || "").trim();
@@ -370,7 +468,7 @@ export async function uploadUserMedia(projectId, { url, name, env = process.env,
   }
   const body = { url: mediaUrl };
   if (name) body.name = String(name);
-  const res = await call("POST", `/v1/projects/${encodeURIComponent(id)}/user-media`, {
+  const res = await call("POST", `/v1/user-media`, {
     body, env, fetchImpl, timeoutMs, signal, what: "submagic upload user media"
   });
   const v = verdictOf(res, "submagic upload user media");
@@ -490,6 +588,6 @@ export async function send(message = {}, options = {}) {
 export default {
   PROVIDER, CHANNELS, ADDRESS_FIELD, ENABLED, TRANSMITS, send,
   submagicConfig, isSubmagicConfigured,
-  createProject, getProject, uploadUserMedia, updateProject, exportProject,
+  createProject, createProjectFromFile, getProject, uploadUserMedia, updateProject, exportProject,
   parseWebhook, buildItems, buildDictionary, RATE_LIMITS
 };

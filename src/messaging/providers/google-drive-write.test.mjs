@@ -17,9 +17,10 @@ import { fileURLToPath } from "node:url";
 
 import {
   PROVIDER, ENABLED, TRANSMITS, FOLDER_MIME,
-  DRIVE_WRITE_SCOPE, MAX_TEXT_UPLOAD_BYTES, VIDEO_UPLOAD_UNSUPPORTED,
+  DRIVE_WRITE_SCOPE, MAX_TEXT_UPLOAD_BYTES, MAX_VIDEO_BYTES,
   grantsWrite, resetTokenCache,
-  listNewVideos, getFileMeta, renameFile, ensureFolder, uploadTextFile, uploadVideo
+  listNewVideos, getFileMeta, renameFile, ensureFolder, uploadTextFile,
+  downloadFile, shareAnyoneWithLink, uploadVideo
 } from "./google-drive-write.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -199,17 +200,198 @@ describe("the brief", () => {
   });
 });
 
-describe("THE NAMED GAP — video bytes", () => {
-  /* This is not a bug to be fixed by adding a raw fetch here. The chokepoint
-     reads every response with res.text(), so an MP4 cannot travel through it,
-     and a module that opened its own socket is exactly what
-     src/lib/no-unfenced-transmit.test.mjs exists to stop. The gap is named. */
-  test("uploadVideo refuses and says why", async () => {
-    const res = await uploadVideo({ parentId: "f", name: "043_t02_final_v1.mp4", sourceUrl: "https://cdn.test/o.mp4" });
+/* ── THE GAP THAT USED TO BE HERE IS CLOSED ─────────────────────────────────
+   uploadVideo() refused until 2026-09-22, because the chokepoint read every
+   response as text and an MP4 came back mangled. The fix was NOT a raw fetch
+   in this file — that is the hole src/lib/no-unfenced-transmit.test.mjs
+   exists to stop. The missing half was built inside the chokepoint instead
+   (transmitBinary / postBinaryTo), so the bytes move with a fence, a size cap
+   and a long clock. These tests are what that now buys. */
+
+const MP4 = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112, 105, 115, 111, 109]);
+
+/* A fetch stand-in that can answer BYTES as well as JSON, and that can carry
+   response headers — the resumable upload's session URL arrives in `location`
+   and nowhere else. */
+function binaryFetch({ scope = DRIVE_WRITE_SCOPE, responses = [] } = {}) {
+  const calls = [];
+  const queue = [...responses];
+  const impl = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (String(url).includes("oauth2.googleapis.com/token")) {
+      const body = { access_token: "at-test", expires_in: 3600, token_type: "Bearer", scope };
+      return { ok: true, status: 200, headers: { forEach() {} }, text: async () => JSON.stringify(body) };
+    }
+    const next = queue.length > 1 ? queue.shift() : (queue[0] || {});
+    const { status = 200, body = {}, bytes = null, headers = {} } = next;
+    const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), String(v)]));
+    const res = {
+      ok: status >= 200 && status < 300, status,
+      headers: { forEach(fn) { for (const [k, v] of Object.entries(lower)) fn(v, k); } },
+      text: async () => (typeof body === "string" ? body : JSON.stringify(body))
+    };
+    if (bytes) {
+      let done = false;
+      res.body = { getReader: () => ({
+        read: async () => (done ? { done: true } : (done = true, { done: false, value: bytes })),
+        cancel: async () => { done = true; }
+      }) };
+    }
+    return res;
+  };
+  impl.calls = calls;
+  impl.drive = () => calls.filter((c) => !c.url.includes("oauth2.googleapis.com"));
+  return impl;
+}
+
+describe("reading a take out of Drive", () => {
+  test("the bytes come back whole, with our own token and no public link", async () => {
+    const impl = binaryFetch({ responses: [{ status: 200, bytes: MP4, headers: { "content-type": "video/mp4" } }] });
+    const res = await downloadFile("drv1", { env: envWith(), fetchImpl: impl });
+    assert.equal(res.ok, true);
+    assert.deepEqual([...res.bytes], [...MP4]);
+    assert.equal(res.contentType, "video/mp4");
+    const call = impl.drive()[0];
+    assert.match(call.url, /alt=media/);
+    assert.match(call.init.headers.authorization, /^Bearer /,
+      "authenticated, which is why there is no virus-scan page and no size threshold");
+  });
+
+  test("a file still uploading from the phone is a RETRY, not a paid minute", async () => {
+    const impl = binaryFetch({ responses: [{ status: 200, bytes: new Uint8Array(0) }] });
+    const res = await downloadFile("drv1", { env: envWith(), fetchImpl: impl });
     assert.equal(res.ok, false);
-    assert.equal(res.unsupported, true);
-    assert.equal(res.error, VIDEO_UPLOAD_UNSUPPORTED);
-    assert.match(res.error, /reads every response as text/);
+    assert.equal(res.retryable, true);
+    assert.match(res.error, /empty file/);
+  });
+
+  test("a take bigger than the cap is refused before the body is pulled", async () => {
+    const impl = binaryFetch({ responses: [{ status: 200, bytes: MP4, headers: { "content-length": "999999999" } }] });
+    const res = await downloadFile("drv1", { env: envWith(), fetchImpl: impl, maxBytes: 1000 });
+    assert.equal(res.ok, false);
+    assert.match(res.error, /over the 1000-byte cap/);
+  });
+
+  test("the fence holds a download as firmly as it holds a write", async () => {
+    const impl = binaryFetch({ responses: [{ status: 200, bytes: MP4 }] });
+    const res = await downloadFile("drv1", { env: { GOOGLE_DRIVE_OAUTH_TOKEN_JSON: tokenJson }, fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.equal(res.retryable, true);
+    assert.equal(impl.drive().length, 0);
+  });
+
+  test("no file id means no call", async () => {
+    const impl = binaryFetch({});
+    const res = await downloadFile("", { env: envWith(), fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.equal(impl.calls.length, 0);
+  });
+});
+
+describe("sharing ONE file by link", () => {
+  test("it asks for reader on exactly that file, and nothing else", async () => {
+    const impl = binaryFetch({ responses: [{ status: 200, body: { id: "perm1" } }] });
+    const res = await shareAnyoneWithLink("drv1", { env: envWith(), fetchImpl: impl });
+    assert.equal(res.ok, true);
+    assert.equal(res.permissionId, "perm1");
+    const call = impl.drive()[0];
+    assert.match(call.url, /\/files\/drv1\/permissions/);
+    const body = JSON.parse(call.init.body);
+    assert.deepEqual(body, { role: "reader", type: "anyone" },
+      "reader, never writer — a link that can edit the take is a different thing entirely");
+  });
+
+  test("a 403 reads as the read-only token it usually is, and changes no stored key", async () => {
+    const impl = binaryFetch({ responses: [{ status: 403, body: { error: { message: "insufficientPermissions" } } }] });
+    const res = await shareAnyoneWithLink("drv1", { env: envWith(), fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.match(res.error, /no stored key was changed/);
+  });
+});
+
+describe("putting the finished ad in Paul's folder", () => {
+  const session = "https://upload.test/session/abc";
+
+  test("it downloads the render, opens a session, then PUTs the bytes", async () => {
+    const impl = binaryFetch({ responses: [
+      { status: 200, bytes: MP4, headers: { "content-type": "video/mp4" } },   // the render
+      { status: 200, body: {}, headers: { location: session } },                // session opened
+      { status: 200, body: { id: "final1", name: "043_t02_final_v1.mp4" } }     // bytes accepted
+    ] });
+    const res = await uploadVideo({
+      parentId: "f043", name: "043_t02_final_v1.mp4", sourceUrl: "https://cdn.test/o.mp4",
+      env: envWith(), fetchImpl: impl
+    });
+    assert.equal(res.ok, true);
+    assert.equal(res.fileId, "final1");
+    assert.equal(res.byteLength, MP4.byteLength);
+
+    const calls = impl.drive();
+    assert.equal(calls.length, 3);
+    assert.equal(calls[0].url, "https://cdn.test/o.mp4");
+    assert.equal(calls[0].init.headers, undefined,
+      "our Drive token must never be attached to a third-party host");
+    assert.match(calls[1].url, /uploadType=resumable/);
+    assert.equal(calls[2].url, session);
+    assert.equal(calls[2].init.method, "PUT");
+    assert.deepEqual([...calls[2].init.body], [...MP4]);
+  });
+
+  test("bytes already in hand skip the download entirely", async () => {
+    const impl = binaryFetch({ responses: [
+      { status: 200, body: {}, headers: { location: session } },
+      { status: 200, body: { id: "final2" } }
+    ] });
+    const res = await uploadVideo({
+      parentId: "f043", name: "n.mp4", bytes: MP4, env: envWith(), fetchImpl: impl
+    });
+    assert.equal(res.ok, true);
+    assert.equal(impl.drive().length, 2);
+  });
+
+  test("a session with no location header is reported, not guessed at", async () => {
+    const impl = binaryFetch({ responses: [
+      { status: 200, body: {}, headers: {} },
+      { status: 200, body: { id: "never" } }
+    ] });
+    const res = await uploadVideo({ parentId: "f", name: "n.mp4", bytes: MP4, env: envWith(), fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.match(res.error, /no location header/);
+    assert.equal(impl.drive().length, 1, "nothing was uploaded to a URL we did not get");
+  });
+
+  test("a render bigger than the cap never reaches Drive", async () => {
+    const impl = binaryFetch({ responses: [{ status: 200, bytes: MP4, headers: { "content-length": "999999999" } }] });
+    const res = await uploadVideo({
+      parentId: "f", name: "n.mp4", sourceUrl: "https://cdn.test/o.mp4",
+      env: envWith(), fetchImpl: impl, maxBytes: 100
+    });
+    assert.equal(res.ok, false);
+    assert.equal(impl.drive().length, 1, "it stopped at the download and never opened an upload session");
+  });
+
+  test("neither bytes nor a link is a refusal, with no call at all", async () => {
+    const impl = binaryFetch({});
+    const res = await uploadVideo({ parentId: "f", name: "n.mp4", env: envWith(), fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.equal(res.retryable, false);
+    assert.match(res.error, /bytes or an http\(s\) sourceUrl/);
+    assert.equal(impl.calls.length, 0);
+  });
+
+  test("the fence holds the whole thing", async () => {
+    const impl = binaryFetch({ responses: [{ status: 200, bytes: MP4 }] });
+    const res = await uploadVideo({
+      parentId: "f", name: "n.mp4", sourceUrl: "https://cdn.test/o.mp4",
+      env: { GOOGLE_DRIVE_OAUTH_TOKEN_JSON: tokenJson }, fetchImpl: impl
+    });
+    assert.equal(res.ok, false);
+    assert.equal(impl.drive().length, 0);
+  });
+
+  test("the video cap is a memory ceiling, and it is a real number", () => {
+    assert.equal(MAX_VIDEO_BYTES, 512 * 1024 * 1024);
+    assert.ok(MAX_VIDEO_BYTES > MAX_TEXT_UPLOAD_BYTES * 50, "a take is not a brief");
   });
 });
 

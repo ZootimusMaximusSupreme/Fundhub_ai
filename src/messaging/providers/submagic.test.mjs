@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import {
   PROVIDER, CHANNELS, ADDRESS_FIELD, ENABLED, TRANSMITS,
   submagicConfig, isSubmagicConfigured,
-  createProject, getProject, uploadUserMedia, updateProject, exportProject,
+  createProject, createProjectFromFile, getProject, uploadUserMedia, updateProject, exportProject,
   parseWebhook, buildItems, buildDictionary,
   MAX_ITEM_SECONDS, MAX_DICTIONARY_TERMS, MAX_DICTIONARY_TERM_CHARS, RATE_LIMITS
 } from "./submagic.mjs";
@@ -226,6 +226,17 @@ describe("upload user media", () => {
     assert.equal(good.ok, true);
     assert.equal(good.userMediaId, "um1");
   });
+
+  test("IT POSTS TO /v1/user-media — the per-project path does not exist", async () => {
+    /* Measured 2026-09-22: POST /v1/projects/{id}/user-media answers 404, not
+       401, so it was never going to start working once a key arrived. Every
+       b-roll upload would have failed for the life of the pipeline. */
+    const impl = fakeFetch({ status: 200, body: { id: "um1" } });
+    await uploadUserMedia("p1", { url: "https://cdn.test/clip.mp4", env: LIVE, fetchImpl: impl });
+    assert.equal(impl.calls[0].url, "https://submagic.test/v1/user-media");
+    assert.ok(!String(impl.calls[0].url).includes("/projects/"),
+      "a userMediaId belongs to the account, not to one project");
+  });
 });
 
 describe("export", () => {
@@ -236,9 +247,110 @@ describe("export", () => {
     assert.match(res.error, /SUBMAGIC_EXPORT_PATH/);
   });
 
-  test("the limits from the research are recorded, and export is the tight one", () => {
+  test("the measured limits are recorded, and CREATE is the tight one", () => {
+    /* Corrected 2026-09-22 off https://docs.submagic.co/rate-limits.md. An
+       earlier document said creates were 500 an hour; they are 30. Export at
+       50 is no longer the tightest number on the plan — starting a take is. */
+    assert.equal(RATE_LIMITS.create, 30);
+    assert.equal(RATE_LIMITS.upload, 30);
     assert.equal(RATE_LIMITS.export, 50);
-    assert.ok(RATE_LIMITS.export < RATE_LIMITS.create);
+    assert.ok(RATE_LIMITS.create < RATE_LIMITS.export,
+      "a sweeper that budgets by export alone would run into 429s on create first");
+  });
+});
+
+describe("uploading the take itself", () => {
+  const MP4 = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]);
+
+  /** A stand-in that keeps the FormData rather than trying to JSON.parse it. */
+  function formFetch({ status = 200, body = {} } = {}) {
+    const calls = [];
+    const impl = async (url, init) => {
+      calls.push({ url: String(url), init, form: init?.body });
+      return {
+        ok: status >= 200 && status < 300, status,
+        headers: { forEach() {} },
+        text: async () => JSON.stringify(body)
+      };
+    };
+    impl.calls = calls;
+    return impl;
+  }
+
+  test("the file goes to /v1/projects/upload as multipart, with the four switches off", async () => {
+    const impl = formFetch({ body: { id: "proj-up" } });
+    const res = await createProjectFromFile({
+      title: "Ad 43 take 2", language: "en", file: MP4,
+      fileName: "IMG_4471.mov", contentType: "video/quicktime",
+      webhookUrl: "https://fundhub.ai/api/public/submagic",
+      env: LIVE, fetchImpl: impl
+    });
+    assert.equal(res.ok, true);
+    assert.equal(res.projectId, "proj-up");
+
+    const call = impl.calls[0];
+    assert.equal(call.url, "https://submagic.test/v1/projects/upload");
+    assert.equal(call.init.method, "POST");
+    assert.equal(call.init.headers["x-api-key"], KEY);
+    assert.equal(call.init.headers["Content-Type"], undefined,
+      "FormData writes its own boundary; setting one by hand splits the video");
+
+    const form = call.form;
+    assert.ok(form instanceof FormData);
+    assert.equal(form.get("title"), "Ad 43 take 2");
+    assert.equal(form.get("autoRender"), "false", "the words must be read before anything is placed");
+    assert.equal(form.get("magicBrolls"), "false", "3 AI credits a clip against 15 a month");
+    assert.equal(form.get("removeBadTakes"), "false", "a shortened timeline drifts off the transcript times");
+    assert.equal(form.get("webhookUrl"), "https://fundhub.ai/api/public/submagic");
+    assert.ok(JSON.parse(form.get("dictionary")).includes("Fundhub"));
+    assert.equal(form.get("file").name, "IMG_4471.mov");
+    assert.equal(form.get("file").type, "video/quicktime");
+    assert.equal(form.get("file").size, MP4.byteLength);
+  });
+
+  test("no bytes is a refusal with no call — an empty upload still costs a create", async () => {
+    const impl = formFetch({});
+    for (const bad of [undefined, null, new Uint8Array(0)]) {
+      const res = await createProjectFromFile({ title: "t", file: bad, env: LIVE, fetchImpl: impl });
+      assert.equal(res.ok, false);
+      assert.equal(res.retryable, false);
+    }
+    assert.equal(impl.calls.length, 0);
+  });
+
+  test("a take over the ceiling is refused FOREVER, not retried", async () => {
+    const impl = formFetch({});
+    const res = await createProjectFromFile({
+      title: "t", file: MP4, maxBytes: 4, env: LIVE, fetchImpl: impl
+    });
+    assert.equal(res.ok, false);
+    assert.equal(res.retryable, false, "the file will be exactly as big on the next pass");
+    assert.equal(impl.calls.length, 0);
+  });
+
+  test("no key means no call, and the name is reported rather than the value", async () => {
+    const impl = formFetch({});
+    const res = await createProjectFromFile({ title: "t", file: MP4, env: { ADAPTERS_DRY_RUN: "0" }, fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.match(res.error, /SUBMAGIC_API_KEY/);
+    assert.equal(impl.calls.length, 0);
+  });
+
+  test("the fence holds the upload with ADAPTERS_DRY_RUN unset", async () => {
+    const impl = formFetch({ body: { id: "never" } });
+    const res = await createProjectFromFile({
+      title: "t", file: MP4, env: { SUBMAGIC_API_KEY: KEY, SUBMAGIC_API_BASE: "https://submagic.test" }, fetchImpl: impl
+    });
+    assert.equal(res.ok, false);
+    assert.equal(impl.calls.length, 0);
+  });
+
+  test("an accepted upload with no id is a failure, not a project nobody can find", async () => {
+    const impl = formFetch({ body: { ok: true } });
+    const res = await createProjectFromFile({ title: "t", file: MP4, env: LIVE, fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.equal(res.retryable, false);
+    assert.match(res.error, /returned no id/);
   });
 });
 

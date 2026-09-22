@@ -32,15 +32,30 @@
 //    Owner law: a stored key is never removed — a token that cannot write is
 //    left exactly where it is and reported.
 //
-// 2. BYTES. src/lib/outbound-fetch.mjs reads every response with res.text().
-//    That is correct for JSON and fatal for a 4K MP4: the body would be
-//    mangled and held whole in memory. So a VIDEO cannot move through this
-//    module — uploadVideo() refuses and says why. Small text (the one-page
-//    brief for Paul) is fine and is implemented. Moving the video bytes is a
-//    laptop script's job, the same way scripts/slo-broll-upload.mjs already is.
+// 2. BYTES — CLOSED 2026-09-22. This used to say a video could not move
+//    through the fence, because src/lib/outbound-fetch.mjs read every response
+//    with res.text() and an MP4 came back mangled. That gap is now filled by
+//    transmitBinary()/postBinaryTo() in the same chokepoint, with a size cap
+//    and a two-minute clock. downloadFile() and uploadVideo() below use it, so
+//    the bytes move inside the fence rather than in a laptop script.
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// SCOPE, MEASURED 2026-09-22 (docs/specs/video-pipeline-unknowns-settled-2026-09-22.md)
+//
+// The live OAuth token grants the FULL `https://www.googleapis.com/auth/drive`
+// scope, and a real create/trash/delete round trip against the SLO Ads folder
+// returned 200/200/204 with no 403. A 200 MB resumable upload session was
+// granted and cancelled with zero bytes sent. So the write path works today on
+// the OAuth credential; the service account was never needed and was not
+// touched. If a token without write scope is ever put in its place, the guard
+// in driveAccessToken() still names the missing scope rather than letting it
+// read as a mystery, and no stored key is changed either way.
 // ═══════════════════════════════════════════════════════════════════════════
 
-import { transmit, postJsonTo, ADAPTERS, redact } from "../../lib/outbound-fetch.mjs";
+import {
+  transmit, postJsonTo, transmitBinary, postBinaryTo, ADAPTERS, redact
+} from "../../lib/outbound-fetch.mjs";
 import { classify, success, failure, rejection } from "./http.mjs";
 import { driveConfigFromEnv } from "../../company-brain/config.mjs";
 import { fetchAccessToken, fetchOAuthAccessToken } from "../../company-brain/auth.mjs";
@@ -64,6 +79,17 @@ export const FOLDER_MIME = "application/vnd.google-apps.folder";
    is here so a caller cannot quietly hand it a video and get a corrupt upload
    instead of a refusal. See limit 2 in the header. */
 export const MAX_TEXT_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+/* How big a VIDEO this module will carry in or out. A take is held whole in
+   memory while it moves, and a serverless function has about a gigabyte for
+   everything it does, so this is a memory ceiling before it is a policy one.
+   A 4K minute is roughly 350 MB; a take past this cap is refused by name
+   instead of taking the worker down. Overridable per call. */
+export const MAX_VIDEO_BYTES = 512 * 1024 * 1024;
+
+/* The one long clock in this module. A few hundred megabytes does not move in
+   ten seconds, and the JSON calls above keep the short default. */
+export const VIDEO_TIMEOUT_MS = 300_000;
 
 const FILE_FIELDS = "id,name,mimeType,parents,createdTime,modifiedTime,size,videoMediaMetadata,trashed";
 
@@ -136,6 +162,13 @@ export async function driveAccessToken({ env = process.env, now = Date.now, fetc
 function verdictOf(res, what) {
   if (res.blocked) return { ok: false, retryable: true, status: 0, error: res.error || `${what} held by the adapters fence` };
   if (res.transmitted === false) return { ok: false, retryable: true, status: 0, error: res.error || `${what} was not sent` };
+  /* A BINARY CALL CAN FAIL WITH A 200. The size cap in transmitBinary bites on
+     a response the server thinks went perfectly, so `ok: false` under a 2xx is
+     real and must not be read off the status code alone. It is not retryable —
+     the file will be the same size next time. */
+  if (res.ok === false && res.status >= 200 && res.status < 300) {
+    return { ok: false, retryable: false, status: res.status, error: redact(res.error || `${what} was refused`) };
+  }
   if (res.status === 0) return { ok: false, retryable: true, status: 0, error: res.error || `${what} did not complete` };
   if (res.status === 403) {
     return { ok: false, retryable: false, status: 403,
@@ -339,24 +372,173 @@ export async function uploadTextFile({
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   uploadVideo — REFUSES, ON PURPOSE. Read limit 2 in the header.
+   downloadFile — the take itself, as bytes, with our own token.
 
-   src/lib/outbound-fetch.mjs reads every response with res.text(). A resumable
-   upload PUT of a 4K MP4 cannot go through it, and a helper here that quietly
-   opened its own socket would be the exact hole
-   src/lib/no-unfenced-transmit.test.mjs exists to close.
+   `alt=media` on the ordinary files endpoint. Authenticated, so there is no
+   virus-scan interstitial, no `confirm=t` query trick, no size threshold and
+   no requirement that the file be shared with anybody. That is the whole
+   reason this is the preferred way to get a take out of Drive.
 
-   So this is a named gap, not a silent one. The bytes move in a laptop script,
-   the same way scripts/slo-broll-upload.mjs already moves b-roll.
+   The cap is the caller's, defaulting to MAX_VIDEO_BYTES, and it is enforced
+   inside the chokepoint against content-length first and then chunk by chunk.
    ───────────────────────────────────────────────────────────────────────── */
-export const VIDEO_UPLOAD_UNSUPPORTED =
-  "moving video bytes is not built. src/lib/outbound-fetch.mjs reads every response as text, " +
-  "so an MP4 cannot travel through the fence in either direction. The finished file has to be " +
-  "copied by a script on the laptop (the pattern is scripts/slo-broll-upload.mjs). " +
-  "See docs/journeys/ad-video-flow.md.";
+export async function downloadFile(fileId, {
+  env = process.env, fetchImpl, maxBytes = MAX_VIDEO_BYTES,
+  timeoutMs = VIDEO_TIMEOUT_MS, signal
+} = {}) {
+  const id = String(fileId || "").trim();
+  if (!id) return { ok: false, retryable: false, error: "downloadFile needs a fileId" };
 
-export async function uploadVideo() {
-  return { ok: false, retryable: false, unsupported: true, error: VIDEO_UPLOAD_UNSUPPORTED };
+  const tok = await driveAccessToken({ env, fetchImpl });
+  if (!tok.ok) return tok;
+
+  const url = `${DRIVE_API}/files/${encodeURIComponent(id)}?${qs({ alt: "media", ...SHARED })}`;
+  const res = await transmitBinary(url, {
+    method: "GET",
+    headers: { authorization: `Bearer ${tok.accessToken}` }
+  }, {
+    fence: ADAPTERS, env, fetchImpl, maxBytes, timeoutMs, signal,
+    what: "drive download take"
+  });
+
+  const v = verdictOf(res, "drive download take");
+  if (!v.ok) return v;
+  if (!res.bytes || res.byteLength <= 0) {
+    /* A real file id with zero bytes is a phone that has not finished
+       uploading. listNewVideos already filters those; this is the second
+       line, because sending an empty MP4 to Submagic costs a paid minute. */
+    return { ok: false, retryable: true, error: "Drive returned an empty file — the upload from the phone may still be running" };
+  }
+  return {
+    ok: true, retryable: false,
+    bytes: res.bytes,
+    byteLength: res.byteLength,
+    contentType: res.contentType || "video/mp4"
+  };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   shareAnyoneWithLink — one file, readable by whoever holds its id.
+
+   ONLY used by the fallback staging route in src/ad-videos/staging.mjs, and
+   only ever on the ONE take being staged. Never on a folder, never on a
+   parent, and it grants `reader` — it cannot be used to hand anybody write
+   access to anything.
+
+   What makes this acceptable rather than "the video is now public": a Drive
+   file id is 33 characters of random, there is no listing and no directory,
+   and the permission reaches exactly one file. Measured 2026-09-22: an
+   unshared file answers a sign-in page to the same URL, so the permission is
+   doing real work and its absence is a closed door.
+   ───────────────────────────────────────────────────────────────────────── */
+export async function shareAnyoneWithLink(fileId, { env = process.env, fetchImpl, timeoutMs, signal } = {}) {
+  const id = String(fileId || "").trim();
+  if (!id) return { ok: false, retryable: false, error: "shareAnyoneWithLink needs a fileId" };
+
+  const tok = await driveAccessToken({ env, fetchImpl });
+  if (!tok.ok) return tok;
+
+  const url = `${DRIVE_API}/files/${encodeURIComponent(id)}/permissions?${qs({ fields: "id", ...SHARED })}`;
+  const res = await driveCall("POST", url, {
+    token: tok.accessToken,
+    body: JSON.stringify({ role: "reader", type: "anyone" }),
+    env, fetchImpl, timeoutMs, signal, what: "drive share file by link"
+  });
+  const v = verdictOf(res, "drive share file by link");
+  if (!v.ok) return v;
+  return { ok: true, retryable: false, fileId: id, permissionId: v.body?.id ? String(v.body.id) : null };
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   uploadVideo — the finished ad, into Paul's folder. RESUMABLE, in two calls.
+
+   This used to refuse. The reason it refused — the chokepoint could not carry
+   an MP4 — is fixed in src/lib/outbound-fetch.mjs, so the bytes now move
+   inside the fence with a size cap and a long clock.
+
+   WHY RESUMABLE AND NOT MULTIPART. Google's own guidance puts multipart at 5 MB
+   and under; a finished take is two orders of magnitude past that. Resumable
+   is two requests: the first creates a session and answers with a one-time
+   session URL in the `location` header, the second PUTs the bytes to it. The
+   session URL is a credential for one upload — it is never logged and never
+   stored.
+
+   `sourceUrl` is fetched with NO credentials on purpose: it is the vendor's
+   own finished-render link, and attaching our Drive token to a third-party
+   host is how a token leaks.
+   ───────────────────────────────────────────────────────────────────────── */
+export async function uploadVideo({
+  parentId, name, sourceUrl, bytes, contentType = "video/mp4",
+  env = process.env, fetchImpl, maxBytes = MAX_VIDEO_BYTES,
+  timeoutMs = VIDEO_TIMEOUT_MS, signal
+} = {}) {
+  const parent = String(parentId || "").trim();
+  const fileName = String(name || "").trim();
+  if (!parent) return { ok: false, retryable: false, error: "uploadVideo needs a parentId" };
+  if (!fileName) return { ok: false, retryable: false, error: "uploadVideo needs a name" };
+
+  let payload = bytes || null;
+  let type = contentType;
+
+  if (!payload) {
+    const from = String(sourceUrl || "").trim();
+    if (!/^https?:\/\//i.test(from)) {
+      return { ok: false, retryable: false, error: "uploadVideo needs bytes or an http(s) sourceUrl" };
+    }
+    const got = await transmitBinary(from, { method: "GET" }, {
+      fence: ADAPTERS, env, fetchImpl, maxBytes, timeoutMs, signal,
+      what: "download the finished render"
+    });
+    const gv = verdictOf(got, "download the finished render");
+    if (!gv.ok) return gv;
+    if (!got.bytes || got.byteLength <= 0) {
+      return { ok: false, retryable: true, error: "the finished-render link returned no bytes" };
+    }
+    payload = got.bytes;
+    type = got.contentType || contentType;
+  }
+
+  if (payload.byteLength > maxBytes) {
+    return { ok: false, retryable: false,
+      error: `uploadVideo refused: ${payload.byteLength} bytes is over the ${maxBytes}-byte cap` };
+  }
+
+  const tok = await driveAccessToken({ env, fetchImpl });
+  if (!tok.ok) return tok;
+
+  // 1. Open the session. Metadata only; not one byte of video moves here.
+  const startUrl = `${DRIVE_UPLOAD_API}/files?${qs({ uploadType: "resumable", fields: "id,name", ...SHARED })}`;
+  const started = await driveCall("POST", startUrl, {
+    token: tok.accessToken,
+    body: JSON.stringify({ name: fileName, parents: [parent] }),
+    env, fetchImpl, timeoutMs, signal, what: "drive open upload session"
+  });
+  const sv = verdictOf(started, "drive open upload session");
+  if (!sv.ok) return sv;
+
+  const session = started.headers?.location || started.headers?.["x-guploader-uploadid-location"] || null;
+  if (!session) {
+    return { ok: false, retryable: true,
+      error: "Drive opened an upload session but returned no location header — nothing was uploaded" };
+  }
+
+  // 2. The bytes. One PUT, through the same fence, with the long clock.
+  const put = await postBinaryTo(session, {
+    method: "PUT",
+    headers: { authorization: `Bearer ${tok.accessToken}` },
+    contentType: type,
+    body: payload,
+    byteLength: payload.byteLength,
+    maxBytes,
+    timeoutMs,
+    fence: ADAPTERS, env, fetchImpl, signal, what: "drive upload video"
+  });
+  const pv = verdictOf(put, "drive upload video");
+  if (!pv.ok) return pv;
+
+  const id = pv.body?.id;
+  if (!id) return { ok: false, retryable: true, error: "Drive accepted the video but returned no file id" };
+  return { ok: true, retryable: false, fileId: String(id), name: pv.body?.name || fileName, byteLength: payload.byteLength };
 }
 
 /** send — provider contract. Writes the brief; refuses anything else. */
@@ -379,5 +561,6 @@ export async function send(message = {}, options = {}) {
 export default {
   PROVIDER, CHANNELS, ADDRESS_FIELD, ENABLED, TRANSMITS, send,
   driveAccessToken, resetTokenCache, grantsWrite,
-  listNewVideos, getFileMeta, renameFile, ensureFolder, uploadTextFile, uploadVideo
+  listNewVideos, getFileMeta, renameFile, ensureFolder, uploadTextFile,
+  downloadFile, shareAnyoneWithLink, uploadVideo
 };

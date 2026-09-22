@@ -111,9 +111,30 @@ describe("walk", () => {
       pending: [{ id: "r1", status: "raw_landed", drive_raw_file_id: "d1" }],
       onPatch: (id, f) => patches.push([id, f])
     });
-    const res = await walk(noDb, { store, ports: portsFor({ env: {}, naming }) });
+    /* staging: null on purpose. The real stager is wired in now and would move
+       this row, so the "stuck" case has to be a port that is genuinely absent
+       rather than a feature that was never built. */
+    const res = await walk(noDb, {
+      store,
+      ports: { ...portsFor({ env: {}, naming }), staging: null }
+    });
     assert.equal(patches.length, 0, "a row that waited must not be rewritten with an empty patch");
-    assert.match(res.per[0].note, /staging is not built/);
+    assert.match(res.per[0].note, /staging port was not supplied/);
+  });
+
+  test("the sweeper hands the pipeline a real stager, so a raw take moves with no network", async () => {
+    /* The gap this batch closed. `direct` staging makes no call and publishes
+       no link — it only marks the row ready for the upload route. */
+    const patches = [];
+    const store = fakeStore({
+      pending: [{ id: "r1", status: "raw_landed", drive_raw_file_id: "d1" }],
+      onPatch: (id, f) => patches.push([id, f])
+    });
+    const res = await walk(noDb, { store, ports: portsFor({ env: {}, naming }) });
+    assert.equal(res.advanced, 1);
+    assert.equal(patches[0][1].status, "staged");
+    assert.equal(patches[0][1].source_url, undefined, "direct staging must not publish a link");
+    assert.equal(patches[0][1].storage_raw_key, "drive:d1");
   });
 
   test("every row in the batch gets a turn, and one stuck row does not block the rest", async () => {
@@ -125,7 +146,11 @@ describe("walk", () => {
     });
     const res = await walk(noDb, {
       store,
-      ports: { ...portsFor({ env: {}, naming }), submagic: { createProject: async () => ({ ok: true, projectId: "p9" }) } }
+      ports: {
+        ...portsFor({ env: {}, naming }),
+        staging: null,
+        submagic: { createProject: async () => ({ ok: true, projectId: "p9" }) }
+      }
     });
     assert.equal(res.per.length, 2);
     assert.equal(res.advanced, 1);

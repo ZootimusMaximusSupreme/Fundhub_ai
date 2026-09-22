@@ -1,13 +1,17 @@
 # Ad video — from a filmed take to Paul's folder
 
-Generated from the code on 2026-09-22. Written against `src/ad-videos/pipeline.mjs`,
-`src/workflows/ad-video-sweeper.mjs`, `src/messaging/providers/submagic.mjs`,
-`src/messaging/providers/google-drive-write.mjs`, `src/messaging/providers/ntfy.mjs`
-and the `submagic` branch in `src/http/router.mjs`.
+Generated from the code on 2026-09-22, updated the same day when staging and the
+binary transfer landed. Written against `src/ad-videos/pipeline.mjs`,
+`src/ad-videos/staging.mjs`, `src/workflows/ad-video-sweeper.mjs`,
+`src/messaging/providers/submagic.mjs`,
+`src/messaging/providers/google-drive-write.mjs`, `src/messaging/providers/ntfy.mjs`,
+`src/lib/outbound-fetch.mjs` and the `submagic` branch in `src/http/router.mjs`.
 
 The plan is `docs/video-pipeline-plan.md`. The vendor facts are
-`docs/specs/video-pipeline-api-verification-2026-09-22.md`. The 4K rule is
-`.claude/rules/video-4k-unless-ad.md`.
+`docs/specs/video-pipeline-unknowns-settled-2026-09-22.md`, which corrects the
+earlier `docs/specs/video-pipeline-api-verification-2026-09-22.md` on three
+points: the Drive link works, Submagic takes the file directly, and creates are
+30 an hour rather than 500. The 4K rule is `.claude/rules/video-4k-unless-ad.md`.
 
 **Chris films, and Chris approves. That is the whole job.**
 
@@ -19,8 +23,8 @@ The plan is `docs/video-pipeline-plan.md`. The vendor facts are
 flowchart TD
     A["Chris films the take<br/>phone shares it to the Raw Drive folder"] --> B["raw_landed"]
     B -->|"sweeper sees a new video, size above zero"| B
-    B -->|"stage: give it a plain public link"| C["staged"]
-    C -->|"Submagic Create Project, autoRender OFF"| D["editing"]
+    B -->|"stage: direct (no link) or share one file by link"| C["staged"]
+    C -->|"upload the bytes (or hand over the link), autoRender OFF"| D["editing"]
     D -->|"Submagic returns words[] with real times"| E["transcribed"]
     D -->|"still listening"| D
     E -->|"Claude picks the script, then the Drive file is renamed"| F["matched"]
@@ -43,8 +47,8 @@ flowchart TD
 | From | What runs | To | Where it lives |
 |---|---|---|---|
 | — | Drive `files.list` on the Raw folder every 5 minutes | `raw_landed` | `ad-video-sweeper.mjs` `detect()` |
-| `raw_landed` | make a public link for the take | `staged` | `pipeline.mjs` `stage()` — **not built, see below** |
-| `staged` | Submagic Create Project, `autoRender:false` | `editing` | `pipeline.mjs` `submagicCreate()` |
+| `raw_landed` | get the take ready: direct (no link) or one shared link | `staged` | `pipeline.mjs` `stage()` + `staging.mjs` |
+| `staged` | upload the bytes to Submagic (or pass the link), `autoRender:false` | `editing` | `pipeline.mjs` `submagicCreate()` |
 | `editing` | Submagic Get Project → `words[]` | `transcribed` | `pipeline.mjs` `readTranscript()` |
 | `transcribed` | Claude matches the words to a script, then Drive rename | `matched` | `pipeline.mjs` `matchAndRename()` |
 | `matched` | upload our clips, place them, Export Project | stays `matched`, `exported_at` set | `pipeline.mjs` `placeBrollAndExport()` |
@@ -76,32 +80,49 @@ primary text and the landing link.
 
 ---
 
-## Three things that are NOT built, named out loud
+## The three gaps that used to be here are CLOSED (2026-09-22)
 
-**Staging the take — the one that blocks everything.** Submagic cannot be given
-a Google Drive link: Drive puts a virus-scan page in front of anything over
-25 MB and Submagic rejects share links outright. So the take needs a plain
-public link first, and this repo has no proven place to put a
-several-hundred-megabyte file. The one public-URL trick already here is a
-Netlify **draft** deploy
-(`clickfunnels-fragments/slo/client-wins/upload-deck-images.mjs`), which shells
-out to the `netlify` command line — so it can only run on a laptop, never inside
-a worker — and was built for small images. With no staging port the row simply
-waits and says so. Nothing is lost: the take is still in Drive.
+This section used to list three things that were not built. All three were
+built on 2026-09-22, and two of them were only ever gaps because of a fact that
+turned out to be wrong. The measurements are in
+`docs/specs/video-pipeline-unknowns-settled-2026-09-22.md`.
 
-**Moving the video bytes.** `src/lib/outbound-fetch.mjs` — the one door
-everything outbound goes through — reads every response as text. That is right
-for JSON and wrong for a 4K MP4. So downloading the finished file from Submagic
-and uploading it into Paul's folder cannot happen through the fence.
-`uploadVideo()` refuses and says why. The folder and the brief are real and do
-land; the video is the gap. Moving it is a laptop script's job, the same way
-`scripts/slo-broll-upload.mjs` already moves b-roll.
+**1. Staging the take — built, and it needs no new vendor.** The old note said
+a Google Drive link cannot work, so a take would have to be copied to
+Cloudflare R2 or Amazon S3 first. Both halves were measured false. Submagic has
+a whole-project upload route (`POST /v1/projects/upload`, multipart, up to
+2 GB), so no link is needed by anybody; and a Drive link does work anyway — a
+344.6 MB file answered real MP4 bytes to a client with no credentials at all,
+over `drive.usercontent.google.com/download?id=…&export=download&confirm=t`. The
+threshold is around 100 MB rather than 25, and `confirm=t` defeats it.
 
-**Writing to Drive at all may be refused.** `src/company-brain/config.mjs` asks
-Google for `drive.readonly`. A read-only token cannot make a folder or upload a
-file. The provider checks the granted scope and reports "the stored Google token
-is read-only" instead of a mystery 403. Granting the write scope is a change on
-the Google side. Owner law: the stored key is never removed.
+`src/ad-videos/staging.mjs` holds both routes. **Direct is the default and it
+publishes nothing**: no link, no permission, no call. The take's bytes travel
+Drive → worker → Submagic, inside the fence, once. `AD_VIDEO_STAGING_MODE=link`
+switches to sharing one file read-only by its unguessable id, for the day the
+upload route turns out to be plan-gated. A typo in that variable reads as
+`direct` — a misspelling must never be the thing that makes a video public.
+
+Netlify Blobs and Supabase Storage were both measured and both fail: a blob can
+be 5 GB but the only way out is a function response capped at 20 MB, and our
+Supabase plan caps a file at exactly 50 MiB. Neither is worth rebuilding.
+
+**2. Moving the video bytes — built, inside the fence.** `transmitBinary()` and
+`postBinaryTo()` in `src/lib/outbound-fetch.mjs` are the missing half of the
+chokepoint: a caller still names a fence, the dry-run flags still hold it, and
+there is a size cap and a two-minute clock. The cap is checked against
+`content-length` first and then chunk by chunk, so a vendor that lies about the
+length still cannot fill the worker's memory. Used for three things: reading a
+take out of Drive, uploading it to Submagic, and pulling the finished render
+back down. `uploadVideo()` no longer refuses — it opens a resumable session and
+PUTs the bytes into Paul's folder.
+
+**3. Writing to Drive — measured working.** The live token grants the full
+`https://www.googleapis.com/auth/drive` scope, and a real create/trash/delete
+round trip returned 200/200/204 with no 403. A 200 MB upload session was
+granted and cancelled with zero bytes sent. The read-only guard stays in place
+for the day a narrower token is ever put in its place: it names the missing
+scope rather than reading as a mystery 403, and no stored key is ever changed.
 
 ---
 
@@ -128,17 +149,20 @@ Read by NAME only; no value is ever printed or logged.
 `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`, `GOOGLE_DRIVE_DELEGATE_EMAIL`,
 `GOOGLE_DRIVE_OAUTH_TOKEN_JSON`, `DRIVE_RAW_FOLDER_ID`, `DRIVE_PAUL_FOLDER_ID`,
 `NTFY_TOPIC`, `NTFY_SERVER`, `NTFY_TOKEN`, `PUBLIC_SITE_URL`,
-`ADAPTERS_DRY_RUN`, `MESSAGING_DRY_RUN`.
+`ADAPTERS_DRY_RUN`, `MESSAGING_DRY_RUN`, `AD_VIDEO_STAGING_MODE`.
 
-`NTFY_TOPIC`, `DRIVE_RAW_FOLDER_ID` and `DRIVE_PAUL_FOLDER_ID` are new and are
-**not set**. A topic name is the whole address of a notification — set it long
+`AD_VIDEO_STAGING_MODE` is optional and is **not set** — unset means `direct`,
+which publishes nothing. `NTFY_TOPIC`, `DRIVE_RAW_FOLDER_ID` and
+`DRIVE_PAUL_FOLDER_ID` are new and are **not set**. A topic name is the whole address of a notification — set it long
 and random, like a password.
 
 ---
 
 ## The money guard
 
-Export is capped at 50 an hour and every update costs another export. So:
+Creating a project is capped at **30 an hour** (measured 2026-09-22; an earlier
+note said 500, which was wrong by a factor of sixteen), and export at 50, with
+every update costing another export. So:
 
 * a pass moves at most 10 rows and picks up at most 20 new files
 * `exported_at` on the row stops a second export of the same take

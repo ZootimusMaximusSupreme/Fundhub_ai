@@ -27,7 +27,7 @@
 // serverless function can be retried mid-flight, so "did this already happen?"
 // is answered by a field on the row, not by hope:
 //
-//   stage            → source_url          already set? skip
+//   stage            → staged_at / source_url already set? skip
 //   submagic create  → submagic_project_id     already set? skip
 //   read transcript  → transcript              already set? skip
 //   match + rename   → script_id / renamed_at  already set? skip
@@ -97,33 +97,59 @@ export function checkResolution({ video_kind, height } = {}) {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   stage — give the take a plain link Submagic can actually download.
+   stage — get the take ready to hand over.
 
-   A Google Drive link cannot be used. Drive puts a virus-scan page in front of
-   anything over 25 MB and Submagic rejects share links outright with "URL does
-   not point to a downloadable media file". That is in the API research and it
-   is the single most load-bearing fact in this pipeline.
+   THIS USED TO BE THE DEAD END OF THE WHOLE PIPELINE. It said a Drive link
+   could not work and that nothing here could host a several-hundred-megabyte
+   MP4, so every take stopped at `raw_landed` forever. Both halves were
+   measured false on 2026-09-22; src/ad-videos/staging.mjs carries the whole
+   story and the two routes.
 
-   The staging port is injected because the repo has no proven home for a
-   several-hundred-megabyte file. The one public-URL trick already here — a
-   Netlify DRAFT deploy, clickfunnels-fragments/slo/client-wins/upload-deck-images.mjs
-   — shells out to the netlify CLI and was built for small JPEGs, so it cannot
-   run inside a worker and may well refuse a 4K MP4. Nothing is invented to
-   paper over that: with no staging port the row WAITS and says so.
+   TWO SHAPES OF SUCCESS, and a caller must read `mode` rather than assume:
+
+     direct — no link, no url, nothing published. The bytes go Drive → worker →
+              Submagic in submagicCreate(). This is the default.
+     link   — one file shared read-only by its unguessable id, and `source_url`
+              is the download link.
+
+   The port is still injected rather than imported, so every step in this file
+   stays testable with no network. The sweeper supplies the real one.
    ───────────────────────────────────────────────────────────────────────── */
 export async function stage(row, { staging, env = process.env } = {}) {
-  if (has(row.source_url)) return skip("already staged");
+  if (has(row.source_url) || has(row.staged_at)) return skip("already staged");
   if (!has(row.drive_raw_file_id)) return dead("no raw file id on the row — nothing to stage");
   if (!staging || typeof staging.publicUrlFor !== "function") {
     return wait(
-      "staging is not built: there is no proven way in this repo to put a several-hundred-megabyte " +
-      "MP4 behind a public link. The take is safe in Drive and nothing was lost. " +
-      "See docs/journeys/ad-video-flow.md."
+      "the staging port was not supplied — src/ad-videos/staging.mjs is what belongs here. " +
+      "The take is safe in Drive and nothing was lost. See docs/journeys/ad-video-flow.md."
     );
   }
+
   const res = await staging.publicUrlFor(row, { env });
-  if (!res?.ok || !has(res.url)) return wait(res?.error || "staging returned no url");
-  return ok({ status: "staged", source_url: String(res.url), staged_at: res.at || null });
+  if (!res?.ok) {
+    const why = res?.error || "staging returned nothing";
+    return res?.retryable === false ? dead(why) : wait(why);
+  }
+
+  const at = res.at || new Date().toISOString();
+
+  if (res.mode === "direct") {
+    /* No source_url on purpose. A row with an empty source_url and a staged_at
+       is the signal submagicCreate() reads as "upload the bytes", and it is
+       also what keeps a half-finished staging from looking like a link. */
+    return ok(
+      { status: "staged", staged_at: at, storage_raw_key: res.storageKey || null },
+      res.note || "the take goes straight to Submagic — no link was made"
+    );
+  }
+
+  if (!has(res.url)) return wait("staging returned no url");
+  return ok({
+    status: "staged",
+    source_url: String(res.url),
+    staged_at: at,
+    storage_raw_key: res.storageKey || null
+  });
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -132,18 +158,58 @@ export async function stage(row, { staging, env = process.env } = {}) {
    autoRender is forced off inside the provider. The whole B-roll timing answer
    depends on reading the real word timings before anything is placed, and that
    is impossible once the project has rendered.
+
+   TWO ROUTES IN, PICKED BY WHAT stage() LEFT ON THE ROW:
+
+     source_url set  → the link route. Submagic downloads it itself.
+     no source_url   → the upload route. The bytes are read out of Drive with
+                       our own token and posted to Submagic as a multipart
+                       upload. Nothing is ever world-readable.
+
+   The upload route is preferred and is what `direct` staging produces. Both
+   cost one create against a 30-an-hour ceiling, which is why
+   `submagic_project_id` is checked first and never re-spent.
    ───────────────────────────────────────────────────────────────────────── */
-export async function submagicCreate(row, { submagic, env = process.env, webhookUrl } = {}) {
+export async function submagicCreate(row, {
+  submagic, drive, staging, env = process.env, webhookUrl, maxUploadBytes
+} = {}) {
   if (has(row.submagic_project_id)) return skip("already at Submagic");
-  if (!has(row.source_url)) return wait("no public link yet");
   if (!submagic?.createProject) return wait("the Submagic provider was not supplied");
 
-  const res = await submagic.createProject({
+  const common = {
     title: row.title || `Fundhub take ${row.id}`,
     language: row.language || "en",
-    videoUrl: row.source_url,
     webhookUrl: webhookUrl || env.SUBMAGIC_WEBHOOK_URL || undefined,
     env
+  };
+
+  /* The link route. */
+  if (has(row.source_url)) {
+    const res = await submagic.createProject({ ...common, videoUrl: row.source_url });
+    if (!res.ok) return res.retryable === false ? dead(res.error) : wait(res.error);
+    return ok({ status: "editing", submagic_project_id: res.projectId });
+  }
+
+  /* The upload route. */
+  if (!has(row.drive_raw_file_id)) {
+    return dead("no link and no Drive file — there is nothing to hand to Submagic");
+  }
+  if (typeof drive?.downloadFile !== "function" || typeof submagic.createProjectFromFile !== "function") {
+    return wait(
+      "the upload route needs drive.downloadFile and submagic.createProjectFromFile. " +
+      `Set ${staging?.STAGING_MODE_VAR || "AD_VIDEO_STAGING_MODE"}=link to use a shared link instead.`
+    );
+  }
+
+  const got = await drive.downloadFile(row.drive_raw_file_id, { env, maxBytes: maxUploadBytes });
+  if (!got.ok) return got.retryable === false ? dead(got.error) : wait(got.error);
+
+  const res = await submagic.createProjectFromFile({
+    ...common,
+    file: got.bytes,
+    fileName: row.drive_raw_name || `take-${row.id}.mp4`,
+    contentType: got.contentType || "video/mp4",
+    maxBytes: maxUploadBytes
   });
   if (!res.ok) return res.retryable === false ? dead(res.error) : wait(res.error);
   return ok({ status: "editing", submagic_project_id: res.projectId });
@@ -472,9 +538,11 @@ export async function deliverToPaul(row, {
   });
   if (!brief.ok) return brief.retryable === false ? dead(brief.error) : wait(brief.error);
 
-  /* The video itself. uploadVideo() refuses on purpose — see the header of
-     src/messaging/providers/google-drive-write.mjs. The folder and the brief
-     are real and they are in Paul's Drive; the file is the named gap. */
+  /* The video itself. This used to be a named gap — uploadVideo() refused,
+     because the fence could not carry an MP4 — and it is now real: the
+     finished render is pulled down and pushed into Paul's folder as a
+     resumable upload, both halves inside the fence. A provider that still does
+     not offer it is reported as `unsupported` and the folder and brief stay. */
   const video = await (drive.uploadVideo
     ? drive.uploadVideo({
       parentId: folder.folderId,

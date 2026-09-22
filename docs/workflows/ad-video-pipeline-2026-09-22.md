@@ -365,3 +365,89 @@ been executed. The constraints, the row-level security policies, the two-taps
 race and the column names are all unproved. Whoever has a database runs these
 first, and must set `APP_DATABASE_URL` to `fundhub_app` or the isolation tests
 pass while proving nothing.
+
+---
+
+# Unit C — staging, binary transfer, Drive write (2026-09-22)
+
+**Status: done.** Branch `feat/ad-video-pipeline`. Built on the probe in
+`docs/specs/video-pipeline-unknowns-settled-2026-09-22.md`.
+
+## What now works end to end
+
+A row can move **detected → staged → submitted**, with no network in the tests
+and no new vendor in production.
+
+| Step | Before | Now |
+|---|---|---|
+| `raw_landed → staged` | stopped forever: "staging is not built" | `src/ad-videos/staging.mjs`, wired into the sweeper |
+| `staged → editing` | needed a public link nobody could make | the take's bytes are uploaded straight to Submagic |
+| video bytes anywhere | impossible — the fence read every response as text | `transmitBinary()` / `postBinaryTo()` inside the fence |
+| finished ad → Paul's folder | `uploadVideo()` refused on purpose | resumable upload, real |
+
+## The three pieces
+
+**A — STAGING.** `src/ad-videos/staging.mjs`. Two modes.
+
+* `direct` (**the default**) makes no call, no link and no permission. The
+  bytes travel Drive → worker → Submagic. Nothing is ever world-readable.
+* `link` shares **one file** as `anyone with the link / reader` and returns
+  `https://drive.usercontent.google.com/download?id=<FILE_ID>&export=download&confirm=t`.
+  Unguessable (a Drive file id, no listing behind it), read-only, one file. The
+  query string carries the id and nothing else — no token, no org, no row id.
+  `confirm=t` is not optional above roughly 100 MB.
+* An unrecognised value in `AD_VIDEO_STAGING_MODE` reads as `direct`. A typo
+  must not be the thing that publishes a video.
+
+**B — BINARY TRANSFER.** `transmitBinary()` and `postBinaryTo()` in
+`src/lib/outbound-fetch.mjs` — inside the chokepoint, not beside it. A caller
+still names a fence, `ADAPTERS_DRY_RUN` still holds it, and
+`src/lib/no-unfenced-transmit.test.mjs` is untouched and green. Cap defaults to
+512 MB with a 2 GB hard ceiling; it is checked against `content-length` before
+the body is pulled and then chunk by chunk, so a vendor that lies about its
+length cannot fill the worker's memory. Timeout 2 minutes. Used for the Drive
+download, the Submagic upload and the finished-render download.
+
+**C — DRIVE WRITE.** The probe measured the live token holding the full
+`drive` scope with a real create/trash/delete round trip, so nothing about any
+stored credential was touched. `downloadFile()` (`alt=media`, authenticated —
+no virus-scan page, no size threshold), `shareAnyoneWithLink()` and a real
+`uploadVideo()` (resumable: open a session, PUT the bytes).
+
+## Two corrections that came out of the probe
+
+1. **B-roll was posting to a route that does not exist.**
+   `POST /v1/projects/{id}/user-media` answers 404, not 401, so it was never
+   going to start working once a key arrived. It is now `POST /v1/user-media`.
+2. **Creates are 30 an hour, not 500.** `RATE_LIMITS.create` was wrong by a
+   factor of sixteen. Create is now the tightest limit on the plan, not export.
+
+## One fix a layer down
+
+`store.patch()` threw `unpatchable_column` on all fourteen worker marks
+migration 390 added — `staged_at`, `exported_at`, `renamed_at` and the rest —
+and `patch()` is called inside the sweeper's `walk()`, so one throw ended the
+whole pass. They are on the allow-list now.
+
+## Env vars set
+
+**None.** No variable was set, unset, cleared or overwritten. `AD_VIDEO_STAGING_MODE`
+is read but is optional: unset means `direct`, which is the mode that publishes
+nothing.
+
+## Measured
+
+`npm run lint` clean (2623 files). `npx tsc --noEmit` clean.
+Full suite: **11289 tests, 11276 pass, 9 fail, 4 skipped.** The same nine
+failures, by name, with this work stashed on the baseline commit — **zero
+added**, and 51 tests added.
+
+## NOT proved
+
+* **No Postgres on this Mac.** No `.pg.test.mjs` ran. `store.mjs`'s new
+  allow-list entries are unproved against real SQL.
+* **`SUBMAGIC_API_KEY` has still never been exercised.** It is stored with
+  `--secret`, so a laptop reads a mask and gets a 401 that proves nothing. The
+  first live Submagic call has to come from a deployed function or an Inngest
+  job — a local script will fail on the mask and look like a bad key.
+* **Nothing has been deployed.** No ship, no migration, no ClickFunnels push.

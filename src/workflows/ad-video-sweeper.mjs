@@ -41,6 +41,7 @@
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { advance } from "../ad-videos/pipeline.mjs";
+import * as defaultStaging from "../ad-videos/staging.mjs";
 import * as submagic from "../messaging/providers/submagic.mjs";
 import * as drive from "../messaging/providers/google-drive-write.mjs";
 import * as ntfy from "../messaging/providers/ntfy.mjs";
@@ -90,7 +91,10 @@ export function portsFor({ env = process.env, naming, staging, saveFinished, can
   return {
     env,
     naming,
-    staging,
+    /* The real stager, unless a test hands in its own. It publishes nothing by
+       default: `direct` mode makes no call and no link, and the take's bytes
+       move once, inside the fence, when submagicCreate() runs. */
+    staging: staging || defaultStaging,
     saveFinished,
     candidateScripts,
     brollLibrary,
