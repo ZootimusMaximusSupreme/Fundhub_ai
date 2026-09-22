@@ -589,6 +589,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="2"]{z-index:20;transform:translate3d(0,20px,0) scale(.91) rotate(calc(var(--tilt) * 3.4))}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="far"]{z-index:10;opacity:0;transform:translate3d(0,20px,0) scale(.91) rotate(calc(var(--tilt) * 3.4))}
 /* The top two cards always show their contents (no fade), so a fast scroll never lands on a blank card */
+/* The front card is readable the instant it arrives: no opacity fade on depth 0, and a fast
+   scroll snaps (no transitions for that frame) so two cards never blend. */
+.fh-root .proof-shuffle-deck .fh-card[data-depth="0"]{transition:transform .55s cubic-bezier(.2,.75,.2,1)}
+.fh-root .proof-shuffle-deck.is-snap .fh-card{transition:none!important}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="2"]:not(.is-out) > *,.fh-root .proof-shuffle-deck .fh-card[data-depth="far"]:not(.is-out) > *{opacity:0}
 .fh-root .proof-shuffle-deck .fh-card.is-out{animation:fh-deck-out .34s cubic-bezier(.3,.7,.2,1) both}
 .fh-root .proof-shuffle-deck .fh-card.is-in{animation:fh-deck-in .34s cubic-bezier(.3,.7,.2,1) both}
@@ -1209,7 +1213,11 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
            snap, no fly animation, and stop any flight still running, so two cards
            never blend and the top card is always fully readable. */
         var now=Date.now(),fast=(now-lastPaint)<450;lastPaint=now;
-        if(fast||dir===0){for(var k=0;k<N;k++)cards[k].classList.remove('is-out','is-in');}
+        if(fast||dir===0){
+          for(var k=0;k<N;k++)cards[k].classList.remove('is-out','is-in');
+          deck.classList.add('is-snap');
+          requestAnimationFrame(function(){requestAnimationFrame(function(){deck.classList.remove('is-snap');});});
+        }
         else if(dir===1)fly(cards[(a-1+N)%N],'is-out');
         else if(dir===-1)fly(cards[a],'is-in');
         var sum=0;for(var j=0;j<=a;j++)sum+=vals[j];
