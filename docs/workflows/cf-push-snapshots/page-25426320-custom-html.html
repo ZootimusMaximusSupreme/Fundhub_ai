@@ -2188,6 +2188,15 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
    much wider column — that gap on both sides is the empty space the owner saw
    (2026-09-22). max-height:none lets each card fill its column at true 9:16. */
 .fh-b .proofgrid .vslot{max-height:none}
+/* Phones: one video testimonial per row (owner 2026-09-22: "on mobile the video
+   testimonials should stack"). Three 9/16 slots across a 390px screen leave each
+   one 107px wide; stacked, each fills the column at true 9:16 (342x608 on a
+   390px phone). 699px is the inverse of the /watch block's min-width:700px, so
+   both pages break together. The 380px cap only bites between about 430 and
+   699, where a full-width 9:16 card would otherwise run past 950px tall; a
+   phone is narrower than the cap, so it still fills the column. */
+@media(max-width:699px){.fh-b .proofgrid{grid-template-columns:1fr;gap:16px;justify-items:center}
+.fh-b .proofgrid .vslot{width:100%;max-width:380px}}
 .fh-b .btn{display:block;width:100%;max-width:420px;margin:30px auto 0;background:#188bf6;color:#fff;font-family:var(--sans);font-size:17px;font-weight:600;padding:18px 26px;border:0;border-radius:9px;cursor:pointer;transition:background .15s;box-shadow:0 5px 18px rgba(24,139,246,.28);text-align:center;text-decoration:none}
 .fh-b .btn:hover{background:#0b78dd}
 .fh-b .marq{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:12px 0;margin-top:44px}
