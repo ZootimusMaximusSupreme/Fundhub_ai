@@ -561,10 +561,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="1"]{z-index:30;transform:translate3d(0,10px,0) scale(.955) rotate(calc(var(--tilt) * 2.4))}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="2"]{z-index:20;transform:translate3d(0,20px,0) scale(.91) rotate(calc(var(--tilt) * 3.4))}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="far"]{z-index:10;opacity:0;transform:translate3d(0,20px,0) scale(.91) rotate(calc(var(--tilt) * 3.4))}
-.fh-root .proof-shuffle-deck .fh-card > *{transition:opacity .3s ease}
-.fh-root .proof-shuffle-deck .fh-card[data-depth]:not([data-depth="0"]):not(.is-out) > *{opacity:0}
-.fh-root .proof-shuffle-deck .fh-card.is-out{animation:fh-deck-out .62s cubic-bezier(.3,.7,.2,1) both}
-.fh-root .proof-shuffle-deck .fh-card.is-in{animation:fh-deck-in .62s cubic-bezier(.3,.7,.2,1) both}
+/* The top two cards always show their contents (no fade), so a fast scroll never lands on a blank card */
+.fh-root .proof-shuffle-deck .fh-card[data-depth="2"]:not(.is-out) > *,.fh-root .proof-shuffle-deck .fh-card[data-depth="far"]:not(.is-out) > *{opacity:0}
+.fh-root .proof-shuffle-deck .fh-card.is-out{animation:fh-deck-out .34s cubic-bezier(.3,.7,.2,1) both}
+.fh-root .proof-shuffle-deck .fh-card.is-in{animation:fh-deck-in .34s cubic-bezier(.3,.7,.2,1) both}
 @keyframes fh-deck-out{
   0%{z-index:50;opacity:1;transform:translate3d(0,0,0) rotate(var(--tilt))}
   46%{z-index:50;opacity:1;transform:translate3d(calc(var(--fh-tilt-dir, -1) * -8%),-44%,0) rotate(calc(var(--tilt) * -7)) scale(.97)}
@@ -1004,6 +1004,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       if(!runway||!row||!deck)return;
       var cards=Array.prototype.slice.call(deck.querySelectorAll('.fh-card')),N=cards.length;
       if(!N)return;
+      /* Load and decode every approval picture before the deck reaches the screen, so fast scrolling never shows an empty card */
+      var shots=deck.querySelectorAll('img[data-slot="approval-screenshot"]');
+      function warm(){for(var q=0;q<shots.length;q++){shots[q].loading='eager';if(shots[q].decode)shots[q].decode().catch(function(){});}}
+      if('IntersectionObserver' in window){var wio=new IntersectionObserver(function(es){for(var e=0;e<es.length;e++){if(es[e].isIntersecting){warm();wio.disconnect();return;}}},{rootMargin:'150% 0px'});wio.observe(deck);}else warm();
       var vals=cards.map(function(c){
         if(c.getAttribute('data-layout')!=='win')return 0;
         var a=c.querySelector('.fh-amount');return a?(parseInt(a.textContent.replace(/[^0-9]/g,''),10)||0):0;
