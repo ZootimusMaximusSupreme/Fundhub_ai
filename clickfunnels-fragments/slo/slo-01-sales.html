@@ -194,7 +194,9 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 @media(max-width:640px){.fh-root .quals{grid-template-columns:1fr}}
 
 .fh-root .inds{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:20px}
-.fh-root .inds span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px}
+.fh-root .inds span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray);border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 13px;transition:color .25s ease,background-color .25s ease,border-color .25s ease,box-shadow .25s ease}
+/* Industry pills: same blue glow as the course pills, lit left to right, then the next row, as you scroll */
+.fh-root .inds span.is-lit{color:#2563EB;background:#EFF6FF;border-color:#2563EB;box-shadow:0 0 0 3px rgba(37,99,235,.13),0 6px 16px -6px rgba(37,99,235,.55)}
 
 .fh-root .res-slot{margin-top:14px;border:1px dashed var(--line);border-radius:10px;background:#fff;padding:16px 18px;text-align:left}
 .fh-root .res-slot span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--gray2)}
@@ -897,7 +899,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <span class="kicker">The Guarantee</span>
         <p>If you're not happy with what you get, <b>email us and we'll refund you.</b></p>
       </div>
-      <a class="btn" href="#fh-order">Get My Roadmap &middot; $297</a>
+      <a class="btn fh-go-pay" href="https://fundhub.ai/roadmap/pay.html">Get My Roadmap &middot; $297</a>
     </section>
 
     <!-- lightbox for the sample pages -->
@@ -1066,8 +1068,28 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       for(var i=0;i<pills.length;i++)io.observe(pills[i]);
     })();
     </script>
+    <script>
+    (function(){
+      /* Industry pills light in reading order while the row moves from 85% to 50% of the screen; scrolling back up turns them off */
+      var box,pills,N,raf=0;
+      function paint(){
+        raf=0;var vh=window.innerHeight,top=box.getBoundingClientRect().top;
+        var k=(vh*0.85-top)/(vh*0.35);k=Math.max(0,Math.min(1,k));
+        var lit=Math.round(k*N);
+        for(var i=0;i<N;i++)pills[i].classList.toggle('is-lit',i<lit);
+      }
+      function queue(){if(!raf)raf=requestAnimationFrame(paint);}
+      function start(){
+        box=document.getElementById('fh-inds');if(!box)return;
+        pills=box.querySelectorAll('span');N=pills.length;
+        window.addEventListener('scroll',queue,{passive:true});window.addEventListener('resize',queue);paint();
+      }
+      /* the pills sit below this script, so wait for the page */
+      if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
+    })();
+    </script>
 <!-- FH-DECK-JS:END -->
-      <div class="inds">
+      <div class="inds" id="fh-inds">
         <span>E-Commerce</span><span>Agency Owners</span><span>Coaches &amp; Consultants</span><span>SaaS Founders</span><span>Professional Services</span><span>Real Estate</span>
       </div>
     </section>
@@ -1193,15 +1215,16 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 </div>
 <script>
 (function(){
-  var a=document.getElementById('fh-pay-go');if(!a)return;
+  /* the checkout box button and every "Get My Roadmap" button open the built checkout, carrying the ad tags */
+  var links=document.querySelectorAll('#fh-pay-go, a.fh-go-pay');if(!links.length)return;
   var BASE='https://fundhub.ai/roadmap/pay.html',KEYS=['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
   function go(){
     var s={};try{s=JSON.parse(sessionStorage.getItem('fh_attribution')||'{}')||{};}catch(e){}
     var cur=new URLSearchParams(location.search),q=new URLSearchParams();
     KEYS.forEach(function(k){var v=s[k]||cur.get(k);if(v)q.set(k,String(v).slice(0,200));});
-    var qs=q.toString();a.href=BASE+(qs?'?'+qs:'');
+    var qs=q.toString();for(var i=0;i<links.length;i++)links[i].href=BASE+(qs?'?'+qs:'');
   }
-  go();a.addEventListener('pointerdown',go);a.addEventListener('click',go);
+  go();for(var i=0;i<links.length;i++){links[i].addEventListener('pointerdown',go);links[i].addEventListener('click',go);}
 })();
 </script>
 <!-- SLOT-UTM: paste clickfunnels-fragments/06-utm-hidden-fields.html here as its own element. No visible output. -->
