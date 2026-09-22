@@ -1,165 +1,89 @@
-// Staging — the two routes a take can travel, and the safety of each.
+// Staging — the one route a take can travel, and the proof it publishes nothing.
 //
-// NO NETWORK. The Drive provider is a stub, which is also how the module is
-// meant to be used from the sweeper: ports in, verdict out.
+// NO NETWORK. This module makes no call at all any more, which is itself the
+// property worth the most here.
 //
-// The properties worth the most here are the ones a reviewer cannot check by
-// reading the happy path:
+// THE TEST THAT MATTERS IS THE ABSENCE ONE. A `link` mode used to live in this
+// file: it called drive.shareAnyoneWithLink() — "anyone holding this link may
+// read this file" — and nothing ever took that permission back off. It was
+// deleted on 2026-09-22 along with the provider call it needed, because
+// Submagic takes the bytes directly and no public link is needed by anybody.
 //
-//   * `direct` publishes NOTHING. No call, no link, no permission. A test that
-//     only checked "did it return ok" would pass while quietly sharing a video
-//     with the internet, so the assertion is on the calls that did NOT happen.
-//   * A bad value in the mode variable reads as `direct`, never as `link`. A
-//     typo must not be the thing that makes a take world-readable.
-//   * The link carries `confirm=t`. Without it a file over roughly 100 MB
-//     answers a virus-scan page with a 200 status, which an editor accepts and
-//     then cannot decode. Measured 2026-09-22.
+// So the assertions below are on what CANNOT happen: no module here shares a
+// file, no environment variable turns sharing back on, and no answer from this
+// module ever carries a URL. A test that only checked "did it return ok" would
+// pass while quietly publishing a video.
 
 import { test, describe } from "node:test";
 import assert from "node:assert";
+import { readFileSync } from "node:fs";
 
-import {
-  publicUrlFor, stagingMode, driveDownloadUrl,
-  MODE_DIRECT, MODE_LINK, MODES, STAGING_MODE_VAR, DRIVE_DOWNLOAD_BASE
-} from "./staging.mjs";
+import * as staging from "./staging.mjs";
+import { publicUrlFor, MODE_DIRECT, MODES } from "./staging.mjs";
 
 const row = (extra = {}) => ({ id: "row1", drive_raw_file_id: "1M8Vnwglva5mhvqPqeGAopLcBztjZwvDe", ...extra });
 
-/** A Drive stub that records whether anything was shared. */
-function fakeDrive({ ok = true, error = null, retryable = true } = {}) {
-  const shared = [];
-  return {
-    shared,
-    shareAnyoneWithLink: async (fileId) => {
-      shared.push(fileId);
-      return ok ? { ok: true, retryable: false, fileId, permissionId: "perm1" } : { ok: false, retryable, error };
-    }
-  };
-}
-
-describe("which route", () => {
-  test("nothing set means direct — the route that publishes nothing", () => {
-    assert.equal(stagingMode({}), MODE_DIRECT);
-    assert.equal(stagingMode({ [STAGING_MODE_VAR]: "" }), MODE_DIRECT);
+describe("nothing is ever published", () => {
+  test("direct is the only mode there is", () => {
+    assert.deepEqual([...MODES], [MODE_DIRECT]);
   });
 
-  test("link is the only way to get link", () => {
-    assert.equal(stagingMode({ [STAGING_MODE_VAR]: "link" }), MODE_LINK);
-    assert.equal(stagingMode({ [STAGING_MODE_VAR]: "LINK" }), MODE_LINK);
-  });
-
-  test("A TYPO READS AS DIRECT, never as link", () => {
-    for (const typo of ["lnik", "public", "true", "1", "url", "yes"]) {
-      assert.equal(stagingMode({ [STAGING_MODE_VAR]: typo }), MODE_DIRECT,
-        `"${typo}" must not be the thing that makes a take world-readable`);
-    }
-  });
-
-  test("the two modes are the whole list", () => {
-    assert.deepEqual([...MODES], [MODE_DIRECT, MODE_LINK]);
-  });
-});
-
-describe("direct — the default", () => {
   test("it makes NO call and returns NO url", async () => {
-    const drive = fakeDrive();
-    const res = await publicUrlFor(row(), { env: {}, drive });
+    const res = await publicUrlFor(row(), { env: {} });
     assert.equal(res.ok, true);
     assert.equal(res.mode, MODE_DIRECT);
-    assert.equal(res.url, null, "direct must not hand back a link");
-    assert.deepEqual(drive.shared, [], "direct must not share the file with anybody");
+    assert.equal(res.url, null, "staging must not hand back a link");
+  });
+
+  test("no environment variable can turn sharing back on", async () => {
+    /* The old switch, plus every spelling somebody might reach for. None of
+       them may change the answer, because the code that acted on them is gone
+       rather than defaulted off. */
+    for (const env of [
+      { AD_VIDEO_STAGING_MODE: "link" }, { AD_VIDEO_STAGING_MODE: "LINK" },
+      { AD_VIDEO_STAGING_MODE: "public" }, { AD_VIDEO_SHARE: "1" }
+    ]) {
+      const res = await publicUrlFor(row(), { env });
+      assert.equal(res.mode, MODE_DIRECT);
+      assert.equal(res.url, null, `${JSON.stringify(env)} must not make a take world-readable`);
+    }
+  });
+
+  test("THE MODULE HOLDS NO WAY TO SHARE A FILE", () => {
+    /* Read as text on purpose. An export that is missing today can be added
+       back tomorrow by an agent that thinks it is restoring a feature; this
+       fails the moment the words come back. */
+    const src = readFileSync(new URL("./staging.mjs", import.meta.url), "utf8");
+    const body = src.split("\n").filter((l) => !l.trimStart().startsWith("//")).join("\n");
+    assert.equal(/shareAnyoneWithLink\s*\(/.test(body), false,
+      "staging must not be able to share a Drive file with anyone");
+    assert.equal(/drive\.usercontent\.google\.com/.test(body), false,
+      "staging must not build a public download link");
+    assert.equal(staging.stagingMode, undefined, "the mode switch is gone, not defaulted");
+    assert.equal(staging.driveDownloadUrl, undefined, "the public link builder is gone");
+    assert.equal(staging.MODE_LINK, undefined, "there is no link mode to name");
   });
 
   test("it leaves a mark that says where the bytes are", async () => {
-    const res = await publicUrlFor(row(), { env: {}, drive: fakeDrive() });
+    const res = await publicUrlFor(row(), { env: {} });
     assert.equal(res.storageKey, "drive:1M8Vnwglva5mhvqPqeGAopLcBztjZwvDe");
     assert.ok(res.at, "the step above writes this as staged_at");
-  });
-});
-
-describe("link — the fallback", () => {
-  test("it shares exactly one file and builds the download link", async () => {
-    const drive = fakeDrive();
-    const res = await publicUrlFor(row(), { env: { [STAGING_MODE_VAR]: "link" }, drive });
-    assert.equal(res.ok, true);
-    assert.equal(res.mode, MODE_LINK);
-    assert.deepEqual(drive.shared, ["1M8Vnwglva5mhvqPqeGAopLcBztjZwvDe"],
-      "one file, never a folder and never a second file");
-    assert.ok(res.url.startsWith(DRIVE_DOWNLOAD_BASE));
-  });
-
-  test("THE LINK CARRIES confirm=t — without it a big take returns a virus-scan page", () => {
-    const url = driveDownloadUrl("abc123");
-    assert.match(url, /[?&]confirm=t(&|$)/);
-    assert.match(url, /[?&]export=download(&|$)/);
-    assert.match(url, /[?&]id=abc123(&|$)/);
-  });
-
-  test("the link carries the file id and NOTHING else about us", () => {
-    const url = new URL(driveDownloadUrl("abc123"));
-    assert.deepEqual([...url.searchParams.keys()].sort(), ["confirm", "export", "id"],
-      "no token, no org, no row id, no anything that names Fundhub or a client");
-    assert.equal(url.pathname, "/download");
-  });
-
-  test("a file id with a query character in it cannot escape the query string", () => {
-    const url = new URL(driveDownloadUrl("abc&export=evil"));
-    assert.equal(url.searchParams.get("id"), "abc&export=evil");
-    assert.equal(url.searchParams.get("export"), "download");
-  });
-
-  test("Drive refusing to share is reported, not papered over", async () => {
-    const res = await publicUrlFor(row(), {
-      env: { [STAGING_MODE_VAR]: "link" },
-      drive: fakeDrive({ ok: false, error: "HTTP 403 from Google", retryable: false })
-    });
-    assert.equal(res.ok, false);
-    assert.equal(res.retryable, false);
-    assert.equal(res.url, null);
-    assert.match(res.error, /403/);
-  });
-
-  test("a provider that cannot share says so rather than returning a dead link", async () => {
-    const res = await publicUrlFor(row(), { env: { [STAGING_MODE_VAR]: "link" }, drive: {} });
-    assert.equal(res.ok, false);
-    assert.match(res.error, /share a file/);
+    assert.match(res.note, /nothing was shared/);
   });
 });
 
 describe("a row that cannot be staged at all", () => {
   test("no Drive file id is a permanent refusal, not a retry", async () => {
-    const drive = fakeDrive();
     for (const bad of [null, "", "   ", undefined]) {
-      const res = await publicUrlFor(row({ drive_raw_file_id: bad }), { env: {}, drive });
+      const res = await publicUrlFor(row({ drive_raw_file_id: bad }), { env: {} });
       assert.equal(res.ok, false);
       assert.equal(res.retryable, false, "a row with no file will never grow one");
+      assert.equal(res.url, null);
     }
-    assert.deepEqual(drive.shared, []);
   });
 
   test("no row at all does not throw", async () => {
-    const res = await publicUrlFor(undefined, { env: {}, drive: fakeDrive() });
+    const res = await publicUrlFor(undefined, { env: {} });
     assert.equal(res.ok, false);
-  });
-
-  test("driveDownloadUrl of nothing is null, not a broken link", () => {
-    assert.equal(driveDownloadUrl(""), null);
-    assert.equal(driveDownloadUrl(null), null);
-  });
-});
-
-describe("the mode can be forced for one call", () => {
-  test("an explicit mode beats the environment", async () => {
-    const drive = fakeDrive();
-    const res = await publicUrlFor(row(), { env: { [STAGING_MODE_VAR]: "link" }, drive, mode: MODE_DIRECT });
-    assert.equal(res.mode, MODE_DIRECT);
-    assert.deepEqual(drive.shared, []);
-  });
-
-  test("an unknown forced mode falls back to the environment, not to link", async () => {
-    const drive = fakeDrive();
-    const res = await publicUrlFor(row(), { env: {}, drive, mode: "whatever" });
-    assert.equal(res.mode, MODE_DIRECT);
-    assert.deepEqual(drive.shared, []);
   });
 });

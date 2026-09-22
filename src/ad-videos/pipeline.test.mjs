@@ -55,8 +55,10 @@ describe("the state table", () => {
   });
 
   test("a step that throws is caught and reported as retryable", async () => {
-    const out = await advance(row({ status: "staged", source_url: "https://x.test/a.mp4" }), {
-      submagic: { createProject: () => { throw new Error("boom"); } }
+    const out = await advance(row({ status: "staged", staged_at: "2026-09-22T10:00:00Z" }), {
+      drive: { downloadFile: async () => okish({ bytes: new Uint8Array([1]), byteLength: 1 }) },
+      claim: async () => true,
+      submagic: { createProjectFromFile: () => { throw new Error("boom"); } }
     });
     assert.equal(out.ok, false);
     assert.equal(out.retryable, true);
@@ -73,10 +75,17 @@ describe("staging", () => {
     assert.match(out.error, /nothing was lost/);
   });
 
-  test("a staged url moves it on", async () => {
-    const out = await stage(row(), { staging: { publicUrlFor: async () => ({ ok: true, url: "https://draft.test/a.mp4" }) } });
+  /* THE LINK ROUTE IS GONE. Staging used to be able to share the take with
+     "anyone who has this link" and hand Submagic the URL, and nothing ever took
+     that share back off. A stager that returns a url now gets it ignored — the
+     row never carries one, so there is nothing for a later step to hand out. */
+  test("a url from a stager is NEVER written onto the row", async () => {
+    const out = await stage(row(), {
+      staging: { publicUrlFor: async () => ({ ok: true, url: "https://draft.test/a.mp4", storageKey: "drive:drv1" }) }
+    });
     assert.equal(out.patch.status, "staged");
-    assert.equal(out.patch.source_url, "https://draft.test/a.mp4");
+    assert.equal(out.patch.source_url, undefined,
+      "a take must never be published to get itself captioned");
   });
 
   /* The default route. Nothing is published, so there is deliberately no
@@ -119,12 +128,15 @@ describe("staging", () => {
 });
 
 describe("Submagic", () => {
-  test("create moves raw to editing and keeps the project id", async () => {
-    const out = await submagicCreate(row({ status: "staged", source_url: "https://x.test/a.mp4" }), {
-      submagic: { createProject: async () => okish({ projectId: "proj9" }) }
+  test("create moves staged to editing and keeps the project id", async () => {
+    const out = await submagicCreate(row({ status: "staged", staged_at: "2026-09-22T10:00:00Z" }), {
+      drive: { downloadFile: async () => okish({ bytes: new Uint8Array([1]), byteLength: 1 }) },
+      claim: async () => true,
+      submagic: { createProjectFromFile: async () => okish({ projectId: "proj9" }) }
     });
     assert.equal(out.patch.status, "editing");
     assert.equal(out.patch.submagic_project_id, "proj9");
+    assert.equal(out.patch.submagic_claimed_at, null, "the claim comes off in the same write");
   });
 
   /* ── THE UPLOAD ROUTE ──────────────────────────────────────────────────
@@ -142,8 +154,8 @@ describe("Submagic", () => {
         drive: {
           downloadFile: async (id) => { asked = id; return okish({ bytes, byteLength: bytes.byteLength, contentType: "video/quicktime" }); }
         },
+        claim: async () => true,
         submagic: {
-          createProject: async () => { throw new Error("the link route must not run when there is no link"); },
           createProjectFromFile: async (args) => { sent = args; return okish({ projectId: "proj-upload" }); }
         },
         env: {}
@@ -159,7 +171,8 @@ describe("Submagic", () => {
     test("a Drive read that failed for good takes the row to failed, not a retry loop", async () => {
       const out = await submagicCreate(staged, {
         drive: { downloadFile: async () => ({ ok: false, retryable: false, error: "the take is bigger than the cap" }) },
-        submagic: { createProject: async () => okish({}), createProjectFromFile: async () => okish({ projectId: "x" }) },
+        claim: async () => true,
+        submagic: { createProjectFromFile: async () => okish({ projectId: "x" }) },
         env: {}
       });
       assert.equal(out.ok, false);
@@ -171,8 +184,8 @@ describe("Submagic", () => {
       let created = false;
       const out = await submagicCreate(staged, {
         drive: { downloadFile: async () => ({ ok: false, retryable: true, error: "Drive returned an empty file" }) },
+        claim: async () => { throw new Error("a claim must not be spent on a take that was never sent"); },
         submagic: {
-          createProject: async () => okish({}),
           createProjectFromFile: async () => { created = true; return okish({ projectId: "x" }); }
         },
         env: {}
@@ -182,22 +195,22 @@ describe("Submagic", () => {
       assert.deepEqual(out.patch, {});
     });
 
-    test("no link and no Drive file is a dead end, said out loud", async () => {
+    test("no Drive file is a dead end, said out loud", async () => {
       const out = await submagicCreate(row({ status: "staged", staged_at: "t", drive_raw_file_id: null }), {
-        submagic: { createProject: async () => okish({}) }, env: {}
+        submagic: { createProjectFromFile: async () => okish({}) }, env: {}
       });
       assert.equal(out.patch.status, "failed");
       assert.match(out.error, /nothing to hand to Submagic/);
     });
 
-    test("a provider with no upload route WAITS and names the way out", async () => {
+    test("no Drive provider WAITS and names the missing port", async () => {
       const out = await submagicCreate(staged, {
-        submagic: { createProject: async () => okish({}) },
+        submagic: { createProjectFromFile: async () => okish({}) },
         drive: {},
         env: {}
       });
       assert.equal(out.retryable, true);
-      assert.match(out.error, /AD_VIDEO_STAGING_MODE=link/);
+      assert.match(out.error, /drive\.downloadFile/);
     });
   });
 
@@ -267,6 +280,7 @@ describe("b-roll and export", () => {
   test("a take with no matching clip still exports — captions alone are an ad", async () => {
     let exported = false;
     const out = await placeBrollAndExport(matched, {
+      claim: async () => true,
       submagic: {
         uploadUserMedia: async () => okish({ userMediaId: "m1" }),
         updateProject: async () => okish({}),
@@ -281,6 +295,7 @@ describe("b-roll and export", () => {
   test("B-ROLL REFUSED DOES NOT STOP THE AD — it is recorded and the export runs", async () => {
     let exported = false;
     const out = await placeBrollAndExport(matched, {
+      claim: async () => true,
       submagic: {
         uploadUserMedia: async () => okish({ userMediaId: "m1" }),
         updateProject: async () => ({ ok: false, retryable: false, error: "422 items overlap" }),
@@ -297,6 +312,7 @@ describe("b-roll and export", () => {
   test("a clip is uploaded, then placed at the word it is about", async () => {
     let placed = null;
     const out = await placeBrollAndExport(matched, {
+      claim: async () => true,
       submagic: {
         uploadUserMedia: async () => okish({ userMediaId: "m1" }),
         updateProject: async (_id, { placements }) => { placed = placements; return okish({}); },
@@ -316,16 +332,18 @@ describe("running it twice", () => {
      time. The field named in each assertion is the idempotency key. */
   test("an already-staged row is not staged again", async () => {
     let called = false;
-    await stage(row({ source_url: "https://x.test/a.mp4" }), {
-      staging: { publicUrlFor: async () => { called = true; return okish({ url: "u" }); } }
+    await stage(row({ staged_at: "2026-09-22T10:00:00Z" }), {
+      staging: { publicUrlFor: async () => { called = true; return okish({ mode: "direct" }); } }
     });
     assert.equal(called, false);
   });
 
   test("a row already at Submagic does not get a SECOND PROJECT (a paid minute)", async () => {
     let called = false;
-    await submagicCreate(row({ status: "staged", source_url: "u", submagic_project_id: "p1" }), {
-      submagic: { createProject: async () => { called = true; return okish({ projectId: "p2" }); } }
+    await submagicCreate(row({ status: "staged", staged_at: "t", submagic_project_id: "p1" }), {
+      claim: async () => true,
+      drive: { downloadFile: async () => okish({ bytes: new Uint8Array([1]), byteLength: 1 }) },
+      submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p2" }); } }
     });
     assert.equal(called, false);
   });
@@ -359,6 +377,188 @@ describe("running it twice", () => {
       naming: NAMING, paulFolderId: "paul"
     });
     assert.equal(made, false);
+  });
+});
+
+describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
+  /* A mark written AFTER the vendor answered is not idempotency, it is a bet
+     that nothing dies in between. An upload of a two-hundred-megabyte take runs
+     for minutes and a serverless function can be killed at any point in it:
+     killed after Submagic accepted and before the row was written, the next
+     pass reads a row that says nothing happened and pays again.
+
+     So the claim goes down first (migration 391) and comes off when the vendor
+     answers. Every test here is about the ORDER of those two things, which is
+     the only thing that makes the guard real. */
+
+  const staged = row({ status: "staged", staged_at: "2026-09-22T10:00:00Z" });
+  const bytes = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]);
+  const drive = { downloadFile: async () => okish({ bytes, byteLength: bytes.byteLength }) };
+  const matched = row({ status: "matched", submagic_project_id: "p1" });
+
+  test("the create claim is written BEFORE Submagic is called, never after", async () => {
+    const order = [];
+    const out = await submagicCreate(staged, {
+      drive,
+      claim: async (patch) => { order.push(["claim", Object.keys(patch)[0]]); return true; },
+      submagic: { createProjectFromFile: async () => { order.push(["vendor"]); return okish({ projectId: "p9" }); } },
+      env: {}
+    });
+    assert.deepEqual(order, [["claim", "submagic_claimed_at"], ["vendor"]],
+      "the mark must be on the row before a byte of the take leaves");
+    assert.equal(out.patch.submagic_claimed_at, null, "and it comes off in the same write as the result");
+  });
+
+  test("NO CLAIM PORT, NO CREATE — an unmarked spend does not happen at all", async () => {
+    let called = false;
+    const out = await submagicCreate(staged, {
+      drive,
+      submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
+      env: {}
+    });
+    assert.equal(called, false);
+    assert.equal(out.retryable, true);
+    assert.match(out.error, /claim could not be written/);
+  });
+
+  test("a claim write that failed stops the create", async () => {
+    for (const claim of [async () => false, async () => { throw new Error("db gone"); }]) {
+      let called = false;
+      const out = await submagicCreate(staged, {
+        drive, claim,
+        submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
+        env: {}
+      });
+      assert.equal(called, false, "a claim that did not land is the hole this closes");
+      assert.equal(out.ok, false);
+    }
+  });
+
+  test("A STANDING CLAIM REFUSES A SECOND PROJECT — this is the double-bill", async () => {
+    /* The crash case. Submagic publishes no list endpoint, so nothing here can
+       ask whether the first create landed; creating another would be wrong half
+       the time and it is the expensive half. */
+    let called = false;
+    const out = await submagicCreate(row({
+      status: "staged", staged_at: "t", submagic_claimed_at: "2026-09-22T10:05:00Z"
+    }), {
+      drive, claim: async () => true,
+      submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
+      env: {}
+    });
+    assert.equal(called, false, "a crashed upload must never be paid for twice");
+    assert.equal(out.ok, false);
+    assert.equal(out.retryable, true);
+    assert.deepEqual(out.patch, {}, "and the claim is left exactly where it is");
+    assert.match(out.error, /retry this take/);
+  });
+
+  test("a vendor that ANSWERED clears the claim — no project was made, so retry cleanly", async () => {
+    const out = await submagicCreate(staged, {
+      drive, claim: async () => true,
+      submagic: { createProjectFromFile: async () => ({ ok: false, retryable: true, status: 429, sent: true, error: "too many creates this hour" }) },
+      env: {}
+    });
+    assert.equal(out.retryable, true);
+    assert.equal(out.patch.submagic_claimed_at, null,
+      "a 429 is the vendor talking: nothing was created and nothing was billed");
+  });
+
+  test("a fence that held the call clears the claim too — nothing left the building", async () => {
+    const out = await submagicCreate(staged, {
+      drive, claim: async () => true,
+      submagic: { createProjectFromFile: async () => ({ ok: false, retryable: true, status: 0, sent: false, error: "held by the adapters fence" }) },
+      env: {}
+    });
+    assert.equal(out.patch.submagic_claimed_at, null);
+  });
+
+  test("a create that went out and NEVER CAME BACK keeps its claim", async () => {
+    const out = await submagicCreate(staged, {
+      drive, claim: async () => true,
+      submagic: { createProjectFromFile: async () => ({ ok: false, retryable: true, status: 0, sent: true, error: "timed out after 120000ms" }) },
+      env: {}
+    });
+    assert.deepEqual(out.patch, {},
+      "nobody knows whether that take was billed, so nobody may guess — a person looks");
+  });
+
+  test("the export claim is written BEFORE the export, never after", async () => {
+    const order = [];
+    const out = await placeBrollAndExport(matched, {
+      claim: async (patch) => { order.push(["claim", Object.keys(patch)[0]]); return true; },
+      submagic: { exportProject: async () => { order.push(["vendor"]); return okish({}); } },
+      brollLibrary: []
+    });
+    assert.deepEqual(order, [["claim", "export_claimed_at"], ["vendor"]]);
+    assert.ok(out.patch.exported_at);
+    assert.equal(out.patch.export_claimed_at, null);
+  });
+
+  test("NO CLAIM PORT, NO EXPORT — an export bills minutes", async () => {
+    let exported = false;
+    const out = await placeBrollAndExport(matched, {
+      submagic: { exportProject: async () => { exported = true; return okish({}); } },
+      brollLibrary: []
+    });
+    assert.equal(exported, false);
+    assert.match(out.error, /never runs before its mark is on the row/);
+  });
+
+  test("A STANDING EXPORT CLAIM POLLS instead of exporting again", async () => {
+    /* Better than refusing: a poll costs nothing, sits inside a 100-an-hour
+       read limit, and settles the question a second export would only guess at. */
+    let exported = false;
+    let asked = false;
+    const out = await placeBrollAndExport(row({
+      status: "matched", submagic_project_id: "p1", export_claimed_at: "2026-09-22T10:05:00Z"
+    }), {
+      claim: async () => true,
+      submagic: {
+        exportProject: async () => { exported = true; return okish({}); },
+        getProject: async () => { asked = true; return okish({ status: "completed", downloadUrl: "https://real.test/o.mp4" }); }
+      }
+    });
+    assert.equal(exported, false, "export is billed and capped at 50 an hour");
+    assert.equal(asked, true);
+    assert.equal(out.patch.status, "rendered", "the first export had in fact landed");
+  });
+
+  test("an answered export failure clears the claim", async () => {
+    const out = await placeBrollAndExport(matched, {
+      claim: async () => true,
+      submagic: { exportProject: async () => ({ ok: false, retryable: true, status: 503, sent: true, error: "Submagic is down" }) },
+      brollLibrary: []
+    });
+    assert.equal(out.patch.export_claimed_at, null);
+  });
+});
+
+describe("NOTHING IS EVER PUBLISHED TO GET A TAKE EDITED", () => {
+  /* The `link` route is gone. It shared the take as "anyone with the link,
+     reader" and nothing ever took that share back off, so a take handed over
+     for one edit stayed readable by anyone holding its id for the life of the
+     file. Google grants no expiry on an `anyone` permission, so there was no
+     small fix that bounded it — and Submagic takes the bytes directly, so the
+     whole route was unnecessary. */
+  test("a row that somehow carries a source_url is still uploaded, not linked", async () => {
+    let linked = false;
+    let uploaded = false;
+    const bytes = new Uint8Array([1, 2, 3]);
+    const out = await submagicCreate(row({
+      status: "staged", staged_at: "t", source_url: "https://drive.usercontent.google.com/download?id=x"
+    }), {
+      drive: { downloadFile: async () => okish({ bytes, byteLength: 3 }) },
+      claim: async () => true,
+      submagic: {
+        createProject: async () => { linked = true; return okish({ projectId: "bad" }); },
+        createProjectFromFile: async () => { uploaded = true; return okish({ projectId: "good" }); }
+      },
+      env: {}
+    });
+    assert.equal(linked, false, "an old row must not reopen the route that publishes the take");
+    assert.equal(uploaded, true);
+    assert.equal(out.patch.submagic_project_id, "good");
   });
 });
 

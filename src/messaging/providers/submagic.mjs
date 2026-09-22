@@ -45,9 +45,10 @@
 // ignored:
 //
 //   1. `POST /v1/projects/{id}/user-media` DOES NOT EXIST — it is a 404, not a
-//      401, so it was never going to start working once a key landed. The real
-//      route is `POST /v1/user-media` (and `POST /v1/user-media/upload` for
-//      raw bytes), and a userMediaId is not scoped to a project.
+//      401, so it was never going to start working once a key landed. The one
+//      route Submagic documents for adding media is
+//      `POST /v1/user-media/upload` — multipart, form field `file`, answering
+//      `{ userMediaId }` — and a userMediaId is not scoped to a project.
 //   2. Creates are **30 an hour**, not the 500 an earlier document recorded.
 //
 // WHAT IS STILL UNKNOWN: the key itself has never been exercised. It is stored
@@ -69,7 +70,7 @@
 //     header or a credential at any level.
 
 import {
-  transmit, postJsonTo, postBinaryTo, ADAPTERS, redact
+  transmit, transmitBinary, postJsonTo, postBinaryTo, ADAPTERS, redact
 } from "../../lib/outbound-fetch.mjs";
 import { classify, success, failure, rejection } from "./http.mjs";
 
@@ -270,32 +271,47 @@ async function call(method, path, {
 
 /* verdictOf — one shape for every call below, so a caller never has to read a
    status code. `retryable` is the field the sweeper acts on: a 429 or a 5xx is
-   "not right now", a 400/422 is "this payload will never work". */
+   "not right now", a 400/422 is "this payload will never work".
+
+   `sent` IS THE FIELD THAT DECIDES WHETHER WE MAY HAVE BEEN BILLED, and it is
+   the only way to tell two identical-looking failures apart:
+
+     sent: false → the request was never handed to fetch. The dry-run fence held
+                   it, or it was refused before it left. Nothing happened at the
+                   vendor, full stop.
+     sent: true  → it went out. A status above zero means the vendor answered
+                   and its answer is the truth; a status of zero means it went
+                   out and never came back, and then NOBODY KNOWS whether a
+                   project was made or a render started.
+
+   src/ad-videos/pipeline.mjs reads this to decide whether to clear a spend
+   claim. Collapsing all three into "retryable" is what would let a crashed
+   upload be paid for twice. */
 function verdictOf(res, what) {
   if (res.blocked) {
-    return { ok: false, retryable: true, status: 0,
+    return { ok: false, retryable: true, status: 0, sent: false,
       error: res.error || `${what} held by the adapters fence`, body: null };
   }
   if (res.transmitted === false) {
-    return { ok: false, retryable: true, status: 0,
+    return { ok: false, retryable: true, status: 0, sent: false,
       error: res.error || `${what} was not sent`, body: null };
   }
   if (res.status === 0) {
-    return { ok: false, retryable: true, status: 0,
+    return { ok: false, retryable: true, status: 0, sent: true,
       error: res.error || `${what} did not complete`, body: null };
   }
   if (res.status === 401 || res.status === 403) {
     /* Named on purpose. Two of the three things this module cannot verify are
        the host and the header name, and both present as a 401. */
-    return { ok: false, retryable: true, status: res.status,
+    return { ok: false, retryable: true, status: res.status, sent: true,
       error: redact(`${what}: HTTP ${res.status}. Check SUBMAGIC_API_KEY, and that ` +
         `SUBMAGIC_API_BASE and SUBMAGIC_API_AUTH_HEADER match Submagic's own docs — ` +
         `neither is recorded in the API research.`),
       body: null };
   }
   const cls = classify(res.status);
-  if (cls.status === "sent") return { ok: true, retryable: false, status: res.status, error: null, body: res.body };
-  return { ok: false, retryable: cls.retryable, status: res.status,
+  if (cls.status === "sent") return { ok: true, retryable: false, status: res.status, sent: true, error: null, body: res.body };
+  return { ok: false, retryable: cls.retryable, status: res.status, sent: true,
     error: redact(res.error || `${what} returned HTTP ${res.status}`), body: res.body };
 }
 
@@ -369,9 +385,9 @@ export async function createProjectFromFile({
   env = process.env, fetchImpl, timeoutMs, signal, maxBytes = MAX_FILE_BYTES
 } = {}) {
   const t = String(title || "").trim();
-  if (!t) return { ok: false, retryable: false, error: "createProjectFromFile needs a title" };
+  if (!t) return { ok: false, retryable: false, sent: false, error: "createProjectFromFile needs a title" };
   if (!file || typeof file.byteLength !== "number" || file.byteLength <= 0) {
-    return { ok: false, retryable: false, error: "createProjectFromFile needs the file's bytes" };
+    return { ok: false, retryable: false, sent: false, error: "createProjectFromFile needs the file's bytes" };
   }
   /* Checked against BOTH ceilings here, before a byte is sent. The chokepoint
      has its own cap and would refuse too, but it reports that as "nothing was
@@ -379,13 +395,13 @@ export async function createProjectFromFile({
      be exactly as big on the next pass. This says never, once. */
   const cap = Math.min(Number(maxBytes) || MAX_FILE_BYTES, MAX_FILE_BYTES);
   if (file.byteLength > cap) {
-    return { ok: false, retryable: false,
+    return { ok: false, retryable: false, sent: false,
       error: `this take is ${file.byteLength} bytes and the ceiling for an upload is ${cap}` };
   }
 
   const cfg = submagicConfig(env);
   if (!cfg.ok) {
-    return { ok: false, retryable: true, error: `Submagic is not configured: ${cfg.missing.join(", ")} is not set` };
+    return { ok: false, retryable: true, sent: false, error: `Submagic is not configured: ${cfg.missing.join(", ")} is not set` };
   }
 
   const form = new FormData();
@@ -446,39 +462,99 @@ export async function getProject(projectId, { env = process.env, fetchImpl, time
   };
 }
 
+/** A b-roll clip is seconds long. This cap is a guard against a wrong link
+    pointing at a feature film, not a real ceiling on anything we film. */
+export const MAX_USER_MEDIA_BYTES = 256 * 1024 * 1024;
+
 /* uploadUserMedia — put one of OUR b-roll clips in the account's media library.
 
-   THE PATH CHANGED ON 2026-09-22 AND THE OLD ONE WAS A 404.
-   `POST /v1/projects/{id}/user-media` does not exist — measured, and a 404 not
-   a 401, so it would never have started working once the key landed. The real
-   route is `POST /v1/user-media`, and a userMediaId belongs to the ACCOUNT, not
-   to a project: the same clip can be placed on every ad without re-uploading.
-   The projectId argument is kept so existing callers are unchanged, and is used
-   only to label the call.
+   ═══════════════════════════════════════════════════════════════════════════
+   THE PATH HAS BEEN WRONG TWICE. THIS IS THE ONE THE VENDOR DOCUMENTS.
 
-   The clip is handed over as a URL. For raw bytes Submagic has a separate
-   `POST /v1/user-media/upload`; b-roll already lives at a link, so nothing
-   here needs it. */
-export async function uploadUserMedia(projectId, { url, name, env = process.env, fetchImpl, timeoutMs, signal } = {}) {
+   It first posted to `POST /v1/projects/{id}/user-media`. Measured 2026-09-22:
+   that is a 404, not a 401 — so it was never going to start working once the
+   key landed, and every b-roll clip would have failed silently forever.
+
+   It was then moved to `POST /v1/user-media`, which does answer 401 and so does
+   exist. But a 401 only proves the ROUTE is there; it proves nothing about what
+   that route wants in its body, and `{ url }` was a guess nobody has ever seen
+   accepted. Submagic documents exactly one way to add media, and this is it:
+
+     POST /v1/user-media/upload   multipart, form field `file`
+                                  → { "userMediaId": "<uuid>" }
+     https://docs.submagic.co/api-reference/user-media-upload
+
+   So the clip goes over as BYTES. A caller that only has a link gets the bytes
+   fetched here first, through the same fence, with a size cap — b-roll lives in
+   our own Drive folder or on our own CDN, so that fetch is ours either way.
+
+   A userMediaId belongs to the ACCOUNT, not to a project: the same clip can be
+   placed on every ad without re-uploading. `projectId` is kept so existing
+   callers are unchanged and is used only to label the call.
+   ═══════════════════════════════════════════════════════════════════════════ */
+export async function uploadUserMedia(projectId, {
+  url, name, file, contentType = "video/mp4",
+  env = process.env, fetchImpl, timeoutMs, signal, maxBytes = MAX_USER_MEDIA_BYTES
+} = {}) {
   const id = String(projectId || "").trim();
-  const mediaUrl = String(url || "").trim();
-  if (!id) return { ok: false, retryable: false, error: "uploadUserMedia needs a projectId" };
-  if (!/^https?:\/\//i.test(mediaUrl)) {
-    return { ok: false, retryable: false, error: "uploadUserMedia needs an http(s) url to the clip" };
+  if (!id) return { ok: false, retryable: false, sent: false, error: "uploadUserMedia needs a projectId" };
+
+  const cfg = submagicConfig(env);
+  if (!cfg.ok) {
+    return { ok: false, retryable: true, sent: false,
+      error: `Submagic is not configured: ${cfg.missing.join(", ")} is not set` };
   }
-  const body = { url: mediaUrl };
-  if (name) body.name = String(name);
-  const res = await call("POST", `/v1/user-media`, {
-    body, env, fetchImpl, timeoutMs, signal, what: "submagic upload user media"
+
+  const cap = Math.min(Number(maxBytes) || MAX_USER_MEDIA_BYTES, MAX_USER_MEDIA_BYTES);
+  let bytes = file || null;
+  let type = contentType;
+
+  if (!bytes) {
+    const mediaUrl = String(url || "").trim();
+    if (!/^https?:\/\//i.test(mediaUrl)) {
+      return { ok: false, retryable: false, sent: false,
+        error: "uploadUserMedia needs the clip's bytes or an http(s) url to fetch them from" };
+    }
+    const got = await transmitBinary(mediaUrl, { method: "GET" }, {
+      fence: ADAPTERS, env, fetchImpl, maxBytes: cap, timeoutMs, signal,
+      what: "submagic fetch b-roll clip"
+    });
+    const gv = verdictOf(got, "submagic fetch b-roll clip");
+    if (!gv.ok) return gv;
+    if (!got.bytes || got.byteLength <= 0) {
+      return { ok: false, retryable: true, sent: true, error: "the b-roll link returned no bytes" };
+    }
+    bytes = got.bytes;
+    type = got.contentType || contentType;
+  }
+
+  if (bytes.byteLength > cap) {
+    return { ok: false, retryable: false, sent: false,
+      error: `this clip is ${bytes.byteLength} bytes and the ceiling for a b-roll upload is ${cap}` };
+  }
+
+  const form = new FormData();
+  form.append("file", new Blob([bytes], { type }), String(name || "broll.mp4"));
+
+  /* No Content-Type header: FormData writes its own boundary, and setting one
+     by hand splits the request in the middle of the clip. */
+  const res = await postBinaryTo(`${cfg.apiBase}/v1/user-media/upload`, {
+    headers: authHeaders(cfg),
+    body: form,
+    byteLength: bytes.byteLength,
+    maxBytes: cap,
+    fence: ADAPTERS, env, fetchImpl, timeoutMs, signal,
+    what: "submagic upload user media"
   });
+
   const v = verdictOf(res, "submagic upload user media");
   if (!v.ok) return v;
-  const userMediaId = v.body?.id || v.body?.userMediaId || null;
+  const userMediaId = v.body?.userMediaId || v.body?.id || null;
   if (!userMediaId) {
     return { ...v, ok: false, retryable: false,
       error: "Submagic accepted the clip but returned no userMediaId — it cannot be placed" };
   }
-  return { ...v, userMediaId: String(userMediaId) };
+  return { ...v, userMediaId: String(userMediaId), byteLength: bytes.byteLength };
 }
 
 /* updateProject — PUT /v1/projects/{id}
@@ -509,7 +585,7 @@ export async function updateProject(projectId, { placements = [], env = process.
    inferred rather than documented; SUBMAGIC_EXPORT_PATH overrides it. */
 export async function exportProject(projectId, { env = process.env, fetchImpl, timeoutMs, signal } = {}) {
   const id = String(projectId || "").trim();
-  if (!id) return { ok: false, retryable: false, error: "exportProject needs a projectId" };
+  if (!id) return { ok: false, retryable: false, sent: false, error: "exportProject needs a projectId" };
   const cfg = submagicConfig(env);
   const path = cfg.exportPath.replace("{id}", encodeURIComponent(id));
   const res = await call("POST", path, { body: {}, env, fetchImpl, timeoutMs, signal, what: "submagic export project" });

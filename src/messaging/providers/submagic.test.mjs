@@ -215,27 +215,107 @@ describe("get project", () => {
   });
 });
 
-describe("upload user media", () => {
-  test("bytes are never accepted — a clip goes over as a link", async () => {
-    const impl = fakeFetch({ status: 200, body: { id: "um1" } });
-    const bad = await uploadUserMedia("p1", { url: "not-a-url", env: LIVE, fetchImpl: impl });
-    assert.equal(bad.ok, false);
-    assert.equal(impl.calls.length, 0);
+describe("upload user media — OUR b-roll clips", () => {
+  const CLIP = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112, 9, 9]);
 
-    const good = await uploadUserMedia("p1", { url: "https://cdn.test/clip.mp4", name: "approval", env: LIVE, fetchImpl: impl });
-    assert.equal(good.ok, true);
-    assert.equal(good.userMediaId, "um1");
+  /** A fetch stand-in that can serve real bytes AND keep a FormData body. */
+  function mediaFetch({ statuses = [] } = {}) {
+    const calls = [];
+    const queue = [...statuses];
+    const impl = async (url, init) => {
+      calls.push({ url: String(url), init, form: init?.body });
+      const next = queue.length > 1 ? queue.shift() : (queue[0] || {});
+      const { status = 200, body = {}, bytes = null, headers = {} } = next;
+      const lower = Object.fromEntries(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), String(v)]));
+      const res = {
+        ok: status >= 200 && status < 300, status,
+        headers: { forEach(fn) { for (const [k, v] of Object.entries(lower)) fn(v, k); } },
+        text: async () => (typeof body === "string" ? body : JSON.stringify(body))
+      };
+      if (bytes) {
+        let done = false;
+        res.body = { getReader: () => ({
+          read: async () => (done ? { done: true } : (done = true, { done: false, value: bytes })),
+          cancel: async () => { done = true; }
+        }) };
+      }
+      return res;
+    };
+    impl.calls = calls;
+    return impl;
+  }
+
+  test("IT POSTS TO /v1/user-media/upload — the documented route, as multipart", async () => {
+    /* Two paths have been wrong here. POST /v1/projects/{id}/user-media answers
+       404, measured 2026-09-22, so every b-roll upload would have failed for the
+       life of the pipeline. POST /v1/user-media answers 401, so that route does
+       exist — but a 401 proves nothing about what body it wants, and `{ url }`
+       was a guess. This is the one shape Submagic documents:
+       https://docs.submagic.co/api-reference/user-media-upload */
+    const impl = mediaFetch({ statuses: [
+      { status: 200, bytes: CLIP, headers: { "content-type": "video/mp4" } },
+      { status: 200, body: { userMediaId: "um1" } }
+    ] });
+    const res = await uploadUserMedia("p1", {
+      url: "https://cdn.test/clip.mp4", name: "approval-email.mp4", env: LIVE, fetchImpl: impl
+    });
+    assert.equal(res.ok, true);
+    assert.equal(res.userMediaId, "um1");
+
+    assert.equal(impl.calls[0].url, "https://cdn.test/clip.mp4", "the clip's bytes are fetched first");
+
+    const post = impl.calls[1];
+    assert.equal(post.url, "https://submagic.test/v1/user-media/upload");
+    assert.ok(!post.url.includes("/projects/"),
+      "a userMediaId belongs to the account, not to one project");
+    assert.equal(post.init.method, "POST");
+    assert.equal(post.init.headers["x-api-key"], KEY);
+    assert.equal(post.init.headers["Content-Type"], undefined,
+      "FormData writes its own boundary; setting one by hand splits the clip");
+
+    const form = post.form;
+    assert.ok(form instanceof FormData);
+    assert.equal(form.get("file").name, "approval-email.mp4");
+    assert.equal(form.get("file").size, CLIP.byteLength);
+    assert.equal(form.get("url"), null, "the clip goes over as bytes, never as a link Submagic must fetch");
   });
 
-  test("IT POSTS TO /v1/user-media — the per-project path does not exist", async () => {
-    /* Measured 2026-09-22: POST /v1/projects/{id}/user-media answers 404, not
-       401, so it was never going to start working once a key arrived. Every
-       b-roll upload would have failed for the life of the pipeline. */
-    const impl = fakeFetch({ status: 200, body: { id: "um1" } });
-    await uploadUserMedia("p1", { url: "https://cdn.test/clip.mp4", env: LIVE, fetchImpl: impl });
-    assert.equal(impl.calls[0].url, "https://submagic.test/v1/user-media");
-    assert.ok(!String(impl.calls[0].url).includes("/projects/"),
-      "a userMediaId belongs to the account, not to one project");
+  test("bytes already in hand skip the fetch entirely", async () => {
+    const impl = mediaFetch({ statuses: [{ status: 200, body: { userMediaId: "um2" } }] });
+    const res = await uploadUserMedia("p1", { file: CLIP, name: "c.mp4", env: LIVE, fetchImpl: impl });
+    assert.equal(res.ok, true);
+    assert.equal(res.userMediaId, "um2");
+    assert.equal(impl.calls.length, 1, "nothing was downloaded — the caller already had the clip");
+    assert.equal(impl.calls[0].url, "https://submagic.test/v1/user-media/upload");
+  });
+
+  test("neither bytes nor a usable link is a refusal with NO call", async () => {
+    const impl = mediaFetch({ statuses: [{ status: 200, body: { userMediaId: "um1" } }] });
+    for (const bad of ["not-a-url", "", undefined, "ftp://cdn.test/clip.mp4"]) {
+      const res = await uploadUserMedia("p1", { url: bad, env: LIVE, fetchImpl: impl });
+      assert.equal(res.ok, false);
+      assert.equal(res.retryable, false);
+      assert.equal(res.sent, false);
+    }
+    assert.equal(impl.calls.length, 0);
+  });
+
+  test("a clip over the cap is refused before a byte is posted", async () => {
+    const impl = mediaFetch({ statuses: [{ status: 200, body: { userMediaId: "um1" } }] });
+    const res = await uploadUserMedia("p1", { file: CLIP, maxBytes: 4, env: LIVE, fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.equal(res.retryable, false);
+    assert.match(res.error, /ceiling/);
+    assert.equal(impl.calls.length, 0);
+  });
+
+  test("no key means no call, and the name is reported rather than the value", async () => {
+    const impl = mediaFetch({ statuses: [{ status: 200, body: { userMediaId: "um1" } }] });
+    const res = await uploadUserMedia("p1", { file: CLIP, env: { ADAPTERS_DRY_RUN: "0" }, fetchImpl: impl });
+    assert.equal(res.ok, false);
+    assert.equal(res.sent, false);
+    assert.match(res.error, /SUBMAGIC_API_KEY/);
+    assert.equal(impl.calls.length, 0);
   });
 });
 

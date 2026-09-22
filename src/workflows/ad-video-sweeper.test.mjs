@@ -29,7 +29,11 @@ function fakeStore({ pending = [], scripts = [], onPatch = () => {}, lastSeen = 
     lastRawSeenAt: async () => lastSeen,
     recordRawTake: async (_db, take) => onRecord(take),
     listPending: async () => pending,
-    patch: async (_db, id, fields) => onPatch(id, fields),
+    /* The real store answers with the row it wrote, and the sweeper's claim port
+       reads that answer: no row back means the claim did not land, and a step
+       whose claim did not land refuses to spend. So the stand-in answers with a
+       row too, unless a test's own onPatch wants to say otherwise. */
+    patch: async (_db, id, fields) => onPatch(id, fields) ?? { id, ...fields },
     candidateScripts: async () => scripts,
     findBySubmagicProjectId: async () => null
   };
@@ -84,23 +88,29 @@ describe("detect", () => {
 });
 
 describe("walk", () => {
-  test("a row moves one step and the patch is written once", async () => {
+  test("a row moves one step, and the spend claim is written BEFORE the result", async () => {
+    /* Two writes now, not one, and the ORDER of them is the point: the claim
+       goes down before the take's bytes leave, so a function killed mid-upload
+       leaves a mark behind instead of a row that says nothing happened. */
     const patches = [];
     const store = fakeStore({
-      pending: [{ id: "r1", status: "staged", source_url: "https://x.test/a.mp4" }],
+      pending: [{ id: "r1", status: "staged", staged_at: "2026-09-22T10:00:00Z", drive_raw_file_id: "d1" }],
       onPatch: (id, fields) => patches.push([id, fields])
     });
     const res = await walk(noDb, {
       store,
       ports: {
         ...portsFor({ env: {}, naming }),
-        submagic: { createProject: async () => ({ ok: true, projectId: "p9" }) }
+        drive: { downloadFile: async () => ({ ok: true, bytes: new Uint8Array([1]), byteLength: 1 }) },
+        submagic: { createProjectFromFile: async () => ({ ok: true, projectId: "p9" }) }
       }
     });
     assert.equal(res.ok, true);
     assert.equal(res.advanced, 1);
-    assert.equal(patches.length, 1);
-    assert.equal(patches[0][1].status, "editing");
+    assert.equal(patches.length, 2);
+    assert.ok(patches[0][1].submagic_claimed_at, "the claim is written first");
+    assert.equal(patches[1][1].status, "editing");
+    assert.equal(patches[1][1].submagic_claimed_at, null, "and comes off with the result");
     assert.equal(res.per[0].from, "staged");
     assert.equal(res.per[0].to, "editing");
   });
@@ -141,7 +151,7 @@ describe("walk", () => {
     const store = fakeStore({
       pending: [
         { id: "r1", status: "raw_landed", drive_raw_file_id: "d1" },
-        { id: "r2", status: "staged", source_url: "https://x.test/a.mp4" }
+        { id: "r2", status: "staged", staged_at: "2026-09-22T10:00:00Z", drive_raw_file_id: "d2" }
       ]
     });
     const res = await walk(noDb, {
@@ -149,7 +159,8 @@ describe("walk", () => {
       ports: {
         ...portsFor({ env: {}, naming }),
         staging: null,
-        submagic: { createProject: async () => ({ ok: true, projectId: "p9" }) }
+        drive: { downloadFile: async () => ({ ok: true, bytes: new Uint8Array([1]), byteLength: 1 }) },
+        submagic: { createProjectFromFile: async () => ({ ok: true, projectId: "p9" }) }
       }
     });
     assert.equal(res.per.length, 2);

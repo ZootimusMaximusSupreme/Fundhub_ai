@@ -23,7 +23,7 @@ points: the Drive link works, Submagic takes the file directly, and creates are
 flowchart TD
     A["Chris films the take<br/>phone shares it to the Raw Drive folder"] --> B["raw_landed"]
     B -->|"sweeper sees a new video, size above zero"| B
-    B -->|"stage: direct (no link) or share one file by link"| C["staged"]
+    B -->|"stage: nothing is published, no link is made"| C["staged"]
     C -->|"upload the bytes (or hand over the link), autoRender OFF"| D["editing"]
     D -->|"Submagic returns words[] with real times"| E["transcribed"]
     D -->|"still listening"| D
@@ -47,8 +47,8 @@ flowchart TD
 | From | What runs | To | Where it lives |
 |---|---|---|---|
 | — | Drive `files.list` on the Raw folder every 5 minutes | `raw_landed` | `ad-video-sweeper.mjs` `detect()` |
-| `raw_landed` | get the take ready: direct (no link) or one shared link | `staged` | `pipeline.mjs` `stage()` + `staging.mjs` |
-| `staged` | upload the bytes to Submagic (or pass the link), `autoRender:false` | `editing` | `pipeline.mjs` `submagicCreate()` |
+| `raw_landed` | get the take ready. Nothing is published | `staged` | `pipeline.mjs` `stage()` + `staging.mjs` |
+| `staged` | upload the bytes to Submagic, `autoRender:false` | `editing` | `pipeline.mjs` `submagicCreate()` |
 | `editing` | Submagic Get Project → `words[]` | `transcribed` | `pipeline.mjs` `readTranscript()` |
 | `transcribed` | Claude matches the words to a script, then Drive rename | `matched` | `pipeline.mjs` `matchAndRename()` |
 | `matched` | upload our clips, place them, Export Project | stays `matched`, `exported_at` set | `pipeline.mjs` `placeBrollAndExport()` |
@@ -96,12 +96,18 @@ a whole-project upload route (`POST /v1/projects/upload`, multipart, up to
 over `drive.usercontent.google.com/download?id=…&export=download&confirm=t`. The
 threshold is around 100 MB rather than 25, and `confirm=t` defeats it.
 
-`src/ad-videos/staging.mjs` holds both routes. **Direct is the default and it
-publishes nothing**: no link, no permission, no call. The take's bytes travel
-Drive → worker → Submagic, inside the fence, once. `AD_VIDEO_STAGING_MODE=link`
-switches to sharing one file read-only by its unguessable id, for the day the
-upload route turns out to be plan-gated. A typo in that variable reads as
-`direct` — a misspelling must never be the thing that makes a video public.
+`src/ad-videos/staging.mjs` holds the one route there is, and **it publishes
+nothing**: no link, no permission, no call. The take's bytes travel Drive →
+worker → Submagic, inside the fence, once.
+
+**The `link` fallback was deleted on 2026-09-22.** It shared one file as "anyone
+with the link, reader" and handed Submagic the URL — and nothing ever took that
+share back off. A take handed over for one edit stayed readable by anyone
+holding its id for the life of the file, and Google grants no expiry on an
+`anyone` permission, so there was no small fix that bounded it. The provider
+call it used, `shareAnyoneWithLink()`, is gone too, so nothing in this repo can
+publish a Drive file any more. If Submagic's upload route is ever refused on our
+plan, that is a new decision to make out loud — not a dormant switch.
 
 Netlify Blobs and Supabase Storage were both measured and both fail: a blob can
 be 5 GB but the only way out is a function response capped at 20 MB, and our
@@ -149,11 +155,18 @@ Read by NAME only; no value is ever printed or logged.
 `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON`, `GOOGLE_DRIVE_DELEGATE_EMAIL`,
 `GOOGLE_DRIVE_OAUTH_TOKEN_JSON`, `DRIVE_RAW_FOLDER_ID`, `DRIVE_PAUL_FOLDER_ID`,
 `NTFY_TOPIC`, `NTFY_SERVER`, `NTFY_TOKEN`, `PUBLIC_SITE_URL`,
-`ADAPTERS_DRY_RUN`, `MESSAGING_DRY_RUN`, `AD_VIDEO_STAGING_MODE`.
+`ADAPTERS_DRY_RUN`, `MESSAGING_DRY_RUN`.
 
-`AD_VIDEO_STAGING_MODE` is optional and is **not set** — unset means `direct`,
-which publishes nothing. `NTFY_TOPIC`, `DRIVE_RAW_FOLDER_ID` and
-`DRIVE_PAUL_FOLDER_ID` are new and are **not set**. A topic name is the whole address of a notification — set it long
+`AD_VIDEO_STAGING_MODE` is **gone**. It used to choose between publishing the
+take and not publishing it; there is now only the route that publishes nothing,
+so there is no switch to get wrong.
+
+Set on Netlify 2026-09-22 (production, deploy-preview, branch-deploy):
+`DRIVE_RAW_FOLDER_ID` (the new "Raw" folder inside SLO Ads — takes land there),
+`DRIVE_PAUL_FOLDER_ID` (the existing `paul-submagic` folder, reused so finished
+work has one home and not two), `SUBMAGIC_WEBHOOK_URL`
+(`https://fundhub.ai/api/webhooks/submagic`) and `NTFY_TOPIC`, stored
+`--secret`. A topic name is the whole address of a notification, so it is long
 and random, like a password.
 
 ---
@@ -167,6 +180,23 @@ every update costing another export. So:
 * a pass moves at most 10 rows and picks up at most 20 new files
 * `exported_at` on the row stops a second export of the same take
 * `submagic_project_id` stops a second project, which is a second paid minute
+* **the mark goes down BEFORE the money goes out.** Both of those marks used to
+  be written only after the vendor had already answered, which left the whole
+  length of a two-hundred-megabyte upload with nothing on the row. A function
+  killed in that window came back to a row that said nothing had happened and
+  spent again. `submagic_claimed_at` and `export_claimed_at`
+  (`db/migrations/391_ad_video_spend_claims.sql`) are written first and cleared
+  when the vendor answers. A standing create claim REFUSES a second create —
+  Submagic has no list endpoint, so nothing can find out whether the first one
+  landed and a person has to look. A standing export claim POLLS instead, which
+  costs nothing and settles the question outright.
+* **a retry clears last run's marks.** `retryFailed()` puts the row back at
+  `staged`, and every step after staging skips when its own mark is already
+  set — so a retried take used to skip every step, write an empty patch, and sit
+  at `staged` for ever without saying so. It now clears the project id, the
+  transcript, the rename, the b-roll, the export, the render, the notification
+  and both claims. The inputs — the Drive file, the ad number, the take number,
+  the matched script — survive.
 * AI B-roll is never asked for — 3 credits a clip against 15 credits a month is
   five clips for a hundred ads. `buildItems()` refuses the type outright.
 

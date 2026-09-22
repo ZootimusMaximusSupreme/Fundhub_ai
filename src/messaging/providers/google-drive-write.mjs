@@ -418,36 +418,23 @@ export async function downloadFile(fileId, {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   shareAnyoneWithLink — one file, readable by whoever holds its id.
+   THERE IS NO shareAnyoneWithLink HERE ANY MORE, AND THAT IS ON PURPOSE.
 
-   ONLY used by the fallback staging route in src/ad-videos/staging.mjs, and
-   only ever on the ONE take being staged. Never on a folder, never on a
-   parent, and it grants `reader` — it cannot be used to hand anybody write
-   access to anything.
+   It used to live at this spot: one POST that added
+   `{ role: "reader", type: "anyone" }` to a file, so that Submagic could fetch
+   a take from a plain URL. Its only caller was the `link` staging mode in
+   src/ad-videos/staging.mjs.
 
-   What makes this acceptable rather than "the video is now public": a Drive
-   file id is 33 characters of random, there is no listing and no directory,
-   and the permission reaches exactly one file. Measured 2026-09-22: an
-   unshared file answers a sign-in page to the same URL, so the permission is
-   doing real work and its absence is a closed door.
+   Both were deleted on 2026-09-22. The share was never taken off again — a
+   take handed over for one edit stayed world-readable to anyone holding its id
+   for the life of the file — and Google grants no expiry on an `anyone`
+   permission, so there was no small fix that bounded it. Submagic's own
+   documented route (`POST /v1/projects/upload`, multipart, up to 2 GB) takes
+   the bytes directly, so nothing needs the share at all.
+
+   DO NOT ADD IT BACK to make some other feature easier. Publishing a customer
+   or owner file to the whole internet is a decision, not a helper function.
    ───────────────────────────────────────────────────────────────────────── */
-export async function shareAnyoneWithLink(fileId, { env = process.env, fetchImpl, timeoutMs, signal } = {}) {
-  const id = String(fileId || "").trim();
-  if (!id) return { ok: false, retryable: false, error: "shareAnyoneWithLink needs a fileId" };
-
-  const tok = await driveAccessToken({ env, fetchImpl });
-  if (!tok.ok) return tok;
-
-  const url = `${DRIVE_API}/files/${encodeURIComponent(id)}/permissions?${qs({ fields: "id", ...SHARED })}`;
-  const res = await driveCall("POST", url, {
-    token: tok.accessToken,
-    body: JSON.stringify({ role: "reader", type: "anyone" }),
-    env, fetchImpl, timeoutMs, signal, what: "drive share file by link"
-  });
-  const v = verdictOf(res, "drive share file by link");
-  if (!v.ok) return v;
-  return { ok: true, retryable: false, fileId: id, permissionId: v.body?.id ? String(v.body.id) : null };
-}
 
 /* ─────────────────────────────────────────────────────────────────────────
    uploadVideo — the finished ad, into Paul's folder. RESUMABLE, in two calls.
@@ -562,5 +549,5 @@ export default {
   PROVIDER, CHANNELS, ADDRESS_FIELD, ENABLED, TRANSMITS, send,
   driveAccessToken, resetTokenCache, grantsWrite,
   listNewVideos, getFileMeta, renameFile, ensureFolder, uploadTextFile,
-  downloadFile, shareAnyoneWithLink, uploadVideo
+  downloadFile, uploadVideo
 };

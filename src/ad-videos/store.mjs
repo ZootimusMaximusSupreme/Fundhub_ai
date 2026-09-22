@@ -378,23 +378,75 @@ export async function markFailed(tx, { orgId, id, from, reason }) {
   return r.rows[0] || null;
 }
 
+/* The marks a retry has to wipe, and the reason wiping them is the whole fix.
+   Ordered the way the pipeline runs, so a reader can follow it.
+
+   ═══════════════════════════════════════════════════════════════════════════
+   WITHOUT THIS LIST A RETRIED TAKE NEVER MOVES AGAIN.
+
+   retryFailed() puts the row back at `staged`, and the step that runs at
+   `staged` is submagicCreate(). That step's first line is "have I already got a
+   project id? then skip" — and a take that failed at, say, the export still has
+   its project id. So it skips, returns an EMPTY patch, and because the patch is
+   empty the sweeper writes nothing and the status never moves. The row sits at
+   `staged` forever, on every pass, silently. The same trap waits at every later
+   step: a stale transcript stalls the transcriber, a stale renamed_at stalls the
+   matcher, a stale exported_at sends the exporter to poll a render that was
+   never asked for.
+
+   So a retry clears everything downstream of staging. The raw file in Drive and
+   the row's identity (ad_id, take_no, script_id) survive, because those are the
+   inputs, not the work. script_id in particular is kept on purpose: the match
+   is the expensive, model-driven step and the transcript it was made from is
+   about to be read again from a project that says the same words.
+
+   THE TWO SPEND CLAIMS ARE HERE FOR A SECOND REASON. A claim standing with no
+   result is how the pipeline refuses to pay twice after a crash, and it is
+   DELIBERATELY unclearable by any worker. A person retrying the take is the
+   one act that says "I have looked, go again" — so this is the only place they
+   come off. See migration 391 and the header of src/ad-videos/pipeline.mjs. */
+const RETRY_CLEARS = Object.freeze([
+  "submagic_claimed_at", "submagic_project_id",
+  "transcript", "transcript_words",
+  "renamed_at",
+  "broll_placed_at", "broll_count", "broll_notes",
+  "export_claimed_at", "exported_at",
+  "rendered_at", "finished_url", "storage_final_key", "save_note",
+  "notified_at", "notify_error",
+  "delivery_note"
+]);
+
 /**
  * Put the take back in the queue after a failure — the diagram's "retry the
  * broken step" arrow. Back to `staged`, because the raw file in Drive is the
  * one input that still exists after any later step died, and everything after
  * staging is derived from it.
+ *
+ * Which is exactly why everything after staging is cleared here. See
+ * RETRY_CLEARS above: a retry that leaves last run's marks standing is not a
+ * retry, it is a take that stalls at `staged` and never says so.
+ *
+ * Costs a second Submagic project, and that is the right trade: a person asked
+ * for this, the old project's render is the one that failed, and 30 creates an
+ * hour is not the constraint a hand-driven retry runs into.
  */
 export async function retryFailed(tx, { orgId, id }) {
   transition("failed", "staged");
+  const cleared = RETRY_CLEARS.map((c) => `${c} = NULL`).join(", ");
   const r = await tx.query(
     `UPDATE ad_videos
-        SET status = 'staged', failure_reason = NULL
+        SET status = 'staged', failure_reason = NULL, ${cleared}
       WHERE id = $1 AND org_id = $2 AND status = 'failed'
       RETURNING ${FULL_COLUMNS}`,
     [id, orgId]
   );
   return r.rows[0] || null;
 }
+
+/* Exported for src/ad-videos/store-retry.test.mjs, which proves this list
+   covers every mark the pipeline reads as "already done". Read it; never
+   mutate it from outside. */
+export { RETRY_CLEARS as RETRY_CLEARS_FOR_TEST };
 
 /**
  * The finished file is saved; hand the take a token and wait for Chris.
@@ -514,7 +566,11 @@ const WORKER_MARKS = Object.freeze([
   "staged_at", "renamed_at", "broll_placed_at", "exported_at", "rendered_at",
   "notified_at", "delivered_at", "broll_count", "broll_notes", "save_note",
   "notify_error", "delivery_note", "drive_brief_file_id", "transcript_words",
-  "ad_id", "take_no"
+  "ad_id", "take_no",
+  /* The two spend claims (391). A step writes its claim BEFORE it calls the
+     vendor and clears it when the vendor answers, so these are written and
+     cleared by the same patch path as every other mark. */
+  "submagic_claimed_at", "export_claimed_at"
 ]);
 for (const c of WORKER_MARKS) PATCHABLE.add(c);
 
@@ -531,6 +587,7 @@ const PENDING_COLUMNS = `
   v.finished_version, v.paul_folder_id, v.drive_final_file_id,
   v.drive_brief_file_id, v.staged_at, v.renamed_at, v.broll_placed_at,
   v.exported_at, v.rendered_at, v.notified_at, v.delivered_at,
+  v.submagic_claimed_at, v.export_claimed_at,
   v.broll_count, v.failure_reason, v.created_at, v.updated_at,
   s.title, s.hook_text, s.body AS script_body`;
 

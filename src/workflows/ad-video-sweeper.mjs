@@ -195,9 +195,27 @@ export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {
        step's ports are the same for every row. */
     const links = await approvalLinks(database, row, { store, env: ports.env });
 
+    /* THE CLAIM PORT — the only write a step makes for itself, and the only one
+       that happens BEFORE the work rather than after it.
+
+       The two steps that cost money (the Submagic create and the Submagic
+       export) call this the instant before they call the vendor, so a function
+       that is killed mid-upload leaves a mark behind saying "something was
+       started here". Without it the next pass reads a row that says nothing
+       happened and spends again — see the header of src/ad-videos/pipeline.mjs
+       and migration 391.
+
+       It returns FALSE when the write did not land, and a step that gets false
+       does not call the vendor at all. */
+    const claim = async (patch) => {
+      const written = await store.patch(database, row.id, patch);
+      return written !== null && written !== undefined;
+    };
+
     const out = await advance(row, {
       ...ports,
       ...links,
+      claim,
       candidateScripts: ports.candidateScripts,
       brollLibrary: ports.brollLibrary
     });

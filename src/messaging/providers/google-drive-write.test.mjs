@@ -20,7 +20,7 @@ import {
   DRIVE_WRITE_SCOPE, MAX_TEXT_UPLOAD_BYTES, MAX_VIDEO_BYTES,
   grantsWrite, resetTokenCache,
   listNewVideos, getFileMeta, renameFile, ensureFolder, uploadTextFile,
-  downloadFile, shareAnyoneWithLink, uploadVideo
+  downloadFile, uploadVideo
 } from "./google-drive-write.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -288,24 +288,34 @@ describe("reading a take out of Drive", () => {
   });
 });
 
-describe("sharing ONE file by link", () => {
-  test("it asks for reader on exactly that file, and nothing else", async () => {
-    const impl = binaryFetch({ responses: [{ status: 200, body: { id: "perm1" } }] });
-    const res = await shareAnyoneWithLink("drv1", { env: envWith(), fetchImpl: impl });
-    assert.equal(res.ok, true);
-    assert.equal(res.permissionId, "perm1");
-    const call = impl.drive()[0];
-    assert.match(call.url, /\/files\/drv1\/permissions/);
-    const body = JSON.parse(call.init.body);
-    assert.deepEqual(body, { role: "reader", type: "anyone" },
-      "reader, never writer — a link that can edit the take is a different thing entirely");
+describe("THE PROVIDER CANNOT SHARE A FILE WITH ANYONE", () => {
+  /* shareAnyoneWithLink() used to live here: one POST that added
+     `{ role: "reader", type: "anyone" }` to a take so Submagic could fetch it
+     from a plain URL. Nothing ever took that permission back off, and Google
+     grants no expiry on an `anyone` permission, so a take handed over for one
+     edit stayed readable by anyone holding its id for the life of the file.
+
+     It was deleted on 2026-09-22 with its only caller, the `link` staging mode.
+     Submagic's own documented route takes the bytes directly, so no public link
+     is needed by anybody.
+
+     These two assertions are the guard. The first stops the export coming back.
+     The second stops the same POST being written under a different name. */
+  test("the share function is gone, not merely unused", async () => {
+    const mod = await import("./google-drive-write.mjs");
+    assert.equal(mod.shareAnyoneWithLink, undefined);
+    assert.equal(mod.default.shareAnyoneWithLink, undefined);
   });
 
-  test("a 403 reads as the read-only token it usually is, and changes no stored key", async () => {
-    const impl = binaryFetch({ responses: [{ status: 403, body: { error: { message: "insufficientPermissions" } } }] });
-    const res = await shareAnyoneWithLink("drv1", { env: envWith(), fetchImpl: impl });
-    assert.equal(res.ok, false);
-    assert.match(res.error, /no stored key was changed/);
+  test("nothing in this provider asks Google for an `anyone` permission", () => {
+    const src = fs.readFileSync(path.join(HERE, "google-drive-write.mjs"), "utf8");
+    /* Comments stripped, so the note explaining WHY this is gone does not itself
+       trip the check that it is gone. */
+    const body = src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+    assert.equal(/type:\s*["']anyone["']/.test(body), false,
+      "publishing an owner file to the whole internet is a decision, not a helper");
+    assert.equal(/\/permissions/.test(body), false,
+      "this provider has no business writing Drive permissions at all");
   });
 });
 
