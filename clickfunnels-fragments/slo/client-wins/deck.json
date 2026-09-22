@@ -60,25 +60,6 @@
       }
     },
     {
-      "id": "d-250k-loc",
-      "kind": "win",
-      "category": "line_of_credit",
-      "amount_dollars": 250000,
-      "amount_text_on_crop": "Principal $250,000.00",
-      "lender": "unnamed",
-      "product": "Commercial line of credit",
-      "source": "Drive: Fundhub ads/broll/approvals/250k-line-of-credit.jpg",
-      "alt": "Line of credit paperwork showing $250,000 principal",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-250k-loc.jpg",
-      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715349/file/7310fe462131f4f15d819fd81d980aa4.jpg",
-        "width": 1200,
-        "height": 900,
-        "cf_image_id": 23715349
-      }
-    },
-    {
       "id": "t-74k-chase-ink",
       "kind": "win",
       "category": "credit_card",
@@ -121,7 +102,7 @@
       "kind": "win",
       "category": "credit_card",
       "amount_dollars": 54500,
-      "amount_text_on_crop": "Credit Access Line†: $54,500",
+      "amount_text_on_crop": "Credit Access Line\u2020: $54,500",
       "lender": "Chase",
       "product": "Ink Business Unlimited card",
       "source": "Drive: Fundhub ads/broll/approvals/54k-ink-business.jpg",
