@@ -11,9 +11,9 @@ long; line the thank-you page up with the Sorting Hat offer. No questions, ship 
 | Build `public/funnel/watch-proof.js` + `thankyou-sort.js`, crops, manifest, push-script dedupe, tests | this session (branch `feat/watch-proof`) | done |
 | Independent review | reviewer | done: FAIL on 1 blocker (blind append when the live page cannot be read) + 6 low items |
 | Fix all 7 review items on `feat/watch-proof` | fix session | done (see "Review fixes") |
-| Merge `feat/watch-proof` to main, `npm run ship` | shipping step | pending |
-| `node scripts/cf-push-custom-html.mjs push --only=apply-watch` then `--only=apply-thank-you` | shipping step, after ship | pending |
-| Live proof with `NOINJECT=1 node docs/workflows/watch-proof-2026-09-22-evidence/_walk.mjs …` | shipping step, after push | pending |
+| Cherry-pick to main (a7de361a, f906f770), `npm run ship` | shipping step | done: shipped 7ed294e9 |
+| `node scripts/cf-push-custom-html.mjs push --only=apply-watch` then `--only=apply-thank-you` | shipping step, after ship | done; "append" stored each tag twice, repaired by the replace-mode push (ba357eee) |
+| Live proof (`docs/workflows/watch-proof-2026-09-22-evidence/_walk.mjs`, `_clicks.mjs`) | shipping step, after push | done (see "Live proof") |
 
 ## Change manifest
 
@@ -106,6 +106,35 @@ Marked shots (kept on this Mac; evidence folders are gitignored by repo policy):
    under the 1992px ceiling; nothing above the first Get Started moves.
 
 Tests: `src/ads/funnel-proof-scripts.test.mjs` 24/24 (was 18). Lint clean.
+
+## Live proof (2026-09-22, after ship + push, nothing injected)
+
+Footer code read back with `expand[]=footer_code`:
+/watch = fh-attribution x1, vsl-watch-beacon x3 (both there before), watch-proof.js x1.
+/thank-you = fh-attribution x2 (there before), thankyou-sort.js x1.
+
+| Check | /watch 1280 | /watch 390 | /thank-you 1280 booked | /thank-you 390 no booking | /thank-you 390 Back press |
+|---|---|---|---|---|---|
+| Page height | 2165 | 1967 | 3172 | 2461 | 2461 |
+| Proof images load | 9/9 | 9/9 | 6/6 | 6/6 | 6/6 |
+| 3 client texts shown, words exact | yes | yes | yes | yes | yes |
+| Buttons | 2 x Get Started -> /apply | same | none added | Pick your call time -> /funding-book-call | same |
+| Headline | — | — | Your Call Is Booked. | We've Got Your Application. | We've Got Your Application. |
+| Sideways scroll | none | none | none | none | none |
+| Script errors, failed fundhub.ai loads | 0 | 0 | 0 | 0 | 0 |
+
+Clicked live (`_clicks.mjs`, 1280 and 390): second Get Started lands on /apply; Pick
+your call time lands on /funding-book-call. Tap-to-enlarge at 1280: opens at 900px,
+image loaded, Escape closes. "Booked" = fresh record plus arriving from
+/funding-book-call; "Back press" = the same record arriving from anywhere else.
+
+Marked shots (committed with `git add -f`; the folder is gitignored):
+`docs/workflows/watch-proof-2026-09-22-evidence/watch-1280-marked.png`,
+`watch-390-marked.png`, `watch-1280-zoom-marked.png`, `thankyou-1280-booked-marked.png`,
+`thankyou-390-not-booked-marked.png`, `thankyou-390-back-marked.png`.
+
+Superseded: branch `feat/watch-proof` commit 8b077811 made the same replace-mode push
+fix; main took ba357eee instead, so 8b077811 was not applied.
 
 ## Left undone
 
