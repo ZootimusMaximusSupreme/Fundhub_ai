@@ -7,10 +7,27 @@
 //
 // GET answers 405 on purpose. Do not ping this with a body — that would store
 // identity and fire C-00.
+//
+// Cross-site (owner-set 2026-09-22): the /roadmap widget on
+// https://apply.fundhub.ai posts here, so OPTIONS is answered and
+// Access-Control-Allow-Origin is echoed for allow-listed origins only
+// (src/slo/cors.mjs). Never "*".
+//
+// defer_pull: true stores identity + consent and does NOT start the pull; the
+// Commas payment starts it (see src/slo/pull.mjs WHEN THE PULL STARTS). A demo
+// order starts the pull now, with no money event.
+//
+// Body (2026-09-22): first/middle/last name, suffix, dob, ssn, address, apt,
+// city, state, zip, moved_recently + prev_* (previous address), businesses[]
+// ({ name, address, city, state, zip, ein?, phone?, started }), consent.
+// A refusal carries errors: [{ field, code, message }] — one per bad box.
 
 import { db } from "../../src/db.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import { parseSloPullBody, runSloPull } from "../../src/slo/pull.mjs";
+import { answerPreflight, applySloCors } from "../../src/slo/cors.mjs";
+
+const METHODS = "POST, OPTIONS";
 
 function readBody(req) {
   if (req?.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
@@ -36,6 +53,7 @@ const STATUS = {
   address_required: 400,
   not_found: 404,
   no_account: 409,
+  order_not_paid: 409,
   encryption_unavailable: 503,
   identity_refused: 400,
   consent_refused: 400,
@@ -44,7 +62,9 @@ const STATUS = {
 };
 
 export default async function handler(req, res, deps = {}) {
+  applySloCors(req, res, METHODS);
   res.setHeader("Cache-Control", "no-store");
+  if (answerPreflight(req, res, METHODS)) return;
   const method = String(req.method || "GET").toUpperCase();
   if (method !== "POST") {
     res.setHeader("allow", "POST");
@@ -53,7 +73,12 @@ export default async function handler(req, res, deps = {}) {
 
   const parsed = parseSloPullBody(readBody(req));
   if (!parsed.ok) {
-    return res.status(STATUS[parsed.error] || 400).json({ ok: false, error: parsed.error });
+    /* errors[] names each field ({ field, code, message }) so the page can put
+       the words under the right box. No value the buyer typed is echoed back. */
+    const out = { ok: false, error: parsed.error };
+    if (Array.isArray(parsed.errors)) out.errors = parsed.errors;
+    if (Array.isArray(parsed.warnings) && parsed.warnings.length) out.warnings = parsed.warnings;
+    return res.status(STATUS[parsed.error] || 400).json(out);
   }
 
   try {
@@ -65,6 +90,10 @@ export default async function handler(req, res, deps = {}) {
       storeIdentity: deps.storeIdentity,
       captureConsent: deps.captureConsent,
       ensureAccount: deps.ensureAccount,
+      replaceBusinesses: deps.replaceBusinesses,
+      mergeFields: deps.mergeFields,
+      demo: deps.demo,
+      startDemoPull: deps.startDemoPull,
       ip: clientIp(req),
       userAgent: req.headers?.["user-agent"] || null
     });

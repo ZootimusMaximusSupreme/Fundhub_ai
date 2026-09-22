@@ -152,3 +152,74 @@ test("replayed soft-pull request does not order again", async () => {
   assert.equal(res.requestId, "spr-existing");
   assert.equal(pulled, false);
 });
+
+/* ── The /roadmap widget, LIVE pay (owner-set 2026-09-22) ──────────────────
+   The widget stores identity + consent BEFORE the card (slo-pull with
+   defer_pull: true), then the buyer pays. The Commas webhook turns that
+   payment into diagnostic.paid (purpose 'diagnostic'). These two run the REAL
+   requestSoftPull consent gate — not a stubbed step — to prove: consent on
+   file + the paid event → the pull starts; no consent → no pull. */
+
+function ledgerDb({ consent }) {
+  const db = dbWithAccount();
+  const base = db.query.bind(db);
+  const inserted = [];
+  db.inserted = inserted;
+  db.query = async (sql, params = []) => {
+    if (/FROM client_consents/.test(sql)) {
+      assert.deepEqual(params.slice(0, 3), ["org-1", "cl-1", "soft_pull_consent"]);
+      return {
+        rows: consent
+          ? [{ id: "cons-1", org_id: "org-1", client_id: "cl-1", kind: "soft_pull_consent",
+              granted_at: "2026-09-22T10:00:00Z", revoked_at: null, expires_at: null, is_valid: true }]
+          : []
+      };
+    }
+    if (/FROM soft_pull_requests/.test(sql)) return { rows: [] };
+    if (/INSERT INTO soft_pull_requests/.test(sql)) {
+      const row = { id: "spr-live-1", org_id: params[0], client_id: params[1], status: "queued",
+        idempotency_key: params[8], cost_cents: null };
+      inserted.push(row);
+      return { rows: [row] };
+    }
+    return base(sql, params);
+  };
+  return db;
+}
+
+const commasPaid = () => ev(
+  "diagnostic.paid",
+  { product: "crs", purpose: "diagnostic", amount: 297, ref: "slo_widget_1", source: "commas" },
+  { clientId: "cl-1", id: "evt-commas-1" }
+);
+
+test("widget LIVE pay: consent stored before paying + diagnostic.paid → the pull starts", async () => {
+  const db = ledgerDb({ consent: true });
+  const pulls = [];
+  const res = await handle({
+    event: commasPaid(),
+    db,
+    step: fakeStep(),
+    runPull: async (_db, opts) => { pulls.push(opts); return { ok: true, crsResultId: "crs-1", bureausPulled: ["EX"] }; }
+  });
+  assert.equal(res.pulled, true);
+  assert.equal(pulls.length, 1);
+  assert.equal(pulls[0].requestId, "spr-live-1");
+  assert.equal(pulls[0].clientId, "cl-1");
+  assert.equal(db.inserted[0].idempotency_key, "diagnostic-paid:evt-commas-1");
+});
+
+test("widget LIVE pay: no consent on file → the gate refuses, no pull", async () => {
+  const db = ledgerDb({ consent: false });
+  let pulled = false;
+  const res = await handle({
+    event: commasPaid(),
+    db,
+    step: fakeStep(),
+    runPull: async () => { pulled = true; return { ok: true }; }
+  });
+  assert.equal(res.pulled, false);
+  assert.equal(res.reason, "consent_required");
+  assert.equal(pulled, false);
+  assert.equal(db.inserted.length, 0);
+});

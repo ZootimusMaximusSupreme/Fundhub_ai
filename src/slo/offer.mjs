@@ -35,3 +35,34 @@ export function sloPublicBase(env = process.env) {
 export function sloPullSuccessUrl(env = process.env) {
   return `${sloPublicBase(env)}${SLO_PULL_PATH}`;
 }
+
+/* ── The /roadmap widget (owner-set 2026-09-22) ──────────────────────────────
+   The checkout is a two-step widget ON the /roadmap sales page
+   (clickfunnels-fragments/slo/slo-01-sales.html), not separate pages. */
+
+/* DEMO PAY. SLO_DEMO_PAY="1" means the Pay button records the order exactly
+   as a real one (a payment_links row with the real amount, is_demo = true) but
+   Commas is never called and no card is charged. Anything else, including
+   unset, is the real Commas path. Only the exact string "1" turns it on, so a
+   typo fails toward the real till rather than toward giving pulls away. */
+export const SLO_DEMO_PAY_ENV = "SLO_DEMO_PAY";
+
+export function isSloDemoPay(env = process.env) {
+  return String(env?.[SLO_DEMO_PAY_ENV] ?? "").trim() === "1";
+}
+
+/* payment_links.checkout_url is NOT NULL, and a demo order has no card page.
+   This is not a URL anybody can pay at, on purpose: a staff screen that shows
+   it shows something plainly not payable. */
+export const SLO_DEMO_CHECKOUT_URL = "demo:no-charge";
+
+/* Where a buyer goes after the pull. Funding bucket: the booking page with the
+   pre-approval amount on it (?pa=, whole dollars — the page counts up to it).
+   Repair bucket: the same page, no amount, as the "Talk to us first" link. */
+export const SLO_ROADMAP_BOOK_URL = "https://apply.fundhub.ai/roadmap-book";
+
+export function sloRoadmapBookUrl(pa = null) {
+  const n = Number(pa);
+  if (pa == null || !Number.isSafeInteger(n) || n <= 0) return SLO_ROADMAP_BOOK_URL;
+  return `${SLO_ROADMAP_BOOK_URL}?pa=${n}`;
+}
