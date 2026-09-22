@@ -22,6 +22,7 @@ import { financeOsPullSweeper } from './finance-os-pull-sweeper.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { affiliatePayoutRun } from './affiliate-payout-run.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
+import { adVideoSweeper } from './ad-video-sweeper.mjs';
 import { metaCampaignSyncSweeper } from './meta-campaign-sync-sweeper.mjs';
 import { clickfunnelsAnalyticsSweeper } from './clickfunnels-analytics-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
@@ -253,6 +254,20 @@ export const functions = [
   affiliatePayoutRun,
 
   meetTranscriptSweeper,
+
+  /* THE CLOCK BEHIND THE AD VIDEO PIPELINE. Every five minutes.
+
+     Looks in the Raw Drive folder for a take Chris just filmed, then moves every
+     ad_videos row one step: stage → Submagic → read the words → match the script
+     and rename the file → place OUR b-roll → export → buzz the phone → after he
+     approves, into Paul's folder.
+
+     REGISTERING IT SENDS NOTHING. Submagic and Drive sit behind ADAPTERS_DRY_RUN
+     and the phone behind MESSAGING_DRY_RUN, both of which default to BLOCKED
+     (src/lib/dry-run.mjs), and with DRIVE_RAW_FOLDER_ID unset it watches nothing
+     at all. Every pass is one bounded batch — export is capped at 50 an hour and
+     an update costs another, so a runaway pass would cost real money. */
+  adVideoSweeper,
 
   /* THE CLOCK BEHIND THE META PULL. Registered 2026-09-09, daily at 07:00 UTC.
 
