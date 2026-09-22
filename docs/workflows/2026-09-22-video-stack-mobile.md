@@ -132,3 +132,34 @@ SRC=live node _proof.mjs <outdir>   # the live pages
 SRC=tree node _proof.mjs <outdir>   # the working tree
 python3 _apply-marks.py shots-after # burn the red boxes + legend
 ```
+
+## Shipped and proved live — 2026-09-22
+
+Both pages are now live and stacked on a phone. The one thing the board had left
+open — `/roadmap` never having been pushed to ClickFunnels — is closed.
+
+What was deployed:
+
+* `/roadmap` — `node scripts/cf-push-custom-html.mjs push --only=slo-297-sales`,
+  page id 25426320, `ok: true`.
+* `/watch` — `npm run ship` (deploy `5acf4fea`, `/api/health` 304 applied, 0 pending).
+  The funnel script was already live from the earlier ship; this run confirmed it.
+
+Live measurement, no injection, own headless Chromium (repo playwright 1.62.1,
+Android Chrome UA at 390x844 and 360x800, desktop Chrome UA at 1280x900):
+
+| page | width | live before this run | live after this run |
+|---|---|---|---|
+| /watch | 390 | 1 per row, 342x608 | 1 per row, 342x608 |
+| /watch | 360 | 1 per row, 312x554.7 | 1 per row, 312x554.7 |
+| /watch | 1280 | 3 per row, 257.3x457.5 | 3 per row, 257.3x457.5 |
+| /roadmap | 390 | **3 per row, 107.3x190.8** | **1 per row, 342x608** |
+| /roadmap | 360 | **3 per row, 97.3x173** | **1 per row, 312x554.7** |
+| /roadmap | 1280 | 3 per row, 293.3x521.5 | 3 per row, 293.3x521.5 |
+
+`aspect-ratio: 9 / 16` reads on every card at every width, fill `rgb(17,17,19)`,
+border `rgb(38,38,43)`, 12px corners, grey mono uppercase label. No sideways
+scroll on either page at any of the three widths. Desktop is unchanged.
+
+Marked shots (red numbered boxes drawn from each card's real browser rect, with
+a caption legend): `docs/workflows/video-stack-2026-09-22-evidence/`.
