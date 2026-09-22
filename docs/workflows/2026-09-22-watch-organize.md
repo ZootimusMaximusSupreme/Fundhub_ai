@@ -11,7 +11,7 @@ scroll down, with 10 more approvals; the headline font the same as /roadmap.
 |---|---|---|
 | `public/funnel/watch-proof.js`, `public/funnel/thankyou-sort.js`, tests, flow doc, proof shots | this session (branch `feat/watch-organize`) | done |
 | Review fix: Tab key blanked the approvals row | this session (branch `feat/watch-organize`) | done |
-| Ship `public/funnel/*.js` (`npm run ship` from main) + footer re-push | shipping step, after merge | pending |
+| Ship `public/funnel/*.js` (`npm run ship` from main) + footer re-push | shipping step, after merge | done (`c67c11a9`, ship `28e17e32`) |
 
 No ClickFunnels push is needed: both pages already load these files from
 fundhub.ai, and fundhub.ai serves them `max-age=0, must-revalidate`, so a ship is
@@ -107,3 +107,40 @@ Proof before merge (live /watch, fixed script swapped in, own headless Chromium)
 Gates: lint clean; `node --test src/ads/*.test.mjs` 122/122; `npm test` 10942 tests,
 10 fail — the same 10 fail on `main` `b35c34cd` (diagrams sync, CRM screens, org scope,
 journeys registry, pulse registry, underwrite baseline), none in the funnel files.
+
+## Shipped and proved LIVE (2026-09-22)
+
+- Merged to `main` as `c67c11a9` (main was clean). `npm run ship`: deploy live, `/api/health`
+  0 pending, logged `28e17e32`. `https://fundhub.ai/funnel/watch-proof.js` serves the fix
+  (`fhxKeep`, `overflow:clip`).
+- Footer re-push (`scripts/cf-push-custom-html.mjs push`): `apply-watch` (page 25061160) and
+  `apply-thank-you` (page 25063539) read the live footer and reported `footer_already_current`
+  — the same tags already load the fundhub.ai scripts, so nothing was replaced.
+
+Live, no script injection, own headless Chromium (Android Chrome UA 390×844, desktop Chrome UA 1280×900):
+
+| /watch | 390 | 1280 |
+|---|---|---|
+| Order under the first Get Started (page y) | note 633 → approvals 715 → videos 1010 → roads 1288 → ticker 1529 | 915 → 988 → 1329 → 1741 → 2005 |
+| Block width / x | 342 at 24 (all three) | 852 at 214 (all three) |
+| Headings | Inter 700 22px | Inter 700 32px |
+| Approvals | 16 win cards, 16/16 images loaded, $20,000 … $500,000 | 16, 16/16 |
+| Row slide (page scroll → translateX) | 223 → −1, 445 → −1104, 667 → −2207 | 483 → 0, 717 → −1144, 950 → −2286 |
+| Mouse wheel | — | every 50px notch moved the page 50px (never held) |
+| 17 Tabs | row sideways scroll 0 at every step; focused card on screen 16/16; 3 cards on screen at every scroll after | 0; 16/16; 5 at every scroll |
+| Video placeholders | 3, "[ VIDEO TESTIMONIAL 1–3 ]", 106×188 (9:16), #111113 / #26262B / 12px, JetBrains Mono uppercase | 169×300 |
+| Client texts | "texted" / "real texts" / "what clients": none; quote cards 0; client-text images 0 | same |
+| Gutters (left/right) | H1 24/24, video 24/24, button 24/24; /roadmap 24/24, 25/25, 24/24; page width 390 | H1 237/237, video 214/214, button 430/430; /roadmap 237, 215, 430 |
+| H1 | Inter 700 28px, ls −1.26px, lh 28.56px; amounts Inter 700, no underline; /roadmap identical | Inter 700 46px, ls −2.07px, lh 46.92px; /roadmap identical |
+| Script errors | 0 | 0 |
+
+| /thank-you | 390 | 1280 |
+|---|---|---|
+| Not booked | "We've Got Your Application.", "Pick your call time" → /funding-book-call; steps, prep, calendar hidden | same |
+| Booked (fresh saved record + came from /funding-book-call; nothing booked) | "Your Call Is Booked."; steps, prep, calendar shown; no book button | same |
+| Proof row | "Real approvals, real screenshots": $74,000, $50,000, $25,000, 3/3 loaded; no client texts | same |
+
+Marked live shots (`watch-organize-2026-09-22-evidence/`): `live-column-390-marked.png`,
+`live-column-1280-marked.png`, `live-carousel-390-marked.png`, `live-carousel-1280-marked.png`,
+`live-gutters-390-marked.png`, `live-h1-1280-marked.png`, `live-keyboard-1280-marked.png`,
+`live-thankyou-390-marked.png`, `live-thankyou-proof-1280-marked.png`.
