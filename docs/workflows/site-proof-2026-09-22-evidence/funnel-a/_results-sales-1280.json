@@ -1,0 +1,196 @@
+{
+  "width": 1280,
+  "phase": "sales",
+  "order": {
+    "status": 200,
+    "ok": true,
+    "demo": true,
+    "ref": "slo_795a500fafb46694f3bd3b91",
+    "client_id": "4f41b445-7e9d-42e6-b817-2aec05b6568f",
+    "price": "$297"
+  },
+  "email": "demo+proof-1790089963081@fundhub.ai",
+  "landed": "https://apply.fundhub.ai/roadmap-book?ref=slo_795a500fafb46694f3bd3b91&client_id=4f41b445-7e9d-42e6-b817-2aec05b6568f&utm_source=proof&utm_content=43",
+  "results": [
+    {
+      "step": "1a page load + hero",
+      "width": 1280,
+      "expected": "Hero shows",
+      "happened": "hero=true, video readyState=0, text \"For business owners going after the most funding their file \"",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/01-hero-1280-MARKED.png"
+    },
+    {
+      "step": "1b approvals shuffle",
+      "width": 1280,
+      "expected": "Front card picture loaded + opaque at every scroll stop",
+      "happened": "9 on-screen stops, cards 01,03,05,06,09,10,12,15,16, all loaded+opaque=false",
+      "pass": "FAIL",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/01b-approvals-shuffle-1280-MARKED.png"
+    },
+    {
+      "step": "1c industry pills glow",
+      "width": 1280,
+      "expected": "Pills light in order as the row scrolls up",
+      "happened": "part-way 2/6 lit, then 6/6 lit, 6/6 glowing",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/01c-industry-pills-1280-MARKED.png"
+    },
+    {
+      "step": "1e letter pack tab",
+      "width": 1280,
+      "expected": "Pack opens with tabs; a tab click shows that page",
+      "happened": "7 tabs, default \"03 Round 1\", after click \"06 Complaints\" / \"Dispute Letter Pack · 06 Complaints · cover sheet\"",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/01e-letter-pack-tab-1280-MARKED.png"
+    },
+    {
+      "step": "1d covers open lightbox",
+      "width": 1280,
+      "expected": "All 5 What You Get covers open a sample",
+      "happened": "analysis:open, pack:open, roadmap:open, snapshot:open, lenders:open",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/01d-cover-lightbox-1280-MARKED.png"
+    },
+    {
+      "step": "2 CTA scrolls to widget",
+      "width": 1280,
+      "expected": "Step 1 on screen",
+      "happened": "form top 292px, bottom 642px of 900, Continue visible=true",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/02-cta-scrolls-to-widget-1280-MARKED.png"
+    },
+    {
+      "step": "3a step 1 empty errors",
+      "width": 1280,
+      "expected": "Error under each of the 4 boxes",
+      "happened": "c_first=\"Please enter your first name.\"; c_last=\"Please enter your last name.\"; email=\"Please enter a real email address.\"; phone=\"Please enter your phone number.\"",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/03a-step1-empty-errors-1280-MARKED.png"
+    },
+    {
+      "step": "3b fill -> step 2",
+      "width": 1280,
+      "expected": "Step 2 shows",
+      "happened": "step2 on=true, tab2 on=true, legal name prefilled \"Demo Tester\"",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/03b-step2-shown-1280-MARKED.png"
+    },
+    {
+      "step": "4a step 2 empty errors",
+      "width": 1280,
+      "expected": "Error under every required box, nothing sent",
+      "happened": "first_name:err, last_name:err, dob:err, ssn:err, address:err, city:err, state:err, zip:err, consent:err; requests sent 0",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/04a-step2-empty-errors-1280-MARKED.png"
+    },
+    {
+      "step": "4b add business -> $312",
+      "width": 1280,
+      "expected": "Button shows $312",
+      "happened": "button \"Get My Roadmap · $312\", total $312, 2 business boxes",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/04b-add-business-312-1280-MARKED.png"
+    },
+    {
+      "step": "4c remove business -> $297",
+      "width": 1280,
+      "expected": "Button back to $297",
+      "happened": "button \"Get My Roadmap · $297\", total $297, 1 business box",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/04c-remove-business-297-1280-MARKED.png"
+    },
+    {
+      "step": "5 fake address warning",
+      "width": 1280,
+      "expected": "\"We couldn't find that address...\" under street",
+      "happened": "slo-pull 422 address_unverified; under street: \"We couldn't find that address. Check the street and ZIP, or tap Pay again to use it as typed.\"",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/05-fake-address-warning-1280-MARKED.png"
+    },
+    {
+      "step": "6a Pay pressed (demo)",
+      "width": 1280,
+      "expected": "Demo notice showing, consent on, $297",
+      "happened": "consent true, \"Demo checkout: your card is not charged.\", \"Get My Roadmap · $297\"",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/06a-pay-ready-demo-1280-MARKED.png"
+    },
+    {
+      "step": "6b lands on /roadmap-book",
+      "width": 1280,
+      "expected": "URL has ref, client_id, utm_source=proof, utm_content=43",
+      "happened": "/roadmap-book?ref=slo_795a500fafb46694f3bd3b91&client_id=4f41b445-7e9d-42e6-b817-2aec05b6568f&utm_source=proof&utm_content=43 (slo-pull 200 next=book; matches order true)",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/06b-landed-roadmap-book-1280-MARKED.png"
+    },
+    {
+      "step": "7a one clean card",
+      "width": 1280,
+      "expected": "One card, calendar only, no second hero/logo",
+      "happened": "cards=1, inner hero=false, header logo=false, side logo=false",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07a-book-card-calendar-1280-MARKED.png"
+    },
+    {
+      "step": "7b frame fits",
+      "width": 1280,
+      "expected": "Frame tall enough, no inner scroll",
+      "happened": "frame 1237px, calendar content 1236px",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07a-book-card-calendar-1280-MARKED.png"
+    },
+    {
+      "step": "7c pick date + time -> Confirm on screen",
+      "width": 1280,
+      "expected": "Confirm visible without scrolling",
+      "happened": "2 other open dates, picked 24 (selected now 24 September 2026), time Select time 10:00 AM - 10:30 AM (MST), confirm button at y=763-811 of 900",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07c-date-time-confirm-1280-MARKED.png"
+    },
+    {
+      "step": "7d Confirm -> form shows (stopped)",
+      "width": 1280,
+      "expected": "Name/email form appears; nothing booked",
+      "happened": "form shown=true, inputs [phone_number, name, email]; not filled, Book not pressed",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07d-confirm-form-shows-1280-MARKED.png"
+    },
+    {
+      "step": "8 thank-you not-booked",
+      "width": 1280,
+      "expected": "Not-booked view",
+      "happened": "eyebrow \"Received · Your call request\", headline \"We've Got Your Request.\", calendar block none",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/08-thank-you-not-booked-1280-MARKED.png"
+    }
+  ],
+  "consoleErrs": [
+    {
+      "page": "https://apply.fundhub.ai/roadmap",
+      "text": "Refused to get unsafe header \"X-Clickfunnels-Version\"",
+      "src": "https://sdk.myclickfunnels.com/assets/sdk/index-YDLU5VVV.js"
+    },
+    {
+      "page": "https://apply.fundhub.ai/roadmap",
+      "text": "Failed to load resource: the server responded with a status of 422 ()",
+      "src": "https://fundhub.ai/api/public/slo-pull"
+    },
+    {
+      "page": "https://apply.fundhub.ai/roadmap-book",
+      "text": "Failed to load resource: the server responded with a status of 400 ()",
+      "src": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e"
+    },
+    {
+      "page": "https://apply.fundhub.ai/roadmap-book",
+      "text": "Failed to load resource: the server responded with a status of 400 ()",
+      "src": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e"
+    }
+  ],
+  "netFails": [
+    {
+      "url": "https://fundhub.ai/api/public/slo-pull",
+      "status": 422
+    }
+  ]
+}

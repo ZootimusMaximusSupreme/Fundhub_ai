@@ -1,0 +1,67 @@
+{
+  "width": 390,
+  "phase": "book",
+  "order": null,
+  "email": null,
+  "landed": null,
+  "results": [
+    {
+      "step": "7a one clean card",
+      "width": 390,
+      "expected": "One card, calendar only, no second hero/logo",
+      "happened": "cards=1, inner hero=false, header logo=false, side logo=false",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07a-book-card-calendar-390-MARKED.png"
+    },
+    {
+      "step": "7b frame fits",
+      "width": 390,
+      "expected": "Frame tall enough, no inner scroll",
+      "happened": "frame 1796px, calendar content 1796px",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07a-book-card-calendar-390-MARKED.png"
+    },
+    {
+      "step": "7c pick date + time -> Confirm on screen",
+      "width": 390,
+      "expected": "Confirm visible without scrolling",
+      "happened": "2 other open dates, picked 24 (selected now 24 September 2026), time Select time 10:00 AM - 10:30 AM (MST), confirm button at y=730-778 of 844",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07c-date-time-confirm-390-MARKED.png"
+    },
+    {
+      "step": "7d Confirm -> form shows (stopped)",
+      "width": 390,
+      "expected": "Name/email form appears; nothing booked",
+      "happened": "form shown=true, inputs [phone_number, name, email]; not filled, Book not pressed",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/07d-confirm-form-shows-390-MARKED.png"
+    },
+    {
+      "step": "8 thank-you not-booked",
+      "width": 390,
+      "expected": "Not-booked view",
+      "happened": "eyebrow \"Received · Your call request\", headline \"We've Got Your Request.\", calendar block none",
+      "pass": "PASS",
+      "shot": "docs/workflows/site-proof-2026-09-22-evidence/funnel-a/08-thank-you-not-booked-390-MARKED.png"
+    }
+  ],
+  "consoleErrs": [
+    {
+      "page": "https://apply.fundhub.ai/roadmap-book",
+      "text": "Refused to get unsafe header \"X-Clickfunnels-Version\"",
+      "src": "https://sdk.myclickfunnels.com/assets/sdk/index-YDLU5VVV.js"
+    },
+    {
+      "page": "https://apply.fundhub.ai/roadmap-book",
+      "text": "Failed to load resource: the server responded with a status of 400 ()",
+      "src": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e"
+    },
+    {
+      "page": "https://apply.fundhub.ai/roadmap-book",
+      "text": "Failed to load resource: the server responded with a status of 400 ()",
+      "src": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e"
+    }
+  ],
+  "netFails": []
+}

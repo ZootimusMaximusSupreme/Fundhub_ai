@@ -1,0 +1,645 @@
+{
+  "01-hero-390.png": {
+    "legend": "390px: /roadmap loads",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Hero headline",
+        "box": {
+          "x": 48,
+          "y": 238,
+          "w": 684,
+          "h": 228
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Sales video (readyState 0)",
+        "box": {
+          "x": 48,
+          "y": 838,
+          "w": 684,
+          "h": 385
+        }
+      },
+      {
+        "n": 3,
+        "caption": "First CTA button",
+        "box": {
+          "x": 48,
+          "y": 1283,
+          "w": 684,
+          "h": 126
+        }
+      }
+    ],
+    "notes": []
+  },
+  "01c-industry-pills-390.png": {
+    "legend": "390px: industry pills glow",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "6/6 pills lit blue with glow (6 have the shadow)",
+        "box": {
+          "x": 48,
+          "y": 760,
+          "w": 684,
+          "h": 224
+        }
+      }
+    ],
+    "notes": [
+      "Part-way (row at 72% of screen): 2 lit. Row at 45%: 6 lit."
+    ]
+  },
+  "01d-cover-lightbox-390.png": {
+    "legend": "390px: a cover opens the sample",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Sample opened: \"Credit Analysis Report · Alex Rivera\"",
+        "box": {
+          "x": 24,
+          "y": 84,
+          "w": 732,
+          "h": 1485
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Close button",
+        "box": {
+          "x": 706,
+          "y": 102,
+          "w": 28,
+          "h": 48
+        }
+      }
+    ],
+    "notes": []
+  },
+  "01e-letter-pack-tab-390.png": {
+    "legend": "390px: letter pack sample, tab switched",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Tab clicked: \"06 Complaints\" (was \"03 Round 1\")",
+        "box": {
+          "x": 70,
+          "y": 270,
+          "w": 222,
+          "h": 58
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Page shown: \"Dispute Letter Pack · 06 Complaints · cover sheet\"",
+        "box": {
+          "x": 70,
+          "y": 356,
+          "w": 640,
+          "h": 96
+        }
+      }
+    ],
+    "notes": [
+      "7 tabs in the pack"
+    ]
+  },
+  "02-cta-scrolls-to-widget-390.png": {
+    "legend": "390px: Get My Roadmap -> checkout widget",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Step tabs: 1 · Contact is on",
+        "box": {
+          "x": 98,
+          "y": 434,
+          "w": 584,
+          "h": 69
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Step 1 form on screen",
+        "box": {
+          "x": 98,
+          "y": 511,
+          "w": 584,
+          "h": 734
+        }
+      },
+      {
+        "n": 3,
+        "caption": "Continue button on screen",
+        "box": {
+          "x": 98,
+          "y": 1045,
+          "w": 584,
+          "h": 108
+        }
+      }
+    ],
+    "notes": [
+      "lightbox closed before click: true"
+    ]
+  },
+  "03a-step1-empty-errors-390.png": {
+    "legend": "390px: step 1 empty Continue",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "c_first: \"Please enter your first name.\"",
+        "box": {
+          "x": 98,
+          "y": 567,
+          "w": 282,
+          "h": 73
+        }
+      },
+      {
+        "n": 2,
+        "caption": "c_last: \"Please enter your last name.\"",
+        "box": {
+          "x": 400,
+          "y": 567,
+          "w": 282,
+          "h": 73
+        }
+      },
+      {
+        "n": 3,
+        "caption": "email: \"Please enter a real email address.\"",
+        "box": {
+          "x": 98,
+          "y": 821,
+          "w": 584,
+          "h": 36
+        }
+      },
+      {
+        "n": 4,
+        "caption": "phone: \"Please enter your phone number.\"",
+        "box": {
+          "x": 98,
+          "y": 1037,
+          "w": 584,
+          "h": 36
+        }
+      }
+    ],
+    "notes": []
+  },
+  "03b-step2-shown-390.png": {
+    "legend": "390px: Continue -> step 2",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Tab 2 · Payment is on",
+        "box": {
+          "x": 398,
+          "y": 20,
+          "w": 284,
+          "h": 69
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Legal name carried over: \"Demo Tester\"",
+        "box": {
+          "x": 128,
+          "y": 203,
+          "w": 524,
+          "h": 169
+        }
+      }
+    ],
+    "notes": [
+      "email used: demo+proof-1790090135868@fundhub.ai"
+    ]
+  },
+  "04a-step2-empty-errors-390.png": {
+    "legend": "390px: step 2 empty Pay (whole widget)",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "first_name: \"Please enter your legal first name.\"",
+        "box": {
+          "x": 54,
+          "y": 384,
+          "w": 252,
+          "h": 73
+        }
+      },
+      {
+        "n": 2,
+        "caption": "last_name: \"Please enter your legal last name.\"",
+        "box": {
+          "x": 54,
+          "y": 637,
+          "w": 296,
+          "h": 73
+        }
+      },
+      {
+        "n": 3,
+        "caption": "dob: \"Please enter your date of birth.\"",
+        "box": {
+          "x": 54,
+          "y": 890,
+          "w": 524,
+          "h": 36
+        }
+      },
+      {
+        "n": 4,
+        "caption": "ssn: \"Please enter your Social Security number.\"",
+        "box": {
+          "x": 54,
+          "y": 1235,
+          "w": 524,
+          "h": 36
+        }
+      },
+      {
+        "n": 5,
+        "caption": "address: \"Please enter your street address.\"",
+        "box": {
+          "x": 54,
+          "y": 1566,
+          "w": 524,
+          "h": 36
+        }
+      },
+      {
+        "n": 6,
+        "caption": "city: \"Please enter your city.\"",
+        "box": {
+          "x": 54,
+          "y": 1951,
+          "w": 524,
+          "h": 36
+        }
+      },
+      {
+        "n": 7,
+        "caption": "state: \"Please pick your state.\"",
+        "box": {
+          "x": 54,
+          "y": 2168,
+          "w": 252,
+          "h": 73
+        }
+      },
+      {
+        "n": 8,
+        "caption": "zip: \"Please enter your ZIP code.\"",
+        "box": {
+          "x": 326,
+          "y": 2168,
+          "w": 252,
+          "h": 73
+        }
+      },
+      {
+        "n": 9,
+        "caption": "consent: \"Please check the box to authorize the soft pull before we can continue\"",
+        "box": {
+          "x": 24,
+          "y": 4057,
+          "w": 584,
+          "h": 73
+        }
+      }
+    ],
+    "notes": [
+      "No order request was sent: true"
+    ]
+  },
+  "04b-add-business-312-390.png": {
+    "legend": "390px: + Add a business",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Total: $312",
+        "box": {
+          "x": 98,
+          "y": 784,
+          "w": 584,
+          "h": 92
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Button: \"Get My Roadmap · $312\"",
+        "box": {
+          "x": 98,
+          "y": 1092,
+          "w": 584,
+          "h": 108
+        }
+      },
+      {
+        "n": 3,
+        "caption": "Line: \"2 businesses · first one free, $15 each extra\"",
+        "box": {
+          "x": 98,
+          "y": 884,
+          "w": 584,
+          "h": 60
+        }
+      }
+    ],
+    "notes": []
+  },
+  "04c-remove-business-297-390.png": {
+    "legend": "390px: Remove the extra business",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Total: $297",
+        "box": {
+          "x": 98,
+          "y": 784,
+          "w": 584,
+          "h": 92
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Button: \"Get My Roadmap · $297\"",
+        "box": {
+          "x": 98,
+          "y": 1024,
+          "w": 584,
+          "h": 108
+        }
+      }
+    ],
+    "notes": [
+      "1 business box left (Business 1, free)"
+    ]
+  },
+  "05-fake-address-warning-390.png": {
+    "legend": "390px: unfindable address -> Pay",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Under street: \"We couldn't find that address. Check the street and ZIP, or tap Pay again to use\"",
+        "box": {
+          "x": 128,
+          "y": 904,
+          "w": 524,
+          "h": 109
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Street box: 1 Nowhere Fake Street",
+        "box": {
+          "x": 128,
+          "y": 794,
+          "w": 524,
+          "h": 98
+        }
+      }
+    ],
+    "notes": [
+      "slo-checkout: 200 demo=true ref=slo_b14b21d94eaf7852ed42a07d",
+      "slo-pull: 422 address_unverified"
+    ]
+  },
+  "06a-pay-ready-demo-390.png": {
+    "legend": "390px: real-looking address, ready to Pay",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Consent checked: true",
+        "box": {
+          "x": 98,
+          "y": 433,
+          "w": 584,
+          "h": 214
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Notice: \"Demo checkout: your card is not charged.\"",
+        "box": {
+          "x": 98,
+          "y": 795,
+          "w": 584,
+          "h": 96
+        }
+      },
+      {
+        "n": 3,
+        "caption": "Pay button: \"Get My Roadmap · $297\"",
+        "box": {
+          "x": 98,
+          "y": 919,
+          "w": 584,
+          "h": 108
+        }
+      }
+    ],
+    "notes": []
+  },
+  "06b-landed-roadmap-book-390.png": {
+    "legend": "390px: after demo Pay -> /roadmap-book",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Top line: \"Order complete · Everything is in your account\"",
+        "box": {
+          "x": 48,
+          "y": 123,
+          "w": 684,
+          "h": 70
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Headline: \"Want to Get There Faster?\"",
+        "box": {
+          "x": 48,
+          "y": 238,
+          "w": 684,
+          "h": 118
+        }
+      }
+    ],
+    "notes": [
+      "URL: https://apply.fundhub.ai/roadmap-book",
+      "ref=slo_b14b21d94eaf7852ed42a07d",
+      "client_id=df29b6f9-66f7-47f0-bfc2-81cf2b21d52c",
+      "utm_source=proof utm_content=43",
+      "slo-pull: 200 next=book; ref matches the order: true"
+    ]
+  },
+  "07a-book-card-calendar-390.png": {
+    "legend": "390px: /roadmap-book card (whole card)",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Event details; no second logo or hero inside",
+        "box": {
+          "x": 2,
+          "y": 670,
+          "w": 680,
+          "h": 362
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Month grid",
+        "box": {
+          "x": 58,
+          "y": 1363,
+          "w": 568,
+          "h": 904
+        }
+      },
+      {
+        "n": 3,
+        "caption": "Times list; frame 1796px vs calendar 1796px",
+        "box": {
+          "x": 74,
+          "y": 2377,
+          "w": 536,
+          "h": 1219
+        }
+      }
+    ],
+    "notes": [
+      "cards on page 1; inside frame: hero false, header logo false, side-panel logo false"
+    ]
+  },
+  "07c-date-time-confirm-390.png": {
+    "legend": "390px: date + time picked (no extra scrolling)",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Date picked: September 2026 24",
+        "box": {
+          "x": 431,
+          "y": 790,
+          "w": 70,
+          "h": 108
+        }
+      },
+      {
+        "n": 3,
+        "caption": "\"Confirm\" button on screen: true",
+        "box": {
+          "x": 229,
+          "y": 1460,
+          "w": 322,
+          "h": 96
+        }
+      }
+    ],
+    "notes": []
+  },
+  "07d-confirm-form-shows-390.png": {
+    "legend": "390px: Confirm -> name/email form (STOPPED, not booked)",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Form shows, fields: phone_number, name, email",
+        "box": {
+          "x": 106,
+          "y": 461,
+          "w": 568,
+          "h": 765
+        }
+      },
+      {
+        "n": 2,
+        "caption": "\"Book Appointment\" button: NOT pressed",
+        "box": {
+          "x": 134,
+          "y": 1130,
+          "w": 512,
+          "h": 96
+        }
+      }
+    ],
+    "notes": []
+  },
+  "08-thank-you-not-booked-390.png": {
+    "legend": "390px: /roadmap-thank-you",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Eyebrow: \"Received · Your call request\"",
+        "box": {
+          "x": 131,
+          "y": 135,
+          "w": 518,
+          "h": 35
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Headline: \"We've Got Your Request.\"",
+        "box": {
+          "x": 89,
+          "y": 305,
+          "w": 602,
+          "h": 46
+        }
+      }
+    ],
+    "notes": [
+      "calendar block display: none; booking saved in browser: true"
+    ]
+  },
+  "01b-approvals-shuffle-scrolling-390.png": {
+    "legend": "390px: approvals deck while wheel-scrolling",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Card on top mid-scroll: #3, opacity 1, picture loaded true",
+        "box": {
+          "x": 148,
+          "y": 714,
+          "w": 632,
+          "h": 835
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Counter 06/16 + running total",
+        "box": {
+          "x": 90,
+          "y": 999,
+          "w": 600,
+          "h": 43
+        }
+      }
+    ],
+    "notes": [
+      "13 wheel stops with the deck on screen; cards flipped 06,07,08,10,11,12,14,15,16; stops where the top card was faint or had no picture: 0"
+    ]
+  },
+  "01b2-approvals-shuffle-fast-flick-390.png": {
+    "legend": "390px: approvals deck 0.12s after a fast flick",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Card on top: #6, opacity 0.3 (fading in), picture loaded true",
+        "box": {
+          "x": 101,
+          "y": 1079,
+          "w": 601,
+          "h": 609
+        }
+      }
+    ],
+    "notes": [
+      "3 of 6 flicks (2-3 cards per jump) showed a faint card at 0.12s: opacity 0.3, 0.34, 0.35; all full at 0.62s: true"
+    ]
+  }
+}
