@@ -609,19 +609,78 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   .fh-root .shelves span.course-pill{transition:none}
   .fh-root .shelves span.course-pill.is-lit{box-shadow:none}
 }
-/* Checkout box: opens the built checkout (fundhub.ai/roadmap/pay.html -> Commas card page -> pull form) */
-.fh-pay{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0A0A0A;padding:10px 12px 14px;text-align:left}
-.fh-pay *{box-sizing:border-box}
-.fh-pay-steps{display:flex;gap:8px}
-.fh-pay-steps span{flex:1;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A8A93;border:1px solid #E4E4E7;border-radius:8px;padding:9px 4px;background:#fff}
-.fh-pay-steps span.on{color:#0A0A0A;border-color:#0A0A0A}
-.fh-pay-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding-top:12px;border-top:1px solid #E4E4E7;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93}
-.fh-pay-total b{font-size:22px;color:#0A0A0A;letter-spacing:-.02em}
-.fh-pay-btn{display:block;width:100%;margin-top:14px;background:#188bf6;color:#fff!important;font:600 17px 'Inter',system-ui,sans-serif;padding:17px 22px;border:0;border-radius:9px;text-align:center;text-decoration:none!important;box-shadow:0 5px 18px rgba(24,139,246,.28);transition:background .15s}
-.fh-pay-btn:hover{background:#0b78dd}
-.fh-pay-note{margin-top:12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A8A93;line-height:1.7}
-.fh-pay-note svg{width:12px;height:12px;vertical-align:-2px;margin-right:4px;color:#3E8E58}
-@media(max-width:380px){.fh-pay-steps span{font-size:9px;letter-spacing:.08em}}
+/* Checkout widget: our own two-step widget on this page (owner-set 2026-09-22). Script: after the SPLIT-LINE. */
+.cfw{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0A0A0A;padding:10px 12px 14px;text-align:left;line-height:1.5;font-size:15px}
+.cfw *{box-sizing:border-box;margin:0}
+.cfw [hidden]{display:none!important}
+.cfw-steps{display:flex;gap:8px;margin-bottom:4px}
+.cfw-steps button{flex:1;min-width:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93;border:1px solid #E4E4E7;border-radius:8px;padding:9px 6px;background:#fff;cursor:pointer;line-height:1.4}
+.cfw-steps button.on{color:#0A0A0A;border-color:#0A0A0A;cursor:default}
+.cfw-step{display:none}.cfw-step.on{display:block}
+.cfw label{display:block;font-size:12.5px;font-weight:600;color:#52525B;margin-top:12px;line-height:1.4}
+.cfw label .opt{font-weight:500;color:#8A8A93;text-transform:lowercase}
+.cfw .why{display:block;font-weight:500;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#3E8E58;margin-top:2px}
+.cfw input[type=text],.cfw input[type=email],.cfw input[type=tel],.cfw select{display:block;width:100%;min-width:0;height:auto;margin-top:6px;font:16px 'Inter',system-ui,sans-serif;line-height:1.3;padding:13px 14px;border:1px solid #D4D4D8;border-radius:9px;background-color:#fff;color:#0A0A0A;outline:none;box-shadow:none;-webkit-appearance:none;appearance:none}
+.cfw select{padding-right:34px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2352525B' stroke-width='1.6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center}
+.cfw input::placeholder{color:#A1A1AA}
+.cfw input:focus,.cfw select:focus{border-color:#0A0A0A;box-shadow:0 0 0 3px rgba(10,10,10,.08)}
+.cfw .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.cfw .row-sfx{display:grid;grid-template-columns:1fr 104px;gap:10px}
+.cfw .row2>*,.cfw .row-sfx>*{min-width:0}
+.cfw-box{margin-top:14px;background:#fff;border:1px solid #E4E4E7;border-radius:12px;padding:12px 14px 14px}
+.cfw-kick{display:block;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93;line-height:1.5}
+.cfw-biz-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cfw-biz-h .cfw-kick{color:#0A0A0A}
+.cfw-rm{background:none;border:0;padding:4px 0;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#52525B;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.cfw-prev{margin-top:14px;padding-top:12px;border-top:1px dashed #E4E4E7}
+.cfw-secure{margin-top:16px;background:#F6FBF7;border:1px solid #CFE3D4;border-radius:12px;padding:6px 14px 14px;position:relative}
+.cfw-secure::before{content:"secured field";position:absolute;top:-9px;left:12px;background:#F6FBF7;padding:0 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#3E8E58}
+.cfw-secure label{margin-top:8px}
+.cfw-ssn{display:flex;gap:8px;align-items:stretch}
+.cfw-ssn input{flex:1}
+.cfw .mask{-webkit-text-security:disc}
+.cfw-show{margin-top:6px;flex:0 0 auto;background:#fff;border:1px solid #D4D4D8;border-radius:9px;padding:0 14px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#52525B;cursor:pointer}
+.cfw .check{display:flex;gap:12px;align-items:flex-start;margin-top:14px;background:#fff;border:1px solid #E4E4E7;border-radius:10px;padding:12px 14px;font-weight:500;font-size:13.5px;color:#52525B;line-height:1.5;cursor:pointer}
+.cfw-box .check{background:#FAFAFA}
+.cfw .check input{margin:2px 0 0;width:18px;height:18px;flex:0 0 auto;accent-color:#188bf6}
+.cfw .consent{margin-top:16px}
+.cfw-add{display:block;width:100%;margin-top:12px;background:#fff;border:1px dashed #A1A1AA;border-radius:10px;padding:13px 14px;font:600 14.5px 'Inter',system-ui,sans-serif;color:#0A0A0A;cursor:pointer}
+.cfw-add:hover{border-color:#188bf6;color:#0b78dd}
+.cfw .ferr{display:block;margin-top:6px;font-size:12.5px;font-weight:500;color:#B4544C;line-height:1.45}
+.cfw .ferr.fwarn{color:#8A6D00}
+.cfw .err{border-color:#B4544C!important}
+.cfw .check+.ferr{margin-top:6px}
+.cfw-total{display:flex;justify-content:space-between;align-items:baseline;margin-top:16px;padding-top:12px;border-top:1px solid #E4E4E7;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93}
+.cfw-total b{font-size:22px;color:#0A0A0A;letter-spacing:-.02em}
+.cfw-totline{margin-top:4px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#8A8A93}
+.cfw-demo{margin-top:12px;border:1px solid #E5B800;background:#FFF8E1;border-radius:8px;padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;color:#7A5C00;text-align:center}
+.cfw-formerr{margin-top:12px;background:#FDF2F1;border:1px solid #F0C9C5;border-radius:10px;padding:11px 14px;color:#8A2F27;font-size:14px;line-height:1.5}
+.cfw-btn{display:block;width:100%;margin-top:14px;background:#188bf6;color:#fff;font:600 17px 'Inter',system-ui,sans-serif;padding:17px 22px;border:0;border-radius:9px;cursor:pointer;box-shadow:0 5px 18px rgba(24,139,246,.28);transition:background .15s;text-align:center}
+.cfw-btn:hover{background:#0b78dd}
+.cfw-btn[disabled]{opacity:.65;cursor:wait}
+.cfw-note{margin-top:12px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8A8A93;line-height:1.7}
+.cfw-note .lk{width:12px;height:12px;vertical-align:-2px;margin-right:4px;color:#3E8E58}
+.cfw-back{display:block;text-align:center;margin-top:10px;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#52525B;text-decoration:underline;text-underline-offset:3px}
+.cfw-state{text-align:center;padding:24px 6px 12px}
+.cfw-state h3{font-family:'Inter',system-ui,sans-serif;font-size:20px;font-weight:700;letter-spacing:-.02em;line-height:1.25;color:#0A0A0A;margin:0 auto 8px;max-width:30ch}
+.cfw-state p{color:#52525B;font-size:14.5px;line-height:1.6;max-width:46ch;margin:0 auto}
+.cfw-state p+p{margin-top:8px}
+.cfw-state .cfw-small{margin-top:12px;font-size:13px}
+.cfw-state a{color:#0A0A0A;text-decoration:underline;text-underline-offset:3px}
+.cfw-spin{width:28px;height:28px;border-radius:50%;border:3px solid #E4E4E7;border-top-color:#188bf6;margin:0 auto 14px;animation:cfwspin .9s linear infinite}
+@keyframes cfwspin{to{transform:rotate(360deg)}}
+.cfw-bureaus{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-top:16px}
+.cfw-bureaus span{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8A8A93;background:#fff;border:1px solid #E4E4E7;border-radius:999px;padding:6px 11px}
+.cfw-bureaus span.ok{color:#3E8E58;border-color:#CFE3D4;background:#F6FBF7}
+.cfw-bureaus span.bad{color:#7A5C00;border-color:#E5B800;background:#FFF8E1}
+.cfw-plans{display:grid;gap:10px;margin-top:18px;text-align:left}
+.cfw-plan{display:flex;justify-content:space-between;align-items:center;gap:14px;width:100%;background:#fff;border:1px solid #D4D4D8;border-radius:10px;padding:15px 16px;font:600 15px 'Inter',system-ui,sans-serif;color:#0A0A0A;text-align:left;cursor:pointer;line-height:1.35}
+.cfw-plan b{flex:0 0 auto;font-family:'JetBrains Mono',monospace;font-size:16px;color:#0b78dd}
+.cfw-plan:hover{border-color:#188bf6;box-shadow:0 0 0 3px rgba(24,139,246,.12)}
+.cfw-plan[disabled]{opacity:.6;cursor:wait}
+.cfw-link{display:inline-block;margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+@media(max-width:380px){.cfw-steps button{font-size:9.5px;letter-spacing:.08em}.cfw .row-sfx{grid-template-columns:1fr 88px}}
+@media(prefers-reduced-motion:reduce){.cfw-spin{animation:none}}
 /* FH-DECK-CSS:END */
 </style>
 
@@ -901,7 +960,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <span class="kicker">The Guarantee</span>
         <p>If you're not happy with what you get, <b>email us and we'll refund you.</b></p>
       </div>
-      <a class="btn fh-go-pay" href="https://fundhub.ai/roadmap/pay.html">Get My Roadmap &middot; $297</a>
+      <a class="btn fh-go-pay" href="#fh-order">Get My Roadmap &middot; $297</a>
     </section>
 
     <!-- lightbox for the sample pages -->
@@ -1174,13 +1233,13 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       </div>
       <div class="cardw">
         <span class="kicker">What happens when you press the button</span>
-        <p><b>1.</b> Your $297 goes through on the secure card page. <b>2.</b> You fill out one short form and we pull your credit from all three bureaus with a <b>soft inquiry</b>. <b>3.</b> UnderwriteIQ reads it and builds your package. <b>About ten seconds later it's in your account.</b></p>
+        <p><b>1.</b> Your $297 goes through. <b>2.</b> We pull your credit from all three bureaus with a <b>soft inquiry</b>, right here on this page. <b>3.</b> UnderwriteIQ reads it and builds your package. <b>About ten seconds later it's in your account.</b></p>
       </div>
       <div class="cardw secure-note">
         <span class="kicker"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Why we ask for your social</span>
         <p>Your social security number is the only way to pull your credit from all three bureaus. It's used for that <b>soft inquiry</b> and nothing else. A soft inquiry <b>doesn't show up to lenders</b> and <b>doesn't move your score</b>. It travels encrypted, and we never sell your data.</p>
       </div>
-      <div class="below">First your name and email. Then the secure card page. Then one short form for the soft pull.</div>
+      <div class="below">First box is your name, email and phone. Second box is the short form for your soft pull.</div>
       <div class="secure-head">
         <span class="sh-l"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Secure checkout</span>
         <span class="sh-m">256-bit SSL encryption</span>
@@ -1193,39 +1252,660 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 </div>
 
 <!-- ================= SPLIT-LINE ==================
-     ABOVE -> 01a TOP fragment (one Custom JS/HTML element)
-     The card below is a stand-in: replace with the NATIVE
-     ClickFunnels TWO-STEP order form element. CF owns the insides.
-       Step 1: Name · Email · Phone            (contact only)
-       Step 2: Social · Card · $297             (owner rule: the soft pull runs on THIS page)
-       No order bump on this page (owner-set 2026-09-22: the lander does not mention letter mailing).
-       Button: Get My Roadmap · $297
-     Note: the older checkout brief said pay-then-pull with no SSN on this form.
-     Chris overrode that on 2026-09-20: social is collected here, pull runs on submit.
-     UTM: paste clickfunnels-fragments/06-utm-hidden-fields.html onto THIS page
-     as its own Custom JS/HTML element. It stamps the hidden inputs on the form.
-     BELOW -> 01b BOTTOM fragment (second Custom JS/HTML element)
+     ABOVE: the sales page. BELOW: the checkout widget, then the page bottom.
+     This whole file is still ONE Custom JS/HTML element.
+     The checkout is OUR OWN two-step widget (owner-set 2026-09-22), not a
+     ClickFunnels order form. It talks to https://fundhub.ai/api/public/:
+       GET  slo-checkout?businesses=n   price, and whether Pay is DEMO (charges nothing)
+       POST slo-checkout                starts the order (ref + client_id)
+       POST slo-pull                    identity + consent. LIVE sends defer_pull:true,
+                                        then goes to the Commas card page, which returns
+                                        to this page with ?ref=&client_id=
+       GET  slo-status                  polled every second after submit
+       POST slo-repair-checkout         only after a pull result on the repair path
+     Step 1 · Contact: first, last, email, phone.
+     Step 2 · Payment: legal name, DOB, social, home address, previous address,
+                       businesses (first free, each extra $15), consent, Pay.
+     Nothing about repair or letter mailing shows before a pull result.
+     The widget never decides demo or live. The server's answer does.
+     UTM: read from sessionStorage fh_attribution (fh-attribution.js at the end of this file).
      ================================================ -->
 <div class="fh-widget-slot" id="fh-cf-form">
-  <div class="fh-pay">
-    <div class="fh-pay-steps" aria-label="Three steps"><span class="on">1 &middot; Contact</span><span>2 &middot; Card</span><span>3 &middot; Soft pull</span></div>
-    <div class="fh-pay-total"><span>Total today</span><b>$297</b></div>
-    <a class="fh-pay-btn" id="fh-pay-go" href="https://fundhub.ai/roadmap/pay.html">Get My Roadmap &middot; $297</a>
-    <div class="fh-pay-note"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Secure checkout &middot; Fundhub never sees or stores your card number</div>
+  <div class="cfw" id="fhw">
+    <div class="cfw-steps" data-tabs><button type="button" class="on" data-tab="1">1 &middot; Contact</button><button type="button" data-tab="2">2 &middot; Payment</button></div>
+
+    <form class="cfw-step s1 on" novalidate autocomplete="on">
+      <div class="row2">
+        <label>First name<input type="text" name="c_first" data-f="c_first" autocomplete="given-name" maxlength="80"></label>
+        <label>Last name<input type="text" name="c_last" data-f="c_last" autocomplete="family-name" maxlength="80"></label>
+      </div>
+      <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
+      <label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
+      <button type="submit" class="cfw-btn">Continue</button>
+      <div class="cfw-note">Step 1 of 2. The short form for your soft pull is next.</div>
+    </form>
+
+    <form class="cfw-step s2" novalidate autocomplete="off">
+      <div class="cfw-box">
+        <span class="cfw-kick">Your legal name, as on your Social Security card</span>
+        <div class="row2">
+          <label>Legal first name<input type="text" name="first_name" data-f="first_name" autocomplete="given-name" maxlength="20"></label>
+          <label>Middle name<input type="text" name="middle_name" data-f="middle_name" autocomplete="additional-name" maxlength="15" placeholder="Optional"></label>
+        </div>
+        <div class="row-sfx">
+          <label>Legal last name<input type="text" name="last_name" data-f="last_name" autocomplete="family-name" maxlength="32"></label>
+          <label>Suffix<select name="suffix" data-f="suffix"><option value="">None</option><option value="JR">Jr</option><option value="SR">Sr</option><option value="II">II</option><option value="III">III</option><option value="IV">IV</option></select></label>
+        </div>
+        <label>Date of birth<input type="text" name="dob" data-f="dob" autocomplete="bday" inputmode="numeric" placeholder="MM/DD/YYYY" maxlength="10"></label>
+      </div>
+
+      <div class="cfw-secure">
+        <label>Social Security number<span class="why">used for the soft pull only &middot; doesn't move your score</span>
+          <span class="cfw-ssn"><input type="text" name="ssn" class="mask" data-f="ssn" autocomplete="off" inputmode="numeric" maxlength="11" placeholder="&bull;&bull;&bull;-&bull;&bull;-&bull;&bull;&bull;&bull;" spellcheck="false"><button type="button" class="cfw-show" data-show aria-pressed="false">Show</button></span>
+        </label>
+      </div>
+
+      <div class="cfw-box">
+        <span class="cfw-kick">Home address</span>
+        <label>Street address<input type="text" name="address" data-f="address" autocomplete="address-line1" maxlength="48" placeholder="123 Main St"></label>
+        <label>Apt / unit <span class="opt">optional</span><input type="text" name="apt" data-f="apt" autocomplete="address-line2" maxlength="10"></label>
+        <label>City<input type="text" name="city" data-f="city" autocomplete="address-level2" maxlength="28"></label>
+        <div class="row2">
+          <label>State<select name="state" data-f="state" autocomplete="address-level1" data-states></select></label>
+          <label>ZIP<input type="text" name="zip" data-f="zip" autocomplete="postal-code" inputmode="numeric" maxlength="10"></label>
+        </div>
+        <label class="check"><input type="checkbox" name="moved_recently" data-moved><span>Moved in the last 2 years?</span></label>
+        <div class="cfw-prev" data-prev hidden>
+          <span class="cfw-kick">Previous address</span>
+          <label>Street address<input type="text" name="prev_address" data-f="prev_address" autocomplete="off" maxlength="48"></label>
+          <label>Apt / unit <span class="opt">optional</span><input type="text" name="prev_apt" data-f="prev_apt" autocomplete="off" maxlength="10"></label>
+          <label>City<input type="text" name="prev_city" data-f="prev_city" autocomplete="off" maxlength="28"></label>
+          <div class="row2">
+            <label>State<select name="prev_state" data-f="prev_state" autocomplete="off" data-states></select></label>
+            <label>ZIP<input type="text" name="prev_zip" data-f="prev_zip" autocomplete="off" inputmode="numeric" maxlength="10"></label>
+          </div>
+        </div>
+      </div>
+
+      <div data-bizlist></div>
+      <button type="button" class="cfw-add" data-add>+ Add a business ($15)</button>
+
+      <label class="check consent"><input type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub Credit Solutions LLC to run a soft pull of my credit report. A soft pull does not affect my credit score.</span></label>
+
+      <div class="cfw-total"><span>Total today</span><b data-total>$297</b></div>
+      <div class="cfw-totline" data-totline hidden></div>
+      <div class="cfw-demo" data-demo hidden></div>
+      <div class="cfw-formerr" data-formerr role="alert" hidden></div>
+      <button type="submit" class="cfw-btn" data-pay>Get My Roadmap &middot; $297</button>
+      <div class="cfw-note"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Secure checkout &middot; soft pull only &middot; not happy, email us and we'll refund you</div>
+      <div class="cfw-note" data-livenote hidden>Next: your card, on the secure card page</div>
+      <a class="cfw-back" href="#" data-back>Back to step 1</a>
+    </form>
+
+    <div class="cfw-state" data-state="paying" hidden>
+      <div class="cfw-spin" aria-hidden="true"></div>
+      <h3>Taking you to the secure card page&hellip;</h3>
+      <p>Your details are saved. After you pay, you come right back here and we read your file.</p>
+    </div>
+
+    <div class="cfw-state" data-state="reading" hidden role="status">
+      <div class="cfw-spin" aria-hidden="true"></div>
+      <h3>Reading your file&hellip;</h3>
+      <p>Order placed. We're pulling your credit with a soft inquiry and building your roadmap. Keep this page open.</p>
+      <div class="cfw-bureaus"><span data-b="TU">TransUnion</span><span data-b="EX">Experian</span><span data-b="EQ">Equifax</span></div>
+    </div>
+
+    <div class="cfw-state" data-state="done" hidden role="status">
+      <h3>Your file is read.</h3>
+      <p>Opening your results&hellip;</p>
+      <a class="cfw-link" data-go href="https://apply.fundhub.ai/roadmap-book">Open my results</a>
+    </div>
+
+    <div class="cfw-state" data-state="repair" hidden>
+      <h3>Your file needs work before funding. We can do it for you.</h3>
+      <div class="cfw-plans" data-plans></div>
+      <div class="cfw-formerr" data-planerr role="alert" hidden></div>
+      <a class="cfw-link" data-talk href="https://apply.fundhub.ai/roadmap-book">Talk to us first</a>
+    </div>
+
+    <div class="cfw-state" data-state="repair-done" hidden role="status">
+      <h3>You're in.</h3>
+      <p>We'll email next steps.</p>
+    </div>
+
+    <div class="cfw-state" data-state="failed" hidden role="alert">
+      <h3>We couldn't read your file this time.</h3>
+      <p>This usually means a detail didn't match what the bureaus have. Check your details and try again.</p>
+      <p data-frozen hidden>A frozen credit file can't be read. Lift the freeze with that bureau, then try again.</p>
+      <button type="button" class="cfw-btn" data-retry>Check my details</button>
+      <p class="cfw-small">Still stuck? Email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a> or <a data-talk href="https://apply.fundhub.ai/roadmap-book">book a call with us</a>.</p>
+    </div>
+
+    <div class="cfw-state" data-state="slow" hidden role="status">
+      <h3>This is taking longer than usual.</h3>
+      <p>Your order is saved. Press the button to check again.</p>
+      <button type="button" class="cfw-btn" data-recheck>Check again</button>
+      <p class="cfw-small">Still stuck? Email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a>.</p>
+    </div>
   </div>
 </div>
 <script>
 (function(){
-  /* the checkout box button and every "Get My Roadmap" button open the built checkout, carrying the ad tags */
-  var links=document.querySelectorAll('#fh-pay-go, a.fh-go-pay');if(!links.length)return;
-  var BASE='https://fundhub.ai/roadmap/pay.html',KEYS=['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
-  function go(){
-    var s={};try{s=JSON.parse(sessionStorage.getItem('fh_attribution')||'{}')||{};}catch(e){}
-    var cur=new URLSearchParams(location.search),q=new URLSearchParams();
-    KEYS.forEach(function(k){var v=s[k]||cur.get(k);if(v)q.set(k,String(v).slice(0,200));});
-    var qs=q.toString();for(var i=0;i<links.length;i++)links[i].href=BASE+(qs?'?'+qs:'');
+  /* The /roadmap checkout widget. Contract: docs/journeys/slo-roadmap-widget-flow.md.
+     The social security number and date of birth go in a POST body only. They are
+     never put in the address bar, in browser storage, or in the console. */
+  var root=document.getElementById('fhw');if(!root||!window.fetch)return;
+  var API='https://fundhub.ai/api/public/';
+  var BOOK='https://apply.fundhub.ai/roadmap-book';
+  var HOME='https://apply.fundhub.ai/roadmap';
+  var ORIGINS=['https://apply.fundhub.ai','https://fundhub.ai','https://www.fundhub.ai'];
+  var UTM=['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
+  var EXTRA=['landing_path','referrer_domain'];
+  var BIZ_KEYS=['name','address','apt','city','state','zip','ein','phone','started'];
+  var POLL_MS=1000,POLL_MAX_MS=90000;
+  var GENERIC='Something went wrong on our side. Please try again, or email support@fundhub.ai.';
+  var STATES='AL:Alabama|AK:Alaska|AZ:Arizona|AR:Arkansas|CA:California|CO:Colorado|CT:Connecticut|DE:Delaware|DC:District of Columbia|FL:Florida|GA:Georgia|HI:Hawaii|ID:Idaho|IL:Illinois|IN:Indiana|IA:Iowa|KS:Kansas|KY:Kentucky|LA:Louisiana|ME:Maine|MD:Maryland|MA:Massachusetts|MI:Michigan|MN:Minnesota|MS:Mississippi|MO:Missouri|MT:Montana|NE:Nebraska|NV:Nevada|NH:New Hampshire|NJ:New Jersey|NM:New Mexico|NY:New York|NC:North Carolina|ND:North Dakota|OH:Ohio|OK:Oklahoma|OR:Oregon|PA:Pennsylvania|RI:Rhode Island|SC:South Carolina|SD:South Dakota|TN:Tennessee|TX:Texas|UT:Utah|VT:Vermont|VA:Virginia|WA:Washington|WV:West Virginia|WI:Wisconsin|WY:Wyoming|PR:Puerto Rico|VI:U.S. Virgin Islands|GU:Guam|AS:American Samoa|MP:Northern Mariana Islands|AA:Armed Forces Americas|AE:Armed Forces Europe|AP:Armed Forces Pacific';
+
+  var price={base:29700,each:1500,max:20};
+  var order=null;   /* {ref, client_id, demo, checkoutUrl, sig, locked} kept in memory only */
+  var t0=0,busy=false,pollToken=0,logged=false;
+
+  var s1=root.querySelector('.s1'),s2=root.querySelector('.s2');
+  var tabs=root.querySelectorAll('[data-tab]'),tabBar=root.querySelector('[data-tabs]');
+  var bizList=root.querySelector('[data-bizlist]'),addBtn=root.querySelector('[data-add]');
+  var payBtn=root.querySelector('[data-pay]'),totalEl=root.querySelector('[data-total]'),totLine=root.querySelector('[data-totline]');
+  var formErr=root.querySelector('[data-formerr]'),demoEl=root.querySelector('[data-demo]'),liveNote=root.querySelector('[data-livenote]');
+  var moved=root.querySelector('[data-moved]'),prevBox=root.querySelector('[data-prev]');
+  var ssnInput=s2.querySelector('[name="ssn"]'),showBtn=root.querySelector('[data-show]');
+  var step=1;
+
+  function each(list,fn){Array.prototype.forEach.call(list,fn);}
+  function squeeze(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
+  function plain(v){var s=String(v==null?'':v);if(s.normalize)s=s.normalize('NFD').replace(/[̀-ͯ]/g,'');return s.replace(/[‘’ʼ]/g,"'");}
+  function digits(v){return String(v==null?'':v).replace(/\D/g,'');}
+  function pad(n){return (n<10?'0':'')+n;}
+  function money(c){var d=c/100;return '$'+(d%1===0?d.toLocaleString('en-US'):d.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}));}
+  function val(form,name){var el=form.querySelector('[name="'+name+'"]');return el?squeeze(el.value):'';}
+
+  /* ---- state lists ---- */
+  function fillStates(sel){
+    var h='<option value="">Pick one</option>';
+    STATES.split('|').forEach(function(p){var kv=p.split(':');h+='<option value="'+kv[0]+'">'+kv[1]+'</option>';});
+    sel.innerHTML=h;
   }
-  go();for(var i=0;i<links.length;i++){links[i].addEventListener('pointerdown',go);links[i].addEventListener('click',go);}
+  each(root.querySelectorAll('select[data-states]'),fillStates);
+
+  /* ---- errors under each box ---- */
+  function slotFor(input){
+    var lab=input.closest('label');if(!lab)return null;
+    if(lab.classList.contains('check')){
+      var nx=lab.nextElementSibling;
+      if(nx&&nx.classList.contains('ferr'))return nx;
+      var s=document.createElement('span');s.className='ferr';lab.parentNode.insertBefore(s,lab.nextSibling);return s;
+    }
+    var f=lab.querySelector('.ferr');
+    if(!f){f=document.createElement('span');f.className='ferr';lab.appendChild(f);}
+    return f;
+  }
+  function setErr(input,msg,warn){
+    var s=slotFor(input);if(!s)return;
+    s.textContent=msg;s.className=warn?'ferr fwarn':'ferr';s.hidden=false;
+    if(!warn){input.classList.add('err');input.setAttribute('aria-invalid','true');}
+  }
+  function clearErr(input){
+    var s=slotFor(input);if(s){s.hidden=true;s.textContent='';}
+    input.classList.remove('err');input.removeAttribute('aria-invalid');
+  }
+  function clearAll(form){
+    each(form.querySelectorAll('.ferr'),function(s){s.hidden=true;s.textContent='';});
+    each(form.querySelectorAll('.err'),function(i){i.classList.remove('err');i.removeAttribute('aria-invalid');});
+  }
+  function showFormErr(msg){formErr.textContent=msg;formErr.hidden=false;}
+  function hideFormErr(){formErr.hidden=true;formErr.textContent='';}
+  root.addEventListener('input',function(e){if(e.target.classList&&e.target.classList.contains('err'))clearErr(e.target);});
+  root.addEventListener('change',function(e){if(e.target.classList&&e.target.classList.contains('err'))clearErr(e.target);});
+
+  /* ---- field checks: the same rules as src/slo/fields.mjs and src/slo/businesses.mjs ---- */
+  function vName(v,label,max,req){
+    var t=squeeze(String(v).replace(/\./g,' '));
+    if(!t)return req?'Please enter '+label+'.':null;
+    var p=plain(t);
+    if(/\d/.test(p))return 'Names cannot have numbers in them.';
+    if(!/^[A-Za-z]+(?:[ '-][A-Za-z]+)*$/.test(p))return 'Use only the letters on your Social Security card. Spaces, dashes and apostrophes are fine.';
+    if(p.length>max)return 'Keep this to '+max+' letters or fewer.';
+    return null;
+  }
+  function parseDob(v){
+    var s=squeeze(v),m=s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+    if(m)return {y:+m[3],mo:+m[1],d:+m[2]};
+    m=s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if(m)return {y:+m[1],mo:+m[2],d:+m[3]};
+    return null;
+  }
+  function vDob(v){
+    if(!squeeze(v))return 'Please enter your date of birth.';
+    var p=parseDob(v);if(!p)return 'Enter your date of birth as MM/DD/YYYY.';
+    var dt=new Date(Date.UTC(p.y,p.mo-1,p.d));
+    if(dt.getUTCFullYear()!==p.y||dt.getUTCMonth()!==p.mo-1||dt.getUTCDate()!==p.d||p.y<1900)return 'That date is not a real date. Please check it.';
+    var now=new Date();
+    if(dt.getTime()>Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()))return 'That date is in the future. Please check it.';
+    var age=now.getUTCFullYear()-p.y;
+    if(now.getUTCMonth()<p.mo-1||(now.getUTCMonth()===p.mo-1&&now.getUTCDate()<p.d))age--;
+    if(age<18)return 'You must be 18 or older.';
+    return null;
+  }
+  function isoDob(v){var p=parseDob(v);return p?p.y+'-'+pad(p.mo)+'-'+pad(p.d):squeeze(v);}
+  function vSsn(v){
+    var d=digits(v);
+    if(!d)return 'Please enter your Social Security number.';
+    if(d.length!==9)return 'A Social Security number has 9 digits. Please check it.';
+    if(d.slice(0,3)==='000'||d.slice(3,5)==='00'||d.slice(5)==='0000')return 'That number is not valid. Please check it.';
+    return null;
+  }
+  var PO=/\b(?:p\s*\.?\s*o\s*\.?\s*box|post\s+office\s+box|pob\s+\d)/i;
+  var RURAL=/^(?:rr|r\s*\.\s*r\s*\.?|rural\s+route|hc|hcr|highway\s+contract)\s*\d/i;
+  /* One address block. get(k) returns the input for street|apt|city|state|zip. */
+  function checkAddress(get,who,bad){
+    var st=get('address'),s=squeeze(st.value);
+    if(!s)bad(st,'Please enter '+who+' street address.');
+    else if(s.length>48)bad(st,'Keep the street to 48 characters or fewer. Put the apartment in its own box.');
+    else if(PO.test(s))setErr(st,'A P.O. box can stop a bureau from finding the file. Use the street address if you have one.',true);
+    else if(!/^\d/.test(s)&&!RURAL.test(s))bad(st,'Start with the house number, like 123 Main St.');
+    var ap=get('apt'),a=squeeze(ap.value).toUpperCase();
+    if(a&&(a.length>10||!/^[A-Z0-9#][A-Z0-9 #\/-]*$/.test(a)))bad(ap,'Use 10 letters or numbers or fewer, like 4B.');
+    var ci=get('city'),c=squeeze(ci.value),cp=plain(c);
+    if(!c)bad(ci,'Please enter '+who+' city.');
+    else if(!/^[A-Za-z][A-Za-z .'-]*$/.test(cp)||cp.length>28)bad(ci,'Use the city name only, in letters.');
+    var sa=get('state');if(!sa.value)bad(sa,'Please pick '+who+' state.');
+    var zi=get('zip'),z=squeeze(zi.value);
+    if(!z)bad(zi,'Please enter '+who+' ZIP code.');
+    else if(!/^\d{5}(?:[-\s]?\d{4})?$/.test(z))bad(zi,'A ZIP code is 5 digits, like 90210.');
+  }
+  function monthYear(v){
+    var s=squeeze(v),m=s.match(/^(\d{1,2})\s*\/\s*(\d{4})$/),y,mo;
+    if(m){mo=+m[1];y=+m[2];}
+    else if((m=s.match(/^(\d{4})-(\d{2})$/))){y=+m[1];mo=+m[2];}
+    else return null;
+    if(y<1800||y>2100||mo<1||mo>12)return null;
+    return {y:y,mo:mo};
+  }
+  function phone10(v){var d=digits(v);if(d.length===11&&d.charAt(0)==='1')d=d.slice(1);return d.length===10?d:null;}
+
+  /* ---- step 1 ---- */
+  function checkStep1(){
+    clearAll(s1);var ok=true;
+    function bad(el,msg){setErr(el,msg);ok=false;}
+    var f=s1.querySelector('[name="c_first"]'),l=s1.querySelector('[name="c_last"]'),em=s1.querySelector('[name="email"]'),ph=s1.querySelector('[name="phone"]');
+    if(!squeeze(f.value))bad(f,'Please enter your first name.');
+    if(!squeeze(l.value))bad(l,'Please enter your last name.');
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(squeeze(em.value)))bad(em,'Please enter a real email address.');
+    if(!squeeze(ph.value))bad(ph,'Please enter your phone number.');
+    else if(!phone10(ph.value))bad(ph,'Use a 10-digit phone number.');
+    return ok;
+  }
+  function contact(){
+    return {first_name:val(s1,'c_first'),last_name:val(s1,'c_last'),email:val(s1,'email').toLowerCase(),phone:phone10(val(s1,'phone'))||val(s1,'phone')};
+  }
+
+  /* ---- businesses ---- */
+  function bizRows(){return Array.prototype.slice.call(bizList.querySelectorAll('.cfw-biz'));}
+  function bizInput(row,k){return row.querySelector('[data-k="'+k+'"]');}
+  function bizBlank(row){return BIZ_KEYS.every(function(k){var el=bizInput(row,k);return !el||!squeeze(el.value);});}
+  function bizBlock(){
+    var d=document.createElement('div');d.className='cfw-box cfw-biz';
+    d.innerHTML='<div class="cfw-biz-h"><span class="cfw-kick" data-bizname></span><button type="button" class="cfw-rm" data-rm>Remove</button></div>'
+      +'<label>Legal business name<input type="text" data-k="name" autocomplete="organization" maxlength="100"></label>'
+      +'<label>Business street address<input type="text" data-k="address" autocomplete="off" maxlength="48" placeholder="123 Main St"></label>'
+      +'<label>Suite / unit <span class="opt">optional</span><input type="text" data-k="apt" autocomplete="off" maxlength="10"></label>'
+      +'<label>City<input type="text" data-k="city" autocomplete="off" maxlength="28"></label>'
+      +'<div class="row2"><label>State<select data-k="state" autocomplete="off" data-states></select></label>'
+      +'<label>ZIP<input type="text" data-k="zip" autocomplete="off" inputmode="numeric" maxlength="10"></label></div>'
+      +'<div class="row2"><label>EIN <span class="opt">optional</span><input type="text" data-k="ein" autocomplete="off" inputmode="numeric" maxlength="10" placeholder="12-3456789"></label>'
+      +'<label>Phone <span class="opt">optional</span><input type="tel" data-k="phone" autocomplete="off" inputmode="tel" maxlength="20"></label></div>'
+      +'<label>Month and year it started<input type="text" data-k="started" autocomplete="off" inputmode="numeric" maxlength="7" placeholder="MM/YYYY"></label>';
+    fillStates(d.querySelector('select[data-states]'));
+    return d;
+  }
+  function renumber(){
+    var rows=bizRows();
+    rows.forEach(function(row,i){
+      row.querySelector('[data-bizname]').textContent='Business '+(i+1)+' — '+(i===0?'Free':money(price.each));
+      row.querySelector('[data-rm]').hidden=(i===0);
+      BIZ_KEYS.forEach(function(k){var el=bizInput(row,k);if(el)el.setAttribute('data-f','businesses.'+i+'.'+k);});
+    });
+    addBtn.hidden=rows.length>=price.max;
+    addBtn.textContent='+ Add a business ('+money(price.each)+')';
+    paintTotal();
+  }
+  function bizCount(){return Math.max(1,bizRows().length);}
+  function paintTotal(){
+    var n=bizCount(),c=price.base+price.each*(n-1);
+    totalEl.textContent=money(c);
+    payBtn.textContent='Get My Roadmap · '+money(c);
+    if(n>1){totLine.textContent=n+' businesses · first one free, '+money(price.each)+' each extra';totLine.hidden=false;}
+    else{totLine.hidden=true;totLine.textContent='';}
+  }
+  addBtn.addEventListener('click',function(){
+    if(bizRows().length>=price.max)return;
+    var b=bizBlock();bizList.appendChild(b);renumber();
+    var first=b.querySelector('[data-k="name"]');if(first)first.focus();
+  });
+  bizList.addEventListener('click',function(e){
+    var rm=e.target.closest&&e.target.closest('[data-rm]');if(!rm)return;
+    var row=rm.closest('.cfw-biz');if(row&&bizRows().indexOf(row)>0){row.parentNode.removeChild(row);renumber();}
+  });
+  bizList.appendChild(bizBlock());renumber();
+
+  function checkBusinesses(bad){
+    var rows=bizRows();
+    rows.forEach(function(row,i){
+      /* A lone first business may be left blank; the order is still one business. */
+      if(i===0&&rows.length===1&&bizBlank(row))return;
+      var nm=bizInput(row,'name'),n=squeeze(nm.value),letters=plain(n).replace(/[^A-Za-z]/g,'');
+      if(!n)bad(nm,'Please enter the legal business name.');
+      else if(letters.length<2||n.length>100)bad(nm,'Use the name as filed with the state.');
+      checkAddress(function(k){return bizInput(row,k);},'the business',bad);
+      var ein=bizInput(row,'ein');if(squeeze(ein.value)&&digits(ein.value).length!==9)bad(ein,'An EIN has 9 digits, like 12-3456789.');
+      var ph=bizInput(row,'phone');if(squeeze(ph.value)&&!phone10(ph.value))bad(ph,'Use a 10-digit phone number.');
+      var st=bizInput(row,'started'),my=monthYear(st.value),now=new Date();
+      if(!squeeze(st.value))bad(st,'Please enter the month and year it started, like 03/2021.');
+      else if(!my)bad(st,'Use month and year, like 03/2021.');
+      else if(my.y*12+my.mo>now.getUTCFullYear()*12+now.getUTCMonth()+1)bad(st,'That date is in the future. Please check it.');
+    });
+  }
+  function bizPayload(){
+    var rows=bizRows();
+    if(rows.length===1&&bizBlank(rows[0]))return [];
+    return rows.map(function(row){
+      var o={};BIZ_KEYS.forEach(function(k){var el=bizInput(row,k),v=el?squeeze(el.value):'';if(v)o[k]=v;});return o;
+    });
+  }
+
+  /* ---- step 2 ---- */
+  moved.addEventListener('change',function(){prevBox.hidden=!moved.checked;});
+  function checkStep2(){
+    clearAll(s2);hideFormErr();var ok=true;
+    function bad(el,msg){setErr(el,msg);ok=false;}
+    function one(name,msg){var el=s2.querySelector('[name="'+name+'"]');if(msg)bad(el,msg);}
+    one('first_name',vName(val(s2,'first_name'),'your legal first name',20,true));
+    one('middle_name',vName(val(s2,'middle_name'),'your middle name',15,false));
+    one('last_name',vName(val(s2,'last_name'),'your legal last name',32,true));
+    one('dob',vDob(val(s2,'dob')));
+    one('ssn',vSsn(ssnInput.value));
+    checkAddress(function(k){return s2.querySelector('[name="'+k+'"]');},'your',bad);
+    if(moved.checked)checkAddress(function(k){return s2.querySelector('[name="prev_'+k+'"]');},'your previous',bad);
+    checkBusinesses(bad);
+    var c=s2.querySelector('[name="consent"]');
+    if(!c.checked)bad(c,'Please check the box to authorize the soft pull before we can continue.');
+    return ok;
+  }
+  function identity(){
+    var o={first_name:val(s2,'first_name'),last_name:val(s2,'last_name'),dob:isoDob(val(s2,'dob')),ssn:digits(ssnInput.value),
+      address:val(s2,'address'),city:val(s2,'city'),state:val(s2,'state'),zip:val(s2,'zip')};
+    var mid=val(s2,'middle_name'),sfx=val(s2,'suffix'),apt=val(s2,'apt');
+    if(mid)o.middle_name=mid;if(sfx)o.suffix=sfx;if(apt)o.apt=apt;
+    if(moved.checked){
+      o.moved_recently=true;
+      ['address','apt','city','state','zip'].forEach(function(k){var v=val(s2,'prev_'+k);if(v)o['prev_'+k]=v;});
+    }
+    return o;
+  }
+  function clearSecrets(){ssnInput.value='';ssnInput.classList.add('mask');showBtn.textContent='Show';showBtn.setAttribute('aria-pressed','false');}
+
+  /* ---- typing helpers ---- */
+  ssnInput.addEventListener('input',function(){
+    var d=digits(ssnInput.value).slice(0,9);
+    ssnInput.value=d.length>5?d.slice(0,3)+'-'+d.slice(3,5)+'-'+d.slice(5):d.length>3?d.slice(0,3)+'-'+d.slice(3):d;
+  });
+  showBtn.addEventListener('click',function(){
+    var hid=ssnInput.classList.toggle('mask');
+    showBtn.textContent=hid?'Show':'Hide';showBtn.setAttribute('aria-pressed',hid?'false':'true');
+  });
+  root.addEventListener('input',function(e){
+    var el=e.target,typing=e.inputType==='insertText';
+    if(el.name==='dob'){
+      var v=el.value;
+      if(/^\d{8}$/.test(v))el.value=v.slice(0,2)+'/'+v.slice(2,4)+'/'+v.slice(4);
+      else if(typing&&(/^\d{2}$/.test(v)||/^\d{1,2}\/\d{2}$/.test(v)))el.value=v+'/';
+    }else if(el.getAttribute&&el.getAttribute('data-k')==='started'){
+      var s=el.value;
+      if(/^\d{6}$/.test(s))el.value=s.slice(0,2)+'/'+s.slice(2);
+      else if(typing&&/^\d{2}$/.test(s))el.value=s+'/';
+    }
+  });
+
+  /* ---- steps and panes ---- */
+  function go(n){
+    step=n;
+    s1.classList.toggle('on',n===1);s2.classList.toggle('on',n===2);
+    each(tabs,function(t){t.classList.toggle('on',t.getAttribute('data-tab')===String(n));});
+    var r=root.getBoundingClientRect();if(r.top<0)root.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function showPane(name){
+    var form=name==='form';
+    tabBar.hidden=!form;
+    s1.hidden=!form;s2.hidden=!form;
+    each(root.querySelectorAll('.cfw-state'),function(p){p.hidden=p.getAttribute('data-state')!==name;});
+    if(!form){var r=root.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*0.6)root.scrollIntoView({behavior:'smooth',block:'start'});}
+  }
+  function onContinue(){
+    if(order&&order.locked){go(2);return;}
+    if(!checkStep1()){var f=s1.querySelector('.err');if(f)f.focus();return;}
+    var c=contact();
+    var lf=s2.querySelector('[name="first_name"]'),ll=s2.querySelector('[name="last_name"]');
+    if(!lf.value)lf.value=c.first_name;if(!ll.value)ll.value=c.last_name;
+    go(2);
+  }
+  s1.addEventListener('submit',function(e){e.preventDefault();onContinue();});
+  each(tabs,function(t){t.addEventListener('click',function(){
+    if(t.getAttribute('data-tab')==='1')go(1);else if(step!==2)onContinue();
+  });});
+  root.querySelector('[data-back]').addEventListener('click',function(e){e.preventDefault();go(1);});
+
+  /* ---- the server ---- */
+  function call(method,path,body){
+    var opt={method:method,headers:{accept:'application/json'}};
+    if(body){opt.headers['content-type']='application/json';opt.body=JSON.stringify(body);}
+    return fetch(API+path,opt).then(function(r){
+      return r.json().then(function(b){return {status:r.status,ok:r.ok,body:b};},function(){return {status:r.status,ok:r.ok,body:null};});
+    });
+  }
+  function attribution(){
+    var s={};try{s=JSON.parse(sessionStorage.getItem('fh_attribution')||'{}')||{};}catch(e){}
+    var cur=new URLSearchParams(location.search),out={};
+    UTM.forEach(function(k){var v=s[k]||cur.get(k);if(v)out[k]=String(v).slice(0,200);});
+    EXTRA.forEach(function(k){if(s[k])out[k]=String(s[k]).slice(0,200);});
+    return out;
+  }
+  function returnUrl(){return ORIGINS.indexOf(location.origin)>-1?location.origin+location.pathname:HOME;}
+  function bookUrl(pa){
+    var q=new URLSearchParams(),n=Number(pa),a=attribution();
+    if(pa!=null&&Number.isInteger(n)&&n>0)q.set('pa',String(n));
+    if(order){q.set('ref',order.ref);q.set('client_id',order.client_id);}
+    UTM.forEach(function(k){if(a[k])q.set(k,a[k]);});
+    var s=q.toString();return BOOK+(s?'?'+s:'');
+  }
+  function msgFor(code){
+    if(code==='checkout_not_configured')return 'Checkout is paused right now. Email support@fundhub.ai and we will get you in.';
+    if(code==='encryption_unavailable')return 'We cannot take your details safely right now. Please try again in a few minutes.';
+    if(code==='not_found'||code==='order_not_paid'||code==='no_account')return 'We lost track of this order. Please press the button again.';
+    return GENERIC;
+  }
+  function find(field){try{return root.querySelector('[data-f="'+field+'"]');}catch(e){return null;}}
+  /* errors[] -> the words under the right box. true when something was shown. */
+  function showApiErrors(b){
+    var list=(b&&Array.isArray(b.errors))?b.errors:[],loose=[],first=null;
+    list.forEach(function(e){
+      var el=e&&e.field?find(e.field):null;
+      if(el){setErr(el,e.message||'Please check this.');if(!first)first=el;}
+      else if(e&&e.message&&loose.indexOf(e.message)<0)loose.push(e.message);
+    });
+    ((b&&Array.isArray(b.warnings))?b.warnings:[]).forEach(function(w){var el=w&&w.field?find(w.field):null;if(el&&w.message)setErr(el,w.message,true);});
+    if(first)go(s1.contains(first)?1:2);
+    if(loose.length)showFormErr(loose.join(' '));
+    if(first)first.focus();
+    return !!first||loose.length>0;
+  }
+  function setBusy(on){busy=on;payBtn.disabled=on;if(on)payBtn.textContent='Working…';else paintTotal();}
+
+  function startCheckout(c,biz,sig){
+    var body={email:c.email,first_name:c.first_name,last_name:c.last_name,phone:c.phone,return_url:returnUrl()};
+    if(biz.length)body.businesses=biz;else body.business_count=1;
+    var a=attribution();Object.keys(a).forEach(function(k){body[k]=a[k];});
+    return call('POST','slo-checkout',body).then(function(r){
+      var b=r.body||{};
+      if(r.ok&&b.ok===true&&b.ref&&b.client_id&&(b.demo===true||b.checkoutUrl)){
+        order={ref:String(b.ref),client_id:String(b.client_id),demo:b.demo===true,checkoutUrl:b.checkoutUrl?String(b.checkoutUrl):null,sig:sig,locked:false};
+        return order;
+      }
+      if(!showApiErrors(b))showFormErr(msgFor(b.error));
+      return null;
+    });
+  }
+  function sendPull(o,biz){
+    var body=identity();
+    body.ref=o.ref;body.client_id=o.client_id;body.consent=true;
+    if(biz.length)body.businesses=biz;
+    /* LIVE: store identity + consent now; the payment starts the pull. */
+    if(!o.demo)body.defer_pull=true;
+    /* DEMO: the sandbox pull runs inside this request, so show the reading state now. */
+    if(o.demo)showPane('reading');
+    var req=call('POST','slo-pull',body);
+    body=null;
+    return req.then(function(r){
+      var b=r.body||{};
+      if(r.ok&&b.ok===true){
+        clearSecrets();
+        if(b.next==='pay'){
+          if(!o.checkoutUrl){order=null;showPane('form');go(2);showFormErr(msgFor('not_found'));return;}
+          try{sessionStorage.setItem('fh_widget_t0',String(t0));}catch(e){}
+          showPane('paying');
+          location.href=o.checkoutUrl;
+          return;
+        }
+        o.locked=true;
+        showPane('reading');poll(o);
+        return;
+      }
+      showPane('form');go(2);
+      if(b.error==='not_found'||b.error==='order_not_paid'||b.error==='no_account')order=null;
+      if(!showApiErrors(b))showFormErr(msgFor(b.error));
+    });
+  }
+  s2.addEventListener('submit',function(e){
+    e.preventDefault();if(busy)return;
+    hideFormErr();
+    var locked=!!(order&&order.locked);
+    if(!locked&&!checkStep1()){go(1);var f1=s1.querySelector('.err');if(f1)f1.focus();return;}
+    if(!checkStep2()){var f2=s2.querySelector('.err');if(f2)f2.focus();return;}
+    setBusy(true);t0=Date.now();logged=false;
+    var biz=bizPayload(),c=contact(),sig=JSON.stringify([c.email,c.first_name,c.last_name,c.phone,biz]);
+    var start=(order&&(order.locked||order.sig===sig))?Promise.resolve(order):startCheckout(c,biz,sig);
+    start.then(function(o){return o?sendPull(o,biz):null;})
+      .catch(function(){showPane('form');go(2);showFormErr(GENERIC);})
+      .then(function(){setBusy(false);});
+  });
+
+  /* ---- after submit: poll slo-status ---- */
+  var BUREAU_WORD={file_returned:'read',frozen:'frozen',no_file:'no file',error:'error'};
+  function paintBureaus(b){
+    each(root.querySelectorAll('[data-b]'),function(el){
+      var k=el.getAttribute('data-b'),s=b&&b[k],name=el.getAttribute('data-name')||el.textContent;
+      el.setAttribute('data-name',name);
+      el.className=s==='file_returned'?'ok':(s==='frozen'||s==='no_file'||s==='error')?'bad':'';
+      el.textContent=name+(BUREAU_WORD[s]?' · '+BUREAU_WORD[s]:'');
+    });
+  }
+  function poll(o){
+    var token=++pollToken,began=Date.now();
+    paintBureaus(null);
+    function again(){setTimeout(tick,POLL_MS);}
+    function tick(){
+      if(token!==pollToken)return;
+      if(Date.now()-began>POLL_MAX_MS){showPane('slow');return;}
+      call('GET','slo-status?ref='+encodeURIComponent(o.ref)+'&client_id='+encodeURIComponent(o.client_id)).then(function(r){
+        if(token!==pollToken)return;
+        var s=r.body;
+        if(r.status===404||r.status===400){failed(null);return;}
+        if(!r.ok||!s||s.ok!==true){again();return;}
+        paintBureaus(s.bureaus);
+        if(s.state==='done'){route(s);return;}
+        if(s.state==='failed'){failed(s);return;}
+        again();
+      },function(){if(token===pollToken)again();});
+    }
+    tick();
+  }
+  function route(s){
+    if(!logged){logged=true;console.info('fh-widget time-to-bucket '+(Date.now()-(t0||Date.now())));}
+    if(s.bucket==='repair'&&s.repair_offer&&Array.isArray(s.repair_offer.plans)){showRepair(s.repair_offer);return;}
+    /* funding -> the booking page with the amount. No bucket (review) -> the plain booking page. */
+    var url=bookUrl(s.bucket==='funding'?s.pa:null);
+    root.querySelector('[data-go]').href=url;
+    showPane('done');
+    location.href=url;
+  }
+  function failed(s){
+    var frozen=!!(s&&s.bureaus&&['TU','EX','EQ'].some(function(k){return s.bureaus[k]==='frozen';}));
+    root.querySelector('[data-frozen]').hidden=!frozen;
+    each(root.querySelectorAll('[data-talk]'),function(a){a.href=bookUrl(null);});
+    showPane('failed');
+  }
+  root.querySelector('[data-retry]').addEventListener('click',function(){showPane('form');go(2);});
+  root.querySelector('[data-recheck]').addEventListener('click',function(){if(order){showPane('reading');poll(order);}});
+
+  /* ---- the repair offer: only after a pull result on the repair path ---- */
+  var planErr=root.querySelector('[data-planerr]');
+  function showRepair(offer){
+    var box=root.querySelector('[data-plans]');box.innerHTML='';
+    offer.plans.forEach(function(p){
+      if(!p||!p.key)return;
+      var b=document.createElement('button');b.type='button';b.className='cfw-plan';b.setAttribute('data-plan',String(p.key));
+      var n=document.createElement('span');n.textContent=p.name||'';
+      var pr=document.createElement('b');pr.textContent=p.display||(Number.isInteger(p.price_cents)?money(p.price_cents):'');
+      b.appendChild(n);b.appendChild(pr);box.appendChild(b);
+    });
+    each(root.querySelectorAll('[data-talk]'),function(a){a.href=bookUrl(null);});
+    planErr.hidden=true;
+    showPane('repair');
+  }
+  root.querySelector('[data-plans]').addEventListener('click',function(e){
+    var btn=e.target.closest&&e.target.closest('[data-plan]');if(!btn||!order||busy)return;
+    busy=true;planErr.hidden=true;
+    var all=root.querySelectorAll('[data-plan]');each(all,function(x){x.disabled=true;});
+    call('POST','slo-repair-checkout',{ref:order.ref,client_id:order.client_id,plan:btn.getAttribute('data-plan')}).then(function(r){
+      var b=r.body||{};
+      if(r.ok&&b.ok===true&&b.demo===true){showPane('repair-done');return;}
+      if(r.ok&&b.ok===true&&b.checkoutUrl){location.href=String(b.checkoutUrl);return;}
+      planErr.textContent=(b.errors&&b.errors[0]&&b.errors[0].message)||msgFor(b.error);planErr.hidden=false;
+    },function(){planErr.textContent=GENERIC;planErr.hidden=false;})
+      .then(function(){busy=false;each(all,function(x){x.disabled=false;});});
+  });
+
+  /* ---- prices and mode: the server decides, the widget only shows it ---- */
+  call('GET','slo-checkout').then(function(r){
+    var b=r.body;if(!r.ok||!b||b.ok!==true)return;
+    if(Number.isInteger(b.basePriceCents))price.base=b.basePriceCents;
+    if(b.business){
+      if(Number.isInteger(b.business.eachCents))price.each=b.business.eachCents;
+      if(Number.isInteger(b.business.max))price.max=b.business.max;
+    }
+    renumber();
+    if(b.demo===true){demoEl.textContent=(b.notices&&b.notices.charge)||'Demo checkout: your card is not charged.';demoEl.hidden=false;liveNote.hidden=true;}
+    else{demoEl.hidden=true;liveNote.hidden=false;}
+    if(b.checkout&&b.checkout.ready===false){showFormErr(msgFor('checkout_not_configured'));payBtn.disabled=true;}
+  },function(){});
+
+  /* ---- back from the Commas card page: ?ref=&client_id= -> resume polling ---- */
+  var qp=new URLSearchParams(location.search),rRef=qp.get('ref'),rCid=qp.get('client_id');
+  if(rRef&&rCid&&/^slo_[A-Za-z0-9_-]{6,100}$/.test(rRef)&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rCid)){
+    order={ref:rRef,client_id:rCid,demo:false,checkoutUrl:null,sig:null,locked:true};
+    try{t0=Number(sessionStorage.getItem('fh_widget_t0'))||0;sessionStorage.removeItem('fh_widget_t0');}catch(e){}
+    if(!t0)t0=Date.now();
+    showPane('reading');
+    setTimeout(function(){root.scrollIntoView({behavior:'smooth',block:'start'});},300);
+    poll(order);
+  }
 })();
 </script>
 <!-- SLOT-UTM: paste clickfunnels-fragments/06-utm-hidden-fields.html here as its own element. No visible output. -->
@@ -1379,19 +2059,22 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 <script>
 (function(){
   /* sticky mobile CTA: show after 600px, hide once the checkout is on screen */
-  var t=document.getElementById('fh-sticky'),o=document.getElementById('fh-order');
+  var t=document.getElementById('fh-sticky'),o=document.getElementById('fh-order'),w=document.getElementById('fh-cf-form');
+  function seen(el){if(!el)return false;var r=el.getBoundingClientRect();return r.top<window.innerHeight&&r.bottom>0;}
   function f(){
-    var atForm=false;
-    if(o){var r=o.getBoundingClientRect();atForm=r.top<window.innerHeight&&r.bottom>0;}
+    var atForm=seen(o)||seen(w);
     if(window.innerWidth<=760&&window.scrollY>600&&!atForm){t.classList.add('on')}else{t.classList.remove('on')}
   }
   if(t){window.addEventListener('scroll',f,{passive:true});window.addEventListener('resize',f);f();}
-  /* every CTA scrolls to the checkout */
+  /* every CTA scrolls to the checkout widget and centers it (top of it when it is taller than the screen) */
   document.addEventListener('click',function(e){
     var a=e.target.closest&&e.target.closest('a[href="#fh-order"]');
-    if(!a||!o)return;
+    var dest=w||o;
+    if(!a||!dest)return;
     e.preventDefault();
-    o.scrollIntoView({behavior:'smooth',block:'start'});
+    var r=dest.getBoundingClientRect(),vh=window.innerHeight;
+    var y=window.pageYOffset+r.top-(r.height<vh?(vh-r.height)/2:16);
+    window.scrollTo({top:Math.max(0,y),behavior:'smooth'});
   });
 })();
 </script>
