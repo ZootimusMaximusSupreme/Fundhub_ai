@@ -26,7 +26,7 @@ export function metaPixelId(env = process.env) {
 export function metaPixelHeadHtml(pixelId) {
   const id = String(pixelId).replace(/[^\d]/g, "");
   if (!id) return "";
-  return `<!-- Meta Pixel (FundHub) -->
+  return `<!-- Meta Pixel (Fundhub) -->
 <script>
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -91,7 +91,7 @@ export function wrapCustomHtmlDocument({
   return `<!doctype html>
 <html lang="en">
 <head>
-<title>FundHub</title>
+<title>Fundhub</title>
 ${headBits.join("\n")}
 </head>
 <body>
