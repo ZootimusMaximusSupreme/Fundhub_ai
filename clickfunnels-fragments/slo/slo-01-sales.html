@@ -2151,13 +2151,20 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-b .cardw{max-width:660px;margin:26px auto 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;box-shadow:0 1px 3px rgba(10,10,10,.05);text-align:left}
 .fh-b .cardw p{margin-top:12px;font-size:15.5px;color:var(--gray);line-height:1.66}
 .fh-b .cardw p b{color:var(--ink);font-weight:600}
-.fh-b .proofgrid{max-width:660px;margin:30px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.fh-b .proofgrid{max-width:900px;margin:30px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .fh-b .vslot{aspect-ratio:9/16;max-height:300px;border-radius:12px;background:#111113;border:1px solid #26262B;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px}
 .fh-b .vslot span{color:#8A8A93;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;line-height:1.5}
 .fh-b .foot-support{margin:10px auto 4px;text-align:center;font-size:12.5px;color:var(--gray)}
 .fh-b .foot-support a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .fh-b .proofgrid{width:calc(100% - 48px);align-items:start}
 .fh-b .proofgrid>*{min-width:0}
+/* The .fh-b .vslot rule above is shared verbatim with the /watch proof block
+   (src/ads/funnel-proof-scripts.test.mjs pins the two bodies equal), so its
+   max-height:300px is lifted here instead of edited there. Without this the
+   card is clamped to 300px tall and 9/16 shrinks its width to 168.8px inside a
+   much wider column — that gap on both sides is the empty space the owner saw
+   (2026-09-22). max-height:none lets each card fill its column at true 9:16. */
+.fh-b .proofgrid .vslot{max-height:none}
 .fh-b .btn{display:block;width:100%;max-width:420px;margin:30px auto 0;background:#188bf6;color:#fff;font-family:var(--sans);font-size:17px;font-weight:600;padding:18px 26px;border:0;border-radius:9px;cursor:pointer;transition:background .15s;box-shadow:0 5px 18px rgba(24,139,246,.28);text-align:center;text-decoration:none}
 .fh-b .btn:hover{background:#0b78dd}
 .fh-b .marq{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:12px 0;margin-top:44px}
