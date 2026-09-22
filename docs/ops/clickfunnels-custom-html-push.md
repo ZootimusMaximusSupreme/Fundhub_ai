@@ -55,6 +55,17 @@ Meta pixel ground truth (if env empty): `docs/workflows/archive/ads-revenue-mode
 
 Full custom HTML **replaces the step**. Native booking calendar **does not** survive. Never full-replace `/funding-book-call`.
 
+The $297 booking page (`/roadmap-book`) shows this same calendar in a frame. Its frame-only look lives in
+`clickfunnels-fragments/04c-book-framed.html`, pushed as one marked block into the calendar page's
+`head_code` (manifest key `apply-book-framed`, strategy `code_block_upsert`: reads the live head code with
+`expand[]=head_code`, snapshots it, appends the block or swaps only that block, then re-reads to verify). It
+does nothing when the page is not in a frame, so `/funding-book-call` itself looks the same.
+
+```bash
+node scripts/cf-push-custom-html.mjs push --dry-run --only=apply-book-framed
+node scripts/cf-push-custom-html.mjs push --only=apply-book-framed
+```
+
 ## Skills / rules
 
 - Cursor: `.cursor/skills/fundhub-clickfunnels-html-push/SKILL.md`
