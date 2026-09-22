@@ -8,12 +8,15 @@
  * What it does:
  *   1. The booking check (T14-01, moved here from the fragment). "Your Call Is
  *      Booked." shows only when fh_booking_v1 describes a real, fresh, upcoming
- *      booking. Everyone else sees "We've Got Your Application." and a
- *      "Pick your call time" button to /funding-book-call. The call steps, the
- *      prep list and the calendar buttons show only to people who booked.
+ *      booking and the visitor came straight from /funding-book-call. Everyone
+ *      else, including homepage-survey DOWNSELL and MANUAL_REVIEW leads, sees
+ *      "We've Got Your Application.", "One step left: pick a time for your call."
+ *      and a "Pick your call time" button to /funding-book-call. The call steps,
+ *      the prep list and the calendar buttons show only to people who booked.
  *   2. "What the call decides" after the hero: one call, three roads.
- *   3. Step 03 reads "You leave knowing your road".
+ *   3. Step 03 reads "You get one of three roads".
  *   4. "Real approvals, real texts" before the FAQ: three approvals, three texts.
+ *      Any screenshot opens full size on tap or click.
  * The FAQ, the calendar, the prep list, the $32 wording and the speed wording are
  * not touched. No links off the page.
  *
@@ -35,12 +38,18 @@
   /* ══ BOOKING CHECK START — sliced out and tested by src/ads/funnel-proof-scripts.test.mjs.
         Do not rename fhIsBooked and do not move these markers. ══ */
   /* Presence of the key is NOT proof of a booking. It must describe a real,
-     recent, still-upcoming appointment before this page may claim one exists.
-     The live /funding-book-call page still runs the older writer, which stamps
-     capturedAt only; the repo writer (04a-book-top.html) adds submittedAt. Either
-     stamp counts, and both must be under six hours old. A record with no name or
-     email is someone who clicked a time slot and never filled the form. */
-  function fhIsBooked(d, now) {
+     recent, still-upcoming appointment, and the visitor must have come here
+     straight from the booking page.
+     Why the hop matters: the live /funding-book-call page saves the record every
+     time the slot, name or email changes, before anyone presses Book. Fill the form,
+     press Back, and the record looks like a booking. A real booking is different:
+     ClickFunnels sends the booker on with window.location from /funding-book-call,
+     so that page is the referrer. A Back press keeps /thank-you's first referrer.
+     The live page stamps capturedAt only; the repo writer (04a-book-top.html) adds
+     submittedAt. Either stamp counts, and it must be under six hours old. A record
+     with no name or email is someone who clicked a time slot and never filled the form. */
+  function fhIsBooked(d, now, ref) {
+    if (!/^https?:\/\/[^/]+\/funding-book-call(?:[/?#]|$)/.test(String(ref || ""))) return false;
     if (!d || typeof d !== "object") return false;
     if (!d.start || !d.end) return false;
     if (!d.name || !d.email) return false;
@@ -73,9 +82,9 @@
   /* The same three client texts as /watch. Words copied exactly off each crop,
      typo included. Lines are the separate message bubbles. */
   var TEXTS = [
-    { id: "s34-q1", lines: ["We got approved for 25,000 \uD83D\uDE4F\uD83C\uDFFE"], amount: "25,000",
+    { id: "s34-q1", lines: ["We got approved for 25,000 \uD83D\uDE4F\uD83C\uDFFE"], amount: "",
       src: "https://fundhub.ai/funnel/proof/s34-q1.jpg", w: 1200, h: 190,
-      source: "Real client text. Source: Canva Client Wins deck, slide 34 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg. The client wrote the 25,000." },
+      source: "Real client text. Source: Canva Client Wins deck, slide 34 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg. The client wrote the 25,000; it shows in the quote and the screenshot, so the amount headline is off." },
     { id: "s21-b", lines: ["APPROVED!!!", "I was on such a cold streak and I finally got an approval", "No hard pull it all!!!"], amount: "",
       src: "https://fundhub.ai/funnel/proof/s21-b.jpg", w: 1200, h: 567,
       source: "Real client text. Source: Canva Client Wins deck, slide 21 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s21-b.jpg. Three bubbles, words exact." },
@@ -366,6 +375,10 @@
     "#fh-ty-proof .fh-card>.fh-shot{padding:4px}",
     "#fh-ty-proof .fh-card>.fh-quote{font-size:14px;line-height:1.4}",
     "#fh-ty-proof .fh-card>.fh-mark{--fh-mark-h:12px}",
+    ".fhz{position:fixed;inset:0;z-index:2147483000;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:64px 16px 24px;background:rgba(12,12,13,.88);cursor:zoom-out}",
+    ".fhz img{display:block;width:auto;height:auto;max-width:min(100%,900px);max-height:100%;object-fit:contain;background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.45)}",
+    ".fhz button{position:absolute;top:12px;right:12px;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;background:#fff;color:#0C0C0D;font:600 26px/44px system-ui,-apple-system,sans-serif;text-align:center;cursor:pointer}",
+    "#fh-ty-proof img[data-slot=\"approval-screenshot\"]{cursor:zoom-in}",
     "@media(min-width:700px){",
     /* Desktop: approvals on one row, texts on the next. */
     "#fh-ty-proof .fhy-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;overflow:visible;margin:16px 0 0;padding:0}",
@@ -374,6 +387,56 @@
     "#fh-ty-proof .fhy-row>.fh-card[data-layout=\"quote-win\"]{order:2}",
     "}"
   ].join("\n");
+
+  /* Tap or click a screenshot to see it full size. At 1280 wide the six approvals
+     are about 100px each, too small to read in the row. */
+  var SHOT = 'img[data-slot="approval-screenshot"]';
+  function zoomable(scope) {
+    var shots = scope.querySelectorAll(SHOT);
+    for (var i = 0; i < shots.length; i++) {
+      shots[i].setAttribute("tabindex", "0");
+      shots[i].setAttribute("role", "button");
+      shots[i].setAttribute("aria-label", "See full size: " + shots[i].alt);
+    }
+    scope.addEventListener("click", function (e) {
+      var img = e.target && e.target.closest ? e.target.closest(SHOT) : null;
+      if (img) openZoom(img);
+    });
+    scope.addEventListener("keydown", function (e) {
+      var t = e.target;
+      if ((e.key === "Enter" || e.key === " ") && t && t.matches && t.matches(SHOT)) {
+        e.preventDefault();
+        openZoom(t);
+      }
+    });
+  }
+  function openZoom(img) {
+    if (document.querySelector(".fhz")) return;
+    var ov = document.createElement("div");
+    ov.className = "fhz";
+    ov.setAttribute("role", "dialog");
+    ov.setAttribute("aria-modal", "true");
+    ov.setAttribute("aria-label", img.alt);
+    var big = document.createElement("img");
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var x = document.createElement("button");
+    x.type = "button";
+    x.setAttribute("aria-label", "Close");
+    x.textContent = "\u00D7";
+    ov.appendChild(big);
+    ov.appendChild(x);
+    function onKey(e) { if (e.key === "Escape") close(); }
+    function close() {
+      document.removeEventListener("keydown", onKey, true);
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      try { img.focus({ preventScroll: true }); } catch (e) {}
+    }
+    ov.addEventListener("click", close);
+    document.addEventListener("keydown", onKey, true);
+    document.body.appendChild(ov);
+    try { x.focus({ preventScroll: true }); } catch (e) {}
+  }
 
   function addStyles() {
     if (document.getElementById("fh-ty-sort-css")) return;
@@ -404,7 +467,7 @@
     var prep = root.querySelector("section.prep");
     var cal = document.getElementById("fh-cal-cta") || root.querySelector(".cal-cta");
     var faq = root.querySelector("section.faq");
-    var booked = fhIsBooked(readBooking(), Date.now());
+    var booked = fhIsBooked(readBooking(), Date.now(), document.referrer);
 
     /* 1. Booking check (T14-01). */
     if (booked) {
@@ -420,7 +483,7 @@
       setText(hero.querySelector(".eyebrow"), "Received · Funding Path");
       setText(hero.querySelector("h1.sec"), "We've Got Your Application.");
       setText(hero.querySelector(".lede"), "Here's what happens next.");
-      setText(prose && prose.querySelector("p:not(.lead)"), "Check your email — we'll be in touch with your next step.");
+      setText(prose && prose.querySelector("p:not(.lead)"), "One step left: pick a time for your call.");
       show(expect, false);
       show(prep, false);
       show(cal, false);
@@ -445,7 +508,7 @@
     if (expect) {
       var titles = expect.querySelectorAll(".step .t");
       for (var i = 0; i < titles.length; i++) {
-        if (/exact funding number/i.test(titles[i].textContent)) titles[i].textContent = "You leave knowing your road";
+        if (/exact funding number/i.test(titles[i].textContent)) titles[i].textContent = "You get one of three roads";
       }
     }
 
@@ -460,6 +523,7 @@
     );
     if (faq && faq.parentNode) faq.parentNode.insertBefore(proof, faq);
     else after(decides, proof);
+    zoomable(proof);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);

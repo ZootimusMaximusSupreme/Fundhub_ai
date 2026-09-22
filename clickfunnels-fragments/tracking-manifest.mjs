@@ -73,6 +73,15 @@ export function trackingFooterScripts({
     .join("\n");
 }
 
+/**
+ * True when `html` is a rendered ClickFunnels page. The builder-page push reads the
+ * public page to learn which footer scripts are already there; a bot wall or an
+ * error page would read as "none" and every tag would be appended again.
+ */
+export function isClickFunnelsPageHtml(html) {
+  return typeof html === "string" && html.includes("data-page-element=");
+}
+
 /** Direct ROAS hub script (override with DIRECT_ROAS_HUB_URL in env). */
 export function directRoasScriptSrc(env = process.env) {
   const fromEnv = String(env.DIRECT_ROAS_HUB_URL ?? "").trim();

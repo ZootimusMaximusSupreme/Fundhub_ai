@@ -20,7 +20,7 @@
  *
  * Phones: each set is one sideways swipe row, so the page grows by less than one
  * screen. Desktop: the six approvals sit in one row, the texts beside the closing
- * button.
+ * button. Any screenshot opens full size on tap or click.
  */
 (function () {
   "use strict";
@@ -48,11 +48,12 @@
   ];
 
   /* Client texts. Words copied exactly off each crop, typo included. Lines are the
-     separate message bubbles. amount is set only where the client wrote the number. */
+     separate message bubbles. amount stays off: a number the client wrote is already
+     in the quote and the screenshot, and a third copy is noise. */
   var TEXTS = [
-    { id: "s34-q1", lines: ["We got approved for 25,000 \uD83D\uDE4F\uD83C\uDFFE"], amount: "25,000",
+    { id: "s34-q1", lines: ["We got approved for 25,000 \uD83D\uDE4F\uD83C\uDFFE"], amount: "",
       src: "https://fundhub.ai/funnel/proof/s34-q1.jpg", w: 1200, h: 190,
-      source: "Real client text. Source: Canva Client Wins deck, slide 34 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg. The client wrote the 25,000." },
+      source: "Real client text. Source: Canva Client Wins deck, slide 34 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg. The client wrote the 25,000; it shows in the quote and the screenshot, so the amount headline is off." },
     { id: "s21-b", lines: ["APPROVED!!!", "I was on such a cold streak and I finally got an approval", "No hard pull it all!!!"], amount: "",
       src: "https://fundhub.ai/funnel/proof/s21-b.jpg", w: 1200, h: 567,
       source: "Real client text. Source: Canva Client Wins deck, slide 21 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s21-b.jpg. Three bubbles, words exact." },
@@ -344,6 +345,10 @@
     "#fh-watch-proof .fh-card>.fh-mark{--fh-mark-h:12px}",
     "#fh-watch-proof .fhx-roads p{margin:6px auto 0;font-size:14.5px;line-height:1.5;color:#52525B}",
     "#fh-watch-proof .fhx-roads .btn{margin-top:14px}",
+    ".fhz{position:fixed;inset:0;z-index:2147483000;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:64px 16px 24px;background:rgba(12,12,13,.88);cursor:zoom-out}",
+    ".fhz img{display:block;width:auto;height:auto;max-width:min(100%,900px);max-height:100%;object-fit:contain;background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.45)}",
+    ".fhz button{position:absolute;top:12px;right:12px;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;background:#fff;color:#0C0C0D;font:600 26px/44px system-ui,-apple-system,sans-serif;text-align:center;cursor:pointer}",
+    "#fh-watch-proof img[data-slot=\"approval-screenshot\"]{cursor:zoom-in}",
     "@media(min-width:700px){",
     "#fh-watch-proof{margin-top:36px}",
     "#fh-watch-proof .fhx-sec+.fhx-sec,#fh-watch-proof .fhx-pair{margin-top:28px}",
@@ -362,6 +367,56 @@
     "#fh-watch-proof .fhx-roads p{margin-left:0}",
     "}"
   ].join("\n");
+
+  /* Tap or click a screenshot to see it full size. At 1280 wide the six approvals
+     are about 100px each, too small to read in the row. */
+  var SHOT = 'img[data-slot="approval-screenshot"]';
+  function zoomable(scope) {
+    var shots = scope.querySelectorAll(SHOT);
+    for (var i = 0; i < shots.length; i++) {
+      shots[i].setAttribute("tabindex", "0");
+      shots[i].setAttribute("role", "button");
+      shots[i].setAttribute("aria-label", "See full size: " + shots[i].alt);
+    }
+    scope.addEventListener("click", function (e) {
+      var img = e.target && e.target.closest ? e.target.closest(SHOT) : null;
+      if (img) openZoom(img);
+    });
+    scope.addEventListener("keydown", function (e) {
+      var t = e.target;
+      if ((e.key === "Enter" || e.key === " ") && t && t.matches && t.matches(SHOT)) {
+        e.preventDefault();
+        openZoom(t);
+      }
+    });
+  }
+  function openZoom(img) {
+    if (document.querySelector(".fhz")) return;
+    var ov = document.createElement("div");
+    ov.className = "fhz";
+    ov.setAttribute("role", "dialog");
+    ov.setAttribute("aria-modal", "true");
+    ov.setAttribute("aria-label", img.alt);
+    var big = document.createElement("img");
+    big.src = img.currentSrc || img.src;
+    big.alt = img.alt;
+    var x = document.createElement("button");
+    x.type = "button";
+    x.setAttribute("aria-label", "Close");
+    x.textContent = "\u00D7";
+    ov.appendChild(big);
+    ov.appendChild(x);
+    function onKey(e) { if (e.key === "Escape") close(); }
+    function close() {
+      document.removeEventListener("keydown", onKey, true);
+      if (ov.parentNode) ov.parentNode.removeChild(ov);
+      try { img.focus({ preventScroll: true }); } catch (e) {}
+    }
+    ov.addEventListener("click", close);
+    document.addEventListener("keydown", onKey, true);
+    document.body.appendChild(ov);
+    try { x.focus({ preventScroll: true }); } catch (e) {}
+  }
 
   function addStyles() {
     if (document.getElementById("fh-watch-proof-css")) return;
@@ -402,7 +457,9 @@
     var anchor = root.querySelector(".cta-note") || root.querySelector('a.btn[href="/apply"]');
     if (!anchor || !anchor.parentNode) return;
     addStyles();
-    anchor.parentNode.insertBefore(build(), anchor.nextSibling);
+    var sec = build();
+    anchor.parentNode.insertBefore(sec, anchor.nextSibling);
+    zoomable(sec);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);

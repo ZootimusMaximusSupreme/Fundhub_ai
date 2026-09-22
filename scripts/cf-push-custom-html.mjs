@@ -23,6 +23,7 @@ import {
   DO_NOT_FULL_REPLACE_PATHS,
   PUSH_MANIFEST,
   trackingFooterScripts,
+  isClickFunnelsPageHtml,
 } from "../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -222,7 +223,11 @@ async function listPages(creds, workspaceId, ctx) {
   return pages;
 }
 
-/** The public page as a visitor gets it (no auth). Empty string when it cannot be read. */
+/**
+ * The public page as a visitor gets it (no auth). Empty string when it cannot be
+ * read, or when what came back is not a ClickFunnels page (a bot wall or error page
+ * would otherwise read as "no scripts on the page" and every tag would be appended again).
+ */
 async function fetchLiveHtml(url, ctx = {}) {
   if (!url) return "";
   const doFetch = ctx.fetch || globalThis.fetch;
@@ -230,7 +235,9 @@ async function fetchLiveHtml(url, ctx = {}) {
     const res = await doFetch(url, {
       headers: { "user-agent": "Fundhub-CF-Push/1.0 (+https://fundhub.ai)" },
     });
-    return res.ok ? await res.text() : "";
+    if (!res.ok) return "";
+    const html = await res.text();
+    return isClickFunnelsPageHtml(html) ? html : "";
   } catch {
     return "";
   }
@@ -473,6 +480,24 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       // cannot see what the footer already loads. That blind spot is how
       // vsl-watch-beacon.js ended up on /watch three times. Read the public page too.
       const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);
+      if (!liveHtml) {
+        // Footer code cannot be read back or removed through the API, so a blind
+        // append would stack every tag again for good. Stop instead, dry run or not.
+        results.push({
+          key: row.key,
+          page_id: page.id,
+          path: row.path,
+          liveUrl: row.liveUrl,
+          mode: "builder_page_tracking_inject_only",
+          ok: false,
+          skipped: true,
+          reason: "live_page_unreadable",
+          note: "Could not read the public page, so the scripts already on it are unknown. Nothing appended.",
+          live_html_read: false,
+        });
+        process.exitCode = 1;
+        continue;
+      }
       const existing = `${liveHead}\n${liveFoot}\n${liveHtml}`;
       const head = "";
       const foot = trackingFooterScripts({

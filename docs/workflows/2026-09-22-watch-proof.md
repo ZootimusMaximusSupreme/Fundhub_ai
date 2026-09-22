@@ -9,6 +9,8 @@ long; line the thank-you page up with the Sorting Hat offer. No questions, ship 
 | Unit | Owner | Status |
 |---|---|---|
 | Build `public/funnel/watch-proof.js` + `thankyou-sort.js`, crops, manifest, push-script dedupe, tests | this session (branch `feat/watch-proof`) | done |
+| Independent review | reviewer | done: FAIL on 1 blocker (blind append when the live page cannot be read) + 6 low items |
+| Fix all 7 review items on `feat/watch-proof` | fix session | done (see "Review fixes") |
 | Merge `feat/watch-proof` to main, `npm run ship` | shipping step | pending |
 | `node scripts/cf-push-custom-html.mjs push --only=apply-watch` then `--only=apply-thank-you` | shipping step, after ship | pending |
 | Live proof with `NOINJECT=1 node docs/workflows/watch-proof-2026-09-22-evidence/_walk.mjs …` | shipping step, after push | pending |
@@ -75,6 +77,35 @@ Marked shots (kept on this Mac; evidence folders are gitignored by repo policy):
 - The booking check accepts `capturedAt` as well as `submittedAt`, because the live
   /funding-book-call page still runs the older writer. With `submittedAt` only, every
   real booker would have been told to pick a call time.
+
+## Review fixes (2026-09-22, after the FAIL)
+
+1. **Blocker, fixed.** `scripts/cf-push-custom-html.mjs`: the builder-page push now
+   stops before any append when the public page cannot be read, or when what comes
+   back is not a ClickFunnels page (`isClickFunnelsPageHtml` in
+   `tracking-manifest.mjs`: a bot wall or error page used to read as "no scripts").
+   Result `live_page_unreadable`, exit code 1, dry run and real run alike.
+2. **Decision recorded.** Homepage-survey DOWNSELL and MANUAL_REVIEW leads still land
+   on /thank-you and now get "Pick your call time". Kept on purpose: the Sorting Hat
+   call sorts every lead (fund now, fix first, do it yourself), /watch says "Nobody
+   gets turned away", and the page's own FAQ already says "Still take the call."
+   Survey routing is unchanged. Written into `docs/journeys/sorting-hat-pages-flow.md`.
+3. **Fixed.** "Your Call Is Booked." now also needs the visitor to arrive straight from
+   /funding-book-call (`document.referrer`). ClickFunnels moves a real booker on with
+   `window.location` from that page; fill-the-form-then-Back keeps the first referrer,
+   so it shows "Pick your call time". Cost: a booker who returns later from another
+   link sees the button too (their email holds the time).
+4. **Fixed.** No-booking copy is "One step left: pick a time for your call." above the
+   button (was "we'll be in touch with your next step").
+5. **Fixed.** Step 03 title is "You get one of three roads" (script + fragment); the
+   text under it still reads "You leave knowing exactly what you qualify for…".
+6. **Fixed.** s34-q1 card: amount headline off (the 25,000 is in the quote and on the
+   screenshot). Every screenshot on both pages opens full size on tap, click, Enter
+   or Space; a click or Escape closes it.
+7. **Noted, not changed.** Phone /watch grows about 800px, not the planned ~520. Still
+   under the 1992px ceiling; nothing above the first Get Started moves.
+
+Tests: `src/ads/funnel-proof-scripts.test.mjs` 24/24 (was 18). Lint clean.
 
 ## Left undone
 
