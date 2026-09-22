@@ -85,6 +85,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "hiring-bench-sweeper",
   "hiring-outreach-cadence",
   "inquiry-call-sweeper",
+  "ad-video-sweeper",
   "meet-transcript-sweeper",
   "message-dispatch-sweeper",
   "meta-campaign-sync-sweeper",

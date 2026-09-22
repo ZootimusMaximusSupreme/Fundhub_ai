@@ -117,8 +117,15 @@ import { isSyntheticRow } from "./synthetic.mjs";
    Moved 76 -> 77 on 2026-09-18 with the next-step catch-up (hole 12), a cron
    with no event trigger like every sweeper here. The pin was ALREADY one
    behind before this move (src/workflows/index.mjs served 77 against a pin of
-   76), so this still reads one short; that older gap is not this change's. */
-const REGISTERED = 78;
+   76), so this still reads one short; that older gap is not this change's.
+
+   Moved 78 -> 79 on 2026-09-22 with the ad video sweeper — the clock that looks
+   in the Raw Drive folder for a take Chris just filmed and walks it through
+   Submagic to his phone for approval. It is a cron with no event trigger, so
+   like every sweeper here it will always appear in neverFired, which is the
+   correct outcome for a scheduled job rather than a coverage hole. It is
+   exercised directly by src/workflows/ad-video-sweeper.test.mjs. */
+const REGISTERED = 79;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

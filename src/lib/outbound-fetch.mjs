@@ -62,6 +62,48 @@ const KNOWN_FENCES = new Set([...FENCED, INTERNAL]);
 
 export const DEFAULT_TIMEOUT_MS = 10_000;
 
+/* ─────────────────────────────────────────────────────────────────────────
+   THE BINARY PATH. Added 2026-09-22 for the ad-video pipeline.
+
+   transmit() reads every response with res.text(). That is right for JSON and
+   fatal for an MP4: the bytes are decoded as UTF-8 and come back mangled. So
+   for a long time this repo could not move a video at all, in either
+   direction, and the ad-video pipeline said so out loud rather than opening a
+   socket of its own.
+
+   transmitBinary() is that missing half, and it is INSIDE the fence on
+   purpose. The alternative — one raw fetch in one provider "just for video" —
+   is precisely the hole src/lib/no-unfenced-transmit.test.mjs exists to close.
+   A caller still names a fence, the dry-run flags still hold it, and the
+   structural test still passes because nothing new reaches the network outside
+   this file.
+
+   THREE THINGS IT DOES THAT transmit() DOES NOT:
+
+     1. A SIZE CAP, enforced while reading. A 4K take is hundreds of megabytes
+        and a serverless function has about a gigabyte of memory for
+        everything. The cap is checked against content-length BEFORE the body
+        is pulled, and again chunk by chunk as it arrives, so a vendor that
+        lies about the length still cannot fill the heap — the read stops and
+        the request is aborted.
+     2. A LONGER DEFAULT TIMEOUT. Ten seconds is right for a JSON call and
+        wrong for 200 MB; two minutes is the default here and it is still a
+        real ceiling, not "forever".
+     3. BYTES BACK, NOT TEXT. `bytes` is a Uint8Array and it is never logged,
+        never stored, and never put in an error message.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/** Two minutes. Long enough for a few hundred megabytes, short enough to be a
+    ceiling a stuck socket actually hits. */
+export const DEFAULT_BINARY_TIMEOUT_MS = 120_000;
+
+/** How much a binary call will hold in memory unless the caller raises it. */
+export const DEFAULT_MAX_BINARY_BYTES = 512 * 1024 * 1024;
+
+/** The ceiling on that ceiling. A caller cannot ask for more than this, whatever
+    it passes, because past here the process is the thing that breaks. */
+export const HARD_MAX_BINARY_BYTES = 2 * 1024 * 1024 * 1024;
+
 /** How much of an error is kept. It lands in messages.last_error, which
     operators read and paste into support threads, so it is bounded. */
 export const MAX_ERROR_CHARS = 300;
@@ -157,15 +199,11 @@ function readHeaders(res) {
  *          `transmitted:false` means no request was handed to fetch — proven by
  *          control flow, not guessed from the status. See the note above held().
  */
-export async function transmit(url, init = {}, {
-  fence,
-  what,
-  env,
-  fetchImpl,
-  timeoutMs = DEFAULT_TIMEOUT_MS,
-  signal,
-  asText = false
-} = {}) {
+/* fenceHold — the two questions asked before ANY request, binary or not.
+   Returns a held() shape when the answer is no, and null when the caller may
+   proceed. One function so the binary path cannot drift into asking a weaker
+   question than the JSON path asks. */
+function fenceHold(fence, { what, env, url } = {}) {
   if (!KNOWN_FENCES.has(fence)) {
     /* Not a configuration problem — a programming one. Loud, because the fix is
        to name a fence and the alternative is a silent unguarded send. */
@@ -184,6 +222,20 @@ export async function transmit(url, init = {}, {
       return held(`${verdict.reason}${what ? ` (${what})` : ""}`, fence);
     }
   }
+  return null;
+}
+
+export async function transmit(url, init = {}, {
+  fence,
+  what,
+  env,
+  fetchImpl,
+  timeoutMs = DEFAULT_TIMEOUT_MS,
+  signal,
+  asText = false
+} = {}) {
+  const hold = fenceHold(fence, { what, env, url });
+  if (hold) return hold;
 
   const doFetch = fetchImpl || globalThis.fetch;
   if (typeof doFetch !== "function") {
@@ -238,6 +290,209 @@ export async function transmit(url, init = {}, {
     clearTimeout(timer);
     if (signal) signal.removeEventListener("abort", onOuterAbort);
   }
+}
+
+/* readCapped — pull the body, stopping the moment it is too big.
+
+   Chunk by chunk rather than res.arrayBuffer(), because arrayBuffer() buffers
+   the WHOLE thing before anyone can object: a vendor that answers a 5 GB file
+   to a request for a 200 MB one would take the process down before the cap was
+   ever consulted. Here the cap bites on the chunk that crosses it, the reader
+   is cancelled, and nothing further is pulled.
+
+   A stand-in Response in a test may have no .body stream; arrayBuffer() is the
+   fallback and its size is checked the moment it lands. */
+async function readCapped(res, cap) {
+  const body = res?.body;
+  if (!body || typeof body.getReader !== "function") {
+    const buf = await res.arrayBuffer();
+    const u8 = new Uint8Array(buf);
+    return u8.byteLength > cap
+      ? { over: true, bytes: null, byteLength: u8.byteLength }
+      : { over: false, bytes: u8, byteLength: u8.byteLength };
+  }
+
+  const reader = body.getReader();
+  const chunks = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = value instanceof Uint8Array ? value : new Uint8Array(value);
+    total += chunk.byteLength;
+    if (total > cap) {
+      try { await reader.cancel(); } catch { /* already gone */ }
+      return { over: true, bytes: null, byteLength: total };
+    }
+    chunks.push(chunk);
+  }
+
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) { out.set(c, at); at += c.byteLength; }
+  return { over: false, bytes: out, byteLength: total };
+}
+
+/** The shape a binary call returns when nothing came back. Same fields as a
+    good one, so a caller that forgets to check `ok` reads a clean empty rather
+    than an undefined. */
+function noBytes(base) {
+  return { ...base, bytes: null, byteLength: 0, contentType: null };
+}
+
+/**
+ * Fetch BYTES through the fence. Never throws.
+ *
+ * @param {string} url
+ * @param {object} [init]                 method/headers/body, as fetch takes them.
+ * @param {object} opts
+ * @param {"messaging"|"adapters"|"internal"} opts.fence  Required, same as transmit().
+ * @param {number} [opts.maxBytes]        Refuses anything larger. See the cap notes above.
+ * @param {number} [opts.timeoutMs]
+ * @returns {Promise<{ok:boolean, blocked:boolean, transmitted:boolean, status:number,
+ *                    bytes:Uint8Array|null, byteLength:number, contentType:string|null,
+ *                    headers:Record<string,string>, error:string|null, fence:string|null}>}
+ */
+export async function transmitBinary(url, init = {}, {
+  fence,
+  what,
+  env,
+  fetchImpl,
+  timeoutMs = DEFAULT_BINARY_TIMEOUT_MS,
+  maxBytes = DEFAULT_MAX_BINARY_BYTES,
+  signal
+} = {}) {
+  const hold = fenceHold(fence, { what, env, url });
+  if (hold) return noBytes(hold);
+
+  const cap = Math.min(Math.max(Number(maxBytes) || 0, 0), HARD_MAX_BINARY_BYTES);
+  if (cap <= 0) {
+    return noBytes({
+      ok: false, blocked: false, transmitted: false, status: 0, body: null, headers: {},
+      error: `binary transfer refused: maxBytes must be a positive number of bytes`, fence
+    });
+  }
+
+  const doFetch = fetchImpl || globalThis.fetch;
+  if (typeof doFetch !== "function") {
+    return noBytes({ ok: false, blocked: false, transmitted: false, status: 0, body: null, headers: {},
+      error: "no fetch implementation available", fence });
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const onOuterAbort = () => controller.abort();
+  if (signal) signal.addEventListener("abort", onOuterAbort, { once: true });
+
+  try {
+    const res = await doFetch(url, { ...init, signal: controller.signal });
+    const headers = readHeaders(res);
+    const contentType = headers["content-type"] || null;
+
+    /* THE CHEAP CHECK FIRST. content-length is a claim, not proof, but when it
+       is present and over the cap there is no reason to pull a single byte. */
+    const declared = Number(headers["content-length"]);
+    if (Number.isFinite(declared) && declared > cap) {
+      controller.abort();
+      return noBytes({
+        ok: false, blocked: false, transmitted: true, status: res.status, body: null, headers,
+        error: `${what || url} is ${declared} bytes, over the ${cap}-byte cap for this transfer`,
+        fence
+      });
+    }
+
+    if (!res.ok) {
+      /* An error body is small and is text. Read it for the reason, redact it,
+         and never let it near the bytes path. */
+      const text = await res.text().catch(() => "");
+      return noBytes({
+        ok: false, blocked: false, transmitted: true, status: res.status, body: null, headers,
+        error: redact(text || `HTTP ${res.status}`), fence
+      });
+    }
+
+    const read = await readCapped(res, cap);
+    if (read.over) {
+      return noBytes({
+        ok: false, blocked: false, transmitted: true, status: res.status, body: null, headers,
+        error: `${what || url} sent more than the ${cap}-byte cap for this transfer ` +
+               `(stopped after ${read.byteLength} bytes)`,
+        fence
+      });
+    }
+
+    return {
+      ok: true, blocked: false, transmitted: true, status: res.status,
+      bytes: read.bytes, byteLength: read.byteLength, contentType,
+      body: null, headers, error: null, fence
+    };
+  } catch (err) {
+    const aborted = err && (err.name === "AbortError" || err.name === "TimeoutError");
+    return noBytes({
+      ok: false, blocked: false,
+      // Same reasoning as transmit(): the call was made, so this stays true.
+      transmitted: true, status: 0, body: null, headers: {},
+      error: redact(aborted ? `timed out after ${timeoutMs}ms` : String((err && err.message) || err)),
+      fence
+    });
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener("abort", onOuterAbort);
+  }
+}
+
+/* sizeOf — how many bytes a body is, when that is knowable.
+
+   FormData cannot be measured without walking it, so it answers null and the
+   caller is expected to pass `byteLength` for the part that matters. A null is
+   "unknown", never "zero". */
+function sizeOf(body) {
+  if (body == null) return 0;
+  if (typeof body === "string") return Buffer.byteLength(body, "utf8");
+  if (body instanceof Uint8Array) return body.byteLength;
+  if (body instanceof ArrayBuffer) return body.byteLength;
+  if (typeof Blob !== "undefined" && body instanceof Blob) return body.size;
+  return null;
+}
+
+/**
+ * SEND bytes through the fence, and read the (small, JSON) answer back.
+ *
+ * The other half of the binary path: an upload's response is a few hundred
+ * bytes of JSON, so transmit() handles the reply perfectly well — what it could
+ * not do was carry a large body under a ten-second clock with no size check.
+ *
+ * The cap is checked BEFORE anything is sent. A body too big to send is a
+ * refusal, not a request that dies halfway and leaves a half-made record at a
+ * vendor.
+ */
+export async function postBinaryTo(url, {
+  headers = {},
+  body,
+  contentType,
+  byteLength,
+  maxBytes = DEFAULT_MAX_BINARY_BYTES,
+  timeoutMs = DEFAULT_BINARY_TIMEOUT_MS,
+  method = "POST",
+  ...rest
+} = {}) {
+  const cap = Math.min(Math.max(Number(maxBytes) || 0, 0), HARD_MAX_BINARY_BYTES);
+  const size = Number.isFinite(Number(byteLength)) ? Number(byteLength) : sizeOf(body);
+  if (size !== null && size > cap) {
+    /* NOT `blocked`. blocked means the dry-run fence held it, and a caller that
+       reads this as a fence hold would wait for a flag that is already off.
+       Nothing left the process either way — transmitted stays false. */
+    return {
+      ok: false, blocked: false, transmitted: false, status: 0, body: null, headers: {},
+      error: `binary upload refused before it was sent: ${size} bytes is over the ${cap}-byte cap`,
+      fence: rest.fence ?? null
+    };
+  }
+  return transmit(url, {
+    method,
+    headers: contentType ? { "Content-Type": contentType, ...headers } : headers,
+    body
+  }, { ...rest, timeoutMs });
 }
 
 /** JSON POST — the shape almost every caller wants. */

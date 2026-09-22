@@ -27,6 +27,8 @@ import {
 } from "../messaging/providers/mail-letter.mjs";
 import { onMailDelivered } from "../inquiry-ops/call-scheduler.mjs";
 import { onRepairEvent } from "../repair/handlers.mjs";
+import * as submagicProvider from "../messaging/providers/submagic.mjs";
+import { recordSubmagicWebhook } from "../ad-videos/pipeline.mjs";
 
 /* PROVIDER TABLES ARE NULL-PROTOTYPE. Read this before turning either of the
    two below back into a plain `{}` literal.
@@ -353,6 +355,55 @@ async function dispatchWebhook({ db, provider, rawBody, headers = {}, url, env =
     return norm(await handleResendDeliveryEvent({
       db, body, rawBody, headers, secret: env.RESEND_WEBHOOK_SECRET
     }));
+  }
+
+  /* Submagic — "your video finished".
+     POST /api/webhooks/submagic
+
+     NO ROUTES ENTRY, deliberately, same as twilio-status and mailgun-events
+     above: netlify/functions/api.mjs routes `webhooks/` by PREFIX, and
+     src/http/routes.test.mjs fails if anybody adds a `webhooks/…` key to that
+     map. This door depends on no lookup ordering at all.
+
+     ═════════════════════════════════════════════════════════════════════
+     THE PAYLOAD PROVES NOTHING AND IS NOT TREATED AS IF IT DID.
+
+     Submagic documents no signature on this webhook
+     (docs/specs/video-pipeline-api-verification-2026-09-22.md), so the body
+     arrives unauthenticated from the open internet and anyone who guesses the
+     URL can post one. It is therefore trusted for exactly ONE thing — "go and
+     look at this project" — and recordSubmagicWebhook then asks Submagic
+     directly, with our own key, what the truth is. A forged ping costs one
+     read against a 100-an-hour limit and changes nothing.
+
+     It also answers 200 whenever the body parsed, even when nothing moved. A
+     non-200 makes a provider retry, and a retry storm on an open door is worse
+     than a ping that did nothing — the sweeper polls the same project every
+     five minutes anyway, so no ping is load-bearing.
+     ═════════════════════════════════════════════════════════════════════ */
+  if (provider === "submagic") {
+    const parsed = submagicProvider.parseWebhook(rawBody);
+    if (!parsed.ok) {
+      return { status: 400, body: { ok: false, error: parsed.error } };
+    }
+    const verified = await recordSubmagicWebhook(parsed, { submagic: submagicProvider, env });
+    if (!verified.ok || !Object.keys(verified.patch || {}).length) {
+      return { status: 200, body: { ok: true, ignored: true, reason: verified.error || "nothing to change" } };
+    }
+    /* The ad_videos store is Builder A's and is loaded at run time for the same
+       reason src/workflows/ad-video-sweeper.mjs loads it that way: a missing
+       module must not take the whole webhook router down. */
+    try {
+      const store = await import("../ad-videos/store.mjs");
+      const row = await store.findByProject(db, verified.projectId);
+      if (!row) {
+        return { status: 200, body: { ok: true, ignored: true, reason: "no take is waiting on this project" } };
+      }
+      await store.patch(db, row.id, verified.patch);
+      return { status: 200, body: { ok: true, id: row.id, status: verified.patch.status } };
+    } catch (err) {
+      return { status: 200, body: { ok: true, ignored: true, reason: `store unavailable: ${String(err?.message || err)}` } };
+    }
   }
 
   if (provider === "mailgun-events") {
