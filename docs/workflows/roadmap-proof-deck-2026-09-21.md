@@ -76,3 +76,14 @@ W3
 ## Leftovers (not fixed here)
 
 - The bottom fragment still shows placeholders on the live page: "[ VIDEO TESTIMONIAL 1-3 ]", "[ PHOTO 1-3 · NAME · ONE LINE ]", "[SUPPORT EMAIL]", "[SUPPORT PHONE]", "[CHRIS FILLS BUMP PRICE]". The add-on card says "tick the box on the form", and the pay flow has no such box.
+
+## 2026-09-21 late: approvals redo (Community box)
+
+- Source: Chris's Drive folder `13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ` → `broll/approvals` (22 screenshots) + the best Canva crops.
+- 17 cards, biggest first, all one template (1200x900 crop, amount on top). Total $2,156,300.
+  $500K, $469.8K, $400K, $250K lines of credit · $74K Chase Ink · $70K LOC · $54.5K Chase Ink · $50K LOC · $50K KeyBank · $50K Chase · $41K Chase Ink · $30K Navy Federal · $25K Navy Federal · $25K Highland · $24K Navy Federal · $23K Chase Freedom · $20K Truist.
+- Left out: $39K personal loan (not a card or line of credit); both $40K GM cards and the $25K KeyPoint (offers / pre-quals, not approvals); all quote cards; chat-text and collage cards.
+- Every amount read off its crop by one agent, re-read by an independent checker. Names, account numbers, and envelope IDs are blurred.
+- Shuffle no longer pins the page. Cards flip while the deck moves from 90% to 5% of the screen, and the page keeps scrolling.
+- Fixed: the footer total had leftover junk text ("$250,000<50,000"). The build script's replace treated `$2` as a regex group.
+- Proof: live 1280 and 390 wide, 17/17 images load, no sideways scroll. Marked shots in `roadmap-approvals-2026-09-21-evidence/`.

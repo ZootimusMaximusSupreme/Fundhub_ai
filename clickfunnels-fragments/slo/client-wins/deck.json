@@ -1,138 +1,328 @@
 {
-  "source": "Canva 'Client Wins - Funding - Your Story' (DAHKy90FpvM), 38 pages, rendered at 3x on 2026-09-21",
-  "rule": ".cursor/rules/proof-cards-from-source.mdc: amounts are read off the crop, never the yellow APPROVED FOR headline; names blurred; no faces",
+  "source": "Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ broll/approvals (owner's approval screenshots) + best crops from the Canva Client Wins deck. Re-cropped 2026-09-21 to one template: 1200x900.",
+  "rule": ".claude/rules/proof-cards-from-source.md: amount read off the crop; credit cards and lines of credit only; no offers/pre-quals, no loans, no quotes; names and account numbers blurred; biggest first",
   "cards": [
     {
-      "id": "s20-a",
+      "id": "d-500k-loc",
       "kind": "win",
-      "slide": 20,
+      "category": "line_of_credit",
+      "amount_dollars": 500000,
+      "amount_text_on_crop": "Credit limit $500,000.00",
+      "lender": "unnamed",
+      "product": "Commercial Line of Credit",
+      "source": "Drive: Fundhub ads/broll/approvals/500k-line-of-credit-account.jpg",
+      "alt": "Commercial Line of Credit approval showing $500,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-500k-loc.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715346/file/2ebcf1ec2959eafec36ed810cdcef6f5.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715346
+      }
+    },
+    {
+      "id": "d-469k-loc",
+      "kind": "win",
+      "category": "line_of_credit",
+      "amount_dollars": 469800,
+      "amount_text_on_crop": "Credit limit $469,800.00",
+      "lender": "unnamed",
+      "product": "Commercial Line of Credit",
+      "source": "Drive: Fundhub ads/broll/approvals/469k-line-of-credit-account.jpg",
+      "alt": "Commercial Line of Credit approval showing $469,800",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-469k-loc.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715347/file/62e762095e88a7911fdf48dcef0e15a6.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715347
+      }
+    },
+    {
+      "id": "d-400k-loc",
+      "kind": "win",
+      "category": "line_of_credit",
+      "amount_dollars": 400000,
+      "amount_text_on_crop": "Credit limit $400,000.00",
+      "lender": "unnamed",
+      "product": "Commercial line of credit",
+      "source": "Drive: Fundhub ads/broll/approvals/400k-line-of-credit.jpg",
+      "alt": "Commercial line of credit approval showing $400,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-400k-loc.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715348/file/87977dcab48ab92052338711db574153.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715348
+      }
+    },
+    {
+      "id": "d-250k-loc",
+      "kind": "win",
+      "category": "line_of_credit",
+      "amount_dollars": 250000,
+      "amount_text_on_crop": "Principal $250,000.00",
+      "lender": "unnamed",
+      "product": "Commercial line of credit",
+      "source": "Drive: Fundhub ads/broll/approvals/250k-line-of-credit.jpg",
+      "alt": "Line of credit paperwork showing $250,000 principal",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-250k-loc.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715349/file/7310fe462131f4f15d819fd81d980aa4.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715349
+      }
+    },
+    {
+      "id": "t-74k-chase-ink",
+      "kind": "win",
+      "category": "credit_card",
       "amount_dollars": 74000,
       "amount_text_on_crop": "Your credit limit is $74,000.",
-      "amount_where": "bank's own approval email",
       "lender": "Chase",
       "product": "Ink Business Cash card",
-      "alt": "Chase approval email: Welcome to Chase Ink Business Cash, your credit limit is $74,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s20-a.jpg",
-      "verified": "ok",
+      "source": "Canva Client Wins deck crop s20-a.jpg",
+      "alt": "Chase Ink Business Cash card approval showing $74,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/t-74k-chase-ink.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
       "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714380/file/c305597e7ae5bf832ba13b1152292e86.jpg",
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715350/file/685c4e87c43f57142cfe2bd70318efeb.jpg",
         "width": 1200,
-        "height": 1095,
-        "cf_image_id": 23714380
+        "height": 900,
+        "cf_image_id": 23715350
       }
     },
     {
-      "id": "s37-b",
+      "id": "d-70k-loc",
       "kind": "win",
-      "slide": 37,
-      "amount_dollars": 50000,
-      "amount_text_on_crop": "Credit Limi[t:] 50000 (the blue circle covers the 't:'). The operator caption also says '$50,000 Business Credit Card Approval, 0% APR✅'",
-      "amount_where": "Bank's own document: the KeyBank business card welcome letter, 'Credit Limit' line circled in blue by the operator. The same amount is repeated in the operator's white caption overlay.",
-      "lender": "KeyBank",
-      "product": "business credit card",
-      "alt": "KeyBank business card letter showing a credit limit of 50000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s37-b.jpg",
-      "verified": "ok",
+      "category": "line_of_credit",
+      "amount_dollars": 70000,
+      "amount_text_on_crop": "$70,000.00",
+      "lender": "unnamed",
+      "product": "Business Revolving Line of Credit",
+      "source": "Drive: Fundhub ads/broll/approvals/70k-line-of-credit-letter.jpg",
+      "alt": "Business Revolving Line of Credit approval showing $70,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-70k-loc.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
       "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714381/file/73fa5060517fef0c561de31b0a2b2668.jpg",
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715351/file/87ce21a9d56365a948583e5c47d1bced.jpg",
         "width": 1200,
-        "height": 1207,
-        "cf_image_id": 23714381
+        "height": 900,
+        "cf_image_id": 23715351
       }
     },
     {
-      "id": "s36-a",
+      "id": "d-54k-ink",
       "kind": "win",
-      "slide": 36,
-      "amount_dollars": 50000,
-      "amount_text_on_crop": "$50,000.00",
-      "amount_where": "approval screenshot (the bank app inside the Slack post: 'Available credit $50,000.00' and 'Total credit limit $50,000.00'); also in the operator caption overlay 'a $50k Chase Approval'",
+      "category": "credit_card",
+      "amount_dollars": 54500,
+      "amount_text_on_crop": "Credit Access Line†: $54,500",
       "lender": "Chase",
-      "product": "business card",
-      "alt": "Chase app showing a total credit limit of $50,000.00, with the client's post: 50k bag secured",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s36-a.jpg",
-      "verified": "ok",
+      "product": "Ink Business Unlimited card",
+      "source": "Drive: Fundhub ads/broll/approvals/54k-ink-business.jpg",
+      "alt": "Chase Ink Business Unlimited card approval showing $54,500",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-54k-ink.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
       "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714382/file/3f5f57428ecd8ca13fbe201ed84aaaeb.jpg",
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715352/file/37f8476a42f24b8a951b3bbab7356c86.jpg",
         "width": 1200,
-        "height": 1909,
-        "cf_image_id": 23714382
+        "height": 900,
+        "cf_image_id": 23715352
       }
     },
     {
-      "id": "s25-a",
+      "id": "d-50k-loc",
       "kind": "win",
-      "slide": 25,
+      "category": "line_of_credit",
+      "amount_dollars": 50000,
+      "amount_text_on_crop": "Credit limit $50,000.00",
+      "lender": "unnamed",
+      "product": "Commercial line of credit",
+      "source": "Drive: Fundhub ads/broll/approvals/50k-line-of-credit.jpg",
+      "alt": "Commercial line of credit approval showing $50,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-50k-loc.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715353/file/89de6b8fb2e72f1708bf9d0e232e0264.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715353
+      }
+    },
+    {
+      "id": "t-50k-keybank",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 50000,
+      "amount_text_on_crop": "Credit Limi[t:] 50000 (the owner's blue circle covers the 't:', same as in the original)",
+      "lender": "KeyBank",
+      "product": "KeyBank Business Cash Rewards card",
+      "source": "Canva Client Wins deck crop s37-b.jpg",
+      "alt": "KeyBank business credit card approval showing a $50,000 credit limit",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/t-50k-keybank.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715354/file/6484dec63f442004a983f44f01eb1a5d.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715354
+      }
+    },
+    {
+      "id": "t-50k-chase",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 50000,
+      "amount_text_on_crop": "Total credit limit $50,000.00 (also Available credit $50,000.00)",
+      "lender": "Chase",
+      "product": "Ink Business card",
+      "source": "Canva Client Wins deck crop s36-a.jpg",
+      "alt": "Chase Ink Business card approval showing $50,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/t-50k-chase.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715355/file/68b915259e7c0a5f060eb2a43841fcd1.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715355
+      }
+    },
+    {
+      "id": "d-41k-chase-ink",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 41000,
+      "amount_text_on_crop": "Credit line: $41,000.00",
+      "lender": "Chase",
+      "product": "Ink Business Unlimited card",
+      "source": "Drive: Fundhub ads/broll/approvals/41k-chase-ink.jpg",
+      "alt": "Chase Ink Business Unlimited card approval showing $41,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-41k-chase-ink.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715357/file/7eca23557c059231d5a4ec46f9a4af53.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715357
+      }
+    },
+    {
+      "id": "d-30k-navy",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 30000,
+      "amount_text_on_crop": "Your Credit Limit $30,000.00",
+      "lender": "Navy Federal",
+      "product": "Platinum credit card",
+      "source": "Drive: Fundhub ads/broll/approvals/30k-navy-federal.jpg",
+      "alt": "Navy Federal Platinum credit card approval showing $30,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-30k-navy.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715359/file/c7c14fe81e2ebce892266ef580078d8b.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715359
+      }
+    },
+    {
+      "id": "d-25k-personal-card",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 25000,
+      "amount_text_on_crop": "Your Credit Limit $ 25,000.00",
+      "lender": "Navy Federal Credit Union",
+      "product": "cashRewards Visa credit card",
+      "source": "Drive: Fundhub ads/broll/approvals/25k-personal-card.jpg",
+      "alt": "Navy Federal Credit Union cashRewards Visa credit card approval showing $25,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-25k-personal-card.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715360/file/f2ab5e090077acb25ec2a06820c9aa7e.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715360
+      }
+    },
+    {
+      "id": "t-25k-highland",
+      "kind": "win",
+      "category": "credit_card",
       "amount_dollars": 25000,
       "amount_text_on_crop": "Your credit line: $25,000.00",
-      "amount_where": "bank's own approval screenshot (Highland Bank / Elan card application page, photo of a laptop screen)",
       "lender": "Highland Bank",
       "product": "Visa Business Card",
-      "alt": "Highland Bank approval page: you're approved, your credit line $25,000.00",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s25-a.jpg",
-      "verified": "ok",
+      "source": "Canva Client Wins deck crop s25-a.jpg",
+      "alt": "Highland Bank Visa Business Card approval showing $25,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/t-25k-highland.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
       "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714386/file/9fd994b187ab281c27641a2aad0ba86e.jpg",
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715361/file/d619505428aae233495eb08f9ca78220.jpg",
         "width": 1200,
-        "height": 1592,
-        "cf_image_id": 23714386
+        "height": 900,
+        "cf_image_id": 23715361
       }
     },
     {
-      "id": "s30-a",
+      "id": "d-24k-navy",
       "kind": "win",
-      "slide": 30,
+      "category": "credit_card",
+      "amount_dollars": 24000,
+      "amount_text_on_crop": "You've been approved for a Platinum Credit Card with a credit limit of $24000.00. Your APR is 7.99%.",
+      "lender": "Navy Federal Credit Union",
+      "product": "Platinum Visa credit card",
+      "source": "Drive: Fundhub ads/broll/approvals/24k-navy-federal.jpg",
+      "alt": "Navy Federal Credit Union Platinum Visa credit card approval showing $24,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-24k-navy.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715362/file/7fc29e8b494832b6b5c14a2f82d1610e.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715362
+      }
+    },
+    {
+      "id": "d-23k-chase-freedom",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 23000,
+      "amount_text_on_crop": "Your credit line is $23,000.00",
+      "lender": "Chase",
+      "product": "Freedom Unlimited card",
+      "source": "Drive: Fundhub ads/broll/approvals/23k-chase-freedom-unlimited.jpg",
+      "alt": "Chase Freedom Unlimited approval showing a $23,000 credit line",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/d-23k-chase-freedom.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715363/file/f45edd9e680d174dd614f8a09b6079e4.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23715363
+      }
+    },
+    {
+      "id": "t-20k-truist",
+      "kind": "win",
+      "category": "credit_card",
       "amount_dollars": 20000,
       "amount_text_on_crop": "Credit limit: $20,000",
-      "amount_where": "bank's own document: a photo of the printed Truist 'Business credit card / Account information' sheet",
       "lender": "Truist",
-      "product": "business credit card",
-      "alt": "Truist business credit card letter showing a credit limit of $20,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s30-a.jpg",
-      "verified": "ok",
+      "product": "Business credit card",
+      "source": "Canva Client Wins deck crop s30-a.jpg",
+      "alt": "Truist Business credit card approval showing $20,000",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/t-20k-truist.jpg",
+      "verified": "ok: amount read off crop, re-read by independent checker, PII blurred",
       "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714387/file/044b06154589d424130379175220b944.jpg",
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715364/file/b828126991a18a561b9b0489ffef31dc.jpg",
         "width": 1200,
-        "height": 1208,
-        "cf_image_id": 23714387
-      }
-    },
-    {
-      "id": "s18-a",
-      "kind": "win",
-      "slide": 18,
-      "amount_dollars": 16000,
-      "amount_text_on_crop": "Your credit line is $16,000.",
-      "amount_where": "bank's own approval email",
-      "lender": "BankUnited, N.A.",
-      "product": "Visa Business Card",
-      "alt": "BankUnited approval email: approved for the Visa Business Card, your credit line is $16,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s18-a.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714390/file/6c6c51c90039b946764a543eeac5190a.jpg",
-        "width": 1200,
-        "height": 634,
-        "cf_image_id": 23714390
-      }
-    },
-    {
-      "id": "s15-a",
-      "kind": "win",
-      "slide": 15,
-      "amount_dollars": 15000,
-      "amount_text_on_crop": "Your application was approved on 01/28/2022 with an initial credit line of $15,000.00. A card will be sent to you within 7-10 business days.",
-      "amount_where": "bank's own approval screenshot (fnbo 'View Application Status' web page, photographed on a laptop)",
-      "lender": "FNBO",
-      "product": "business credit card",
-      "alt": "FNBO application status page: approved with an initial credit line of $15,000.00, a card will be sent",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s15-a.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714391/file/7c368556f76a6c38b30af9f8f424c0ee.jpg",
-        "width": 885,
-        "height": 545,
-        "cf_image_id": 23714391
+        "height": 900,
+        "cf_image_id": 23715364
       }
     }
   ]
