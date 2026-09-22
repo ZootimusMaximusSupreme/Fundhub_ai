@@ -1,10 +1,10 @@
 <!doctype html>
 <html lang="en">
 <head>
-<title>FundHub</title>
+<title>Fundhub</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- Meta Pixel (FundHub) -->
+<!-- Meta Pixel (Fundhub) -->
 <script>
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
@@ -17,6 +17,7 @@ fbq('track', 'PageView');
 <noscript><img height="1" width="1" style="display:none" alt=""
 src="https://www.facebook.com/tr?id=2403674420141513&ev=PageView&noscript=1"/></noscript>
 
+<meta name="cf-page-token" content="cfp_IpzH2q5Zwo7EiuvSQG6nNlg3">
 <script src="https://sdk.myclickfunnels.com/sdk.js" defer></script>
 </head>
 <body>
@@ -182,7 +183,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
    sentence shows instead. FH_SIM supplies a stand-in amount so the card
    renders while you preview. Set FH_SIM = false before launch.
    A real ?pa= in the address always wins over this, on or off. */
-var FH_SIM = true;        /* <-- ONE LINE */
+var FH_SIM = false;       /* <-- ONE LINE (off: never show a stand-in amount to a real visitor) */
 var FH_SIM_PA = '84500';  /* stand-in amount, sim only */
 
 (function(){
@@ -418,6 +419,26 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 </footer>
 
 </div>
+
+<script>
+/* Booked -> $297 thank-you. The calendar in the frame is /funding-book-call on this
+   same site; its capture script writes fh_booking_v1 to localStorage when the
+   buyer books. That write fires a storage event here, and we move the whole page
+   to /roadmap-thank-you, keeping pa, ref, client_id and the ad tags. */
+(function(){
+  var KEY='fh_booking_v1',TY='/roadmap-thank-you',done=false,LOADED=Date.now();
+  function go(){
+    if(done)return;done=true;
+    var cur=new URLSearchParams(location.search),q=new URLSearchParams();
+    ['pa','amount','track','ref','client_id','utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(function(k){var v=cur.get(k);if(v)q.set(k,v);});
+    var qs=q.toString();location.href=TY+(qs?'?'+qs:'');
+  }
+  function booked(raw){try{var d=JSON.parse(raw||'null');return !!(d&&d.name&&d.email&&d.submittedAt&&d.submittedAt>=LOADED);}catch(e){return false;}}
+  window.addEventListener('storage',function(e){if(e.key===KEY&&booked(e.newValue))go();});
+  /* fallback: poll in case the storage event is missed; only a booking made after this page loaded counts */
+  var t=setInterval(function(){try{if(booked(localStorage.getItem(KEY))){clearInterval(t);go();}}catch(e){clearInterval(t);}},1500);
+})();
+</script>
 
 <script src="https://fundhub.ai/funnel/fh-attribution.js"></script>
 </body>
