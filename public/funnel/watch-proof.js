@@ -405,6 +405,15 @@
     "#fh-watch-proof .fhx-track>.fh-card{flex-basis:216px;width:216px}",
     "#fh-watch-proof .fhx-vgrid{margin-top:20px;gap:16px;padding:0 24px}",
     "#fh-watch-proof .fhx-vgrid>.fhx-vslot span{font-size:12px}",
+    "}",
+    /* Phones: one video testimonial per row, the same law and the same 699px
+       break as the /roadmap .proofgrid. display:block, not
+       flex-direction:column, because the slots carry flex:1 1 0 and in a column
+       that basis would collapse their height. */
+    "@media(max-width:699px){",
+    "#fh-watch-proof .fhx-vgrid{display:block}",
+    "#fh-watch-proof .fhx-vgrid>.fhx-vslot{width:100%;max-width:380px;margin:0 auto}",
+    "#fh-watch-proof .fhx-vgrid>.fhx-vslot+.fhx-vslot{margin-top:16px}",
     "}"
   ].join("\n");
 
