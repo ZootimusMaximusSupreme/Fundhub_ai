@@ -160,7 +160,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
    sentence shows instead. FH_SIM supplies a stand-in amount so the card
    renders while you preview. Set FH_SIM = false before launch.
    A real ?pa= in the address always wins over this, on or off. */
-var FH_SIM = true;        /* <-- ONE LINE */
+var FH_SIM = false;       /* <-- ONE LINE (off: never show a stand-in amount to a real visitor) */
 var FH_SIM_PA = '84500';  /* stand-in amount, sim only */
 
 (function(){
@@ -269,7 +269,9 @@ var FH_SIM_PA = '84500';  /* stand-in amount, sim only */
      NATIVE ClickFunnels AppointmentScheduler at split time.
      BELOW -> 03b BOTTOM fragment
      ================================================ -->
-<div class="fh-widget-slot"><div style="min-height:420px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.14em;color:#8A8A93;text-transform:uppercase;text-align:center">[ Clickfunnels native booking calendar goes here ]<span>Pick a time &middot; Name &middot; Email &middot; Phone &middot; Book</span></div></div>
+<div class="fh-widget-slot fh-book-embed" style="padding:0!important;overflow:hidden!important">
+<iframe title="Book your Fundhub funding call" src="https://apply.fundhub.ai/funding-book-call" style="display:block;width:100%;min-height:920px;border:0;background:#FCFCFC" loading="lazy"></iframe>
+</div>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 /* no page background — TY-TOP owns body::before */
@@ -394,3 +396,23 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 </footer>
 
 </div>
+
+<script>
+/* Booked -> $297 thank-you. The calendar in the frame is /funding-book-call on this
+   same site; its capture script writes fh_booking_v1 to localStorage when the
+   buyer books. That write fires a storage event here, and we move the whole page
+   to /roadmap-thank-you, keeping pa, ref, client_id and the ad tags. */
+(function(){
+  var KEY='fh_booking_v1',TY='/roadmap-thank-you',done=false,LOADED=Date.now();
+  function go(){
+    if(done)return;done=true;
+    var cur=new URLSearchParams(location.search),q=new URLSearchParams();
+    ['pa','amount','track','ref','client_id','utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(function(k){var v=cur.get(k);if(v)q.set(k,v);});
+    var qs=q.toString();location.href=TY+(qs?'?'+qs:'');
+  }
+  function booked(raw){try{var d=JSON.parse(raw||'null');return !!(d&&d.name&&d.email&&d.submittedAt&&d.submittedAt>=LOADED);}catch(e){return false;}}
+  window.addEventListener('storage',function(e){if(e.key===KEY&&booked(e.newValue))go();});
+  /* fallback: poll in case the storage event is missed; only a booking made after this page loaded counts */
+  var t=setInterval(function(){try{if(booked(localStorage.getItem(KEY))){clearInterval(t);go();}}catch(e){clearInterval(t);}},1500);
+})();
+</script>
