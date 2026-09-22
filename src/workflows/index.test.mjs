@@ -88,6 +88,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "meet-transcript-sweeper",
   "message-dispatch-sweeper",
   "meta-campaign-sync-sweeper",
+  "clickfunnels-analytics-sweeper",
   "n-01-cold-nurture",
   "n-02-warm-nurture",
   "n-03-hot-nurture",

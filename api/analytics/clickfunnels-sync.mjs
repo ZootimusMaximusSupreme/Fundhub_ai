@@ -36,11 +36,11 @@
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid } from "../../src/http/read-api.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
-import { asStaff } from "../../src/partners/rls.mjs";
-import { listFunnels, listPages, fetchPageStats } from "../../src/analytics/clickfunnels.mjs";
-
-const DEFAULT_DAYS = 7;
-const MAX_DAYS = 90; // ClickFunnels itself clamps a timerange to 90 days
+import {
+  runClickfunnelsOrgSync,
+  resolveSyncDays,
+  DEFAULT_DAYS
+} from "../../src/analytics/clickfunnels-org-sync.mjs";
 
 export default async function handler(req, res, deps = {}) {
   if (req.method !== "POST") {
@@ -55,81 +55,10 @@ export default async function handler(req, res, deps = {}) {
   const orgId = staff.org_id;
   if (!isUuid(orgId)) return res.status(403).json({ ok: false, error: "forbidden" });
 
-  const daysRaw = Number((req.body || {}).days);
-  const days = Number.isFinite(daysRaw) && daysRaw > 0 ? Math.min(Math.floor(daysRaw), MAX_DAYS) : DEFAULT_DAYS;
-  const to = new Date();
-  const from = new Date(to.getTime() - days * 24 * 60 * 60 * 1000);
-  const statDate = to.toISOString().slice(0, 10);
+  const days = resolveSyncDays((req.body || {}).days ?? DEFAULT_DAYS);
 
   try {
-    const result = await asStaff(async (tx) => {
-      const connRow = (await tx.query(
-        `SELECT * FROM analytics_connections WHERE org_id = $1 AND platform = 'clickfunnels'`,
-        [orgId]
-      )).rows[0];
-      if (!connRow) return { notFound: true };
-
-      const ctx = { fetch: deps.fetch }; // shared across every call this run, so resolveWorkspaceId caches once
-      let pagesSynced = 0;
-      let statsAttempted = false;
-      let statsAvailable = false;
-
-      try {
-        const funnels = await listFunnels(connRow, ctx);
-
-        for (const funnel of funnels) {
-          const pages = await listPages(connRow, funnel.id, ctx);
-
-          for (const page of pages) {
-            const stats = await fetchPageStats(
-              connRow, page.id, { from: from.toISOString(), to: to.toISOString() }, ctx
-            );
-            statsAttempted = true;
-            if (stats.available) statsAvailable = true;
-
-            await tx.query(
-              `INSERT INTO funnel_page_stats
-                 (org_id, connection_id, clickfunnels_funnel_id, clickfunnels_page_id,
-                  funnel_name, page_name, stat_date, views, conversions)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-               ON CONFLICT (connection_id, clickfunnels_page_id, stat_date) DO UPDATE SET
-                 funnel_name = EXCLUDED.funnel_name,
-                 page_name   = EXCLUDED.page_name,
-                 views       = EXCLUDED.views,
-                 conversions = EXCLUDED.conversions,
-                 captured_at = now()`,
-              [
-                orgId, connRow.id, String(funnel.id), String(page.id),
-                funnel.name, page.name, statDate,
-                stats.available ? stats.views : null,
-                stats.available ? stats.conversions : null
-              ]
-            );
-            pagesSynced++;
-          }
-        }
-
-        await tx.query(
-          `UPDATE analytics_connections
-              SET last_synced_at = now(), last_error = NULL, connection_state = 'active', updated_at = now()
-            WHERE id = $1`,
-          [connRow.id]
-        );
-
-        return { ok: true, pagesSynced, statsAvailable: statsAttempted ? statsAvailable : false };
-      } catch (err) {
-        // The call itself failed (auth, network, rate limit, 5xx) — this is a
-        // connection error, distinct from "stats unavailable for this page".
-        const message = String(err.platformMessage || err.message || "sync failed").slice(0, 2000);
-        await tx.query(
-          `UPDATE analytics_connections
-              SET connection_state = 'error', last_error = $2, updated_at = now()
-            WHERE id = $1`,
-          [connRow.id, message]
-        );
-        return { ok: false, pagesSynced, message };
-      }
-    });
+    const result = await runClickfunnelsOrgSync({ orgId, days, deps: { db: deps.db, fetch: deps.fetch } });
 
     if (result.notFound) {
       return res.status(404).json({
