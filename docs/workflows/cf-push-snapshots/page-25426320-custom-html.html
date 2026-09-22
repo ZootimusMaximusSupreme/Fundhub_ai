@@ -2174,12 +2174,17 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-b .cardw{max-width:660px;margin:26px auto 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;box-shadow:0 1px 3px rgba(10,10,10,.05);text-align:left}
 .fh-b .cardw p{margin-top:12px;font-size:15.5px;color:var(--gray);line-height:1.66}
 .fh-b .cardw p b{color:var(--ink);font-weight:600}
-.fh-b .proofgrid{max-width:660px;margin:30px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-.fh-b .vslot{aspect-ratio:9/16;max-height:300px;border-radius:12px;background:#111113;border:1px solid #26262B;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px}
-.fh-b .pslot{aspect-ratio:1/1;border-radius:12px;background:#fff;border:1px dashed var(--line);display:flex;align-items:center;justify-content:center;text-align:center;padding:14px}
-.fh-b .vslot span{color:#8A8A93}.fh-b .pslot span{color:var(--gray2)}
-.fh-b .vslot span,.fh-b .pslot span{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;line-height:1.5}
-@media(max-width:640px){.fh-b .proofgrid{grid-template-columns:1fr 1fr}}
+.fh-b .txproof{max-width:900px;width:calc(100% - 48px);margin:34px auto 0}
+.fh-b .tx-h{text-align:center;font-weight:700;font-size:22px;letter-spacing:-.02em;color:var(--ink);margin-bottom:14px}
+.fh-b .tx-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;align-items:start}
+.fh-b .tx-card{margin:0;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 14px 10px;box-shadow:0 1px 2px rgba(12,12,13,.06),0 16px 34px -18px rgba(12,12,13,.3);display:flex;flex-direction:column;gap:10px;text-align:left}
+.fh-b .tx-eye{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2)}
+.fh-b .tx-card blockquote{margin:0;font-size:15px;line-height:1.35;color:var(--ink);font-weight:500}
+.fh-b .tx-card img{display:block;width:100%;height:auto;border-radius:8px;border:1px solid var(--line);background:#F4F4F5}
+.fh-b .tx-mark{align-self:flex-end;font-weight:800;font-size:13px;letter-spacing:-.03em;color:var(--ink);padding-top:8px;border-top:1px solid var(--line);width:100%;text-align:right}
+@media(max-width:640px){.fh-b .tx-grid{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:82%;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:6px}.fh-b .tx-card{scroll-snap-align:start}}
+.fh-b .foot-support{margin:10px auto 4px;text-align:center;font-size:12.5px;color:var(--gray)}
+.fh-b .foot-support a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .fh-b .proofgrid{width:calc(100% - 48px);align-items:start}
 .fh-b .proofgrid>*{min-width:0}
 .fh-b .btn{display:block;width:100%;max-width:420px;margin:30px auto 0;background:#188bf6;color:#fff;font-family:var(--sans);font-size:17px;font-weight:600;padding:18px 26px;border:0;border-radius:9px;cursor:pointer;transition:background .15s;box-shadow:0 5px 18px rgba(24,139,246,.28);text-align:center;text-decoration:none}
@@ -2216,17 +2221,17 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   </div>
   <div class="trustline">256-bit SSL secure &middot; Soft pull, no hard inquiry &middot; Zero score impact from that pull</div>
 
-  <!-- SLOT-TESTIMONIALS: 3 video + 3 photo. Empty on purpose. Chris drops in real clips and photos.
-       Do not invent names, quotes, amounts or faces. Each slot hides itself once you replace the
-       bracketed label with real content? No: it stays visible so you can see where they go. -->
-  <div class="proofgrid">
-    <span class="kicker" style="text-align:center;grid-column:1/-1">From people who bought it</span>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 1 ]</span></div>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 2 ]</span></div>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 3 ]</span></div>
-    <div class="pslot"><span>[ PHOTO 1 &middot; NAME &middot; ONE LINE ]</span></div>
-    <div class="pslot"><span>[ PHOTO 2 &middot; NAME &middot; ONE LINE ]</span></div>
-    <div class="pslot"><span>[ PHOTO 3 &middot; NAME &middot; ONE LINE ]</span></div>
+  <!-- REAL CLIENT TEXTS (owner, 2026-09-22): same three as /watch (public/funnel/watch-proof.js).
+       Words copied exactly off each screenshot; photo off, name off (.claude/rules/proof-cards-from-source.md).
+       Sources: Canva Client Wins deck slides 34, 21, 23 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ);
+       crops clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg, s21-b.jpg, s23-b.jpg. -->
+  <div class="txproof">
+    <div class="tx-h">What clients texted us</div>
+    <div class="tx-grid">
+      <figure class="tx-card"><span class="tx-eye">Testimonial</span><blockquote>&ldquo;We got approved for 25,000 &#x1F64F;&#x1F3FE;&rdquo;</blockquote><img src="https://fundhub.ai/funnel/proof/s34-q1.jpg" alt="Client text: We got approved for 25,000" width="1200" height="190" loading="lazy" decoding="async"><span class="tx-mark">fundhub.</span></figure>
+      <figure class="tx-card"><span class="tx-eye">Testimonial</span><blockquote>&ldquo;APPROVED!!!<br>I was on such a cold streak and I finally got an approval<br>No hard pull it all!!!&rdquo;</blockquote><img src="https://fundhub.ai/funnel/proof/s21-b.jpg" alt="Client texts: APPROVED!!! I was on such a cold streak and I finally got an approval. No hard pull it all!!!" width="1200" height="567" loading="lazy" decoding="async"><span class="tx-mark">fundhub.</span></figure>
+      <figure class="tx-card"><span class="tx-eye">Testimonial</span><blockquote>&ldquo;I GOT APPROVED. LETS GOOOOOOOOO&rdquo;</blockquote><img src="https://fundhub.ai/funnel/proof/s23-b.jpg" alt="Client text: I GOT APPROVED. LETS GOOOOOOOOO" width="1200" height="277" loading="lazy" decoding="async"><span class="tx-mark">fundhub.</span></figure>
+    </div>
   </div>
 
   <div class="cardw">
