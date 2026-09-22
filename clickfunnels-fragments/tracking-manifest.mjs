@@ -42,6 +42,36 @@ src="https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1"/></noscript>`;
 
 export const FH_ATTRIBUTION_SRC = "https://fundhub.ai/funnel/fh-attribution.js";
 export const VSL_WATCH_BEACON_SRC = "https://fundhub.ai/funnel/vsl-watch-beacon.js";
+/** Sorting Hat proof block under the first Get Started on /watch (public/funnel/watch-proof.js). */
+export const WATCH_PROOF_SRC = "https://fundhub.ai/funnel/watch-proof.js";
+/** /thank-you booking check + "What the call decides" + real approvals and texts (public/funnel/thankyou-sort.js). */
+export const THANKYOU_SORT_SRC = "https://fundhub.ai/funnel/thankyou-sort.js";
+
+/**
+ * Footer script tags to append. Any src already in `existing` (the page's live
+ * head + footer code) is skipped, so a push never loads the same script twice.
+ * Append-only: tags already duplicated on a page stay as they are.
+ */
+export function trackingFooterScripts({
+  includeVslBeacon,
+  skipAttribution,
+  extraSrcs = [],
+  existing = "",
+}) {
+  const srcs = [];
+  if (!skipAttribution) srcs.push(FH_ATTRIBUTION_SRC);
+  if (includeVslBeacon) srcs.push(VSL_WATCH_BEACON_SRC);
+  for (const src of extraSrcs) srcs.push(src);
+  const seen = new Set();
+  return srcs
+    .filter((src) => {
+      if (seen.has(src) || String(existing).includes(src)) return false;
+      seen.add(src);
+      return true;
+    })
+    .map((src) => `<script src="${src}"></script>`)
+    .join("\n");
+}
 
 /** Direct ROAS hub script (override with DIRECT_ROAS_HUB_URL in env). */
 export function directRoasScriptSrc(env = process.env) {
@@ -127,7 +157,9 @@ export const PUSH_MANIFEST = [
     pageId: "25061160",
     fragment: "clickfunnels-fragments/01-vsl.html",
     vslBeacon: true,
+    extraFooterScripts: [WATCH_PROOF_SRC],
     strategy: "custom_html_or_head_append",
+    note: "Builder page — the body cannot be replaced by API; new sections ride in on footer scripts",
   },
   {
     key: "apply-survey",
@@ -161,7 +193,9 @@ export const PUSH_MANIFEST = [
     pageId: "25063539",
     fragment: "clickfunnels-fragments/05-thank-you.html",
     vslBeacon: false,
+    extraFooterScripts: [THANKYOU_SORT_SRC],
     strategy: "custom_html_or_head_append",
+    note: "Builder page — the body cannot be replaced by API; new sections ride in on footer scripts",
   },
   {
     key: "slo-297-sales",
