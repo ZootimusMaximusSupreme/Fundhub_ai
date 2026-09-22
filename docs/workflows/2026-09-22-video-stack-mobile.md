@@ -86,6 +86,45 @@ Netlify deploy that serves `public/funnel/watch-proof.js`. This workflow was
 told not to read `.env`, and the ClickFunnels push needs `CLICKFUNNELS_API_KEY`
 from it.
 
+## Second look — checked again 14:10, and one half of that is now wrong
+
+A second workflow (`fix/video-cards-stack`) re-measured everything from scratch
+in its own headless Chromium, so nobody has to take the numbers above on trust.
+The code is right. The live status above is **half stale**:
+
+| page | live right now, on a 390px phone | shipped? |
+|---|---|---|
+| `/watch` | **1 per row, 342x608** | **YES — already live** |
+| `/roadmap` | 3 per row, 107x191 slivers | **NO — still the old page** |
+
+So the Netlify deploy has happened. The ClickFunnels push for `/roadmap` has
+not. `/roadmap` is the only page Chris would still see wrong on his phone.
+
+Re-measured the code itself, before (`ae471ecd`) against now, same browser, same
+host page, so only the CSS differs:
+
+| page | width | before | now |
+|---|---|---|---|
+| /watch | 390 | 3 per row, 114.7x203.8 | **1 per row, 360x640** |
+| /watch | 360 | 3 per row, 104.7x186 | **1 per row, 330x586.7** |
+| /watch | 1280 | 3 per row, 300x533.3 | 3 per row, 300x533.3 — untouched |
+| /roadmap | 390 | 3 per row, 107.3x190.8 | **1 per row, 342x608** |
+| /roadmap | 360 | 3 per row, 97.3x173 | **1 per row, 312x554.7** |
+| /roadmap | 1280 | 3 per row, 293.3x521.5 | 3 per row, 293.3x521.5 — untouched |
+
+Desktop is identical to the pixel before and after, so the two size branches
+that landed first are not disturbed. The 9:16 shape, the `#111113` fill, the
+`#26262B` border, the 12px corners and the grey mono label all read the same at
+every width. No sideways scroll at any width. On a 390x844 phone one card is 640
+tall, so a bit over one card fills the screen — the "one and a bit" the ask
+called for.
+
+`npm run lint` clean, `npx tsc --noEmit` clean, `slo-sales-widget-html` +
+`src/ads/*` tests 144 pass / 0 fail / 0 skipped.
+
+Fresh shots with the red boxes and legend, all three sets (before, now, live):
+`docs/workflows/2026-09-22-video-stack-mobile-evidence/verify-before|verify-after|verify-live/`.
+
 ## Rerun
 
 ```
