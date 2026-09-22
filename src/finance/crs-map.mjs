@@ -67,6 +67,52 @@ export function bureauHardErrors(report) {
 }
 
 /**
+ * Per-bureau result of one pull. A pull counts as done at a bureau only when a
+ * file came back (spec docs/specs/roadmap-checkout-soft-pull-2026-09-22.md §4).
+ */
+export const BUREAU_FILE_STATUS = Object.freeze({
+  FILE_RETURNED: "file_returned",
+  FROZEN: "frozen",
+  NO_FILE: "no_file",
+  ERROR: "error"
+});
+
+/** The vendor's own words: creditFiles[].creditFileDetail.creditFileResultStatusType. */
+export function creditFileStatuses(report) {
+  return asArray(report?.creditFiles)
+    .map((f) => String(f?.creditFileDetail?.creditFileResultStatusType ?? "").trim())
+    .filter(Boolean);
+}
+
+/**
+ * classifyBureauReport — file_returned | frozen | no_file | error.
+ *
+ * WHAT IS KNOWN, AND WHAT IS NOT (spec independent check #9). Two status values
+ * are documented: `FileReturned` (every vendor test file) and
+ * `NoFileReturnedCreditFreeze` (seen once in production, a frozen Equifax
+ * file). No no-hit value is documented. So:
+ *   FileReturned                → file_returned
+ *   anything naming a freeze    → frozen
+ *   any other NoFileReturned…   → no_file   (read off the value's own words)
+ *   errorMessages on the report → error     (E4000 bad birth date and the like)
+ *   no status at all            → file_returned, as before. Older payloads and
+ *                                 the sandbox fixtures carry the report with no
+ *                                 creditFiles status, and nothing documents that
+ *                                 as a miss.
+ * An unrecognised status string is also left as file_returned, with the raw
+ * value kept beside it on the stored payload so a human can see it.
+ */
+export function classifyBureauReport(report) {
+  if (!report || typeof report !== "object") return BUREAU_FILE_STATUS.ERROR;
+  if (bureauHardErrors(report)) return BUREAU_FILE_STATUS.ERROR;
+  const raw = creditFileStatuses(report);
+  if (raw.some((s) => s.toLowerCase() === "filereturned")) return BUREAU_FILE_STATUS.FILE_RETURNED;
+  if (raw.some((s) => /freeze|frozen/i.test(s))) return BUREAU_FILE_STATUS.FROZEN;
+  if (raw.some((s) => /^nofile/i.test(s))) return BUREAU_FILE_STATUS.NO_FILE;
+  return BUREAU_FILE_STATUS.FILE_RETURNED;
+}
+
+/**
  * pickCreditScore — the credit score out of a bureau's `scores` array.
  *
  * A bureau returns several models and only some of them are credit scores. The
@@ -129,6 +175,9 @@ function redactRequestEcho(report) {
  * @param {object} input
  * @param {object} input.reports        { TU?: report, EX?: report, EQ?: report }
  * @param {object} [input.errors]       { EQ: "why it failed" }
+ * @param {object} [input.statuses]     { EQ: "frozen" } — per bureau, from the
+ *                                      client. A bureau with a report and no
+ *                                      entry is classified off its report.
  * @param {object} [input.requestIds]   { TU: "..." } — the vendor's own ids
  * @param {string} [input.environment]  "sandbox" | "production"
  * @param {string} [input.pulledAt]     ISO timestamp
@@ -136,6 +185,7 @@ function redactRequestEcho(report) {
 export function mergeBureauReports({
   reports = {},
   errors = {},
+  statuses = {},
   requestIds = {},
   environment = null,
   pulledAt = new Date().toISOString()
@@ -193,6 +243,16 @@ export function mergeBureauReports({
     }
   }
 
+  /* One word per bureau that was asked: file_returned | frozen | no_file |
+     error. A bureau nobody asked is absent, not "error". */
+  const bureauStatus = {};
+  for (const code of BUREAU_CODES) {
+    const given = statuses?.[code];
+    if (given) bureauStatus[code] = given;
+    else if (reports[code] && typeof reports[code] === "object") bureauStatus[code] = classifyBureauReport(reports[code]);
+    else if (errors[code]) bureauStatus[code] = BUREAU_FILE_STATUS.ERROR;
+  }
+
   return {
     source: "crs",
     product: "prequal-fico9",
@@ -219,6 +279,7 @@ export function mergeBureauReports({
     // A bureau that failed is a fact about the pull, kept beside the ones that
     // worked. An empty object means all three answered.
     bureauErrors: { ...errors },
+    bureauStatus,
     requestIds: { ...requestIds }
   };
 }

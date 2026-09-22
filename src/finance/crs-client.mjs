@@ -37,7 +37,67 @@ import {
   livePullAllowed,
   normalizeHost
 } from "./crs-identities.mjs";
-import { bureauHardErrors } from "./crs-map.mjs";
+import {
+  BUREAU_FILE_STATUS,
+  bureauHardErrors,
+  classifyBureauReport,
+  creditFileStatuses
+} from "./crs-map.mjs";
+
+/* ── What goes in the request, per bureau ──────────────────────────────────
+   Spec docs/specs/roadmap-checkout-soft-pull-2026-09-22.md §2-§3 and its
+   independent check.
+
+   SUFFIX. Equifax's suffix field holds 2 characters (confirmed, Redocly
+   Equifax tag), so III is NOT sent to Equifax — a blank is sent, which is
+   what every pull sent before this change. JR, SR, II and IV fit. Experian's
+   basic schema shows 3 characters; TransUnion documents none. Both get the
+   stored value (JR, SR, II, III or IV — all 3 characters or fewer).
+
+   PREVIOUS ADDRESS. CRS says past addresses help a bureau match, but nobody
+   has told us the borrowerResidencyType label a past address takes on the
+   Standard Format endpoints we call (spec §2: "We send the previous address
+   once CRS tells us the right label for it"). So the mapping is built and the
+   label is null: a stored previous address is NOT sent until someone sets
+   this to the label CRS confirms. The current home is always sent. */
+export const SUFFIX_MAX_BY_BUREAU = Object.freeze({ EQ: 2, EX: 3, TU: 3 });
+export const CRS_PRIOR_RESIDENCY_TYPE = null;
+
+/** Capital letters, no accents, single spaces. José → JOSE. */
+export function bureauText(value) {
+  return String(value ?? "")
+    .normalize("NFD")
+    .replace(/\p{M}+/gu, "")
+    .replace(/[‘’ʼ]/g, "'")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toUpperCase();
+}
+
+/** The suffix this bureau can take, or "" when it does not fit. */
+export function suffixForBureau(suffix, bureau) {
+  const s = bureauText(suffix).replace(/\./g, "");
+  if (!s) return "";
+  const max = SUFFIX_MAX_BY_BUREAU[bureau] ?? 3;
+  return s.length <= max ? s : "";
+}
+
+/** "Current" for the home; the prior label (null today) for a past address. */
+export function residencyTypeFor(address) {
+  if (address?.borrowerResidencyType) return address.borrowerResidencyType;
+  if (String(address?.residency ?? "").toLowerCase() === "previous") return CRS_PRIOR_RESIDENCY_TYPE;
+  return "Current";
+}
+
+/* Why a bureau that answered with no file is not a success. The vendor's raw
+   status value is quoted so a human can see exactly what came back. */
+function noFileError(bureau, fileStatus, report) {
+  const raw = creditFileStatuses(report).join(", ");
+  const what = fileStatus === BUREAU_FILE_STATUS.FROZEN
+    ? "the file is frozen at this bureau"
+    : "the bureau returned no file";
+  return `${bureau}: ${what}${raw ? ` (${raw})` : ""}`;
+}
 
 export class CrsError extends Error {
   constructor(message, { status = 502, code = null, blocked = false } = {}) {
@@ -290,22 +350,28 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
      from named fields rather than by spreading the caller's object so that a
      stray internal field — a client id, a note, anything — cannot ride along to
      a credit bureau. */
-  function orderBody(identity) {
+  function orderBody(identity, bureau) {
     const body = {
-      firstName: identity.firstName ?? "",
-      middleName: identity.middleName ?? "",
-      lastName: identity.lastName ?? "",
-      suffix: identity.suffix ?? "",
+      firstName: bureauText(identity.firstName),
+      middleName: bureauText(identity.middleName),
+      lastName: bureauText(identity.lastName),
+      suffix: suffixForBureau(identity.suffix, bureau),
       birthDate: isoBirthDate(identity.birthDate) || "",
       ssn: String(identity.ssn ?? "").replace(/\D/g, ""),
-      addresses: (Array.isArray(identity.addresses) ? identity.addresses : []).map((a) => ({
-        borrowerResidencyType: a?.borrowerResidencyType ?? "Current",
-        addressLine1: a?.addressLine1 ?? "",
-        addressLine2: a?.addressLine2 ?? "",
-        city: a?.city ?? "",
-        state: a?.state ?? "",
-        postalCode: a?.postalCode ?? ""
-      }))
+      addresses: (Array.isArray(identity.addresses) ? identity.addresses : [])
+        .map((a) => ({ a, type: residencyTypeFor(a) }))
+        // A past address with no confirmed label is kept on file, not sent.
+        .filter(({ type }) => Boolean(type))
+        .map(({ a, type }) => ({
+          borrowerResidencyType: type,
+          addressLine1: bureauText(a?.addressLine1),
+          // Apt / unit. Equifax's basic schema has its own 5-character box;
+          // the Standard Format endpoints take it here.
+          addressLine2: bureauText(a?.addressLine2),
+          city: bureauText(a?.city),
+          state: bureauText(a?.state),
+          postalCode: a?.postalCode ?? ""
+        }))
     };
     if (identity.email) body.email = identity.email;
     return body;
@@ -327,20 +393,21 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
     // THE GATE. Before a body is built, before anything is on the wire.
     assertIdentityAllowed({ host: config.host, bureau, identity, env });
 
-    const res = await authed(product.order, { body: orderBody(identity) });
+    const res = await authed(product.order, { body: orderBody(identity, bureau) });
 
     // CRS keys its own retention log by this id and returns it in a header, not
     // in the body. Kept for provenance: it is how a human asks the vendor what
     // we were sent, months later.
     const requestId = res.headers?.requestid ?? res.headers?.["request-id"] ?? null;
+    const ERROR = BUREAU_FILE_STATUS.ERROR;
 
     if (res.blocked) {
       return { ok: false, bureau, report: null, requestId: null, status: 0,
-        blocked: true, error: safeResponseError(res, "request blocked") };
+        blocked: true, fileStatus: ERROR, error: safeResponseError(res, "request blocked") };
     }
     if (!res.ok) {
       return { ok: false, bureau, report: null, requestId, status: res.status,
-        blocked: false,
+        blocked: false, fileStatus: ERROR,
         error: safeResponseError(res, `HTTP ${res.status}`) };
     }
 
@@ -348,20 +415,34 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
     // receipt instead, the report is fetched by id — the vendor's own Postman
     // collection models both steps, so neither is a guess.
     if (looksLikeReport(res.body)) {
-      const hard = bureauHardErrors(res.body);
-      if (hard) {
-        return { ok: false, bureau, report: res.body, requestId, status: res.status,
-          blocked: false, error: hard };
-      }
-      return { ok: true, bureau, report: res.body, requestId, status: res.status,
-        blocked: false, error: null };
+      return reportResult({ bureau, body: res.body, requestId, status: res.status });
     }
     if (requestId) {
       return retrievePrequal({ bureau, requestId, identity });
     }
     return { ok: false, bureau, report: null, requestId, status: res.status,
-      blocked: false,
+      blocked: false, fileStatus: ERROR,
       error: "CRS returned neither a report nor a RequestID to retrieve one with" };
+  }
+
+  /* A report body came back. It is a success ONLY when a file came back.
+     A frozen file and a no-file answer used to be returned as ok — the body
+     has a creditFiles array, so it "looked like a report" — and were stored
+     as a successful pull with nothing in it. Now they come back ok:false with
+     fileStatus saying which, and the body is kept for whoever reads why. */
+  function reportResult({ bureau, body, requestId, status }) {
+    const hard = bureauHardErrors(body);
+    if (hard) {
+      return { ok: false, bureau, report: body, requestId, status,
+        blocked: false, fileStatus: BUREAU_FILE_STATUS.ERROR, error: hard };
+    }
+    const fileStatus = classifyBureauReport(body);
+    if (fileStatus !== BUREAU_FILE_STATUS.FILE_RETURNED) {
+      return { ok: false, bureau, report: body, requestId, status,
+        blocked: false, fileStatus, error: noFileError(bureau, fileStatus, body) };
+    }
+    return { ok: true, bureau, report: body, requestId, status,
+      blocked: false, fileStatus, error: null };
   }
 
   /** retrievePrequal — re-read a report CRS already produced. Not a new pull. */
@@ -373,24 +454,19 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
     }
     assertIdentityAllowed({ host: config.host, bureau, identity, env });
 
-    const res = await authed(product.retrieve(requestId), { body: orderBody(identity) });
+    const res = await authed(product.retrieve(requestId), { body: orderBody(identity, bureau) });
 
     if (res.blocked) {
       return { ok: false, bureau, report: null, requestId, status: 0,
-        blocked: true, error: safeResponseError(res, "request blocked") };
+        blocked: true, fileStatus: BUREAU_FILE_STATUS.ERROR,
+        error: safeResponseError(res, "request blocked") };
     }
     if (!res.ok || !looksLikeReport(res.body)) {
       return { ok: false, bureau, report: null, requestId, status: res.status,
-        blocked: false,
+        blocked: false, fileStatus: BUREAU_FILE_STATUS.ERROR,
         error: safeResponseError(res, "CRS returned no report for that RequestID") };
     }
-    const hard = bureauHardErrors(res.body);
-    if (hard) {
-      return { ok: false, bureau, report: res.body, requestId, status: res.status,
-        blocked: false, error: hard };
-    }
-    return { ok: true, bureau, report: res.body, requestId, status: res.status,
-      blocked: false, error: null };
+    return reportResult({ bureau, body: res.body, requestId, status: res.status });
   }
 
   return {
