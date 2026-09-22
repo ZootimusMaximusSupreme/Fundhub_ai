@@ -43,10 +43,22 @@ src="https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1"/></noscript>`;
 export const FH_ATTRIBUTION_SRC = "https://fundhub.ai/funnel/fh-attribution.js";
 export const VSL_WATCH_BEACON_SRC = "https://fundhub.ai/funnel/vsl-watch-beacon.js";
 
+/** Direct ROAS hub script (override with DIRECT_ROAS_HUB_URL in env). */
+export function directRoasScriptSrc(env = process.env) {
+  const fromEnv = String(env.DIRECT_ROAS_HUB_URL ?? "").trim();
+  if (fromEnv) return fromEnv;
+  return "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w";
+}
+
+export function directRoasHeadHtml(env = process.env) {
+  const src = directRoasScriptSrc(env);
+  return `<!-- Direct ROAS (Fundhub) -->\n<script async src="${src}"></script>`;
+}
+
 export function clarityHeadHtml(env = process.env) {
   const projectId = String(env.CLARITY_PROJECT_ID ?? "").trim();
   if (!projectId) return "";
-  return `<!-- Microsoft Clarity (FundHub) -->
+  return `<!-- Microsoft Clarity (Fundhub) -->
 <script src="https://fundhub.ai/js/clarity.js" defer></script>`;
 }
 
@@ -103,6 +115,7 @@ ${body}
 /** Pages we never full-replace (native CF calendar / checkout). */
 export const DO_NOT_FULL_REPLACE_PATHS = new Set([
   "/funding-book-call",
+  "/funding-book-call-page",
   "/schedule/phonecall",
 ]);
 
@@ -110,7 +123,8 @@ export const PUSH_MANIFEST = [
   {
     key: "apply-watch",
     liveUrl: "https://apply.fundhub.ai/watch",
-    path: "/watch",
+    path: "/vsl-page",
+    pageId: "25061160",
     fragment: "clickfunnels-fragments/01-vsl.html",
     vslBeacon: true,
     strategy: "custom_html_or_head_append",
@@ -118,7 +132,8 @@ export const PUSH_MANIFEST = [
   {
     key: "apply-survey",
     liveUrl: "https://apply.fundhub.ai/apply",
-    path: "/apply",
+    path: "/apply-page",
+    pageId: "25068989",
     fragments: [
       "clickfunnels-fragments/02a-apply-top.html",
       "clickfunnels-fragments/02b-apply-bottom.html",
@@ -129,7 +144,8 @@ export const PUSH_MANIFEST = [
   {
     key: "apply-book",
     liveUrl: "https://apply.fundhub.ai/funding-book-call",
-    path: "/funding-book-call",
+    path: "/funding-book-call-page",
+    pageId: "25062844",
     fragments: [
       "clickfunnels-fragments/04a-book-top.html",
       "clickfunnels-fragments/04b-book-bottom.html",
@@ -141,7 +157,8 @@ export const PUSH_MANIFEST = [
   {
     key: "apply-thank-you",
     liveUrl: "https://apply.fundhub.ai/thank-you",
-    path: "/thank-you",
+    path: "/thank-you-page",
+    pageId: "25063539",
     fragment: "clickfunnels-fragments/05-thank-you.html",
     vslBeacon: false,
     strategy: "custom_html_or_head_append",
