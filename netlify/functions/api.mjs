@@ -200,6 +200,8 @@ import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import publicEeoSurvey from "../../api/public/eeo-survey.mjs";
 import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
 import publicVslWatch from "../../api/public/vsl-watch.mjs";
+import adVideos from "../../api/ad-videos.mjs";
+import publicAdVideoApprove from "../../api/public/ad-video-approve.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
@@ -818,6 +820,29 @@ export const ROUTES = {
      visitor id is a string the caller invents for free. Read the header of
      api/public/vsl-watch.mjs before adding anything beside it. */
   "public/vsl-watch": publicVslWatch,
+  /* Chris taps Approve or Reject on a filmed ad take, from a phone notification
+     (owner decision 5, 2026-09-22). No auth, because a push notification has no
+     session to authenticate with — the random token in the link IS the
+     credential, same class as public/unsubscribe and public/eeo-survey.
+
+     What keeps that safe is in the database rather than in the handler:
+     389_ad_videos.sql writes its row-level security policies on approval_token,
+     so a request that has not declared a live token matches ZERO rows. One
+     stolen token reaches one take and there is no path from there to anything
+     else. The token expires, SQL checks the expiry in the same WHERE clause as
+     the update, and using it spends it.
+
+     GET shows the take so he can see what he is deciding on; POST is the
+     decision, so a link preview or a crawler following the URL cannot approve
+     anything. Every refusal — unknown, expired, already decided, malformed —
+     is the same 404, so the door answers no questions about which tokens
+     exist. Read api/public/ad-video-approve.mjs before adding anything to it. */
+  "public/ad-video-approve": publicAdVideoApprove,
+  /* The filmed takes and where each one is stuck (docs/video-pipeline-plan.md
+     §2). Staff read, ROLE_SETS.OPS — owner and admin only, because these rows
+     carry unreleased ad creative and links to the raw files. Read-only: nothing
+     is approved here, that is public/ad-video-approve above. */
+  "ad-videos": adVideos,
   /* Public lending-climate lead magnet. No auth — same class as survey-submit. */
   "climate": climate,
   "climate/geocode": climateGeocode,
