@@ -13,14 +13,24 @@
 // Access-Control-Allow-Origin is echoed for allow-listed origins only
 // (src/slo/cors.mjs). Never "*".
 //
-// defer_pull: true stores identity + consent and does NOT start the pull; the
-// Commas payment starts it (see src/slo/pull.mjs WHEN THE PULL STARTS). A demo
-// order starts the pull now, with no money event.
+// A LIVE order that is not paid stores identity + consent and does NOT start
+// the pull, with or without defer_pull: the Commas payment starts it (see
+// src/slo/pull.mjs WHEN THE PULL STARTS). A paid live order starts it now. A
+// demo order starts the pull now, with no money event. Each new pull after a
+// failed one is a new attempt (src/slo/pull.mjs ATTEMPTS).
 //
 // Body (2026-09-22): first/middle/last name, suffix, dob, ssn, address, apt,
 // city, state, zip, moved_recently + prev_* (previous address), businesses[]
-// ({ name, address, city, state, zip, ein?, phone?, started }), consent.
+// ({ name, address, city, state, zip, ein?, phone?, started }), consent,
+// address_confirmed (true = take the address as typed after the
+// address_unverified warning).
 // A refusal carries errors: [{ field, code, message }] — one per bad box.
+//
+//   409 existing_account    the email's client already has an identity on
+//                           file or has paid us, and this order is not paid
+//   422 address_unverified  the geocoder could not find the address; the
+//                           warnings name the box. Pay again with
+//                           address_confirmed:true to use it as typed.
 
 import { db } from "../../src/db.mjs";
 import { safeError } from "../../src/http/health.mjs";
@@ -54,6 +64,8 @@ const STATUS = {
   not_found: 404,
   no_account: 409,
   order_not_paid: 409,
+  existing_account: 409,
+  address_unverified: 422,
   encryption_unavailable: 503,
   identity_refused: 400,
   consent_refused: 400,
@@ -94,6 +106,11 @@ export default async function handler(req, res, deps = {}) {
       mergeFields: deps.mergeFields,
       demo: deps.demo,
       startDemoPull: deps.startDemoPull,
+      priorFile: deps.priorFile,
+      checkAddresses: deps.checkAddresses,
+      stampSlo: deps.stampSlo,
+      markIdentity: deps.markIdentity,
+      orderPulls: deps.orderPulls,
       ip: clientIp(req),
       userAgent: req.headers?.["user-agent"] || null
     });

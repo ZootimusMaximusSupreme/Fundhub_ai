@@ -142,7 +142,11 @@ const ALLOWED_RAW_FETCH = {
   /* ── Market / macro data. No client contact, no vendor client record ─────── */
   "src/climate/connectors.mjs":
     "Reads FRED/BLS/Census/NOAA/geocode public series for the climate engine. " +
-    "No client data leaves; no client or vendor record is written.",
+    "Since 2026-09-22 the same two geocoder GETs also check that a $297 buyer's " +
+    "typed home address exists (verifyStreetAddress): the street, city, state " +
+    "and ZIP go to the Census geocoder or Google Geocoding as a lookup. Nothing " +
+    "else of the buyer's leaves; no client is contacted and no client or vendor " +
+    "record is written.",
   "src/analytics/clickfunnels.mjs":
     "Reads Chris's own ClickFunnels workspace: funnels, pages, page stats. " +
     "GET only — listFunnels/listPages/fetchPageStats never POST, PUT or DELETE " +

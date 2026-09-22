@@ -18,15 +18,21 @@ function fakeRes() {
   };
 }
 
-const found = async (_db, { clientId }) => ({ id: clientId, org_id: ORG, order_created_at: null });
+const ORDER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const found = async (_db, { clientId, ref }) => ({
+  id: clientId, org_id: ORG, order_id: ORDER, order_ref: ref, order_created_at: null
+});
 
+/* A stored result reaches the answer only through a request of THIS order
+   that was fulfilled with it (src/slo/status.mjs). */
 function rowsDb({ tier = null, crs = null, decision = null, request = null } = {}) {
+  const req = request || (crs ? { status: "fulfilled", crs_result_id: crs.id, requested_at: "2026-09-22T10:00:00Z" } : null);
   return {
     async query(sql) {
-      if (/FROM soft_pull_requests/.test(sql)) return { rows: request ? [request] : [] };
+      if (/FROM soft_pull_requests/.test(sql)) return { rows: req ? [req] : [] };
       if (/FROM crs_results/.test(sql)) return { rows: crs ? [crs] : [] };
       if (/SELECT outcome_tier FROM clients/.test(sql)) return { rows: [{ outcome_tier: tier }] };
-      if (/FROM events/.test(sql)) return { rows: decision ? [decision] : [] };
+      if (/name = 'decision\.rendered'/.test(sql)) return { rows: decision ? [decision] : [] };
       throw new Error(`unexpected query: ${sql}`);
     }
   };
@@ -59,7 +65,7 @@ test("wrong client for this ref is 404, and nothing past the order check is read
   const db = {
     async query(sql) {
       seen.push(sql);
-      if (/custom_fields->>'slo_ref'/.test(sql)) return { rows: [] };
+      if (/FROM payment_links pl/.test(sql)) return { rows: [] };
       throw new Error(`must not read past the order check: ${sql}`);
     }
   };

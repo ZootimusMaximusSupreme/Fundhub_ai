@@ -5,9 +5,11 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import handler, {
   parseSloCheckoutBody,
+  parseSloPhone,
   runSloCheckout,
   sloPageConfig
 } from "../../api/public/slo-checkout.mjs";
+import { resolveSloBuyer } from "../slo/buyer.mjs";
 import {
   SLO_KEEP_TITLE,
   SLO_PRICE_CENTS,
@@ -81,11 +83,10 @@ function sloDeps(over = {}) {
     env: LIVE_ENV,
     orgId: "org-1",
     db: { query() { throw new Error("slo checkout must not query through the runner"); } },
-    resolveBuyer: async () => "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    resolveBuyer: async () => ({ clientId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", created: true }),
     ensureAccount: async () => "acct-1",
     resolveProduct: async () => "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     recordLink: async (_db, row) => { links.push(row); return { id: "pl-1" }; },
-    stampSlo: async () => {},
     emit: async () => ({ id: "evt-1" }),
     checkoutConfig: () => ({ ok: true }),
     links,
@@ -224,14 +225,12 @@ function business(over = {}) {
 test("DEMO: records the order stamped demo, never calls Commas, answers ref + client_id", async () => {
   let minted = 0;
   const events = [];
-  const stamps = [];
   const deps = sloDeps({
     env: { SLO_DEMO_PAY: "1" }, // no Commas key at all: demo must not need one
     ref: "slo_demo_1",
     checkoutConfig: () => ({ ok: false }),
     createCheckoutSession: async () => { minted += 1; return { ok: true, paymentLink: "x" }; },
-    emit: async (_db, name, payload) => { events.push({ name, payload }); return { id: "e" }; },
-    stampSlo: async (_db, clientId, ref, opts) => { stamps.push({ clientId, ref, opts }); }
+    emit: async (_db, name, payload) => { events.push({ name, payload }); return { id: "e" }; }
   });
   const out = await runSloCheckout({ email: "buyer@example.com", name: "Pat Lee", businesses: 1 }, deps);
 
@@ -247,7 +246,7 @@ test("DEMO: records the order stamped demo, never calls Commas, answers ref + cl
   assert.equal(deps.links[0].ref, "slo_demo_1");
   assert.equal(events[0].name, "slo.checkout_started");
   assert.equal(events[0].payload.demo, true);
-  assert.equal(stamps[0].ref, "slo_demo_1");
+  assert.equal(deps.links[0].businessCount, 1, "the business count rides on the order row");
 });
 
 test("DEMO off: the real path is unchanged — Assessment title, Commas URL, client_id returned", async () => {
@@ -373,4 +372,115 @@ test("POST from the widget carries the Allow-Origin header back", async () => {
   await handler({ method: "POST", headers: { origin: "https://apply.fundhub.ai" }, body: {} }, res);
   assert.equal(res.headers["access-control-allow-origin"], "https://apply.fundhub.ai");
   assert.equal(res.statusCode, 400);
+});
+
+/* ── 2026-09-22 review ─────────────────────────────────────────────────────── */
+
+test("item 2: an EXISTING client's email records the order row only — nothing is written to that client", async () => {
+  for (const env of [{ SLO_DEMO_PAY: "1" }, LIVE_ENV]) {
+    const writes = [];
+    const deps = sloDeps({
+      env,
+      ref: "slo_existing_1",
+      resolveBuyer: async () => ({ clientId: CLIENT, created: false }),
+      ensureAccount: async () => { writes.push("account"); return "acct"; },
+      upsertAttribution: async () => { writes.push("attribution"); },
+      mergeFields: async () => { writes.push("custom_fields"); },
+      replaceBusinesses: async () => { writes.push("businesses"); },
+      stampSlo: async () => { writes.push("slo_ref"); },
+      createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo" })
+    });
+    const parsed = parseSloCheckoutBody({
+      email: "someone.else@example.com",
+      utm_source: "fb",
+      businesses: [business(), business({ name: "Beta Co" })]
+    }, { now: NOW });
+    const out = await runSloCheckout(parsed, deps);
+    assert.equal(out.ok, true);
+    assert.deepEqual(writes, [], `${env.SLO_DEMO_PAY ? "demo" : "live"}: no client write before the order may write`);
+    assert.equal(deps.links.length, 1);
+    assert.equal(deps.links[0].ref, "slo_existing_1");
+    assert.equal(deps.links[0].businessCount, 2, "the ref and the business count live on the order row");
+  }
+});
+
+test("item 2: a client this checkout CREATED gets its account, ad tags and businesses; slo_ref waits for the pull", async () => {
+  const writes = [];
+  const out = await runSloCheckout(
+    parseSloCheckoutBody({ email: "new.buyer@example.com", utm_source: "fb", businesses: [business()] }, { now: NOW }),
+    sloDeps({
+      env: { SLO_DEMO_PAY: "1" },
+      resolveBuyer: async () => ({ clientId: CLIENT, created: true }),
+      ensureAccount: async () => { writes.push("account"); return "acct"; },
+      upsertAttribution: async () => { writes.push("attribution"); },
+      mergeFields: async () => { writes.push("custom_fields"); },
+      replaceBusinesses: async () => { writes.push("businesses"); },
+      stampSlo: async () => { writes.push("slo_ref"); }
+    })
+  );
+  assert.equal(out.ok, true);
+  assert.deepEqual(writes, ["account", "attribution", "custom_fields", "businesses"]);
+});
+
+test("item 2: resolveSloBuyer returns an existing email's id WITHOUT touching the row", async () => {
+  const seen = [];
+  const db = {
+    async query(sql, params) {
+      seen.push({ sql, params });
+      if (/SELECT id FROM clients/.test(sql)) return { rows: [{ id: CLIENT }] };
+      throw new Error(`must not write to an existing client: ${sql}`);
+    }
+  };
+  const out = await resolveSloBuyer(db, { orgId: "org-1", email: "Victim@Example.com", name: "Mallory", phone: "+15555550100" });
+  assert.deepEqual(out, { clientId: CLIENT, created: false });
+  assert.equal(seen.length, 1);
+  assert.deepEqual(seen[0].params, ["org-1", "victim@example.com"]);
+});
+
+test("item 7: phone is optional, 10 US digits when sent, stored as +1XXXXXXXXXX", () => {
+  assert.deepEqual(parseSloPhone(""), { value: null });
+  assert.deepEqual(parseSloPhone(null), { value: null });
+  assert.deepEqual(parseSloPhone("(555) 555-0100"), { value: "+15555550100" });
+  assert.deepEqual(parseSloPhone("5555550100"), { value: "+15555550100" });
+  assert.deepEqual(parseSloPhone("+1 555 555 0100"), { value: "+15555550100" });
+  assert.equal(parseSloPhone("555-0100").error.field, "phone");
+  assert.equal(parseSloPhone("555-0100").error.code, "phone_invalid");
+  assert.equal(parseSloPhone("25555550100").error.code, "phone_invalid", "11 digits must start with 1");
+
+  const ok = parseSloCheckoutBody({ email: "buyer@example.com", phone: "555.555.0100" });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.phone, "+15555550100");
+  assert.equal(parseSloCheckoutBody({ email: "buyer@example.com" }).phone, null);
+  const bad = parseSloCheckoutBody({ email: "buyer@example.com", phone: "12345" });
+  assert.equal(bad.ok, false);
+  assert.deepEqual(bad.errors.map((e) => e.field), ["phone"]);
+});
+
+test("item 7: the phone reaches the new client through the one client door (resolveClient)", async () => {
+  const buyers = [];
+  await runSloCheckout(
+    parseSloCheckoutBody({ email: "buyer@example.com", first_name: "Pat", last_name: "Lee", phone: "(555) 555-0100" }),
+    sloDeps({ env: { SLO_DEMO_PAY: "1" }, resolveBuyer: async (_db, args) => { buyers.push(args); return { clientId: CLIENT, created: true }; } })
+  );
+  assert.equal(buyers[0].phone, "+15555550100");
+
+  const inserts = [];
+  const db = {
+    async query(sql, params) {
+      if (/SELECT id FROM clients/.test(sql)) return { rows: [] };
+      if (/INSERT INTO clients/.test(sql)) { inserts.push(params); return { rows: [{ id: CLIENT }] }; }
+      return { rows: [] };
+    }
+  };
+  const out = await resolveSloBuyer(db, { orgId: "org-1", email: "buyer@example.com", name: "Pat Lee", phone: "+15555550100" });
+  assert.deepEqual(out, { clientId: CLIENT, created: true });
+  assert.equal(inserts.length, 1);
+  assert.ok(inserts[0].includes("+15555550100"), "clients.phone is written on the new row");
+});
+
+test("item 10: GET carries mapsBrowserKey from GOOGLE_MAPS_BROWSER_KEY, null when unset, never the server key", () => {
+  assert.equal(sloPageConfig({ ...LIVE_ENV, GOOGLE_MAPS_BROWSER_KEY: "browser-key-1" }).mapsBrowserKey, "browser-key-1");
+  assert.equal(sloPageConfig(LIVE_ENV).mapsBrowserKey, null);
+  assert.equal(sloPageConfig({ ...LIVE_ENV, GOOGLE_MAPS_BROWSER_KEY: "   " }).mapsBrowserKey, null);
+  assert.equal(sloPageConfig({ ...LIVE_ENV, GOOGLE_MAPS_API_KEY: "server-secret" }).mapsBrowserKey, null);
 });

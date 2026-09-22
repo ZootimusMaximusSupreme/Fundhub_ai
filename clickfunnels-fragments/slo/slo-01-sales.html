@@ -1207,7 +1207,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <details><summary>How do I know this is legit?</summary><div class="a">I've been doing this for ten years. Hundreds of files, tens of thousands of data points, and nobody else in this industry sells this. <b>If you're not happy with what you get, email us and we'll refund you.</b></div></details>
         <details><summary>How is this different from a funding course?</summary><div class="a">A course charges five to ten thousand dollars to teach you how to do it, and you dig the answers out yourself. This is the finished file. Every letter written, every step in order, built off your own credit.</div></details>
         <details><summary>What if my file needs a lot of work?</summary><div class="a">Then the roadmap says so and tells you how long. Some files need six months of dispute rounds. Some need two cards paid down. You'll know which one you are the day you open it.</div></details>
-        <details><summary>Can you do the work for me?</summary><div class="a">This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response. If you'd rather we run it, you'll see that option after checkout, and your $297 counts toward it.</div></details>
+        <details><summary>Can you do the work for me?</summary><div class="a">This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response.</div></details>
         <details><summary>Can't I just apply on my own?</summary><div class="a">You can. Most people apply in the wrong order on a file nobody read, and each decline makes the next one harder. This tells you what to fix first and which banks to go to.</div></details>
         <details><summary>How fast do I get it?</summary><div class="a">About ten seconds after the form.</div></details>
       </div>
@@ -1261,6 +1261,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
        POST slo-pull                    identity + consent. LIVE sends defer_pull:true,
                                         then goes to the Commas card page, which returns
                                         to this page with ?ref=&client_id=
+                                        422 address_unverified: a warning under the street
+                                        box; Pay again with the same address sends
+                                        address_confirmed:true
+                                        409 existing_account: the message goes under Email
        GET  slo-status                  polled every second after submit
        POST slo-repair-checkout         only after a pull result on the repair path
      Step 1 · Contact: first, last, email, phone.
@@ -1308,7 +1312,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <div class="cfw-box">
         <span class="cfw-kick">Home address</span>
         <label>Street address<input type="text" name="address" data-f="address" autocomplete="address-line1" maxlength="48" placeholder="123 Main St"></label>
-        <label>Apt / unit <span class="opt">optional</span><input type="text" name="apt" data-f="apt" autocomplete="address-line2" maxlength="10"></label>
+        <label>Apt / unit <span class="opt">optional</span><input type="text" name="apt" data-f="apt" autocomplete="address-line2" maxlength="14"></label>
         <label>City<input type="text" name="city" data-f="city" autocomplete="address-level2" maxlength="28"></label>
         <div class="row2">
           <label>State<select name="state" data-f="state" autocomplete="address-level1" data-states></select></label>
@@ -1318,7 +1322,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <div class="cfw-prev" data-prev hidden>
           <span class="cfw-kick">Previous address</span>
           <label>Street address<input type="text" name="prev_address" data-f="prev_address" autocomplete="off" maxlength="48"></label>
-          <label>Apt / unit <span class="opt">optional</span><input type="text" name="prev_apt" data-f="prev_apt" autocomplete="off" maxlength="10"></label>
+          <label>Apt / unit <span class="opt">optional</span><input type="text" name="prev_apt" data-f="prev_apt" autocomplete="off" maxlength="14"></label>
           <label>City<input type="text" name="prev_city" data-f="prev_city" autocomplete="off" maxlength="28"></label>
           <div class="row2">
             <label>State<select name="prev_state" data-f="prev_state" autocomplete="off" data-states></select></label>
@@ -1404,10 +1408,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   var BIZ_KEYS=['name','address','apt','city','state','zip','ein','phone','started'];
   var POLL_MS=1000,POLL_MAX_MS=90000;
   var GENERIC='Something went wrong on our side. Please try again, or email support@fundhub.ai.';
+  var ADDR_MSG="We couldn't find that address. Check the street and ZIP, or tap Pay again to use it as typed.";
   var STATES='AL:Alabama|AK:Alaska|AZ:Arizona|AR:Arkansas|CA:California|CO:Colorado|CT:Connecticut|DE:Delaware|DC:District of Columbia|FL:Florida|GA:Georgia|HI:Hawaii|ID:Idaho|IL:Illinois|IN:Indiana|IA:Iowa|KS:Kansas|KY:Kentucky|LA:Louisiana|ME:Maine|MD:Maryland|MA:Massachusetts|MI:Michigan|MN:Minnesota|MS:Mississippi|MO:Missouri|MT:Montana|NE:Nebraska|NV:Nevada|NH:New Hampshire|NJ:New Jersey|NM:New Mexico|NY:New York|NC:North Carolina|ND:North Dakota|OH:Ohio|OK:Oklahoma|OR:Oregon|PA:Pennsylvania|RI:Rhode Island|SC:South Carolina|SD:South Dakota|TN:Tennessee|TX:Texas|UT:Utah|VT:Vermont|VA:Virginia|WA:Washington|WV:West Virginia|WI:Wisconsin|WY:Wyoming|PR:Puerto Rico|VI:U.S. Virgin Islands|GU:Guam|AS:American Samoa|MP:Northern Mariana Islands|AA:Armed Forces Americas|AE:Armed Forces Europe|AP:Armed Forces Pacific';
 
   var price={base:29700,each:1500,max:20};
   var order=null;   /* {ref, client_id, demo, checkoutUrl, sig, locked} kept in memory only */
+  var addrWarned=null; /* the address the server could not find; Pay again with it = use it as typed */
   var t0=0,busy=false,pollToken=0,logged=false;
 
   var s1=root.querySelector('.s1'),s2=root.querySelector('.s2');
@@ -1489,9 +1495,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(dt.getUTCFullYear()!==p.y||dt.getUTCMonth()!==p.mo-1||dt.getUTCDate()!==p.d||p.y<1900)return 'That date is not a real date. Please check it.';
     var now=new Date();
     if(dt.getTime()>Date.UTC(now.getUTCFullYear(),now.getUTCMonth(),now.getUTCDate()))return 'That date is in the future. Please check it.';
-    var age=now.getUTCFullYear()-p.y;
-    if(now.getUTCMonth()<p.mo-1||(now.getUTCMonth()===p.mo-1&&now.getUTCDate()<p.d))age--;
-    if(age<18)return 'You must be 18 or older.';
+    /* No age rule (owner-set 2026-09-22). */
     return null;
   }
   function isoDob(v){var p=parseDob(v);return p?p.y+'-'+pad(p.mo)+'-'+pad(p.d):squeeze(v);}
@@ -1503,16 +1507,21 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     return null;
   }
   var PO=/\b(?:p\s*\.?\s*o\s*\.?\s*box|post\s+office\s+box|pob\s+\d)/i;
-  var RURAL=/^(?:rr|r\s*\.\s*r\s*\.?|rural\s+route|hc|hcr|highway\s+contract)\s*\d/i;
-  /* One address block. get(k) returns the input for street|apt|city|state|zip. */
+  /* "Apt. 4B" -> "APT 4B", "# 12" -> "#12". The 10-character cap is checked after this. */
+  function normApt(v){return squeeze(String(v==null?'':v).replace(/\./g,' ')).toUpperCase().replace(/#\s+/g,'#');}
+  /* One address block. get(k) returns the input for street|apt|city|state|zip.
+     Street: 3-48 characters with a digit SOMEWHERE (PSC 1234 Box 5678, Calle Luna 55,
+     N7450 Aanstad Rd all pass). A P.O. box is a warning only. */
   function checkAddress(get,who,bad){
     var st=get('address'),s=squeeze(st.value);
     if(!s)bad(st,'Please enter '+who+' street address.');
     else if(s.length>48)bad(st,'Keep the street to 48 characters or fewer. Put the apartment in its own box.');
+    else if(s.length<3)bad(st,'Please enter the full street address, like 123 Main St.');
+    else if(!/\d/.test(s))bad(st,'Include the house or box number, like 123 Main St.');
     else if(PO.test(s))setErr(st,'A P.O. box can stop a bureau from finding the file. Use the street address if you have one.',true);
-    else if(!/^\d/.test(s)&&!RURAL.test(s))bad(st,'Start with the house number, like 123 Main St.');
-    var ap=get('apt'),a=squeeze(ap.value).toUpperCase();
-    if(a&&(a.length>10||!/^[A-Z0-9#][A-Z0-9 #\/-]*$/.test(a)))bad(ap,'Use 10 letters or numbers or fewer, like 4B.');
+    var ap=get('apt'),a=normApt(ap.value);
+    if(a&&!/^[A-Z0-9#][A-Z0-9 #\/-]*$/.test(a))bad(ap,'Use letters, numbers, spaces, # or - only, like Apt 4B or #12.');
+    else if(a.length>10)bad(ap,'Keep the apartment or unit to 10 characters or fewer, like Apt 4B.');
     var ci=get('city'),c=squeeze(ci.value),cp=plain(c);
     if(!c)bad(ci,'Please enter '+who+' city.');
     else if(!/^[A-Za-z][A-Za-z .'-]*$/.test(cp)||cp.length>28)bad(ci,'Use the city name only, in letters.');
@@ -1556,7 +1565,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     d.innerHTML='<div class="cfw-biz-h"><span class="cfw-kick" data-bizname></span><button type="button" class="cfw-rm" data-rm>Remove</button></div>'
       +'<label>Legal business name<input type="text" data-k="name" autocomplete="organization" maxlength="100"></label>'
       +'<label>Business street address<input type="text" data-k="address" autocomplete="off" maxlength="48" placeholder="123 Main St"></label>'
-      +'<label>Suite / unit <span class="opt">optional</span><input type="text" data-k="apt" autocomplete="off" maxlength="10"></label>'
+      +'<label>Suite / unit <span class="opt">optional</span><input type="text" data-k="apt" autocomplete="off" maxlength="14"></label>'
       +'<label>City<input type="text" data-k="city" autocomplete="off" maxlength="28"></label>'
       +'<div class="row2"><label>State<select data-k="state" autocomplete="off" data-states></select></label>'
       +'<label>ZIP<input type="text" data-k="zip" autocomplete="off" inputmode="numeric" maxlength="10"></label></div>'
@@ -1649,6 +1658,11 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       ['address','apt','city','state','zip'].forEach(function(k){var v=val(s2,'prev_'+k);if(v)o['prev_'+k]=v;});
     }
     return o;
+  }
+  function addrSig(){
+    var k=['address','city','state','zip'],o=k.map(function(n){return val(s2,n);});
+    if(moved.checked)k.forEach(function(n){o.push(val(s2,'prev_'+n));});
+    return JSON.stringify(o);
   }
   function clearSecrets(){ssnInput.value='';ssnInput.classList.add('mask');showBtn.textContent='Show';showBtn.setAttribute('aria-pressed','false');}
 
@@ -1768,6 +1782,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(biz.length)body.businesses=biz;
     /* LIVE: store identity + consent now; the payment starts the pull. */
     if(!o.demo)body.defer_pull=true;
+    /* Second Pay with the same address after "We couldn't find that address". */
+    if(addrWarned&&addrWarned===addrSig())body.address_confirmed=true;
     /* DEMO: the sandbox pull runs inside this request, so show the reading state now. */
     if(o.demo)showPane('reading');
     var req=call('POST','slo-pull',body);
@@ -1788,6 +1804,14 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         return;
       }
       showPane('form');go(2);
+      if(b.error==='address_unverified'){
+        addrWarned=addrSig();
+        showApiErrors(b);
+        var w=(b.warnings&&b.warnings[0]&&b.warnings[0].field)||'address',st=find(w)||s2.querySelector('[name="address"]');
+        if(st&&!(st.parentNode.querySelector('.ferr')||{}).textContent)setErr(st,ADDR_MSG,true);
+        if(st)st.focus();
+        return;
+      }
       if(b.error==='not_found'||b.error==='order_not_paid'||b.error==='no_account')order=null;
       if(!showApiErrors(b))showFormErr(msgFor(b.error));
     });
@@ -1882,6 +1906,48 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       .then(function(){busy=false;each(all,function(x){x.disabled=false;});});
   });
 
+  /* ---- optional Google address autocomplete ----
+     Loads ONLY when GET slo-checkout hands a browser key (mapsBrowserKey, null when
+     unset). Null: nothing loads, the street boxes stay plain. US addresses only; a
+     pick fills street, city, state and ZIP. A key Google refuses re-enables the boxes. */
+  var placesCountries=['us','pr','vi','gu','mp'];
+  function placesInit(key){
+    if(typeof key!=='string'||!key)return false;
+    if(window.google&&window.google.maps&&window.google.maps.places){placesAttach();return true;}
+    window.fhwPlacesReady=function(){try{placesAttach();}catch(e){}};
+    window.gm_authFailure=function(){
+      each(s2.querySelectorAll('[data-places]'),function(i){i.disabled=false;i.style.backgroundImage='';i.placeholder=i.name==='address'?'123 Main St':'';});
+    };
+    var tag=document.createElement('script');
+    tag.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&libraries=places&callback=fhwPlacesReady';
+    tag.async=true;
+    document.head.appendChild(tag);
+    return true;
+  }
+  function placesAttach(){
+    var P=window.google&&window.google.maps&&window.google.maps.places;if(!P||!P.Autocomplete)return;
+    ['','prev_'].forEach(function(pre){
+      var input=s2.querySelector('[name="'+pre+'address"]');if(!input||input.getAttribute('data-places'))return;
+      input.setAttribute('data-places','1');
+      var ac=new P.Autocomplete(input,{componentRestrictions:{country:placesCountries},fields:['address_components'],types:['address']});
+      ac.addListener('place_changed',function(){placeFill(pre,ac.getPlace());});
+    });
+  }
+  function placeFill(pre,place){
+    var comps=(place&&place.address_components)||[];
+    function part(type,short){for(var i=0;i<comps.length;i++){if(comps[i].types&&comps[i].types.indexOf(type)>-1)return short?comps[i].short_name:comps[i].long_name;}return '';}
+    var street=squeeze(part('street_number')+' '+part('route'));
+    var city=part('locality')||part('sublocality')||part('postal_town')||part('neighborhood');
+    var st=part('administrative_area_level_1',true),country=part('country',true);
+    if(country&&country!=='US')st=country;
+    function put(name,v){var el=s2.querySelector('[name="'+pre+name+'"]');if(el&&v){el.value=v;clearErr(el);}}
+    if(street)put('address',street.slice(0,48));
+    put('city',city.slice(0,28));
+    var sel=s2.querySelector('[name="'+pre+'state"]');
+    if(sel&&st&&sel.querySelector('option[value="'+st+'"]')){sel.value=st;clearErr(sel);}
+    put('zip',part('postal_code'));
+  }
+
   /* ---- prices and mode: the server decides, the widget only shows it ---- */
   call('GET','slo-checkout').then(function(r){
     var b=r.body;if(!r.ok||!b||b.ok!==true)return;
@@ -1894,6 +1960,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(b.demo===true){demoEl.textContent=(b.notices&&b.notices.charge)||'Demo checkout: your card is not charged.';demoEl.hidden=false;liveNote.hidden=true;}
     else{demoEl.hidden=true;liveNote.hidden=false;}
     if(b.checkout&&b.checkout.ready===false){showFormErr(msgFor('checkout_not_configured'));payBtn.disabled=true;}
+    if(b.mapsBrowserKey)placesInit(b.mapsBrowserKey);
   },function(){});
 
   /* ---- back from the Commas card page: ?ref=&client_id= -> resume polling ---- */
@@ -2013,7 +2080,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     <span class="sf-l"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Your card and social are encrypted in transit and used for this order and the soft pull only.</span>
     <span class="sf-r">Questions before you buy: <b>[SUPPORT EMAIL]</b> &middot; <b>[SUPPORT PHONE]</b></span>
   </div>
-  <div class="trustline">256-bit SSL secure &middot; Soft pull, no hard inquiry &middot; Zero score impact from that pull &middot; Credits toward your deposit if you ever go done-for-you</div>
+  <div class="trustline">256-bit SSL secure &middot; Soft pull, no hard inquiry &middot; Zero score impact from that pull</div>
 
   <!-- SLOT-TESTIMONIALS: 3 video + 3 photo. Empty on purpose. Chris drops in real clips and photos.
        Do not invent names, quotes, amounts or faces. Each slot hides itself once you replace the

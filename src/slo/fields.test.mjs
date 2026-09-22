@@ -43,16 +43,25 @@ test("suffix: JR SR II III IV only, dots and case forgiven, blank is null", () =
   assert.equal(checkSuffix("Esq").error.code, "suffix_invalid");
 });
 
-test("date of birth: real date, not future, 18 or older, two typed formats", () => {
+test("date of birth: a real date, 1900 or later, not in the future, two typed formats", () => {
   assert.deepEqual(checkDob("1990-01-02", { now: NOW }), { value: "1990-01-02" });
   assert.deepEqual(checkDob("01/02/1990", { now: NOW }), { value: "1990-01-02" });
   assert.equal(checkDob("", { now: NOW }).error.code, "dob_required");
   assert.equal(checkDob("1990-02-31", { now: NOW }).error.code, "dob_invalid");
   assert.equal(checkDob("2030-01-01", { now: NOW }).error.code, "dob_invalid");
-  // 18th birthday is tomorrow → still 17 → refused; today → allowed.
-  assert.equal(checkDob("2008-09-23", { now: NOW }).error.code, "dob_under_18");
-  assert.deepEqual(checkDob("2008-09-22", { now: NOW }), { value: "2008-09-22" });
-  assert.equal(checkDob("2008-09-23", { now: NOW }).error.field, "dob");
+  assert.equal(checkDob("2026-09-23", { now: NOW }).error.code, "dob_invalid", "tomorrow is the future");
+  assert.equal(checkDob("1899-12-31", { now: NOW }).error.code, "dob_invalid");
+  assert.equal(checkDob("1899-12-31", { now: NOW }).error.field, "dob");
+  assert.deepEqual(checkDob("1900-01-01", { now: NOW }), { value: "1900-01-01" });
+});
+
+test("date of birth: NO age rule (owner-set 2026-09-22) — under 18 and today both pass", () => {
+  assert.deepEqual(checkDob("2008-09-23", { now: NOW }), { value: "2008-09-23" });
+  assert.deepEqual(checkDob("2020-05-05", { now: NOW }), { value: "2020-05-05" });
+  assert.deepEqual(checkDob("2026-09-22", { now: NOW }), { value: "2026-09-22" });
+  for (const d of ["2008-09-23", "2020-05-05", "2026-09-22"]) {
+    assert.notEqual(checkDob(d, { now: NOW }).error?.code, "dob_under_18");
+  }
 });
 
 test("SSN: 9 digits, dashes ok, 666 NOT blocked (every CRS sandbox person is 666)", () => {
@@ -66,13 +75,17 @@ test("SSN: 9 digits, dashes ok, 666 NOT blocked (every CRS sandbox person is 666
   assert.equal(checkSsn("1").error.field, "ssn");
 });
 
-test("street must start with the house number", () => {
+test("street: required, 3-48 characters, and a digit somewhere (not only first)", () => {
   const bad = checkAddress({ address: "Main St", city: "Denton", state: "TX", zip: "76205" });
   assert.equal(bad.errors.length, 1);
   assert.deepEqual(
     { field: bad.errors[0].field, code: bad.errors[0].code },
     { field: "address", code: "street_number" }
   );
+  assert.equal(checkAddress({ address: "", city: "Denton", state: "TX", zip: "76205" }).errors[0].code, "street_required");
+  assert.equal(checkAddress({ address: "1A", city: "Denton", state: "TX", zip: "76205" }).errors[0].code, "street_too_short");
+  assert.equal(checkAddress({ address: `1 ${"A".repeat(47)}`, city: "Denton", state: "TX", zip: "76205" }).errors[0].code, "street_too_long");
+  assert.equal(checkAddress({ address: "1 A", city: "Denton", state: "TX", zip: "76205" }).errors.length, 0, "3 characters is enough");
   const ok = checkAddress({ address: "100 Main St", apt: "4b", city: "Denton", state: "tx", zip: "76205-1234" });
   assert.equal(ok.errors.length, 0);
   assert.equal(ok.value.addressLine2, "4B");
@@ -80,7 +93,43 @@ test("street must start with the house number", () => {
   assert.equal(ok.value.postalCode, "762051234");
 });
 
-test("a P.O. box is a WARNING and never blocks", () => {
+test("street: military, Puerto Rico and Wisconsin grid addresses pass with no error and no warning", () => {
+  const cases = [
+    { address: "PSC 1234 Box 5678", city: "APO", state: "AE", zip: "09012" },
+    { address: "Unit 2050 Box 4190", city: "APO", state: "AP", zip: "96278" },
+    { address: "CMR 480 Box 123", city: "APO", state: "AE", zip: "09128" },
+    { address: "Calle Luna 55", city: "San Juan", state: "PR", zip: "00901" },
+    { address: "Urb Las Gladiolas 150 Calle A", city: "San Juan", state: "PR", zip: "00926" },
+    { address: "N7450 Aanstad Rd", city: "Iola", state: "WI", zip: "54945" },
+    { address: "RR 2 Box 15", city: "Denton", state: "TX", zip: "76205" }
+  ];
+  for (const input of cases) {
+    const out = checkAddress(input);
+    assert.deepEqual(out.errors, [], input.address);
+    assert.deepEqual(out.warnings, [], input.address);
+    assert.equal(out.value.addressLine1, input.address);
+  }
+});
+
+test("apartment: periods and # are normalized, then the 10-character cap applies", () => {
+  const base = { address: "100 Main St", city: "Denton", state: "TX", zip: "76205" };
+  const want = { "Apt. 4B": "APT 4B", "Ste. 200": "STE 200", "#12": "#12", "# 12": "#12", "apt #3": "APT #3", "Unit 7-C": "UNIT 7-C" };
+  for (const [typed, stored] of Object.entries(want)) {
+    const out = checkAddress({ ...base, apt: typed });
+    assert.deepEqual(out.errors, [], typed);
+    assert.equal(out.value.addressLine2, stored, typed);
+  }
+  const long = checkAddress({ ...base, apt: "Apartment 12B" });
+  assert.equal(long.errors[0].field, "apt");
+  assert.equal(long.errors[0].code, "apt_invalid");
+  assert.match(long.errors[0].message, /10 characters or fewer/);
+  const odd = checkAddress({ ...base, apt: "4B!" });
+  assert.equal(odd.errors[0].code, "apt_invalid");
+  assert.match(odd.errors[0].message, /letters, numbers, spaces, # or -/);
+  assert.doesNotMatch(odd.errors[0].message, /10/, "a bad character is not reported as a length problem");
+});
+
+test("a P.O. box is a WARNING and never blocks (and it has its number)", () => {
   assert.equal(isPoBox("P.O. Box 12"), true);
   const po = checkAddress({ address: "PO Box 12", city: "Denton", state: "TX", zip: "76205" });
   assert.equal(po.errors.length, 0);

@@ -89,3 +89,146 @@ test("after the pull: time-to-bucket is logged, funding goes to the booking page
   assert.match(widgetScript, /q\.set\('pa',String\(n\)\)/);
   assert.match(widgetScript, /POLL_MS=1000,POLL_MAX_MS=90000/);
 });
+
+/* ── 2026-09-22 review ─────────────────────────────────────────────────────── */
+
+/* Pull one named function out of the widget script, by brace matching, so it
+   can run on its own in a sandbox. */
+function widgetFunction(name) {
+  const start = widgetScript.indexOf(`function ${name}(`);
+  assert.ok(start >= 0, `function ${name} is in the widget`);
+  let depth = 0;
+  for (let i = widgetScript.indexOf("{", start); i < widgetScript.length; i++) {
+    if (widgetScript[i] === "{") depth += 1;
+    else if (widgetScript[i] === "}") { depth -= 1; if (depth === 0) return widgetScript.slice(start, i + 1); }
+  }
+  throw new Error(`unbalanced ${name}`);
+}
+
+function runWidgetCheck(fields) {
+  /* checkAddress with its real helpers, over plain objects standing in for inputs. */
+  const code = [widgetFunction("squeeze"), widgetFunction("plain"), widgetFunction("normApt"),
+    widgetScript.match(/var PO=.*?;/)[0], widgetFunction("checkAddress")].join("\n");
+  const bad = [];
+  const warn = [];
+  const ctx = vm.createContext({ setErr: (el, msg, w) => { if (w) warn.push([el.k, msg]); }, String, JSON });
+  vm.runInContext(`${code}\nthis.checkAddress = checkAddress;`, ctx);
+  const inputs = Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, { k, value: v }]));
+  ctx.checkAddress((k) => inputs[k], "your", (el, msg) => bad.push([el.k, msg]));
+  return { bad, warn };
+}
+
+test("items 4-5: the widget's street and apartment rules match the server", () => {
+  const base = { apt: "", city: "Town", state: "TX", zip: "76205" };
+  for (const street of ["PSC 1234 Box 5678", "Unit 2050 Box 4190", "CMR 480 Box 123", "Calle Luna 55",
+    "Urb Las Gladiolas 150 Calle A", "N7450 Aanstad Rd", "100 Main St"]) {
+    const out = runWidgetCheck({ ...base, address: street });
+    assert.deepEqual(out.bad, [], street);
+    assert.deepEqual(out.warn, [], street);
+  }
+  assert.equal(runWidgetCheck({ ...base, address: "Main St" }).bad[0][0], "address", "a street needs a digit somewhere");
+  assert.equal(runWidgetCheck({ ...base, address: "1A" }).bad[0][0], "address", "3 characters at least");
+  assert.equal(runWidgetCheck({ ...base, address: "PO Box 12" }).warn[0][0], "address", "a P.O. box warns");
+  assert.deepEqual(runWidgetCheck({ ...base, address: "PO Box 12" }).bad, []);
+  for (const apt of ["Apt. 4B", "Ste. 200", "#12", "# 12"]) {
+    assert.deepEqual(runWidgetCheck({ ...base, address: "100 Main St", apt }).bad, [], apt);
+  }
+  const long = runWidgetCheck({ ...base, address: "100 Main St", apt: "Apartment 12B" }).bad[0];
+  assert.equal(long[0], "apt");
+  assert.match(long[1], /10 characters or fewer/);
+  assert.doesNotMatch(widgetScript, /Start with the house number/);
+  assert.doesNotMatch(widgetScript, /RURAL/);
+  assert.match(html, /name="apt" data-f="apt" autocomplete="address-line2" maxlength="14"/, "the box takes 'Apt. 4B'-style typing");
+});
+
+test("item 6: no 18+ rule in the widget", () => {
+  assert.doesNotMatch(widgetScript, /18 or older/);
+  assert.doesNotMatch(widgetScript, /age<18/);
+  const code = [widgetFunction("squeeze"), widgetFunction("parseDob"), widgetFunction("vDob")].join("\n");
+  const ctx = vm.createContext({ Date, String });
+  vm.runInContext(`${code}\nthis.vDob = vDob;`, ctx);
+  assert.equal(ctx.vDob("01/02/2015"), null, "a child's date is a real date");
+  assert.equal(ctx.vDob("02/31/1990"), "That date is not a real date. Please check it.");
+  assert.equal(ctx.vDob("01/01/1899"), "That date is not a real date. Please check it.");
+  assert.equal(ctx.vDob("01/01/2999"), "That date is in the future. Please check it.");
+});
+
+test("item 9: 'We couldn't find that address' goes under the street box; Pay again confirms it", () => {
+  assert.match(widgetScript, /var ADDR_MSG="We couldn't find that address\. Check the street and ZIP, or tap Pay again to use it as typed\.";/);
+  assert.match(widgetScript, /if\(b\.error==='address_unverified'\)\{\s*addrWarned=addrSig\(\);/);
+  assert.match(widgetScript, /if\(addrWarned&&addrWarned===addrSig\(\)\)body\.address_confirmed=true;/);
+  assert.match(widgetScript, /setErr\(st,ADDR_MSG,true\)/, "shown as a warning, not an error");
+});
+
+test("item 10: Google autocomplete loads only when the server hands a browser key", () => {
+  assert.doesNotMatch(html, /<script[^>]+src="https:\/\/maps\.googleapis\.com/i, "no static Google script on the page");
+  assert.match(widgetScript, /if\(b\.mapsBrowserKey\)placesInit\(b\.mapsBrowserKey\);/);
+
+  const appended = [];
+  const ctx = vm.createContext({
+    window: {},
+    document: {
+      createElement: (tag) => ({ tag }),
+      head: { appendChild: (el) => { appended.push(el); } }
+    },
+    s2: { querySelectorAll: () => [], querySelector: () => null },
+    each: () => {},
+    encodeURIComponent,
+    placesAttach: () => { throw new Error("must not attach without Google loaded"); }
+  });
+  vm.runInContext(`${widgetFunction("placesInit")}\nthis.placesInit = placesInit;`, ctx);
+
+  for (const key of [null, undefined, "", 0]) {
+    assert.equal(ctx.placesInit(key), false, String(key));
+  }
+  assert.equal(appended.length, 0, "null key: nothing loads");
+  assert.equal(ctx.window.fhwPlacesReady, undefined);
+
+  assert.equal(ctx.placesInit("browser key/1"), true);
+  assert.equal(appended.length, 1);
+  assert.equal(appended[0].tag, "script");
+  assert.equal(
+    appended[0].src,
+    "https://maps.googleapis.com/maps/api/js?key=browser%20key%2F1&libraries=places&callback=fhwPlacesReady"
+  );
+  assert.equal(typeof ctx.window.fhwPlacesReady, "function");
+  assert.equal(typeof ctx.window.gm_authFailure, "function", "a refused key re-enables the boxes");
+});
+
+test("item 10: a picked place fills street, city, state and ZIP (US only)", () => {
+  assert.match(widgetScript, /componentRestrictions:\{country:placesCountries\}/);
+  assert.match(widgetScript, /var placesCountries=\['us','pr','vi','gu','mp'\];/);
+  const boxes = {};
+  const sel = { value: "", querySelector: (q) => (/value="TX"|value="PR"/.test(q) ? {} : null) };
+  const ctx = vm.createContext({
+    s2: { querySelector: (q) => {
+      const name = q.match(/name="([^"]+)"/)[1];
+      if (/state$/.test(name)) return sel;
+      return (boxes[name] = boxes[name] || { value: "" });
+    } },
+    clearErr: () => {},
+    String
+  });
+  vm.runInContext(`${widgetFunction("squeeze")}\n${widgetFunction("placeFill")}\nthis.placeFill = placeFill;`, ctx);
+  ctx.placeFill("", { address_components: [
+    { types: ["street_number"], long_name: "100", short_name: "100" },
+    { types: ["route"], long_name: "Main Street", short_name: "Main St" },
+    { types: ["locality"], long_name: "Denton", short_name: "Denton" },
+    { types: ["administrative_area_level_1"], long_name: "Texas", short_name: "TX" },
+    { types: ["country"], long_name: "United States", short_name: "US" },
+    { types: ["postal_code"], long_name: "76205", short_name: "76205" }
+  ] });
+  assert.equal(boxes.address.value, "100 Main Street");
+  assert.equal(boxes.city.value, "Denton");
+  assert.equal(sel.value, "TX");
+  assert.equal(boxes.zip.value, "76205");
+});
+
+test("item 8: the lander never offers done-for-you; the Dispute Letter Pack copy stays", () => {
+  assert.doesNotMatch(html, /Credits toward your deposit if you ever go done-for-you/);
+  assert.doesNotMatch(html, /your \$297 counts toward it/);
+  assert.doesNotMatch(html, /If you'd rather we run it, you'll see that option after checkout/);
+  assert.match(html, /<summary>Can you do the work for me\?<\/summary><div class="a">This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response\.<\/div>/);
+  assert.match(html, /Zero score impact from that pull<\/div>/);
+  assert.match(html, /Print\. Sign\. Mail\./);
+});

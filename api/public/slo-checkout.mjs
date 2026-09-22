@@ -14,9 +14,22 @@
 // GET  — price, whether checkout is on, whether this is DEMO pay. No earnings
 //        figure. ?businesses=n prices the order bump: first business free,
 //        each extra $15 (owner-set 2026-09-22). Every figure is the server's.
-// POST — { email, first_name?, last_name?, businesses?, business_count?,
+//        mapsBrowserKey: GOOGLE_MAPS_BROWSER_KEY, or null when unset. The
+//        widget loads Google address autocomplete only when it is not null.
+//        Never the server key (GOOGLE_MAPS_API_KEY).
+// POST — { email, first_name?, last_name?, phone?, businesses?, business_count?,
 //          return_url?, utm_*? }
 //        The amount is $297 + $15 × (n − 1), n = businesses on the order.
+//        phone is optional; when sent it must be a 10-digit US number and is
+//        stored as +1XXXXXXXXXX on a client this checkout creates.
+//
+// AN EMAIL IS NOT A LOGIN (2026-09-22 review). The buyer is found by email,
+// and anyone can type anyone's email. So when the email already belongs to a
+// client, this door writes NOTHING to that client: no name, phone, account,
+// ad tags, businesses or slo_ref. It records the order row only (the ref and
+// the business count). What that order may later write is decided by
+// src/slo/pull.mjs. A client this checkout creates is its own, and gets the
+// account, ad tags and businesses as before.
 //
 // DEMO PAY (SLO_DEMO_PAY="1", src/slo/offer.mjs isSloDemoPay). The order is
 // recorded exactly as a real one — the buyer, the account, the ad tags, the
@@ -57,8 +70,7 @@ import {
   ensureSloAccount,
   recordSloPaymentLink,
   resolveDiagnosticProductId,
-  resolveSloBuyer,
-  stampSloRef
+  resolveSloBuyer
 } from "../../src/slo/buyer.mjs";
 import { parseSloBusinesses, replaceSloBusinesses } from "../../src/slo/businesses.mjs";
 import { answerPreflight, applySloCors, sloReturnUrl } from "../../src/slo/cors.mjs";
@@ -77,6 +89,19 @@ function readBody(req) {
 
 const cleanStr = (v, max = 200) => (v == null ? "" : String(v).trim().slice(0, max));
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+/** A US phone as +1XXXXXXXXXX. Blank → { value: null }. Not 10 digits (or 11
+ *  starting with 1) → { error }. Formatting characters are ignored. */
+export function parseSloPhone(raw) {
+  const typed = cleanStr(raw, 40);
+  if (!typed) return { value: null };
+  let digits = typed.replace(/\D/g, "");
+  if (digits.length === 11 && digits.startsWith("1")) digits = digits.slice(1);
+  if (digits.length !== 10) {
+    return { error: { field: "phone", code: "phone_invalid", message: "Use a 10-digit phone number." } };
+  }
+  return { value: `+1${digits}` };
+}
 
 export function newSloRef() {
   return `slo_${crypto.randomBytes(12).toString("hex")}`;
@@ -114,6 +139,9 @@ export function sloPageConfig(env = process.env, { businesses = SLO_FREE_BUSINES
        reads this; it never decides the mode itself. */
     demo,
     checkout: { ready: demo || checkoutConfig(env).ok === true },
+    /* The browser key only (a key meant to be seen by a page). null → the
+       widget loads nothing from Google and the address boxes are plain. */
+    mapsBrowserKey: String(env?.GOOGLE_MAPS_BROWSER_KEY ?? "").trim() || null,
     /* Said on the page, not only in a comment. No earnings figure. The charge
        line is built from the same total as priceDisplay, so they cannot drift. */
     notices: {
@@ -145,6 +173,8 @@ export function parseSloCheckoutBody(body, { now = new Date() } = {}) {
   const first = cleanStr(body.first_name ?? body.firstName, 80);
   const last = cleanStr(body.last_name ?? body.lastName, 80);
   const name = [first, last].filter(Boolean).join(" ").trim() || null;
+  const phone = parseSloPhone(body.phone);
+  if (phone.error) errors.push(phone.error);
 
   let businesses = SLO_FREE_BUSINESSES;
   let businessRows = null;
@@ -173,6 +203,7 @@ export function parseSloCheckoutBody(body, { now = new Date() } = {}) {
     name,
     firstName: first || null,
     lastName: last || null,
+    phone: phone.value ?? null,
     businesses,
     businessRows,
     // null unless https on an allow-listed origin; see src/slo/cors.mjs.
@@ -198,27 +229,34 @@ export async function runSloCheckout(parsed, deps = {}) {
   const ref = deps.ref || newSloRef();
   const orgId = deps.orgId || (await resolveDefaultOrg(dbh));
 
-  const clientId = await (deps.resolveBuyer || resolveSloBuyer)(dbh, {
-    orgId, email: parsed.email, name: parsed.name
+  const buyer = await (deps.resolveBuyer || resolveSloBuyer)(dbh, {
+    orgId, email: parsed.email, name: parsed.name, phone: parsed.phone ?? null
   });
+  const clientId = buyer?.clientId || null;
   if (!clientId) return { ok: false, error: "buyer_missing" };
+  const newClient = buyer.created === true;
 
-  await (deps.ensureAccount || ensureSloAccount)(dbh, {
-    orgId, clientId, email: parsed.email, name: parsed.name
-  });
-  if (parsed.attribution) {
-    await (deps.upsertAttribution || upsertClientAdAttribution)(dbh, {
-      orgId, clientId, attribution: parsed.attribution
+  /* Writes to the CLIENT happen only for a client this checkout created. See
+     AN EMAIL IS NOT A LOGIN in the header. */
+  if (newClient) {
+    await (deps.ensureAccount || ensureSloAccount)(dbh, {
+      orgId, clientId, email: parsed.email, name: parsed.name
     });
-    await (deps.mergeFields || mergeCustomFields)(dbh, clientId, parsed.attribution);
-  }
-  /* The businesses the widget sent ride on the order. Rows are the SLO rows
-     only (entity_data.source = 'slo'); the staff approve form's rows are never
-     touched. A later pull form that sends its own list replaces these. */
-  if (Array.isArray(parsed.businessRows)) {
-    await (deps.replaceBusinesses || replaceSloBusinesses)(dbh, {
-      orgId, clientId, businesses: parsed.businessRows
-    });
+    if (parsed.attribution) {
+      await (deps.upsertAttribution || upsertClientAdAttribution)(dbh, {
+        orgId, clientId, attribution: parsed.attribution
+      });
+      await (deps.mergeFields || mergeCustomFields)(dbh, clientId, parsed.attribution);
+    }
+    /* The businesses the widget sent ride on the order. Rows are the SLO rows
+       only (entity_data.source = 'slo'); the staff approve form's rows are
+       never touched. The pull form sends the same list again, and that is
+       what an existing client's order stores, once it is allowed to. */
+    if (Array.isArray(parsed.businessRows)) {
+      await (deps.replaceBusinesses || replaceSloBusinesses)(dbh, {
+        orgId, clientId, businesses: parsed.businessRows
+      });
+    }
   }
   const productId = await (deps.resolveProduct || resolveDiagnosticProductId)(dbh, orgId);
 
@@ -241,11 +279,11 @@ export async function runSloCheckout(parsed, deps = {}) {
   );
 
   if (demo) {
-    /* DEMO: the order row, stamped demo, and no Commas call at all. */
+    /* DEMO: the order row, stamped demo, and no Commas call at all. The ref
+       and business count live on this row, not on the client. */
     await (deps.recordLink || recordSloPaymentLink)(dbh, {
       orgId, clientId, productId, ref, amountCents, businessCount: businesses, isDemo: true
     });
-    await (deps.stampSlo || stampSloRef)(dbh, clientId, ref, { businessesPaid: businesses });
     return {
       ok: true,
       demo: true,
@@ -287,7 +325,6 @@ export async function runSloCheckout(parsed, deps = {}) {
     orgId, clientId, productId, ref, checkoutUrl, amountCents, commasSessionId,
     businessCount: businesses
   });
-  await (deps.stampSlo || stampSloRef)(dbh, clientId, ref, { businessesPaid: businesses });
 
   return {
     ok: true,

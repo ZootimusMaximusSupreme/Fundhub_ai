@@ -2,11 +2,15 @@
 // pull stands, for the /roadmap widget.
 //
 // NO AUTH. Same stranger class and the same credential as
-// api/public/slo-pull.mjs: the pair ref + client_id already stamped on that
-// buyer (findSloOrder). A naked client_id, or a ref that belongs to somebody
-// else, answers 404 — the same answer as a made-up pair, so it cannot be used
-// to learn who exists. The org is taken from the matched client row, never from
-// the request.
+// api/public/slo-pull.mjs: the pair ref + client_id of one order row
+// (payment_links, findSloOrder). A naked client_id, or a ref that belongs to
+// somebody else, answers 404 — the same answer as a made-up pair, so it cannot
+// be used to learn who exists. The org is taken from the matched client row,
+// never from the request.
+//
+// ONLY THIS ORDER'S PULLS (2026-09-22 review). The answer is built from the
+// pulls this order started and nothing else on the client (src/slo/status.mjs),
+// so an order placed with somebody else's email never shows their results.
 //
 // Read only. Never writes, never emits, never charges. The body never carries
 // the tier name, the email, a score or any bureau data: only the fields built

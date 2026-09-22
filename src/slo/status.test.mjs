@@ -7,13 +7,18 @@ import {
   bureausFromFailReason,
   bureausFromResult,
   decisionKeyFor,
+  loadOrderPullRequests,
   loadSloStatus,
   paFromEstimate,
+  sloDemoLedgerPrefix,
   sloStatusFromRows
 } from "./status.mjs";
 
 const ORG = "11111111-1111-4111-8111-111111111111";
 const CLIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+const ORDER = "dddddddd-dddd-4ddd-8ddd-dddddddddddd";
+const REF = "slo_0123456789abcdef01234567";
+const FOUND = { id: CLIENT, org_id: ORG, order_id: ORDER, order_ref: REF };
 
 const CRS_ALL = {
   id: "crs-1",
@@ -174,34 +179,81 @@ test("the answer never carries a tier name, score or email", () => {
   assert.equal(/REPAIR_ONLY|FULL_FUNDING|outcome|score|@/.test(text), false);
 });
 
-test("loadSloStatus scopes every read to this order and to the client's org", async () => {
+test("loadSloStatus reads only this order's pulls, and the result one of them was fulfilled with", async () => {
   const seen = [];
   const db = {
     async query(sql, params) {
       seen.push({ sql, params });
-      if (/FROM soft_pull_requests/.test(sql)) return { rows: [{ status: "fulfilled", requested_at: "2026-09-22T10:01:00Z" }] };
+      if (/FROM soft_pull_requests/.test(sql)) {
+        return { rows: [{ status: "fulfilled", crs_result_id: "crs-1", requested_at: "2026-09-22T10:01:00Z" }] };
+      }
       if (/FROM crs_results/.test(sql)) return { rows: [CRS_ALL] };
       if (/SELECT outcome_tier FROM clients/.test(sql)) return { rows: [{ outcome_tier: "FULL_FUNDING" }] };
       if (/FROM events/.test(sql)) return { rows: [{ outcome_tier: "FULL_FUNDING", funding_estimate: "40000" }] };
       throw new Error(`unexpected ${sql}`);
     }
   };
-  const since = "2026-09-22T10:00:00Z";
-  const s = await loadSloStatus(db, { id: CLIENT, org_id: ORG, order_created_at: since, order_is_demo: true });
+  const s = await loadSloStatus(db, { ...FOUND, order_is_demo: true });
   assert.equal(s.state, "done");
   assert.equal(s.pa, 40000);
   assert.equal(s.demo, true);
 
   const req = seen.find((q) => /FROM soft_pull_requests/.test(q.sql));
-  assert.deepEqual(req.params, [ORG, CLIENT, since]);
-  assert.match(req.sql, /requested_at >= \$3/);
+  assert.deepEqual(req.params, [ORG, CLIENT, `diagnostic-paid:slo-demo:${REF}:`, REF, ORDER]);
+  assert.match(req.sql, /starts_with\(spr\.idempotency_key, \$3\)/);
+  assert.match(req.sql, /e\.name = 'diagnostic\.paid'/);
+  assert.match(req.sql, /e\.payload->>'ref' = \$4/);
+  assert.match(req.sql, /e\.payload->>'paymentLinkId' = \$5::text/);
   const crs = seen.find((q) => /FROM crs_results/.test(q.sql));
-  assert.deepEqual(crs.params, [ORG, CLIENT, since]);
-  assert.match(crs.sql, /created_at >= \$3/);
-  const ev = seen.find((q) => /FROM events/.test(q.sql));
+  assert.deepEqual(crs.params, ["crs-1", ORG, CLIENT], "the result the order's own request names — not the newest on the client");
+  assert.match(crs.sql, /WHERE id = \$1::uuid/);
+  assert.doesNotMatch(crs.sql, /ORDER BY created_at DESC/);
+  const ev = seen.find((q) => /name = 'decision\.rendered'/.test(q.sql));
   assert.deepEqual(ev.params, [ORG, decisionKeyFor("crs-1")]);
   assert.equal(decisionKeyFor("crs-1"), "crs-result:crs-1:decision.rendered:v1");
   for (const q of seen) assert.equal(/INSERT|UPDATE|DELETE/i.test(q.sql), false, "read only");
+});
+
+test("item 2: slo-status never shows a pull this order did not start (another pull on the same client)", async () => {
+  /* The client has a finished pull on file — staff ran it, or an older order.
+     None of its ledger keys belong to this order, so the order query returns
+     nothing, and no crs_results row is even read. */
+  const seen = [];
+  const db = {
+    async query(sql) {
+      seen.push(sql);
+      if (/FROM soft_pull_requests/.test(sql)) return { rows: [] };
+      if (/FROM crs_results/.test(sql)) return { rows: [CRS_ALL] };
+      if (/SELECT outcome_tier FROM clients/.test(sql)) return { rows: [{ outcome_tier: "FULL_FUNDING" }] };
+      if (/FROM events/.test(sql)) return { rows: [{ outcome_tier: "FULL_FUNDING", funding_estimate: "99000" }] };
+      throw new Error(`unexpected ${sql}`);
+    }
+  };
+  const s = await loadSloStatus(db, { ...FOUND, order_is_demo: false });
+  assert.equal(s.state, "running");
+  assert.equal(s.started, false);
+  assert.equal(s.bucket, null);
+  assert.equal(s.pa, null);
+  assert.deepEqual(s.bureaus, { TU: "pending", EX: "pending", EQ: "pending" });
+  assert.equal(seen.some((sql) => /FROM crs_results/.test(sql)), false);
+  assert.equal(seen.some((sql) => /decision\.rendered/.test(sql)), false);
+});
+
+test("item 3: after a retry, the NEWEST attempt is the answer", async () => {
+  const requests = [
+    { status: "queued", crs_result_id: null, requested_at: "2026-09-22T10:05:00Z" },
+    { status: "failed", crs_result_id: null, requested_at: "2026-09-22T10:00:00Z", state_reason: "no bureau returned a report — TU: x" }
+  ];
+  const s = await loadSloStatus({ query: async () => ({ rows: [] }) }, FOUND, { requests });
+  assert.equal(s.state, "running", "attempt 2 is running; attempt 1's failure is history");
+});
+
+test("loadOrderPullRequests needs the order's ref, or reads nothing", async () => {
+  let asked = 0;
+  const db = { query: async () => { asked += 1; return { rows: [] }; } };
+  assert.deepEqual(await loadOrderPullRequests(db, { id: CLIENT, org_id: ORG }), []);
+  assert.equal(asked, 0);
+  assert.equal(sloDemoLedgerPrefix(REF), `diagnostic-paid:slo-demo:${REF}:`);
 });
 
 test("loadSloStatus: no stored result means no event read", async () => {
@@ -212,7 +264,7 @@ test("loadSloStatus: no stored result means no event read", async () => {
       return { rows: [] };
     }
   };
-  const s = await loadSloStatus(db, { id: CLIENT, org_id: ORG, order_created_at: null });
+  const s = await loadSloStatus(db, FOUND);
   assert.equal(s.state, "running");
-  assert.equal(seen.some((sql) => /FROM events/.test(sql)), false);
+  assert.equal(seen.some((sql) => /decision\.rendered/.test(sql)), false);
 });

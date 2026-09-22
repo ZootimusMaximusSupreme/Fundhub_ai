@@ -13,9 +13,23 @@
 //   book_url     the booking page; with ?pa= on the funding path
 //   repair_offer null | { plans, book_url }     (only when done AND repair)
 //
-// ONLY THIS ORDER COUNTS. A returning buyer can have older pulls on file. Only
-// a request and a result made at or after this order's payment_links row was
-// created are read, so an old result is never shown as this order's answer.
+// ONLY PULLS THIS ORDER STARTED COUNT (2026-09-22 review). The buyer is found
+// by email, so an order can sit on a client who has other pulls on file —
+// older ones, or ones staff run later. None of those may show here. A
+// soft_pull_requests row is this order's only when its ledger key says so:
+//
+//   diagnostic-paid:slo-demo:<ref>:<n>   a DEMO pull this order started
+//                                        (src/slo/pull.mjs startSloDemoPull)
+//   diagnostic-paid:<events.id>          C-00's key for a diagnostic.paid event
+//                                        whose payload names THIS order — its
+//                                        ref (the slo-pull emit and the Commas
+//                                        webhook both carry it) or this order's
+//                                        payment_links id (the webhook's
+//                                        paymentLinkId)
+//
+// The result shown is the crs_results row that one of those requests was
+// fulfilled with (soft_pull_requests.crs_result_id), never "the newest result
+// on the client".
 //
 // DONE means the pull was stored AND the tier engine's decision was recorded:
 // the decision.rendered event for that crs_results row, keyed
@@ -40,6 +54,10 @@ import { sloRoadmapBookUrl } from "./offer.mjs";
 import { sloRepairOffer } from "./repair-offer.mjs";
 
 export const BUREAU_KEYS = Object.freeze(["TU", "EX", "EQ"]);
+
+/** The demo event id C-00 turns into its ledger key. One spelling, here. */
+export const SLO_DEMO_EVENT_PREFIX = "slo-demo:";
+const LEDGER_PREFIX = "diagnostic-paid:";
 const BUREAU_STATUSES = new Set(["file_returned", "frozen", "no_file", "error"]);
 const OPEN = new Set(["queued", "processing"]);
 const CLOSED_BAD = new Set(["failed", "cancelled"]);
@@ -182,38 +200,78 @@ export function sloStatusFromRows({ request = null, crs = null, clientTier = nul
   return base;
 }
 
+/** Ledger-key prefix of every demo pull this order starts. */
+export function sloDemoLedgerPrefix(ref) {
+  return `${LEDGER_PREFIX}${SLO_DEMO_EVENT_PREFIX}${ref}:`;
+}
+
+/**
+ * loadOrderPullRequests — this order's soft_pull_requests rows, newest first.
+ * Only rows whose ledger key ties them to this order (see ONLY PULLS THIS
+ * ORDER STARTED COUNT). `found` is the findSloOrder row.
+ */
+export async function loadOrderPullRequests(db, found) {
+  const ref = String(found?.order_ref || "");
+  if (!db || !found?.id || !found?.org_id || !ref) return [];
+  const { rows } = await db.query(
+    `SELECT spr.id, spr.status, spr.state_reason, spr.crs_result_id, spr.requested_at
+       FROM soft_pull_requests spr
+      WHERE spr.org_id = $1::uuid AND spr.client_id = $2::uuid
+        AND (
+          starts_with(spr.idempotency_key, $3)
+          OR spr.idempotency_key IN (
+            SELECT '${LEDGER_PREFIX}' || e.id::text
+              FROM events e
+             WHERE e.org_id = $1::uuid
+               AND e.name = 'diagnostic.paid'
+               AND (e.payload->>'ref' = $4
+                    OR ($5::text IS NOT NULL AND e.payload->>'paymentLinkId' = $5::text))
+          )
+        )
+      ORDER BY spr.requested_at DESC, spr.id DESC`,
+    [found.org_id, found.id, sloDemoLedgerPrefix(ref), ref, found.order_id ? String(found.order_id) : null]
+  );
+  return rows;
+}
+
+/**
+ * nextSloPullAttempt — the attempt number a new pull for this order uses.
+ * 1 + the number of this order's pulls that ended failed or cancelled. So a
+ * retry after a failure is a NEW attempt (a new ledger key, a new pull), and a
+ * double click while an attempt is open, done, or not yet recorded is the SAME
+ * attempt (same key, and C-00 / the event bus turn it into one pull).
+ */
+export function nextSloPullAttempt(requests = []) {
+  const closedBad = requests.filter((r) => CLOSED_BAD.has(r?.status)).length;
+  return closedBad + 1;
+}
+
 /**
  * loadSloStatus — the reads, then sloStatusFromRows.
  * `found` is the findSloOrder row (src/slo/pull.mjs): ref + client_id proved,
  * org taken from the matched client, never from the request.
  */
-export async function loadSloStatus(db, found) {
+export async function loadSloStatus(db, found, { requests: given = null } = {}) {
   const orgId = found.org_id;
   const clientId = found.id;
-  const since = found.order_created_at || null;
 
-  const reqRes = await db.query(
-    `SELECT id, status, state_reason, crs_result_id, requested_at
-       FROM soft_pull_requests
-      WHERE org_id = $1::uuid AND client_id = $2::uuid
-        AND ($3::timestamptz IS NULL OR requested_at >= $3::timestamptz)
-      ORDER BY requested_at DESC
-      LIMIT 1`,
-    [orgId, clientId, since]
-  );
-  const crsRes = await db.query(
-    `SELECT id, outcome_tier, created_at,
-            result->'bureausPulled' AS bureaus_pulled,
-            result->'bureauErrors'  AS bureau_errors,
-            result->'bureauStatus'  AS bureau_status
-       FROM crs_results
-      WHERE org_id = $1::uuid AND client_id = $2::uuid
-        AND ($3::timestamptz IS NULL OR created_at >= $3::timestamptz)
-      ORDER BY created_at DESC
-      LIMIT 1`,
-    [orgId, clientId, since]
-  );
-  const crs = crsRes.rows[0] || null;
+  const requests = Array.isArray(given) ? given : await loadOrderPullRequests(db, found);
+  const request = requests[0] || null;
+  /* The answer is the result a request of THIS order was fulfilled with. */
+  const answered = requests.find((r) => r.status === "fulfilled" && r.crs_result_id) || null;
+  let crs = null;
+  if (answered) {
+    const crsRes = await db.query(
+      `SELECT id, outcome_tier, created_at,
+              result->'bureausPulled' AS bureaus_pulled,
+              result->'bureauErrors'  AS bureau_errors,
+              result->'bureauStatus'  AS bureau_status
+         FROM crs_results
+        WHERE id = $1::uuid AND org_id = $2::uuid AND client_id = $3::uuid`,
+      [answered.crs_result_id, orgId, clientId]
+    );
+    crs = crsRes.rows[0] || null;
+  }
 
   const tierRes = await db.query(
     `SELECT outcome_tier FROM clients WHERE id = $1::uuid AND org_id = $2::uuid`,
@@ -234,7 +292,7 @@ export async function loadSloStatus(db, found) {
   }
 
   return sloStatusFromRows({
-    request: reqRes.rows[0] || null,
+    request,
     crs,
     clientTier: tierRes.rows[0]?.outcome_tier ?? null,
     decision,

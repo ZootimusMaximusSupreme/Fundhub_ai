@@ -3,7 +3,9 @@
 // Spec: docs/specs/roadmap-checkout-soft-pull-2026-09-22.md §2-§3, READ WITH
 // ITS "Independent check" SECTION, which corrects the draft:
 //
-//   * 18+ is OUR rule, not a CRS rule.
+//   * No age rule (owner-set 2026-09-22): the 18+ check the draft asked for
+//     is gone. A birth date only has to be a real date, 1900 or later, not in
+//     the future.
 //   * An SSN starting 666 is NOT blocked. Every CRS sandbox person uses 666,
 //     and blocking it breaks vendor test runs. Only the parts of an SSN that
 //     are never issued (000 area, 00 group, 0000 serial) are refused.
@@ -116,19 +118,10 @@ function utcDay(y, m, d) {
   return dt;
 }
 
-/** Whole years between a birth date and `now`, by calendar day in UTC. */
-export function ageOn(birth, now) {
-  let age = now.getUTCFullYear() - birth.getUTCFullYear();
-  const beforeBirthday = now.getUTCMonth() < birth.getUTCMonth()
-    || (now.getUTCMonth() === birth.getUTCMonth() && now.getUTCDate() < birth.getUTCDate());
-  if (beforeBirthday) age -= 1;
-  return age;
-}
-
 /**
  * Date of birth: YYYY-MM-DD (the date picker) or MM/DD/YYYY (typed).
- * A real calendar date, not in the future, 1900 or later, and 18 or older.
- * The 18+ rule is ours (spec independent check #7).
+ * A real calendar date, 1900 or later, not in the future. No age rule
+ * (owner-set 2026-09-22).
  */
 export function checkDob(raw, { now = new Date() } = {}) {
   const s = squeeze(raw);
@@ -148,9 +141,6 @@ export function checkDob(raw, { now = new Date() } = {}) {
   const today = utcDay(now.getUTCFullYear(), now.getUTCMonth() + 1, now.getUTCDate());
   if (birth.getTime() > today.getTime()) {
     return fieldError("dob", "dob_invalid", "That date is in the future. Please check it.");
-  }
-  if (ageOn(birth, now) < 18) {
-    return fieldError("dob", "dob_under_18", "You must be 18 or older.");
   }
   return { value: `${String(y).padStart(4, "0")}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}` };
 }
@@ -172,9 +162,21 @@ export function checkSsn(raw) {
 }
 
 const PO_BOX = /\b(?:p\s*\.?\s*o\s*\.?\s*box|post\s+office\s+box|pob\s+\d)/i;
-/* Rural route and highway contract addresses have no house number first.
-   They are real homes, so they are not refused for the missing number. */
-const RURAL = /^(?:rr|r\s*\.\s*r\s*\.?|rural\s+route|hc|hcr|highway\s+contract)\s*\d/i;
+
+export const MIN_STREET = 3;
+
+/* THE STREET RULE (2026-09-22 review). Required, 3 to 48 characters, and at
+   least one digit SOMEWHERE. It used to demand a digit FIRST, which refused
+   real homes: military mail (PSC 1234 Box 5678, Unit 2050 Box 4190, CMR 480
+   Box 123), Puerto Rico (Calle Luna 55, Urb ...), and Wisconsin grid
+   addresses (N7450 Aanstad Rd). A P.O. box stays a warning only. */
+
+/* Apartment / unit, as a bureau reads it: capitals, periods dropped, and the
+   space after a # closed up. "Apt. 4B" -> "APT 4B", "Ste. 200" -> "STE 200",
+   "# 12" -> "#12". The 10-character cap is checked AFTER this. */
+export function normalizeApt(raw) {
+  return squeeze(str(raw).replace(/\./g, " ")).toUpperCase().replace(/#\s+/g, "#");
+}
 
 export function isPoBox(line) {
   return PO_BOX.test(str(line));
@@ -194,7 +196,7 @@ export function checkAddress(input = {}, { prefix = "", streetKey = "address", a
   const f = (k) => `${prefix}${k}`;
 
   const street = squeeze(input[streetKey]);
-  const apt = squeeze(input[aptKey]).toUpperCase();
+  const apt = normalizeApt(input[aptKey]);
   const city = squeeze(input.city);
   const state = squeeze(input.state).toUpperCase();
   const zipRaw = squeeze(input.zip);
@@ -203,15 +205,19 @@ export function checkAddress(input = {}, { prefix = "", streetKey = "address", a
     errors.push({ field: f(streetKey), code: "street_required", message: `Please enter ${who} street address.` });
   } else if (street.length > MAX_STREET) {
     errors.push({ field: f(streetKey), code: "street_too_long", message: `Keep the street to ${MAX_STREET} characters or fewer. Put the apartment in its own box.` });
+  } else if (street.length < MIN_STREET) {
+    errors.push({ field: f(streetKey), code: "street_too_short", message: "Please enter the full street address, like 123 Main St." });
+  } else if (!/\d/.test(street)) {
+    errors.push({ field: f(streetKey), code: "street_number", message: "Include the house or box number, like 123 Main St." });
   } else if (isPoBox(street)) {
     warnings.push({ field: f(streetKey), code: "po_box",
       message: "A P.O. box can stop a bureau from finding the file. Use the street address if you have one." });
-  } else if (!/^\d/.test(street) && !RURAL.test(street)) {
-    errors.push({ field: f(streetKey), code: "street_number", message: "Start with the house number, like 123 Main St." });
   }
 
-  if (apt && (apt.length > MAX_APT || !/^[A-Z0-9#][A-Z0-9 #/-]*$/.test(apt))) {
-    errors.push({ field: f(aptKey), code: "apt_invalid", message: `Use ${MAX_APT} letters or numbers or fewer, like 4B.` });
+  if (apt && !/^[A-Z0-9#][A-Z0-9 #/-]*$/.test(apt)) {
+    errors.push({ field: f(aptKey), code: "apt_invalid", message: "Use letters, numbers, spaces, # or - only, like Apt 4B or #12." });
+  } else if (apt.length > MAX_APT) {
+    errors.push({ field: f(aptKey), code: "apt_invalid", message: `Keep the apartment or unit to ${MAX_APT} characters or fewer, like Apt 4B.` });
   }
 
   const cityPlain = stripAccents(city);
