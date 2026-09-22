@@ -1,0 +1,252 @@
+{
+  "width": 390,
+  "ua": "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36",
+  "steps": {
+    "watch": {
+      "top": {
+        "h1": "Get $50,000 to $1,000,000 in Funding in 14 Days or Less",
+        "video": {
+          "tag": "VIDEO",
+          "src": "https://fundhub.ai/funnel/vsl.mp4",
+          "readyState": 4,
+          "paused": false,
+          "muted": true,
+          "w": 280,
+          "h": 157
+        },
+        "getStarted": [
+          {
+            "text": "Get Started",
+            "href": "/apply",
+            "inProof": false
+          },
+          {
+            "text": "Get Started",
+            "href": "/apply",
+            "inProof": true
+          }
+        ],
+        "firstBtnVisible": true,
+        "sideways": false,
+        "videoLater": {
+          "readyState": 4,
+          "currentTime": 5.49,
+          "paused": false
+        }
+      },
+      "proof": {
+        "winsHeading": "Real approvals. Real screenshots.",
+        "winsCards": 6,
+        "winsImgs": "6/6",
+        "winsAmounts": [
+          "$74,000",
+          "$54,500",
+          "$50,000",
+          "$50,000",
+          "$41,000",
+          "$25,000"
+        ],
+        "textsHeading": "What clients texted us",
+        "textsCards": 3,
+        "textsImgs": "3/3",
+        "textsQuotes": [
+          "We got approved for 25,000 🙏🏾",
+          "APPROVED!!!I was on such a cold streak and I finally got an approvalNo hard pull it all!!!",
+          "I GOT APPROVED. LETS GOOOOOOOOO"
+        ],
+        "roadsHeading": "One call. Three roads. Nobody gets turned away.",
+        "secondBtn": {
+          "text": "Get Started",
+          "href": "/apply"
+        },
+        "sideways": false
+      },
+      "zoom": {
+        "open": true,
+        "alt": "Chase Ink Business Cash card approval showing $74,000",
+        "loaded": true,
+        "natural": "1200x900",
+        "shown": "358x269"
+      },
+      "escapeClosed": true
+    },
+    "apply": {
+      "clickedHref": "/apply",
+      "navs": [
+        "https://apply.fundhub.ai/apply"
+      ],
+      "landed": "https://apply.fundhub.ai/apply",
+      "question": {
+        "url": "https://apply.fundhub.ai/apply",
+        "inputs": [
+          "First Name",
+          "Last Name",
+          "Email",
+          "(201) 555-0123"
+        ],
+        "title": "Let's Start With Your Info"
+      }
+    },
+    "book": {
+      "hero": [
+        "You Are Qualified.",
+        "Book Your Funding Call Below"
+      ],
+      "tz": "Phoenix",
+      "calLook": {
+        "month": "September 2026",
+        "available": [
+          "22",
+          "23",
+          "24"
+        ],
+        "sideways": false
+      },
+      "layout": {
+        "cardW": 256,
+        "gridW": 168,
+        "colW": 24,
+        "weekdayLines": 2,
+        "logoPastCard": 38,
+        "logoOverBand": 0,
+        "slotLines": 1
+      },
+      "pickedDay": "23",
+      "slotCount": 16,
+      "slotText": "Select time 10:00 AM - 10:30 AM (MST)",
+      "confirmDetails": "Wednesday, September 23rd 2026, 10:00 AM - 10:30 AM (MST)",
+      "confirmVisible": true,
+      "confirmText": "Confirm",
+      "bookingPostsAfterSlotClick": [],
+      "storedAfterSlotPickThenCleared": null
+    },
+    "thankyouNoBooking": {
+      "referrer": "",
+      "heroSec": "We've Got Your Application.",
+      "eyebrow": "Received · Funding Path",
+      "lede": "Here's what happens next.",
+      "prose": "One step left: pick a time for your call.",
+      "bookBtn": {
+        "text": "Pick your call time",
+        "href": "/funding-book-call"
+      },
+      "decides": "We read your file the way a bank does. Then you get one of three roads: get funded now, fix the file first, or learn to do it yourself. Nobody gets turned away.",
+      "expectShown": false,
+      "prepShown": false,
+      "calShown": false,
+      "calWhen": null,
+      "step3": "You get one of three roads",
+      "proofShown": true,
+      "proofCards": 6,
+      "proofWins": 3,
+      "proofTexts": 3,
+      "proofImgs": "6/6",
+      "proofBeforeFaq": true,
+      "sideways": false,
+      "pressedLandsOn": "https://apply.fundhub.ai/funding-book-call"
+    },
+    "thankyouBooked": {
+      "record": {
+        "name": "Demo Tester",
+        "email": "demo@fundhub.ai",
+        "start": "2026-09-23T15:00:00.000Z",
+        "end": "2026-09-23T15:30:00.000Z",
+        "tz": "America/Phoenix",
+        "submittedAt": 1790090453271,
+        "capturedAt": 1790090453271,
+        "title": "Funding Strategy Meeting — Fundhub"
+      },
+      "referrer": "https://apply.fundhub.ai/funding-book-call",
+      "heroSec": "Your Call Is Booked.",
+      "eyebrow": "Confirmed · Funding Path",
+      "lede": "We'll see you then. Here's what to expect.",
+      "prose": "Check your email for the confirmation and calendar invite.",
+      "bookBtn": null,
+      "decides": "We read your file the way a bank does. Then you get one of three roads: get funded now, fix the file first, or learn to do it yourself. Nobody gets turned away.",
+      "expectShown": true,
+      "prepShown": true,
+      "calShown": true,
+      "calWhen": "Wednesday, September 23, 2026 at 8:00 AM – 8:30 AM (America/Phoenix)",
+      "step3": "You get one of three roads",
+      "proofShown": true,
+      "proofCards": 6,
+      "proofWins": 3,
+      "proofTexts": 3,
+      "proofImgs": "6/6",
+      "proofBeforeFaq": true,
+      "sideways": false,
+      "clearedAfter": true
+    }
+  },
+  "errors": [
+    {
+      "tag": "watch",
+      "kind": "newrelic-jserror-report",
+      "text": "{\"xhr\":[{\"params\":{\"hostname\":\"d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws\",\"port\":\"443\",\"protocol\":\"https\",\"host\":\"d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws:443\",\"pathname\":\"/events\",\"method\":\"POST\",\"status\":200},\"metrics\":{\"count\":1,\"txSize\":{\"t\":314},\"rxSize\":{\"t\":0},\"duration\":{\"t\":209},\"time\":{\"t\":721}}},{\"params\":{\"method\":\"POST\",\"hostname\":\"bam.nr-data.net\",\"port\":\"443\",\"protocol\":\"https\",\"host\":\"bam.nr-data.net:443\",\"pathname\":\"/1/NRJS-7f8cfbfdce5f1f3d33b\",\"status\":200},\"metrics\":{\"count\":1,\"rxSize\":{\"t\":199},\"duration\":{\"t\":99},\"cbTime\":{\"t\":1},\"time\":{\"t\":1141}}},{\"params\":{\"method\":\"POST\",\"hostname\":\"apply.fundhub.ai\",\"port\":\"443\",\"protocol\":\"https\",\"host\":\"apply.fundhub.ai:443\",\"pathname\":\"/_cf/s\",\"status\":204},\"metrics\":{\"count\":1,\"txSize\":{\"t\":714},\"duration\":{\"t\":167},\"cbTime\":{\"t\":1},\"time\":{\"t\":1075}}},{\"params\":{\"method\":\"POST\",\"hostname\":\"bam.nr-data.net\",\"port\":\"443\",\"protocol\":\"https\",\"host\":\"bam.nr-data.net:443\",\"pathname\":\"/events/1/NRJS-7f8cfbfdce5f1f3d33b\",\"status\":200},\"metrics\":{\"count\":1,\"txSize\":{\"t\":326},\"rxSize\":{\"t\":24},\"duration\":{\"t\":67},\"cbTime\":{\"t\":0},\"time\":{\"t\":1244}}}]}",
+      "url": "https://apply.fundhub.ai/watch?utm_source=proof"
+    },
+    {
+      "tag": "book",
+      "kind": "http 400",
+      "text": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+      "url": "https://apply.fundhub.ai/funding-book-call"
+    },
+    {
+      "tag": "book",
+      "kind": "console.error",
+      "text": "Failed to load resource: the server responded with a status of 400 ()",
+      "src": "https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+      "url": "https://apply.fundhub.ai/funding-book-call"
+    }
+  ],
+  "nonGet": [
+    "watch POST https://fundhub.ai/api/public/vsl-watch",
+    "watch POST https://d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws/events?cee=no",
+    "watch POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "watch POST https://apply.fundhub.ai/_cf/s",
+    "watch POST https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=1140&ck=0&s=addf6a937a4479c6&ref=",
+    "watch POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=1244&ck=0&s=addf6a937a4479",
+    "watch POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=11241&ck=0&s=addf6a937a447",
+    "watch POST https://bam.nr-data.net/jserrors/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=11242&ck=0&s=addf6a937a4",
+    "watch POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=11242&ck=0&s=addf6a937a447",
+    "watch POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "watch POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "watch POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "watch POST https://d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws/events?cee=no",
+    "watch POST https://apply.fundhub.ai/_cf/a",
+    "watch POST https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=416&ck=0&s=addf6a937a4479c6&ref=h",
+    "watch POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=485&ck=0&s=addf6a937a4479c",
+    "book POST https://apply.fundhub.ai/user_pages/api/v1/appointments/event_types/14234/calendar_config",
+    "book POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "book POST https://d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws/events?cee=no",
+    "book POST https://apply.fundhub.ai/_cf/s",
+    "book POST https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=703&ck=0&s=51ab078eb739c805&ref=h",
+    "book POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=795&ck=0&s=51ab078eb739c80",
+    "book POST https://api.cronofy.com/v1/availability?et=TNzcBvvcuUJ0yAIT5X3bCL-tuYf6ipjgyGT-kX5TtMeWai9xAZafr5IxLg7LwmORFVvNV9TJ7Qe3S0tI21AXCQ",
+    "book POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "book POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "book POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "book POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws/events?cee=no",
+    "thankyou POST https://apply.fundhub.ai/_cf/s",
+    "thankyou POST https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=1016&ck=0&s=bb9856e584e041c1&ref=",
+    "thankyou POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=1115&ck=0&s=bb9856e584e041",
+    "thankyou POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://apply.fundhub.ai/user_pages/api/v1/appointments/event_types/14234/calendar_config",
+    "thankyou POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws/events?cee=no",
+    "thankyou POST https://apply.fundhub.ai/_cf/a",
+    "thankyou POST https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=548&ck=0&s=bb9856e584e041c1&ref=h",
+    "thankyou POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=624&ck=0&s=bb9856e584e041c",
+    "thankyou POST https://api.cronofy.com/v1/availability?et=UQDhufe0JlpcPdUm21I1NII37xHHcqcRkA6mkn_IXDAwoR2O7hy5wFyewr_2QCaUTUuRev4NhxonO-ugEsLFOA",
+    "thankyou POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://app.directroas.com/api/hub/v1/cmsdutl8e00mukv041vwuo39w/e",
+    "thankyou POST https://d3-36c34dc0877246a0b32c4f4e24be6ce8.ecs.us-east-1.on.aws/events?cee=no",
+    "thankyou POST https://apply.fundhub.ai/_cf/a",
+    "thankyou POST https://bam.nr-data.net/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=269&ck=0&s=bb9856e584e041c1&ref=h",
+    "thankyou POST https://bam.nr-data.net/events/1/NRJS-7f8cfbfdce5f1f3d33b?a=1588871059&sa=1&v=1.242.0&t=Unnamed%20Transaction&rst=343&ck=0&s=bb9856e584e041c"
+  ]
+}
