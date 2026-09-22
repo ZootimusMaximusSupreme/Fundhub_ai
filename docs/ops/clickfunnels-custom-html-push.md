@@ -66,6 +66,16 @@ node scripts/cf-push-custom-html.mjs push --dry-run --only=apply-book-framed
 node scripts/cf-push-custom-html.mjs push --only=apply-book-framed
 ```
 
+The standalone page's own fit lives in `clickfunnels-fragments/04d-book-fit.html` (manifest key
+`apply-book-fit`, marker `fh-book-fit`, same page, same `head_code`, same upsert). Every rule is
+`html:not(.fh-framed)`: the scheduler's big logo stays inside its panel at every width, and on phones
+(under 640px) the card runs full width minus 16px gutters. It never matches inside the frame.
+
+```bash
+node scripts/cf-push-custom-html.mjs push --dry-run --only=apply-book-fit
+node scripts/cf-push-custom-html.mjs push --only=apply-book-fit
+```
+
 ## Skills / rules
 
 - Cursor: `.cursor/skills/fundhub-clickfunnels-html-push/SKILL.md`
