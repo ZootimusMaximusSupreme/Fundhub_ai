@@ -11,7 +11,9 @@
  *      ("put 10 more approvals here"; the /roadmap page shows the same 16). The row
  *      slides to the right as the page scrolls down. It never holds the page.
  *   2. "From our clients" — three vertical video testimonial placeholders, the same
- *      dark 9:16 slot as /roadmap. Placeholders only: no names, quotes or faces.
+ *      dark 9:16 slot as /roadmap, sized to fill the row (owner, 2026-09-22: "the
+ *      padding on the testimonials is too much — make the video testimonial cards
+ *      larger"). Placeholders only: no names, quotes or faces.
  *      No client-text cards ("don't put what clients texted us").
  *   3. "One call. Three roads. Nobody gets turned away." + a second Get Started.
  *
@@ -364,25 +366,30 @@
        the side cannot scroll the row sideways under the slide (the row went blank). */
     "#fh-watch-proof .fhx-scroll{overflow:clip}",
     "#fh-watch-proof .fhx-scroll .fhx-track{will-change:transform}",
-    "#fh-watch-proof .fhx-track>.fh-card{flex:0 0 150px;width:150px}",
+    "#fh-watch-proof .fhx-track>.fh-card{flex:0 0 180px;width:180px}",
     /* Reduced motion: a plain sideways swipe row instead. */
     "#fh-watch-proof .fhx-swipe{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding:0 24px;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
     "#fh-watch-proof .fhx-swipe::-webkit-scrollbar{display:none}",
     "#fh-watch-proof .fhx-swipe .fhx-track{transform:none!important}",
     "#fh-watch-proof .fhx-swipe .fh-card{scroll-snap-align:start}",
-    /* The page resets padding on everything under .fh-root, so the card's own padding is restated here. */
-    "#fh-watch-proof .fh-card{--fh-pad:10px;--fh-gap:6px;--fh-tilt-amount:0deg;--fh-radius-card:12px;--fh-radius-frame:8px;--fh-radius-img:4px;--fh-shadow:0 1px 2px rgba(12,12,13,.06),0 10px 24px -14px rgba(12,12,13,.28);max-width:none;padding:var(--fh-pad) var(--fh-pad) calc(var(--fh-pad) - 2px)}",
-    "#fh-watch-proof .fh-card>.fh-eyebrow{font-size:10px;letter-spacing:.12em}",
-    "#fh-watch-proof .fh-card>.fh-headline{font-size:12px;font-weight:600;line-height:1.2;color:#56565C}",
-    "#fh-watch-proof .fh-card .fh-amount{font-size:20px;font-weight:600;line-height:1.05;margin-top:2px;color:#0C0C0D}",
-    "#fh-watch-proof .fh-card>.fh-shot{padding:4px}",
-    "#fh-watch-proof .fh-card>.fh-mark{--fh-mark-h:12px}",
+    /* The page resets padding on everything under .fh-root, so the card's own padding is
+       restated here. Every length below is the 2026-09-22 card grown 20% (owner: "make the
+       approvals 20% larger"), so the card's height grows with its width. */
+    "#fh-watch-proof .fh-card{--fh-pad:12px;--fh-gap:7px;--fh-tilt-amount:0deg;--fh-radius-card:14px;--fh-radius-frame:10px;--fh-radius-img:5px;--fh-shadow:0 1px 2px rgba(12,12,13,.06),0 10px 24px -14px rgba(12,12,13,.28);max-width:none;padding:var(--fh-pad) var(--fh-pad) calc(var(--fh-pad) - 2px)}",
+    "#fh-watch-proof .fh-card>.fh-eyebrow{font-size:12px;letter-spacing:.12em}",
+    "#fh-watch-proof .fh-card>.fh-headline{font-size:14px;font-weight:600;line-height:1.2;color:#56565C}",
+    "#fh-watch-proof .fh-card .fh-amount{font-size:24px;font-weight:600;line-height:1.05;margin-top:2px;color:#0C0C0D}",
+    "#fh-watch-proof .fh-card>.fh-shot{padding:5px}",
+    "#fh-watch-proof .fh-card>.fh-mark{--fh-mark-h:14px}",
     /* Video testimonial placeholders: the /roadmap slot, word for word (.fh-b .vslot in
-       clickfunnels-fragments/slo/slo-01-sales.html); a test fails if they drift. */
-    "#fh-watch-proof .fhx-vgrid{display:flex;align-items:flex-start;justify-content:center;gap:12px;margin:16px auto 0}",
+       clickfunnels-fragments/slo/slo-01-sales.html); a test fails if they drift. Only the
+       size cap is lifted below: /roadmap's 300px height cap left three 169px cards floating
+       in an 852px row, which is the padding the owner asked us to take out. The cards grow
+       to fill the row instead; the look, the 9:16 shape and the label are untouched. */
+    "#fh-watch-proof .fhx-vgrid{display:flex;align-items:flex-start;justify-content:center;gap:8px;margin:16px auto 0}",
     "#fh-watch-proof .fhx-vslot{aspect-ratio:9/16;max-height:300px;border-radius:12px;background:#111113;border:1px solid #26262B;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px}",
     "#fh-watch-proof .fhx-vslot span{color:#8A8A93;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;line-height:1.5}",
-    "#fh-watch-proof .fhx-vgrid>.fhx-vslot{flex:1 1 0;min-width:0;max-width:169px}",
+    "#fh-watch-proof .fhx-vgrid>.fhx-vslot{flex:1 1 0;min-width:0;max-width:300px;max-height:none}",
     "#fh-watch-proof .fhx-roads p{max-width:52ch;margin:12px auto 0;font-size:16px;line-height:1.6;color:#52525B}",
     "#fh-watch-proof .fhx-roads .btn{margin-top:22px}",
     ".fhz{position:fixed;inset:0;z-index:2147483000;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:64px 16px 24px;background:rgba(12,12,13,.88);cursor:zoom-out}",
@@ -395,8 +402,18 @@
     /* Desktop: the row is the page column; its edges fade so a card slides in and out softly. */
     "#fh-watch-proof .fhx-rail{margin:16px 0 -20px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%)}",
     "#fh-watch-proof .fhx-track{gap:14px}",
-    "#fh-watch-proof .fhx-track>.fh-card{flex-basis:180px;width:180px}",
-    "#fh-watch-proof .fhx-vgrid{margin-top:20px}",
+    "#fh-watch-proof .fhx-track>.fh-card{flex-basis:216px;width:216px}",
+    "#fh-watch-proof .fhx-vgrid{margin-top:20px;gap:16px;padding:0 24px}",
+    "#fh-watch-proof .fhx-vgrid>.fhx-vslot span{font-size:12px}",
+    "}",
+    /* Phones: one video testimonial per row, the same law and the same 699px
+       break as the /roadmap .proofgrid. display:block, not
+       flex-direction:column, because the slots carry flex:1 1 0 and in a column
+       that basis would collapse their height. */
+    "@media(max-width:699px){",
+    "#fh-watch-proof .fhx-vgrid{display:block}",
+    "#fh-watch-proof .fhx-vgrid>.fhx-vslot{width:100%;max-width:380px;margin:0 auto}",
+    "#fh-watch-proof .fhx-vgrid>.fhx-vslot+.fhx-vslot{margin-top:16px}",
     "}"
   ].join("\n");
 

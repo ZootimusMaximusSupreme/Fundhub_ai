@@ -1,0 +1,118 @@
+{
+  "phase": "after",
+  "width": 1280,
+  "ua": "desktop-chrome",
+  "url": "https://apply.fundhub.ai/roadmap",
+  "at": "2026-09-22T20:53:47.553Z",
+  "pageHeight": 9769,
+  "errors": [
+    "Refused to get unsafe header \"X-Clickfunnels-Version\""
+  ],
+  "grid": {
+    "x": 190,
+    "y": 8273.3,
+    "w": 900,
+    "h": 548.3
+  },
+  "gridMaxWidth": "900px",
+  "gridGap": "10px",
+  "slotCount": 3,
+  "card": {
+    "w": 293.3,
+    "h": 521.5
+  },
+  "ratio": 0.5625,
+  "ratioAll": [
+    0.5625,
+    0.5625,
+    0.5625
+  ],
+  "gaps": [
+    10,
+    10
+  ],
+  "rowsUsed": 1,
+  "style": {
+    "background": "rgb(17, 17, 19)",
+    "border": "1px solid rgb(38, 38, 43)",
+    "radius": "12px",
+    "aspectRatio": "9 / 16",
+    "maxHeight": "none",
+    "padding": "14px"
+  },
+  "label": {
+    "color": "rgb(138, 138, 147)",
+    "family": "JetBrains Mono",
+    "size": "10px",
+    "transform": "uppercase",
+    "letterSpacing": "1.2px"
+  },
+  "labels": [
+    "[ VIDEO TESTIMONIAL 1 ]",
+    "[ VIDEO TESTIMONIAL 2 ]",
+    "[ VIDEO TESTIMONIAL 3 ]"
+  ],
+  "heading": "From people who bought it",
+  "secureFoot": {
+    "x": 190,
+    "y": 8142,
+    "w": 900,
+    "h": 70.5
+  },
+  "cardw": [
+    {
+      "x": 310,
+      "y": 8847.6,
+      "w": 660,
+      "h": 100.5
+    },
+    {
+      "x": 310,
+      "y": 8974.1,
+      "w": 660,
+      "h": 152
+    }
+  ],
+  "cardwText": [
+    "The guarantee",
+    "Why $297"
+  ],
+  "btn": {
+    "x": 0,
+    "y": 0,
+    "w": 0,
+    "h": 0
+  },
+  "scrollWidth": 1280,
+  "innerWidth": 1280,
+  "sideways": false,
+  "checkout": {
+    "box": {
+      "x": 190,
+      "y": 7703.4,
+      "w": 900,
+      "h": 438.6
+    },
+    "visible": true,
+    "step1On": true,
+    "step2On": false,
+    "stepTabs": [
+      "1 · Contact",
+      "2 · Payment"
+    ],
+    "step1Fields": [
+      "c_first",
+      "c_last",
+      "email",
+      "phone"
+    ],
+    "continueText": "Continue",
+    "continueReachable": true,
+    "continueBox": {
+      "x": 215,
+      "y": 8032,
+      "w": 850,
+      "h": 54
+    }
+  }
+}

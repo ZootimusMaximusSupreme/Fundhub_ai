@@ -1,0 +1,118 @@
+{
+  "phase": "after",
+  "width": 390,
+  "ua": "android-chrome",
+  "url": "https://apply.fundhub.ai/roadmap",
+  "at": "2026-09-22T20:53:32.652Z",
+  "pageHeight": 11289,
+  "errors": [
+    "Refused to get unsafe header \"X-Clickfunnels-Version\""
+  ],
+  "grid": {
+    "x": 24,
+    "y": 10066.9,
+    "w": 342,
+    "h": 217.6
+  },
+  "gridMaxWidth": "900px",
+  "gridGap": "10px",
+  "slotCount": 3,
+  "card": {
+    "w": 107.3,
+    "h": 190.8
+  },
+  "ratio": 0.5625,
+  "ratioAll": [
+    0.5625,
+    0.5625,
+    0.5625
+  ],
+  "gaps": [
+    10,
+    10
+  ],
+  "rowsUsed": 1,
+  "style": {
+    "background": "rgb(17, 17, 19)",
+    "border": "1px solid rgb(38, 38, 43)",
+    "radius": "12px",
+    "aspectRatio": "9 / 16",
+    "maxHeight": "none",
+    "padding": "14px"
+  },
+  "label": {
+    "color": "rgb(138, 138, 147)",
+    "family": "JetBrains Mono",
+    "size": "10px",
+    "transform": "uppercase",
+    "letterSpacing": "1.2px"
+  },
+  "labels": [
+    "[ VIDEO TESTIMONIAL 1 ]",
+    "[ VIDEO TESTIMONIAL 2 ]",
+    "[ VIDEO TESTIMONIAL 3 ]"
+  ],
+  "heading": "From people who bought it",
+  "secureFoot": {
+    "x": 24,
+    "y": 9881.3,
+    "w": 342,
+    "h": 108
+  },
+  "cardw": [
+    {
+      "x": 0,
+      "y": 10310.5,
+      "w": 390,
+      "h": 126.2
+    },
+    {
+      "x": 0,
+      "y": 10462.8,
+      "w": 390,
+      "h": 203.4
+    }
+  ],
+  "cardwText": [
+    "The guarantee",
+    "Why $297"
+  ],
+  "btn": {
+    "x": 0,
+    "y": 0,
+    "w": 0,
+    "h": 0
+  },
+  "scrollWidth": 390,
+  "innerWidth": 390,
+  "sideways": false,
+  "checkout": {
+    "box": {
+      "x": 24,
+      "y": 9425.8,
+      "w": 342,
+      "h": 455.6
+    },
+    "visible": true,
+    "step1On": true,
+    "step2On": false,
+    "stepTabs": [
+      "1 · Contact",
+      "2 · Payment"
+    ],
+    "step1Fields": [
+      "c_first",
+      "c_last",
+      "email",
+      "phone"
+    ],
+    "continueText": "Continue",
+    "continueReachable": true,
+    "continueBox": {
+      "x": 49,
+      "y": 9754.3,
+      "w": 292,
+      "h": 54
+    }
+  }
+}

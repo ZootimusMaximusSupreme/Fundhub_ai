@@ -1,0 +1,44 @@
+{
+  "width": 390,
+  "at": "2026-09-22T20:55:28.497Z",
+  "submitted": false,
+  "clickedContinue": false,
+  "widget": [
+    24,
+    9426,
+    342,
+    456
+  ],
+  "tabs": [
+    49,
+    9449,
+    292,
+    35
+  ],
+  "step1": [
+    49,
+    9487,
+    292,
+    367
+  ],
+  "continue": [
+    49,
+    9754,
+    292,
+    54
+  ],
+  "step1Open": true,
+  "continueEnabled": true,
+  "fields": [
+    "c_first",
+    "c_last",
+    "email",
+    "phone"
+  ],
+  "grid": [
+    24,
+    10067,
+    342,
+    218
+  ]
+}
