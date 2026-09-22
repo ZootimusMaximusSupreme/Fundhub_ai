@@ -15,7 +15,8 @@
  *      the prep list and the calendar buttons show only to people who booked.
  *   2. "What the call decides" after the hero: one call, three roads.
  *   3. Step 03 reads "You get one of three roads".
- *   4. "Real approvals, real texts" before the FAQ: three approvals, three texts.
+ *   4. "Real approvals, real screenshots" before the FAQ: three approvals. No
+ *      client-text cards (owner, 2026-09-22: "don't put what clients texted us").
  *      Any screenshot opens full size on tap or click.
  * The FAQ, the calendar, the prep list, the $32 wording and the speed wording are
  * not touched. No links off the page.
@@ -79,35 +80,19 @@
       src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715361/file/d619505428aae233495eb08f9ca78220.jpg" }
   ];
 
-  /* The same three client texts as /watch. Words copied exactly off each crop,
-     typo included. Lines are the separate message bubbles. */
-  var TEXTS = [
-    { id: "s34-q1", lines: ["We got approved for 25,000 \uD83D\uDE4F\uD83C\uDFFE"], amount: "",
-      src: "https://fundhub.ai/funnel/proof/s34-q1.jpg", w: 1200, h: 190,
-      source: "Real client text. Source: Canva Client Wins deck, slide 34 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg. The client wrote the 25,000; it shows in the quote and the screenshot, so the amount headline is off." },
-    { id: "s21-b", lines: ["APPROVED!!!", "I was on such a cold streak and I finally got an approval", "No hard pull it all!!!"], amount: "",
-      src: "https://fundhub.ai/funnel/proof/s21-b.jpg", w: 1200, h: 567,
-      source: "Real client text. Source: Canva Client Wins deck, slide 21 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s21-b.jpg. Three bubbles, words exact." },
-    { id: "s23-b", lines: ["I GOT APPROVED. LETS GOOOOOOOOO"], amount: "",
-      src: "https://fundhub.ai/funnel/proof/s23-b.jpg", w: 1200, h: 277,
-      source: "Real client text. Source: Canva Client Wins deck, slide 23 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s23-b.jpg. Nine O's, counted off the crop." }
-  ];
-
   function esc(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
   /* One proof-card template article: every slot kept, the switches decide what shows. */
   function card(o) {
-    var quote = o.lines ? o.lines.map(esc).join("<br>") : "";
-    var shotAlt = o.lines ? "Screenshot of the client's text: " + o.lines.join(" / ") : o.alt;
-    return (o.source ? "<!-- " + esc(o.source) + " -->" : "<!-- Client approval " + esc(o.id) + ": amount read off the screenshot (deck.json). -->") +
+    return "<!-- Client approval " + esc(o.id) + ": amount read off the screenshot (deck.json). -->" +
       '<article class="fh-card" data-layout="' + o.layout + '" data-photo="off" data-name="off" data-amount="' + (o.amount ? "on" : "off") + '">' +
         '<p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>' +
         '<figure class="fh-face"><img data-slot="face" src="' + GIF + '" alt="" width="168" height="168"></figure>' +
         '<h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">' + esc(o.amount || "") + "</span></h3>" +
-        '<figure class="fh-shot"><img data-slot="approval-screenshot" src="' + esc(o.src) + '" alt="' + esc(shotAlt) + '" width="' + (o.w || 1200) + '" height="' + (o.h || 900) + '" loading="lazy" decoding="async"></figure>' +
-        '<blockquote class="fh-quote"><p data-slot="quote">' + quote + "</p></blockquote>" +
+        '<figure class="fh-shot"><img data-slot="approval-screenshot" src="' + esc(o.src) + '" alt="' + esc(o.alt) + '" width="' + (o.w || 1200) + '" height="' + (o.h || 900) + '" loading="lazy" decoding="async"></figure>' +
+        '<blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>' +
         '<div class="fh-rule" aria-hidden="true"></div>' +
         '<span class="fh-name" data-slot="name"></span>' +
         '<span class="fh-mark" role="img" aria-label="Fundhub"></span>' +
@@ -115,7 +100,6 @@
   }
 
   function winCard(w) { return card({ id: w.id, layout: "win", amount: w.amount, src: w.src, alt: w.alt }); }
-  function textCard(t) { return card({ id: t.id, layout: "quote-win", amount: t.amount, src: t.src, w: t.w, h: t.h, lines: t.lines, source: t.source }); }
 
   /* ── proof-card template CSS, verbatim. Do not edit here; edit the template. ── */
   var TEMPLATE_CSS = String.raw`
@@ -366,30 +350,25 @@
     "#fh-ty-proof .fhy-row{display:flex;align-items:flex-start;gap:10px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:14px calc(50% - 50vw) 0;padding:3px calc(50vw - 50%) 8px}",
     "#fh-ty-proof .fhy-row::-webkit-scrollbar{display:none}",
     "#fh-ty-proof .fhy-row>.fh-card{flex:0 0 150px}",
-    "#fh-ty-proof .fhy-row>.fh-card[data-layout=\"quote-win\"]{flex-basis:224px}",
     /* The page resets padding on everything under .fh-root, so the card's own padding is restated here. */
     "#fh-ty-proof .fh-card{--fh-pad:10px;--fh-gap:6px;--fh-tilt-amount:0deg;--fh-radius-card:12px;--fh-radius-frame:8px;--fh-radius-img:4px;--fh-shadow:0 1px 2px rgba(12,12,13,.06),0 10px 24px -14px rgba(12,12,13,.28);max-width:none;padding:var(--fh-pad) var(--fh-pad) calc(var(--fh-pad) - 2px)}",
     "#fh-ty-proof .fh-card>.fh-eyebrow{font-size:10px;letter-spacing:.12em}",
     "#fh-ty-proof .fh-card>.fh-headline{font-size:12px;font-weight:600;line-height:1.2;color:#56565C}",
     "#fh-ty-proof .fh-card .fh-amount{font-size:20px;font-weight:600;line-height:1.05;margin-top:2px;color:#0C0C0D}",
     "#fh-ty-proof .fh-card>.fh-shot{padding:4px}",
-    "#fh-ty-proof .fh-card>.fh-quote{font-size:14px;line-height:1.4}",
     "#fh-ty-proof .fh-card>.fh-mark{--fh-mark-h:12px}",
     ".fhz{position:fixed;inset:0;z-index:2147483000;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:64px 16px 24px;background:rgba(12,12,13,.88);cursor:zoom-out}",
     ".fhz img{display:block;width:auto;height:auto;max-width:min(100%,900px);max-height:100%;object-fit:contain;background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.45)}",
     ".fhz button{position:absolute;top:12px;right:12px;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;background:#fff;color:#0C0C0D;font:600 26px/44px system-ui,-apple-system,sans-serif;text-align:center;cursor:pointer}",
     "#fh-ty-proof img[data-slot=\"approval-screenshot\"]{cursor:zoom-in}",
     "@media(min-width:700px){",
-    /* Desktop: approvals on one row, texts on the next. */
+    /* Desktop: the three approvals on one row. */
     "#fh-ty-proof .fhy-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;overflow:visible;margin:16px 0 0;padding:0}",
     "#fh-ty-proof .fhy-row>.fh-card{flex:none}",
-    "#fh-ty-proof .fhy-row>.fh-card[data-layout=\"win\"]{order:1}",
-    "#fh-ty-proof .fhy-row>.fh-card[data-layout=\"quote-win\"]{order:2}",
     "}"
   ].join("\n");
 
-  /* Tap or click a screenshot to see it full size. At 1280 wide the six approvals
-     are about 100px each, too small to read in the row. */
+  /* Tap or click a screenshot to see it full size: the cards are small. */
   var SHOT = 'img[data-slot="approval-screenshot"]';
   function zoomable(scope) {
     var shots = scope.querySelectorAll(SHOT);
@@ -512,13 +491,11 @@
       }
     }
 
-    /* 4. Real approvals, real texts — before the FAQ. Approvals and texts alternate on phones. */
-    var cards = [];
-    for (var j = 0; j < 3; j++) cards.push(winCard(WINS[j]), textCard(TEXTS[j]));
+    /* 4. Real approvals — before the FAQ. */
     var proof = el(
-      '<section id="fh-ty-proof" aria-label="Client approvals and texts">' +
-        '<span class="kicker">Real approvals, real texts</span>' +
-        '<div class="fhy-row">' + cards.join("") + "</div>" +
+      '<section id="fh-ty-proof" aria-label="Client approvals">' +
+        '<span class="kicker">Real approvals, real screenshots</span>' +
+        '<div class="fhy-row">' + WINS.map(winCard).join("") + "</div>" +
       "</section>"
     );
     if (faq && faq.parentNode) faq.parentNode.insertBefore(proof, faq);

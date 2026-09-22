@@ -37,6 +37,14 @@ const THANKS = read("public/funnel/thankyou-sort.js");
 const TEMPLATE = read("clickfunnels-fragments/slo/fundhub-proof-cards.html");
 const TEMPLATE_CSS = TEMPLATE.slice(TEMPLATE.indexOf("<style>") + "<style>".length, TEMPLATE.indexOf("</style>"));
 const DECK = JSON.parse(read("clickfunnels-fragments/slo/client-wins/deck.json"));
+// /roadmap is only read here, to hold /watch to the same H1 and the same video slot.
+const ROADMAP = read("clickfunnels-fragments/slo/slo-01-sales.html");
+
+function cssBody(src, selector) {
+  const at = src.indexOf(`${selector}{`);
+  assert.ok(at > -1, `${selector} rule is missing`);
+  return src.slice(at + selector.length + 1, src.indexOf("}", at));
+}
 
 function arrayLiteral(src, name) {
   const start = src.indexOf(`var ${name} = [`);
@@ -67,52 +75,190 @@ describe("every approval is a real deck crop with the amount read off it", () =>
   const byId = new Map(DECK.cards.map((c) => [c.id, c]));
   const money = (n) => `$${n.toLocaleString("en-US")}`;
 
+  // Owner, 2026-09-22: "put 10 more approvals here" — /watch went from 6 to every
+  // card in the deck (16), in the deck's order. /roadmap shows the same 16.
   for (const [name, src, ids] of [
-    ["/watch", WATCH, ["t-74k-chase-ink", "d-54k-ink", "t-50k-keybank", "t-50k-chase", "d-41k-chase-ink", "t-25k-highland"]],
+    ["/watch", WATCH, DECK.cards.map((c) => c.id)],
     ["/thank-you", THANKS, ["t-74k-chase-ink", "t-50k-keybank", "t-25k-highland"]],
   ]) {
     test(`${name} shows exactly the planned approvals, amounts and images from deck.json`, () => {
       const wins = arrayLiteral(src, "WINS");
       assert.deepEqual(wins.map((w) => w.id), ids);
+      assert.equal(new Set(wins.map((w) => w.id)).size, wins.length, "no card twice");
       for (const w of wins) {
         const card = byId.get(w.id);
         assert.ok(card, `${w.id} is in deck.json`);
         assert.equal(card.kind, "win");
         assert.equal(w.amount, money(card.amount_dollars), `${w.id} amount`);
         assert.equal(w.src, card.image.url, `${w.id} image`);
-        assert.ok(card.amount_dollars < 100000, "the $400K+ lines stay out: not proven client wins");
+        assert.equal(w.alt, card.alt, `${w.id} alt`);
       }
     });
   }
-});
 
-describe("the three client texts are the client's own words", () => {
-  const EXPECTED = [
-    { id: "s34-q1", lines: ["We got approved for 25,000 🙏🏾"], amount: "" },
-    { id: "s21-b", lines: ["APPROVED!!!", "I was on such a cold streak and I finally got an approval", "No hard pull it all!!!"], amount: "" },
-    { id: "s23-b", lines: ["I GOT APPROVED. LETS GOOOOOOOOO"], amount: "" },
-  ];
-
-  test("same three quotes, same words, on both pages; s33-q1 (team-written $70K) stays out", () => {
-    // s34-q1's 25,000 is in the quote and on the screenshot, so its amount headline
-    // stays off: the same number three times on one small card is noise.
-    for (const src of [WATCH, THANKS]) {
-      const texts = arrayLiteral(src, "TEXTS");
-      assert.deepEqual(texts.map(({ id, lines, amount }) => ({ id, lines, amount })), EXPECTED);
-      assert.equal(src.includes("s33-q1"), false);
-      for (const t of texts) {
-        assert.match(t.source, /^Real client text\. Source: Canva Client Wins deck, slide \d+/, `${t.id} names its source`);
-        assert.equal(t.src, `https://fundhub.ai/funnel/proof/${t.id}.jpg`);
-      }
+  test("/watch has all 16 deck cards, each with the deck's image size", () => {
+    const wins = arrayLiteral(WATCH, "WINS");
+    assert.equal(DECK.cards.length, 16);
+    assert.equal(wins.length, 16);
+    for (const w of wins) {
+      const card = byId.get(w.id);
+      assert.equal(w.w, card.image.width, `${w.id} width`);
+      assert.equal(w.h, card.image.height, `${w.id} height`);
     }
+    assert.ok(WATCH.includes(String.raw`function winCard(w) { return card({ id: w.id, layout: "win", amount: w.amount, src: w.src, alt: w.alt, w: w.w, h: w.h }); }`));
+    assert.ok(WATCH.includes(String.raw`'" width="' + (o.w || 1200) + '" height="' + (o.h || 900) + '"`));
   });
 
-  test("the served crops are byte-for-byte the deck crops", () => {
-    for (const { id } of EXPECTED) {
+  test("/thank-you keeps its three approvals under $100K", () => {
+    for (const w of arrayLiteral(THANKS, "WINS")) assert.ok(byId.get(w.id).amount_dollars < 100000, w.id);
+  });
+});
+
+describe("no client texts in the watch funnel (owner, 2026-09-22)", () => {
+  // "Please don't put what clients texted us, because we need the vertical video placeholder."
+  test("neither page builds a client-text card", () => {
+    for (const src of [WATCH, THANKS]) {
+      assert.equal(src.includes("var TEXTS"), false, "no TEXTS list");
+      assert.equal(src.includes("textCard"), false, "no text card builder");
+      assert.equal(src.includes('layout: "quote-win"'), false, "no quote-win cards");
+      assert.equal(src.includes("/funnel/proof/"), false, "no client-text crops");
+    }
+    assert.equal(WATCH.includes("What clients texted us"), false);
+    assert.equal(THANKS.includes("Real approvals, real texts"), false);
+    assert.ok(THANKS.includes(`'<span class="kicker">Real approvals, real screenshots</span>'`));
+    assert.ok(THANKS.includes(`'<div class="fhy-row">' + WINS.map(winCard).join("") + "</div>"`), "the /thank-you row is the approvals only");
+  });
+
+  test("the client-text crops still served on fundhub.ai stay byte-for-byte the deck crops", () => {
+    for (const id of ["s34-q1", "s21-b", "s23-b"]) {
       const served = fs.readFileSync(path.join(ROOT, "public/funnel/proof", `${id}.jpg`));
       const deck = fs.readFileSync(path.join(ROOT, "clickfunnels-fragments/slo/client-wins/deck", `${id}.jpg`));
       assert.ok(served.equals(deck), `${id}.jpg`);
     }
+  });
+});
+
+describe("/watch is one organized column: approvals, video testimonials, three roads", () => {
+  const build = WATCH.slice(WATCH.indexOf("function build()"), WATCH.indexOf("function run()"));
+
+  test("the three blocks come in order under the first Get Started, each with the same heading", () => {
+    const at = (s) => build.indexOf(s);
+    const wins = at('<h2 class="fhx-h">Real approvals. Real screenshots.</h2>');
+    const vids = at('<h2 class="fhx-h">From our clients</h2>');
+    const roads = at('<h2 class="fhx-h">One call. Three roads. Nobody gets turned away.</h2>');
+    assert.ok(wins > -1 && vids > wins && roads > vids, "approvals, then videos, then roads");
+    assert.equal((build.match(/<h2 class="fhx-h">/g) || []).length, 3);
+    assert.ok(at('<a class="btn" href="/apply"') > roads, "the second Get Started closes the section");
+    assert.ok(WATCH.includes(String.raw`var anchor = root.querySelector(".cta-note") || root.querySelector('a.btn[href="/apply"]');`));
+  });
+
+  test("the section heading is the /roadmap section heading", () => {
+    const h2 = cssBody(ROADMAP, ".fh-root .h2");
+    const mine = cssBody(WATCH, "#fh-watch-proof .fhx-h");
+    for (const decl of ["font-family:var(--sans)", "font-size:clamp(22px,3.4vw,32px)", "font-weight:700", "letter-spacing:-.035em", "line-height:1.12", "text-align:center", "max-width:26ch"]) {
+      assert.ok(h2.includes(decl), `/roadmap .h2 has ${decl}`);
+      assert.ok(mine.includes(decl), `/watch heading has ${decl}`);
+    }
+  });
+
+  test("three vertical video placeholders, the /roadmap slot word for word, nothing invented", () => {
+    assert.deepEqual(arrayLiteral(WATCH, "VIDEOS"), ["[ VIDEO TESTIMONIAL 1 ]", "[ VIDEO TESTIMONIAL 2 ]", "[ VIDEO TESTIMONIAL 3 ]"]);
+    assert.ok(build.includes(String.raw`'<div class="fhx-vgrid">' + VIDEOS.map(function (v) { return '<div class="fhx-vslot"><span>' + esc(v) + "</span></div>"; }).join("") + "</div>"`));
+    assert.equal(cssBody(WATCH, "#fh-watch-proof .fhx-vslot"), cssBody(ROADMAP, ".fh-b .vslot"));
+    assert.equal(cssBody(WATCH, "#fh-watch-proof .fhx-vslot span"), cssBody(ROADMAP, ".fh-b .vslot span"));
+    assert.ok(cssBody(ROADMAP, ".fh-b .vslot").includes("background:#111113"));
+    assert.ok(cssBody(ROADMAP, ".fh-b .vslot").includes("aspect-ratio:9/16"));
+  });
+});
+
+describe("/watch approvals row slides right as the page scrolls down, and never holds the page", () => {
+  const START = "CAROUSEL MATH START";
+  const END = "CAROUSEL MATH END";
+  const a = WATCH.indexOf(START);
+  const b = WATCH.indexOf(END);
+  assert.ok(a > -1 && b > a, "carousel math markers");
+  const body = WATCH.slice(WATCH.indexOf("*/", a) + 2, WATCH.lastIndexOf("/*", b));
+  // eslint-disable-next-line no-new-func
+  const fhxShift = new Function(`${body}\nreturn fhxShift;`)();
+  const vh = 900;
+  const travel = 2000;
+  const row = 250;
+  // With a 250px row on a 900px screen the row moves while its bottom edge goes from
+  // 810 (90%) up to where its top edge is 90 (10%): top 560 -> 90, 470px of scroll.
+
+  test("rests on the first card until the whole row is on screen (bottom edge at 90%)", () => {
+    assert.equal(fhxShift(900, row, vh, travel), 0, "still coming up from below");
+    assert.equal(fhxShift(560, row, vh, travel), 0, "bottom edge at 810 = 90%");
+  });
+
+  test("moves in step with the scroll, and shows the last card while the whole row is still on screen", () => {
+    assert.equal(fhxShift(560 - 470 / 4, row, vh, travel), -500);
+    assert.equal(fhxShift(560 - 470 / 2, row, vh, travel), -1000);
+    assert.equal(fhxShift(90, row, vh, travel), -2000, "top edge at 90 = 10%: last card, row fully on screen");
+    assert.equal(fhxShift(-400, row, vh, travel), -2000, "rests on the last card after that");
+    let last = 1;
+    for (let top = 900; top >= -300; top -= 25) {
+      const x = fhxShift(top, row, vh, travel);
+      assert.ok(x <= last && x >= -travel, `never goes back or past the end (top ${top})`);
+      last = x;
+    }
+  });
+
+  test("a short screen still gets at least 40% of the screen of scroll for the whole row", () => {
+    // Phone on its side: 390px tall, 250px row. 0.8 * 390 - 250 = 62px would race.
+    const short = 390;
+    const span = short * 0.4;
+    assert.equal(fhxShift(short * 0.1 + span, row, short, travel), 0);
+    assert.equal(fhxShift(short * 0.1 + span / 2, row, short, travel), -1000);
+    assert.equal(fhxShift(short * 0.1, row, short, travel), -2000);
+  });
+
+  test("nothing to slide, or no screen height, means no movement", () => {
+    assert.equal(fhxShift(0, row, vh, 0), 0);
+    assert.equal(fhxShift(0, row, 0, travel), 0);
+  });
+
+  test("one transform per animation frame, passive listener, reduced motion gets a swipe row, nothing is pinned", () => {
+    assert.ok(WATCH.includes(`document.addEventListener("scroll", queue, { capture: true, passive: true });`));
+    assert.ok(WATCH.includes("window.requestAnimationFrame(frame);"));
+    assert.ok(WATCH.includes(`if (on) track.style.transform = "translate3d(" + fhxShift(r.top, r.height, vh, travel).toFixed(1) + "px,0,0)";`));
+    assert.ok(WATCH.includes(`window.matchMedia("(prefers-reduced-motion: reduce)")`));
+    assert.ok(WATCH.includes("#fh-watch-proof .fhx-swipe{overflow-x:auto;"));
+    assert.ok(WATCH.includes("#fh-watch-proof .fhx-swipe .fhx-track{transform:none!important}"));
+    const motion = WATCH.slice(WATCH.indexOf("function motion("), WATCH.indexOf("function flushGutters("));
+    for (const pin of ["position:sticky", "preventDefault", "scrollTo(", "scrollTop", "overflow"]) {
+      assert.equal(motion.includes(pin), false, `the motion code never touches ${pin}`);
+    }
+    assert.equal(WATCH.includes("position:sticky"), false);
+  });
+
+  test("off-screen cards load before they slide in", () => {
+    assert.ok(WATCH.includes("if (!eager && r.top < vh * 2) {"));
+    assert.ok(WATCH.includes(`imgs[i].loading = "eager";`));
+  });
+});
+
+describe("/watch lines up with /roadmap: same side gutters, same H1", () => {
+  test("the H1 rule is the /roadmap H1 rule word for word, and the amounts use the H1's own font", () => {
+    assert.equal(cssBody(WATCH, ".fhw .fh-root .hero h1"), cssBody(ROADMAP, ".fh-root .hero h1"));
+    assert.equal(
+      cssBody(WATCH, ".fhw .fh-root .hero h1 .amt"),
+      "font-family:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;text-decoration:none",
+    );
+  });
+
+  test("only the ClickFunnels boxes around this page's .fh-root lose their side padding, and only where the script runs", () => {
+    assert.ok(WATCH.includes(".fhw .fhw-flush{padding-left:0!important;padding-right:0!important;margin-left:0!important;margin-right:0!important}"));
+    assert.match(WATCH, /document\.documentElement\.classList\.add\("fhw"\);\s*flushGutters\(root\);/);
+    const flush = WATCH.slice(WATCH.indexOf("function flushGutters("), WATCH.indexOf("function addStyles("));
+    assert.ok(flush.includes("for (var el = root.parentElement; el && el !== document.body; el = el.parentElement) {"));
+    assert.ok(flush.includes(String.raw`if (!el.hasAttribute("data-page-element") && !/(^|\s)(col-inner|containerInnerV2)(\s|$)/.test(el.className)) continue;`));
+    // Every page-wide rule is scoped to .fhw, which only this script sets.
+    const start = WATCH.indexOf("var ALIGN_CSS = [");
+    const align = WATCH.slice(start, WATCH.indexOf("].join(", start));
+    const selectors = [...align.matchAll(/"([^"{]+)\{/g)].map((m) => m[1]);
+    assert.equal(selectors.length, 3);
+    for (const sel of selectors) assert.ok(sel.startsWith(".fhw "), sel);
   });
 });
 
@@ -205,7 +351,7 @@ describe("/thank-you copy for visitors with no booking", () => {
   });
 });
 
-describe("screenshots open full size (at 1280 wide the approvals are about 100px)", () => {
+describe("screenshots open full size (the cards are small, and on /watch they move)", () => {
   test("both scripts make every card screenshot open on tap, click, Enter or Space and close on Escape", () => {
     for (const [src, scope] of [[WATCH, "zoomable(sec)"], [THANKS, "zoomable(proof)"]]) {
       assert.ok(src.includes(scope), scope);

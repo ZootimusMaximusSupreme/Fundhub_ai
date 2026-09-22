@@ -6,11 +6,21 @@
  * body cannot be replaced by API, so this script adds the new section itself,
  * right under the first "Get Started" button and its note, above the ticker.
  *
- * What it adds (the Sorting Hat offer — one call, three roads):
- *   1. "Real approvals. Real screenshots." — six client approvals.
- *   2. "What clients texted us" — three real client texts.
+ * What it adds, one column, one rhythm (owner, 2026-09-22: "it needs to be organized"):
+ *   1. "Real approvals. Real screenshots." — all 16 client approvals from the deck
+ *      ("put 10 more approvals here"; the /roadmap page shows the same 16). The row
+ *      slides to the right as the page scrolls down. It never holds the page.
+ *   2. "From our clients" — three vertical video testimonial placeholders, the same
+ *      dark 9:16 slot as /roadmap. Placeholders only: no names, quotes or faces.
+ *      No client-text cards ("don't put what clients texted us").
  *   3. "One call. Three roads. Nobody gets turned away." + a second Get Started.
- * The H1, the video and the first button are not touched.
+ *
+ * It also lines the page up with /roadmap (only where this script runs):
+ *   - the builder containers around the page lose their side padding, so the text
+ *     column sits 24px from the screen edge on a phone, as on /roadmap;
+ *   - the H1 uses the /roadmap H1 rule, and its dollar amounts use the H1's own
+ *     font (no mono, no underline). The H1 words are not touched.
+ * The video and the first button are not touched.
  *
  * Proof law (.claude/rules/proof-cards-from-source.md): every card is the
  * proof-card template's own markup (clickfunnels-fragments/slo/fundhub-proof-cards.html),
@@ -18,9 +28,7 @@
  * below is a verbatim copy of that file's <style> block; a test fails if they drift
  * (src/ads/funnel-proof-scripts.test.mjs).
  *
- * Phones: each set is one sideways swipe row, so the page grows by less than one
- * screen. Desktop: the six approvals sit in one row, the texts beside the closing
- * button. Any screenshot opens full size on tap or click.
+ * Any screenshot opens full size on tap or click.
  */
 (function () {
   "use strict";
@@ -30,37 +38,46 @@
   var SECTION_ID = "fh-watch-proof";
   var GIF = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-  /* Approvals. Amount read off each crop; see clickfunnels-fragments/slo/client-wins/deck.json.
-     The $400K+ credit lines are left out: the source does not prove they are client wins. */
+  /* Approvals: every card in clickfunnels-fragments/slo/client-wins/deck.json, in the
+     deck's order (smallest first, climbing to the biggest). Amount read off each crop;
+     src, width, height and alt are the deck's. */
   var WINS = [
-    { id: "t-74k-chase-ink", amount: "$74,000", alt: "Chase Ink Business Cash card approval showing $74,000",
-      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715350/file/685c4e87c43f57142cfe2bd70318efeb.jpg" },
-    { id: "d-54k-ink", amount: "$54,500", alt: "Chase Ink Business Unlimited card approval showing $54,500",
-      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715352/file/37f8476a42f24b8a951b3bbab7356c86.jpg" },
-    { id: "t-50k-keybank", amount: "$50,000", alt: "KeyBank business credit card approval showing a $50,000 credit limit",
-      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715354/file/6484dec63f442004a983f44f01eb1a5d.jpg" },
-    { id: "t-50k-chase", amount: "$50,000", alt: "Chase Ink Business card approval showing $50,000",
-      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715355/file/68b915259e7c0a5f060eb2a43841fcd1.jpg" },
-    { id: "d-41k-chase-ink", amount: "$41,000", alt: "Chase Ink Business Unlimited card approval showing $41,000",
+    { id: "t-20k-truist", amount: "$20,000", w: 1200, h: 900, alt: "Truist Business credit card approval showing $20,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715364/file/b828126991a18a561b9b0489ffef31dc.jpg" },
+    { id: "d-23k-chase-freedom", amount: "$23,000", w: 1200, h: 900, alt: "Chase Freedom Unlimited approval showing a $23,000 credit line",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715363/file/f45edd9e680d174dd614f8a09b6079e4.jpg" },
+    { id: "d-24k-navy", amount: "$24,000", w: 1200, h: 900, alt: "Navy Federal Credit Union Platinum Visa credit card approval showing $24,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715362/file/7fc29e8b494832b6b5c14a2f82d1610e.jpg" },
+    { id: "d-25k-personal-card", amount: "$25,000", w: 1200, h: 900, alt: "Navy Federal Credit Union cashRewards Visa credit card approval showing $25,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715360/file/f2ab5e090077acb25ec2a06820c9aa7e.jpg" },
+    { id: "t-25k-highland", amount: "$25,000", w: 1200, h: 900, alt: "Highland Bank Visa Business Card approval showing $25,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715361/file/d619505428aae233495eb08f9ca78220.jpg" },
+    { id: "d-30k-navy", amount: "$30,000", w: 1200, h: 900, alt: "Navy Federal Platinum credit card approval showing $30,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715359/file/c7c14fe81e2ebce892266ef580078d8b.jpg" },
+    { id: "d-41k-chase-ink", amount: "$41,000", w: 1200, h: 900, alt: "Chase Ink Business Unlimited card approval showing $41,000",
       src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715357/file/7eca23557c059231d5a4ec46f9a4af53.jpg" },
-    { id: "t-25k-highland", amount: "$25,000", alt: "Highland Bank Visa Business Card approval showing $25,000",
-      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715361/file/d619505428aae233495eb08f9ca78220.jpg" }
+    { id: "d-50k-loc", amount: "$50,000", w: 1200, h: 900, alt: "Commercial line of credit approval showing $50,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715353/file/89de6b8fb2e72f1708bf9d0e232e0264.jpg" },
+    { id: "t-50k-keybank", amount: "$50,000", w: 1200, h: 900, alt: "KeyBank business credit card approval showing a $50,000 credit limit",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715354/file/6484dec63f442004a983f44f01eb1a5d.jpg" },
+    { id: "t-50k-chase", amount: "$50,000", w: 1200, h: 900, alt: "Chase Ink Business card approval showing $50,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715355/file/68b915259e7c0a5f060eb2a43841fcd1.jpg" },
+    { id: "d-54k-ink", amount: "$54,500", w: 1200, h: 900, alt: "Chase Ink Business Unlimited card approval showing $54,500",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715352/file/37f8476a42f24b8a951b3bbab7356c86.jpg" },
+    { id: "d-70k-loc", amount: "$70,000", w: 1200, h: 900, alt: "Business Revolving Line of Credit approval showing $70,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715351/file/87ce21a9d56365a948583e5c47d1bced.jpg" },
+    { id: "t-74k-chase-ink", amount: "$74,000", w: 1200, h: 900, alt: "Chase Ink Business Cash card approval showing $74,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715350/file/685c4e87c43f57142cfe2bd70318efeb.jpg" },
+    { id: "d-400k-loc", amount: "$400,000", w: 1200, h: 900, alt: "Commercial line of credit approval showing $400,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715348/file/87977dcab48ab92052338711db574153.jpg" },
+    { id: "d-469k-loc", amount: "$469,800", w: 1200, h: 900, alt: "Commercial Line of Credit approval showing $469,800",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715347/file/62e762095e88a7911fdf48dcef0e15a6.jpg" },
+    { id: "d-500k-loc", amount: "$500,000", w: 1200, h: 900, alt: "Commercial Line of Credit approval showing $500,000",
+      src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715346/file/2ebcf1ec2959eafec36ed810cdcef6f5.jpg" }
   ];
 
-  /* Client texts. Words copied exactly off each crop, typo included. Lines are the
-     separate message bubbles. amount stays off: a number the client wrote is already
-     in the quote and the screenshot, and a third copy is noise. */
-  var TEXTS = [
-    { id: "s34-q1", lines: ["We got approved for 25,000 \uD83D\uDE4F\uD83C\uDFFE"], amount: "",
-      src: "https://fundhub.ai/funnel/proof/s34-q1.jpg", w: 1200, h: 190,
-      source: "Real client text. Source: Canva Client Wins deck, slide 34 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg. The client wrote the 25,000; it shows in the quote and the screenshot, so the amount headline is off." },
-    { id: "s21-b", lines: ["APPROVED!!!", "I was on such a cold streak and I finally got an approval", "No hard pull it all!!!"], amount: "",
-      src: "https://fundhub.ai/funnel/proof/s21-b.jpg", w: 1200, h: 567,
-      source: "Real client text. Source: Canva Client Wins deck, slide 21 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s21-b.jpg. Three bubbles, words exact." },
-    { id: "s23-b", lines: ["I GOT APPROVED. LETS GOOOOOOOOO"], amount: "",
-      src: "https://fundhub.ai/funnel/proof/s23-b.jpg", w: 1200, h: 277,
-      source: "Real client text. Source: Canva Client Wins deck, slide 23 (Drive folder 13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ); crop clickfunnels-fragments/slo/client-wins/deck/s23-b.jpg. Nine O's, counted off the crop." }
-  ];
+  /* Vertical video testimonial placeholders. Chris drops in real clips. */
+  var VIDEOS = ["[ VIDEO TESTIMONIAL 1 ]", "[ VIDEO TESTIMONIAL 2 ]", "[ VIDEO TESTIMONIAL 3 ]"];
 
   function esc(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -69,23 +86,20 @@
   /* One proof-card template article. Same markup and switches as the template:
      every slot kept, the switches decide what shows. */
   function card(o) {
-    var quote = o.lines ? o.lines.map(esc).join("<br>") : "";
-    var shotAlt = o.lines ? "Screenshot of the client's text: " + o.lines.join(" / ") : o.alt;
-    return (o.source ? "<!-- " + esc(o.source) + " -->" : "<!-- Client approval " + esc(o.id) + ": amount read off the screenshot (deck.json). -->") +
+    return "<!-- Client approval " + esc(o.id) + ": amount read off the screenshot (deck.json). -->" +
       '<article class="fh-card" data-layout="' + o.layout + '" data-photo="off" data-name="off" data-amount="' + (o.amount ? "on" : "off") + '">' +
         '<p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>' +
         '<figure class="fh-face"><img data-slot="face" src="' + GIF + '" alt="" width="168" height="168"></figure>' +
         '<h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">' + esc(o.amount || "") + "</span></h3>" +
-        '<figure class="fh-shot"><img data-slot="approval-screenshot" src="' + esc(o.src) + '" alt="' + esc(shotAlt) + '" width="' + (o.w || 1200) + '" height="' + (o.h || 900) + '" loading="lazy" decoding="async"></figure>' +
-        '<blockquote class="fh-quote"><p data-slot="quote">' + quote + "</p></blockquote>" +
+        '<figure class="fh-shot"><img data-slot="approval-screenshot" src="' + esc(o.src) + '" alt="' + esc(o.alt) + '" width="' + (o.w || 1200) + '" height="' + (o.h || 900) + '" loading="lazy" decoding="async"></figure>' +
+        '<blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>' +
         '<div class="fh-rule" aria-hidden="true"></div>' +
         '<span class="fh-name" data-slot="name"></span>' +
         '<span class="fh-mark" role="img" aria-label="Fundhub"></span>' +
       "</article>";
   }
 
-  function winCard(w) { return card({ id: w.id, layout: "win", amount: w.amount, src: w.src, alt: w.alt }); }
-  function textCard(t) { return card({ id: t.id, layout: "quote-win", amount: t.amount, src: t.src, w: t.w, h: t.h, lines: t.lines, source: t.source }); }
+  function winCard(w) { return card({ id: w.id, layout: "win", amount: w.amount, src: w.src, alt: w.alt, w: w.w, h: w.h }); }
 
   /* ── proof-card template CSS, verbatim. Do not edit here; edit the template. ── */
   var TEMPLATE_CSS = String.raw`
@@ -325,51 +339,65 @@
 `;
   /* ── end template CSS ── */
 
-  /* Sizing for this page only, through the template's own variables and pieces. */
+  /* Page alignment with /roadmap. run() puts .fhw on <html>, so none of this reaches
+     any page this script is not on. The H1 rule is the /roadmap H1 rule, word for word
+     (clickfunnels-fragments/slo/slo-01-sales.html); a test fails if they drift. */
+  var ALIGN_CSS = [
+    ".fhw .fhw-flush{padding-left:0!important;padding-right:0!important;margin-left:0!important;margin-right:0!important}",
+    ".fhw .fh-root .hero h1{font-family:var(--sans);font-size:clamp(28px,4.8vw,46px);font-weight:700;letter-spacing:-.045em;line-height:1.02;margin:20px auto 0;max-width:26ch}",
+    ".fhw .fh-root .hero h1 .amt{font-family:inherit;font-size:inherit;font-weight:inherit;letter-spacing:inherit;line-height:inherit;text-decoration:none}"
+  ].join("\n");
+
+  /* This section. One column: every heading is the /roadmap section heading, every
+     block is the page's text column, the same space between blocks. */
   var PAGE_CSS = [
-    "#fh-watch-proof{margin:30px 0 0;text-align:center}",
-    "#fh-watch-proof .fhx-h{font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:clamp(17px,4.4vw,24px);font-weight:700;letter-spacing:-.035em;line-height:1.2;color:#0A0A0A;margin:0 auto}",
-    "#fh-watch-proof .fhx-sec+.fhx-sec,#fh-watch-proof .fhx-pair{margin-top:22px}",
-    "#fh-watch-proof .fhx-row{display:flex;align-items:flex-start;gap:10px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin:10px calc(50% - 50vw) 0;padding:3px calc(50vw - 50%) 8px}",
-    /* Phones: the swipe rows run to both screen edges; the first card still lines up with the text above. */
-    "#fh-watch-proof .fhx-row::-webkit-scrollbar{display:none}",
-    "#fh-watch-proof .fhx-row>.fh-card{flex:0 0 140px}",
-    "#fh-watch-proof .fhx-texts .fhx-row>.fh-card{flex-basis:224px}",
+    "#fh-watch-proof{margin:48px 0 0;text-align:center}",
+    "#fh-watch-proof .fhx-sec+.fhx-sec{margin-top:48px}",
+    "#fh-watch-proof .fhx-h{font-family:var(--sans);font-size:clamp(22px,3.4vw,32px);font-weight:700;letter-spacing:-.035em;line-height:1.12;text-align:center;color:#0A0A0A;margin:0 auto;max-width:26ch}",
+    /* Approvals row. Phones: it runs to both screen edges (the page column is 24px in);
+       the first card lines up with the text above, the last with the text edge. The
+       padding keeps the card shadows; the margins give it back, so the row sits in
+       the same rhythm as the other blocks. */
+    "#fh-watch-proof .fhx-rail{position:relative;overflow:hidden;margin:12px -24px -20px;padding:4px 0 20px}",
+    "#fh-watch-proof .fhx-track{display:flex;align-items:flex-start;gap:10px;width:max-content;padding:0 24px}",
+    "#fh-watch-proof .fhx-scroll .fhx-track{will-change:transform}",
+    "#fh-watch-proof .fhx-track>.fh-card{flex:0 0 150px;width:150px}",
+    /* Reduced motion: a plain sideways swipe row instead. */
+    "#fh-watch-proof .fhx-swipe{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding:0 24px;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
+    "#fh-watch-proof .fhx-swipe::-webkit-scrollbar{display:none}",
+    "#fh-watch-proof .fhx-swipe .fhx-track{transform:none!important}",
+    "#fh-watch-proof .fhx-swipe .fh-card{scroll-snap-align:start}",
     /* The page resets padding on everything under .fh-root, so the card's own padding is restated here. */
     "#fh-watch-proof .fh-card{--fh-pad:10px;--fh-gap:6px;--fh-tilt-amount:0deg;--fh-radius-card:12px;--fh-radius-frame:8px;--fh-radius-img:4px;--fh-shadow:0 1px 2px rgba(12,12,13,.06),0 10px 24px -14px rgba(12,12,13,.28);max-width:none;padding:var(--fh-pad) var(--fh-pad) calc(var(--fh-pad) - 2px)}",
     "#fh-watch-proof .fh-card>.fh-eyebrow{font-size:10px;letter-spacing:.12em}",
     "#fh-watch-proof .fh-card>.fh-headline{font-size:12px;font-weight:600;line-height:1.2;color:#56565C}",
     "#fh-watch-proof .fh-card .fh-amount{font-size:20px;font-weight:600;line-height:1.05;margin-top:2px;color:#0C0C0D}",
     "#fh-watch-proof .fh-card>.fh-shot{padding:4px}",
-    "#fh-watch-proof .fh-card>.fh-quote{font-size:14px;line-height:1.4}",
     "#fh-watch-proof .fh-card>.fh-mark{--fh-mark-h:12px}",
-    "#fh-watch-proof .fhx-roads p{margin:6px auto 0;font-size:14.5px;line-height:1.5;color:#52525B}",
-    "#fh-watch-proof .fhx-roads .btn{margin-top:14px}",
+    /* Video testimonial placeholders: the /roadmap slot, word for word (.fh-b .vslot in
+       clickfunnels-fragments/slo/slo-01-sales.html); a test fails if they drift. */
+    "#fh-watch-proof .fhx-vgrid{display:flex;align-items:flex-start;justify-content:center;gap:12px;margin:16px auto 0}",
+    "#fh-watch-proof .fhx-vslot{aspect-ratio:9/16;max-height:300px;border-radius:12px;background:#111113;border:1px solid #26262B;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px}",
+    "#fh-watch-proof .fhx-vslot span{color:#8A8A93;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;line-height:1.5}",
+    "#fh-watch-proof .fhx-vgrid>.fhx-vslot{flex:1 1 0;min-width:0;max-width:169px}",
+    "#fh-watch-proof .fhx-roads p{max-width:52ch;margin:12px auto 0;font-size:16px;line-height:1.6;color:#52525B}",
+    "#fh-watch-proof .fhx-roads .btn{margin-top:22px}",
     ".fhz{position:fixed;inset:0;z-index:2147483000;box-sizing:border-box;display:flex;align-items:center;justify-content:center;padding:64px 16px 24px;background:rgba(12,12,13,.88);cursor:zoom-out}",
     ".fhz img{display:block;width:auto;height:auto;max-width:min(100%,900px);max-height:100%;object-fit:contain;background:#fff;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.45)}",
     ".fhz button{position:absolute;top:12px;right:12px;width:44px;height:44px;margin:0;padding:0;border:0;border-radius:50%;background:#fff;color:#0C0C0D;font:600 26px/44px system-ui,-apple-system,sans-serif;text-align:center;cursor:pointer}",
     "#fh-watch-proof img[data-slot=\"approval-screenshot\"]{cursor:zoom-in}",
     "@media(min-width:700px){",
-    "#fh-watch-proof{margin-top:36px}",
-    "#fh-watch-proof .fhx-sec+.fhx-sec,#fh-watch-proof .fhx-pair{margin-top:28px}",
-    "#fh-watch-proof .fhx-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;overflow:visible;margin:14px auto 0;padding:0}",
-    "#fh-watch-proof .fhx-wins .fhx-row{max-width:560px}",
-    "#fh-watch-proof .fhx-row>.fh-card{flex:none}",
-    "#fh-watch-proof .fhx-roads p{max-width:44ch;font-size:15px}",
-    "#fh-watch-proof .fhx-roads .btn{margin-top:16px}",
-    "}",
-    "@media(min-width:1000px){",
-    "#fh-watch-proof .fhx-wins .fhx-row{max-width:none;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}",
-    "#fh-watch-proof .fhx-pair{display:grid;grid-template-columns:minmax(0,1fr) 250px;gap:28px;align-items:center;margin-top:30px}",
-    "#fh-watch-proof .fhx-pair>.fhx-sec+.fhx-sec{margin-top:0}",
-    "#fh-watch-proof .fhx-roads{text-align:left}",
-    "#fh-watch-proof .fhx-roads .fhx-h{margin:0;font-size:22px}",
-    "#fh-watch-proof .fhx-roads p{margin-left:0}",
+    "#fh-watch-proof{margin-top:56px}",
+    "#fh-watch-proof .fhx-sec+.fhx-sec{margin-top:56px}",
+    /* Desktop: the row is the page column; its edges fade so a card slides in and out softly. */
+    "#fh-watch-proof .fhx-rail{margin:16px 0 -20px;-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%);mask-image:linear-gradient(90deg,transparent 0,#000 24px,#000 calc(100% - 24px),transparent 100%)}",
+    "#fh-watch-proof .fhx-track{gap:14px}",
+    "#fh-watch-proof .fhx-track>.fh-card{flex-basis:180px;width:180px}",
+    "#fh-watch-proof .fhx-vgrid{margin-top:20px}",
     "}"
   ].join("\n");
 
-  /* Tap or click a screenshot to see it full size. At 1280 wide the six approvals
-     are about 100px each, too small to read in the row. */
+  /* Tap or click a screenshot to see it full size: the cards are small, and moving. */
   var SHOT = 'img[data-slot="approval-screenshot"]';
   function zoomable(scope) {
     var shots = scope.querySelectorAll(SHOT);
@@ -403,7 +431,7 @@
     var x = document.createElement("button");
     x.type = "button";
     x.setAttribute("aria-label", "Close");
-    x.textContent = "\u00D7";
+    x.textContent = "×";
     ov.appendChild(big);
     ov.appendChild(x);
     function onKey(e) { if (e.key === "Escape") close(); }
@@ -418,33 +446,109 @@
     try { x.focus({ preventScroll: true }); } catch (e) {}
   }
 
+  /* ══ CAROUSEL MATH START — sliced out and tested by src/ads/funnel-proof-scripts.test.mjs.
+        Do not rename fhxShift and do not move these markers. ══ */
+  /* How far the approvals row has slid, in px (0 or less). It starts to move once the
+     whole row is on screen (its bottom edge 90% of the way down) and shows its last
+     card while the whole row is still on screen (its top edge 10% down), so every card,
+     the biggest approvals too, is read in full. Before and after that it rests. On a
+     short screen, where that stretch would be under 40% of the screen, it is stretched
+     to 40% so the row never races. The page is never held: this only reads where the
+     row is; it never stops or slows the scroll. */
+  function fhxShift(top, height, vh, travel) {
+    if (!(vh > 0) || !(travel > 0)) return 0;
+    var span = Math.max(vh * 0.8 - height, vh * 0.4);
+    var p = (vh * 0.1 + span - top) / span;
+    if (p <= 0) return 0;
+    if (p > 1) p = 1;
+    return -p * travel;
+  }
+  /* ══ CAROUSEL MATH END ══ */
+
+  /* Scroll down, the row slides right: one transform per animation frame, nothing
+     else moves. The live page scrolls inside <body>, not the window, so the listener
+     is on the document in the capture phase, which hears both. Reduced motion: the
+     row is a normal sideways swipe row and never moves on its own. */
+  function motion(sec) {
+    var rail = sec.querySelector(".fhx-rail");
+    var track = rail && rail.querySelector(".fhx-track");
+    if (!track) return;
+    var imgs = rail.querySelectorAll("img[loading=\"lazy\"]");
+    var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
+    var travel = 0, queued = false, on = false, eager = false;
+    function measure() { travel = Math.max(0, track.offsetWidth - rail.clientWidth); }
+    function frame() {
+      queued = false;
+      var r = rail.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      /* Cards off to the side sit outside the clipped row, where lazy images never
+         start. Load all of them once the row is within two screens. */
+      if (!eager && r.top < vh * 2) {
+        eager = true;
+        for (var i = 0; i < imgs.length; i++) imgs[i].loading = "eager";
+      }
+      if (on) track.style.transform = "translate3d(" + fhxShift(r.top, r.height, vh, travel).toFixed(1) + "px,0,0)";
+    }
+    function queue() {
+      if (queued) return;
+      queued = true;
+      window.requestAnimationFrame(frame);
+    }
+    function mode() {
+      on = !(mq && mq.matches);
+      rail.classList.toggle("fhx-scroll", on);
+      rail.classList.toggle("fhx-swipe", !on);
+      if (on) { rail.scrollLeft = 0; measure(); } else track.style.transform = "";
+      queue();
+    }
+    if (!window.requestAnimationFrame) { rail.classList.add("fhx-swipe"); return; }
+    document.addEventListener("scroll", queue, { capture: true, passive: true });
+    window.addEventListener("resize", function () { if (on) measure(); queue(); }, { passive: true });
+    if (mq) {
+      if (mq.addEventListener) mq.addEventListener("change", mode);
+      else if (mq.addListener) mq.addListener(mode);
+    }
+    mode();
+  }
+
+  /* The builder's section, row and column boxes each add side padding (15px + 15px on
+     a phone), so /watch read 54px in from the screen edge where /roadmap reads 24px.
+     Only the ClickFunnels boxes around this page's .fh-root lose it. */
+  function flushGutters(root) {
+    for (var el = root.parentElement; el && el !== document.body; el = el.parentElement) {
+      if (!el.hasAttribute("data-page-element") && !/(^|\s)(col-inner|containerInnerV2)(\s|$)/.test(el.className)) continue;
+      var cs = window.getComputedStyle(el);
+      if (parseFloat(cs.paddingLeft) || parseFloat(cs.paddingRight) || parseFloat(cs.marginLeft) || parseFloat(cs.marginRight)) {
+        el.classList.add("fhw-flush");
+      }
+    }
+  }
+
   function addStyles() {
     if (document.getElementById("fh-watch-proof-css")) return;
     var s = document.createElement("style");
     s.id = "fh-watch-proof-css";
-    s.textContent = TEMPLATE_CSS + "\n" + PAGE_CSS;
+    s.textContent = TEMPLATE_CSS + "\n" + ALIGN_CSS + "\n" + PAGE_CSS;
     (document.head || document.documentElement).appendChild(s);
   }
 
   function build() {
     var sec = document.createElement("section");
     sec.id = SECTION_ID;
-    sec.setAttribute("aria-label", "Client approvals and texts");
+    sec.setAttribute("aria-label", "Client approvals and video testimonials");
     sec.innerHTML =
       '<div class="fhx-sec fhx-wins">' +
         '<h2 class="fhx-h">Real approvals. Real screenshots.</h2>' +
-        '<div class="fhx-row">' + WINS.map(winCard).join("") + "</div>" +
+        '<div class="fhx-rail"><div class="fhx-track">' + WINS.map(winCard).join("") + "</div></div>" +
       "</div>" +
-      '<div class="fhx-pair">' +
-        '<div class="fhx-sec fhx-texts">' +
-          '<h2 class="fhx-h">What clients texted us</h2>' +
-          '<div class="fhx-row">' + TEXTS.map(textCard).join("") + "</div>" +
-        "</div>" +
-        '<div class="fhx-sec fhx-roads">' +
-          '<h2 class="fhx-h">One call. Three roads. Nobody gets turned away.</h2>' +
-          "<p>Funding now, fix the file first, or learn to do it yourself. Soft pull only. No obligation.</p>" +
-          '<a class="btn" href="/apply" style="text-align:center;text-decoration:none">Get Started</a>' +
-        "</div>" +
+      '<div class="fhx-sec fhx-vids">' +
+        '<h2 class="fhx-h">From our clients</h2>' +
+        '<div class="fhx-vgrid">' + VIDEOS.map(function (v) { return '<div class="fhx-vslot"><span>' + esc(v) + "</span></div>"; }).join("") + "</div>" +
+      "</div>" +
+      '<div class="fhx-sec fhx-roads">' +
+        '<h2 class="fhx-h">One call. Three roads. Nobody gets turned away.</h2>' +
+        "<p>Funding now, fix the file first, or learn to do it yourself. Soft pull only. No obligation.</p>" +
+        '<a class="btn" href="/apply" style="text-align:center;text-decoration:none">Get Started</a>' +
       "</div>";
     return sec;
   }
@@ -456,10 +560,13 @@
     /* Anchor: the note under the first Get Started. Fall back to the button itself. */
     var anchor = root.querySelector(".cta-note") || root.querySelector('a.btn[href="/apply"]');
     if (!anchor || !anchor.parentNode) return;
+    document.documentElement.classList.add("fhw");
+    flushGutters(root);
     addStyles();
     var sec = build();
     anchor.parentNode.insertBefore(sec, anchor.nextSibling);
     zoomable(sec);
+    motion(sec);
   }
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run);

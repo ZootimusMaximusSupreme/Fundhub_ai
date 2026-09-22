@@ -1,6 +1,7 @@
 # /watch and /thank-you — the Sorting Hat pages (actual)
 
-Generated from code on 2026-09-22 (branch `feat/watch-proof`). Both pages are
+Generated from code on 2026-09-22 (branch `feat/watch-proof`; /watch section and
+/thank-you proof row regenerated on branch `feat/watch-organize`). Both pages are
 ClickFunnels builder pages on apply.fundhub.ai. Their body cannot be replaced by
 API, so everything new is added by a footer script served from fundhub.ai:
 
@@ -16,21 +17,25 @@ to do it yourself). Nobody gets turned away.
 
 ```mermaid
 flowchart TD
-    A["Visitor opens /watch"] --> B["H1, video, Get Started, note<br/>(unchanged — builder page)"]
+    A["Visitor opens /watch"] --> B["H1, video, Get Started, note<br/>(builder page; words unchanged)"]
     B --> C["watch-proof.js runs<br/>run() — public/funnel/watch-proof.js"]
     C --> D{".fh-root .cta-note found?"}
     D -->|no| E["Falls back to the first a.btn to /apply.<br/>Neither found: adds nothing"]
-    D -->|yes| F["Real approvals. Real screenshots.<br/>6 proof-card template win cards<br/>(amounts from deck.json)"]
-    F --> G["What clients texted us<br/>3 quote-win cards: s34-q1, s21-b, s23-b<br/>(amount headline off: the number is already in the quote)"]
+    D -->|yes| K["html.fhw set; flushGutters(): the builder boxes around .fh-root<br/>lose their side padding (column 24px from the edge, as /roadmap);<br/>H1 takes the /roadmap H1 rule, amounts in the H1 font"]
+    K --> F["Real approvals. Real screenshots.<br/>all 16 deck.json win cards in one row;<br/>motion(): the row slides right as the page scrolls down<br/>(fhxShift; reduced motion: a swipe row)"]
+    F --> G["From our clients<br/>3 vertical video placeholders<br/>[ VIDEO TESTIMONIAL 1-3 ] (the /roadmap slot)"]
     G --> H["One call. Three roads. Nobody gets turned away."]
     H --> I["Second Get Started → /apply"]
     B -->|first button| J["/apply"]
     I --> J
 ```
 
-Phones: approvals and texts are each one sideways swipe row. Desktop (1000px and
-up): approvals in one row of six, texts beside the closing button. Tap, click,
-Enter or Space on any screenshot opens it full size; a click or Escape closes it.
+One column at every width, same heading and the same space between the three
+blocks. The approvals row starts to slide once the whole row is on screen (its
+bottom edge 90% down) and shows the last card while the whole row is still on
+screen (its top edge 10% down); the page itself is never held. No client-text
+cards (owner, 2026-09-22). Tap, click, Enter or Space on any screenshot opens it
+full size; a click or Escape closes it.
 
 ## /thank-you
 
@@ -44,7 +49,7 @@ flowchart TD
     D --> G["What the call decides<br/>(three roads, nobody turned away)"]
     F --> G
     G --> H["Step 03 reads: You get one of three roads<br/>(booked view only — steps are hidden otherwise)"]
-    H --> I["Real approvals, real texts<br/>$74,000 · $50,000 KeyBank · $25,000 Highland + 3 texts<br/>any screenshot opens full size"]
+    H --> I["Real approvals, real screenshots<br/>$74,000 · $50,000 KeyBank · $25,000 Highland<br/>(no client texts) — any screenshot opens full size"]
     I --> J["FAQ (unchanged)"]
 ```
 
