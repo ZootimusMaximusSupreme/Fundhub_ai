@@ -25,6 +25,7 @@ import {
   VSL_WATCH_BEACON_SRC,
   FH_ATTRIBUTION_SRC,
   trackingFooterScripts,
+  isClickFunnelsPageHtml,
 } from "../../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
@@ -86,12 +87,14 @@ describe("every approval is a real deck crop with the amount read off it", () =>
 
 describe("the three client texts are the client's own words", () => {
   const EXPECTED = [
-    { id: "s34-q1", lines: ["We got approved for 25,000 🙏🏾"], amount: "25,000" },
+    { id: "s34-q1", lines: ["We got approved for 25,000 🙏🏾"], amount: "" },
     { id: "s21-b", lines: ["APPROVED!!!", "I was on such a cold streak and I finally got an approval", "No hard pull it all!!!"], amount: "" },
     { id: "s23-b", lines: ["I GOT APPROVED. LETS GOOOOOOOOO"], amount: "" },
   ];
 
   test("same three quotes, same words, on both pages; s33-q1 (team-written $70K) stays out", () => {
+    // s34-q1's 25,000 is in the quote and on the screenshot, so its amount headline
+    // stays off: the same number three times on one small card is noise.
     for (const src of [WATCH, THANKS]) {
       const texts = arrayLiteral(src, "TEXTS");
       assert.deepEqual(texts.map(({ id, lines, amount }) => ({ id, lines, amount })), EXPECTED);
@@ -129,7 +132,11 @@ describe("fhIsBooked — the thank-you page claims a booking only when one exist
   assert.ok(a > -1 && b > a, "booking check markers");
   const body = THANKS.slice(THANKS.indexOf("*/", a) + 2, THANKS.lastIndexOf("/*", b));
   // eslint-disable-next-line no-new-func
-  const fhIsBooked = new Function(`var FRESH_MS = 6 * 60 * 60 * 1000;\n${body}\nreturn fhIsBooked;`)();
+  const check = new Function(`var FRESH_MS = 6 * 60 * 60 * 1000;\n${body}\nreturn fhIsBooked;`)();
+  // ClickFunnels sends a real booker on from the booking page with window.location,
+  // so that page is the referrer. Every case below arrives that way unless it says not.
+  const FROM_BOOKING = "https://apply.fundhub.ai/funding-book-call";
+  const fhIsBooked = (d, now, ref = FROM_BOOKING) => check(d, now, ref);
 
   const now = Date.parse("2026-09-22T15:00:00Z");
   const H = 3600e3;
@@ -169,6 +176,44 @@ describe("fhIsBooked — the thank-you page claims a booking only when one exist
   test("a stamp far in the future is not trusted", () => {
     assert.equal(fhIsBooked({ ...base, capturedAt: now + 7 * H }, now), false);
   });
+
+  test("a full record is not a booking unless the visitor came straight from the booking page", () => {
+    // The live booking page saves the record as the form is typed, before Book is
+    // pressed. Filling the form and pressing Back keeps /thank-you's first referrer.
+    const rec = { ...base, capturedAt: now - 60e3 };
+    for (const ref of ["", "https://fundhub.ai/", "https://apply.fundhub.ai/apply", "https://apply.fundhub.ai/thank-you", "https://apply.fundhub.ai/funding-book-call-old", "https://apply.fundhub.ai/x/funding-book-call"]) {
+      assert.equal(fhIsBooked(rec, now, ref), false, `referrer ${JSON.stringify(ref)}`);
+    }
+    assert.equal(fhIsBooked({ ...rec, submittedAt: now - 30e3 }, now, "https://fundhub.ai/"), false);
+    for (const ref of ["https://apply.fundhub.ai/funding-book-call", "https://apply.fundhub.ai/funding-book-call/", "https://apply.fundhub.ai/funding-book-call?utm_source=fb&fbclid=1"]) {
+      assert.equal(fhIsBooked(rec, now, ref), true, `referrer ${ref}`);
+    }
+  });
+
+  test("the page passes document.referrer to the check", () => {
+    assert.match(THANKS, /fhIsBooked\(readBooking\(\), Date\.now\(\), document\.referrer\)/);
+  });
+});
+
+describe("/thank-you copy for visitors with no booking", () => {
+  test("one message, and it matches the button under it", () => {
+    assert.ok(THANKS.includes('"One step left: pick a time for your call."'));
+    assert.ok(THANKS.includes(">Pick your call time</a>"));
+    assert.equal(/we'll be in touch with your next step/.test(THANKS), false, "no 'we will be in touch' above a book-now button");
+    assert.equal(THANKS.includes('textContent = "You leave knowing'), false);
+  });
+});
+
+describe("screenshots open full size (at 1280 wide the approvals are about 100px)", () => {
+  test("both scripts make every card screenshot open on tap, click, Enter or Space and close on Escape", () => {
+    for (const [src, scope] of [[WATCH, "zoomable(sec)"], [THANKS, "zoomable(proof)"]]) {
+      assert.ok(src.includes(scope), scope);
+      assert.ok(src.includes(`var SHOT = 'img[data-slot="approval-screenshot"]';`));
+      assert.match(src, /e\.key === "Enter" \|\| e\.key === " "/);
+      assert.match(src, /e\.key === "Escape"/);
+      assert.ok(src.includes(".fhz{position:fixed;inset:0;"));
+    }
+  });
 });
 
 describe("the fragments and the push manifest load the scripts once", () => {
@@ -183,7 +228,8 @@ describe("the fragments and the push manifest load the scripts once", () => {
     assert.ok(html.includes(`<script src="${THANKYOU_SORT_SRC}"></script>`));
     assert.equal(html.includes("T14-01: nothing on this page may claim"), false, "the check lives in thankyou-sort.js now");
     assert.equal(html.includes("You get your exact funding number"), false);
-    assert.ok(html.includes("You leave knowing your road"));
+    assert.ok(html.includes('<div class="t">You get one of three roads</div>'));
+    assert.equal(html.includes("You leave knowing your road"), false, "the step 03 title must not repeat its own text");
   });
 
   test("only /watch and /thank-you get the new footer scripts", () => {
@@ -195,6 +241,27 @@ describe("the fragments and the push manifest load the scripts once", () => {
         ["apply-thank-you", "25063539", [THANKYOU_SORT_SRC]],
       ],
     );
+  });
+
+  test("only a rendered ClickFunnels page counts as a read of the live page", () => {
+    assert.equal(isClickFunnelsPageHtml(`<div data-page-element="ContentNode"></div><script src="${FH_ATTRIBUTION_SRC}"></script>`), true);
+    for (const html of ["", null, undefined, "<html><title>Just a moment...</title></html>", "Service Unavailable"]) {
+      assert.equal(isClickFunnelsPageHtml(html), false, String(html));
+    }
+  });
+
+  test("a builder-page push stops, and appends nothing, when the live page cannot be read", () => {
+    // Footer code cannot be read back or removed by API, so appending blind would
+    // stack fh-attribution.js and a 4th vsl-watch-beacon.js on /watch for good.
+    const push = read("scripts/cf-push-custom-html.mjs");
+    const fetchAt = push.indexOf("const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);");
+    const stopAt = push.indexOf("if (!liveHtml) {", fetchAt);
+    const appendAt = push.indexOf("await appendHeadFooter(", fetchAt);
+    assert.ok(fetchAt > -1 && stopAt > fetchAt && appendAt > stopAt, "the unreadable check sits between the read and the append");
+    const guard = push.slice(stopAt, appendAt);
+    assert.match(guard, /reason: "live_page_unreadable"/);
+    assert.match(guard, /process\.exitCode = 1;\s*continue;/);
+    assert.match(push, /return isClickFunnelsPageHtml\(html\) \? html : "";/);
   });
 
   test("trackingFooterScripts skips any src already on the page and never repeats one", () => {
