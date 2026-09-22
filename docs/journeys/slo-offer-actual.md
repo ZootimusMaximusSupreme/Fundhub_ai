@@ -66,6 +66,14 @@ flowchart TD
   `slo-03-thank-you.html` loads the same script from `https://fundhub.ai/funnel/fh-attribution.js`.
   Sales and thank-you also load the VSL watch beacon. A third funnel is not built yet.
 - `public/roadmap/pull.html` — reads `?ref=` and `?client_id=`. Submit POSTs `/api/public/slo-pull`, then clears SSN.
+- `clickfunnels-fragments/slo/slo-02-booking.html` (live at https://apply.fundhub.ai/roadmap-book, CF page
+  25426722) frames https://apply.fundhub.ai/funding-book-call in `#fh-book-frame`. That native calendar page
+  (CF page 25062844) carries `clickfunnels-fragments/04c-book-framed.html` in its head code: only when it is
+  inside a frame, it hides its own hero, logo, marquee and footer, hides the scheduler's big logo, and posts
+  `fh-book-height` to https://apply.fundhub.ai. The booking page sets the frame to that height (never under
+  600px) and scrolls back to the card when picking a time shrinks it to the contact form. Opened on its own,
+  /funding-book-call is unchanged. A booking still writes `fh_booking_v1` inside the frame and the booking page
+  still moves to `/roadmap-thank-you` on it (unchanged).
 - `netlify.toml` — `/slo` and `/slo/*` 301 to `/roadmap/` and `/roadmap/:splat`.
 
 ## Not in this code

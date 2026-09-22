@@ -24,6 +24,7 @@ import {
   PUSH_MANIFEST,
   trackingFooterScripts,
   isClickFunnelsPageHtml,
+  upsertMarkedBlock,
 } from "../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -300,6 +301,47 @@ async function appendHeadFooter(creds, pageId, headSnippet, footerSnippet, ctx, 
   return { ok: true, pageId, body };
 }
 
+/** GET one page with head_code / footer_code expanded (they are left out otherwise). */
+async function getPageCode(creds, pageId, slot, ctx) {
+  const url = new URL(`${baseUrl(creds.subdomain)}/pages/${pageId}`);
+  url.searchParams.append("expand[]", slot);
+  const { body } = await cfApi({ url: url.toString(), apiKey: creds.api_key, ctx });
+  if (!body || !Object.prototype.hasOwnProperty.call(body, slot)) {
+    throw new Error(`page ${pageId}: ${slot} not returned with expand — refusing to write blind`);
+  }
+  return String(body[slot] ?? "");
+}
+
+/**
+ * Upsert one marked block (row.marker) from row.fragment into a builder page's
+ * head_code or footer_code. Snapshots the live code first. Never touches the body.
+ */
+async function upsertCodeBlock(creds, pageId, row, ctx, dryRun, snapDir) {
+  const slot = row.codeSlot === "footer_code" ? "footer_code" : "head_code";
+  const block = readFragment(row.fragment);
+  const live = await getPageCode(creds, pageId, slot, ctx);
+  mkdirSync(snapDir, { recursive: true });
+  const snapshot = join(snapDir, `page-${pageId}-${slot}.html`);
+  writeFileSync(snapshot, live, "utf8");
+  const plan = upsertMarkedBlock(live, block, row.marker);
+  const base = { slot, marker: row.marker, action: plan.mode, snapshot: snapshot.slice(ROOT.length + 1) };
+  if (!plan.changed) return { ok: true, pageId, ...base, skipped: true, reason: "block_unchanged" };
+  if (dryRun) return { ok: true, dryRun: true, pageId, ...base };
+  await cfApi({
+    url: `${baseUrl(creds.subdomain)}/pages/${pageId}`,
+    apiKey: creds.api_key,
+    ctx,
+    method: "PUT",
+    body: JSON.stringify({ page: { [slot]: plan.send, [`${slot}_mode`]: plan.mode } }),
+  });
+  const after = await getPageCode(creds, pageId, slot, ctx);
+  // append keeps every byte that was there; replace must equal what was sent
+  const verified =
+    after.includes(block.trim()) &&
+    (plan.mode === "replace" ? after.trim() === plan.next.trim() : after.includes(live.trim()));
+  return { ok: verified, pageId, ...base, verified, code_length_before: live.length, code_length_after: after.length };
+}
+
 async function putCustomHtml(creds, pageId, html, ctx, dryRun) {
   if (dryRun) {
     return { ok: true, dryRun: true, pageId, mode: "custom_html_put" };
@@ -384,6 +426,20 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       (row.pageId && byId.get(String(row.pageId))) || (row.path && byPath.get(row.path));
     if (!page) {
       results.push({ key: row.key, path: row.path, pageId: row.pageId, error: "page_not_found" });
+      continue;
+    }
+
+    if (row.strategy === "code_block_upsert") {
+      const r = await upsertCodeBlock(creds, page.id, row, ctx, dryRun, snapDir);
+      results.push({
+        key: row.key,
+        page_id: page.id,
+        path: row.path,
+        liveUrl: row.liveUrl,
+        mode: "code_block_upsert",
+        calendar_safe: true,
+        ...r,
+      });
       continue;
     }
 

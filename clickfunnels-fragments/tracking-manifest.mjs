@@ -151,6 +151,37 @@ ${body}
 </html>`;
 }
 
+/**
+ * Put one marked block into a page's head_code / footer_code without touching
+ * anything else in it. The block must start with `<!-- ${marker}:start` and end
+ * with `<!-- ${marker}:end -->`.
+ *   no block live yet   -> mode "append" (send just the block; CF appends it)
+ *   block live, differs -> mode "replace" (send the live code with only the block swapped)
+ *   block live, same    -> changed false (send nothing)
+ * @param {string} live current head_code / footer_code ("" when empty)
+ * @param {string} block the full marked block from the fragment file
+ * @param {string} marker e.g. "fh-framed"
+ */
+export function upsertMarkedBlock(live, block, marker) {
+  const start = `<!-- ${marker}:start`;
+  const end = `<!-- ${marker}:end -->`;
+  const b = String(block).trim();
+  if (!b.startsWith(start) || !b.endsWith(end)) {
+    throw new Error(`block must start with "${start}" and end with "${end}"`);
+  }
+  if (b.indexOf(start, 1) !== -1) throw new Error(`block holds "${start}" twice`);
+  const code = String(live ?? "");
+  const i = code.indexOf(start);
+  if (i === -1) return { changed: true, mode: "append", send: b, next: code ? `${code}\n${b}` : b };
+  if (code.indexOf(start, i + 1) !== -1) throw new Error(`live code holds "${start}" twice — fix by hand`);
+  const j = code.indexOf(end, i);
+  if (j === -1) throw new Error(`live code has "${start}" but no "${end}"`);
+  const current = code.slice(i, j + end.length);
+  if (current === b) return { changed: false, mode: "none", send: "", next: code };
+  const next = code.slice(0, i) + b + code.slice(j + end.length);
+  return { changed: true, mode: "replace", send: next, next };
+}
+
 /** Pages we never full-replace (native CF calendar / checkout). */
 export const DO_NOT_FULL_REPLACE_PATHS = new Set([
   "/funding-book-call",
@@ -194,6 +225,18 @@ export const PUSH_MANIFEST = [
     vslBeacon: false,
     strategy: "head_footer_append_only",
     note: "Native calendar — never POST custom_html full page replace",
+  },
+  {
+    key: "apply-book-framed",
+    liveUrl: "https://apply.fundhub.ai/funding-book-call",
+    path: "/funding-book-call-page",
+    pageId: "25062844",
+    fragment: "clickfunnels-fragments/04c-book-framed.html",
+    codeSlot: "head_code",
+    marker: "fh-framed",
+    vslBeacon: false,
+    strategy: "code_block_upsert",
+    note: "Framed-only layer so the calendar sits clean inside /roadmap-book. One marked block in the native page's head_code; body and calendar untouched; does nothing when the page is not in a frame.",
   },
   {
     key: "apply-thank-you",
