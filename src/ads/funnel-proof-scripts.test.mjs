@@ -26,6 +26,7 @@ import {
   FH_ATTRIBUTION_SRC,
   trackingFooterScripts,
   isClickFunnelsPageHtml,
+  dedupeFooterScripts,
 } from "../../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
@@ -250,18 +251,40 @@ describe("the fragments and the push manifest load the scripts once", () => {
     }
   });
 
-  test("a builder-page push stops, and appends nothing, when the live page cannot be read", () => {
-    // Footer code cannot be read back or removed by API, so appending blind would
-    // stack fh-attribution.js and a 4th vsl-watch-beacon.js on /watch for good.
+  test("a builder-page push reads the footer, stops when the live page cannot be read, replaces, and reads back", () => {
+    // Footer code is only returned with expand[]=footer_code. The old push appended
+    // blind: vsl-watch-beacon.js reached /watch three times, and one append on
+    // 2026-09-22 left watch-proof.js and thankyou-sort.js on the pages twice.
     const push = read("scripts/cf-push-custom-html.mjs");
-    const fetchAt = push.indexOf("const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);");
-    const stopAt = push.indexOf("if (!liveHtml) {", fetchAt);
-    const appendAt = push.indexOf("await appendHeadFooter(", fetchAt);
-    assert.ok(fetchAt > -1 && stopAt > fetchAt && appendAt > stopAt, "the unreadable check sits between the read and the append");
-    const guard = push.slice(stopAt, appendAt);
+    const branch = push.slice(push.indexOf("// Builder page: the body cannot be replaced by API"), push.indexOf("console.log(JSON.stringify({ auth: creds.source"));
+    assert.ok(branch.length > 500, "builder-page branch found");
+    const at = (s) => branch.indexOf(s);
+    const readFoot = at('const liveFootCode = await getPageCode(creds, page.id, "footer_code", ctx);');
+    const readPage = at("const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);");
+    const stop = at("if (!liveHtml) {");
+    const put = at('body: JSON.stringify({ page: { footer_code: next, footer_code_mode: "replace" } }),');
+    const readBack = branch.indexOf('const after = await getPageCode(creds, page.id, "footer_code", ctx);', put);
+    assert.ok(readFoot > -1 && readPage > readFoot && stop > readPage && put > stop && readBack > put, "read footer, read page, stop if unreadable, replace, read back");
+    const guard = branch.slice(stop, put);
     assert.match(guard, /reason: "live_page_unreadable"/);
     assert.match(guard, /process\.exitCode = 1;\s*continue;/);
+    assert.match(guard, /if \(dryRun\) \{/, "a dry run never writes");
+    assert.equal(branch.includes("appendHeadFooter("), false, "no blind append on a builder page");
+    assert.match(branch, /const verified = after\.trim\(\) === next\.trim\(\);/);
     assert.match(push, /return isClickFunnelsPageHtml\(html\) \? html : "";/);
+  });
+
+  test("dedupeFooterScripts keeps one copy of the row's own scripts and leaves every other tag alone", () => {
+    const tag = (src) => `<script src="${src}"></script>`;
+    const live = [FH_ATTRIBUTION_SRC, VSL_WATCH_BEACON_SRC, VSL_WATCH_BEACON_SRC, VSL_WATCH_BEACON_SRC, WATCH_PROOF_SRC, WATCH_PROOF_SRC].map(tag).join("\n");
+    assert.equal(
+      dedupeFooterScripts(live, [WATCH_PROOF_SRC]),
+      [FH_ATTRIBUTION_SRC, VSL_WATCH_BEACON_SRC, VSL_WATCH_BEACON_SRC, VSL_WATCH_BEACON_SRC, WATCH_PROOF_SRC].map(tag).join("\n"),
+    );
+    const ty = [FH_ATTRIBUTION_SRC, FH_ATTRIBUTION_SRC, THANKYOU_SORT_SRC, THANKYOU_SORT_SRC, THANKYOU_SORT_SRC].map(tag).join("\n");
+    assert.equal(dedupeFooterScripts(ty, [THANKYOU_SORT_SRC]), [FH_ATTRIBUTION_SRC, FH_ATTRIBUTION_SRC, THANKYOU_SORT_SRC].map(tag).join("\n"));
+    assert.equal(dedupeFooterScripts(ty, []), ty);
+    assert.equal(dedupeFooterScripts("", [WATCH_PROOF_SRC]), "");
   });
 
   test("trackingFooterScripts skips any src already on the page and never repeats one", () => {

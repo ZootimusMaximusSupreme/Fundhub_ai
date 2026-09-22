@@ -74,6 +74,27 @@ export function trackingFooterScripts({
 }
 
 /**
+ * Keep the first copy of each given footer script tag and drop the rest. Only the
+ * srcs passed in are touched; every other tag in `code` stays exactly as it is.
+ * Used on a builder page's footer_code for the row's own extraFooterScripts, which a
+ * raced or double-applied append can leave there twice.
+ */
+export function dedupeFooterScripts(code, srcs = []) {
+  let out = String(code ?? "");
+  for (const src of srcs) {
+    const tag = `<script src="${src}"></script>`;
+    const first = out.indexOf(tag);
+    if (first === -1) continue;
+    let i;
+    while ((i = out.indexOf(tag, first + tag.length)) !== -1) {
+      const start = out[i - 1] === "\n" ? i - 1 : i;
+      out = out.slice(0, start) + out.slice(i + tag.length);
+    }
+  }
+  return out;
+}
+
+/**
  * True when `html` is a rendered ClickFunnels page. The builder-page push reads the
  * public page to learn which footer scripts are already there; a bot wall or an
  * error page would read as "none" and every tag would be appended again.
