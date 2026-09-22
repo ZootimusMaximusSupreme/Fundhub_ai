@@ -566,6 +566,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="2"]{z-index:20;transform:translate3d(0,20px,0) scale(.91) rotate(calc(var(--tilt) * 3.4))}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="far"]{z-index:10;opacity:0;transform:translate3d(0,20px,0) scale(.91) rotate(calc(var(--tilt) * 3.4))}
 /* The top two cards always show their contents (no fade), so a fast scroll never lands on a blank card */
+/* The front card is readable the instant it arrives: no opacity fade on depth 0, and a fast
+   scroll snaps (no transitions for that frame) so two cards never blend. */
+.fh-root .proof-shuffle-deck .fh-card[data-depth="0"]{transition:transform .55s cubic-bezier(.2,.75,.2,1)}
+.fh-root .proof-shuffle-deck.is-snap .fh-card{transition:none!important}
 .fh-root .proof-shuffle-deck .fh-card[data-depth="2"]:not(.is-out) > *,.fh-root .proof-shuffle-deck .fh-card[data-depth="far"]:not(.is-out) > *{opacity:0}
 .fh-root .proof-shuffle-deck .fh-card.is-out{animation:fh-deck-out .34s cubic-bezier(.3,.7,.2,1) both}
 .fh-root .proof-shuffle-deck .fh-card.is-in{animation:fh-deck-in .34s cubic-bezier(.3,.7,.2,1) both}
@@ -1171,7 +1175,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       function pad(n){return (n<10?'0':'')+n;}
       var reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if(reduced)return;
-            var active=-1,raf=0,shown=0,tw=0;
+            var active=-1,raf=0,shown=0,tw=0,lastPaint=0;
       function depthOf(i,a){var d=(i-a+N)%N;return d<3?String(d):'far';}
       function fly(el,cls){el.classList.remove('is-out','is-in');void el.offsetWidth;el.classList.add(cls);}
       cards.forEach(function(c){c.addEventListener('animationend',function(){c.classList.remove('is-out','is-in');});});
@@ -1182,7 +1186,16 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       }
       function paint(a,dir){
         for(var i=0;i<N;i++){cards[i].setAttribute('data-depth',depthOf(i,a));cards[i].setAttribute('aria-hidden',i===a?'false':'true');}
-        if(dir===1)fly(cards[(a-1+N)%N],'is-out');
+        /* Fast scrolling (a new card within 450ms, or a jump of more than one card):
+           snap, no fly animation, and stop any flight still running, so two cards
+           never blend and the top card is always fully readable. */
+        var now=Date.now(),fast=(now-lastPaint)<450;lastPaint=now;
+        if(fast||dir===0){
+          for(var k=0;k<N;k++)cards[k].classList.remove('is-out','is-in');
+          deck.classList.add('is-snap');
+          requestAnimationFrame(function(){requestAnimationFrame(function(){deck.classList.remove('is-snap');});});
+        }
+        else if(dir===1)fly(cards[(a-1+N)%N],'is-out');
         else if(dir===-1)fly(cards[a],'is-in');
         var sum=0;for(var j=0;j<=a;j++)sum+=vals[j];
         if(iEl)iEl.textContent=pad(a+1);
@@ -2176,7 +2189,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 <div class="fh-b">
   <div class="secure-foot">
     <span class="sf-l"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Your card and social are encrypted in transit and used for this order and the soft pull only.</span>
-    <span class="sf-r">Questions before you buy: <b>[SUPPORT EMAIL]</b> &middot; <b>[SUPPORT PHONE]</b></span>
+    <span class="sf-r">Questions before you buy: <b><a href="mailto:support@fundhub.ai">support@fundhub.ai</a></b> &middot; <b><a href="tel:+15613048368">(561) 304-8368</a></b></span>
   </div>
   <div class="trustline">256-bit SSL secure &middot; Soft pull, no hard inquiry &middot; Zero score impact from that pull</div>
 
