@@ -65,11 +65,47 @@ import {
   readToken, withApprovalToken, findByToken, approveByToken, rejectByToken
 } from "../../src/ad-videos/token.mjs";
 import { folderNumber } from "../../src/ad-videos/naming.mjs";
+import { renderDecisionPage, renderGonePage } from "../../src/ad-videos/decision-page.mjs";
 
 const METHODS = "GET, POST";
 
 /* One answer for every refusal. See the section above. */
 const notFound = (res) => res.status(404).json({ ok: false, error: "not_found" });
+
+/* ── WHAT A TAP ON A PHONE ACTUALLY OPENS ────────────────────────────────────
+   A notification link is opened by a browser, and a browser handed a JSON body
+   shows Chris a wall of braces with no Approve button in it. So a GET that says
+   it wants a page gets the page (src/ad-videos/decision-page.mjs), and a GET
+   from anything else — curl, a test, the sweeper checking its own link — gets
+   the JSON it asked for.
+
+   The DECISION is unchanged either way: the page's two buttons POST, exactly as
+   before, so a link preview or a scanner that only ever issues a GET still
+   cannot approve anything. The page is a view of the same one row the token
+   reaches and adds no new read.
+
+   REFUSALS STAY IDENTICAL. An HTML caller gets the same page back for an
+   unknown token, an expired one and a spent one — same bytes, same 404 — for
+   the reason the section above gives. */
+const wantsHtml = (req) =>
+  /\btext\/html\b/i.test(String(req?.headers?.accept ?? req?.headers?.Accept ?? ""));
+
+/* The URL of this page carries a live approval token in its query string. None
+   of these headers is optional: no store, so it is not left in a shared cache;
+   no referrer, so tapping the video does not hand the token to Submagic's host;
+   noindex, so a crawler that ever sees the link does not publish it. */
+function pageHeaders(res) {
+  res.setHeader("Content-Type", "text/html; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("X-Robots-Tag", "noindex, nofollow, noarchive");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+}
+
+const gonePage = (res) => {
+  pageHeaders(res);
+  return res.status(404).send(renderGonePage("This link is no longer good."));
+};
 
 export default async function handler(req, res, deps = {}) {
   const connect = deps.pool ?? pool;
@@ -93,14 +129,19 @@ export default async function handler(req, res, deps = {}) {
   // The token may ride in the query string on the GET (it is what the
   // notification's link carries) and in the body on the POST.
   const token = readToken(body.token ?? query.token);
+  const html = method === "GET" && wantsHtml(req);
   // Shape failure answers exactly as an unknown token does. A caller must not
   // learn that their guess was at least the right length.
-  if (!token) return notFound(res);
+  if (!token) return html ? gonePage(res) : notFound(res);
 
   try {
     if (method === "GET") {
       const row = await withApprovalToken(connect, token, (tx) => findByToken(tx, token));
-      if (!row) return notFound(res);
+      if (!row) return html ? gonePage(res) : notFound(res);
+      if (html) {
+        pageHeaders(res);
+        return res.status(200).send(renderDecisionPage(pageView(row, token)));
+      }
       return res.status(200).json({ ok: true, video: shape(row) });
     }
 
@@ -135,8 +176,54 @@ export default async function handler(req, res, deps = {}) {
     // The real message goes to the server log, which only we can read; the
     // caller gets one word. Same rule, same reason, as api/public/vsl-watch.mjs.
     console.error("ad-video-approve failed:", err && err.message);
+    if (html) {
+      // Still a page for a browser, but NOT the 404 page and not a 404 status.
+      // "The link is spent" and "our side broke" are different facts and a
+      // person deciding needs to know which one he is looking at.
+      pageHeaders(res);
+      return res.status(500).send(renderGonePage("Something broke on our side. Try the link again in a minute."));
+    }
     return res.status(500).json({ ok: false, error: "error" });
   }
+}
+
+/* The page's view of the one row this token reaches. Same columns as shape()
+   below — TAP_COLUMNS and nothing wider — just worded for a person rather than
+   for a program. */
+function pageView(row, token) {
+  const facts = [
+    ["Picture", sizeWords(row.width, row.height)],
+    ["Runs for", runtimeWords(row.duration_seconds)],
+    ["Kind", row.video_kind === "not_ad" ? "Not an ad" : "Paid ad"]
+  ];
+  return {
+    token,
+    adId: row.ad_id,
+    adIdPadded: folderNumber(row.ad_id),
+    takeNo: row.take_no,
+    status: row.status,
+    videoUrl: row.finished_url,
+    facts,
+    // Owner decision 2, 2026-09-22: flag a non-ad take that is not 4K, on the
+    // screen where somebody is about to approve it.
+    warn: row.resolution_ok === false
+      ? "This is not an ad and it is not 4K. Approving it ships a video that breaks the 4K rule."
+      : null
+  };
+}
+
+function sizeWords(width, height) {
+  if (!width || !height) return "not measured";
+  const label = height >= 2160 ? " (4K)" : height >= 1080 ? " (1080p)" : "";
+  return `${width} by ${height}${label}`;
+}
+
+function runtimeWords(seconds) {
+  const n = Number(seconds);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  const m = Math.floor(n / 60);
+  const s = String(Math.round(n % 60)).padStart(2, "0");
+  return `${m}:${s}`;
 }
 
 /* Who tapped. There is no session, so this is a label and not an identity —
