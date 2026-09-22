@@ -41,15 +41,6 @@
       }
     },
     {
-      "id": "s23-b",
-      "kind": "quote",
-      "slide": 23,
-      "quote": "I GOT APPROVED. LETS GOOOOOOOOO",
-      "source_crop": "clickfunnels-fragments/slo/client-wins/deck/s23-b.jpg",
-      "speaker": "client",
-      "verified": "ok"
-    },
-    {
       "id": "s36-a",
       "kind": "win",
       "slide": 36,
@@ -66,72 +57,6 @@
         "width": 1200,
         "height": 1909,
         "cf_image_id": 23714382
-      }
-    },
-    {
-      "id": "s03-stack",
-      "kind": "win",
-      "slide": 3,
-      "amount_dollars": 50000,
-      "amount_text_on_crop": "$25,000 (Umpqua Bank) + $25,000 (second email, blurry) + one more approval whose amount is unreadable",
-      "amount_where": "approval screenshots (three photographed approval emails)",
-      "lender": "Umpqua Bank",
-      "product": "Visa Business Card, two approvals",
-      "alt": "Two Umpqua Bank Visa Business Card approval emails, each with a $25,000 credit line",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s03-stack.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714383/file/541307264588ead5166837b82e716a82.jpg",
-        "width": 1200,
-        "height": 772,
-        "cf_image_id": 23714383
-      }
-    },
-    {
-      "id": "s08-stack",
-      "kind": "win",
-      "slide": 8,
-      "amount_dollars": 46000,
-      "amount_text_on_crop": "$25,000 (Enterprise Bank & Trust) + $9000 (SouthState) + $12,000 (Bank of America)",
-      "amount_where": "approval screenshot (two card-carrier letters plus the BoA approval screen)",
-      "lender": "Enterprise Bank & Trust, SouthState, Bank of America",
-      "product": "three business cards",
-      "alt": "Three card approvals: Enterprise Bank & Trust $25,000, SouthState $9,000 and Bank of America $12,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s08-stack.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714384/file/b691a9443a7cb82525f5a19457a015b4.jpg",
-        "width": 1200,
-        "height": 1269,
-        "cf_image_id": 23714384
-      }
-    },
-    {
-      "id": "s21-b",
-      "kind": "quote",
-      "slide": 21,
-      "quote": "APPROVED!!!\nI was on such a cold streak and I finally got an approval\nNo hard pull it all!!!",
-      "source_crop": "clickfunnels-fragments/slo/client-wins/deck/s21-b.jpg",
-      "speaker": "client",
-      "verified": "ok"
-    },
-    {
-      "id": "s11-b",
-      "kind": "win",
-      "slide": 11,
-      "amount_dollars": 38000,
-      "amount_text_on_crop": "Brings me to a total of $38k in CC funding so far this round!",
-      "amount_where": "client chat message (grey left-side received bubble), stated as a running total",
-      "lender": "NIHFCU and others",
-      "product": "credit card funding, client's running total",
-      "alt": "Client message: NIHFCU approved me for $5k, brings me to a total of $38k in CC funding so far this round",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s11-b.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714385/file/6041ddf196a91b1d6bd156e2accf1af6.jpg",
-        "width": 1200,
-        "height": 642,
-        "cf_image_id": 23714385
       }
     },
     {
@@ -173,53 +98,6 @@
       }
     },
     {
-      "id": "s31-stack",
-      "kind": "win",
-      "slide": 31,
-      "amount_dollars": 20000,
-      "amount_text_on_crop": "I got the two cards. / Both state $10K.",
-      "amount_where": "client's chat messages: 'I got the two cards.' plus 'Both state $10K.' (white left bubbles) = 2 x $10,000 credit limits",
-      "lender": "two cards",
-      "product": "two cards at $10K each",
-      "alt": "Client messages: I got the two cards. Both state $10K.",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s31-stack.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714388/file/1722aa9756499d8d5206ee489e9c4cf1.jpg",
-        "width": 1200,
-        "height": 792,
-        "cf_image_id": 23714388
-      }
-    },
-    {
-      "id": "s33-q1",
-      "kind": "quote",
-      "slide": 33,
-      "quote": "Yessir 🥳🥳\nThings are really falling in place I appreciate you family 💯",
-      "source_crop": "clickfunnels-fragments/slo/client-wins/deck/s33-q1.jpg",
-      "speaker": "client",
-      "verified": "ok"
-    },
-    {
-      "id": "s05-stack",
-      "kind": "win",
-      "slide": 5,
-      "amount_dollars": 16000,
-      "amount_text_on_crop": "$5,000 (U.S. Bank email) + AM EX $2000 + BOA $9000 (chat)",
-      "amount_where": "mixed: approval screenshot for $5,000 (U.S. Bank); client chat message for $2000 AmEx and $9000 BOA",
-      "lender": "U.S. Bank, American Express, Bank of America",
-      "product": "three cards",
-      "alt": "U.S. Bank $5,000 card approval email and client message: an AmEx $2000 limit and a BOA $9000 limit",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s05-stack.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714389/file/98b25ed86330b0972ec414212623c4ea.jpg",
-        "width": 1200,
-        "height": 1078,
-        "cf_image_id": 23714389
-      }
-    },
-    {
       "id": "s18-a",
       "kind": "win",
       "slide": 18,
@@ -255,129 +133,6 @@
         "width": 885,
         "height": 545,
         "cf_image_id": 23714391
-      }
-    },
-    {
-      "id": "s29-a",
-      "kind": "win",
-      "slide": 29,
-      "amount_dollars": 15000,
-      "amount_text_on_crop": "15,000",
-      "amount_where": "client's chat message (grey received iMessage bubble '15,000', sent in reply to the operator's blue bubble 'Yo! They say how much you got approved for?^')",
-      "lender": "unnamed bank",
-      "product": "blue business card",
-      "alt": "Client messages: I accepted the blue biz card, and the limit 15,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s29-a.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714392/file/bd4952f802d0bc0b6022373aca3aede1.jpg",
-        "width": 1200,
-        "height": 1366,
-        "cf_image_id": 23714392
-      }
-    },
-    {
-      "id": "s34-q1",
-      "kind": "quote",
-      "slide": 34,
-      "quote": "We got approved for 25,000 🙏🏾",
-      "source_crop": "clickfunnels-fragments/slo/client-wins/deck/s34-q1.jpg",
-      "speaker": "client",
-      "verified": "ok"
-    },
-    {
-      "id": "s16-a",
-      "kind": "win",
-      "slide": 16,
-      "amount_dollars": 12000,
-      "amount_text_on_crop": "Status: Approved   Credit limit: $12,000",
-      "amount_where": "bank's own approval screenshot, sent as a picture in a received (grey, left) text-message bubble",
-      "lender": "Bank of America",
-      "product": "credit card",
-      "alt": "Bank of America approval: Status Approved, credit limit $12,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s16-a.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714393/file/3e61200f75342a1df47df8c8a6695588.jpg",
-        "width": 1200,
-        "height": 591,
-        "cf_image_id": 23714393
-      }
-    },
-    {
-      "id": "s32-a",
-      "kind": "win",
-      "slide": 32,
-      "amount_dollars": 12000,
-      "amount_text_on_crop": "Credit line $12,000",
-      "amount_where": "bank's own approval screenshot (Chase for Business: 'you've been approved!', 'Your credit details', 'Credit line $12,000'). The same amount also appears in the operator's caption overlay 'Quick $12,000 approval for a client' above it.",
-      "lender": "Chase",
-      "product": "Ink business card",
-      "alt": "Chase for Business: you've been approved, credit line $12,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s32-a.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714394/file/50a08e6bd336be6a07773bce6f394d68.jpg",
-        "width": 1200,
-        "height": 786,
-        "cf_image_id": 23714394
-      }
-    },
-    {
-      "id": "s12-a",
-      "kind": "win",
-      "slide": 12,
-      "amount_dollars": 10000,
-      "amount_text_on_crop": "that will give you a total credit line of $10,000.",
-      "amount_where": "approval screenshot (U.S. Bank 'Congratulations ... on your new credit card!' email)",
-      "lender": "U.S. Bank",
-      "product": "credit card",
-      "alt": "U.S. Bank email: congratulations on your new credit card, total credit line of $10,000",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s12-a.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714395/file/e5b2a60402055cd86332c4966e8213fc.jpg",
-        "width": 1001,
-        "height": 1948,
-        "cf_image_id": 23714395
-      }
-    },
-    {
-      "id": "s04-b",
-      "kind": "win",
-      "slide": 4,
-      "amount_dollars": 7500,
-      "amount_text_on_crop": "Got approved for PNC, 7.5k for the. Biz cc",
-      "amount_where": "client chat message (Slack-style message at 5:15 PM; sender name hidden by a grey box already in the source)",
-      "lender": "PNC",
-      "product": "business credit card",
-      "alt": "Client message: Got approved for PNC, 7.5k for the Biz cc",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s04-b.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714396/file/21c62db506c816f496f9692ecd26e927.jpg",
-        "width": 1200,
-        "height": 241,
-        "cf_image_id": 23714396
-      }
-    },
-    {
-      "id": "s21-a",
-      "kind": "win",
-      "slide": 21,
-      "amount_dollars": 7000,
-      "amount_text_on_crop": "$7,000.00",
-      "amount_where": "bank's own approval screenshot (Citizens approval email, shown under 'Everyday Points Business MasterCard'), sent by the client in a grey received bubble",
-      "lender": "Citizens",
-      "product": "Everyday Points Business MasterCard",
-      "alt": "Citizens approval email for a business card with a $7,000.00 credit line",
-      "crop": "clickfunnels-fragments/slo/client-wins/deck/s21-a.jpg",
-      "verified": "ok",
-      "image": {
-        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23714397/file/352c2ece6580bf22848d67d0c1d1b959.jpg",
-        "width": 1060,
-        "height": 1422,
-        "cf_image_id": 23714397
       }
     }
   ]

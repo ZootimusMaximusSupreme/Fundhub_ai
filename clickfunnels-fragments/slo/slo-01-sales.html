@@ -525,11 +525,9 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     padding: 56px 32px 64px;
   }
 }
-/* Community box deck: the row of three boxes pins while the cards flip, one card per 30vh.
+/* Community box: approvals shuffle biggest-first as the box moves up the screen. No pin: the page keeps scrolling.
    Cards and amounts come from clickfunnels-fragments/slo/client-wins/deck.json (build-deck.mjs). */
 .fh-root .deck-runway{position:relative}
-.fh-root .deck-runway::after{content:"";display:block;height:calc(var(--fh-steps, 12) * 30vh)}
-.fh-root .deck-runway > .slimrow{position:-webkit-sticky;position:sticky;top:var(--fh-pin-top, 16px)}
 @media(min-width:641px){
   .fh-root .deck-runway > .slimrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:1fr auto;grid-template-areas:"course comm" "adv comm"}
   .fh-root .slim-course{grid-area:course}
@@ -602,8 +600,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 @media(prefers-reduced-motion:reduce){
   .fh-root .deck-runway::after{display:none}
   .fh-root .deck-runway > .slimrow{position:static}
-  .fh-root .deck-meta,.fh-root .deck-bar{display:none}
-  .fh-root .proof-shuffle-deck{height:auto;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:8px 20px 14px;margin:8px -20px 0;scroll-padding:0 20px}
+    .fh-root .proof-shuffle-deck{height:auto;display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding:8px 20px 14px;margin:8px -20px 0;scroll-padding:0 20px}
   .fh-root .proof-shuffle-deck .fh-card{position:relative;inset:auto;flex:0 0 86%;height:var(--deck-h);scroll-snap-align:center;opacity:1!important;transform:none!important;animation:none!important;transition:none}
   .fh-root .shelves span.course-pill{transition:none}
   .fh-root .shelves span.course-pill.is-lit{box-shadow:none}
@@ -719,8 +716,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <div class="slim slim-adv"><div class="pk-t">Advisors</div><div class="pk-d">You can reach an advisor along the way.</div></div>
         <div class="slim slim-comm" id="fh-community-proof">
           <div class="pk-t">Community</div><div class="pk-d">The FundHub wins group, from the day you buy.</div>
-          <div class="deck-meta" aria-hidden="true"><span class="deck-count"><b id="fh-deck-i">01</b> / <span id="fh-deck-n">22</span></span><span class="deck-total">Total<b id="fh-deck-total">$74,000</b></span></div>
-          <div class="proof-shuffle-deck" id="fh-proof-shuffle" role="region" aria-label="Client approval and testimonial cards">
+          <div class="deck-meta" aria-hidden="true"><span class="deck-count"><b id="fh-deck-i">01</b> / <span id="fh-deck-n">07</span></span><span class="deck-total">Total<b id="fh-deck-total">$74,000</b></span></div>
+          <div class="proof-shuffle-deck" id="fh-proof-shuffle" role="region" aria-label="Client credit card approvals, biggest first">
 <!-- FH-DECK-CARDS:START -->
   <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
     <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
@@ -742,61 +739,11 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     <span class="fh-name" data-slot="name"></span>
     <span class="fh-mark" role="img" aria-label="Fundhub"></span>
   </article>
-  <article class="fh-card" data-layout="quote" data-photo="off" data-name="blur" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount"></span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></figure>
-    <blockquote class="fh-quote"><p data-slot="quote">I GOT APPROVED. LETS GOOOOOOOOO</p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name">Client name</span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
   <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
     <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
     <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
     <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$50,000</span></h3>
     <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714382/file/3f5f57428ecd8ca13fbe201ed84aaaeb.jpg" alt="Chase app showing a total credit limit of $50,000.00, with the client's post: 50k bag secured" width="1200" height="1909" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$50,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714383/file/541307264588ead5166837b82e716a82.jpg" alt="Two Umpqua Bank Visa Business Card approval emails, each with a $25,000 credit line" width="1200" height="772" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$46,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714384/file/b691a9443a7cb82525f5a19457a015b4.jpg" alt="Three card approvals: Enterprise Bank &amp; Trust $25,000, SouthState $9,000 and Bank of America $12,000" width="1200" height="1269" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="quote" data-photo="off" data-name="blur" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount"></span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></figure>
-    <blockquote class="fh-quote"><p data-slot="quote">APPROVED!!!<br>I was on such a cold streak and I finally got an approval<br>No hard pull it all!!!</p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name">Client name</span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$38,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714385/file/6041ddf196a91b1d6bd156e2accf1af6.jpg" alt="Client message: NIHFCU approved me for $5k, brings me to a total of $38k in CC funding so far this round" width="1200" height="642" loading="lazy" decoding="async"></figure>
     <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
     <div class="fh-rule" aria-hidden="true"></div>
     <span class="fh-name" data-slot="name"></span>
@@ -825,36 +772,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
     <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
     <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$20,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714388/file/1722aa9756499d8d5206ee489e9c4cf1.jpg" alt="Client messages: I got the two cards. Both state $10K." width="1200" height="792" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="quote" data-photo="off" data-name="blur" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount"></span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></figure>
-    <blockquote class="fh-quote"><p data-slot="quote">Yessir 🥳🥳<br>Things are really falling in place I appreciate you family 💯</p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name">Client name</span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$16,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714389/file/98b25ed86330b0972ec414212623c4ea.jpg" alt="U.S. Bank $5,000 card approval email and client message: an AmEx $2000 limit and a BOA $9000 limit" width="1200" height="1078" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
     <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$16,000</span></h3>
     <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714390/file/6c6c51c90039b946764a543eeac5190a.jpg" alt="BankUnited approval email: approved for the Visa Business Card, your credit line is $16,000" width="1200" height="634" loading="lazy" decoding="async"></figure>
     <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
@@ -872,80 +789,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     <span class="fh-name" data-slot="name"></span>
     <span class="fh-mark" role="img" aria-label="Fundhub"></span>
   </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$15,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714392/file/bd4952f802d0bc0b6022373aca3aede1.jpg" alt="Client messages: I accepted the blue biz card, and the limit 15,000" width="1200" height="1366" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="quote" data-photo="off" data-name="blur" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount"></span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""></figure>
-    <blockquote class="fh-quote"><p data-slot="quote">We got approved for 25,000 🙏🏾</p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name">Client name</span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$12,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714393/file/3e61200f75342a1df47df8c8a6695588.jpg" alt="Bank of America approval: Status Approved, credit limit $12,000" width="1200" height="591" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$12,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714394/file/50a08e6bd336be6a07773bce6f394d68.jpg" alt="Chase for Business: you've been approved, credit line $12,000" width="1200" height="786" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$10,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714395/file/e5b2a60402055cd86332c4966e8213fc.jpg" alt="U.S. Bank email: congratulations on your new credit card, total credit line of $10,000" width="1001" height="1948" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$7,500</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714396/file/21c62db506c816f496f9692ecd26e927.jpg" alt="Client message: Got approved for PNC, 7.5k for the Biz cc" width="1200" height="241" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
-  <article class="fh-card" data-layout="win" data-photo="off" data-name="off" data-amount="on">
-    <p class="fh-eyebrow"><span class="fh-for-win">Client win</span><span class="fh-for-quote">Testimonial</span></p>
-    <figure class="fh-face"><img data-slot="face" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="" width="168" height="168"></figure>
-    <h3 class="fh-headline">Approved for <span class="fh-amount" data-slot="dollar-amount">$7,000</span></h3>
-    <figure class="fh-shot"><img data-slot="approval-screenshot" src="https://statics.myclickfunnels.com/workspace/edLgGE/image/23714397/file/352c2ece6580bf22848d67d0c1d1b959.jpg" alt="Citizens approval email for a business card with a $7,000.00 credit line" width="1060" height="1422" loading="lazy" decoding="async"></figure>
-    <blockquote class="fh-quote"><p data-slot="quote"></p></blockquote>
-    <div class="fh-rule" aria-hidden="true"></div>
-    <span class="fh-name" data-slot="name"></span>
-    <span class="fh-mark" role="img" aria-label="Fundhub"></span>
-  </article>
 <!-- FH-DECK-CARDS:END -->
           </div>
           <div class="deck-bar" aria-hidden="true"><i id="fh-deck-bar"></i></div>
-          <p class="deck-foot"><b id="fh-deck-sum">$483,500</b> across <span id="fh-deck-count">18</span> real credit card approvals. Every amount is read off its screenshot.</p>
+          <p class="deck-foot"><b id="fh-deck-sum">$250,000<50,000</b> across <span id="fh-deck-count">7</span> real credit card approvals. Every amount is read off its screenshot.</p>
         </div>
       </div>
       </div>
@@ -1076,13 +923,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       function pad(n){return (n<10?'0':'')+n;}
       var reduced=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       if(reduced)return;
-      runway.style.setProperty('--fh-steps',String(N));
-      var active=-1,raf=0,shown=0,tw=0,pinTop=16;
-      function pin(){
-        var vh=window.innerHeight,h=row.offsetHeight,reserve=window.innerWidth<=760?84:24;
-        pinTop=(h+reserve+24<=vh)?Math.round((vh-h)/2):Math.round(vh-h-reserve);
-        runway.style.setProperty('--fh-pin-top',pinTop+'px');
-      }
+            var active=-1,raf=0,shown=0,tw=0;
       function depthOf(i,a){var d=(i-a+N)%N;return d<3?String(d):'far';}
       function fly(el,cls){el.classList.remove('is-out','is-in');void el.offsetWidth;el.classList.add(cls);}
       cards.forEach(function(c){c.addEventListener('animationend',function(){c.classList.remove('is-out','is-in');});});
@@ -1102,17 +943,18 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       }
       function update(){
         raf=0;
-        var scrolled=pinTop-runway.getBoundingClientRect().top,step=window.innerHeight*0.3;
-        var a=Math.floor(Math.max(0,scrolled)/step);if(a>N-1)a=N-1;
+        var vh=window.innerHeight,r=deck.getBoundingClientRect();
+        /* flip through every card while the deck travels from 85% to 25% of the screen; the page never stops */
+        var k=((vh*0.85)-r.top)/(vh*0.6);k=Math.max(0,Math.min(0.999,k));
+        var a=Math.floor(k*N);
         if(a===active)return;
         var dir=active<0?0:(a-active===1?1:(a-active===-1?-1:0));
         active=a;paint(a,dir);
       }
       function queue(){if(!raf)raf=requestAnimationFrame(update);}
-      pin();
       window.addEventListener('scroll',queue,{passive:true});
-      window.addEventListener('resize',function(){pin();queue();});
-      window.addEventListener('load',function(){pin();queue();});
+      window.addEventListener('resize',queue);
+      window.addEventListener('load',queue);
       update();
     })();
     </script>

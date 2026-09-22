@@ -62,7 +62,7 @@ html = html.slice(0, i + A.length) + "\n" + cards.map(card).join("\n") + "\n" + 
 const setText = (id, text) => {
   const re = new RegExp(`(id="${id}"[^>]*>)[^<]*(<)`);
   if (!re.test(html)) throw new Error(`#${id} missing`);
-  html = html.replace(re, `$1${text}$2`);
+  html = html.replace(re, (_, a, b) => a + text + b);
 };
 setText("fh-deck-n", String(cards.length).padStart(2, "0"));
 setText("fh-deck-total", money(first));
