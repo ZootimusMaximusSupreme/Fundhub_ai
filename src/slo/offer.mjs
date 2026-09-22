@@ -24,6 +24,8 @@ export const SLO_PRODUCT_CODE = "diagnostic";
 
 export const SLO_PULL_PATH = "/roadmap/pull.html";
 
+/** The $297 booking page (ClickFunnels, iframes /funding-book-call). Owner-set 2026-09-22. */
+export const SLO_BOOK_PAGE_URL = "https://apply.fundhub.ai/roadmap-book";
 export const SLO_BOOK_URL = "https://apply.fundhub.ai/schedule/phonecall";
 
 export function sloPublicBase(env = process.env) {

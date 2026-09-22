@@ -1190,7 +1190,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <div class="rows">
         <div class="srow"><span class="n">01</span><div><div class="t">You Fill Out the Form</div><div class="d">Takes about ten seconds. We pull your credit with a soft inquiry, so your score doesn't move.</div></div></div>
         <div class="srow"><span class="n">02</span><div><div class="t">UnderwriteIQ Reads Your File</div><div class="d">Credit Analysis Report. All six rounds of dispute letters. The roadmap. The Funding Snapshot. The lender match list. All of it built off your own credit and sitting in your account.</div></div></div>
-        <div class="srow"><span class="n">03</span><div><div class="t">You See What You Qualify For</div><div class="d">How much right now, how much once your file is optimized, and every step between the two. Run it yourself. If you'd rather we run it for you, that's a separate conversation and you'll see it after checkout.</div></div></div>
+        <div class="srow"><span class="n">03</span><div><div class="t">You See What You Qualify For</div><div class="d">How much right now, how much once your file is optimized, and every step between the two. Run it yourself. </div></div></div>
       </div>
       <div class="prose" style="margin-top:20px">
         <p>Everything is yours to keep. One payment, no contract.</p>
@@ -1784,8 +1784,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(!o.demo)body.defer_pull=true;
     /* Second Pay with the same address after "We couldn't find that address". */
     if(addrWarned&&addrWarned===addrSig())body.address_confirmed=true;
-    /* DEMO: the sandbox pull runs inside this request, so show the reading state now. */
-    if(o.demo)showPane('reading');
     var req=call('POST','slo-pull',body);
     body=null;
     return req.then(function(r){
@@ -1797,6 +1795,15 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
           try{sessionStorage.setItem('fh_widget_t0',String(t0));}catch(e){}
           showPane('paying');
           location.href=o.checkoutUrl;
+          return;
+        }
+        /* DEMO, NO PULL: the server stored nothing and ran no pull. Straight to booking. */
+        if(b.next==='book'){
+          o.locked=true;
+          var url=bookUrl(null);
+          root.querySelector('[data-go]').href=url;
+          showPane('done');
+          location.href=url;
           return;
         }
         o.locked=true;
