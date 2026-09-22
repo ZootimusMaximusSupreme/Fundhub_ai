@@ -25,6 +25,7 @@ import {
   trackingFooterScripts,
   isClickFunnelsPageHtml,
   upsertMarkedBlock,
+  nextFooterCode,
 } from "../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -342,6 +343,58 @@ async function upsertCodeBlock(creds, pageId, row, ctx, dryRun, snapDir) {
   return { ok: verified, pageId, ...base, verified, code_length_before: live.length, code_length_after: after.length };
 }
 
+/**
+ * Builder page (the body cannot be replaced by API): add this row's footer scripts.
+ * Reads the live footer_code (expand[]) and the public page first and stops, appending
+ * nothing, if either cannot be read: a blind write would stack every tag again.
+ * Sends the whole footer with footer_code_mode "replace" (ClickFunnels "append" stored a
+ * pushed tag twice), then reads it back and fails unless it matches what was sent.
+ */
+async function pushBuilderFooter(creds, pageId, row, ctx, dryRun, snapDir) {
+  let liveFoot;
+  try {
+    liveFoot = await getPageCode(creds, pageId, "footer_code", ctx);
+  } catch {
+    liveFoot = null;
+  }
+  const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);
+  if (liveFoot === null || !liveHtml) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "live_page_unreadable",
+      detail: liveFoot === null ? "footer_code not returned by the API" : "public page not readable as a ClickFunnels page",
+      live_html_read: Boolean(liveHtml),
+    };
+  }
+  mkdirSync(snapDir, { recursive: true });
+  const snapshot = join(snapDir, `page-${pageId}-footer_code.html`);
+  writeFileSync(snapshot, liveFoot, "utf8");
+  const plan = nextFooterCode(liveFoot, {
+    includeVslBeacon: !!row.vslBeacon,
+    extraSrcs: row.extraFooterScripts ?? [],
+    existing: liveHtml,
+  });
+  const base = {
+    live_html_read: true,
+    snapshot: snapshot.slice(ROOT.length + 1),
+    would_append_footer_srcs: plan.added,
+    collapsed_duplicate_srcs: plan.collapsed,
+  };
+  if (!plan.changed) return { ok: true, pageId, ...base, skipped: true, reason: "footer_already_right" };
+  if (dryRun) return { ok: true, dryRun: true, pageId, ...base };
+  await cfApi({
+    url: `${baseUrl(creds.subdomain)}/pages/${pageId}`,
+    apiKey: creds.api_key,
+    ctx,
+    method: "PUT",
+    body: JSON.stringify({ page: { footer_code: plan.next, footer_code_mode: "replace" } }),
+  });
+  const after = await getPageCode(creds, pageId, "footer_code", ctx);
+  const verified = after.trim() === plan.next.trim();
+  return { ok: verified, pageId, ...base, verified, code_length_before: liveFoot.length, code_length_after: after.length };
+}
+
 async function putCustomHtml(creds, pageId, html, ctx, dryRun) {
   if (dryRun) {
     return { ok: true, dryRun: true, pageId, mode: "custom_html_put" };
@@ -529,48 +582,15 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
         ...r,
       });
     } else {
-      const livePage = await getPage(creds, page.id, ctx);
-      const liveHead = String(livePage.head_code ?? "");
-      const liveFoot = String(livePage.footer_code ?? "");
-      // GET /pages/{id} does not return head_code or footer_code, so the API alone
-      // cannot see what the footer already loads. That blind spot is how
-      // vsl-watch-beacon.js ended up on /watch three times. Read the public page too.
-      const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);
-      if (!liveHtml) {
-        // Footer code cannot be read back or removed through the API, so a blind
-        // append would stack every tag again for good. Stop instead, dry run or not.
-        results.push({
-          key: row.key,
-          page_id: page.id,
-          path: row.path,
-          liveUrl: row.liveUrl,
-          mode: "builder_page_tracking_inject_only",
-          ok: false,
-          skipped: true,
-          reason: "live_page_unreadable",
-          note: "Could not read the public page, so the scripts already on it are unknown. Nothing appended.",
-          live_html_read: false,
-        });
-        process.exitCode = 1;
-        continue;
-      }
-      const existing = `${liveHead}\n${liveFoot}\n${liveHtml}`;
-      const head = "";
-      const foot = trackingFooterScripts({
-        includeVslBeacon: !!row.vslBeacon,
-        skipAttribution: existing.includes("fh-attribution.js"),
-        extraSrcs: row.extraFooterScripts ?? [],
-        existing,
-      });
-      const r = await appendHeadFooter(creds, page.id, head, foot, ctx, dryRun);
+      const r = await pushBuilderFooter(creds, page.id, row, ctx, dryRun, snapDir);
+      if (!r.ok) process.exitCode = 1;
       results.push({
         key: row.key,
         page_id: page.id,
         path: row.path,
         liveUrl: row.liveUrl,
-        note: "Not a custom HTML page — footer scripts appended (srcs already on the page skipped); fragment body unchanged",
+        note: "Not a custom HTML page — footer code sent whole (replace), owned scripts kept to one copy; fragment body unchanged",
         pixel_env: pixel.envName,
-        live_html_read: liveHtml.length > 0,
         ...r,
         mode: "builder_page_tracking_inject_only",
       });

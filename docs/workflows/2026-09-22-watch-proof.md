@@ -11,8 +11,8 @@ long; line the thank-you page up with the Sorting Hat offer. No questions, ship 
 | Build `public/funnel/watch-proof.js` + `thankyou-sort.js`, crops, manifest, push-script dedupe, tests | this session (branch `feat/watch-proof`) | done |
 | Independent review | reviewer | done: FAIL on 1 blocker (blind append when the live page cannot be read) + 6 low items |
 | Fix all 7 review items on `feat/watch-proof` | fix session | done (see "Review fixes") |
-| Merge `feat/watch-proof` to main, `npm run ship` | shipping step | pending |
-| `node scripts/cf-push-custom-html.mjs push --only=apply-watch` then `--only=apply-thank-you` | shipping step, after ship | pending |
+| Cherry-pick to main (a7de361a, f906f770), `npm run ship` | shipping step | done: shipped 7ed294e9 |
+| `node scripts/cf-push-custom-html.mjs push --only=apply-watch` then `--only=apply-thank-you` | shipping step, after ship | done, then repaired (see "Push") |
 | Live proof with `NOINJECT=1 node docs/workflows/watch-proof-2026-09-22-evidence/_walk.mjs …` | shipping step, after push | pending |
 
 ## Change manifest
@@ -106,6 +106,20 @@ Marked shots (kept on this Mac; evidence folders are gitignored by repo policy):
    under the 1992px ceiling; nothing above the first Get Started moves.
 
 Tests: `src/ads/funnel-proof-scripts.test.mjs` 24/24 (was 18). Lint clean.
+
+## Push (2026-09-22)
+
+- Before (read with `expand[]=footer_code`): /watch footer = attribution x1, beacon x3.
+  /thank-you footer = attribution x2. Copies: `docs/workflows/cf-push-snapshots/page-25061160-footer_code.html`
+  and `page-25063539-footer_code.html` (written by the fixed push).
+- First push used footer_code_mode "append". Read-back: ClickFunnels stored the new tag
+  twice on each page (watch-proof.js x2, thankyou-sort.js x2). Each script guards
+  against a second run, so the pages still showed one block, but the tag was doubled.
+- Fix: the builder-page push now sends the whole footer in replace mode
+  (`nextFooterCode`: one copy of each owned script, other tags untouched) and fails
+  unless the read-back matches. Re-pushed both pages with it.
+- Not touched: the three beacon tags on /watch and the two attribution tags on
+  /thank-you. They were there before this work.
 
 ## Left undone
 

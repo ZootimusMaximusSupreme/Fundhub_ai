@@ -74,6 +74,41 @@ export function trackingFooterScripts({
 }
 
 /**
+ * The footer code a builder-page push leaves behind, sent whole with
+ * footer_code_mode "replace". ClickFunnels "append" stored a pushed tag twice
+ * (measured 2026-09-22 on /watch and /thank-you), so the push never appends.
+ *   - every tag for a script this row owns (extraSrcs) is collapsed to one copy;
+ *   - missing tracking tags are added (any src already in the code or `existing` is skipped);
+ *   - tags the row does not own, older duplicates included, stay exactly as they are.
+ * @returns {{ next: string, changed: boolean, added: string[], collapsed: string[] }}
+ */
+export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], existing = "" } = {}) {
+  const tag = (src) => `<script src="${src}"></script>`;
+  let code = String(live ?? "");
+  const collapsed = [];
+  for (const src of [...new Set(extraSrcs)]) {
+    const t = tag(src);
+    const first = code.indexOf(t);
+    if (first === -1) continue;
+    const head = code.slice(0, first + t.length);
+    const tail = code.slice(first + t.length);
+    const kept = tail.split(`\n${t}`).join("").split(t).join("");
+    if (kept !== tail) collapsed.push(src);
+    code = head + kept;
+  }
+  const seen = `${code}\n${existing}`;
+  const add = trackingFooterScripts({
+    includeVslBeacon,
+    skipAttribution: seen.includes("fh-attribution.js"),
+    extraSrcs,
+    existing: seen,
+  });
+  const next = add ? (code.trim() ? `${code.replace(/\s+$/, "")}\n${add}` : add) : code;
+  const added = [...add.matchAll(/src="([^"]+)"/g)].map((m) => m[1]);
+  return { next, changed: next !== String(live ?? ""), added, collapsed };
+}
+
+/**
  * True when `html` is a rendered ClickFunnels page. The builder-page push reads the
  * public page to learn which footer scripts are already there; a bot wall or an
  * error page would read as "none" and every tag would be appended again.
