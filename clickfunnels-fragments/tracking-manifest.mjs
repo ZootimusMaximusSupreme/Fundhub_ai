@@ -260,6 +260,18 @@ export const PUSH_MANIFEST = [
     note: "Framed-only layer so the calendar sits clean inside /roadmap-book. One marked block in the native page's head_code; body and calendar untouched; does nothing when the page is not in a frame.",
   },
   {
+    key: "apply-book-fit",
+    liveUrl: "https://apply.fundhub.ai/funding-book-call",
+    path: "/funding-book-call-page",
+    pageId: "25062844",
+    fragment: "clickfunnels-fragments/04d-book-fit.html",
+    codeSlot: "head_code",
+    marker: "fh-book-fit",
+    vslBeacon: false,
+    strategy: "code_block_upsert",
+    note: "Standalone-only layer: the scheduler's logo stays in its panel at every width, and on phones the card runs full width minus 16px gutters. One marked block in the same head_code; every rule is html:not(.fh-framed), so the framed view is untouched.",
+  },
+  {
     key: "apply-thank-you",
     liveUrl: "https://apply.fundhub.ai/thank-you",
     path: "/thank-you-page",
