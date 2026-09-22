@@ -221,7 +221,8 @@ describe("/watch approvals row slides right as the page scrolls down, and never 
   test("one transform per animation frame, passive listener, reduced motion gets a swipe row, nothing is pinned", () => {
     assert.ok(WATCH.includes(`document.addEventListener("scroll", queue, { capture: true, passive: true });`));
     assert.ok(WATCH.includes("window.requestAnimationFrame(frame);"));
-    assert.ok(WATCH.includes(`if (on) track.style.transform = "translate3d(" + fhxShift(r.top, r.height, vh, travel).toFixed(1) + "px,0,0)";`));
+    assert.ok(WATCH.includes("var x = fhxShift(r.top, r.height, vh, travel);"));
+    assert.ok(WATCH.includes(`track.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";`));
     assert.ok(WATCH.includes(`window.matchMedia("(prefers-reduced-motion: reduce)")`));
     assert.ok(WATCH.includes("#fh-watch-proof .fhx-swipe{overflow-x:auto;"));
     assert.ok(WATCH.includes("#fh-watch-proof .fhx-swipe .fhx-track{transform:none!important}"));
@@ -230,6 +231,32 @@ describe("/watch approvals row slides right as the page scrolls down, and never 
       assert.equal(motion.includes(pin), false, `the motion code never touches ${pin}`);
     }
     assert.equal(WATCH.includes("position:sticky"), false);
+  });
+
+  test("keyboard Tab never scrolls the sliding row sideways under the slide (the row went blank)", () => {
+    // Reviewer 2026-09-22: Tab onto an off-side card scrolled the overflow:hidden row, and
+    // that hidden scroll added to the slide until 0 of 16 cards were on screen.
+    assert.ok(WATCH.includes("#fh-watch-proof .fhx-scroll{overflow:clip}"), "the sliding row is clipped, not scrollable");
+    assert.ok(WATCH.includes("if (rail.scrollLeft) rail.scrollLeft = 0;"), "every frame undoes a sideways scroll where clip is missing");
+  });
+
+  test("a card that gets keyboard focus is brought fully into the row, never past either end", () => {
+    // eslint-disable-next-line no-new-func
+    const fhxKeep = new Function(`${body}\nreturn fhxKeep;`)();
+    const view = 390;
+    const w = 150;
+    // Card 3 (left 24 + 2 * 160 = 344) with the row at rest: its right edge is at 494, off
+    // the row. Nudged just enough that the right edge sits 24px inside: 390 - 24 - 494 = -128.
+    assert.equal(fhxKeep(0, 344, w, view, 2208), -128);
+    // Already fully inside: the slide is left alone.
+    assert.equal(fhxKeep(-200, 344, w, view, 2208), -200);
+    // Row slid far right, first card focused: back to its start, not past 0.
+    assert.equal(fhxKeep(-1500, 24, w, view, 2208), 0);
+    // Last card: never slid past the end of the row.
+    assert.equal(fhxKeep(0, 24 + 15 * 160, w, view, 2208), -2208);
+    const motion = WATCH.slice(WATCH.indexOf("function motion("), WATCH.indexOf("function flushGutters("));
+    assert.ok(motion.includes(`kb = t.matches(":focus-visible");`), "only keyboard focus moves the row; a click or tap does not");
+    assert.ok(motion.includes(`rail.addEventListener("focusout", function () { focused = null; queue(); });`));
   });
 
   test("off-screen cards load before they slide in", () => {

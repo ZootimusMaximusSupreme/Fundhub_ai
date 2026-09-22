@@ -22,7 +22,7 @@ flowchart TD
     C --> D{".fh-root .cta-note found?"}
     D -->|no| E["Falls back to the first a.btn to /apply.<br/>Neither found: adds nothing"]
     D -->|yes| K["html.fhw set; flushGutters(): the builder boxes around .fh-root<br/>lose their side padding (column 24px from the edge, as /roadmap);<br/>H1 takes the /roadmap H1 rule, amounts in the H1 font"]
-    K --> F["Real approvals. Real screenshots.<br/>all 16 deck.json win cards in one row;<br/>motion(): the row slides right as the page scrolls down<br/>(fhxShift; reduced motion: a swipe row)"]
+    K --> F["Real approvals. Real screenshots.<br/>all 16 deck.json win cards in one row;<br/>motion(): the row slides right as the page scrolls down<br/>(fhxShift; reduced motion: a swipe row;<br/>Tab onto a card: fhxKeep shows it)"]
     F --> G["From our clients<br/>3 vertical video placeholders<br/>[ VIDEO TESTIMONIAL 1-3 ] (the /roadmap slot)"]
     G --> H["One call. Three roads. Nobody gets turned away."]
     H --> I["Second Get Started → /apply"]

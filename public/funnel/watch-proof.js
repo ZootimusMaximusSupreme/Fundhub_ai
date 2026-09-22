@@ -360,6 +360,9 @@
        the same rhythm as the other blocks. */
     "#fh-watch-proof .fhx-rail{position:relative;overflow:hidden;margin:12px -24px -20px;padding:4px 0 20px}",
     "#fh-watch-proof .fhx-track{display:flex;align-items:flex-start;gap:10px;width:max-content;padding:0 24px}",
+    /* Sliding row: clipped, not scrollable, so a card that takes keyboard focus off to
+       the side cannot scroll the row sideways under the slide (the row went blank). */
+    "#fh-watch-proof .fhx-scroll{overflow:clip}",
     "#fh-watch-proof .fhx-scroll .fhx-track{will-change:transform}",
     "#fh-watch-proof .fhx-track>.fh-card{flex:0 0 150px;width:150px}",
     /* Reduced motion: a plain sideways swipe row instead. */
@@ -463,6 +466,14 @@
     if (p > 1) p = 1;
     return -p * travel;
   }
+  /* A card that has keyboard focus stays in view: the slide is nudged just enough to
+     bring the card fully inside the row, 24px from its edges, never past either end. */
+  function fhxKeep(x, left, width, view, travel) {
+    var lo = 24 - left, hi = view - 24 - left - width;
+    if (x > hi) x = hi;
+    if (x < lo) x = lo;
+    return Math.min(0, Math.max(-travel, x));
+  }
   /* ══ CAROUSEL MATH END ══ */
 
   /* Scroll down, the row slides right: one transform per animation frame, nothing
@@ -475,7 +486,7 @@
     if (!track) return;
     var imgs = rail.querySelectorAll("img[loading=\"lazy\"]");
     var mq = window.matchMedia ? window.matchMedia("(prefers-reduced-motion: reduce)") : null;
-    var travel = 0, queued = false, on = false, eager = false;
+    var travel = 0, queued = false, on = false, eager = false, focused = null;
     function measure() { travel = Math.max(0, track.offsetWidth - rail.clientWidth); }
     function frame() {
       queued = false;
@@ -487,7 +498,15 @@
         eager = true;
         for (var i = 0; i < imgs.length; i++) imgs[i].loading = "eager";
       }
-      if (on) track.style.transform = "translate3d(" + fhxShift(r.top, r.height, vh, travel).toFixed(1) + "px,0,0)";
+      if (!on) return;
+      /* A browser that cannot clip the row can still scroll it sideways on focus. Undo it. */
+      if (rail.scrollLeft) rail.scrollLeft = 0;
+      var x = fhxShift(r.top, r.height, vh, travel);
+      if (focused) {
+        var c = focused.getBoundingClientRect(), t = track.getBoundingClientRect();
+        x = fhxKeep(x, c.left - t.left, c.width, rail.clientWidth, travel);
+      }
+      track.style.transform = "translate3d(" + x.toFixed(1) + "px,0,0)";
     }
     function queue() {
       if (queued) return;
@@ -503,6 +522,14 @@
     }
     if (!window.requestAnimationFrame) { rail.classList.add("fhx-swipe"); return; }
     document.addEventListener("scroll", queue, { capture: true, passive: true });
+    /* Tab onto a card: the row shows that card. Mouse and touch focus leave it alone. */
+    rail.addEventListener("focusin", function (e) {
+      var t = e.target, kb = true;
+      try { kb = t.matches(":focus-visible"); } catch (err) {}
+      focused = kb && t.closest ? t.closest(".fh-card") : null;
+      queue();
+    });
+    rail.addEventListener("focusout", function () { focused = null; queue(); });
     window.addEventListener("resize", function () { if (on) measure(); queue(); }, { passive: true });
     if (mq) {
       if (mq.addEventListener) mq.addEventListener("change", mode);

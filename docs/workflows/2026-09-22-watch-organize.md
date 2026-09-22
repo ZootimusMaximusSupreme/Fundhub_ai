@@ -10,7 +10,8 @@ scroll down, with 10 more approvals; the headline font the same as /roadmap.
 | Unit | Owner | Status |
 |---|---|---|
 | `public/funnel/watch-proof.js`, `public/funnel/thankyou-sort.js`, tests, flow doc, proof shots | this session (branch `feat/watch-organize`) | done |
-| Ship `public/funnel/*.js` (`npm run ship` from main) | shipping step, after merge | pending |
+| Review fix: Tab key blanked the approvals row | this session (branch `feat/watch-organize`) | done |
+| Ship `public/funnel/*.js` (`npm run ship` from main) + footer re-push | shipping step, after merge | pending |
 
 No ClickFunnels push is needed: both pages already load these files from
 fundhub.ai, and fundhub.ai serves them `max-age=0, must-revalidate`, so a ship is
@@ -72,3 +73,37 @@ Marked shots: `watch-organize-2026-09-22-evidence/gutters-390-marked.png`,
 `column-390-marked.png`, `thankyou-390-marked.png`, `thankyou-1280-marked.png`.
 
 Gates: `npm run lint` clean; `node --test src/ads/*.test.mjs` 120/120.
+
+## Review fix (2026-09-22) — the approvals row went blank after the Tab key
+
+Reviewer FAIL on `7386265f`: each screenshot takes keyboard focus; Tab onto a card off to
+the side scrolled the `overflow:hidden` row sideways, the script never undid it, and that
+hidden scroll added to the slide (1280: 1201px hidden, 0 of 16 cards on screen from scroll
+950 on). The focused card was often off screen while tabbing.
+
+- `public/funnel/watch-proof.js`:
+  - the sliding row is `overflow:clip` (clipped, not scrollable), and every frame sets
+    `rail.scrollLeft` back to 0 where a browser cannot clip;
+  - `fhxKeep` (inside the tested carousel-math block): a card with **keyboard** focus
+    (`:focus-visible`) is nudged fully into the row, 24px from its edges, never past
+    either end. Mouse click and phone tap focus leave the slide alone. Focus leaving the
+    row returns it to the scroll position.
+- `src/ads/funnel-proof-scripts.test.mjs` — 38 → 40: the clip + scrollLeft reset; `fhxKeep`
+  math (off-side card pulled in, visible card untouched, never past 0 or the last card);
+  keyboard-only. The transform assertion now reads the new two-line form (same one
+  transform per frame).
+
+Proof before merge (live /watch, fixed script swapped in, own headless Chromium):
+
+| | 390 | 1280 |
+|---|---|---|
+| 17 Tabs: row `scrollLeft` | 0 every step | 0 every step |
+| 16 Tabs: focused card inside the row | 16/16 | 16/16 |
+| Cards on screen after tabbing, scroll 0 → end | 3–4 of 16 at every position | 5 of 16 at every position |
+| Mouse click / phone tap on a card | slide unchanged (−1061 / −1104), full-size view opens, Escape closes | same |
+| Reduced motion | swipe row, scrolls to 640 | — |
+| Script errors | 0 | 0 |
+
+Gates: lint clean; `node --test src/ads/*.test.mjs` 122/122; `npm test` 10942 tests,
+10 fail — the same 10 fail on `main` `b35c34cd` (diagrams sync, CRM screens, org scope,
+journeys registry, pulse registry, underwrite baseline), none in the funnel files.
