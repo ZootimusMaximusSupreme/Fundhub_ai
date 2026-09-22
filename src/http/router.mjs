@@ -395,7 +395,7 @@ async function dispatchWebhook({ db, provider, rawBody, headers = {}, url, env =
        module must not take the whole webhook router down. */
     try {
       const store = await import("../ad-videos/store.mjs");
-      const row = await store.findBySubmagicProjectId(db, verified.projectId);
+      const row = await store.findByProject(db, verified.projectId);
       if (!row) {
         return { status: 200, body: { ok: true, ignored: true, reason: "no take is waiting on this project" } };
       }

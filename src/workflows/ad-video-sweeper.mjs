@@ -100,9 +100,47 @@ export function portsFor({ env = process.env, naming, staging, saveFinished, can
     webhookUrl: env.SUBMAGIC_WEBHOOK_URL || null,
     paulFolderId: env.DRIVE_PAUL_FOLDER_ID || null,
     landingBase: env.PUBLIC_SITE_URL || "https://fundhub.ai",
+    /* Both null here ON PURPOSE. A decision link is minted PER ROW, a moment
+       before that row's buzz goes out (see approvalLinks() below), because the
+       token in it is a credential for exactly one take. A link built once at
+       port-construction time would either be the same for every video or be
+       minted for takes that are nowhere near needing one. */
     approveUrl: null,
     rejectUrl: null
   };
+}
+
+/* approvalLinks — the two buttons in the notification, and the only place a
+   token is put in a URL.
+
+   Called for one row, only when that row is at `rendered` and is therefore
+   about to be shown to Chris. store.mintApprovalLink() writes the token on the
+   row first and hands it back; if it returns null the row was not at `rendered`
+   any more — somebody else got there — and no link is built.
+
+   THE TOKEN IS IN THE QUERY STRING, and that is what it is for: a phone
+   notification has no session, so the link IS the credential (owner decision 5,
+   2026-09-22). What keeps that from mattering is in the database, not here —
+   389's policies are written on approval_token, so the link reaches one row and
+   nothing else. It is never logged: the sweeper's per-row report carries the id
+   and the state, never the URL. */
+export async function approvalLinks(database, row, { store, env = process.env } = {}) {
+  if (row?.status !== "rendered") return { approveUrl: null, rejectUrl: null };
+  if (typeof store?.mintApprovalLink !== "function") return { approveUrl: null, rejectUrl: null };
+
+  const minted = await store.mintApprovalLink(database, { orgId: row.org_id, id: row.id });
+  if (!minted?.token) return { approveUrl: null, rejectUrl: null };
+
+  const base = String(env.PUBLIC_SITE_URL || "https://fundhub.ai").replace(/\/+$/, "");
+  const url = (decision) =>
+    `${base}/api/public/ad-video-approve?token=${encodeURIComponent(minted.token)}` +
+    `&decision=${decision}`;
+  /* Both links open the SAME page — api/public/ad-video-approve.mjs answers a
+     GET with the screen and its two buttons, and only a POST decides. The
+     `decision` hint tells the page which button he meant to press; it cannot
+     decide anything by itself, which is what stops a link preview or a URL
+     scanner from approving a video nobody watched. */
+  return { approveUrl: url("approve"), rejectUrl: url("reject") };
 }
 
 /* detect — new takes in the Raw folder become rows.
@@ -149,8 +187,13 @@ export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {
   let advanced = 0;
 
   for (const row of rows) {
+    /* The one step that needs something minted before it runs. Every other
+       step's ports are the same for every row. */
+    const links = await approvalLinks(database, row, { store, env: ports.env });
+
     const out = await advance(row, {
       ...ports,
+      ...links,
       candidateScripts: ports.candidateScripts,
       brollLibrary: ports.brollLibrary
     });

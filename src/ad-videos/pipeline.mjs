@@ -27,7 +27,7 @@
 // serverless function can be retried mid-flight, so "did this already happen?"
 // is answered by a field on the row, not by hope:
 //
-//   stage            → raw_public_url          already set? skip
+//   stage            → source_url          already set? skip
 //   submagic create  → submagic_project_id     already set? skip
 //   read transcript  → transcript              already set? skip
 //   match + rename   → script_id / renamed_at  already set? skip
@@ -45,6 +45,7 @@
 
 import { planBroll } from "./broll.mjs";
 import { matchTakeToScript } from "./match.mjs";
+import { linkNumber } from "./naming.mjs";
 
 /** The states, exactly as docs/video-pipeline-plan.md §2 names them. */
 export const STATES = Object.freeze([
@@ -111,7 +112,7 @@ export function checkResolution({ video_kind, height } = {}) {
    paper over that: with no staging port the row WAITS and says so.
    ───────────────────────────────────────────────────────────────────────── */
 export async function stage(row, { staging, env = process.env } = {}) {
-  if (has(row.raw_public_url)) return skip("already staged");
+  if (has(row.source_url)) return skip("already staged");
   if (!has(row.drive_raw_file_id)) return dead("no raw file id on the row — nothing to stage");
   if (!staging || typeof staging.publicUrlFor !== "function") {
     return wait(
@@ -122,7 +123,7 @@ export async function stage(row, { staging, env = process.env } = {}) {
   }
   const res = await staging.publicUrlFor(row, { env });
   if (!res?.ok || !has(res.url)) return wait(res?.error || "staging returned no url");
-  return ok({ status: "staged", raw_public_url: String(res.url), staged_at: res.at || null });
+  return ok({ status: "staged", source_url: String(res.url), staged_at: res.at || null });
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -134,13 +135,13 @@ export async function stage(row, { staging, env = process.env } = {}) {
    ───────────────────────────────────────────────────────────────────────── */
 export async function submagicCreate(row, { submagic, env = process.env, webhookUrl } = {}) {
   if (has(row.submagic_project_id)) return skip("already at Submagic");
-  if (!has(row.raw_public_url)) return wait("no public link yet");
+  if (!has(row.source_url)) return wait("no public link yet");
   if (!submagic?.createProject) return wait("the Submagic provider was not supplied");
 
   const res = await submagic.createProject({
     title: row.title || `Fundhub take ${row.id}`,
     language: row.language || "en",
-    videoUrl: row.raw_public_url,
+    videoUrl: row.source_url,
     webhookUrl: webhookUrl || env.SUBMAGIC_WEBHOOK_URL || undefined,
     env
   });
@@ -314,7 +315,7 @@ export async function pollFinished(row, { submagic, env = process.env } = {}) {
 
   return ok({
     status: "rendered",
-    submagic_download_url: res.downloadUrl,
+    finished_url: res.downloadUrl,
     rendered_at: new Date().toISOString(),
     duration_seconds: res.durationSeconds ?? row.duration_seconds ?? null
   });
@@ -352,7 +353,7 @@ export async function recordSubmagicWebhook(parsed, { submagic, env = process.en
 
   return { ok: true, retryable: false, projectId: parsed.projectId, patch: {
     status: "rendered",
-    submagic_download_url: truth.downloadUrl,
+    finished_url: truth.downloadUrl,
     rendered_at: new Date().toISOString(),
     duration_seconds: truth.durationSeconds ?? null
   } };
@@ -373,7 +374,7 @@ export async function saveFinishedAndNotify(row, {
   notify, saveFinished, approveUrl, rejectUrl, env = process.env
 } = {}) {
   if (has(row.notified_at)) return skip("already notified");
-  if (!has(row.submagic_download_url)) return wait("no finished file link yet");
+  if (!has(row.finished_url)) return wait("no finished file link yet");
 
   const patch = { status: "awaiting_approval" };
 
@@ -397,7 +398,7 @@ export async function saveFinishedAndNotify(row, {
       body: size.warning ? `Watch it, then approve or reject. ${size.warning}` : "Watch it, then approve or reject.",
       priority: 4,
       tags: ["clapper"],
-      click: row.submagic_download_url,
+      click: row.finished_url,
       actions: [
         approveUrl ? { label: "Approve", url: approveUrl } : null,
         rejectUrl ? { label: "Reject", url: rejectUrl } : null
@@ -422,7 +423,13 @@ export async function saveFinishedAndNotify(row, {
    utm_content=43 are two different ads and one ad's results split in half.
    ───────────────────────────────────────────────────────────────────────── */
 export function buildBrief(row, { landingBase = "https://fundhub.ai" } = {}) {
-  const adId = String(row.ad_id ?? "").trim();
+  /* linkNumber(), not String(row.ad_id). It is the same value today — the
+     database's ad_videos_ad_id_ck already refuses a padded number — but this is
+     the line that puts an ad number in front of Paul, and it should REFUSE a
+     padded one rather than print it. A brief is the last place the mistake is
+     still cheap: once Paul has pasted `utm_content=043` into Meta, that ad's
+     results are split in half and neither number looks wrong on its own. */
+  const adId = linkNumber(row.ad_id);
   const link = `${String(landingBase).replace(/\/+$/, "")}/?utm_content=${encodeURIComponent(adId)}`;
   return [
     `Ad number: ${adId}`,
@@ -472,7 +479,7 @@ export async function deliverToPaul(row, {
     ? drive.uploadVideo({
       parentId: folder.folderId,
       name: naming.finalName({ adId: row.ad_id, takeNo: row.take_no, version: row.finished_version || 1 }),
-      sourceUrl: row.submagic_download_url,
+      sourceUrl: row.finished_url,
       env
     })
     : { ok: false, unsupported: true, error: "no uploadVideo on the Drive provider" });
@@ -482,7 +489,7 @@ export async function deliverToPaul(row, {
       ok: false,
       retryable: video.unsupported !== true,
       patch: {
-        drive_final_folder_id: folder.folderId,
+        paul_folder_id: folder.folderId,
         drive_brief_file_id: brief.fileId,
         delivery_note: String(video.error).slice(0, 500)
       },
@@ -493,7 +500,7 @@ export async function deliverToPaul(row, {
 
   return ok({
     status: "delivered",
-    drive_final_folder_id: folder.folderId,
+    paul_folder_id: folder.folderId,
     drive_brief_file_id: brief.fileId,
     drive_final_file_id: video.fileId,
     delivered_at: new Date().toISOString()

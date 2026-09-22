@@ -55,7 +55,7 @@ describe("the state table", () => {
   });
 
   test("a step that throws is caught and reported as retryable", async () => {
-    const out = await advance(row({ status: "staged", raw_public_url: "https://x.test/a.mp4" }), {
+    const out = await advance(row({ status: "staged", source_url: "https://x.test/a.mp4" }), {
       submagic: { createProject: () => { throw new Error("boom"); } }
     });
     assert.equal(out.ok, false);
@@ -76,13 +76,13 @@ describe("staging", () => {
   test("a staged url moves it on", async () => {
     const out = await stage(row(), { staging: { publicUrlFor: async () => ({ ok: true, url: "https://draft.test/a.mp4" }) } });
     assert.equal(out.patch.status, "staged");
-    assert.equal(out.patch.raw_public_url, "https://draft.test/a.mp4");
+    assert.equal(out.patch.source_url, "https://draft.test/a.mp4");
   });
 });
 
 describe("Submagic", () => {
   test("create moves raw to editing and keeps the project id", async () => {
-    const out = await submagicCreate(row({ status: "staged", raw_public_url: "https://x.test/a.mp4" }), {
+    const out = await submagicCreate(row({ status: "staged", source_url: "https://x.test/a.mp4" }), {
       submagic: { createProject: async () => okish({ projectId: "proj9" }) }
     });
     assert.equal(out.patch.status, "editing");
@@ -204,7 +204,7 @@ describe("running it twice", () => {
      time. The field named in each assertion is the idempotency key. */
   test("an already-staged row is not staged again", async () => {
     let called = false;
-    await stage(row({ raw_public_url: "https://x.test/a.mp4" }), {
+    await stage(row({ source_url: "https://x.test/a.mp4" }), {
       staging: { publicUrlFor: async () => { called = true; return okish({ url: "u" }); } }
     });
     assert.equal(called, false);
@@ -212,7 +212,7 @@ describe("running it twice", () => {
 
   test("a row already at Submagic does not get a SECOND PROJECT (a paid minute)", async () => {
     let called = false;
-    await submagicCreate(row({ status: "staged", raw_public_url: "u", submagic_project_id: "p1" }), {
+    await submagicCreate(row({ status: "staged", source_url: "u", submagic_project_id: "p1" }), {
       submagic: { createProject: async () => { called = true; return okish({ projectId: "p2" }); } }
     });
     assert.equal(called, false);
@@ -234,7 +234,7 @@ describe("running it twice", () => {
 
   test("an already-notified row is not buzzed again", async () => {
     let buzzed = false;
-    await saveFinishedAndNotify(row({ status: "rendered", submagic_download_url: "https://x", notified_at: "t" }), {
+    await saveFinishedAndNotify(row({ status: "rendered", finished_url: "https://x", notified_at: "t" }), {
       notify: { send: async () => { buzzed = true; return { status: "sent" }; } }
     });
     assert.equal(buzzed, false);
@@ -270,7 +270,7 @@ describe("THE WEBHOOK PROVES NOTHING", () => {
       { submagic: { getProject: async () => okish({ status: "completed", downloadUrl: "https://real.test/out.mp4", durationSeconds: 101 }) } }
     );
     assert.equal(out.patch.status, "rendered");
-    assert.equal(out.patch.submagic_download_url, "https://real.test/out.mp4");
+    assert.equal(out.patch.finished_url, "https://real.test/out.mp4");
   });
 
   test("a render Submagic says failed is recorded as failed", async () => {
@@ -310,7 +310,7 @@ describe("the 4K law", () => {
 
   test("the warning rides on the notification", async () => {
     let sent = null;
-    await saveFinishedAndNotify(row({ status: "rendered", video_kind: "not_ad", height: 1080, submagic_download_url: "https://x" }), {
+    await saveFinishedAndNotify(row({ status: "rendered", video_kind: "not_ad", height: 1080, finished_url: "https://x" }), {
       notify: { send: async (m) => { sent = m; return { status: "sent" }; } }
     });
     assert.match(sent.notification.body, /4K/);
@@ -319,7 +319,7 @@ describe("the 4K law", () => {
 
 describe("the notification", () => {
   test("a buzz that did not land does NOT hide a finished video", async () => {
-    const out = await saveFinishedAndNotify(row({ status: "rendered", submagic_download_url: "https://x" }), {
+    const out = await saveFinishedAndNotify(row({ status: "rendered", finished_url: "https://x" }), {
       notify: { send: async () => ({ status: "failed", error: "ntfy is not configured" }) }
     });
     assert.equal(out.patch.status, "awaiting_approval");
@@ -327,7 +327,7 @@ describe("the notification", () => {
   });
 
   test("no notifier at all still moves the row and says nobody was told", async () => {
-    const out = await saveFinishedAndNotify(row({ status: "rendered", submagic_download_url: "https://x" }), {});
+    const out = await saveFinishedAndNotify(row({ status: "rendered", finished_url: "https://x" }), {});
     assert.equal(out.patch.status, "awaiting_approval");
     assert.match(out.note, /nobody was told/);
   });
@@ -347,7 +347,7 @@ describe("Paul's folder", () => {
   });
 
   test("the folder and the brief land even though the video cannot", async () => {
-    const out = await deliverToPaul(row({ status: "approved", submagic_download_url: "https://x" }), {
+    const out = await deliverToPaul(row({ status: "approved", finished_url: "https://x" }), {
       drive: {
         ensureFolder: async () => okish({ folderId: "f043" }),
         uploadTextFile: async () => okish({ fileId: "b1" }),
@@ -357,7 +357,7 @@ describe("Paul's folder", () => {
     });
     assert.equal(out.ok, false);
     assert.equal(out.retryable, false, "an unsupported step must not be retried forever");
-    assert.equal(out.patch.drive_final_folder_id, "f043");
+    assert.equal(out.patch.paul_folder_id, "f043");
     assert.equal(out.patch.drive_brief_file_id, "b1");
     assert.match(out.patch.delivery_note, /not built/);
   });
@@ -369,7 +369,7 @@ describe("Paul's folder", () => {
   });
 
   test("a full delivery records all three ids", async () => {
-    const out = await deliverToPaul(row({ status: "approved", submagic_download_url: "https://x" }), {
+    const out = await deliverToPaul(row({ status: "approved", finished_url: "https://x" }), {
       drive: {
         ensureFolder: async () => okish({ folderId: "f043" }),
         uploadTextFile: async () => okish({ fileId: "b1" }),

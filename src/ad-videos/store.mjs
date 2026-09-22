@@ -41,7 +41,8 @@ import {
   isState, isTerminal, isHumanOnly, canTransition, nextStates,
   transition, AdVideoStateError
 } from "./states.mjs";
-import { normalizeAdId, normalizeTakeNo } from "./naming.mjs";
+import { normalizeAdId, normalizeTakeNo, parseVideoName } from "./naming.mjs";
+import { mintApprovalToken } from "./token.mjs";
 
 /* Re-exported so a worker needs ONE import to move a row and to reason about
    where it may go. Builder B codes against this list. */
@@ -98,8 +99,16 @@ function buildPatch(patch, startIndex) {
         `"${key}" cannot be set this way — status and the approval fields move ` +
         `through their own functions, so a worker cannot write them by accident`);
     }
+    /* THE PADDED-NUMBER GUARD, at the last place it is cheap. 389's
+       ad_videos_ad_id_ck already refuses "043" — but it refuses it as a
+       Postgres constraint violation from inside a worker, which is a long way
+       from the line that made the mistake. normalizeAdId() throws by name, so
+       whoever wrote the padded value reads why instead of reading SQLSTATE
+       23514. A padded number is never trimmed into a good one: "043" arriving
+       here means a caller mixed up the folder name with the link, and quietly
+       fixing it would hide the bug that splits an ad's results in half. */
     sets.push(`${key} = $${i}`);
-    params.push(value);
+    params.push(key === "ad_id" && value !== null ? normalizeAdId(value) : value);
     i += 1;
   }
   return { sets, params };
@@ -457,3 +466,332 @@ export async function markDelivered(tx, { orgId, id, paulFolderId, driveFinalFil
   );
   return r.rows[0] || null;
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// THE SWEEPER'S SIX FUNCTIONS
+//
+// Added 2026-09-22 at merge. src/workflows/ad-video-sweeper.mjs was written
+// against a store that named its functions differently from the one that was
+// built, so it checked for them, found nothing, and reported "the store does
+// not offer listPending/patch" on every pass. It did not crash — it did
+// nothing at all, quietly, forever, which is worse.
+//
+// These six are that seam, written on the store's side because this file is
+// where the state machine and the row-level security already live. Everything
+// above stays as it was.
+//
+// EACH ONE OPENS ITS OWN STAFF TRANSACTION and takes a `db` rather than a `tx`,
+// because the sweeper is a workflow and has no transaction to hand in. That is
+// the only difference in shape from the functions above.
+// ═══════════════════════════════════════════════════════════════════════════
+
+/* The states a worker has a next step for. Anything else is a resting place:
+   a person moves it (awaiting_approval), or nothing does (delivered, rejected,
+   failed, scripted, filming). Must stay equal to the keys of NEXT_STEP in
+   src/ad-videos/pipeline.mjs — src/ad-videos/store-sweeper.test.mjs fails if
+   the two lists drift apart. */
+export const PENDING_STATES = Object.freeze([
+  "raw_landed", "staged", "editing", "transcribed", "matched", "rendered", "approved"
+]);
+
+/* The marks a step leaves, added by 390. Patchable, unlike status and the
+   approval fields, because a step writes its own mark as part of doing its
+   job — but still an ALLOW-LIST, so a typo is an error rather than a column
+   that silently never gets written. */
+const WORKER_MARKS = Object.freeze([
+  "staged_at", "renamed_at", "broll_placed_at", "exported_at", "rendered_at",
+  "notified_at", "delivered_at", "broll_count", "broll_notes", "save_note",
+  "notify_error", "delivery_note", "drive_brief_file_id", "transcript_words",
+  "ad_id", "take_no"
+]);
+for (const c of WORKER_MARKS) PATCHABLE.add(c);
+
+/* The brief Paul gets carries the script's own words, so listPending reads them
+   alongside the take. LEFT JOIN, not JOIN: a take whose match has not run yet
+   has no script_id, and dropping it from the queue would strand it at
+   raw_landed forever. */
+const PENDING_COLUMNS = `
+  v.id, v.org_id, v.partner_id, v.ad_id, v.take_no, v.script_id, v.script_path,
+  v.recorder, v.video_kind, v.status, v.drive_raw_file_id, v.drive_raw_name,
+  v.width, v.height, v.duration_seconds, v.resolution_ok, v.storage_raw_key,
+  v.source_url, v.transcript, v.transcript_words, v.match_confidence,
+  v.submagic_project_id, v.finished_url, v.storage_final_key,
+  v.finished_version, v.paul_folder_id, v.drive_final_file_id,
+  v.drive_brief_file_id, v.staged_at, v.renamed_at, v.broll_placed_at,
+  v.exported_at, v.rendered_at, v.notified_at, v.delivered_at,
+  v.broll_count, v.failure_reason, v.created_at, v.updated_at,
+  s.title, s.hook_text, s.body AS script_body`;
+
+/**
+ * lastRawSeenAt(db) → an ISO time, or null when no take has ever landed.
+ *
+ * What the Drive poll passes as `since`, so it asks for new files instead of
+ * the whole folder every five minutes.
+ *
+ * DELIBERATELY EARLIER THAN THE TRUE ANSWER. This is OUR insert time, not
+ * Drive's createdTime, and the two differ by however long the poll took to
+ * notice. Asking from a moment that is too LATE loses a take silently and
+ * forever; asking from one that is too EARLY costs one listing of files we
+ * already hold, and claimTake's ON CONFLICT throws every one of them away. So
+ * it deliberately reaches back OVERLAP_MINUTES and the duplicate is absorbed
+ * downstream, which is the trade this whole file is built to make.
+ */
+export const OVERLAP_MINUTES = 30;
+
+export async function lastRawSeenAt(db) {
+  return asStaff(async (tx) => {
+    const r = await tx.query(
+      `SELECT MAX(created_at) - make_interval(mins => $1) AS since
+         FROM ad_videos WHERE drive_raw_file_id IS NOT NULL`,
+      [OVERLAP_MINUTES]
+    );
+    const at = r.rows[0]?.since;
+    return at ? new Date(at).toISOString() : null;
+  }, { db });
+}
+
+/**
+ * recordRawTake(db, file) → { created, row }
+ *
+ * A new file in the Raw folder becomes a row at `raw_landed`.
+ *
+ * *** NO AD NUMBER IS INVENTED HERE. *** Chris's phone calls the file
+ * IMG_4471.mov and nothing about it says which ad it is — the transcript match
+ * is what gives a take its number (plan §1 step 8). So ad_id and take_no go in
+ * NULL and 390's ad_videos_identified_ck refuses to let the row past `matched`
+ * without them. A guessed number is worse than no number: it is indistinguish-
+ * able from a real one to everybody downstream, including Paul.
+ *
+ * The ONE exception is a file we named ourselves — a re-run over a folder the
+ * renamer already touched. parseVideoName() reads those back, and only those:
+ * it returns null for anything that is not one of our four shapes rather than
+ * guessing at a number it half-recognises.
+ *
+ * SAFE TO RUN TWICE. The insert is ON CONFLICT DO NOTHING against
+ * ad_videos_drive_raw_uq, so the poll seeing the same file on the next pass
+ * changes nothing about a row that has already moved on to staged or editing.
+ */
+export async function recordRawTake(db, {
+  driveFileId, name = null, width = null, height = null,
+  durationSeconds = null, videoKind = "ad", orgId = null, partnerId = null
+} = {}) {
+  if (!driveFileId) {
+    throw new AdVideoStoreError("drive_file_required",
+      "recordRawTake needs the Drive file id — it is what makes the poll repeatable");
+  }
+
+  /* Only our own names are read. Anything else stays unidentified on purpose. */
+  let adId = null;
+  let takeNo = null;
+  const parsed = parseVideoName(name);
+  if (parsed) { adId = parsed.adId; takeNo = parsed.takeNo; }
+
+  return asStaff(async (tx) => {
+    const who = await houseOwner(tx, { orgId, partnerId });
+    if (!who) {
+      return { created: false, row: null,
+        error: "no house partner found — 377 creates it with slug 'fundhub-house'" };
+    }
+
+    const ins = await tx.query(
+      `INSERT INTO ad_videos
+         (org_id, partner_id, ad_id, take_no, status, video_kind,
+          drive_raw_file_id, drive_raw_name, width, height, duration_seconds)
+       VALUES ($1, $2, $3, $4, 'raw_landed', $5, $6, $7, $8, $9, $10)
+       ON CONFLICT (org_id, drive_raw_file_id) WHERE drive_raw_file_id IS NOT NULL
+       DO NOTHING
+       RETURNING ${FULL_COLUMNS}`,
+      [who.orgId, who.partnerId, adId, takeNo, videoKind,
+       driveFileId, name, width, height, durationSeconds]
+    );
+    if (ins.rows[0]) return { created: true, row: ins.rows[0] };
+
+    const existing = await findByDriveFileId(tx, {
+      orgId: who.orgId, driveFileId, withTranscript: true
+    });
+    return { created: false, row: existing };
+  }, { db });
+}
+
+/* The org and partner a take of Chris's own belongs to. 377 creates exactly one
+   house partner per org with slug 'fundhub-house'; 389 makes partner_id NOT
+   NULL for the reason 377:163-165 gives — a row no partner owns is a row no
+   policy matches and nobody sees. Passed-in values win, so a test or a second
+   org does not have to go through this lookup. */
+async function houseOwner(tx, { orgId = null, partnerId = null } = {}) {
+  if (orgId && partnerId) return { orgId, partnerId };
+  const r = await tx.query(
+    `SELECT id, org_id FROM partners
+      WHERE slug = 'fundhub-house' AND ($1::uuid IS NULL OR org_id = $1)
+      ORDER BY created_at ASC LIMIT 1`,
+    [orgId]
+  );
+  const row = r.rows[0];
+  return row ? { orgId: orgId || row.org_id, partnerId: partnerId || row.id } : null;
+}
+
+/**
+ * findByProject(db, projectId) → the take Submagic's webhook is talking about.
+ *
+ * THE `db`-TAKING TWIN of findBySubmagicProjectId() above, and it exists
+ * because the webhook router had neither of the two things that function needs.
+ * It called `findBySubmagicProjectId(db, projectId)` — a pool where a staff
+ * transaction belongs, and a bare string where `{ projectId }` belongs — and
+ * that fails in the worst available way:
+ *
+ *   * the string does not destructure, so the query asked for `undefined`; and
+ *   * ad_videos carries FORCEd row-level security, so a pool that has not
+ *     declared a principal matches ZERO rows. It does not error. It returns
+ *     nothing, the webhook answers "no take is waiting on this project", and
+ *     every render notification is dropped in silence.
+ *
+ * The webhook is on an open door with no signature, so it runs as staff for one
+ * read and one patch and nothing else. The payload was already verified against
+ * Submagic with our own key before this is reached.
+ */
+export async function findByProject(db, projectId) {
+  const id = String(projectId || "").trim();
+  if (!id) return null;
+  return asStaff(
+    (tx) => findBySubmagicProjectId(tx, { projectId: id, withTranscript: true }),
+    { db }
+  );
+}
+
+/**
+ * listPending(db, { limit }) → the rows that have a next step, oldest first.
+ *
+ * OLDEST FIRST, not newest. A take that has been stuck since this morning is
+ * the one worth moving; newest-first would let a busy day starve it forever.
+ */
+export async function listPending(db, { limit = 25, states = PENDING_STATES } = {}) {
+  const wanted = (Array.isArray(states) ? states : [states]).map(String);
+  const bad = wanted.filter((s) => !isState(s));
+  if (bad.length) {
+    throw new AdVideoStoreError("unknown_state",
+      `unknown state ${bad.join(", ")} — expected one of ${STATES.join(", ")}`);
+  }
+  return asStaff(async (tx) => {
+    const r = await tx.query(
+      `SELECT ${PENDING_COLUMNS}
+         FROM ad_videos v
+         LEFT JOIN ad_scripts s ON s.id = v.script_id
+        WHERE v.status = ANY($1)
+        ORDER BY v.created_at ASC
+        LIMIT $2`,
+      [wanted, Math.max(1, Math.min(Number(limit) || 25, 200))]
+    );
+    return r.rows;
+  }, { db });
+}
+
+/**
+ * patch(db, id, changes) → the row as it now stands, or null.
+ *
+ * THE ONE WRITE THE SWEEPER MAKES, and the reason it cannot skip approval.
+ *
+ * A status in `changes` is NOT written as a column. It is routed to advance(),
+ * which calls transition(), which refuses a move into `approved` or `rejected`
+ * unless the caller is a person (states.mjs HUMAN_ONLY, `by: "worker"` is the
+ * default here and is never overridden). So a worker that returned
+ * `{ status: "approved" }` — through a bug, a bad vendor payload, or a webhook
+ * somebody forged — is refused before any SQL runs. There is no path from this
+ * function to an approved video.
+ *
+ * `status: "failed"` is the one status that is not a transition: it is reachable
+ * from every working state and carries its reason, so it goes to markFailed().
+ *
+ * Everything else is checked against PATCHABLE, which throws by name on a
+ * column that does not exist. A patch key that is merely misspelled must not
+ * be a write that quietly goes nowhere — that is how an idempotency mark stops
+ * being written and a billed export runs every five minutes.
+ */
+export async function patch(db, id, changes = {}) {
+  const { status, failure_reason: reason, ...rest } = changes || {};
+  return asStaff(async (tx) => {
+    const current = await tx.query(
+      `SELECT org_id, status FROM ad_videos WHERE id = $1`, [id]
+    );
+    const row = current.rows[0];
+    if (!row) return null;
+    const orgId = row.org_id;
+
+    if (status === "failed") {
+      return markFailed(tx, { orgId, id, from: row.status, reason: reason || "a step broke and said nothing" });
+    }
+    if (status && status !== row.status) {
+      return advance(tx, { orgId, id, from: row.status, to: status, patch: rest });
+    }
+    // No status move — just the marks this step left behind.
+    const { sets, params } = buildPatch(rest, 3);
+    if (!sets.length) return findById(tx, { orgId, id, withTranscript: true });
+    const r = await tx.query(
+      `UPDATE ad_videos SET ${sets.join(", ")}
+        WHERE id = $1 AND org_id = $2
+        RETURNING ${FULL_COLUMNS}`,
+      [id, orgId, ...params]
+    );
+    return r.rows[0] || null;
+  }, { db });
+}
+
+/**
+ * candidateScripts(db, { limit }) → the scripts a take could be.
+ *
+ * What Claude reads to decide which ad a filmed take is. Archived scripts are
+ * left out: a take cannot be a script that was withdrawn, and offering one as a
+ * candidate is how a take gets the wrong number.
+ */
+export async function candidateScripts(db, { limit = 400 } = {}) {
+  return asStaff(async (tx) => {
+    const r = await tx.query(
+      `SELECT id, title, hook_text, body, version
+         FROM ad_scripts
+        WHERE archived_at IS NULL
+        ORDER BY updated_at DESC
+        LIMIT $1`,
+      [Math.max(1, Math.min(Number(limit) || 400, 1000))]
+    );
+    return r.rows;
+  }, { db });
+}
+
+/**
+ * mintApprovalLink(db, { orgId, id }) → { token, expiresAt } or null.
+ *
+ * The credential that goes in the phone notification, written on the row
+ * BEFORE the buzz goes out. A notification carrying a token the row does not
+ * yet hold is a link that 404s on the one tap that matters.
+ *
+ * WHY THIS AND NOT armForApproval(). armForApproval moves the row to
+ * awaiting_approval in the same statement, and the buzz has to be sent while
+ * it is still `rendered` — the notification is what carries the link. So this
+ * writes the token only, and the pipeline's own patch makes the state move a
+ * moment later through patch() above, past the state machine, as usual.
+ *
+ * `AND status = 'rendered'` is what keeps this from re-arming a take that is
+ * already waiting on Chris: a second mint would kill the link in the
+ * notification he is looking at right now.
+ */
+export async function mintApprovalLink(db, { orgId = null, id, ttlHours } = {}) {
+  const { token, expiresAt } = mintApprovalToken(
+    ttlHours ? { ttlHours } : {}
+  );
+  return asStaff(async (tx) => {
+    const r = await tx.query(
+      `UPDATE ad_videos
+          SET approval_token = $2, approval_expires_at = $3
+        WHERE id = $1
+          AND status = 'rendered'
+          AND ($4::uuid IS NULL OR org_id = $4)
+        RETURNING id`,
+      [id, token, expiresAt, orgId]
+    );
+    return r.rows[0] ? { token, expiresAt } : null;
+  }, { db });
+}
+
+/* The write allow-list, under a loud name, so src/ad-videos/seam.test.mjs can
+   prove that every column the pipeline writes is one the store will actually
+   write. Not part of the API — read it, never mutate it from outside. */
+export { PATCHABLE as PATCHABLE_FOR_TEST };

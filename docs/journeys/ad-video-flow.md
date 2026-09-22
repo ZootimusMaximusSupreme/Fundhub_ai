@@ -155,3 +155,70 @@ Export is capped at 50 an hour and every update costs another export. So:
 (`videoMediaMetadata`), never off a form. A take that is not an ad and came back
 under 2160 lines tall is flagged on the row and in the notification. It is never
 upscaled and never quietly shipped.
+
+---
+
+## What the merge review changed (2026-09-22)
+
+Three agents built this in three worktrees at the same time. All three finished
+green. The pipeline still could not have moved a single video, because every
+defect lived in the gap **between** two files that were never loaded into the
+same process — so no test in any of the three could see it.
+
+**The workers wrote fourteen columns the table did not have.** The pipeline was
+written to the plan's §2 step 4 (what has already happened to a take) and the
+table to the plan's §3 (what we know about a take). Those are different lists.
+`exported_at` was one of the missing ones — the mark that stops a take being
+re-exported on every five-minute pass, at Submagic's per-minute rate. The guard
+was written and had nothing to stand on. `db/migrations/390_ad_video_worker_marks.sql`
+adds them. Three more were named differently on each side and now use the
+table's name: `raw_public_url` → `source_url`, `submagic_download_url` →
+`finished_url`, `drive_final_folder_id` → `paul_folder_id`.
+
+**The table could not hold a take that had just landed.** 389 made `ad_id` and
+`take_no` NOT NULL, but a take does not know its ad number when it lands —
+Chris's phone calls the file IMG_4471.mov and the transcript match is what gives
+it a number (plan §1 step 8). A worker had to refuse the row or invent a number,
+and an invented number is worse: it is indistinguishable from a real one to
+everybody downstream, including Paul. 390 makes both columns nullable and adds
+`ad_videos_identified_ck`, which is stricter where it counts — a take cannot
+reach `matched` or anything after it without both numbers.
+
+**The sweeper and the store spoke different languages.** The sweeper probed for
+`lastRawSeenAt`, `recordRawTake`, `listPending`, `patch` and `candidateScripts`;
+the store offered none of them. It did not crash — it reported "the store does
+not offer listPending/patch" and returned, on every pass, silently. Those five
+are now built, plus `mintApprovalLink`, and each opens its own staff transaction
+because `ad_videos` carries FORCEd row-level security and an unscoped connection
+matches zero rows without erroring.
+
+**The Submagic webhook dropped every render.** It called
+`findBySubmagicProjectId(db, projectId)` — a pool where a staff transaction
+belongs and a bare string where an options object belongs. Between the two, it
+always found nothing and answered "no take is waiting on this project".
+`findByProject(db, projectId)` is the correctly-shaped twin.
+
+**Chris's notification had no buttons in it.** `approveUrl` and `rejectUrl` were
+both `null`, because the worker half had no token minter. `approvalLinks()` in
+the sweeper now mints one per row, a moment before that row's buzz goes out, and
+only while the row is still `rendered` — so a second mint cannot kill the link
+in the notification he is looking at right now.
+
+**Three approval doors became one.** Two of the three builders each built a way
+to approve a take. Both were sound; two doors for one decision is not. The door
+is `api/public/ad-video-approve.mjs`, whose token lives on the `ad_videos` row
+and whose row-level security policies are written on that token. The screen from
+the door that was dropped was kept — `src/ad-videos/decision-page.mjs` — because
+a phone notification is opened by a **browser**, and the surviving door answered
+a tap with raw JSON that has no Approve button in it. A GET that asks for a page
+now gets the page; only a POST decides, so a link preview or a URL scanner
+following the link out of a notification still cannot approve anything.
+
+`src/ad-videos/seam.test.mjs` is what stops all of this coming back. It reads
+the migrations as text and the modules as modules, so it needs no database —
+which is the only kind of proof available on a machine with no Postgres.
+
+**Still not proved:** every `.pg.test.mjs` in this feature is unrun. There is no
+local Postgres on this Mac. Nothing about migration 389, migration 390, the
+constraints, the row-level security policies, or any SQL statement in
+`store.mjs` or `token.mjs` has been executed even once.

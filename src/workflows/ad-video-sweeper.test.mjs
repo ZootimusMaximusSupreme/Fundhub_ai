@@ -43,11 +43,19 @@ const naming = {
 };
 
 describe("a pass that cannot run", () => {
-  test("with no store built yet it says so and does NOT throw", async () => {
+  test("a pass with nothing behind it is reported, not thrown", async () => {
     const res = await sweep(noDb, { env: {} });
-    // src/ad-videos/store.mjs is Builder A's and may not exist yet. A missing
-    // module must be a reported "not built", never a dead deploy.
-    if (!res.ok) assert.match(res.error, /store/);
+    /* WHAT THIS ASSERTED BEFORE THE MERGE, and why it changed. The store was
+       Builder A's file and might not exist, so this checked that a MISSING
+       MODULE was reported rather than taking the deploy down. It now exists, so
+       the pass gets one step further and stops on the database instead.
+
+       The rule under test is the one that has not changed: whatever is missing
+       — the module, the database, the folder id — the sweeper SAYS SO and does
+       not throw. A registered workflow that throws on import takes every other
+       workflow in src/workflows/index.mjs down with it. */
+    assert.equal(res.ok, false);
+    assert.match(res.error, /store|DATABASE_URL/);
     assert.equal(typeof res.ok, "boolean");
   });
 
@@ -79,7 +87,7 @@ describe("walk", () => {
   test("a row moves one step and the patch is written once", async () => {
     const patches = [];
     const store = fakeStore({
-      pending: [{ id: "r1", status: "staged", raw_public_url: "https://x.test/a.mp4" }],
+      pending: [{ id: "r1", status: "staged", source_url: "https://x.test/a.mp4" }],
       onPatch: (id, fields) => patches.push([id, fields])
     });
     const res = await walk(noDb, {
@@ -112,7 +120,7 @@ describe("walk", () => {
     const store = fakeStore({
       pending: [
         { id: "r1", status: "raw_landed", drive_raw_file_id: "d1" },
-        { id: "r2", status: "staged", raw_public_url: "https://x.test/a.mp4" }
+        { id: "r2", status: "staged", source_url: "https://x.test/a.mp4" }
       ]
     });
     const res = await walk(noDb, {

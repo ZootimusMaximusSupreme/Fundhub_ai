@@ -300,3 +300,68 @@ Three gaps, all named in `docs/journeys/ad-video-flow.md` with the reason:
 
 **pg tests were NOT RUN.** There is no local Postgres on this Mac. Nothing in
 this batch is proved against a real database.
+
+---
+
+## Merge review — one branch, 2026-09-22
+
+Status: **all three units merged into `feat/ad-video-pipeline`. Not shipped, not
+deployed, no production data touched.**
+
+### What was dropped, and why
+
+Two of the three builders each built an approval door. Both were sound designs.
+Two doors deciding one thing is the bug CLAUDE.md §8 ("reuse before you build")
+exists to stop, so one was kept.
+
+| Dropped | Kept instead |
+|---|---|
+| `api/public/ad-video-decision.mjs` | `api/public/ad-video-approve.mjs` |
+| `db/migrations/390_ad_video_decision_tokens.sql` (second token table) | the token columns already on `ad_videos` in 389, with the row-level security policies written on them |
+| `src/video/ad-video.mjs` (second state machine) | `src/ad-videos/states.mjs` |
+| `src/video/decision-token.mjs`, `decision-store.mjs`, `approval-notice.mjs` | `src/ad-videos/token.mjs`, `store.mjs`, and the pipeline's own notification |
+| the second `src/messaging/providers/ntfy.mjs` (fence INTERNAL, `NTFY_TOPIC_URL`) | the one the pipeline actually calls (fence MESSAGING, `NTFY_TOPIC`/`NTFY_SERVER`/`NTFY_TOKEN`) — and so the INTERNAL allow-list edit in `src/lib/no-unfenced-transmit.test.mjs` was reverted |
+
+**Kept from the dropped door:** `src/ad-videos/decision-page.mjs`. The surviving
+door answered a phone tap with raw JSON, which has no Approve button in it. A
+GET that asks for a page now gets the page; only a POST decides.
+
+### Defects found and fixed in review
+
+1. **Fourteen columns the workers wrote did not exist.** Migration 390 adds
+   them. `exported_at` is the one that costs money.
+2. **The table could not hold a take that had just landed** — `ad_id` NOT NULL,
+   but the ad number is not known until the match. 390 makes it nullable and
+   adds a check that demands it from `matched` onward.
+3. **The sweeper probed the store for six functions it did not have** and
+   reported "the store does not offer listPending/patch" on every pass.
+4. **The Submagic webhook passed a pool where a staff transaction belongs**, so
+   row-level security matched nothing and every render notification was dropped.
+5. **The notification had no Approve or Reject link in it.**
+6. Three column names differed between the two halves.
+7. `buildBrief` built the landing link by hand; it now goes through
+   `linkNumber()`, which refuses a padded ad number instead of printing one.
+
+### Measured
+
+| | Baseline (`main` @ `60737ada`) | This branch |
+|---|---|---|
+| Tests | 10948 | 11222 |
+| Pass | 10934 | 11209 |
+| **Fail** | **10** | **9** |
+| Skipped | 4 | 4 |
+
+Same nine failures by name, all pre-existing on `main`. One baseline failure
+(`docs/diagrams is in sync with the code`) is fixed. **Zero added.**
+
+`npm run lint` clean (2620 files). `npx tsc --noEmit` clean.
+`npm run journeys:check` up to date.
+
+### NOT proved — read this before believing any of it
+
+**Every `.pg.test.mjs` in this feature is unrun.** There is no local Postgres on
+this Mac. Not one line of SQL in `389`, `390`, `store.mjs` or `token.mjs` has
+been executed. The constraints, the row-level security policies, the two-taps
+race and the column names are all unproved. Whoever has a database runs these
+first, and must set `APP_DATABASE_URL` to `fundhub_app` or the isolation tests
+pass while proving nothing.
