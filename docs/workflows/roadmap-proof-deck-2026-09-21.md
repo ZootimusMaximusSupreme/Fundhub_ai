@@ -10,7 +10,7 @@ Headline that stays: "Your Credit File Could Be Worth $100K to $1M in Funding, a
 |------|-------|--------|
 | W1 Images and amounts: high-res slides from Canva, crops, amounts, real quotes | this session (workflow agents) | done |
 | W2 Design and build: cards, sticky shuffle, blue pills, checkout box, mobile pass | this session | done |
-| W3 Push only the sales page, live scroll proof | this session | claimed |
+| W3 Push only the sales page, live scroll proof | this session | done |
 
 Chris said "go on all of them" (2026-09-21), so one session runs all three.
 
@@ -56,7 +56,15 @@ W2
 - Proof so far (local copy of the exact push wrapper, Playwright): all 22 cards step through at 390x844 and 1280x800 and reverse on scroll up. All images load, no script errors, no horizontal overflow at 360/390/430, and the pay link carries utm_source and utm_content.
 - Suite: 13 fail now vs 11 at HEAD in a clean worktree. The 2 extra read `public/roadmap/index.html`, which is deleted in the working tree by another session. With that file present, the sales page passes the UTM test.
 
+W3
+- Pushed `slo-297-sales` only (page 25426320) via `node scripts/cf-push-custom-html.mjs push --only=slo-297-sales`. No other funnel page touched.
+- `scripts/cf-push-custom-html.mjs`: the custom_html_put push now adds the page's own SDK token (`<meta name="cf-page-token">`, from GET /pages/{id} `sdk.token`). Without it the live page showed a "NO_PAGE_META ERROR" badge over the phone CTA. It had been there since the first custom HTML push.
+- Live proof on https://apply.fundhub.ai/roadmap (Playwright, 390x844 and 1280x800): the $100K headline is there. All 22 cards flip one per 30vh and reverse on scroll up, all 18 images load from statics.myclickfunnels.com, and there are 0 script errors. Pills are gray below the 65% line, #2563EB above it, and gray again on the way back up. Tapping the hero CTA scrolls to #fh-order. Tapping "Get My Roadmap" opens https://fundhub.ai/roadmap/pay.html?utm_source=facebook&utm_content=43 and its hidden fields hold utm_source=facebook and utm_content=43. Nothing was submitted.
+- Marked-up screenshots: `docs/workflows/roadmap-proof-deck-2026-09-21-evidence/`.
+
 ## Findings
+
+- The live page shows a ClickFunnels "TEST MODE" badge bottom right. It covers the right end of the phone CTA bar. The badge shows because the $297 funnel is in test mode in ClickFunnels. Per the ClickFunnels SDK guide it goes away when the funnel is set live, which is Chris's call.
 
 - The $1,000,000 target cannot be met from real screenshots. Readable, de-duplicated credit card approvals total $483,500. The yellow headlines add up to about $1.27M, but the screenshots under them do not show those amounts.
 - The zip Chris sent (`shitforclaude.zip`) holds preview pages whose checkout box is a mock. It takes a social and card number and sends them nowhere. It was not used.

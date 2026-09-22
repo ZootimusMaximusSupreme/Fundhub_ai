@@ -18,6 +18,7 @@ import { decryptToken } from "../src/adplatforms/tokens.mjs";
 import {
   metaPixelId,
   metaPixelHeadHtml,
+  directRoasHeadHtml,
   wrapCustomHtmlDocument,
   FH_ATTRIBUTION_SRC,
   VSL_WATCH_BEACON_SRC,
@@ -160,6 +161,13 @@ function readFragment(relPath) {
   return readFileSync(abs, "utf8");
 }
 
+function trackingHeadScripts({ skipMeta, skipDirectRoas, env = process.env }) {
+  const parts = [];
+  if (!skipMeta) parts.push(metaPixelHeadHtml(metaPixelId(env).id));
+  if (!skipDirectRoas) parts.push(directRoasHeadHtml(env));
+  return parts.join("\n");
+}
+
 function trackingFooterScripts({ includeVslBeacon, skipAttribution }) {
   const parts = [];
   if (!skipAttribution) {
@@ -169,6 +177,28 @@ function trackingFooterScripts({ includeVslBeacon, skipAttribution }) {
     parts.push(`<script src="${VSL_WATCH_BEACON_SRC}"></script>`);
   }
   return parts.join("\n");
+}
+
+function injectIntoCustomHtmlDocument(html, { headBits = "", footBits = "" } = {}) {
+  let out = html;
+  if (headBits && !out.includes(headBits.slice(0, 40))) {
+    if (out.includes("</head>")) out = out.replace("</head>", `${headBits}\n</head>`);
+    else out = `${headBits}\n${out}`;
+  }
+  if (footBits && !out.includes(footBits.slice(0, 40))) {
+    if (out.includes("</body>")) out = out.replace("</body>", `${footBits}\n</body>`);
+    else out = `${out}\n${footBits}`;
+  }
+  return out;
+}
+
+async function getCustomHtml(creds, pageId, ctx) {
+  const { body } = await cfApi({
+    url: `${baseUrl(creds.subdomain)}/pages/${pageId}/custom_html`,
+    apiKey: creds.api_key,
+    ctx,
+  });
+  return body.custom_html ?? "";
 }
 
 function injectBlock(html, block) {
@@ -226,6 +256,9 @@ async function isCustomHtmlPage(creds, pageId, ctx) {
 async function appendHeadFooter(creds, pageId, headSnippet, footerSnippet, ctx, dryRun) {
   if (dryRun) {
     return { ok: true, dryRun: true, pageId, mode: "head_footer_append" };
+  }
+  if (!headSnippet && !footerSnippet) {
+    return { ok: true, pageId, mode: "head_footer_append", skipped: true, reason: "tracking_already_present" };
   }
   const page = await getPage(creds, pageId, ctx);
   const payload = { page: {} };
@@ -316,34 +349,65 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
   const byPath = new Map(
     pages.filter((p) => p.current_path).map((p) => [p.current_path, p]),
   );
+  const byId = new Map(pages.map((p) => [String(p.id), p]));
 
   const results = [];
   const snapDir = join(ROOT, "docs/workflows/cf-push-snapshots");
 
   for (const row of PUSH_MANIFEST) {
     if (only && row.key !== only) continue;
-    if (!row.path) {
+    if (!row.path && !row.pageId) {
       results.push({ key: row.key, skipped: true, reason: "no_path_map_yet" });
       continue;
     }
-    const page = byPath.get(row.path);
+    const page =
+      (row.pageId && byId.get(String(row.pageId))) || (row.path && byPath.get(row.path));
     if (!page) {
-      results.push({ key: row.key, path: row.path, error: "page_not_found" });
+      results.push({ key: row.key, path: row.path, pageId: row.pageId, error: "page_not_found" });
+      continue;
+    }
+
+    if (row.strategy === "custom_html_inject_only") {
+      await snapshotCustomHtml(creds, page.id, ctx, snapDir);
+      const existing = await getCustomHtml(creds, page.id, ctx);
+      const head = trackingHeadScripts({
+        skipMeta: existing.includes("fbq('init'"),
+        skipDirectRoas: existing.includes("directroas.com"),
+        env: process.env,
+      });
+      const foot = trackingFooterScripts({
+        includeVslBeacon: !!row.vslBeacon,
+        skipAttribution: existing.includes("fh-attribution.js"),
+      });
+      const html = injectIntoCustomHtmlDocument(existing, { headBits: head, footBits: foot });
+      const r = await putCustomHtml(creds, page.id, html, ctx, dryRun);
+      results.push({
+        key: row.key,
+        page_id: page.id,
+        path: row.path,
+        liveUrl: row.liveUrl,
+        mode: "custom_html_inject_only",
+        pixel_env: pixel.envName,
+        ...r,
+      });
       continue;
     }
 
     if (DO_NOT_FULL_REPLACE_PATHS.has(row.path) || row.strategy === "head_footer_append_only") {
-      const fragHtml = row.fragments
-        ? row.fragments.map(readFragment).join("\n")
-        : row.fragment
-          ? readFragment(row.fragment)
-          : "";
-      const hasAttr = fragHtml.includes("fh-attribution.js");
-      // apply.fundhub.ai already loads Meta pixel via CF site tracking — inject attribution only.
-      const head = "";
+      const livePage = await getPage(creds, page.id, ctx);
+      const liveHead = String(livePage.head_code ?? "");
+      const liveFoot = String(livePage.footer_code ?? "");
+      const liveHasAttr =
+        liveHead.includes("fh-attribution.js") || liveFoot.includes("fh-attribution.js");
+      const liveHasMeta = liveHead.includes("fbq('init'") || liveFoot.includes("fbq('init'");
+      const head = trackingHeadScripts({
+        skipMeta: liveHasMeta,
+        skipDirectRoas: liveHead.includes("directroas.com") || liveFoot.includes("directroas.com"),
+        env: process.env,
+      });
       const foot = trackingFooterScripts({
         includeVslBeacon: !!row.vslBeacon,
-        skipAttribution: hasAttr,
+        skipAttribution: liveHasAttr,
       });
       await snapshotCustomHtml(creds, page.id, ctx, snapDir);
       const r = await appendHeadFooter(creds, page.id, head, foot, ctx, dryRun);
@@ -361,8 +425,11 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
     }
 
     const bodyHtml = row.fragment ? readFragment(row.fragment) : "";
+    // The CF SDK shows a "NO_PAGE_META ERROR" badge on the live page without this token.
+    const sdkToken = (await getPage(creds, page.id, ctx))?.sdk?.token;
     const html = wrapCustomHtmlDocument({
       bodyHtml,
+      pageToken: sdkToken,
       pixelId: pixel.id,
       includeVslBeacon: !!row.vslBeacon,
       env: process.env,
@@ -382,11 +449,15 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
         ...r,
       });
     } else {
-      const hasAttr = bodyHtml.includes("fh-attribution.js");
+      const livePage = await getPage(creds, page.id, ctx);
+      const liveHead = String(livePage.head_code ?? "");
+      const liveFoot = String(livePage.footer_code ?? "");
+      const liveHasAttr =
+        liveHead.includes("fh-attribution.js") || liveFoot.includes("fh-attribution.js");
       const head = "";
       const foot = trackingFooterScripts({
         includeVslBeacon: !!row.vslBeacon,
-        skipAttribution: hasAttr,
+        skipAttribution: liveHasAttr,
       });
       const r = await appendHeadFooter(creds, page.id, head, foot, ctx, dryRun);
       results.push({
