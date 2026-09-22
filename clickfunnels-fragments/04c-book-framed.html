@@ -107,12 +107,38 @@ html.fh-framed #formContainer a.elButton .elButtonMainText{font-size:17px!import
 (function(){
   if(window.self===window.top) return;
   var PARENT='https://apply.fundhub.ai';
-  var SCHED='[data-page-element="AppointmentScheduler/V1"]';
-  var last=0,timer=null;
-  function bottomOf(el){
-    var r=el.getBoundingClientRect();
-    return r.bottom+(window.pageYOffset||document.documentElement.scrollTop||0);
+  // Only talk to the booking page. Framed anywhere else (a preview, the builder)
+  // the look still applies but nothing is posted, so no origin-mismatch errors.
+  function parentOrigin(){
+    try{ return window.parent.location.origin; }catch(e){}
+    try{ var a=window.location.ancestorOrigins; if(a&&a.length) return a[0]; }catch(e){}
+    try{ return new URL(document.referrer).origin; }catch(e){}
+    return '';
   }
+  if(parentOrigin()!==PARENT) return;
+  var SCHED='[data-page-element="AppointmentScheduler/V1"]';
+  var last=0,lastKey='',touched=false,timer=null;
+  function scrollTopNow(){ return window.pageYOffset||document.documentElement.scrollTop||0; }
+  function bottomOf(el){ return el.getBoundingClientRect().bottom+scrollTopNow(); }
+  function topOf(el){ return el.getBoundingClientRect().top+scrollTopNow(); }
+  function shown(el){ return !!el&&el.getBoundingClientRect().height>0; }
+  // What the visitor has to press next: the picked time + Confirm, or the
+  // contact form + Book. Sent once each time it appears, so the booking page
+  // can bring it on screen instead of leaving Confirm below the fold.
+  function focusBox(){
+    var c=document.querySelector('.cf2__confirm-details, .DTP__confirm-details');
+    if(shown(c)) return {k:'confirm:'+(c.textContent||''),t:topOf(c),b:bottomOf(c)};
+    var f=document.getElementById('formContainer');
+    if(shown(f)){
+      var btn=f.querySelector('a.elButton');
+      return {k:'form',t:topOf(f),b:shown(btn)?bottomOf(btn):bottomOf(f)};
+    }
+    return null;
+  }
+  // never move the booking page before the visitor has touched the calendar
+  function touch(){ touched=true; }
+  document.addEventListener('pointerdown',touch,true);
+  document.addEventListener('keydown',touch,true);
   function measure(){
     var b=document.body;
     if(!b) return 0;
@@ -126,9 +152,16 @@ html.fh-framed #formContainer a.elButton .elButtonMainText{font-size:17px!import
   function post(){
     timer=null;
     var h=measure();
-    if(!h||Math.abs(h-last)<2) return;
+    if(!h) return;
+    var msg={type:'fh-book-height',h:h};
+    var fb=focusBox(),key=fb?fb.k:'';
+    if(key!==lastKey){
+      lastKey=key;
+      if(fb&&touched) msg.focus={t:Math.floor(fb.t),b:Math.ceil(fb.b)};
+    }
+    if(!msg.focus&&Math.abs(h-last)<2) return;
     last=h;
-    try{ window.parent.postMessage({type:'fh-book-height',h:h},PARENT); }catch(e){}
+    try{ window.parent.postMessage(msg,PARENT); }catch(e){}
   }
   function soon(){ if(!timer) timer=setTimeout(post,120); }
   function start(){

@@ -71,8 +71,10 @@ flowchart TD
   (CF page 25062844) carries `clickfunnels-fragments/04c-book-framed.html` in its head code: only when it is
   inside a frame, it hides its own hero, logo, marquee and footer, hides the scheduler's big logo, and posts
   `fh-book-height` to https://apply.fundhub.ai. The booking page sets the frame to that height (never under
-  600px) and scrolls back to the card when picking a time shrinks it to the contact form. Opened on its own,
-  /funding-book-call is unchanged. A booking still writes `fh_booking_v1` inside the frame and the booking page
+  600px). Once the visitor has touched the calendar, picking a time sends where the picked time + Confirm sit
+  (after Confirm: the contact form + Book), and the booking page scrolls only as far as needed to put that on
+  screen. Framed on any other address the calendar posts nothing. Opened on its own, /funding-book-call is
+  unchanged. A booking still writes `fh_booking_v1` inside the frame and the booking page
   still moves to `/roadmap-thank-you` on it (unchanged).
 - `netlify.toml` — `/slo` and `/slo/*` 301 to `/roadmap/` and `/roadmap/:splat`.
 
