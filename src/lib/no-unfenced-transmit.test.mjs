@@ -191,7 +191,21 @@ const INTERNAL_CALLERS = new Set([
   // same reason an embedding call is: holding it behind the messaging or
   // adapters dry-run flag would not protect a consumer, it would just silently
   // downgrade every client's documents to the short pdf-lib set.
-  "src/underwrite/black-report-pdf.mjs"
+  "src/underwrite/black-report-pdf.mjs",
+  /* Added 2026-09-22. Buzzes the OWNER'S OWN PHONE when an ad video is waiting
+     on his approval (docs/video-pipeline-plan.md step 13).
+
+     It cannot reach a client, and that is the whole of the argument: it
+     publishes to one fixed topic URL out of NTFY_TOPIC_URL, takes no recipient
+     from any caller, and has no argument that can redirect it. Behind MESSAGING
+     it would be held by MESSAGING_DRY_RUN, and the effect of that hold would
+     not be a consumer protected — none is reachable — it would be the approval
+     step of the pipeline stopping dead with no notification and no error
+     anybody sees. Same reasoning as black-report-pdf.mjs above.
+
+     IF IT EVER LEARNS TO TAKE A RECIPIENT FROM A CALLER it stops being internal
+     that day and belongs behind MESSAGING. */
+  "src/messaging/providers/ntfy.mjs"
 ]);
 
 function walk(dir, out = []) {

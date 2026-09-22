@@ -200,6 +200,7 @@ import publicUnsubscribe from "../../api/public/unsubscribe.mjs";
 import publicEeoSurvey from "../../api/public/eeo-survey.mjs";
 import publicAffiliateClick from "../../api/public/affiliate-click.mjs";
 import publicVslWatch from "../../api/public/vsl-watch.mjs";
+import publicAdVideoDecision from "../../api/public/ad-video-decision.mjs";
 import creativeGenerate from "../../api/creative/generate.mjs";
 import creativeLibrary from "../../api/creative/library.mjs";
 import creativeBrandKits from "../../api/creative/brand-kits.mjs";
@@ -818,6 +819,21 @@ export const ROUTES = {
      visitor id is a string the caller invents for free. Read the header of
      api/public/vsl-watch.mjs before adding anything beside it. */
   "public/vsl-watch": publicVslWatch,
+  /* THE SECOND OPEN DOOR, and the only one that WRITES A DECISION. Chris
+     approves an ad video by tapping a button in a phone notification, so there
+     is no session to authenticate — the one-time token in the link is the
+     credential (src/video/decision-token.mjs: a public selector for the index,
+     a secret verifier compared in constant time, only its hash stored).
+
+     A GET renders a page and changes nothing; only a POST decides. That split
+     is load-bearing, not tidiness: a GET that decided would be fired by every
+     link preview, mail prefetcher and URL scanner that touched the
+     notification, approving videos nobody watched. The spend is a conditional
+     UPDATE, so two taps cannot both win, and every refusal — bad token, spent,
+     expired, wrong state — answers with identical bytes.
+
+     Read the header of api/public/ad-video-decision.mjs before touching it. */
+  "public/ad-video-decision": publicAdVideoDecision,
   /* Public lending-climate lead magnet. No auth — same class as survey-submit. */
   "climate": climate,
   "climate/geocode": climateGeocode,
