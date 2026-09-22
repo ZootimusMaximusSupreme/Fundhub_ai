@@ -88,3 +88,7 @@ If one of these needs a change, an agent makes it in the ClickFunnels screen. Th
 - **Booking-time capture through the frame** may already work, because the framed page is on the same site. It is untested, not broken.
 - **§5 is wrong where it says an agent changes ClickFunnels screen settings.** Those settings need a logged-in ClickFunnels admin session. Under `.claude/rules/chris-never-clickfunnels.md`, Chris does not log in, so those three settings stay as they are unless another way is found.
 - How long ClickFunnels keeps past webhooks is not documented, so Step 0 may not find an old booking message.
+
+## Owner decisions
+
+- 2026-09-22: $297 buyers book on https://apply.fundhub.ai/funding-book-call "for now" (owner-set).
