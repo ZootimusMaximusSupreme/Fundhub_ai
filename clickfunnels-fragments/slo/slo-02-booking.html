@@ -275,12 +275,23 @@ var FH_SIM_PA = '84500';  /* stand-in amount, sim only */
 <script>
 /* The framed calendar shows only the scheduler (04c-book-framed.html on
    /funding-book-call) and posts its real height as fh-book-height. Size the
-   frame to it: no inner scrollbar, nothing cut off. When picking a time swaps
-   the tall time list for the short contact form, bring the card back into view. */
+   frame to it: no inner scrollbar, nothing cut off. When a picked time shows
+   Confirm (or Confirm shows the contact form) the calendar sends where that
+   part sits (focus t..b, frame px); scroll just enough to put it on screen. */
 (function(){
-  var ORIGIN='https://apply.fundhub.ai',MIN=600,cur=0;
+  var ORIGIN='https://apply.fundhub.ai',MIN=600,PAD=16,cur=0;
   var f=document.getElementById('fh-book-frame');
   if(!f) return;
+  function vh(){ return window.innerHeight||document.documentElement.clientHeight; }
+  // frame rows t..b on screen: card top too when it all fits, else the bottom (Confirm/Book) up from the fold
+  function reveal(t,b){
+    var F=f.getBoundingClientRect().top,H=vh(),dy;
+    if(F+t>=0&&F+b<=H) return;
+    if(b+2*PAD<=H) dy=F-PAD;
+    else if(b-t+2*PAD<=H) dy=F+b-(H-PAD);
+    else dy=F+t-PAD;
+    if(Math.abs(dy)>1) window.scrollBy({top:dy,behavior:'smooth'});
+  }
   window.addEventListener('message',function(e){
     if(e.origin!==ORIGIN||e.source!==f.contentWindow) return;
     var d=e.data;
@@ -291,10 +302,10 @@ var FH_SIM_PA = '84500';  /* stand-in amount, sim only */
     var shrank=cur>0&&h<cur-150;
     cur=h;
     f.style.height=h+'px';
-    if(shrank){
-      var top=(f.parentElement||f).getBoundingClientRect().top;
-      if(top<0) window.scrollBy({top:top-16,behavior:'smooth'});
-    }
+    var fo=d.focus,t=fo?Number(fo.t):NaN,b=fo?Number(fo.b):NaN;
+    if(t>=0&&t<h&&b>t){ reveal(t,Math.min(b,h)); return; }
+    // no target sent: step in only when the shrink left the visitor below the whole card
+    if(shrank&&f.getBoundingClientRect().bottom<80) reveal(Math.max(0,h-(vh()-2*PAD)),h);
   });
 })();
 </script>

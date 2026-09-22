@@ -9,6 +9,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
+import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 import {
   PUSH_MANIFEST,
@@ -53,9 +54,13 @@ test("framed layer hides the page chrome and posts its height to the booking pag
   assert.match(html, /html\.fh-framed \.fh-root,/, "04a hero/logo and 04b marquee/footer hide");
   assert.match(html, /\[data-page-element="SectionContainer\/V1"\]:not\(:has\(\[data-page-element="AppointmentScheduler\/V1"\]\)\)/);
   assert.match(html, /#calContainer > div:first-child img/, "scheduler logo hides");
-  assert.match(html, /postMessage\(\{type:'fh-book-height',h:h\},PARENT\)/);
+  assert.match(html, /var msg=\{type:'fh-book-height',h:h\};/);
+  assert.match(html, /window\.parent\.postMessage\(msg,PARENT\)/);
   assert.match(html, /var PARENT='https:\/\/apply\.fundhub\.ai';/);
   assert.doesNotMatch(html, /postMessage\([^)]*'\*'\)/, "never posts to any origin");
+  assert.match(html, /if\(parentOrigin\(\)!==PARENT\) return;/, "framed anywhere else, posts nothing");
+  assert.match(html, /\.cf2__confirm-details, \.DTP__confirm-details/, "sends where Confirm sits");
+  assert.match(html, /if\(fb&&touched\) msg\.focus=/, "never moves the page before the visitor touches the calendar");
 });
 
 test("booking page sizes the frame from fh-book-height and keeps the booked redirect", () => {
@@ -106,4 +111,107 @@ test("upsertMarkedBlock appends, swaps only its own block, and skips when unchan
   assert.throws(() => upsertMarkedBlock("", "<style></style>", "fh-x"), /must start with/);
   assert.throws(() => upsertMarkedBlock("<!-- fh-x:start v1 -->", v2, "fh-x"), /no "<!-- fh-x:end -->"/);
   assert.throws(() => upsertMarkedBlock(`${v1}\n${v1}`, v2, "fh-x"), /twice/);
+});
+
+// Run the booking page's real frame script against a fake page and check where
+// Confirm lands after picking a time (reviewer case: 390x844 phone, frame
+// 1796 -> 1150, Confirm 968-1016 inside the frame).
+function bookingFrame({ vh, frameTop }) {
+  const script = [...read(BOOKING).matchAll(/<script>([\s\S]*?)<\/script>/g)]
+    .map((m) => m[1])
+    .find((s) => s.includes("fh-book-height"));
+  assert.ok(script, "booking page frame script found");
+  const child = {};
+  const page = { y: 0, handler: null };
+  const f = {
+    style: {},
+    contentWindow: child,
+    getBoundingClientRect() {
+      const top = frameTop - page.y;
+      return { top, bottom: top + (parseFloat(this.style.height) || 920) };
+    },
+  };
+  const win = {
+    innerHeight: vh,
+    addEventListener: (type, fn) => {
+      if (type === "message") page.handler = fn;
+    },
+    scrollBy: ({ top }) => {
+      page.y += top;
+    },
+  };
+  vm.runInNewContext(script, {
+    window: win,
+    document: { getElementById: (id) => (id === "fh-book-frame" ? f : null), documentElement: { clientHeight: vh } },
+    Number,
+    Math,
+    isFinite,
+    NaN,
+  });
+  const send = (data, origin = "https://apply.fundhub.ai", source = child) =>
+    page.handler({ origin, source, data });
+  const onScreen = (t, b) => {
+    const top = f.getBoundingClientRect().top;
+    return top + t >= 0 && top + b <= vh;
+  };
+  return { f, page, send, onScreen };
+}
+
+test("phone: picking a low time brings Confirm on screen, not the card top", () => {
+  const p = bookingFrame({ vh: 844, frameTop: 400 });
+  p.send({ type: "fh-book-height", h: 1796 });
+  p.page.y = 1300; // scrolled down the long time list to the 12th time
+  p.send({ type: "fh-book-height", h: 1150, focus: { t: 780, b: 1080 } });
+  assert.equal(p.f.style.height, "1150px");
+  assert.ok(p.onScreen(968, 1016), "Confirm is fully on screen");
+  assert.ok(p.onScreen(780, 1080), "picked time, Confirm and Cancel all on screen");
+});
+
+test("Confirm already on screen: the page does not move", () => {
+  const p = bookingFrame({ vh: 900, frameTop: 300 });
+  p.send({ type: "fh-book-height", h: 1237 });
+  p.page.y = 280;
+  p.send({ type: "fh-book-height", h: 1237, focus: { t: 560, b: 830 } });
+  assert.equal(p.page.y, 280);
+});
+
+test("short laptop window: Confirm is pulled up from below the fold", () => {
+  const p = bookingFrame({ vh: 700, frameTop: 300 });
+  p.send({ type: "fh-book-height", h: 1237 });
+  p.page.y = 300;
+  p.send({ type: "fh-book-height", h: 1237, focus: { t: 560, b: 830 } });
+  assert.ok(p.onScreen(560, 830));
+});
+
+test("form after Confirm fits: the card top shows with the Book button", () => {
+  const p = bookingFrame({ vh: 844, frameTop: 400 });
+  p.send({ type: "fh-book-height", h: 1150 });
+  p.page.y = 1200;
+  p.send({ type: "fh-book-height", h: 789, focus: { t: 120, b: 735 } });
+  assert.ok(p.onScreen(0, 735), "card top through Book on screen");
+});
+
+test("no target sent: a shrink only scrolls when the visitor is left below the whole card", () => {
+  const near = bookingFrame({ vh: 844, frameTop: 400 });
+  near.send({ type: "fh-book-height", h: 1796 });
+  near.page.y = 500; // looking at the month grid
+  near.send({ type: "fh-book-height", h: 1300 });
+  assert.equal(near.page.y, 500, "another date with fewer times does not move the page");
+
+  const lost = bookingFrame({ vh: 844, frameTop: 400 });
+  lost.send({ type: "fh-book-height", h: 1796 });
+  lost.page.y = 1900;
+  lost.send({ type: "fh-book-height", h: 1150 });
+  assert.ok(lost.onScreen(1150 - 100, 1150), "bottom of the card back on screen");
+});
+
+test("messages from anywhere but the calendar frame are ignored", () => {
+  const p = bookingFrame({ vh: 844, frameTop: 400 });
+  p.send({ type: "fh-book-height", h: 1500 }, "https://evil.example");
+  p.send({ type: "fh-book-height", h: 1500 }, "https://apply.fundhub.ai", {});
+  p.send({ type: "other", h: 1500 });
+  p.send({ type: "fh-book-height", h: "x" });
+  assert.equal(p.f.style.height, undefined);
+  p.send({ type: "fh-book-height", h: 300 });
+  assert.equal(p.f.style.height, "600px", "never below 600");
 });
