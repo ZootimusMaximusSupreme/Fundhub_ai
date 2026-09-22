@@ -9,6 +9,8 @@ Public folder is `public/roadmap/`. Old `/slo` URLs 301 to `/roadmap`. APIs stay
 ```mermaid
 flowchart TD
   S["/roadmap/ — sales page public/roadmap/index.html"] -->|every CTA| P["/roadmap/pay.html — email required, first + last optional"]
+  CF["apply.fundhub.ai/roadmap — ClickFunnels custom HTML page 25426320, clickfunnels-fragments/slo/slo-01-sales.html"] -->|"every CTA scrolls to the checkout part #fh-order"| CFB["Checkout box: Get My Roadmap · $297"]
+  CFB -->|"https://fundhub.ai/roadmap/pay.html + first-touch utm_* from the page"| P
   S -. fills every price slot .-> A
   P -. fills price + server notices .-> A
   A["GET /api/public/slo-checkout"] --> B["Price $297, next /roadmap/pull.html"]
@@ -34,6 +36,13 @@ flowchart TD
 ```
 
 ## Traced paths
+
+- `clickfunnels-fragments/slo/slo-01-sales.html` (live at https://apply.fundhub.ai/roadmap) — every CTA is
+  `href="#fh-order"` and a click handler scrolls to the checkout section. The checkout box `#fh-pay-go` links to
+  `https://fundhub.ai/roadmap/pay.html`; on load and on press it adds the five `utm_*` tags from the page's own
+  `fh_attribution` session store (first touch, written by `fh-attribution.js`) or from the page URL, because a
+  session store on apply.fundhub.ai is not readable on fundhub.ai. `landing_path` and `referrer_domain` are not
+  carried across; pay.html records its own. The box holds no form fields and collects nothing itself.
 
 - `api/public/slo-checkout.mjs` — mint + write a diagnostic payment link so the existing Commas adapter emits `diagnostic.paid`.
 - `api/public/slo-pull.mjs` — POST only. Matching `ref` + `client_id` required. Server stores `soft-pull-v1` consent text. Then `diagnostic.paid`.
