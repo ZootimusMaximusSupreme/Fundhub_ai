@@ -930,3 +930,10 @@ Detail, rules, and code lines for every item: `docs/workflows/walkthrough-4-2026
 - [ ] **low** — The client portal writes its own card shadow instead of using the shared one (`public/app/client-portal.html:86`)
 
 Also from the walk: Walk2 and Walk3 need enrolling by hand (Present deck, not the desk button); Walk1 has two duplicate tasks; 237 banks still have no bureau on file.
+
+---
+
+## Open items — 2026-09-23
+
+- [ ] **SLO / marketing video Drive naming strategy.** Chris's system is `SLO Ad N Take M.mp4` (+ specials: Retargeting, Funding Roadmap, Portal Welcome, VSL). Need a written strategy doc + organizer script alignment so agents stop inventing LOCKED-AD / pipeline names. Reference: Riverside list (IMG_0448 email), `scripts/slo-ads-drive-organize.mjs`, `docs/workflows/slo-ads-drive-manifest-2026-09-23.md`.
+- [ ] **Local AI models in Cursor.** Add/configure local models in Cursor settings (Ollama/LM Studio or whatever Chris uses); document steps in repo if there's a pattern.

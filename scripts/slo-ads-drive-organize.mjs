@@ -17,38 +17,54 @@ const TO_CANONICAL = {
   // Normalize (missing take number)
   "SLO Ad 1.mp4": "SLO Ad 1 Take 1.mp4",
 
-  // Undo wrong script-ID renames (2026-09-23 mistake)
+  // Pipeline ids → Chris Drive labels (Riverside SLO Ads list)
   "LOCKED-AD-01-take-1.mp4": "SLO Ad 1 Take 1.mp4",
-  "LOCKED-AD-07-take-1.mp4": "SLO Ad 6 Take 1.mp4",
-  "LOCKED-AD-07-take-2.mp4": "SLO Ad 6 Take 2.mp4",
-  "LOCKED-AD-07-take-3.mp4": "SLO Ad 6 Take 3.mp4",
-  "LOCKED-AD-07-take-4.mp4": "SLO Ad 6 Take 4.mp4",
-  "LOCKED-AD-07-take-5.mp4": "SLO Ad 6 Take 5.mp4",
-  "LOCKED-AD-07-take-6.mp4": "SLO Ad 6 Take 6.mp4",
-  "LOCKED-AD-07-take-7.mp4": "SLO Ad 6 Take 7.mp4",
-  "LOCKED-AD-two-sides-variant.mp4": "SLO Ad Two Sides.mp4",
+  "LOCKED-AD-two-sides-variant.mp4": "SLO Ad 7 Take 1.mp4",
   "AD-07-call-pitch-take-1.mp4": "SLO Ad 7 Call Pitch Take 1.mp4",
   "AD-07-call-pitch-take-2.mp4": "SLO Ad 7 Call Pitch Take 2.mp4",
-  "Retarget-checkout-abandon-take-2.mp4": "SLO Checkout Abandon Take 2.mp4",
-  "Retarget-checkout-abandon-take-3.mp4": "SLO Checkout Abandon Take 3.mp4",
+  "Retarget-checkout-abandon-take-2.mp4": "SLO Funding Roadmap Take 2.mp4",
+  "Retarget-checkout-abandon-take-3.mp4": "SLO Funding Roadmap Take 3.mp4",
+
+  "SLO Ad Two Sides.mp4": "SLO Ad 7 Take 1.mp4",
+
+  // 2026-09-23 transcript pass — slo-ads-content-map-2026-09-23.md
+  "SLO VSL Take 1.mp4": "SLO Portal Welcome Take 1.mp4",
+  "SLO Ad 7 Call Pitch Take 2.mp4": "SLO Ad 3 Take 1.mp4",
+  "SLO Ad 7 Call Pitch Take 3.mp4": "SLO Ad 6 Take 1.mp4",
+  "SLO Ad 7 Call Pitch Take 4.mp4": "SLO VSL 2 Booking Take 2.mp4",
+  "SLO Checkout Abandon Take 2.mp4": "SLO Funding Roadmap Take 2.mp4",
+  "SLO Checkout Abandon Take 3.mp4": "SLO Funding Roadmap Take 3.mp4",
   "VSL-01-Sales-open.mp4": "SLO VSL 1 Open.mp4",
   "VSL-01-Sales-middle.mp4": "SLO VSL 1 Middle.mp4",
   "VSL-01-Sales-FAQ.mp4": "SLO VSL 1 FAQ.mp4",
   "VSL-01-Sales-close.mp4": "SLO VSL 1 Close.mp4",
   "VSL-02-Booking.mp4": "SLO VSL 2 Booking.mp4",
 
-  // iPhone export — ~344 MB, ~2× VSL 2 Booking size/duration → full VSL 1 take (script-check name)
-  "8FEE9AD2-4920-4D91-99F7-D45180DEF6C1.mp4": "SLO VSL Take 1.mp4",
+  // iPhone export — portal welcome (~203 s), not sales VSL 1
+  "8FEE9AD2-4920-4D91-99F7-D45180DEF6C1.mp4": "SLO Portal Welcome Take 1.mp4",
 };
 
 const UUID_MP4 = /^[0-9A-F-]{36}\.mp4$/i;
 
 /** Always trash (useless clip per script check) */
-const TRASH_NAMES = new Set(["SLO Ad 1 Take 2.mp4"]);
+const TRASH_NAMES = new Set([
+  "SLO Ad 1 Take 2.mp4",
+  "847ED8E1-DA51-4EC0-B840-7E13CA0E4D0F.mp4",
+  "SLO Ad 7 Call Pitch Take 5.mp4",
+  "SLO Ad 7 Call Pitch Take 7.mp4",
+  "SLO Ad 7 Call Pitch Take 8.mp4",
+  "SLO Ad 7 Call Pitch Take 9.mp4",
+  "SLO Funding Roadmap Take 2.mp4",
+  // Same md5 as trashed SLO junk — UUID-only survivors after first pass
+  "24337812-8AAF-4015-A821-F37280E5AD50.mp4",
+  "91857F54-7DB4-4D46-BEA5-7FA70BC2C4F8.mp4",
+  "D9F44B24-AD7E-479D-B8CF-3B64715F4441.mp4",
+  "D8499A33-29BA-4CA1-B323-1D4D58E5CBE9.mp4",
+  "E0B42CA1-C980-4F52-BFD9-862B81B59303.mp4",
+]);
 
 function canonicalName(name) {
   if (TO_CANONICAL[name]) return TO_CANONICAL[name];
-  if (UUID_MP4.test(name)) return "SLO VSL Take 1.mp4";
   return name;
 }
 
@@ -56,7 +72,7 @@ function nameScore(name) {
   let s = 0;
   if (/^DUPLICATE/i.test(name)) s -= 100;
   if (UUID_MP4.test(name)) s -= 50;
-  if (/^LOCKED-AD|^VSL-0|^Retarget-|^AD-07-call-pitch/i.test(name)) s -= 30;
+  if (/^LOCKED-AD|^VSL-0|^Retarget-|^AD-07-call-pitch|^SLO Checkout Abandon|^SLO Ad Two Sides|^SLO Ad 6 Take/i.test(name)) s -= 30;
   if (/^SLO /i.test(name)) s += 20;
   return s;
 }
@@ -210,7 +226,9 @@ for (const t of plan.trash) {
   await trashFile(t.id);
   console.log("trashed", t.name);
 }
-for (const r of plan.rename) {
+// High take numbers first so intermediate names do not collide on Drive.
+const renameOrder = [...plan.rename].sort((a, b) => b.to.localeCompare(a.to) || b.from.localeCompare(a.from));
+for (const r of renameOrder) {
   await renameFile(r.id, r.to);
   console.log("renamed", r.from, "→", r.to);
 }

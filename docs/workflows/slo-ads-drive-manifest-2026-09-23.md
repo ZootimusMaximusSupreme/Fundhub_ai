@@ -4,22 +4,29 @@ Folder: Fundhub + DirectRoas → Marketing Videos → **SLO Ads**
 Drive id: `13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ`
 
 Organizer: `scripts/slo-ads-drive-organize.mjs`  
-Naming law: **`SLO … / TAKE #`** (Chris's Drive labels). Not pipeline ids (`LOCKED-AD-*`, `VSL-01-*`, `043_t01_raw`).
+
+**Naming law (Chris → self email, 2026-09-23, `IMG_0448.png`):** Riverside projects under **SLO Ads** are numbered **`Ad N — …`** (plus retarget / VSL / welcome titles). On Drive the same clips use **`SLO Ad N Take M.mp4`** (or the special names below). Not pipeline ids (`LOCKED-AD-*`, `VSL-01-*`, `043_t01_raw`).
 
 Reference: `docs/workflows/slo-video-script-check-2026-09-21.md` (speech ↔ script; filenames stay SLO).
 
-## Canonical MP4 names
+## Canonical MP4 names (from email + script-check)
 
-| File | Notes |
-|------|--------|
-| `SLO Ad 1 Take 1.mp4` | Normalize from `SLO Ad 1.mp4` if needed |
-| `SLO Ad 6 Take 1.mp4` … `Take 7.mp4` | Seven takes |
-| `SLO Ad 7 Call Pitch Take 1.mp4`, `Take 2.mp4` | Call pitch |
-| `SLO Ad Two Sides.mp4` | Two-sides / stacking angle |
-| `SLO Checkout Abandon Take 2.mp4`, `Take 3.mp4` | Checkout abandon retarget |
-| `SLO VSL 1 Open.mp4`, `Middle`, `FAQ`, `Close` | Sales VSL segments |
+| File | Riverside / notes |
+|------|-------------------|
+| `SLO Ad 1 Take 1.mp4` | Ad 1 — Straight offer, full read |
+| `SLO Ad 2 Take 1.mp4`, `Take 2.mp4` | Ad 2 — Straight offer, declined and no… |
+| `SLO Ad 3 Take 1.mp4` | Ad 3 — Straight offer, what your file is… |
+| `SLO Ad 5 Take 1.mp4` | Ad 5 — Straight offer, max fundability,… |
+| `SLO Ad 6 Take 1.mp4`, `Take 2.mp4` | Ad 6 — Haynes, you already know… (2 takes in Riverside) |
+| `SLO Ad 7 Take 1.mp4` | Two-sides / stacking angle (was `SLO Ad Two Sides.mp4`) |
+| `SLO Ad 7 Call Pitch Take 1.mp4` … `Take 9.mp4` | Ad 7 — Haynes, the call that was never… (+ extra takes) |
+| `SLO Retargeting Take 3.mp4` | Retarget Funding Success Blueprint |
+| `SLO Funding Roadmap Take 2.mp4`, `Take 3.mp4` | Checkout-abandon retarget (was `SLO Checkout Abandon …`) |
+| `SLO Funding Roadmap Call Take 1.mp4` | Funding Roadmap Call (3 takes in Riverside) |
+| `Fundhub Portal Welcome Video.mp4` | Fundhub Portal Welcome Video |
+| `SLO VSL 1 Open.mp4`, `Middle`, `FAQ`, `Close` | SLO Main Page VSL segments |
 | `SLO VSL 2 Booking.mp4` | Booking VSL |
-| `SLO VSL Take 1.mp4` | Full-length VSL 1 export (was UUID `8FEE9AD2-…`; ~344 MB, inferred from size vs `SLO VSL 2 Booking`) |
+| `SLO VSL Take 1.mp4` | Full-length VSL 1 export (~344 MB) |
 
 ## Dedupe / trash
 

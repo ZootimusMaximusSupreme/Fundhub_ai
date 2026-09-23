@@ -2,68 +2,8 @@
   "apply": false,
   "inventory": [
     {
-      "id": "13ArgrVHLxWWa7IKk4kxIKgdabqVbiCOk",
-      "name": "SLO VSL Take 1.mp4",
-      "size": "361356950",
-      "md5": "ae3270598ab64c61e37b4d77a57f61b1"
-    },
-    {
-      "id": "1PLhjZ6iSUA-emWeasA73Udx2VMuU0HC5",
-      "name": "SLO Checkout Abandon Take 2.mp4",
-      "size": "20179387",
-      "md5": "54dc462adba65b57ae558e0d5a3f6bd8"
-    },
-    {
-      "id": "1Bv071vX9YufFsm-BrhPhbxdZGRDgdoBO",
-      "name": "SLO Checkout Abandon Take 3.mp4",
-      "size": "107815556",
-      "md5": "9bac5f15d90cf1d0e7adc687ab42a523"
-    },
-    {
-      "id": "1E_U1-dCpq1R-_lEpZ8MsqaNmUUG_aTJo",
-      "name": "SLO Ad 6 Take 7.mp4",
-      "size": "50109653",
-      "md5": "928f3d5f01bcf79a3b7348b122b237d3"
-    },
-    {
-      "id": "1w3CAKc02v7uKlnCFy2La97dEhkHbav3n",
-      "name": "SLO Ad 6 Take 6.mp4",
-      "size": "13553034",
-      "md5": "451ee8473384bac2adab104e6d39af30"
-    },
-    {
-      "id": "1UfS8yWgkyqdTuZR5Qn0emd7cht9PClYB",
-      "name": "SLO Ad 6 Take 5.mp4",
-      "size": "8089244",
-      "md5": "4f318b0c65c4e0a0ff91468a1934eb7b"
-    },
-    {
-      "id": "11ivyY9iZxNyjQ4T8WFsQWbYoEHIq194W",
-      "name": "SLO Ad 6 Take 4.mp4",
-      "size": "66617333",
-      "md5": "468b90ae145f7c4843cd40ec70091fa4"
-    },
-    {
-      "id": "1l44LRdel7gIOVrt0szV6euZU2JjbTEMr",
-      "name": "SLO Ad 6 Take 3.mp4",
-      "size": "54986267",
-      "md5": "bbe474490a1a5ad4d86334a9436b0489"
-    },
-    {
-      "id": "1qSx7jGemwGgH8jXdjGpvAKPFnjfzKnSc",
-      "name": "SLO Ad 6 Take 2.mp4",
-      "size": "99043515",
-      "md5": "db08cdf7823291280c91854f55449315"
-    },
-    {
-      "id": "1JrUjinomrNJ7mshI9BKQ01KEd1YDK0or",
-      "name": "SLO Ad 7 Call Pitch Take 1.mp4",
-      "size": "118774986",
-      "md5": "33771941002cdda5afff57847c4ad9e9"
-    },
-    {
       "id": "1WeCLzeOGc3DLyOoAeI_CHsfFq6Zfe5EX",
-      "name": "SLO Ad 7 Call Pitch Take 2.mp4",
+      "name": "SLO Ad 3 Take 1.mp4",
       "size": "119330927",
       "md5": "5095e39610caf4ec5604c1eca706e640"
     },
@@ -72,6 +12,42 @@
       "name": "SLO Ad 6 Take 1.mp4",
       "size": "102426719",
       "md5": "7656a6719d023abffe97773a2cbcc2b5"
+    },
+    {
+      "id": "13ArgrVHLxWWa7IKk4kxIKgdabqVbiCOk",
+      "name": "SLO Portal Welcome Take 1.mp4",
+      "size": "361356950",
+      "md5": "ae3270598ab64c61e37b4d77a57f61b1"
+    },
+    {
+      "id": "1qSx7jGemwGgH8jXdjGpvAKPFnjfzKnSc",
+      "name": "SLO VSL 2 Booking Take 2.mp4",
+      "size": "99043515",
+      "md5": "db08cdf7823291280c91854f55449315"
+    },
+    {
+      "id": "11ivyY9iZxNyjQ4T8WFsQWbYoEHIq194W",
+      "name": "SLO Ad 7 Call Pitch Take 6.mp4",
+      "size": "66617333",
+      "md5": "468b90ae145f7c4843cd40ec70091fa4"
+    },
+    {
+      "id": "1SR7YPrItJZliVknOZVWDn-N3EhgmcD6l",
+      "name": "SLO Ad 7 Take 1.mp4",
+      "size": "133069084",
+      "md5": "7c0b68b76a961b202ea8ebab0e89f79f"
+    },
+    {
+      "id": "1Bv071vX9YufFsm-BrhPhbxdZGRDgdoBO",
+      "name": "SLO Funding Roadmap Take 3.mp4",
+      "size": "107815556",
+      "md5": "9bac5f15d90cf1d0e7adc687ab42a523"
+    },
+    {
+      "id": "1JrUjinomrNJ7mshI9BKQ01KEd1YDK0or",
+      "name": "SLO Ad 7 Call Pitch Take 1.mp4",
+      "size": "118774986",
+      "md5": "33771941002cdda5afff57847c4ad9e9"
     },
     {
       "id": "11vkWEGsrwUyPcGmTJIAVnRZqRqAA-Wbz",
@@ -84,12 +60,6 @@
       "name": "SLO VSL 1 FAQ.mp4",
       "size": "62335322",
       "md5": "6a3520e0efcf5e9d45f89877f9b0f520"
-    },
-    {
-      "id": "1SR7YPrItJZliVknOZVWDn-N3EhgmcD6l",
-      "name": "SLO Ad Two Sides.mp4",
-      "size": "133069084",
-      "md5": "7c0b68b76a961b202ea8ebab0e89f79f"
     },
     {
       "id": "1y0FFet6TA5hYuwTs9ZUd0S6CFBqObPuk",
@@ -122,5 +92,5 @@
     "keep": [],
     "md5Dedup": []
   },
-  "mp4Count": 19
+  "mp4Count": 14
 }
