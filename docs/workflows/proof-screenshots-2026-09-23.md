@@ -122,3 +122,43 @@ public page.
 Not a name, do not bar: the Elan stock sample card art prints "CHRIS JOHNSON" and
 "4000 1234 5678 9010" on cards 7 and 25. Dummy placeholder values.
 
+## Shipped (2026-09-23)
+
+**40 branded proof files.** 26 carry an amount read off the screenshot's own pixels.
+14 say "Approved" with no figure, because no figure is legible in those pixels.
+
+- Drive: `broll/approvals` — now 62 files. The 22 high-res originals were not touched.
+  https://drive.google.com/drive/folders/13bRiy8tiyWmA4kIclQrcsLQk-MuMIOTm
+- Repo: `clickfunnels-fragments/slo/client-wins/deck/win-*.png`
+- Provenance: `clickfunnels-fragments/slo/client-wins/approvals-manifest.json`
+  (source card, box, lender, amount, where the amount was read, bars applied)
+
+From 59 screenshots found: 2 dropped as not-proof, 17 folded away as the same approval
+reused on more than one card, 40 shipped.
+
+### Duplicates
+
+The deck reuses the same approval across cards, cropped differently each time, so byte
+matching finds nothing. Grouping is a 256-bit perceptual hash, and **every pair it proposed
+was looked at side by side before merging.** Six pairs that the hash called close were
+rejected as genuinely different messages — dark chat screenshots all look alike at 16x16.
+Seven it missed were merged by hand after the same visual check.
+
+Within a group the **clearest** copy ships. An earlier rule preferred the copy needing no
+bar of ours, which picked a blurry thumbnail of the Umpqua email over the full-size one.
+Bars land correctly on whichever copy wins, so image quality decides.
+
+### Two things barred beyond names
+
+- A Bank of America **credit application reference number** appears on two cards. Both are
+  barred, so it cannot matter which copy the picker keeps. The proof ("$12,000 of available
+  credit") is untouched.
+- Faces kept, none of them a client: an American Express marketing banner inside a real
+  Amex email, and two few-pixel reaction avatars in chat threads. No face was added anywhere.
+
+### Not done, on purpose
+
+- The sales page was not touched. The 750 headline was not put back.
+- `deck.json` / `build-deck.mjs` still drive the live shuffle deck off the old crops.
+  Nothing on the live page changed. Wiring these 40 in is a separate decision.
+
