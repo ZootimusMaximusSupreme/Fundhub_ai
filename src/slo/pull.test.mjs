@@ -285,7 +285,7 @@ test("no businesses key: stored businesses are left alone; a list replaces them"
 
   const b = spyDeps();
   const out = await runSloPull(parseSloPullBody(validBody({
-    businesses: [{ name: "Acme LLC", address: "1 Main St", city: "Dallas", state: "TX", zip: "75201", started: "01/2020" }]
+    businesses: [{ name: "Acme LLC", address: "1 Main St", city: "Dallas", state: "TX", zip: "75201", ein: "12-3456789", started: "01/2020" }]
   })), { db: orderDb(), env: {}, ...b.deps });
   assert.equal(b.calls.businesses, 1);
   assert.equal(out.businesses.submitted, 1);

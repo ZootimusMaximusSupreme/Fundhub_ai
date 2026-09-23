@@ -1664,7 +1664,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       +'<label>City<input type="text" data-k="city" autocomplete="off" maxlength="28"></label>'
       +'<div class="row2"><label>State<select data-k="state" autocomplete="off" data-states></select></label>'
       +'<label>ZIP<input type="text" data-k="zip" autocomplete="off" inputmode="numeric" maxlength="10"></label></div>'
-      +'<div class="row2"><label>EIN <span class="opt">optional</span><input type="text" data-k="ein" autocomplete="off" inputmode="numeric" maxlength="10" placeholder="12-3456789"></label>'
+      +'<div class="row2"><label>EIN<input type="text" data-k="ein" autocomplete="off" inputmode="numeric" maxlength="10" placeholder="12-3456789"></label>'
       +'<label>Phone <span class="opt">optional</span><input type="tel" data-k="phone" autocomplete="off" inputmode="tel" maxlength="20"></label></div>'
       +'<label>Month and year it started<input type="text" data-k="started" autocomplete="off" inputmode="numeric" maxlength="7" placeholder="MM/YYYY"></label>';
     fillStates(d.querySelector('select[data-states]'));
@@ -1709,7 +1709,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       if(!n)bad(nm,'Please enter the legal business name.');
       else if(letters.length<2||n.length>100)bad(nm,'Use the name as filed with the state.');
       checkAddress(function(k){return bizInput(row,k);},'the business',bad);
-      var ein=bizInput(row,'ein');if(squeeze(ein.value)&&digits(ein.value).length!==9)bad(ein,'An EIN has 9 digits, like 12-3456789.');
+      var ein=bizInput(row,'ein');if(!squeeze(ein.value))bad(ein,'Please enter the business EIN.');else if(digits(ein.value).length!==9)bad(ein,'An EIN has 9 digits, like 12-3456789.');
       var ph=bizInput(row,'phone');if(squeeze(ph.value)&&!phone10(ph.value))bad(ph,'Use a 10-digit phone number.');
       var st=bizInput(row,'started'),my=monthYear(st.value),now=new Date();
       if(!squeeze(st.value))bad(st,'Please enter the month and year it started, like 03/2021.');

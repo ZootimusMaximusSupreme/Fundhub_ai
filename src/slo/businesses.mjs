@@ -12,7 +12,8 @@
 // entity_data.incorporated_date (src/sales/closer-deck.mjs).
 //
 // Spec §2 per business: legal name, street, city, state, ZIP (same checks as
-// home), EIN 9 digits (optional here), business phone 10 digits (optional),
+// home), EIN 9 digits (REQUIRED, owner-set 2026-09-23), business phone 10
+// digits (optional),
 // month and year started (required, not in the future).
 
 import { withTransaction } from "../db/with-transaction.mjs";
@@ -137,7 +138,9 @@ export function parseSloBusinesses(raw, { now = new Date() } = {}) {
     warnings.push(...addr.warnings);
 
     let ein = null;
-    if (squeeze(row.ein)) {
+    if (!squeeze(row.ein)) {
+      rowErrors.push({ field: `${p}ein`, code: "business_ein_required", message: "Please enter the business EIN." });
+    } else {
       ein = normalizeSoftPullEin(row.ein);
       if (!ein) {
         rowErrors.push({ field: `${p}ein`, code: "business_ein_invalid", message: "An EIN has 9 digits, like 12-3456789." });

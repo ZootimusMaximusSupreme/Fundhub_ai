@@ -65,10 +65,15 @@ test("a full business row parses; EIN and phone are normalized", () => {
   assert.equal(typeof b.age_months, "number");
 });
 
-test("EIN and phone are optional; started is required and not in the future", () => {
-  const noExtras = parseSloBusinesses([biz({ ein: "", phone: "" })], { now: NOW });
-  assert.deepEqual(noExtras.errors, []);
-  assert.equal(noExtras.businesses[0].ein, null);
+test("EIN is required (owner-set 2026-09-23); phone stays optional; started is required and not in the future", () => {
+  const noEin = parseSloBusinesses([biz({ ein: "" })], { now: NOW });
+  assert.equal(noEin.errors[0].field, "businesses.0.ein");
+  assert.equal(noEin.errors[0].code, "business_ein_required");
+  assert.deepEqual(noEin.businesses, []);
+
+  const noPhone = parseSloBusinesses([biz({ phone: "" })], { now: NOW });
+  assert.deepEqual(noPhone.errors, []);
+  assert.equal(noPhone.businesses[0].phone, null);
 
   const future = parseSloBusinesses([biz({ started: "12/2030" })], { now: NOW });
   assert.equal(future.errors[0].field, "businesses.0.started");
