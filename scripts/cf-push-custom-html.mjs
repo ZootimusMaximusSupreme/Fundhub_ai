@@ -24,8 +24,8 @@ import {
   PUSH_MANIFEST,
   trackingFooterScripts,
   isClickFunnelsPageHtml,
-  dedupeFooterScripts,
   upsertMarkedBlock,
+  nextFooterCode,
 } from "../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -343,6 +343,58 @@ async function upsertCodeBlock(creds, pageId, row, ctx, dryRun, snapDir) {
   return { ok: verified, pageId, ...base, verified, code_length_before: live.length, code_length_after: after.length };
 }
 
+/**
+ * Builder page (the body cannot be replaced by API): add this row's footer scripts.
+ * Reads the live footer_code (expand[]) and the public page first and stops, appending
+ * nothing, if either cannot be read: a blind write would stack every tag again.
+ * Sends the whole footer with footer_code_mode "replace" (ClickFunnels "append" stored a
+ * pushed tag twice), then reads it back and fails unless it matches what was sent.
+ */
+async function pushBuilderFooter(creds, pageId, row, ctx, dryRun, snapDir) {
+  let liveFoot;
+  try {
+    liveFoot = await getPageCode(creds, pageId, "footer_code", ctx);
+  } catch {
+    liveFoot = null;
+  }
+  const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);
+  if (liveFoot === null || !liveHtml) {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "live_page_unreadable",
+      detail: liveFoot === null ? "footer_code not returned by the API" : "public page not readable as a ClickFunnels page",
+      live_html_read: Boolean(liveHtml),
+    };
+  }
+  mkdirSync(snapDir, { recursive: true });
+  const snapshot = join(snapDir, `page-${pageId}-footer_code.html`);
+  writeFileSync(snapshot, liveFoot, "utf8");
+  const plan = nextFooterCode(liveFoot, {
+    includeVslBeacon: !!row.vslBeacon,
+    extraSrcs: row.extraFooterScripts ?? [],
+    existing: liveHtml,
+  });
+  const base = {
+    live_html_read: true,
+    snapshot: snapshot.slice(ROOT.length + 1),
+    would_append_footer_srcs: plan.added,
+    collapsed_duplicate_srcs: plan.collapsed,
+  };
+  if (!plan.changed) return { ok: true, pageId, ...base, skipped: true, reason: "footer_already_right" };
+  if (dryRun) return { ok: true, dryRun: true, pageId, ...base };
+  await cfApi({
+    url: `${baseUrl(creds.subdomain)}/pages/${pageId}`,
+    apiKey: creds.api_key,
+    ctx,
+    method: "PUT",
+    body: JSON.stringify({ page: { footer_code: plan.next, footer_code_mode: "replace" } }),
+  });
+  const after = await getPageCode(creds, pageId, "footer_code", ctx);
+  const verified = after.trim() === plan.next.trim();
+  return { ok: verified, pageId, ...base, verified, code_length_before: liveFoot.length, code_length_after: after.length };
+}
+
 async function putCustomHtml(creds, pageId, html, ctx, dryRun) {
   if (dryRun) {
     return { ok: true, dryRun: true, pageId, mode: "custom_html_put" };
@@ -530,81 +582,17 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
         ...r,
       });
     } else {
-      // Builder page: the body cannot be replaced by API, so only the footer changes.
-      // A plain GET /pages/{id} leaves footer_code out; expand[]=footer_code returns it
-      // (getPageCode throws rather than write blind). The old append-only push could
-      // not see the footer, which is how vsl-watch-beacon.js got onto /watch three times,
-      // and an append also landed watch-proof.js twice on 2026-09-22. So: read the
-      // footer, add only what is missing, keep one copy of this row's own scripts, send
-      // the whole footer back with mode "replace", and read it back.
-      const liveFootCode = await getPageCode(creds, page.id, "footer_code", ctx);
-      const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);
-      if (!liveHtml) {
-        // The public page is the second witness of what already loads. Without it,
-        // stop instead of guessing, dry run or not.
-        results.push({
-          key: row.key,
-          page_id: page.id,
-          path: row.path,
-          liveUrl: row.liveUrl,
-          mode: "builder_page_footer_replace",
-          ok: false,
-          skipped: true,
-          reason: "live_page_unreadable",
-          note: "Could not read the public page, so the scripts already on it are unknown. Footer not changed.",
-          live_html_read: false,
-        });
-        process.exitCode = 1;
-        continue;
-      }
-      const own = row.extraFooterScripts ?? [];
-      const existing = `${liveFootCode}\n${liveHtml}`;
-      const add = trackingFooterScripts({
-        includeVslBeacon: !!row.vslBeacon,
-        skipAttribution: existing.includes("fh-attribution.js"),
-        extraSrcs: own,
-        existing,
-      });
-      const kept = dedupeFooterScripts(liveFootCode, own);
-      const next = [kept.replace(/\s+$/, ""), add].filter(Boolean).join("\n");
-      const base = {
+      const r = await pushBuilderFooter(creds, page.id, row, ctx, dryRun, snapDir);
+      if (!r.ok) process.exitCode = 1;
+      results.push({
         key: row.key,
         page_id: page.id,
         path: row.path,
         liveUrl: row.liveUrl,
-        mode: "builder_page_footer_replace",
+        note: "Not a custom HTML page — footer code sent whole (replace), owned scripts kept to one copy; fragment body unchanged",
         pixel_env: pixel.envName,
-        live_html_read: true,
-        footer_srcs_before: footerSrcs(liveFootCode),
-        footer_srcs_after: footerSrcs(next),
-      };
-      if (next === liveFootCode) {
-        results.push({ ...base, ok: true, skipped: true, reason: "footer_already_current" });
-        continue;
-      }
-      if (dryRun) {
-        results.push({ ...base, ok: true, dryRun: true });
-        continue;
-      }
-      mkdirSync(snapDir, { recursive: true });
-      const snapshot = join(snapDir, `page-${page.id}-footer_code.html`);
-      writeFileSync(snapshot, liveFootCode, "utf8");
-      await cfApi({
-        url: `${baseUrl(creds.subdomain)}/pages/${page.id}`,
-        apiKey: creds.api_key,
-        ctx,
-        method: "PUT",
-        body: JSON.stringify({ page: { footer_code: next, footer_code_mode: "replace" } }),
-      });
-      const after = await getPageCode(creds, page.id, "footer_code", ctx);
-      const verified = after.trim() === next.trim();
-      if (!verified) process.exitCode = 1;
-      results.push({
-        ...base,
-        ok: verified,
-        verified,
-        footer_srcs_read_back: footerSrcs(after),
-        snapshot: snapshot.slice(ROOT.length + 1),
+        ...r,
+        mode: "builder_page_tracking_inject_only",
       });
     }
   }

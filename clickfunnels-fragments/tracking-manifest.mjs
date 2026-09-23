@@ -76,8 +76,6 @@ export function trackingFooterScripts({
 /**
  * Keep the first copy of each given footer script tag and drop the rest. Only the
  * srcs passed in are touched; every other tag in `code` stays exactly as it is.
- * Used on a builder page's footer_code for the row's own extraFooterScripts, which a
- * raced or double-applied append can leave there twice.
  */
 export function dedupeFooterScripts(code, srcs = []) {
   let out = String(code ?? "");
@@ -92,6 +90,37 @@ export function dedupeFooterScripts(code, srcs = []) {
     }
   }
   return out;
+}
+
+/**
+ * The footer code a builder-page push leaves behind, sent whole with
+ * footer_code_mode "replace".
+ * @returns {{ next: string, changed: boolean, added: string[], collapsed: string[] }}
+ */
+export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], existing = "" } = {}) {
+  const tag = (src) => `<script src="${src}"></script>`;
+  let code = String(live ?? "");
+  const collapsed = [];
+  for (const src of [...new Set(extraSrcs)]) {
+    const t = tag(src);
+    const first = code.indexOf(t);
+    if (first === -1) continue;
+    const head = code.slice(0, first + t.length);
+    const tail = code.slice(first + t.length);
+    const kept = tail.split(`\n${t}`).join("").split(t).join("");
+    if (kept !== tail) collapsed.push(src);
+    code = head + kept;
+  }
+  const seen = `${code}\n${existing}`;
+  const add = trackingFooterScripts({
+    includeVslBeacon,
+    skipAttribution: seen.includes("fh-attribution.js"),
+    extraSrcs,
+    existing: seen,
+  });
+  const next = add ? (code.trim() ? `${code.replace(/\s+$/, "")}\n${add}` : add) : code;
+  const added = [...add.matchAll(/src="([^"]+)"/g)].map((m) => m[1]);
+  return { next, changed: next !== String(live ?? ""), added, collapsed };
 }
 
 /**

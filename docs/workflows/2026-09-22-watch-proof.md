@@ -107,34 +107,22 @@ Marked shots (kept on this Mac; evidence folders are gitignored by repo policy):
 
 Tests: `src/ads/funnel-proof-scripts.test.mjs` 24/24 (was 18). Lint clean.
 
-## Live proof (2026-09-22, after ship + push, nothing injected)
-
-Footer code read back with `expand[]=footer_code`:
-/watch = fh-attribution x1, vsl-watch-beacon x3 (both there before), watch-proof.js x1.
-/thank-you = fh-attribution x2 (there before), thankyou-sort.js x1.
-
-| Check | /watch 1280 | /watch 390 | /thank-you 1280 booked | /thank-you 390 no booking | /thank-you 390 Back press |
-|---|---|---|---|---|---|
-| Page height | 2165 | 1967 | 3172 | 2461 | 2461 |
-| Proof images load | 9/9 | 9/9 | 6/6 | 6/6 | 6/6 |
-| 3 client texts shown, words exact | yes | yes | yes | yes | yes |
-| Buttons | 2 x Get Started -> /apply | same | none added | Pick your call time -> /funding-book-call | same |
-| Headline | — | — | Your Call Is Booked. | We've Got Your Application. | We've Got Your Application. |
-| Sideways scroll | none | none | none | none | none |
-| Script errors, failed fundhub.ai loads | 0 | 0 | 0 | 0 | 0 |
-
-Clicked live (`_clicks.mjs`, 1280 and 390): second Get Started lands on /apply; Pick
-your call time lands on /funding-book-call. Tap-to-enlarge at 1280: opens at 900px,
-image loaded, Escape closes. "Booked" = fresh record plus arriving from
-/funding-book-call; "Back press" = the same record arriving from anywhere else.
-
-Marked shots (committed with `git add -f`; the folder is gitignored):
-`docs/workflows/watch-proof-2026-09-22-evidence/watch-1280-marked.png`,
-`watch-390-marked.png`, `watch-1280-zoom-marked.png`, `thankyou-1280-booked-marked.png`,
-`thankyou-390-not-booked-marked.png`, `thankyou-390-back-marked.png`.
-
 Superseded: branch `feat/watch-proof` commit 8b077811 made the same replace-mode push
 fix; main took ba357eee instead, so 8b077811 was not applied.
+
+## Push (2026-09-22)
+
+- Before (read with `expand[]=footer_code`): /watch footer = attribution x1, beacon x3.
+  /thank-you footer = attribution x2. Copies: `docs/workflows/cf-push-snapshots/page-25061160-footer_code.html`
+  and `page-25063539-footer_code.html` (written by the fixed push).
+- First push used footer_code_mode "append". Read-back: ClickFunnels stored the new tag
+  twice on each page (watch-proof.js x2, thankyou-sort.js x2). Each script guards
+  against a second run, so the pages still showed one block, but the tag was doubled.
+- Fix: the builder-page push now sends the whole footer in replace mode
+  (`nextFooterCode`: one copy of each owned script, other tags untouched) and fails
+  unless the read-back matches. Re-pushed both pages with it.
+- Not touched: the three beacon tags on /watch and the two attribution tags on
+  /thank-you. They were there before this work.
 
 ## Left undone
 

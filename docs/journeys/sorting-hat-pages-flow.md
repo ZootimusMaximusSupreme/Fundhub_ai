@@ -80,7 +80,12 @@ is unchanged.
 `--only=apply-thank-you`. Mode `builder_page_tracking_inject_only`: appends the
 footer script only; any src already on the live page is skipped
 (`trackingFooterScripts`, `clickfunnels-fragments/tracking-manifest.mjs`).
-If the public page cannot be read, or what comes back is not a ClickFunnels page
-(`isClickFunnelsPageHtml`), the push appends nothing, reports
-`live_page_unreadable` and exits 1. Footer code cannot be read back or removed by
-API, so a blind append would stack the tags for good.
+The push reads the live footer code (`GET /pages/{id}?expand[]=footer_code`) and
+the public page. If either cannot be read, or the page is not a ClickFunnels page
+(`isClickFunnelsPageHtml`), it writes nothing, reports `live_page_unreadable` and
+exits 1. Otherwise it saves the old footer to
+`docs/workflows/cf-push-snapshots/page-<id>-footer_code.html`, builds the new footer
+with `nextFooterCode` (one copy of each script the row owns, missing tags added,
+other tags untouched), sends it whole with `footer_code_mode: "replace"`, and reads
+it back. It fails unless the read-back matches. ClickFunnels "append" stored each
+pushed tag twice on 2026-09-22, so the push never appends.

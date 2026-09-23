@@ -27,6 +27,7 @@ import {
   trackingFooterScripts,
   isClickFunnelsPageHtml,
   dedupeFooterScripts,
+  nextFooterCode,
 } from "../../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
@@ -467,27 +468,59 @@ describe("the fragments and the push manifest load the scripts once", () => {
     }
   });
 
-  test("a builder-page push reads the footer, stops when the live page cannot be read, replaces, and reads back", () => {
-    // Footer code is only returned with expand[]=footer_code. The old push appended
-    // blind: vsl-watch-beacon.js reached /watch three times, and one append on
-    // 2026-09-22 left watch-proof.js and thankyou-sort.js on the pages twice.
+  test("a builder-page push stops, and writes nothing, when the live footer or page cannot be read", () => {
+    // A blind write would stack fh-attribution.js and a 4th vsl-watch-beacon.js on /watch.
     const push = read("scripts/cf-push-custom-html.mjs");
-    const branch = push.slice(push.indexOf("// Builder page: the body cannot be replaced by API"), push.indexOf("console.log(JSON.stringify({ auth: creds.source"));
-    assert.ok(branch.length > 500, "builder-page branch found");
-    const at = (s) => branch.indexOf(s);
-    const readFoot = at('const liveFootCode = await getPageCode(creds, page.id, "footer_code", ctx);');
-    const readPage = at("const liveHtml = await fetchLiveHtml(row.liveUrl, ctx);");
-    const stop = at("if (!liveHtml) {");
-    const put = at('body: JSON.stringify({ page: { footer_code: next, footer_code_mode: "replace" } }),');
-    const readBack = branch.indexOf('const after = await getPageCode(creds, page.id, "footer_code", ctx);', put);
-    assert.ok(readFoot > -1 && readPage > readFoot && stop > readPage && put > stop && readBack > put, "read footer, read page, stop if unreadable, replace, read back");
-    const guard = branch.slice(stop, put);
-    assert.match(guard, /reason: "live_page_unreadable"/);
-    assert.match(guard, /process\.exitCode = 1;\s*continue;/);
-    assert.match(guard, /if \(dryRun\) \{/, "a dry run never writes");
-    assert.equal(branch.includes("appendHeadFooter("), false, "no blind append on a builder page");
-    assert.match(branch, /const verified = after\.trim\(\) === next\.trim\(\);/);
+    const fn = push.slice(push.indexOf("async function pushBuilderFooter("), push.indexOf("async function putCustomHtml("));
+    assert.ok(fn.length > 200, "pushBuilderFooter exists");
+    const stopAt = fn.indexOf("if (liveFoot === null || !liveHtml) {");
+    const putAt = fn.indexOf('method: "PUT"');
+    assert.ok(fn.indexOf('getPageCode(creds, pageId, "footer_code", ctx)') < stopAt, "footer_code is read first");
+    assert.ok(fn.indexOf("await fetchLiveHtml(row.liveUrl, ctx)") < stopAt, "the public page is read first");
+    assert.ok(stopAt > -1 && putAt > stopAt, "the unreadable check sits before the write");
+    assert.match(fn.slice(stopAt, putAt), /reason: "live_page_unreadable"/);
     assert.match(push, /return isClickFunnelsPageHtml\(html\) \? html : "";/);
+    assert.match(push, /const r = await pushBuilderFooter\(creds, page\.id, row, ctx, dryRun, snapDir\);\s*if \(!r\.ok\) process\.exitCode = 1;/);
+  });
+
+  test("a builder-page push sends the whole footer in replace mode and checks the read-back", () => {
+    // ClickFunnels "append" stored watch-proof.js and thankyou-sort.js twice (2026-09-22).
+    const push = read("scripts/cf-push-custom-html.mjs");
+    const fn = push.slice(push.indexOf("async function pushBuilderFooter("), push.indexOf("async function putCustomHtml("));
+    assert.match(fn, /footer_code: plan\.next, footer_code_mode: "replace"/);
+    assert.equal(fn.includes('"append"'), false);
+    assert.match(fn, /const verified = after\.trim\(\) === plan\.next\.trim\(\);/);
+  });
+
+  test("nextFooterCode: one copy of each owned script, other tags untouched, nothing added twice", () => {
+    const t = (src) => `<script src="${src}"></script>`;
+    const watchLive = [t(FH_ATTRIBUTION_SRC), t(VSL_WATCH_BEACON_SRC), t(VSL_WATCH_BEACON_SRC), t(VSL_WATCH_BEACON_SRC)].join("\n");
+    const opts = { includeVslBeacon: true, extraSrcs: [WATCH_PROOF_SRC], existing: "" };
+
+    // before the push: adds watch-proof.js once, keeps the three old beacons as they are
+    const first = nextFooterCode(watchLive, opts);
+    assert.equal(first.next, `${watchLive}\n${t(WATCH_PROOF_SRC)}`);
+    assert.deepEqual(first.added, [WATCH_PROOF_SRC]);
+    assert.equal(first.changed, true);
+
+    // after "append" doubled it: collapses to one copy, adds nothing
+    const doubled = `${watchLive}\n${t(WATCH_PROOF_SRC)}\n${t(WATCH_PROOF_SRC)}`;
+    const fixed = nextFooterCode(doubled, opts);
+    assert.equal(fixed.next, first.next);
+    assert.deepEqual(fixed.collapsed, [WATCH_PROOF_SRC]);
+    assert.deepEqual(fixed.added, []);
+
+    // already right: no change, so no write
+    assert.equal(nextFooterCode(first.next, opts).changed, false);
+
+    // thank-you: the two old attribution tags stay; thankyou-sort.js is added once
+    const tyLive = `${t(FH_ATTRIBUTION_SRC)}\n${t(FH_ATTRIBUTION_SRC)}`;
+    const ty = nextFooterCode(tyLive, { includeVslBeacon: false, extraSrcs: [THANKYOU_SORT_SRC] });
+    assert.equal(ty.next, `${tyLive}\n${t(THANKYOU_SORT_SRC)}`);
+
+    // empty footer on a page whose public HTML already loads attribution
+    const blank = nextFooterCode("", { includeVslBeacon: false, extraSrcs: [THANKYOU_SORT_SRC], existing: `<body>${t(FH_ATTRIBUTION_SRC)}</body>` });
+    assert.equal(blank.next, t(THANKYOU_SORT_SRC));
   });
 
   test("dedupeFooterScripts keeps one copy of the row's own scripts and leaves every other tag alone", () => {
