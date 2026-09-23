@@ -95,3 +95,67 @@ The Loom share page carries a `loom-agent-hint` meta tag instructing agents to r
 ## Manifest
 
 Written after the splice. See bottom of this file.
+
+---
+
+## Manifest — shipped 2026-09-23
+
+**File touched:** `clickfunnels-fragments/slo/slo-01-sales.html` (24 insertions, 44 deletions)
+**Also touched:** `docs/journeys/slo-roadmap-widget-flow.md` (stale button name), `docs/journeys/CHANGELOG.md`
+**Pushed:** ClickFunnels page 25426320, `custom_html_put`, via `scripts/cf-push-custom-html.mjs push --only=slo-297-sales`
+**Live:** https://apply.fundhub.ai/roadmap/ — proved 2026-09-23
+
+### How it ran
+
+6 rewrite agents, one per page region, each reading the transcript directly. Every proposed edit then went
+through 3 adversarial checkers: is it really in the Loom, did it invent anything, does it apply cleanly.
+31 edits proposed, 30 survived. The 1 refuted edit (deleting the card-logo row) was killed for a whitespace
+mismatch in its find-string, not a bad idea — it is a real ask at [19:42], so it was redone by hand and shipped.
+2 further wording calls were made by hand after reading the result: the bridge connector was smoothed, and the
+hero sub-head kept rather than the headline being rewritten.
+
+### Every change, against its Loom moment
+
+| # | Loom | Change |
+|---|---|---|
+| 1 | 00:00 / 03:12 / 03:36 | New hero sub-head restates the headline in score language and names the funded end state |
+| 2 | 00:24 | Hero mechanism line now names the three things you get, not "the shortest period of time possible" |
+| 3 | 02:03 | Guarantee lifted out of the grey micro-line onto its own readable row |
+| 4 | 06:07 | "And what they haven't told you is that…" connector added to the pain section's last line |
+| 5 | 06:57 | Bridge headline: "the way a lender's underwriter does" |
+| 6 | 07:23 | "And you get all of it for $297." connector before the ten-seconds line |
+| 7 | 08:10 | **tens of thousands → thousands** of data points, in the Bridge, the Proof headline, the Proof copy and the FAQ |
+| 8 | 12:31 | "nobody else in this industry **sells** this" → "**offers this type of help**", on the page and in the FAQ |
+| 9 | 12:53 | No-shortcut line now implied: "It took ten years of reading credit files to build it." |
+| 10 | 09:21 | "Here's What Comes With It." → "Here's What You Get." |
+| 11 | 10:53 | Why $297 now buys **unlocking your funding**, not "the finished file" |
+| 12 | 10:30 | Guarantee reworded so the refund lands first. No new terms, no day count |
+| 13 | 14:05 | "Whether your credit is clean…" → "Every day you wait, you leave money on the table, not knowing how much your file can get you." |
+| 14 | 16:07 | Step 3 → "You See How Much Your File Is Worth"; qual bullet → "exactly how much you qualify for" |
+| 15 | 16:07 | All three CTAs → "Show Me How Much I Qualify For · $297" |
+| 16 | 16:30 | Close → "How Much Is Your File Worth? Find Out in Ten Seconds." |
+| 17 | 16:54 | Guarantee restated beside the order summary |
+| 18 | 17:18 | DELETED "What happens when you press the button" |
+| 19 | 18:04 | DELETED "Why we ask for your social" |
+| 20 | 19:18 | DELETED "First box is your name… second box is the short form" |
+| 21 | 19:42 | DELETED the Secure checkout / SSL / Visa-Mastercard-Amex-Discover row |
+| 22 | 20:04 | DELETED the repeated guarantee card at the page bottom |
+| 23 | 20:04 | DELETED the repeated Why $297 card at the page bottom |
+| 24 | 20:29 | DELETED the scrolling marquee. Page now ends on the testimonial slots |
+
+### Raised in the Loom and deliberately NOT built
+
+- **The price staying visible** [00:48–02:03]. He thinks out loud about $297 as a direct offer and says "there's no right or wrong thing" and "you don't know until you actually test it". Mindset, not an instruction. Price untouched.
+- **The main headline** [03:36–04:24]. He floats making "we'll get you there" clearer, then says "this isn't priority though, it works". The headline is untouched; the clearer end state went into the new line beneath it.
+- **Dropping the pain section** [02:26–03:12]. He wonders aloud whether stating the pain assumes too much, then reads the block and calls it "really good writing" and says "just test it". Kept whole apart from the connector he dictated.
+- **A stronger guarantee with real terms** [10:30]. He says it could be stronger, then calls that "a whole different thing" and names nothing. Framing strengthened; no day count, no multiplier, no new promise invented.
+- **Testimonials**. Three placeholders stay placeholders.
+
+### Left alone on purpose
+
+- Dead CSS for the deleted marquee and card-logo row. Removing it widens the diff for no visible gain.
+- The checkout widget's own "STEP 1 OF 2" marker. He objected to the sales copy explaining the two boxes, not to the form's progress indicator.
+
+### Proof
+
+`docs/workflows/slo-loom-2026-09-23/proof/*-marked.png` — four marked screenshots of the live page.
