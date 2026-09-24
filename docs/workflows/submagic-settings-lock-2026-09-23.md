@@ -1110,3 +1110,52 @@ one is healthy. Tonight's take is repaired by hand instead: back to `staged`,
 then the project id and transcript put back on the row, so the resume path
 carries it forward for free. Whether retry should keep a healthy project is a
 money-versus-simplicity decision, not an agent's.
+
+## W8 THE PILOT RAN END TO END — 2026-09-24 04:35 UTC
+
+`SLO Ad 1 Take 1.mp4` → matched **AD 1 as ad 84, take 1, confidence 95** →
+exported → rendered 04:32:25 → saved-and-notified 04:35:11 → `awaiting_approval`
+with a real approve token. Every one of the eight steps ran on production, on
+the five-minute clock, through the code — the only hands-on moves were the two
+row repairs recorded here. **Sixteen breaks, all ours, none Submagic's.**
+
+### 15. The pipeline called the naming module by names it never had
+
+`naming.rawName / adFolderName / briefName / finalName` vs the module's
+`rawFileName / paulFolderName / briefFileName / finalFileName` — different
+names and argument shapes; the pipeline's tests passed on a stub that invented
+the first set. The rename guard was simply false (the Drive file kept its phone
+name) and delivery would have waited for ever. Pipeline now calls the real
+functions; `seam.test.mjs` checks every `naming.*` call against the exports —
+the third gap of the exact kind that file was written for.
+
+### 16. The first export carried no B-roll — "media is not ready yet"
+
+All four clips uploaded and Submagic handed back ids; placing them a second
+later was refused because Submagic was still taking the files in. The code then
+exported anyway: a billed render, empty. Now the placement is asked again on a
+~90-second clock and a take **waits** rather than exporting an empty cut over a
+transient refusal. A refusal for a real reason still exports captions-only with
+the reason on the row.
+
+**Take 1 is being re-cut with its clips** (project reused; cost: one export and
+one match call). Cut 1's approve link dies when the row leaves
+`awaiting_approval`; cut 2 mints a fresh one.
+
+### Left undone, plainly
+
+* **Our own copy of the finished file was not taken.** `saveFinished` is not
+  supplied by the Netlify worker, so `storage_final_key` is NULL and the branch
+  writes no note. The only copy of cut 1 is Submagic's download link. Paul's
+  folder still gets the file at delivery (uploaded from that link). Wire
+  `saveFinished` into `netlify/functions/ad-video-worker-background.mjs`.
+* **Retry still re-creates a project** — owner call (W7).
+* **Three orphan Submagic projects** for this take, unreachable by API.
+* **The premature commit `a33d0cd8`** shipped with the seam test red for one
+  cycle; behaviour was unchanged and `74ab1b1c` fixed it. The ship chain now
+  gates on `# fail 0`.
+* **AD 1 places 4 clips, not 5** — its remaining lines lean on words no clip
+  carries (`score`, `inquiry`, `document` as spoken).
+* **The phone buzz went to the ntfy topic.** Chris asked for SMS; no real
+  number yet (the one given was a 555 number). Twilio is set up; wiring it is
+  one decision away.
