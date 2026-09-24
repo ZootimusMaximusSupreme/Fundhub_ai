@@ -229,7 +229,13 @@ describe("the state lists have not drifted apart", () => {
 describe("the pipeline only calls naming functions that exist", () => {
   test("every naming.<fn> in pipeline.mjs is an export of naming.mjs", async () => {
     const naming = await import("./naming.mjs");
-    const src = fs.readFileSync(new URL("./pipeline.mjs", import.meta.url), "utf8");
+    /* Code only. The comments in pipeline.mjs name the OLD phantom functions on
+       purpose, as the record of what went wrong; a scan that read them would
+       fail on the very explanation of the fix. */
+    const src = fs.readFileSync(new URL("./pipeline.mjs", import.meta.url), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "")
+      .replace(/^\s*import\b.*$/gm, "");        // `from "./naming.mjs"` is a path, not a call
     const called = new Set();
     for (const m of src.matchAll(/\bnaming\??\.(\w+)/g)) called.add(m[1]);
     assert.ok(called.size >= 4, `expected the pipeline to call naming functions, found ${[...called].join(", ")}`);

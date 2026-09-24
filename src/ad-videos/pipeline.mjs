@@ -423,8 +423,14 @@ export async function matchAndRename(row, {
     ?? (Number((/\btake\s*(\d{1,3})\b/i.exec(String(row.drive_raw_name || "")) || [])[1]) || 1);
 
   let renamedAt = row.renamed_at || null;
-  if (!renamedAt && drive?.renameFile && naming?.rawName) {
-    const name = naming.rawName({ adId, takeNo, date: row.created_at });
+  /* THE REAL NAMING MODULE, BY ITS REAL NAMES. This used to call
+     naming.rawName({ adId, takeNo, date }) — a function that exists only in
+     pipeline.test.mjs's hand-written stub. src/ad-videos/naming.mjs exports
+     rawFileName(adId, takeNo, takeDate). Measured 2026-09-24 on the first real
+     take: the guard was false, the rename silently never ran, renamed_at stayed
+     NULL. seam.test.mjs now checks every naming.* call against the module. */
+  if (!renamedAt && drive?.renameFile && naming?.rawFileName) {
+    const name = naming.rawFileName(adId, takeNo, new Date(row.created_at));
     const r = await drive.renameFile(row.drive_raw_file_id, name, { env });
     if (!r.ok) return r.retryable === false ? dead(r.error) : wait(r.error);
     renamedAt = r.at || new Date().toISOString();
@@ -450,8 +456,29 @@ export async function matchAndRename(row, {
    A take with no matching clip still exports. An ad with captions and no B-roll
    is an ad; an ad that never renders is nothing.
    ───────────────────────────────────────────────────────────────────────── */
+/* HOW LONG TO WAIT FOR SUBMAGIC TO FINISH TAKING OUR CLIPS IN.
+
+   POST /v1/user-media/upload answers with an id the moment the bytes land, and
+   then Submagic keeps working on the file. Ask it to place that id a second
+   later and it refuses: `VALIDATION_ERROR: The following media is not ready
+   yet … Please wait for the upload to complete.` Measured 2026-09-24 on the
+   first real take: every clip uploaded, the placement was refused for exactly
+   that reason, and the export went out with nothing on it.
+
+   So a placement that is refused as NOT READY is tried again on this clock —
+   about a minute and a half all told, well inside the worker's fifteen — and if
+   it is still not ready the take WAITS rather than exporting empty. Tests pass
+   an array of zeros. */
+export const MEDIA_READY_DELAYS_MS = Object.freeze([5_000, 10_000, 20_000, 30_000, 30_000]);
+
+const NOT_READY = /not ready yet|wait for the upload/i;
+const pause = (ms) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve());
+
 export async function placeBrollAndExport(row, ports = {}) {
-  const { submagic, claim, drive, brollLibrary = [], env = process.env, brollOptions = {} } = ports;
+  const {
+    submagic, claim, drive, brollLibrary = [], env = process.env, brollOptions = {},
+    mediaReadyDelaysMs = MEDIA_READY_DELAYS_MS
+  } = ports;
   /* ALREADY EXPORTED — OR ALREADY CLAIMED? THEN ASK WHETHER IT IS FINISHED.
 
      The webhook is the fast path out of this state and it is also the only
@@ -520,10 +547,23 @@ export async function placeBrollAndExport(row, ports = {}) {
     for (const s of plan.skipped) notes.push(`${s.clip}: ${s.why}`);
 
     if (plan.placements.length) {
-      const upd = await submagic.updateProject(row.submagic_project_id, { placements: plan.placements, env });
+      let upd = await submagic.updateProject(row.submagic_project_id, { placements: plan.placements, env });
+      /* NOT READY is not a refusal, it is "ask again". See MEDIA_READY_DELAYS_MS. */
+      for (const ms of mediaReadyDelaysMs) {
+        if (upd.ok || !NOT_READY.test(String(upd.error || ""))) break;
+        await pause(ms);
+        upd = await submagic.updateProject(row.submagic_project_id, { placements: plan.placements, env });
+      }
+      if (!upd.ok && NOT_READY.test(String(upd.error || ""))) {
+        /* Still not ready after the whole clock. Exporting now would bill a
+           render with nothing on it — the exact thing that happened once. Wait;
+           the next pass uploads nothing (the ids are the account's) and asks
+           again. */
+        return wait(`our clips are still being taken in at Submagic — not exporting an empty cut: ${upd.error}`);
+      }
       if (!upd.ok) {
-        /* A refused placement must NOT stop the ad. Captions alone are still a
-           finished ad, and the reason is kept on the row so it can be read. */
+        /* A placement refused for a REAL reason must not stop the ad. Captions
+           alone are still a finished ad, and the reason stays on the row. */
         notes.push(`b-roll refused: ${upd.error}`);
       } else {
         placed = plan.placements.length;
@@ -712,18 +752,18 @@ export async function deliverToPaul(row, {
   if (!has(row.ad_id)) return dead("no ad number on the row — there is no folder to put this in");
   if (!drive?.ensureFolder || !drive?.uploadTextFile) return wait("the Drive provider was not supplied");
   if (!has(paulFolderId)) return wait("DRIVE_PAUL_FOLDER_ID is not set — there is nowhere to deliver to");
-  if (!naming?.adFolderName || !naming?.briefName || !naming?.finalName) return wait("the naming module was not supplied");
+  if (!naming?.paulFolderName || !naming?.briefFileName || !naming?.finalFileName) return wait("the naming module was not supplied");
 
   const folder = await drive.ensureFolder({
     parentId: paulFolderId,
-    name: naming.adFolderName(row.ad_id),
+    name: naming.paulFolderName(row.ad_id),
     env
   });
   if (!folder.ok) return folder.retryable === false ? dead(folder.error) : wait(folder.error);
 
   const brief = await drive.uploadTextFile({
     parentId: folder.folderId,
-    name: naming.briefName(row.ad_id),
+    name: naming.briefFileName(row.ad_id, "txt"),
     content: buildBrief(row, { landingBase }),
     mimeType: "text/plain",
     env
@@ -738,7 +778,7 @@ export async function deliverToPaul(row, {
   const video = await (drive.uploadVideo
     ? drive.uploadVideo({
       parentId: folder.folderId,
-      name: naming.finalName({ adId: row.ad_id, takeNo: row.take_no, version: row.finished_version || 1 }),
+      name: naming.finalFileName(row.ad_id, row.take_no, row.finished_version || 1),
       sourceUrl: row.finished_url,
       env
     })

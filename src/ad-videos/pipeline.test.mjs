@@ -20,10 +20,16 @@ import {
 } from "./pipeline.mjs";
 
 const NAMING = {
-  rawName: ({ adId, takeNo }) => `${String(adId).padStart(3, "0")}_t${String(takeNo).padStart(2, "0")}_raw.mp4`,
-  finalName: ({ adId, takeNo, version }) => `${String(adId).padStart(3, "0")}_t${String(takeNo).padStart(2, "0")}_final_v${version}.mp4`,
-  adFolderName: (adId) => String(adId).padStart(3, "0"),
-  briefName: (adId) => `${String(adId).padStart(3, "0")}_brief.txt`
+  /* THE REAL MODULE'S NAMES AND SHAPES. This stub used to invent rawName,
+     finalName, adFolderName and briefName — functions naming.mjs never had —
+     and every test here passed against them while the real pipeline silently
+     skipped the rename and would have waited for ever at delivery. Measured
+     2026-09-24 on the first real take. seam.test.mjs proves the pipeline only
+     calls what the module exports. */
+  rawFileName: (adId, takeNo) => `${String(adId).padStart(3, "0")}_t${String(takeNo).padStart(2, "0")}_raw.mp4`,
+  finalFileName: (adId, takeNo, version) => `${String(adId).padStart(3, "0")}_t${String(takeNo).padStart(2, "0")}_final_v${version}.mp4`,
+  paulFolderName: (adId) => String(adId).padStart(3, "0"),
+  briefFileName: (adId) => `${String(adId).padStart(3, "0")}_brief.txt`
 };
 
 const row = (extra = {}) => ({
@@ -684,7 +690,7 @@ describe("Paul's folder", () => {
   });
 
   test("the folder name IS padded, so the folders sort", () => {
-    assert.equal(NAMING.adFolderName("43"), "043");
+    assert.equal(NAMING.paulFolderName("43"), "043");
   });
 
   test("the folder and the brief land even though the video cannot", async () => {
@@ -720,5 +726,64 @@ describe("Paul's folder", () => {
     });
     assert.equal(out.patch.status, "delivered");
     assert.equal(out.patch.drive_final_file_id, "v1");
+  });
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Submagic takes our clips in AFTER it hands back their ids.
+
+   Measured 2026-09-24 on the first real take: four clips uploaded, the
+   placement a second later was refused `media is not ready yet … wait for the
+   upload to complete`, and the export went out with nothing on it — a billed
+   render, empty. These pin the rule: ask again on a clock, and never export an
+   empty cut over a transient refusal.
+   ───────────────────────────────────────────────────────────────────────── */
+describe("our clips are placed once Submagic has taken them in", () => {
+  const words = [{ text: "roadmap", start: 5, end: 5.9 }];
+  const notReady = { ok: false, retryable: false, status: 400, sent: true,
+    error: '{"error":"VALIDATION_ERROR","message":"The following media is not ready yet: abc. Please wait for the upload to complete."}' };
+  const lib = [{ driveFileId: "d1", name: "roadmap-document.mp4", mimeType: "video/mp4" }];
+  const drive = { downloadFile: async () => ({ ok: true, bytes: new Uint8Array([1]), contentType: "video/mp4" }) };
+  const base = (overrides) => ({
+    drive, claim: async () => true, brollLibrary: lib, env: {}, mediaReadyDelaysMs: [0, 0, 0],
+    submagic: {
+      uploadUserMedia: async () => ({ ok: true, userMediaId: "um1" }),
+      exportProject: async () => ({ ok: true }),
+      ...overrides
+    }
+  });
+  const matched = () => row({ status: "matched", submagic_project_id: "p1", transcript: "roadmap", transcript_words: words });
+
+  test("not ready, then ready: the clips are placed and the export goes out", async () => {
+    let calls = 0;
+    const out = await placeBrollAndExport(matched(), base({
+      updateProject: async () => (++calls < 3 ? notReady : { ok: true })
+    }));
+    assert.equal(calls, 3, "asked again until Submagic was ready");
+    assert.equal(out.ok, true);
+    assert.equal(out.patch.broll_count, 1, "the clip was placed");
+    assert.ok(out.patch.exported_at, "and the export went out");
+  });
+
+  test("still not ready after the whole clock: WAIT, do not export an empty cut", async () => {
+    let exported = false;
+    const out = await placeBrollAndExport(matched(), base({
+      updateProject: async () => notReady,
+      exportProject: async () => { exported = true; return { ok: true }; }
+    }));
+    assert.equal(out.ok, false);
+    assert.equal(out.retryable, true, "the next pass asks again");
+    assert.equal(exported, false, "a render with nothing on it is a billed mistake, not an ad");
+    assert.match(out.error, /still being taken in/);
+  });
+
+  test("refused for a real reason: the ad still exports, captions only, reason kept", async () => {
+    const out = await placeBrollAndExport(matched(), base({
+      updateProject: async () => ({ ok: false, retryable: false, status: 400, error: "layout unknown" })
+    }));
+    assert.equal(out.ok, true);
+    assert.equal(out.patch.broll_count, 0);
+    assert.ok(out.patch.exported_at);
+    assert.match(out.patch.broll_notes, /b-roll refused: layout unknown/);
   });
 });
