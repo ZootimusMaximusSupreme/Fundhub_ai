@@ -57,6 +57,7 @@ import {
   transmit, postJsonTo, transmitBinary, postBinaryTo, ADAPTERS, redact
 } from "../../lib/outbound-fetch.mjs";
 import { classify, success, failure, rejection } from "./http.mjs";
+import { BROLL_FOLDERS } from "../../ad-videos/broll.mjs";
 import { driveConfigFromEnv } from "../../company-brain/config.mjs";
 import { fetchAccessToken, fetchOAuthAccessToken } from "../../company-brain/auth.mjs";
 
@@ -243,6 +244,73 @@ export async function listNewVideos({
     return String(f.mimeType || "").startsWith("video/");
   });
   return { ok: true, retryable: false, files, skipped: (v.body?.files || []).length - files.length };
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   listBrollClips — the B-roll library, in priority order.
+
+   MEASURED 2026-09-23: nothing in this repo loaded the B-roll library. The
+   sweeper always handed `brollLibrary: []` to the pipeline, and
+   placeBrollAndExport skips B-roll entirely when that list is empty. So no ad
+   had ever had, or could ever have had, a single clip placed on it. Renaming
+   the clips so the planner can match them does nothing until this runs.
+
+   THE ORDER OUT OF HERE IS THE PRIORITY ORDER. planBroll walks the clips as
+   handed and its cursor only moves forward, so the folder listed first takes
+   the early moments. That is why `folders` defaults to BROLL_FOLDERS and why
+   this does not sort the result.
+
+   Returns clips carrying `driveFileId` and `name` and no bytes. The bytes are
+   fetched later, and only for the handful of clips that actually win a slot —
+   downloading all of them on every pass would be dozens of megabytes per take
+   for five clips of use.
+   ═══════════════════════════════════════════════════════════════════════════ */
+export async function listBrollClips({
+  brollFolderId, folders = BROLL_FOLDERS, pageSize = 300,
+  env = process.env, fetchImpl, timeoutMs, signal
+} = {}) {
+  const parent = String(brollFolderId || "").trim();
+  if (!parent) return { ok: false, retryable: false, error: "listBrollClips needs a brollFolderId", clips: [] };
+
+  const tok = await driveAccessToken({ env, fetchImpl });
+  if (!tok.ok) return { ...tok, clips: [] };
+
+  const listIn = async (folderId) => {
+    const url = `${DRIVE_API}/files?${qs({
+      q: `'${String(folderId).replace(/'/g, "\\'")}' in parents and trashed = false`,
+      fields: `files(${FILE_FIELDS})`,
+      orderBy: "name",
+      pageSize,
+      ...SHARED
+    })}`;
+    const res = await driveCall("GET", url, { token: tok.accessToken, env, fetchImpl, timeoutMs, signal, what: "drive list b-roll" });
+    const v = verdictOf(res, "drive list b-roll");
+    return v.ok ? (v.body?.files || []) : null;
+  };
+
+  const top = await listIn(parent);
+  if (top === null) return { ok: false, retryable: true, error: "could not read the b-roll folder", clips: [] };
+
+  const byName = new Map(
+    top.filter((f) => f.mimeType === FOLDER_MIME).map((f) => [f.name, f.id])
+  );
+
+  const clips = [];
+  const missing = [];
+  for (const wanted of folders) {
+    const id = byName.get(wanted);
+    if (!id) { missing.push(wanted); continue; }
+    const files = await listIn(id);
+    if (files === null) { missing.push(wanted); continue; }
+    for (const f of files) {
+      const mime = String(f.mimeType || "");
+      /* A PDF cannot be shown as b-roll, and a folder is not a clip. */
+      if (!mime.startsWith("video/") && !mime.startsWith("image/")) continue;
+      clips.push({ driveFileId: f.id, name: f.name, mimeType: mime, folder: wanted });
+    }
+  }
+
+  return { ok: true, retryable: false, clips, missingFolders: missing };
 }
 
 /** getFileMeta — one file, including videoMediaMetadata (width/height/duration).

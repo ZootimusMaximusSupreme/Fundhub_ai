@@ -239,6 +239,23 @@ export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {
 
    `db` and the limits are arguments, so the tests drive this with no Inngest
    and no scheduler. Never throws; the error is returned so a caller can log it. */
+/* loadBrollLibrary — the clips, read once per pass.
+
+   MEASURED 2026-09-23: this did not exist and `brollLibrary` was always empty,
+   so placeBrollAndExport skipped b-roll on every take and no ad has ever had a
+   clip on it. Reading the folder is one Drive call per subfolder and no bytes
+   move here — the winners are fetched later, in the pipeline.
+
+   A missing DRIVE_BROLL_FOLDER_ID is not an error. It means b-roll is off, the
+   ads still caption and export, and the note says why. */
+export async function loadBrollLibrary(env = process.env, port = drive) {
+  const folderId = env.DRIVE_BROLL_FOLDER_ID;
+  if (!folderId) return [];
+  if (typeof port?.listBrollClips !== "function") return [];
+  const got = await port.listBrollClips({ brollFolderId: folderId, env });
+  return got.ok ? (got.clips || []) : [];
+}
+
 export async function sweep(database, options = {}) {
   const env = options.env || process.env;
   try {
@@ -254,7 +271,7 @@ export async function sweep(database, options = {}) {
       candidateScripts: typeof store.candidateScripts === "function"
         ? await store.candidateScripts(database)
         : [],
-      brollLibrary: options.brollLibrary || []
+      brollLibrary: options.brollLibrary || await loadBrollLibrary(env)
     });
 
     const found = await detect(database, { store, env, limit: options.detectLimit });

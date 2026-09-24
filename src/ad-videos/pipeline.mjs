@@ -377,7 +377,7 @@ export async function matchAndRename(row, {
    is an ad; an ad that never renders is nothing.
    ───────────────────────────────────────────────────────────────────────── */
 export async function placeBrollAndExport(row, ports = {}) {
-  const { submagic, claim, brollLibrary = [], env = process.env, brollOptions = {} } = ports;
+  const { submagic, claim, drive, brollLibrary = [], env = process.env, brollOptions = {} } = ports;
   /* ALREADY EXPORTED — OR ALREADY CLAIMED? THEN ASK WHETHER IT IS FINISHED.
 
      The webhook is the fast path out of this state and it is also the only
@@ -400,13 +400,46 @@ export async function placeBrollAndExport(row, ports = {}) {
   if (!has(row.broll_placed_at) && brollLibrary.length && submagic.uploadUserMedia && submagic.updateProject) {
     /* Upload first, then place. A clip with no userMediaId cannot be placed,
        and planBroll reports it rather than dropping it silently. */
+    /* TWO PASSES, AND THE FIRST ONE COSTS NOTHING.
+
+       planBroll matches on a clip's FILE NAME, so which clips win is already
+       decided before a single byte moves. The library is the whole Drive folder
+       — 78 clips as measured on 2026-09-23 — and at most 5 of them can be used.
+       Uploading all 78 for every take would be dozens of megabytes of download
+       and 78 calls against a 500-an-hour ceiling, to place five.
+
+       So: plan once with a stand-in id to learn the winners, fetch and upload
+       only those, then plan again with the real ids. The second plan is handed
+       the same clips in the same order, and planBroll is deterministic, so it
+       returns the same placements. */
+    const stand = brollLibrary.map((c, i) => ({ ...c, userMediaId: c.userMediaId || `pending-${i}` }));
+    const dry = planBroll({ words: row.transcript_words || [], clips: stand, ...brollOptions });
+    const wanted = new Set((dry.placements || []).map((p) => p.userMediaId));
+
     const clips = [];
-    for (const clip of brollLibrary) {
-      if (clip.userMediaId) { clips.push(clip); continue; }
-      if (!clip.url) { notes.push(`${clip.name || clip.id}: no link to upload`); continue; }
-      const up = await submagic.uploadUserMedia(row.submagic_project_id, { url: clip.url, name: clip.name, env });
-      if (!up.ok) { notes.push(`${clip.name || clip.id}: ${up.error}`); continue; }
-      clips.push({ ...clip, userMediaId: up.userMediaId });
+    for (const clip of stand) {
+      if (!wanted.has(clip.userMediaId)) continue;
+      const { userMediaId: standIn, ...real } = clip;
+      if (!String(standIn).startsWith("pending-")) { clips.push(clip); continue; }
+
+      /* The bytes. A public link is used as-is; a Drive clip is fetched here,
+         because a Drive file is not readable without our credentials and the
+         vendor's downloader has none. */
+      let up;
+      if (real.url) {
+        up = await submagic.uploadUserMedia(row.submagic_project_id, { url: real.url, name: real.name, env });
+      } else if (real.driveFileId && typeof drive?.downloadFile === "function") {
+        const got = await drive.downloadFile(real.driveFileId, { env });
+        if (!got.ok) { notes.push(`${real.name || real.driveFileId}: ${got.error}`); continue; }
+        up = await submagic.uploadUserMedia(row.submagic_project_id, {
+          file: got.bytes, name: real.name, contentType: got.contentType || real.mimeType, env
+        });
+      } else {
+        notes.push(`${real.name || real.driveFileId}: no link and no way to fetch it`);
+        continue;
+      }
+      if (!up.ok) { notes.push(`${real.name || real.driveFileId}: ${up.error}`); continue; }
+      clips.push({ ...real, userMediaId: up.userMediaId });
     }
 
     const plan = planBroll({ words: row.transcript_words || [], clips, ...brollOptions });

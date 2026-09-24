@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   sweep, detect, walk, portsFor, adVideoSweeper,
-  SWEEP_CRON, DEFAULT_BATCH, DEFAULT_DETECT_LIMIT
+  SWEEP_CRON, DEFAULT_BATCH, DEFAULT_DETECT_LIMIT, loadBrollLibrary
 } from "./ad-video-sweeper.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -229,5 +229,41 @@ describe("what actually gates this", () => {
     assert.ok(!/\bfetch\s*\(/.test(code));
     assert.ok(/messaging\/providers\/submagic\.mjs/.test(src));
     assert.ok(/messaging\/providers\/google-drive-write\.mjs/.test(src));
+  });
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE BUG THIS GUARDS, measured 2026-09-23.
+
+   Nothing in the repo loaded the B-roll library. `brollLibrary` was always the
+   empty default, placeBrollAndExport skips b-roll when that list is empty, and
+   so no ad had ever had a single clip placed on it — while the planner, the
+   uploader and 78 renamed clips in Drive all sat there working perfectly.
+
+   An empty list is silent. These tests are what makes it loud.
+   ───────────────────────────────────────────────────────────────────────── */
+describe("the b-roll library actually gets loaded", () => {
+  test("clips come back when the folder is set", async () => {
+    const port = {
+      listBrollClips: async ({ brollFolderId }) => ({
+        ok: true,
+        clips: [{ driveFileId: "a", name: "roadmap-document.png", folder: "deliverables" }],
+        asked: brollFolderId
+      })
+    };
+    const clips = await loadBrollLibrary({ DRIVE_BROLL_FOLDER_ID: "folder_1" }, port);
+    assert.equal(clips.length, 1, "a set folder must produce clips — an empty list means no ad ever gets b-roll");
+    assert.equal(clips[0].name, "roadmap-document.png");
+  });
+
+  test("no folder set is b-roll off, not a crash", async () => {
+    const clips = await loadBrollLibrary({}, { listBrollClips: async () => ({ ok: true, clips: [] }) });
+    assert.deepEqual(clips, []);
+  });
+
+  test("a Drive failure is b-roll off, not a thrown sweep", async () => {
+    const port = { listBrollClips: async () => ({ ok: false, error: "drive said no", clips: [] }) };
+    const clips = await loadBrollLibrary({ DRIVE_BROLL_FOLDER_ID: "folder_1" }, port);
+    assert.deepEqual(clips, [], "one bad Drive read must not stop captions and export");
   });
 });
