@@ -787,3 +787,45 @@ describe("our clips are placed once Submagic has taken them in", () => {
     assert.match(out.patch.broll_notes, /b-roll refused: layout unknown/);
   });
 });
+
+describe("a still that is not ready is dropped; a video gets the clock", () => {
+  const words = [{ text: "roadmap", start: 5, end: 5.9 }, { text: "credit", start: 20, end: 20.9 }];
+  const drive = { downloadFile: async () => ({ ok: true, bytes: new Uint8Array([1]), contentType: "video/mp4" }) };
+  const lib = [
+    { driveFileId: "v", name: "roadmap-document.mp4", mimeType: "video/mp4" },
+    { driveFileId: "s", name: "credit-report.png", mimeType: "image/png" }
+  ];
+  let n = 0;
+  const ids = { "roadmap-document.mp4": "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa", "credit-report.png": "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb" };
+  const base = (updateProject) => ({
+    drive, claim: async () => true, brollLibrary: lib, env: {}, mediaReadyDelaysMs: [0, 0],
+    submagic: {
+      uploadUserMedia: async (_p, { name }) => ({ ok: true, userMediaId: ids[name] || `um${++n}` }),
+      updateProject, exportProject: async () => ({ ok: true })
+    }
+  });
+  const matched = () => row({ status: "matched", submagic_project_id: "p1", transcript: "roadmap credit", transcript_words: words });
+  const notReady = (id) => ({ ok: false, retryable: false, status: 400, sent: true,
+    error: `{"error":"VALIDATION_ERROR","message":"The following media is not ready yet: ${id}. Please wait for the upload to complete."}` });
+
+  test("the PNG is dropped on the first ask, the video is placed, the export goes out", async () => {
+    const asked = [];
+    const out = await placeBrollAndExport(matched(), base(async (_p, { placements }) => {
+      asked.push(placements.map((p) => p.userMediaId));
+      return placements.some((p) => p.userMediaId === ids["credit-report.png"]) ? notReady(ids["credit-report.png"]) : { ok: true };
+    }));
+    assert.equal(out.ok, true);
+    assert.equal(out.patch.broll_count, 1, "the video was placed without the still");
+    assert.ok(out.patch.exported_at, "and the export went out");
+    assert.match(out.patch.broll_notes, /dropped 1 still\(s\).*credit-report\.png/);
+    assert.equal(asked.length, 2, "one ask with both, one ask with the still dropped");
+  });
+
+  test("a video that is not ready is waited for, not dropped", async () => {
+    let calls = 0;
+    const out = await placeBrollAndExport(matched(), base(async () => (++calls < 3 ? notReady(ids["roadmap-document.mp4"]) : { ok: true })));
+    assert.equal(out.ok, true);
+    assert.equal(out.patch.broll_count, 2, "both placed once the video was ready");
+    assert.equal(calls, 3);
+  });
+});

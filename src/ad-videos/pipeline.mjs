@@ -554,12 +554,38 @@ export async function placeBrollAndExport(row, ports = {}) {
     for (const s of plan.skipped) notes.push(`${s.clip}: ${s.why}`);
 
     if (plan.placements.length) {
-      let upd = await submagic.updateProject(row.submagic_project_id, { placements: plan.placements, env });
-      /* NOT READY is not a refusal, it is "ask again". See MEDIA_READY_DELAYS_MS. */
+      let placements = plan.placements;
+      const clipOf = (id) => clips.find((c) => c.userMediaId === id);
+      const isStill = (id) => String(clipOf(id)?.mimeType || "").startsWith("image/")
+        || /\.(png|jpe?g|webp|gif)$/i.test(String(clipOf(id)?.name || ""));
+      const stuckIds = (err) => new Set(String(err || "").match(/[0-9a-f]{8}-[0-9a-f-]{27}/g) || []);
+
+      let upd = await submagic.updateProject(row.submagic_project_id, { placements, env });
+
+      /* A STILL THAT IS NOT READY ON THE FIRST ASK IS DROPPED, NOT WAITED FOR.
+         Measured 2026-09-24, second cut: three 4K videos were ready inside the
+         clock and the one PNG never was — nine minutes of waiting on a picture
+         that Submagic was not going to finish taking in. A video gets the full
+         clock below; a picture gets one ask, then the cut goes out without it,
+         and the note says so. An ad with three moving clips beats no ad. */
+      if (!upd.ok && NOT_READY.test(String(upd.error || ""))) {
+        const stuck = [...stuckIds(upd.error)];
+        if (stuck.length && stuck.every(isStill)) {
+          const keep = placements.filter((pl) => !stuck.includes(pl.userMediaId));
+          notes.push(`dropped ${stuck.length} still(s) Submagic never finished taking in: ` +
+            stuck.map((id) => clipOf(id)?.name || id).join(", "));
+          placements = keep;
+          upd = keep.length
+            ? await submagic.updateProject(row.submagic_project_id, { placements: keep, env })
+            : { ok: true, nothingLeft: true };
+        }
+      }
+
+      /* NOT READY on a VIDEO is not a refusal, it is "ask again". See MEDIA_READY_DELAYS_MS. */
       for (const ms of mediaReadyDelaysMs) {
         if (upd.ok || !NOT_READY.test(String(upd.error || ""))) break;
         await pause(ms);
-        upd = await submagic.updateProject(row.submagic_project_id, { placements: plan.placements, env });
+        upd = await submagic.updateProject(row.submagic_project_id, { placements, env });
       }
       if (!upd.ok && NOT_READY.test(String(upd.error || ""))) {
         /* Still not ready after the whole clock. Exporting now would bill a
@@ -574,7 +600,7 @@ export async function placeBrollAndExport(row, ports = {}) {
            alone are still a finished ad, and the reason stays on the row. */
         notes.push(`b-roll refused: ${upd.error}`);
       } else {
-        placed = plan.placements.length;
+        placed = upd.nothingLeft ? 0 : placements.length;
       }
     }
   }
