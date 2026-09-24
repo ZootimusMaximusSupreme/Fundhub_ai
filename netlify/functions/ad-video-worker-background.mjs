@@ -50,6 +50,11 @@ export async function handler(req) {
     return new Response("no", { status: 404 });
   }
 
+  /* WHICH BUILD IS RUNNING. Two passes on 2026-09-24 behaved like code from
+     before a deploy and nothing in the log could say which build they were.
+     Netlify sets COMMIT_REF at build time; printing it makes a stale function
+     visible in one line. */
+  console.log(`[ad-video-worker] build ${String(process.env.COMMIT_REF || "unknown").slice(0, 8)} starting a pass`);
   const result = await sweep(db, { limit: TAKES_PER_PASS });
 
   if (!result.ok) {

@@ -520,7 +520,21 @@ export async function placeBrollAndExport(row, ports = {}) {
        only those, then plan again with the real ids. The second plan is handed
        the same clips in the same order, and planBroll is deterministic, so it
        returns the same placements. */
-    const stand = brollLibrary.map((c, i) => ({ ...c, userMediaId: c.userMediaId || `pending-${i}` }));
+    /* STILLS ARE HELD OUT OF PLACEMENT FOR NOW. Measured three passes running
+       on 2026-09-24: every 4K video Submagic took in within minutes; the one
+       PNG was "not ready yet" every single time, for as long as we waited. A
+       picture that never becomes ready cannot be allowed to hold a cut, and
+       dropping it after the fact still costs the upload and the wait. So until
+       Submagic is shown to take a still in, only moving clips are offered. The
+       stills stay in the Drive library untouched; flip AD_VIDEO_BROLL_STILLS=1
+       to offer them again once that is proven. */
+    const stillsOn = String(env.AD_VIDEO_BROLL_STILLS || "") === "1";
+    const offered = stillsOn ? brollLibrary : brollLibrary.filter((c) =>
+      String(c.mimeType || "").startsWith("video/") || /\.(mp4|mov|webm|m4v)$/i.test(String(c.name || "")));
+    if (offered.length < brollLibrary.length) {
+      notes.push(`${brollLibrary.length - offered.length} still(s) held back — Submagic never finished taking a still in (AD_VIDEO_BROLL_STILLS=1 to offer them)`);
+    }
+    const stand = offered.map((c, i) => ({ ...c, userMediaId: c.userMediaId || `pending-${i}` }));
     const dry = planBroll({ words: row.transcript_words || [], clips: stand, ...brollOptions });
     const wanted = new Set((dry.placements || []).map((p) => p.userMediaId));
 

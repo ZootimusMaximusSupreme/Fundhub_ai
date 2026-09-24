@@ -797,8 +797,10 @@ describe("a still that is not ready is dropped; a video gets the clock", () => {
   ];
   let n = 0;
   const ids = { "roadmap-document.mp4": "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa", "credit-report.png": "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb" };
+  /* These exercise the drop rule, which only matters when stills are offered
+     at all — so they switch stills on. The default holds them back. */
   const base = (updateProject) => ({
-    drive, claim: async () => true, brollLibrary: lib, env: {}, mediaReadyDelaysMs: [0, 0],
+    drive, claim: async () => true, brollLibrary: lib, env: { AD_VIDEO_BROLL_STILLS: "1" }, mediaReadyDelaysMs: [0, 0],
     submagic: {
       uploadUserMedia: async (_p, { name }) => ({ ok: true, userMediaId: ids[name] || `um${++n}` }),
       updateProject, exportProject: async () => ({ ok: true })
@@ -827,5 +829,32 @@ describe("a still that is not ready is dropped; a video gets the clock", () => {
     assert.equal(out.ok, true);
     assert.equal(out.patch.broll_count, 2, "both placed once the video was ready");
     assert.equal(calls, 3);
+  });
+});
+
+describe("stills are held out of placement until Submagic is shown to take one in", () => {
+  const words = [{ text: "roadmap", start: 5, end: 5.9 }, { text: "credit", start: 20, end: 20.9 }];
+  const drive = { downloadFile: async () => ({ ok: true, bytes: new Uint8Array([1]), contentType: "video/mp4" }) };
+  const lib = [
+    { driveFileId: "v", name: "roadmap-document.mp4", mimeType: "video/mp4" },
+    { driveFileId: "s", name: "credit-report.png", mimeType: "image/png" }
+  ];
+  const ports = (env) => ({
+    drive, claim: async () => true, brollLibrary: lib, env, mediaReadyDelaysMs: [0],
+    submagic: { uploadUserMedia: async (_p, { name }) => ({ ok: true, userMediaId: `um-${name}` }),
+      updateProject: async () => ({ ok: true }), exportProject: async () => ({ ok: true }) }
+  });
+  const matched = () => row({ status: "matched", submagic_project_id: "p1", transcript: "roadmap credit", transcript_words: words });
+
+  test("by default only the video is uploaded and placed, and the note says a still was held", async () => {
+    const out = await placeBrollAndExport(matched(), ports({}));
+    assert.equal(out.ok, true);
+    assert.equal(out.patch.broll_count, 1);
+    assert.match(out.patch.broll_notes, /1 still\(s\) held back/);
+  });
+
+  test("AD_VIDEO_BROLL_STILLS=1 offers the still again", async () => {
+    const out = await placeBrollAndExport(matched(), ports({ AD_VIDEO_BROLL_STILLS: "1" }));
+    assert.equal(out.patch.broll_count, 2);
   });
 });
