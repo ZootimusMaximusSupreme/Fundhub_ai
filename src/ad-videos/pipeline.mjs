@@ -104,6 +104,16 @@ const skip = (note) => ({ ok: true, retryable: false, patch: {}, note, skipped: 
 
 const has = (v) => v !== null && v !== undefined && String(v).trim() !== "";
 
+/* Is a spend claim old enough that nothing could still be running behind it?
+
+   See CLAIM_STALE_AFTER_MS. An unreadable date is treated as NOT stale, because
+   the expensive mistake here is freeing a claim that is still live. */
+export function claimIsStale(claimedAt, now = Date.now()) {
+  const t = Date.parse(String(claimedAt || ""));
+  if (!Number.isFinite(t)) return false;
+  return now - t > CLAIM_STALE_AFTER_MS;
+}
+
 /* answered — did the vendor actually say something?
 
    This is the question a standing claim turns on. `sent: false` means the
@@ -208,6 +218,32 @@ export async function stage(row, { staging, env = process.env } = {}) {
    is why `submagic_project_id` is checked first, the claim is written before
    the call, and neither is ever re-spent.
    ───────────────────────────────────────────────────────────────────────── */
+/* HOW LONG A WHOLE VIDEO FILE IS ALLOWED TO MOVE.
+
+   src/lib/outbound-fetch.mjs caps a binary transfer at 120 seconds by default,
+   which is right for a picture and hopeless for a take. Measured on production
+   2026-09-23: `SLO Ad 1 Take 1.mp4` is 120 MB, the transfer was aborted at the
+   two-minute mark every single pass, and because an aborted request never
+   ANSWERS, the spend claim was not cleared — so every later pass refused to try
+   at all and the take needed a person to free it. Three separate attempts died
+   this way before the cause was found.
+
+   Ten minutes, which fits inside the background function's fifteen with room to
+   write the result down. */
+export const BIG_FILE_TIMEOUT_MS = 600_000;
+
+/* WHEN A SPEND CLAIM IS TOO OLD TO STILL BE RUNNING.
+
+   A claim exists so a create is never paid for twice, and it is deliberately
+   not cleared on its own — a request that never answered might still have
+   landed at the vendor. But `might still be running` stops being true once the
+   longest possible run has passed: a background function is killed at fifteen
+   minutes, so a claim older than twenty cannot belong to anything alive.
+
+   Below that, hands off. Above it, the take frees itself instead of waiting for
+   somebody to notice. */
+export const CLAIM_STALE_AFTER_MS = 20 * 60 * 1000;
+
 export async function submagicCreate(row, {
   submagic, drive, claim, env = process.env, webhookUrl, maxUploadBytes,
   /* The caption look. One Fundhub template for every ad so a hundred of them
@@ -228,7 +264,7 @@ export async function submagicCreate(row, {
      second one would be the wrong guess half the time and it is the expensive
      half. A person looks in the Submagic account and retries the take, which
      clears the claim (src/ad-videos/store.mjs retryFailed). */
-  if (has(row.submagic_claimed_at)) {
+  if (has(row.submagic_claimed_at) && !claimIsStale(row.submagic_claimed_at)) {
     return wait(
       "a Submagic create was already started for this take and never came back with a project id. " +
       "Submagic cannot be asked to list projects, so nothing here can tell whether that one landed. " +
@@ -244,7 +280,9 @@ export async function submagicCreate(row, {
   /* The download is free and it fails often — a phone that is still uploading
      answers zero bytes. So it happens BEFORE the claim: a claim spent on a take
      that was never going to be sent is a take that stalls for nothing. */
-  const got = await drive.downloadFile(row.drive_raw_file_id, { env, maxBytes: maxUploadBytes });
+  const got = await drive.downloadFile(row.drive_raw_file_id, {
+    env, maxBytes: maxUploadBytes, timeoutMs: BIG_FILE_TIMEOUT_MS
+  });
   if (!got.ok) return got.retryable === false ? dead(got.error) : wait(got.error);
 
   const claimed = await putClaim(claim, { submagic_claimed_at: new Date().toISOString() });
@@ -264,6 +302,7 @@ export async function submagicCreate(row, {
     fileName: row.drive_raw_name || `take-${row.id}.mp4`,
     contentType: got.contentType || "video/mp4",
     maxBytes: maxUploadBytes,
+    timeoutMs: BIG_FILE_TIMEOUT_MS,
     templateName: templateName || env.SUBMAGIC_TEMPLATE_NAME || undefined,
     removeSilencePace,
     hookTitle,

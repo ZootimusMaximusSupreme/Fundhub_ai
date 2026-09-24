@@ -439,8 +439,13 @@ describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
        ask whether the first create landed; creating another would be wrong half
        the time and it is the expensive half. */
     let called = false;
+    /* A FRESH claim. It used to be a fixed date in the past, which quietly
+       stopped testing anything once claims learned to expire: a claim older
+       than CLAIM_STALE_AFTER_MS is deliberately let go, because nothing can
+       still be running behind it. The case this test is about is the one where
+       something might be. */
     const out = await submagicCreate(row({
-      status: "staged", staged_at: "t", submagic_claimed_at: "2026-09-22T10:05:00Z"
+      status: "staged", staged_at: "t", submagic_claimed_at: new Date().toISOString()
     }), {
       drive, claim: async () => true,
       submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
@@ -451,6 +456,25 @@ describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
     assert.equal(out.retryable, true);
     assert.deepEqual(out.patch, {}, "and the claim is left exactly where it is");
     assert.match(out.error, /retry this take/);
+  });
+
+  test("a claim too old to belong to anything alive stops blocking the take", async () => {
+    /* The other half of the rule above, and the reason a take stopped needing a
+       person. A background function is killed at fifteen minutes, so a claim
+       older than twenty cannot belong to a run that is still going. Before this,
+       one interrupted upload locked a take out for ever. */
+    let called = false;
+    const stale = new Date(Date.now() - 21 * 60 * 1000).toISOString();
+    const out = await submagicCreate(row({
+      status: "staged", staged_at: "t", submagic_claimed_at: stale
+    }), {
+      drive, claim: async () => true,
+      submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
+      env: {}
+    });
+    assert.equal(called, true, "a claim nothing can still be behind must not block the take for ever");
+    assert.equal(out.ok, true);
+    assert.equal(out.patch.status, "editing");
   });
 
   test("a vendor that ANSWERED clears the claim — no project was made, so retry cleanly", async () => {

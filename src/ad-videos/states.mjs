@@ -95,10 +95,31 @@ export const TRANSITIONS = Object.freeze({
   scripted:          Object.freeze(["filming", "failed"]),
   filming:           Object.freeze(["raw_landed", "failed"]),
   raw_landed:        Object.freeze(["staged", "failed"]),
-  staged:            Object.freeze(["transcribed", "failed"]),
+  /* CORRECTED 2026-09-23, AND THIS IS WHY THE FIRST REAL TAKE NEVER MOVED.
+     
+     These three rows were written from the original plan and never matched the
+     pipeline that was built. src/ad-videos/pipeline.mjs NEXT_STEP is what
+     actually runs, and it goes staged -> editing -> transcribed -> matched ->
+     rendered. This table said staged -> transcribed -> matched -> editing.
+     
+     The built order is the only one physically possible: Submagic IS the
+     transcriber, so there is no transcript until Create Project has returned a
+     project id. STATE_MEANING above already said exactly that — `editing` is
+     "Submagic has it", fired by "Create Project returns a project id", and
+     `transcribed` is "we have the words". The two tables in this one file
+     contradicted each other.
+     
+     Nothing caught it because nothing had ever run end to end. Measured on
+     production: the upload SUCCEEDED, Submagic returned a project id, and the
+     pipeline then threw `cannot go staged -> editing` writing the result down.
+     The project was paid for and the id was lost.
+     
+     transitions-match-the-pipeline.test.mjs now pins this table to NEXT_STEP so
+     the two cannot drift apart again. */
+  staged:            Object.freeze(["editing", "failed"]),
+  editing:           Object.freeze(["transcribed", "failed"]),
   transcribed:       Object.freeze(["matched", "failed"]),
-  matched:           Object.freeze(["editing", "failed"]),
-  editing:           Object.freeze(["rendered", "failed"]),
+  matched:           Object.freeze(["rendered", "failed"]),
   rendered:          Object.freeze(["awaiting_approval", "failed"]),
   awaiting_approval: Object.freeze(["approved", "rejected", "failed"]),
   approved:          Object.freeze(["delivered", "failed"]),

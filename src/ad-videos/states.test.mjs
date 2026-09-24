@@ -20,14 +20,31 @@ import {
 
 /* THE DIAGRAM, TYPED OUT BY HAND. If this list and TRANSITIONS ever disagree,
    one of them is wrong and this file says which move it was. */
+/* CORRECTED 2026-09-23 to the order in docs/journeys/ad-video-flow.md.
+ *
+ * This list used to carry the ORIGINAL PLAN's order — staged -> transcribed ->
+ * matched -> editing. The journey diagram does not say that and has not for a
+ * long time; it draws staged -> editing -> transcribed -> matched, and §66 of
+ * that same file names the swap as a known gap in so many words.
+ *
+ * The built order is the only possible one: Submagic IS the transcriber, so
+ * there are no words until Create Project has returned a project id. states.mjs
+ * itself already said so in STATE_MEANING while its TRANSITIONS table said the
+ * opposite.
+ *
+ * What it cost: the first real take ever run reached Submagic, the upload
+ * SUCCEEDED, a project id came back — and the pipeline threw
+ * `cannot go staged -> editing` writing it down. The project was paid for and
+ * the id was lost, and the take sat at `staged` looking like a vendor fault.
+ */
 const LEGAL = [
   ["scripted", "filming"],
   ["filming", "raw_landed"],
   ["raw_landed", "staged"],
-  ["staged", "transcribed"],
+  ["staged", "editing"],
+  ["editing", "transcribed"],
   ["transcribed", "matched"],
-  ["matched", "editing"],
-  ["editing", "rendered"],
+  ["matched", "rendered"],
   ["rendered", "awaiting_approval"],
   ["awaiting_approval", "approved"],
   ["awaiting_approval", "rejected"],
@@ -101,7 +118,7 @@ describe("ad video states — every legal move", () => {
       for (const to of tos) if (!legalSet.has(`${from}>${to}`)) extra.push(`${from} → ${to}`);
     }
     assert.deepEqual(extra, [],
-      `these moves exist in code and not in docs/video-pipeline-plan.md §5: ${extra.join(", ")}`);
+      `these moves exist in code and not in docs/journeys/ad-video-flow.md: ${extra.join(", ")}`);
   });
 });
 
@@ -137,9 +154,9 @@ describe("ad video states — every illegal move is refused", () => {
       transition("staged", "delivered");
       assert.fail("should have thrown");
     } catch (err) {
-      assert.match(err.message, /transcribed/);
+      assert.match(err.message, /editing/);
       assert.match(err.message, /failed/);
-      assert.deepEqual(err.allowed, ["transcribed", "failed"]);
+      assert.deepEqual(err.allowed, ["editing", "failed"]);
     }
   });
 });
@@ -246,7 +263,7 @@ describe("ad video states — the edges", () => {
   test("nextStates hands back a copy, so a caller cannot edit the machine", () => {
     const got = nextStates("staged");
     got.push("delivered");
-    assert.deepEqual(nextStates("staged"), ["transcribed", "failed"]);
+    assert.deepEqual(nextStates("staged"), ["editing", "failed"]);
   });
 
   test("nextStates on an unknown state is empty rather than a throw", () => {
@@ -262,9 +279,11 @@ describe("ad video states — the edges", () => {
 
 describe("ad video states — the whole happy path, end to end", () => {
   test("a take walks scripted → delivered one legal move at a time", () => {
+    /* The order the pipeline actually runs, and the order the journey diagram
+       draws: Submagic has the take BEFORE there are any words to read. */
     const path = [
-      "scripted", "filming", "raw_landed", "staged", "transcribed", "matched",
-      "editing", "rendered", "awaiting_approval", "approved", "delivered"
+      "scripted", "filming", "raw_landed", "staged", "editing", "transcribed",
+      "matched", "rendered", "awaiting_approval", "approved", "delivered"
     ];
     let at = path[0];
     for (const to of path.slice(1)) {
