@@ -851,9 +851,15 @@ export async function patch(db, id, changes = {}) {
 export async function candidateScripts(db, { limit = 400 } = {}) {
   return asStaff(async (tx) => {
     const r = await tx.query(
-      `SELECT id, title, hook_text, body, version
+      /* Only scripts that carry an ad number, and the number rides along as
+         adId — the exact shape src/ad-videos/match.mjs asks for. A script with
+         no number cannot be a take's script: the pipeline stops dead on it
+         ("the matched script carries no ad number"), so offering it to the
+         matcher was only ever a way to lose. Measured 2026-09-24: the one
+         script on offer was an unrelated walkthrough with no number. */
+      `SELECT id, ad_id AS "adId", title, hook_text, body, version
          FROM ad_scripts
-        WHERE archived_at IS NULL
+        WHERE archived_at IS NULL AND ad_id IS NOT NULL
         ORDER BY updated_at DESC
         LIMIT $1`,
       [Math.max(1, Math.min(Number(limit) || 400, 1000))]

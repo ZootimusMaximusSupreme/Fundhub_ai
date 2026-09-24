@@ -255,7 +255,12 @@ export async function submagicCreate(row, {
   removeSilencePace,
   hookTitle, cleanAudio
 } = {}) {
-  if (has(row.submagic_project_id)) return skip("already at Submagic");
+  /* RESUME, DO NOT RE-CREATE. A row that already holds a project id is at
+     Submagic whatever its status says — a retry that put it back to `staged`
+     must not buy a second project. Measured 2026-09-24: four paid projects for
+     one take, one of them still perfectly good. Moving straight to `editing`
+     is the diagram's own arrow, without the upload. */
+  if (has(row.submagic_project_id)) return ok({ status: "editing" }, "already at Submagic — resuming");
   if (!submagic?.createProjectFromFile) return wait("the Submagic provider was not supplied");
 
   /* A CLAIM STANDING WITH NO PROJECT ID IS A CRASH MID-UPLOAD, and it is the
@@ -346,7 +351,8 @@ export async function submagicCreate(row, {
    This is also the only moment the pipeline learns how long the take runs,
    which is the number the Submagic minute bill is made of. */
 export async function readTranscript(row, { submagic, env = process.env } = {}) {
-  if (has(row.transcript)) return skip("transcript already read");
+  /* Same resume rule: the words are on the row, so move on rather than sit. */
+  if (has(row.transcript)) return ok({ status: "transcribed" }, "transcript already read — resuming");
   if (!has(row.submagic_project_id)) return wait("no project id yet");
   if (!submagic?.getProject) return wait("the Submagic provider was not supplied");
 
@@ -408,9 +414,17 @@ export async function matchAndRename(row, {
     );
   }
 
+  /* THE TAKE NUMBER. A phone names a file "SLO Ad 1 Take 2.mp4", which
+     parseVideoName does not read, so take_no is NULL when the row is made.
+     The number is right there in the name; read it rather than invent one.
+     "Take 6" is take 6. No word "Take" is take 1. UNIQUE (org, ad, take) then
+     refuses a real collision loudly instead of a quiet overwrite. */
+  const takeNo = row.take_no
+    ?? (Number((/\btake\s*(\d{1,3})\b/i.exec(String(row.drive_raw_name || "")) || [])[1]) || 1);
+
   let renamedAt = row.renamed_at || null;
   if (!renamedAt && drive?.renameFile && naming?.rawName) {
-    const name = naming.rawName({ adId, takeNo: row.take_no, date: row.created_at });
+    const name = naming.rawName({ adId, takeNo, date: row.created_at });
     const r = await drive.renameFile(row.drive_raw_file_id, name, { env });
     if (!r.ok) return r.retryable === false ? dead(r.error) : wait(r.error);
     renamedAt = r.at || new Date().toISOString();
@@ -420,6 +434,7 @@ export async function matchAndRename(row, {
     status: "matched",
     script_id: scriptId,
     ad_id: String(adId),
+    take_no: takeNo,
     match_confidence: confidence ?? null,
     renamed_at: renamedAt
   });

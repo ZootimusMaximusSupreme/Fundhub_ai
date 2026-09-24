@@ -1070,3 +1070,43 @@ Nothing was unset, cleared or overwritten. The dead OAuth token is still stored
 exactly where it was — it is stepped over at the point of use. Both fixes are
 in the code around the key, which is what CLAUDE.md §11 asks for.
 
+
+## W7 Steps 3 and 4 passed live — then the match step, and what it found
+
+**Live, measured:** `staged → editing` at 03:40:33 (project created, id saved).
+`editing → transcribed` at 04:00:53 (344 words with real times saved). Then the
+match step failed the take at 04:05 — correctly. Bugs 13 and 14:
+
+### 13. None of the seven locked ads were in the database
+
+`ad_scripts` held one unrelated walkthrough. Claude was asked "which of these
+is it", was offered the wrong script, and said so. `scripts/ad-scripts-load-locked.mjs`
+loads the seven verbatim from `docs/ads/fundhub-297/FundHub-LOCKED-ADS.md`.
+
+### 14. A script had nowhere to carry its ad number
+
+`match.mjs` wants candidates with an `adId`; `candidateScripts()` selected none
+and `ad_scripts` had no column. Migration 393 adds `ad_scripts.ad_id`. Only
+scripts with a number are offered to the matcher now.
+
+**Ad numbers 84–90, agent-set 2026-09-24.** The registry tops out at 83, no
+`ads` row carries a number, and 1–7 were left alone on purpose — a low number
+could attach historical `utm_content` clicks to these ads. Next free above the
+top is collision-proof.
+
+### Four paid projects for one take
+
+Every upload our side lost — killed at 26 s, at 30 s, crashed writing the id —
+had landed at Submagic anyway. Chris's account shows four. Three are orphans our
+database cannot see (no list endpoint). So: a row that already has a project id
+now **resumes** into `editing` rather than sitting or re-creating, and an
+expired claim **fails the take with the reason** instead of spending again.
+
+### Left for an owner call — retry still pays again
+
+`retryFailed()` clears `submagic_project_id` on purpose (journey entry
+2026-09-22), so `failed → staged` re-creates a project even when the existing
+one is healthy. Tonight's take is repaired by hand instead: back to `staged`,
+then the project id and transcript put back on the row, so the resume path
+carries it forward for free. Whether retry should keep a healthy project is a
+money-versus-simplicity decision, not an agent's.
