@@ -469,7 +469,14 @@ export async function matchAndRename(row, {
    about a minute and a half all told, well inside the worker's fifteen — and if
    it is still not ready the take WAITS rather than exporting empty. Tests pass
    an array of zeros. */
-export const MEDIA_READY_DELAYS_MS = Object.freeze([5_000, 10_000, 20_000, 30_000, 30_000]);
+export const MEDIA_READY_DELAYS_MS = Object.freeze([
+  /* ~9 minutes all told. Measured 2026-09-24, second cut: the first ladder
+     (95 s) ran out with a 4K clip still not ready, and because every pass
+     uploads its winners afresh, a clock shorter than Submagic's own intake
+     time can never catch up. The worker has fifteen minutes; this leaves room
+     for the export and the write. */
+  5_000, 10_000, 20_000, 30_000, 60_000, 60_000, 120_000, 120_000, 120_000
+]);
 
 const NOT_READY = /not ready yet|wait for the upload/i;
 const pause = (ms) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve());
@@ -559,7 +566,8 @@ export async function placeBrollAndExport(row, ports = {}) {
            render with nothing on it — the exact thing that happened once. Wait;
            the next pass uploads nothing (the ids are the account's) and asks
            again. */
-        return wait(`our clips are still being taken in at Submagic — not exporting an empty cut: ${upd.error}`);
+        const names = clips.map((c) => `${c.name}=${c.userMediaId}`).join(", ");
+        return wait(`our clips are still being taken in at Submagic — not exporting an empty cut: ${upd.error} [uploaded: ${names}]`);
       }
       if (!upd.ok) {
         /* A placement refused for a REAL reason must not stop the ad. Captions
