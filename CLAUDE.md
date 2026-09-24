@@ -190,6 +190,10 @@ Every video that is not a paid ad — VSLs, welcome and portal videos, testimoni
 
 Grok and Composer do not touch websites or design HTML. Claude does that work. Same law: `.cursor/rules/grok-no-displays.mdc` and `.claude/rules/grok-no-displays.md`.
 
+### Ad video — best of all clips (owner-set 2026-09-24)
+
+For each ad, agents merge every take and clip into one finished video from the best moments — never ship a lone take when others exist; Chris never opens Submagic. Same law: `.cursor/rules/ad-video-best-of-clips.mdc` and `.claude/rules/ad-video-best-of-clips.md`.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
