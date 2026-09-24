@@ -649,6 +649,17 @@ export async function recordRawTake(db, {
       "recordRawTake needs the Drive file id — it is what makes the poll repeatable");
   }
 
+  /* duration_seconds is an INTEGER column and Drive reports the length in
+     milliseconds, so a 67.248-second take arrives as a fraction and Postgres
+     refuses the whole INSERT. Measured 2026-09-23 against production: the very
+     first take ever polled died here with
+     `invalid input syntax for type integer: "67.248"`, which meant nothing
+     could ever reach Submagic. Round it — a take's length to the nearest second
+     is all anything downstream needs, and NULL still means unknown. */
+  const seconds = durationSeconds === null || durationSeconds === undefined || durationSeconds === ""
+    ? null
+    : Number.isFinite(Number(durationSeconds)) ? Math.round(Number(durationSeconds)) : null;
+
   /* Only our own names are read. Anything else stays unidentified on purpose. */
   let adId = null;
   let takeNo = null;
@@ -671,7 +682,7 @@ export async function recordRawTake(db, {
        DO NOTHING
        RETURNING ${FULL_COLUMNS}`,
       [who.orgId, who.partnerId, adId, takeNo, videoKind,
-       driveFileId, name, width, height, durationSeconds]
+       driveFileId, name, width, height, seconds]
     );
     if (ins.rows[0]) return { created: true, row: ins.rows[0] };
 

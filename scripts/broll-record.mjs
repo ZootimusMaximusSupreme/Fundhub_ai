@@ -22,14 +22,23 @@
  * which carry no names. Nothing in this script ever opens the production database.
  *
  * 4K. Owner law .claude/rules/video-4k-unless-ad.md — some of these land in VSLs, not
- * only ads, and 1080p can never be upscaled later. Viewport 1280x720 at device scale
- * factor 3 gives a 3840x2160 surface, so the video is true 4K and the page still lays out
- * at the width it was designed for.
+ * only ads, and 1080p can never be upscaled later. MEASURED 2026-09-23: Playwright only
+ * ever scales a page picture DOWN into the video frame, never up, and deviceScaleFactor
+ * does not change what the recorder receives — a 1280x720 viewport asked to record at
+ * 3840x2160 gave a 1280x720 picture sitting in the top-left corner of a grey 4K frame.
+ * So the viewport itself is 3840x2160 and the page is zoomed 3x, which lays the document
+ * out at the 1280px width it was designed for and paints every pixel of the 4K frame.
  *
- * FORMAT. Playwright records .webm (VP8). Converting to .mp4 needs an H.264 encoder.
- * Measured 2026-09-23: this Mac has no ffmpeg and no Homebrew, and Playwright's own
- * bundled ffmpeg is built with libvpx and png ONLY. So the clips stay .webm with the
- * right names. Install ffmpeg and re-run with --mp4 to convert.
+ * FORMAT. Playwright records .webm (VP8). Turning that into .mp4 needs an H.264
+ * encoder. Measured 2026-09-23: this Mac has no ffmpeg on the PATH and no Homebrew to
+ * install one, and Playwright's own bundled ffmpeg is built with libvpx and png ONLY.
+ * So the clips stay .webm, correctly named. The moment a real ffmpeg is on the PATH
+ * this script writes .mp4 instead — nothing else has to change.
+ *
+ * THE HEAD OF EVERY CLIP IS CUT. The recorder starts the moment the tab opens, so the
+ * first half second is the blank tab and the document's cover page snapping to the
+ * section we want. Playwright's bundled ffmpeg can re-encode VP8, so that head is cut
+ * off and every clip is trimmed to exactly 3.8 seconds.
  *
  *   node scripts/broll-record.mjs            # record all eight
  *   node scripts/broll-record.mjs --only 5   # one clip
@@ -51,10 +60,11 @@ const RAW = path.join(WORK, "raw");
 const OUT = path.join(WORK, "clips");
 const WINS = path.join(ROOT, "clickfunnels-fragments/slo/client-wins");
 
-/* 1280 x 720 at deviceScaleFactor 3 = 3840 x 2160 captured pixels. */
-const VIEW = { width: 1280, height: 720 };
-const SCALE = 3;
-const VIDEO = { width: VIEW.width * SCALE, height: VIEW.height * SCALE };
+/* The viewport IS the video frame. ZOOM puts the page back at its design width:
+   3840 / 3 = 1280 CSS pixels of layout, painted three times as big. */
+const VIEW = { width: 3840, height: 2160 };
+const ZOOM = 3;
+const VIDEO = { ...VIEW };
 
 /* ── the eight clips ─────────────────────────────────────────────────────────
    `anchor` is the heading the scroll STARTS on. A missing anchor throws — a clip
@@ -139,6 +149,33 @@ const CLIPS = [
 
 function sh(cmd, args, opts = {}) {
   return execFileSync(cmd, args, { encoding: "utf8", ...opts });
+}
+
+/** An ffmpeg, and what it can encode. A real one on the PATH wins, because only a real
+ *  one can write H.264. Playwright ships its own, which can re-encode VP8 and is enough
+ *  to cut the head off a clip. */
+function findFfmpeg() {
+  const tryIt = (bin) => {
+    try {
+      const enc = sh(bin, ["-hide_banner", "-encoders"], { stdio: ["ignore", "pipe", "ignore"] });
+      return { bin, h264: /\blibx264\b/.test(enc), vp8: /\blibvpx\b/.test(enc) };
+    } catch { return null; }
+  };
+  const onPath = tryIt("ffmpeg");
+  if (onPath && onPath.h264) return onPath;
+  const cache = path.join(process.env.HOME || "", "Library/Caches/ms-playwright");
+  if (fs.existsSync(cache)) {
+    for (const d of fs.readdirSync(cache).filter((x) => x.startsWith("ffmpeg-"))) {
+      for (const name of ["ffmpeg-mac", "ffmpeg-mac-arm64", "ffmpeg-linux"]) {
+        const bin = path.join(cache, d, name);
+        if (fs.existsSync(bin)) {
+          const got = tryIt(bin);
+          if (got) return got;
+        }
+      }
+    }
+  }
+  return onPath || null;
 }
 
 /** The four UnderwriteIQ deliverables, as HTML instead of PDF.
@@ -308,10 +345,28 @@ function softPullAnswer() {
   };
 }
 
+/* Find the bottom, place the start, and report both — all inside ONE evaluate, so the
+   browser never paints the probe. A visible jump at the head of a 4-second clip is a
+   defect; doing this across two calls is what would cause one. */
+const PREPARE = (a) => {
+  const here = window.scrollY;
+  window.scrollTo(0, 1e7);
+  const max = window.scrollY;
+  window.scrollTo(0, here);
+  if (!a.anchor) {
+    window.scrollTo(0, 0);
+    return { ok: true, max, start: 0 };
+  }
+  const el = [...document.querySelectorAll("h1,h2,h3")]
+    .find((e) => e.textContent.trim().toLowerCase().startsWith(a.anchor.toLowerCase()));
+  if (!el) return { ok: false, max, start: here };
+  window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 40);
+  return { ok: true, max, start: window.scrollY };
+};
+
 const SCROLL = (a) => new Promise((done) => {
   const start = window.scrollY;
-  const max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-  const go = Math.min(a.travel, max - start);
+  const go = Math.max(0, Math.min(a.travel, a.max - start));
   const t0 = performance.now();
   (function step(t) {
     const k = Math.min(1, (t - t0) / a.ms);
@@ -325,7 +380,6 @@ const SCROLL = (a) => new Promise((done) => {
 async function recordClip(browser, base, clip, seconds) {
   const ctx = await browser.newContext({
     viewport: VIEW,
-    deviceScaleFactor: SCALE,
     recordVideo: { dir: RAW, size: VIDEO }
   });
   const page = await ctx.newPage();
@@ -340,37 +394,51 @@ async function recordClip(browser, base, clip, seconds) {
   await page.route("https://fonts.gstatic.com/**", (r) => r.abort());
 
   await page.goto(`${base}/${clip.page}`, { waitUntil: "load" });
-  await page.waitForTimeout(500);
+  await page.addStyleTag({ content: `html{zoom:${ZOOM}}` });
+  await page.waitForTimeout(400);
 
-  if (clip.anchor) {
-    const found = await page.evaluate((txt) => {
-      const el = [...document.querySelectorAll("h1,h2,h3")]
-        .find((e) => e.textContent.trim().toLowerCase().startsWith(txt.toLowerCase()));
-      if (!el) return false;
-      window.scrollTo(0, el.getBoundingClientRect().top + window.scrollY - 40);
-      return true;
-    }, clip.anchor);
-    if (!found) throw new Error(`clip ${clip.n}: no heading starts with "${clip.anchor}" — refusing to record a frozen frame`);
-    await page.waitForTimeout(350);
-  }
-
-  const before = await page.evaluate(() => window.scrollY);
-  const after = await page.evaluate(SCROLL, { travel: clip.travel, ms: seconds * 1000 });
+  const prep = await page.evaluate(PREPARE, { anchor: clip.anchor || null });
+  if (!prep.ok) throw new Error(`clip ${clip.n}: no heading starts with "${clip.anchor}" — refusing to record a frozen frame`);
   await page.waitForTimeout(250);
+
+  const before = prep.start;
+  const after = await page.evaluate(SCROLL, { travel: clip.travel, max: prep.max, ms: seconds * 1000 });
+  await page.waitForTimeout(200);
   if (after - before < 200) throw new Error(`clip ${clip.n}: the page barely moved (${after - before}px). A still frame is a failed clip.`);
 
   const video = page.video();
   await ctx.close();
-  const src = await video.path();
-  const dst = path.join(OUT, clip.file);
-  fs.renameSync(src, dst);
-  return { dst, moved: Math.round(after - before) };
+  return { src: await video.path(), moved: Math.round(after - before) };
+}
+
+/** Cuts the blank head off and fixes the length. Without an ffmpeg the raw recording
+ *  is kept as it is, head and all, and the run says so out loud. */
+const HEAD = 0.75;
+const KEEP = 3.8;
+
+function finish(ff, src, clip) {
+  const ext = ff && ff.h264 ? ".mp4" : ".webm";
+  const dst = path.join(OUT, clip.file.replace(/\.webm$/, ext));
+  if (!ff || !(ff.h264 || ff.vp8)) {
+    fs.renameSync(src, dst);
+    return { dst, trimmed: false };
+  }
+  const codec = ff.h264
+    ? ["-c:v", "libx264", "-preset", "slow", "-crf", "18", "-pix_fmt", "yuv420p", "-movflags", "+faststart"]
+    : ["-c:v", "libvpx", "-b:v", "12M", "-deadline", "good", "-cpu-used", "2"];
+  sh(ff.bin, ["-y", "-hide_banner", "-loglevel", "error",
+    "-ss", String(HEAD), "-i", src, "-t", String(KEEP), ...codec, "-an", dst]);
+  fs.rmSync(src, { force: true });
+  return { dst, trimmed: true };
 }
 
 /** Reads the finished file back the only way this Mac can: Chromium plays it and
  *  reports its own numbers. No ffprobe here either. */
 async function measure(browser, file) {
   const page = await browser.newPage();
+  /* A page on about:blank may not read a file:// video. Stand the page in the same
+     folder as the clip first. */
+  await page.goto(`file://${path.dirname(file)}/`);
   const out = await page.evaluate((src) => new Promise((done) => {
     const v = document.createElement("video");
     v.preload = "metadata";
@@ -387,13 +455,18 @@ async function measure(browser, file) {
 const only = process.argv.includes("--only")
   ? Number(process.argv[process.argv.indexOf("--only") + 1])
   : null;
-const SECONDS = 3.6;
+const SECONDS = 3.0;
 
 console.log("Building the stage (no database, no live site, sample data only)…");
 buildStage();
 fs.rmSync(RAW, { recursive: true, force: true });
 fs.mkdirSync(RAW, { recursive: true });
 fs.mkdirSync(OUT, { recursive: true });
+
+const ff = findFfmpeg();
+console.log(ff
+  ? `ffmpeg: ${ff.bin} (h264 ${ff.h264 ? "yes" : "NO"}, vp8 ${ff.vp8 ? "yes" : "no"})`
+  : "ffmpeg: none found — clips stay raw, with the blank head still on them");
 
 const server = await serve();
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -403,19 +476,20 @@ const report = [];
 for (const clip of CLIPS) {
   if (only && clip.n !== only) continue;
   process.stdout.write(`clip ${clip.n} → ${clip.file} … `);
-  const { dst, moved } = await recordClip(browser, base, clip, SECONDS);
+  const { src, moved } = await recordClip(browser, base, clip, SECONDS);
+  const { dst, trimmed } = finish(ff, src, clip);
   const m = await measure(browser, dst);
-  report.push({ ...clip, path: dst, moved, ...m });
-  console.log(`${m.w}x${m.h}, ${m.secs.toFixed(2)}s, scrolled ${moved}px`);
+  report.push({ ...clip, path: dst, name: path.basename(dst), moved, trimmed, ...m });
+  console.log(`${m.w}x${m.h}, ${m.secs.toFixed(2)}s, scrolled ${moved}px${trimmed ? "" : " (NOT trimmed)"}`);
 }
 
 await browser.close();
 server.close();
 fs.rmSync(RAW, { recursive: true, force: true });
 
-console.log("\n| # | file | size | length | data |");
-console.log("|---|---|---|---|---|");
+console.log("\n| # | what it shows | file | size | length | data on screen |");
+console.log("|---|---|---|---|---|---|");
 for (const r of report) {
-  console.log(`| ${r.n} | \`${r.file}\` | ${r.w}x${r.h} | ${r.secs.toFixed(1)}s | ${r.data} |`);
+  console.log(`| ${r.n} | ${r.what} | \`${r.name}\` | ${r.w}x${r.h} | ${r.secs.toFixed(1)}s | ${r.data} |`);
 }
 console.log(`\nFolder: ${OUT}`);
