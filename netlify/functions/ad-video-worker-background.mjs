@@ -34,7 +34,9 @@ import { sweep } from "../../src/workflows/ad-video-sweeper.mjs";
    bug that spends wrongly spends once and is visible on the next pass rather
    than draining the hour's allowance in a single invocation. Twelve passes an
    hour is still far more than Chris films. */
-export const TAKES_PER_PASS = 1;
+/* Chris 2026-09-24: the long videos have to land in Submagic in one pass,
+   not one every five minutes. Still capped, so a bug cannot drain the hour. */
+export const TAKES_PER_PASS = 10;
 
 /** The header the scheduler proves itself with. */
 export const AUTH_HEADER = "x-fundhub-worker";
