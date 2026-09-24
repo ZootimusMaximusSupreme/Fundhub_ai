@@ -232,8 +232,22 @@ export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {
       last_step_at: new Date().toISOString()
     };
     if (out.patch && Object.keys(out.patch).length) {
-      await store.patch(database, row.id, { ...out.patch, ...mark });
-      advanced += 1;
+      try {
+        await store.patch(database, row.id, { ...out.patch, ...mark });
+        advanced += 1;
+      } catch (err) {
+        /* THE WRITE ITSELF FAILED. The step did its job and the database
+           refused the result — measured 2026-09-24, a jsonb column handed a raw
+           array. The note used to ride on that same UPDATE, so when it was
+           refused the row said nothing and the reason only existed in a
+           function log. Write the note on its own so the row says why. */
+        const why = String((err && err.message) || err).slice(0, 300);
+        await store.patch(database, row.id, {
+          ...mark, last_step_note: `could not save the result of ${out.step}: ${why}`
+        });
+        per.push({ id: row.id, from: row.status, step: out.step, to: row.status, ok: false, note: why });
+        continue;
+      }
     } else {
       await store.patch(database, row.id, mark);
     }

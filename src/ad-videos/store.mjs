@@ -101,6 +101,19 @@ const PATCHABLE = new Set([
      can write every column it emits; trust that test, not a second list. */
 ]);
 
+/* COLUMNS THAT ARE JSON, and must be sent as JSON text.
+
+   node-postgres serialises a JavaScript ARRAY parameter as a Postgres array
+   literal — `{"a","b"}` — not as JSON. Handed to a jsonb column that is
+   `invalid input syntax for type json`, and the whole UPDATE is refused.
+
+   Measured on production 2026-09-24 at 03:45:23: readTranscript got the words
+   back from Submagic fine, then died writing them, and because the step's
+   note rides on the same UPDATE, the row said nothing at all. `transcript_words`
+   was the first jsonb column this store ever wrote, so nothing had covered it.
+   JSON.stringify first and Postgres casts the text to jsonb itself. */
+const JSON_COLUMNS = new Set(["transcript_words"]);
+
 function buildPatch(patch, startIndex) {
   const sets = [];
   const params = [];
@@ -121,7 +134,10 @@ function buildPatch(patch, startIndex) {
        here means a caller mixed up the folder name with the link, and quietly
        fixing it would hide the bug that splits an ad's results in half. */
     sets.push(`${key} = $${i}`);
-    params.push(key === "ad_id" && value !== null ? normalizeAdId(value) : value);
+    let v = value;
+    if (key === "ad_id" && value !== null) v = normalizeAdId(value);
+    else if (JSON_COLUMNS.has(key) && value !== null) v = JSON.stringify(value);
+    params.push(v);
     i += 1;
   }
   return { sets, params };
