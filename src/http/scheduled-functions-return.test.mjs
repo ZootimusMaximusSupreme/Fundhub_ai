@@ -39,9 +39,14 @@ function scheduledFunctions() {
   return names;
 }
 
-test("netlify.toml schedules the five timed jobs this test covers", () => {
+test("netlify.toml schedules the timed jobs this test covers", () => {
   const names = scheduledFunctions();
   assert.deepEqual(names.slice().sort(), [
+    /* Added 2026-09-23. It was an Inngest cron, which runs inside the
+       synchronous /api/inngest request and is killed at 26 seconds. A pass
+       moves a whole video file — the first real take was 120 MB — and was
+       killed mid-upload on production. A scheduled function gets 15 minutes. */
+    "ad-video-sweeper",
     "commas-inbox-sweeper",
     "creative-job-runner",
     "hubstaff-poll-sweeper",

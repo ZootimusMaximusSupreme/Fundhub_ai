@@ -22,7 +22,6 @@ import { financeOsPullSweeper } from './finance-os-pull-sweeper.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { affiliatePayoutRun } from './affiliate-payout-run.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
-import { adVideoSweeper } from './ad-video-sweeper.mjs';
 import { metaCampaignSyncSweeper } from './meta-campaign-sync-sweeper.mjs';
 import { clickfunnelsAnalyticsSweeper } from './clickfunnels-analytics-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
@@ -267,7 +266,18 @@ export const functions = [
      (src/lib/dry-run.mjs), and with DRIVE_RAW_FOLDER_ID unset it watches nothing
      at all. Every pass is one bounded batch — export is capped at 50 an hour and
      an update costs another, so a runaway pass would cost real money. */
-  adVideoSweeper,
+  /* adVideoSweeper is NOT registered here, on purpose (2026-09-23).
+
+     It runs as a Netlify scheduled function instead — netlify/functions/
+     ad-video-sweeper.mjs — because a pass moves a whole video file and an
+     Inngest pass runs inside the synchronous /api/inngest request, which
+     Netlify kills at 26 seconds. Measured on production: the first 120 MB take
+     was killed mid-upload and stopped dead. A scheduled function gets 15
+     minutes.
+
+     Registering it here again would also mean two crons racing for the same
+     take. The workflow module stays exactly where it is and the Netlify
+     function calls its sweep() — same code, more time. */
 
   /* THE CLOCK BEHIND THE META PULL. Registered 2026-09-09, daily at 07:00 UTC.
 

@@ -18,7 +18,19 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
  *
  * An entry here needs a reason and an owner. An empty list is the healthy state. */
 const DELIBERATELY_UNSERVED = {
-  // "some-workflow-id": "why, and who decided",
+  /* Moved out of Inngest on 2026-09-23 and it must not go back.
+
+     A pass downloads a whole filmed take out of Drive and pushes it to
+     Submagic. An Inngest pass runs inside the synchronous /api/inngest request,
+     which Netlify kills at 26 seconds; the first real take was 120 MB and was
+     killed mid-upload on production, leaving a spend claim with no project
+     behind it and the take stopped dead.
+
+     It now runs as a Netlify scheduled function —
+     netlify/functions/ad-video-sweeper.mjs, 15 minutes instead of 26 seconds —
+     which calls the very same sweep() out of this directory. Registering it
+     here again would put two crons on the same take. */
+  "ad-video-sweeper": "runs as a Netlify scheduled function; an Inngest pass is killed at 26s mid-upload"
 };
 
 /* EVERY WORKFLOW THIS REPO SERVES, BY NAME.
@@ -85,7 +97,6 @@ const EXPECTED_WORKFLOW_IDS = [
   "hiring-bench-sweeper",
   "hiring-outreach-cadence",
   "inquiry-call-sweeper",
-  "ad-video-sweeper",
   "meet-transcript-sweeper",
   "message-dispatch-sweeper",
   "meta-campaign-sync-sweeper",

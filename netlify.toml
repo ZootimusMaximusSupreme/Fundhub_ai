@@ -144,6 +144,17 @@
 [functions."hubstaff-poll-sweeper"]
   schedule = "*/10 * * * *"
 
+# The ad-video pipeline: Drive take -> Submagic -> b-roll -> export -> approval.
+#
+# A Netlify scheduled function, NOT the Inngest cron it used to be, and the
+# reason is a wall clock. A pass downloads a whole take out of Drive and pushes
+# it to Submagic; the first real one was 120 MB. Inside /api/inngest that runs
+# in a SYNCHRONOUS function, which Netlify kills at 26 seconds — measured on
+# production 2026-09-23, the pass was killed mid-upload and the take stopped
+# dead. A scheduled function gets 15 minutes.
+[functions."ad-video-sweeper"]
+  schedule = "*/5 * * * *"
+
 # Every minute, not every five. This one drains the Commas payment queue: the
 # webhook only stores the bytes and answers, so nothing a client pays reaches
 # the money chain until a pass runs. That delay is visible to a human.
