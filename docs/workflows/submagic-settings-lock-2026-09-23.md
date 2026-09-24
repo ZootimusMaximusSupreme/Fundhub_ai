@@ -1159,3 +1159,57 @@ one match call). Cut 1's approve link dies when the row leaves
 * **The phone buzz went to the ntfy topic.** Chris asked for SMS; no real
   number yet (the one given was a 555 number). Twilio is set up; wiring it is
   one decision away.
+
+## W9 The re-cut with clips, and the last two finds — 2026-09-24 05:20 UTC
+
+Cut 1 went out captions-only (bug 16). Cut 2 reused the same Submagic project
+— `awaiting_approval → failed → staged` through the store's own functions, then
+the project id and words put back so the resume path carried it to `matched`
+again for free (ad 84, confidence 95, second time).
+
+### 17. Submagic never finishes taking in an uploaded PNG
+
+The 9-minute readiness clock named it: the three 4K videos became ready; the one
+still (`…report-credit-analysis.png`) never did — `not ready yet` for nine
+minutes, on a picture. So a still that is not ready on the **first** ask is now
+dropped and the videos go in at once, with the dropped names on the row; a video
+gets the full clock. An ad with three moving clips beats no ad. Chris's stills
+are still in the library and still offered; a still Submagic *does* take in
+places as before.
+
+### The phone buzz now texts Chris
+
+`src/ad-videos/notify-fanout.mjs`: the finished-ad notification goes to Chris's
+phone by SMS through the Twilio provider **and** to the ntfy topic. The number is
+never written down — it comes from `PULSE_SMS_TO`, the same variable
+`src/pulse/notify.mjs` already documents as "Chris: dest from PULSE_SMS_TO. Do
+not hardcode." The text carries the video link, Approve and Reject, one per line.
+A proof text from the laptop was refused by the session's safety gate (a real
+SMS by hand); the pipeline sends it from production instead.
+
+### The fence caught the scheduler
+
+`netlify/functions/ad-video-sweeper.mjs` makes one raw `fetch` — a POST to our
+own deploy to start the background worker, behind a shared secret. The fence
+test ("nothing reaches the network except through the chokepoint") is right to
+flag it and it is allow-listed with that reason. It had slipped through two
+ships because those chains did not run the fence test; the ship chain now gates
+on `# fail 0` across the ad-video, sweeper, fence, scheduled-return and worker
+guard suites.
+
+### A tick that lands on a deploy is skipped
+
+05:00 fired nothing — scheduler and worker both silent — because the deploy of
+the readiness clock landed at 05:00:39. Netlify swaps the function under the
+schedule and that minute's invocation is lost. Not a break; a thing to know:
+**do not ship inside the 30 seconds before a five-minute mark** when a take is
+mid-flight.
+
+### Cost so far, honestly
+
+* Submagic: four orphan projects from the timeout era (unreachable by API),
+  plus the one real project, plus two exports on it (cut 1 empty, cut 2 with
+  clips). Credits per create/export are unpublished; the account is on the
+  trial plan.
+* Claude: two match calls (~600 tokens each).
+* Netlify: eleven production deploys tonight.
