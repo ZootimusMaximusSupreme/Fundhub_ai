@@ -62,7 +62,8 @@ const ROW_COLUMNS =
    duration_seconds, resolution_ok, storage_raw_key, match_confidence,
    submagic_project_id, finished_url, storage_final_key, finished_version,
    paul_folder_id, drive_final_file_id, approval_expires_at, approved_at,
-   approved_by, rejected_reason, failure_reason, created_at, updated_at`;
+   approved_by, rejected_reason, failure_reason, created_at, updated_at,
+   last_step, last_step_note, last_step_at`;
 
 const FULL_COLUMNS = `${ROW_COLUMNS}, transcript, source_url`;
 
@@ -594,6 +595,10 @@ const PENDING_COLUMNS = `
   v.exported_at, v.rendered_at, v.notified_at, v.delivered_at,
   v.submagic_claimed_at, v.export_claimed_at,
   v.broll_count, v.failure_reason, v.created_at, v.updated_at,
+  /* What the last pass tried and why it stopped (392). Carried here so the
+     state of a stalled take is readable from the same query that lists it,
+     rather than needing a second look at a column nothing returns. */
+  v.last_step, v.last_step_note, v.last_step_at,
   s.title, s.hook_text, s.body AS script_body`;
 
 /**
