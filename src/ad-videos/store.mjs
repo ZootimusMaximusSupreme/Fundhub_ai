@@ -570,7 +570,12 @@ const WORKER_MARKS = Object.freeze([
   /* The two spend claims (391). A step writes its claim BEFORE it calls the
      vendor and clears it when the vendor answers, so these are written and
      cleared by the same patch path as every other mark. */
-  "submagic_claimed_at", "export_claimed_at"
+  "submagic_claimed_at", "export_claimed_at",
+  /* What the last pass tried and why it stopped (392). Written on EVERY pass,
+     including one that waited and moved nothing — a take that retries in
+     silence looks identical to a take nobody is touching, and that is how the
+     first pilot take sat at `staged` with no explanation. */
+  "last_step", "last_step_note", "last_step_at"
 ]);
 for (const c of WORKER_MARKS) PATCHABLE.add(c);
 

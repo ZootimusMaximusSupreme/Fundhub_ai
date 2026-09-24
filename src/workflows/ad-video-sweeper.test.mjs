@@ -115,7 +115,19 @@ describe("walk", () => {
     assert.equal(res.per[0].to, "editing");
   });
 
-  test("a row that cannot move writes NOTHING", async () => {
+  /* CHANGED 2026-09-23, and the old rule cost a night.
+
+     This used to assert that a waiting row is not written at all. The intent
+     was right — a wait must never touch status, a timestamp or a claim — but
+     "write nothing" also meant "say nothing", and a take that retries every
+     five minutes then looks exactly like a take nobody is touching. The first
+     pilot take sat at `staged` for hours that way with the reason living only
+     in a return value nobody could read.
+
+     So the rule is now narrower and stronger: a wait writes ONLY the note of
+     what it tried and why it stopped. Status and every timestamp stay untouched,
+     which is what the old test was really protecting. */
+  test("a row that cannot move writes its reason and nothing else", async () => {
     const patches = [];
     const store = fakeStore({
       pending: [{ id: "r1", status: "raw_landed", drive_raw_file_id: "d1" }],
@@ -128,7 +140,16 @@ describe("walk", () => {
       store,
       ports: { ...portsFor({ env: {}, naming }), staging: null }
     });
-    assert.equal(patches.length, 0, "a row that waited must not be rewritten with an empty patch");
+    assert.equal(patches.length, 1, "a waiting row must say why — silence is how a stall goes unnoticed");
+    const [, wrote] = patches[0];
+    assert.match(wrote.last_step_note, /staging port was not supplied/,
+      "the reason the step gave must be readable in the database, not only in a return value");
+    assert.ok(wrote.last_step_at, "and when it last tried");
+    assert.deepEqual(
+      Object.keys(wrote).sort(),
+      ["last_step", "last_step_at", "last_step_note"],
+      "a wait writes the note and NOTHING else — no status, no timestamp, no claim"
+    );
     assert.match(res.per[0].note, /staging port was not supplied/);
   });
 

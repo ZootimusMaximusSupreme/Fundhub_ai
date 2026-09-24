@@ -219,9 +219,23 @@ export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {
       candidateScripts: ports.candidateScripts,
       brollLibrary: ports.brollLibrary
     });
+    /* WRITE DOWN WHAT JUST HAPPENED, EVEN WHEN NOTHING MOVED.
+
+       A step that waits returns no patch, so before migration 392 a take could
+       retry every five minutes for hours and look untouched from the outside —
+       which is exactly how the first pilot take went dark at `staged`. The note
+       goes on the same write as the patch when there is one, and on its own
+       when there is not. */
+    const mark = {
+      last_step: out.step || null,
+      last_step_note: out.ok ? null : (out.note || out.error || null),
+      last_step_at: new Date().toISOString()
+    };
     if (out.patch && Object.keys(out.patch).length) {
-      await store.patch(database, row.id, out.patch);
+      await store.patch(database, row.id, { ...out.patch, ...mark });
       advanced += 1;
+    } else {
+      await store.patch(database, row.id, mark);
     }
     per.push({
       id: row.id,
