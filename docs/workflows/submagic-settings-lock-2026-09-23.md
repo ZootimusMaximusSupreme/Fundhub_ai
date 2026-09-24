@@ -1232,3 +1232,22 @@ nothing in the log could say which build they were. The worker now prints
 `COMMIT_REF` at the start of every pass. Rule of thumb from tonight: after a
 ship, do not trust the next two ticks to be on the new build until the log line
 says so.
+
+## W10 Delivered — 2026-09-24 05:45:22 UTC
+
+Cut 2 of `SLO Ad 1 Take 1` — ad 84, take 1, **three moving clips**, 160 MB MP4
+verified at the link — reached `awaiting_approval` with a fresh token and the
+notify step went out with no error. Video, Approve and Reject links handed to
+Chris in chat; the same three went to the pulse number by SMS and to ntfy.
+
+### Two small leftovers from the last hour
+
+* **The build marker prints `unknown`.** `COMMIT_REF` exists at build time only;
+  the function runtime does not see it. To make a stale background function
+  visible, the sha has to be baked in at build (a generated file, or the ship
+  script setting a variable before deploy). Left as is; noted so nobody trusts
+  that line.
+* **The SMS leg could not be proved from the log** on the first real text —
+  nothing logged per channel. `notify-fanout.mjs` now prints one line per
+  channel (`sms: sent | ntfy: sent`), number never shown. Every take from here
+  on is provable.

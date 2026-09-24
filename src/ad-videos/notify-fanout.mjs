@@ -49,6 +49,13 @@ export async function send(message = {}, options = {}) {
 
   const ntfyOk = out.ntfy?.ok === true || out.ntfy?.status === "sent";
   const smsOk = out.sms?.ok === true || out.sms?.status === "sent";
+  /* ONE LOG LINE PER CHANNEL. The first real text (2026-09-24 05:45) could not
+     be proved from the worker log because nothing here said what each channel
+     did; the row only records that at least one of them landed. This line is
+     what the log needs so "did the text go" has an answer next time. The
+     number is never printed — only its last two digits. */
+  console.log(`[ad-video-notify] sms: ${smsOk ? "sent" : `not sent (${out.sms?.error || "?"})`}` +
+    `${to ? ` to …${String(to).slice(-2)}` : ""} | ntfy: ${ntfyOk ? "sent" : `not sent (${out.ntfy?.error || "?"})`}`);
   if (ntfyOk || smsOk) {
     return { ok: true, status: "sent", channels: { ntfy: ntfyOk, sms: smsOk },
       error: smsOk ? null : `text not sent: ${out.sms?.error || "unknown"}` };
