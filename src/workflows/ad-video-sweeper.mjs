@@ -40,7 +40,7 @@
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
-import { advance } from "../ad-videos/pipeline.mjs";
+import { advance, renotify } from "../ad-videos/pipeline.mjs";
 import * as defaultStaging from "../ad-videos/staging.mjs";
 import * as submagic from "../messaging/providers/submagic.mjs";
 import * as drive from "../messaging/providers/google-drive-write.mjs";
@@ -267,6 +267,30 @@ export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {
   return { ok: true, advanced, per };
 }
 
+/* rebuzz — a finished ad whose buzz did not land gets buzzed again.
+
+   `awaiting_approval` is a resting place for the walk (the next move is a
+   person's), so this is a separate, small loop: rows waiting on Chris with no
+   notified_at. It writes marks only, never a status. See renotify(). */
+export async function rebuzz(database, { store, ports } = {}) {
+  const per = [];
+  if (typeof store?.listPending !== "function") return { tried: 0, per };
+  let rows = [];
+  try { rows = (await store.listPending(database, { states: ["awaiting_approval"], limit: 25 })) || []; }
+  catch (err) { return { tried: 0, per, error: String((err && err.message) || err) }; }
+  let tried = 0;
+  for (const row of rows) {
+    if (row.notified_at) continue;
+    tried += 1;
+    const out = await renotify(row, { notify: ports.notify, env: ports.env });
+    const mark = { last_step: "renotify", last_step_note: out.ok ? null : (out.error || null), last_step_at: new Date().toISOString() };
+    try { await store.patch(database, row.id, { ...(out.patch || {}), ...mark }); }
+    catch (err) { per.push({ id: row.id, step: "renotify", ok: false, note: String((err && err.message) || err) }); continue; }
+    per.push({ id: row.id, from: row.status, step: "renotify", to: row.status, ok: out.ok, note: out.note || out.error || null });
+  }
+  return { tried, per };
+}
+
 /* sweep — one pass.
 
    `db` and the limits are arguments, so the tests drive this with no Inngest
@@ -308,6 +332,8 @@ export async function sweep(database, options = {}) {
 
     const found = await detect(database, { store, env, limit: options.detectLimit });
     const moved = await walk(database, { store, ports, limit: options.limit });
+    const buzzed = await rebuzz(database, { store, ports });
+    if (buzzed.tried) moved.per = [...(moved.per || []), ...buzzed.per];
 
     return {
       ok: found.ok && moved.ok,

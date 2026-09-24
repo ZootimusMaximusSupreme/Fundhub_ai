@@ -56,12 +56,20 @@ export async function send(message = {}, options = {}) {
      number is never printed — only its last two digits. */
   console.log(`[ad-video-notify] sms: ${smsOk ? "sent" : `not sent (${out.sms?.error || "?"})`}` +
     `${to ? ` to …${String(to).slice(-2)}` : ""} | ntfy: ${ntfyOk ? "sent" : `not sent (${out.ntfy?.error || "?"})`}`);
-  if (ntfyOk || smsOk) {
+  /* WHEN A NUMBER IS SET, THE TEXT IS WHAT COUNTS. Chris asked to be texted.
+     Counting the ntfy push as success marked the first finished ad "notified"
+     while the text had failed, and nothing ever tried again. With a number
+     configured, sent means the text went; ntfy is the second channel. With no
+     number, ntfy is all there is. */
+  const sent = to ? smsOk : ntfyOk;
+  if (sent) {
     return { ok: true, status: "sent", channels: { ntfy: ntfyOk, sms: smsOk },
-      error: smsOk ? null : `text not sent: ${out.sms?.error || "unknown"}` };
+      error: (to && !ntfyOk) ? `ntfy not sent: ${out.ntfy?.error || "unknown"}` : null };
   }
-  return { ok: false, status: "failed", channels: { ntfy: false, sms: false },
-    error: `ntfy: ${out.ntfy?.error || "failed"}; sms: ${out.sms?.error || "failed"}` };
+  return { ok: false, status: "failed", channels: { ntfy: ntfyOk, sms: smsOk },
+    error: to
+      ? `text not sent: ${out.sms?.error || "unknown"}${ntfyOk ? " (ntfy did send)" : `; ntfy: ${out.ntfy?.error || "failed"}`}`
+      : `ntfy: ${out.ntfy?.error || "failed"}; no number set for a text` };
 }
 
 export default send;

@@ -30,7 +30,7 @@ describe("the fan-out never throws and never sends from a test", async () => {
   test("with no number set, the text is skipped and said so", async () => {
     const res = await send({ id: "r1", notification }, { env: { NTFY_TOPIC: "" } });
     assert.equal(res.channels.sms, false);
-    assert.match(res.error || "", /PULSE_SMS_TO is not set|text not sent/);
+    assert.match(res.error || "", /no number set for a text/);
   });
 });
 
@@ -47,5 +47,15 @@ describe("the pulse number reaches Twilio in the shape it wants", async () => {
   test("chrisPulseSmsTo hands back the tidied number", () => {
     assert.equal(chrisPulseSmsTo({ PULSE_SMS_TO: "(602) 555-1234" }), "+16025551234");
     assert.equal(chrisPulseSmsTo({}), null);
+  });
+});
+
+describe("with a number set, the text is what counts", async () => {
+  const { send } = await import("./notify-fanout.mjs");
+  const notification = { title: "Ad 84 take 1 is ready", click: "https://v.example/f.mp4", actions: [] };
+  test("no number: an ntfy-only setup still reports what it did", async () => {
+    const res = await send({ id: "r", notification }, { env: {} });
+    assert.equal(res.ok, false, "nothing is configured in a test, so nothing sent");
+    assert.match(res.error, /no number set for a text/);
   });
 });

@@ -206,7 +206,12 @@ describe("a whole pass", () => {
   test("the batch limit reaches the store", async () => {
     let asked = null;
     const store = fakeStore();
-    store.listPending = async (_db, opts) => { asked = opts.limit; return []; };
+    // The walk asks with only a limit. The rebuzz loop asks again, with states
+    // and its own cap of 25. Record the walk, or the last call hides the batch.
+    store.listPending = async (_db, opts) => {
+      if (!opts?.states) asked = opts.limit;
+      return [];
+    };
     await sweep(noDb, { env: {}, store, naming, limit: 3 });
     assert.equal(asked, 3);
   });
