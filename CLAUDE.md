@@ -192,7 +192,7 @@ Grok and Composer do not touch websites or design HTML. Claude does that work. S
 
 ### Ad video — best of all clips (owner-set 2026-09-24)
 
-For each ad, agents merge every take and clip into one best-of master, cut dead space and repeated words, and never ship a lone take when others exist; Chris never opens Submagic. Same law: `.cursor/rules/ad-video-best-of-clips.mdc` and `.claude/rules/ad-video-best-of-clips.md`.
+For each ad, agents merge every take and clip into one best-of master, kill the editor defects in that law (dead air, repeats, false starts, filler, audio, captions, B-roll, and the rest), and never ship a lone take when others exist; Chris never opens Submagic. Same law: `.cursor/rules/ad-video-best-of-clips.mdc` and `.claude/rules/ad-video-best-of-clips.md`.
 
 ## 3. Before writing any code
 
