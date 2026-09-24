@@ -214,3 +214,36 @@ describe("the state lists have not drifted apart", () => {
     }
   });
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+   3. THE PIPELINE AND THE NAMING MODULE — the third gap of the same kind.
+
+   pipeline.mjs called naming.rawName, naming.adFolderName, naming.briefName
+   and naming.finalName. naming.mjs exports rawFileName, paulFolderName,
+   briefFileName and finalFileName — different names, different argument
+   shapes. pipeline.test.mjs passed because its stub invented the first set.
+   Measured 2026-09-24 on the first real take: the rename guard was false so
+   the Drive file kept its phone name, and delivery would have answered "the
+   naming module was not supplied" on every pass for ever.
+   ───────────────────────────────────────────────────────────────────────── */
+describe("the pipeline only calls naming functions that exist", () => {
+  test("every naming.<fn> in pipeline.mjs is an export of naming.mjs", async () => {
+    const naming = await import("./naming.mjs");
+    const src = fs.readFileSync(new URL("./pipeline.mjs", import.meta.url), "utf8");
+    const called = new Set();
+    for (const m of src.matchAll(/\bnaming\??\.(\w+)/g)) called.add(m[1]);
+    assert.ok(called.size >= 4, `expected the pipeline to call naming functions, found ${[...called].join(", ")}`);
+    const missing = [...called].filter((fn) => typeof naming[fn] !== "function");
+    assert.deepStrictEqual(missing, [],
+      `pipeline.mjs calls naming.${missing.join(", naming.")} but naming.mjs exports no such function — ` +
+      "this is the gap that skipped the rename on the first real take");
+  });
+
+  test("the real module names a raw take the way the rename step calls it", async () => {
+    const { rawFileName, finalFileName, briefFileName, paulFolderName } = await import("./naming.mjs");
+    assert.strictEqual(rawFileName("84", 1, new Date("2026-09-24T01:45:25Z")), "084_t01_raw_2026-09-24.mp4");
+    assert.strictEqual(finalFileName("84", 1, 1), "084_t01_final_v1.mp4");
+    assert.strictEqual(briefFileName("84", "txt"), "084_brief.txt");
+    assert.strictEqual(paulFolderName("84"), "084");
+  });
+});
