@@ -393,3 +393,399 @@ The first real call has to come from a deployed Netlify function, not a laptop:
 the key is stored with `--secret`, so a laptop reads a mask and gets a 401 that
 proves nothing.
 
+
+---
+
+## W1 API truth
+
+Read on 2026-09-23 from Submagic's live docs. Every field below was copied off
+the page, not remembered. Source pages: `docs.submagic.co/llms-full.txt` (the
+whole doc set in one file) and the raw page files, for example
+`docs.submagic.co/api-reference/upload-project.md`. Nothing here is guessed. Where
+the docs do not say, it says so.
+
+### Read this first — the one thing that changes the plan
+
+**There are two ways to start a video and they are not the same.**
+
+* `POST /v1/projects/upload` — you push the film up yourself (multipart file).
+* `POST /v1/projects` — you give Submagic a web link to the film (`videoUrl`).
+
+The link version has one switch the upload version does not have: `autoRender`.
+That switch is what lets you look at the words before the film is made. Details
+in item 8. If we want to check captions before paying for a render, we have to
+put the film somewhere with a public link and use `POST /v1/projects`.
+
+---
+
+### 1. Eye tracking / gaze
+
+**It is not on the upload call. It IS in the API, on a preset.**
+
+There is no eye field of any kind on `POST /v1/projects/upload` or on
+`POST /v1/projects`. I listed every single field on both pages. Not there.
+
+But a preset has one:
+
+| Thing | Truth |
+|---|---|
+| Field name | `eyeContactCorrection` |
+| Type | boolean (`true` / `false`) |
+| Where it lives | `PUT /v1/presets/{id}` (set it) and `GET /v1/presets/{id}` (read it) |
+| Default | Docs do not state a default. The sample preset shows `false` |
+| Doc line | "Whether Eye Contact correction is enabled." — Update Preset page |
+
+It is **not** gated. Some preset switches (logo, colour filter, music) only work
+if the preset already has that thing saved — the docs call that `configured`.
+`eyeContactCorrection` is not in the `configured` list, so we can just turn it on.
+
+**The catch, and it is a big one.** To use a preset on a video you pass
+`presetId`. And the docs say, word for word:
+
+> "presetId cannot be combined with templateName, userThemeId, aiEditTemplate,
+> magicZooms, magicBrolls, magicBrollsPercentage, removeBadTakes,
+> removeSilencePace, items, hookTitle, music, captionPositionY, or
+> captionPositionX. The preset controls these settings."
+
+Read `items` in that list. `items` is how we drop **our own B-roll clips at exact
+seconds**. So on the create call it is either eye contact **or** our own B-roll
+placement. Not both.
+
+**Possible way round it, UNVERIFIED.** `PUT /v1/projects/{id}` also takes `items`,
+and that page lists no preset clash. So in theory: create with the preset (eye
+contact on), then add our clips with `PUT`, then export. The docs never say this
+works. Nobody has run it. Do not plan around it until someone tries it.
+
+**Also note:** there is no "create a preset" endpoint. The API can only list, read
+and change presets that already exist. The preset itself has to be made once in
+the Submagic app. After that agents can drive it.
+
+---
+
+### 2. Dead space / silence removal
+
+Our guess was right. The field is real.
+
+| Thing | Truth |
+|---|---|
+| Field name | `removeSilencePace` |
+| Type | string (on the file-upload call it is sent as text) |
+| Allowed values | `natural`, `fast`, `extra-fast` |
+| Default | None. Leave it out and no silence is cut |
+| Where | `POST /v1/projects`, `POST /v1/projects/upload`, `PUT /v1/projects/{id}` |
+
+**The names are backwards from what you would expect.** Straight off the page:
+
+* `extra-fast` — cuts gaps of **0.1 to 0.2 seconds**. This is the most aggressive one.
+* `fast` — cuts gaps of **0.2 to 0.6 seconds**.
+* `natural` — cuts gaps of **0.6 seconds and up**. This is the gentlest one.
+
+So `natural` only removes long pauses. `extra-fast` removes tiny breaths too.
+
+There is a second, separate switch: `removeBadTakes` (boolean, default `false`).
+Its description says it removes "bad takes **and silence**". So the two overlap.
+Turning both on has an effect the docs do not describe.
+
+#### Does turning it on move the times in `words[]`? — **UNVERIFIED**
+
+The docs never answer this. I searched the whole doc set for any mention of a
+shift, an offset, a re-time, or an original-versus-cut timeline. Nothing.
+
+Here is what we do know. `GET /v1/projects/{id}` gives back `words[]`, and each
+entry has `text`, `type` (`word`, `silence` or `punctuation`), `startTime` and
+`endTime` in seconds. Note it hands back **silence blocks as their own entries**.
+That strongly suggests the times are from the original film, before any cutting.
+But "strongly suggests" is not proof and I will not write it down as one.
+
+**Why this matters more than it sounds.** Our own B-roll clips are placed with
+`items`, using `startTime` and `endTime` in seconds. If silence removal shortens
+the film and the times are measured against the **cut** version, every clip we
+place lands in the wrong spot, and the drift gets worse the further into the
+video you go. If the times are against the **original**, we are fine.
+
+**This has to be measured, not read.** One test: upload one short film twice, once
+with `removeSilencePace` set and once without, and compare the last word's
+`endTime` in each. Same number means the times are original-film times and our
+B-roll placement is safe. A smaller number on the silence-removed one means every
+placement we compute has to be re-mapped. This is the single riskiest unknown on
+the whole board.
+
+---
+
+### 3. Merging clips
+
+**Submagic merges nothing. There is no merge.**
+
+I listed every endpoint in the docs — 22 of them. There is no join, no merge, no
+stitch, no concatenate, no multi-file upload. Every create call takes exactly one
+video: one `file`, or one `videoUrl`.
+
+The only thing that sounds close is Magic Clips
+(`POST /v1/projects/magic-clips`), and it does the **opposite** — it takes one long
+video and chops it into several short ones.
+
+**So: all joining happens on our side, before the upload.** One finished MP4 or
+MOV goes up. Limits are 2 GB and 2 hours.
+
+The one thing Submagic can lay on top of an already-joined film is B-roll —
+either our own clips or AI ones — through `items`. That is covering, not joining.
+
+---
+
+### 4. `magicZooms`
+
+| Thing | Truth |
+|---|---|
+| Field name | `magicZooms` |
+| Type | boolean on `POST /v1/projects`. String `"true"` / `"false"` on `POST /v1/projects/upload` |
+| Values | on or off. Nothing in between. No strength or speed setting |
+| Default | `false` (off) |
+| Doc line | "Enable automatic zoom effects on the video to enhance visual engagement. Optional, defaults to false." |
+
+Two related ones while we are here:
+
+* `magicBrolls` — boolean, default `false`. AI picks moments and drops in **stock**
+  footage on its own.
+* `magicBrollsPercentage` — number 0-100, default `50`. How much of the video the
+  AI B-roll covers. Only does anything when `magicBrolls` is on.
+
+---
+
+### 5. Caption style
+
+**How `templateName` works.** It is a string. You pass the exact name of a style.
+Default is `"Sara"` if you leave it out. The docs warn: "Template names are
+case-sensitive." `templateName` cannot be used at the same time as `userThemeId`
+(a custom style you built in the app), and cannot be used with `presetId`.
+
+**`GET /v1/templates` returns real names.** The docs print the actual answer, all
+42 of them:
+
+Matt, Jess, Jack, Nick, Laura, Kelly 2, Caleb, Kendrick, Lewis, Doug, Carlos,
+Luke, Leila, Mark, Sara, Daniel, Dan 2, Hormozi 4, Dan, Devin, Tayo, Ella, Tracy,
+Hormozi 1, Hormozi 2, Hormozi 3, Hormozi 5, Jason, William, Leon, Ali, Beast,
+Maya, Karl, Iman, Umi, David, Noah, Gstaad, Malta, Nema, seth
+
+**The docs do not say what any of them look like.** Names only. No pictures, no
+descriptions, no "this one is loud, this one is calm". The docs say so outright:
+"the API doesn't provide template previews directly" and suggest making small test
+projects to see them.
+
+So I cannot tell you from the docs which one is clean and professional. Anyone who
+says they can is guessing.
+
+**What the docs DO describe** is a different, smaller list — the three
+`aiEditTemplate` names, each with one word of style:
+
+* `kelly` — "minimal, design"
+* `karl` — "effective, modern"
+* `ella` — "dynamic, bold"
+
+Careful: those are whole-video auto-edit styles, not caption styles. And they are
+all-or-nothing — the docs say when you use `aiEditTemplate` the **only** other
+things you may send are `title`, `language`, the video, `webhookUrl` and
+`dictionary`. Everything else is thrown away. That rules it out for us. We want
+control.
+
+#### My pick for Fundhub ads
+
+This is my judgement, not a doc fact, and it needs eyeballs on it before we lock it.
+
+**Start with `"Sara"`.** Two reasons, both from the docs and neither invented:
+it is the default, and the docs describe it as "optimized for general social media
+content". A default is the safest starting point when you cannot see previews.
+
+**Stay away from anything named Hormozi or Beast.** Those are named after creators
+whose look is the loud, big, bouncing, word-by-word style. That is the exact
+TikTok-flashy thing we do not want. I am reading the naming, not a doc line —
+flagging that so nobody quotes it back as fact.
+
+**Prove it before locking it.** Push one 20-second test clip through 3 styles —
+`Sara`, `Karl`, `Kelly 2` — and look at them side by side. Three projects, three
+exports. That is a small, cheap test and it turns a guess into a fact. Until that
+is done, the style is not locked.
+
+**Long VSL segments: use a calmer setting, and the calm comes from the switches
+more than the style name.** For a long talking-head piece, the things that make it
+feel calm are:
+
+* `magicZooms: false` — no jumping about on a 20-minute talk
+* `magicBrolls: false` — we place our own covering, on purpose
+* `removeSilencePace: "natural"` — only long pauses go, breathing stays
+* `hookTitle` left off — a big animated hook belongs on an ad, not a VSL
+
+Same caption style is fine. It is those four switches that separate an ad from a VSL.
+
+There is a third option worth knowing: `userThemeId`. You build a look once by hand
+in the Submagic app, and from then on agents pass its ID. That is how we would lock
+a Fundhub house style permanently. Not needed today.
+
+---
+
+### 6. Rate limits and what it costs
+
+#### Limits, straight off the pages
+
+| Call | Limit |
+|---|---|
+| `GET /v1/templates` | 1000 an hour |
+| `GET /v1/hook-title/templates` | 1000 an hour |
+| `GET /v1/languages` | 100 a **minute** |
+| `POST /v1/projects` (link) | 500 an hour |
+| `POST /v1/projects/upload` (file) | 500 an hour |
+| `GET /v1/projects/{id}` (read words) | 100 an hour |
+| `PUT /v1/projects/{id}` (place clips) | 100 an hour |
+| `POST /v1/user-media` and `/upload` | 500 an hour |
+| `GET /v1/user-media` | 500 an hour |
+| `PUT /v1/presets/{id}` | 500 an hour |
+| `POST /v1/projects/{id}/export` | **The docs give no number** |
+
+**Two corrections to this board's own brief, above.**
+
+1. The brief says uploads are **30 an hour**. The live page says **500 an hour**.
+2. The brief says export is **50 an hour**. The Export Project page gives no number
+   at all — it only says it "has enhanced rate limits for API-generated projects".
+   The 50 figure is not on the page today. Treat both old numbers as dead.
+
+**Careful — the docs contradict themselves on reads.** The Rate Limits page puts
+"project retrieval" at 500 an hour. The Get Project page itself says 100 an hour.
+Plan for the lower one, 100.
+
+The tightest real limit for our work is **100 an hour on read and 100 an hour on
+place-the-clips**. Those are the two we do over and over per video. Do not poll
+in a tight loop — use `webhookUrl` instead.
+
+Every answer carries headers telling you where you stand: `X-RateLimit-Limit`,
+`X-RateLimit-Remaining`, `X-RateLimit-Reset`. Going over gives a `429` with a
+`retryAfter` in seconds.
+
+#### Credits — mostly not stated, and that absence is the finding
+
+The docs give **no credit cost for making an ordinary project and no credit cost
+for an export**. I searched the whole doc set. It is simply not published.
+
+The only costs written down anywhere:
+
+* **AI B-roll: 3 AI credits per clip.** Doc line: "Every AI B-roll item consumes
+  **3 AI credits**." Each `ai-broll` entry in `items` costs 3. This is the one place
+  we could quietly burn money, because it is per clip, not per video.
+* **Magic Clips: 1 credit per project.** And it draws on the Magic Clips pot, not
+  the API pot.
+* **Publishing to social needs API credits.** No number given. Refuses with a
+  `402` saying "Insufficient API credits to publish".
+
+**So we cannot build a cost guard from the docs.** What a project or an export
+costs has to come from watching the credit balance in the Submagic account before
+and after the first real run. Our own B-roll (`user-media`) has no stated cost —
+which is another reason to prefer our clips over AI ones.
+
+---
+
+### 7. The other names, all confirmed
+
+Every one of these is real and spelled exactly like this.
+
+| Name | Type | Values / default | What it does |
+|---|---|---|---|
+| `autoRender` | boolean | default `true`. **Only on `POST /v1/projects`, NOT on `/upload`** | See item 8 |
+| `magicBrolls` | boolean (string on upload) | default `false` | AI picks moments and inserts **stock** B-roll |
+| `removeBadTakes` | boolean (string on upload) | default `false` | AI removes fluffed takes and silence. Docs warn it "may take 1-2 minutes" |
+| `hookTitle` | boolean **or** object | off unless sent | Animated opening caption |
+| `cleanAudio` | boolean (string on upload) | default `false` | Removes background noise |
+| `dictionary` | array (JSON string on upload) | max 100 items, 50 characters each | Words to spell right |
+| `webhookUrl` | string | must be HTTPS | Where Submagic pings us when it is done |
+| `disableCaptions` | boolean | default `false` | Hides captions on the finished film |
+
+**`hookTitle` in detail.** Send `true` and AI writes one. Or send an object:
+
+* `text` — our own hook, 1 to 100 characters
+* `template` — hook style name, default `"tiktok"`. The 13 real names from
+  `GET /v1/hook-title/templates` are: tiktok, laura, steph, kevin, kelly, mark,
+  logan, enrico, mike, devin, hormozi, masi, ali
+* `top` — how far down, 0 to 80, default `50`
+* `size` — text size, 0 to 80, default `30`
+
+**`dictionary` has a side effect worth knowing.** Doc line: "Terms are saved to
+your account and applied to **all your future projects**; your account keeps the
+1,000 most recently added terms." So it is not per-video. Put "Fundhub" in it once
+and it sticks for everything after. Good for us — but it means a junk word we send
+once keeps affecting later videos.
+
+#### Our own B-roll — the path, confirmed
+
+Two steps, and it is simple.
+
+**Step one — get the clip into Submagic.** Either way gives back a `userMediaId`.
+
+* From a link: `POST /v1/user-media`, JSON body `{ "url": "..." }`. The link has to
+  be public.
+* From a file on our machine: `POST /v1/user-media/upload`, multipart, field `file`.
+
+**Step two — say where it goes.** In `items`, each of our clips is one entry:
+
+* `type` — must be the exact text `"user-media"`
+* `startTime` — seconds, 0 or more
+* `endTime` — seconds, must be bigger than `startTime`
+* `userMediaId` — the ID from step one
+* `layout` — how it sits on screen. Real values for video:
+  `cover`, `contain`, `rounded`, `square`, `split-50-50`, `split-35-65`,
+  `split-50-50-bordered`, `split-35-65-bordered`, `pip-top-right`,
+  `pip-bottom-right`. For a still image only the first four work.
+
+That `layout` list is the answer to "face stays hero". `cover` hides Chris
+completely. The `split-` and `pip-` ones keep him on screen while the clip plays
+beside or over him. For an ad where the face is the hero, `split-35-65` or
+`pip-bottom-right` keeps him visible. `cover` should be used only for short beats.
+
+**Rules the docs set:** every item needs a `type`. Items **may not overlap in
+time**. Bad lengths, overlaps, or an over-long AI prompt get the whole request
+rejected.
+
+The AI version of the same thing is `type: "ai-broll"` with a `prompt` (1 to 2500
+characters) instead of a `userMediaId`, capped at **12 seconds** per clip, and it
+costs 3 credits each. Ours cost nothing extra.
+
+---
+
+### 8. The find nobody asked for but it changes the build
+
+**`autoRender` only exists on the link-based create call.**
+
+* `POST /v1/projects` (link) — has `autoRender`.
+* `POST /v1/projects/upload` (file) — does **not**. I listed every field on that
+  page. It is not there.
+
+What `autoRender` does: set it to `false` and Submagic transcribes the film and
+then **stops**, without making the video. You then read the words with
+`GET /v1/projects/{id}`, fix any wrong ones with `PUT /v1/projects/{id}`, and only
+then pay for the render with `POST /v1/projects/{id}/export`.
+
+Without it, the film renders the moment the words are ready — misheard words and
+all — and fixing them means rendering a second time.
+
+**What this means for us.** If we want to check the captions before the render,
+the film has to sit at a public web link. If we push the file straight up, we get
+whatever the first pass heard.
+
+**The export call also answers the 4K question.** `POST /v1/projects/{id}/export`
+takes `fps` (1-60), `width` (100-4000) and `height` (100-4000). 3840 by 2160 is
+inside that range, so a 4K export is possible. Left alone it copies the original
+film's size. For a 4K VSL we must pass the numbers — do not assume.
+
+**There is also an MCP server.** `POST https://api.submagic.co/mcp`, same key, sent
+as `Authorization: Bearer sk-...`. Same limits, same credits. It can be added to
+Claude Code with one command. Worth knowing; not needed to build the pipeline.
+
+### What is still not known
+
+1. **Does silence removal move the word times?** Not in the docs. Has to be measured.
+   This decides whether our B-roll lands in the right place. Biggest open risk.
+2. **What a project and an export cost in credits.** Not published. Has to be read
+   off the account balance on the first real run.
+3. **What any of the 42 caption styles look like.** No previews exist. Needs a
+   3-style test export.
+4. **Whether preset-then-add-items works.** That is the only route to eye contact
+   plus our own B-roll, and the docs neither allow it nor forbid it.
+5. **Whether the key works at all.** Unchanged from the brief above — it is stored
+   with `--secret`, so the laptop reads a mask. First real call has to be from a
+   deployed function.
