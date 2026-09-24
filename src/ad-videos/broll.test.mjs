@@ -151,3 +151,30 @@ describe("placement", () => {
     assert.ok(DEFAULT_LEAD_IN_SECONDS > 0);
   });
 });
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Video beats a still, and the reason is the face.
+
+   Submagic gives a still only the `cover`, `contain`, `rounded` and `square`
+   layouts, and every one of them fills the frame — so Chris is gone for the
+   three seconds it is up. A video clip can use `split-35-65` or
+   `pip-bottom-right` and keep him on screen next to it. The face is the ad.
+
+   The ordering itself lives in listBrollClips (the Drive provider), because
+   that is what decides the order planBroll is handed. This guards the rule the
+   ordering exists to serve: offered video first, the video is what places.
+   ───────────────────────────────────────────────────────────────────────── */
+describe("a moving clip beats a picture of the same thing", () => {
+  test("the video placed, the still did not", () => {
+    const words = ["today", "your", "roadmap", "is", "ready", "and", "waiting"]
+      .map((t, i) => ({ text: t, start: i, end: i + 0.9 }));
+    const clips = [
+      { name: "roadmap-document.mp4", userMediaId: "video", mimeType: "video/mp4" },
+      { name: "roadmap-document.png", userMediaId: "still", mimeType: "image/png" }
+    ];
+    const plan = planBroll({ words, clips, leadInSeconds: 0 });
+    assert.equal(plan.placements.length, 1, "both match the same word, so only the first can place");
+    assert.equal(plan.placements[0].userMediaId, "video",
+      "offered first, the video must take the slot — a still hides the face for the whole beat");
+  });
+});

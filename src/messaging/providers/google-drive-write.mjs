@@ -302,11 +302,22 @@ export async function listBrollClips({
     if (!id) { missing.push(wanted); continue; }
     const files = await listIn(id);
     if (files === null) { missing.push(wanted); continue; }
-    for (const f of files) {
+    /* VIDEO BEFORE STILLS, inside each folder.
+
+       A still can only use Submagic's `cover`, `contain`, `rounded` or `square`
+       layouts — every one of which fills the frame, so Chris disappears for the
+       three seconds it is up. A video clip can use `split-35-65` or
+       `pip-bottom-right` and keep his face on screen beside it. The face is the
+       ad. So when a moving version of the same thing exists, it wins. */
+    const usable = files.filter((f) => {
       const mime = String(f.mimeType || "");
       /* A PDF cannot be shown as b-roll, and a folder is not a clip. */
-      if (!mime.startsWith("video/") && !mime.startsWith("image/")) continue;
-      clips.push({ driveFileId: f.id, name: f.name, mimeType: mime, folder: wanted });
+      return mime.startsWith("video/") || mime.startsWith("image/");
+    });
+    const rank = (f) => (String(f.mimeType || "").startsWith("video/") ? 0 : 1);
+    usable.sort((a, b) => rank(a) - rank(b) || String(a.name).localeCompare(String(b.name)));
+    for (const f of usable) {
+      clips.push({ driveFileId: f.id, name: f.name, mimeType: f.mimeType, folder: wanted });
     }
   }
 
