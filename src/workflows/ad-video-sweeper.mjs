@@ -45,6 +45,7 @@ import * as defaultStaging from "../ad-videos/staging.mjs";
 import * as submagic from "../messaging/providers/submagic.mjs";
 import * as drive from "../messaging/providers/google-drive-write.mjs";
 import * as ntfy from "../messaging/providers/ntfy.mjs";
+import * as fanout from "../ad-videos/notify-fanout.mjs";
 
 /** Every five minutes. The research puts the useful window at two to five;
     five is the slower end because each pass can cost a paid API minute. */
@@ -100,7 +101,10 @@ export function portsFor({ env = process.env, naming, staging, saveFinished, can
     brollLibrary,
     submagic,
     drive,
-    notify: ntfy,
+    /* Chris's phone by TEXT (PULSE_SMS_TO, via the Twilio provider) and the
+       ntfy topic. He asked to be texted the finished video. ntfy stays as the
+       second channel. See src/ad-videos/notify-fanout.mjs. */
+    notify: fanout,
     webhookUrl: env.SUBMAGIC_WEBHOOK_URL || null,
     paulFolderId: env.DRIVE_PAUL_FOLDER_ID || null,
     landingBase: env.PUBLIC_SITE_URL || "https://fundhub.ai",

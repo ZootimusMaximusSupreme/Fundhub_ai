@@ -52,6 +52,14 @@ const NETWORK_TOKENS = [
    That is the bar. If a new entry can do either, it does not belong here — it
    belongs behind a fence. */
 const ALLOWED_RAW_FETCH = {
+  "netlify/functions/ad-video-sweeper.mjs":
+    "The clock for the ad-video pipeline. Its ONE call is a POST to our own deploy " +
+    "(process.env.URL) at /.netlify/functions/ad-video-worker-background, behind a shared " +
+    "secret, to start the 15-minute worker that Netlify will not put on a schedule. " +
+    "Nothing leaves fundhub.ai and no vendor is reached; the vendor calls happen inside " +
+    "the worker, through the providers and the chokepoint. Added 2026-09-24 after the " +
+    "worker had to move off Inngest (26 s) and off a scheduled function (30 s), both of " +
+    "which killed a 120 MB upload mid-flight.",
   // ── Not actually the global fetch ────────────────────────────────────────
   "src/http/read-api.mjs":
     "`fetch` here is a local parameter holding a database reader, not the global.",
