@@ -615,6 +615,8 @@ const PENDING_COLUMNS = `
      state of a stalled take is readable from the same query that lists it,
      rather than needing a second look at a column nothing returns. */
   v.last_step, v.last_step_note, v.last_step_at,
+  /* The token, so a buzz can be tried again with the links already sent. */
+  v.approval_token,
   s.title, s.hook_text, s.body AS script_body`;
 
 /**

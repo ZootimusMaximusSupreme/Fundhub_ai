@@ -733,15 +733,28 @@ export async function saveFinishedAndNotify(row, {
   }
 
   const size = checkResolution(row);
-  const label = `Ad ${row.ad_id ?? "?"} take ${row.take_no ?? "?"}`;
 
   if (!notify?.send) return { ...ok(patch), note: "no notifier supplied — the video is waiting, nobody was told" };
 
-  const res = await notify.send({
+  const res = await buzz(row, { notify, approveUrl, rejectUrl, env, size });
+
+  if (res?.status === "sent") {
+    return ok({ ...patch, notified_at: new Date().toISOString() }, size.warning);
+  }
+  /* The row still moves to awaiting_approval. A buzz that did not land is not a
+     reason to hide a finished video — it is a reason to try the buzz again. */
+  return ok({ ...patch, notify_error: String(res?.error || "notification did not send").slice(0, 300) }, size.warning);
+}
+
+/* buzz — the one message, whether it is the first time or a retry. */
+export async function buzz(row, { notify, approveUrl, rejectUrl, env = process.env, size } = {}) {
+  const sz = size || checkResolution(row);
+  const label = `Ad ${row.ad_id ?? "?"} take ${row.take_no ?? "?"}`;
+  return notify.send({
     id: row.id,
     notification: {
       title: `${label} is ready`,
-      body: size.warning ? `Watch it, then approve or reject. ${size.warning}` : "Watch it, then approve or reject.",
+      body: sz.warning ? `Watch it, then approve or reject. ${sz.warning}` : "Watch it, then approve or reject.",
       priority: 4,
       tags: ["clapper"],
       click: row.finished_url,
@@ -751,13 +764,48 @@ export async function saveFinishedAndNotify(row, {
       ].filter(Boolean)
     }
   }, { env });
+}
 
-  if (res?.status === "sent") {
-    return ok({ ...patch, notified_at: new Date().toISOString() }, size.warning);
+/* The approve and reject links for a take that already holds its token. The
+   sweeper mints a token only at `rendered`; a retry must reuse the one on the
+   row, or every link already sent goes dead. The token IS the credential
+   (api/public/ad-video-approve.mjs), stored as-is. */
+export function linksFromToken(row, env = process.env) {
+  const token = String(row?.approval_token || "").trim();
+  if (!token) return { approveUrl: null, rejectUrl: null };
+  const base = String(env.PUBLIC_SITE_URL || "https://fundhub.ai").replace(/\/+$/, "");
+  const url = (d) => `${base}/api/public/ad-video-approve?token=${encodeURIComponent(token)}&decision=${d}`;
+  return { approveUrl: url("approve"), rejectUrl: url("reject") };
+}
+
+/* How long a buzz that did not land keeps being retried. */
+export const REBUZZ_WINDOW_MS = 24 * 60 * 60 * 1000;
+
+/* ─────────────────────────────────────────────────────────────────────────
+   renotify — try the buzz again.
+
+   saveFinishedAndNotify's own note says a buzz that did not land "is a reason
+   to try the buzz again". Nothing ever did. Measured 2026-09-24: the first
+   finished ad's text failed, the row was marked notified because the ntfy
+   push had landed, and no pass ever looked at it again. This runs for a row
+   waiting on Chris with no notified_at, inside a day of the render, with the
+   links it already holds. It writes no status.
+   ───────────────────────────────────────────────────────────────────────── */
+export async function renotify(row, { notify, env = process.env } = {}) {
+  if (has(row.notified_at)) return skip("already notified");
+  if (String(row.status) !== "awaiting_approval") return skip(`not waiting on Chris (${row.status})`);
+  if (!has(row.finished_url)) return wait("no finished file link");
+  const renderedAt = Date.parse(String(row.rendered_at || row.updated_at || ""));
+  if (Number.isFinite(renderedAt) && Date.now() - renderedAt > REBUZZ_WINDOW_MS) {
+    return skip("render is more than a day old — not buzzing again");
   }
-  /* The row still moves to awaiting_approval. A buzz that did not land is not a
-     reason to hide a finished video — it is a reason to try the buzz again. */
-  return ok({ ...patch, notify_error: String(res?.error || "notification did not send").slice(0, 300) }, size.warning);
+  if (!notify?.send) return wait("no notifier supplied");
+
+  const { approveUrl, rejectUrl } = linksFromToken(row, env);
+  const res = await buzz(row, { notify, approveUrl, rejectUrl, env });
+  if (res?.status === "sent") return ok({ notified_at: new Date().toISOString(), notify_error: null });
+  return wait(String(res?.error || "notification did not send").slice(0, 300),
+    { notify_error: String(res?.error || "notification did not send").slice(0, 300) });
 }
 
 /* ─────────────────────────────────────────────────────────────────────────

@@ -16,7 +16,7 @@ import {
   advance, STATES, NEXT_STEP, checkResolution, buildBrief, FOUR_K_HEIGHT,
   stage, submagicCreate, readTranscript, matchAndRename,
   placeBrollAndExport, pollFinished, saveFinishedAndNotify, deliverToPaul,
-  recordSubmagicWebhook
+  recordSubmagicWebhook, renotify
 } from "./pipeline.mjs";
 
 const NAMING = {
@@ -856,5 +856,38 @@ describe("stills are held out of placement until Submagic is shown to take one i
   test("AD_VIDEO_BROLL_STILLS=1 offers the still again", async () => {
     const out = await placeBrollAndExport(matched(), ports({ AD_VIDEO_BROLL_STILLS: "1" }));
     assert.equal(out.patch.broll_count, 2);
+  });
+});
+
+describe("a buzz that did not land is tried again, with the links already sent", () => {
+  const waiting = () => row({ status: "awaiting_approval", ad_id: "84", take_no: 1, finished_url: "https://v.example/f.mp4",
+    approval_token: "tok123", rendered_at: new Date().toISOString(), notified_at: null });
+
+  test("renotify sends the same message with approve and reject built from the row's token", async () => {
+    let got = null;
+    const out = await renotify(waiting(), { notify: { send: async (m) => { got = m; return { ok: true, status: "sent" }; } }, env: { PUBLIC_SITE_URL: "https://fundhub.ai" } });
+    assert.equal(out.ok, true);
+    assert.ok(out.patch.notified_at);
+    assert.equal(out.patch.status, undefined, "a retry writes no status");
+    assert.equal(got.notification.click, "https://v.example/f.mp4");
+    assert.equal(got.notification.actions[0].url, "https://fundhub.ai/api/public/ad-video-approve?token=tok123&decision=approve");
+    assert.equal(got.notification.actions[1].url, "https://fundhub.ai/api/public/ad-video-approve?token=tok123&decision=reject");
+  });
+
+  test("a row already notified is left alone", async () => {
+    const out = await renotify({ ...waiting(), notified_at: "2026-09-24T05:45:22Z" }, { notify: { send: async () => { throw new Error("must not send"); } } });
+    assert.equal(out.skipped, true);
+  });
+
+  test("a failed retry keeps the reason on the row and stays retryable", async () => {
+    const out = await renotify(waiting(), { notify: { send: async () => ({ ok: false, status: "failed", error: "text not sent: 21211 invalid To" }) } });
+    assert.equal(out.ok, false);
+    assert.equal(out.retryable, true);
+    assert.match(out.patch.notify_error, /21211/);
+  });
+
+  test("a render more than a day old is not buzzed again", async () => {
+    const out = await renotify({ ...waiting(), rendered_at: "2026-09-01T00:00:00Z" }, { notify: { send: async () => { throw new Error("must not send"); } } });
+    assert.equal(out.skipped, true);
   });
 });
