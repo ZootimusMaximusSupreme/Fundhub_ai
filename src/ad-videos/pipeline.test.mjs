@@ -458,7 +458,7 @@ describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
     assert.match(out.error, /retry this take/);
   });
 
-  test("a claim too old to belong to anything alive stops blocking the take", async () => {
+  test("a claim too old to belong to anything alive stops the take and says why — it does not spend again", async () => {
     /* The other half of the rule above, and the reason a take stopped needing a
        person. A background function is killed at fifteen minutes, so a claim
        older than twenty cannot belong to a run that is still going. Before this,
@@ -472,9 +472,14 @@ describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
       submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
       env: {}
     });
-    assert.equal(called, true, "a claim nothing can still be behind must not block the take for ever");
-    assert.equal(out.ok, true);
-    assert.equal(out.patch.status, "editing");
+    /* REVERSED 2026-09-24, same day it was written. Four projects for one take
+       were measured in the account: every "lost" upload had landed. An expired
+       claim must never turn into a second create. It stops the take with the
+       reason on the row so a person decides. */
+    assert.equal(called, false, "an expired claim must NOT create again — the first one landed");
+    assert.equal(out.ok, false);
+    assert.equal(out.patch.status, "failed");
+    assert.match(out.patch.failure_reason, /LANDED/);
   });
 
   test("a vendor that ANSWERED clears the claim — no project was made, so retry cleanly", async () => {

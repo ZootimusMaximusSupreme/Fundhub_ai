@@ -264,7 +264,27 @@ export async function submagicCreate(row, {
      second one would be the wrong guess half the time and it is the expensive
      half. A person looks in the Submagic account and retries the take, which
      clears the claim (src/ad-videos/store.mjs retryFailed). */
-  if (has(row.submagic_claimed_at) && !claimIsStale(row.submagic_claimed_at)) {
+  /* A STALE CLAIM IS A STOP, NOT A FREE PASS.
+
+     Measured 2026-09-24: Chris's Submagic account held FOUR projects for one
+     take. Every upload our side lost — killed at 26s, killed at 30s, crashed
+     writing the id — had landed at the vendor anyway. So "it never came back,
+     it probably never arrived" is wrong in the direction that costs money, and
+     freeing an old claim automatically is an automatic double-bill.
+
+     A claim nothing can still be running behind is therefore not cleared and
+     retried. It is turned into a `failed` with the reason spelled out, so a
+     person looks in the account, finds the orphan, and puts the id on the row
+     or retries on purpose. One project is one project. */
+  if (has(row.submagic_claimed_at) && claimIsStale(row.submagic_claimed_at)) {
+    return dead(
+      `a Submagic create was started at ${row.submagic_claimed_at} and never wrote a project id, ` +
+      "and it is too old to still be running. The upload almost certainly LANDED anyway — " +
+      "four orphan projects were measured this way on 2026-09-24. Nothing was sent. " +
+      "Find the project in the Submagic account and either put its id on this row or retry on purpose."
+    );
+  }
+  if (has(row.submagic_claimed_at)) {
     return wait(
       "a Submagic create was already started for this take and never came back with a project id. " +
       "Submagic cannot be asked to list projects, so nothing here can tell whether that one landed. " +
