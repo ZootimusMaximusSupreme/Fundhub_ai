@@ -26,8 +26,19 @@
 // the same answer, so a retry cannot shuffle the B-roll.
 
 /** The three folders under `broll/` in the SLO Ads Drive folder. Kept in step
-    with scripts/slo-broll-upload.mjs, which is what put them there. */
-export const BROLL_FOLDERS = Object.freeze(["approvals", "portal", "deliverables"]);
+    with scripts/slo-broll-upload.mjs, which is what put them there.
+
+    THE ORDER IS THE PRIORITY ORDER AND IT MATTERS. planBroll walks the clips in
+    the order it is handed them and the cursor only moves forward, so the first
+    clip that matches a word wins that moment and everything after it is pushed
+    later or dropped. Measured 2026-09-23: with `approvals` first, the 62
+    approval pictures — which all carry the same words now that they are tagged
+    "approve" — took the early slots and the roadmap, the credit report and the
+    bank list never placed at all. AD 1 fell to 2 clips out of 5.
+
+    So the specific documents Chris names out loud go first, the portal screens
+    next, and the approval pictures fill whatever is left. */
+export const BROLL_FOLDERS = Object.freeze(["deliverables", "portal", "approvals"]);
 
 /** Vendor ceiling. Mirrors MAX_ITEM_SECONDS in the Submagic provider — repeated
     here so this module can be reasoned about on its own, and asserted equal in

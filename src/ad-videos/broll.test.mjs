@@ -36,7 +36,19 @@ describe("tagging", () => {
   });
 
   test("the three Drive folders are the ones the upload script made", () => {
-    assert.deepEqual([...BROLL_FOLDERS], ["approvals", "portal", "deliverables"]);
+    assert.deepEqual([...BROLL_FOLDERS].sort(), ["approvals", "deliverables", "portal"]);
+  });
+
+  /* The order is the priority order — planBroll walks the clips as handed and the
+     cursor only moves forward, so whatever comes first takes the early moments.
+     Measured 2026-09-23: with approvals first, the 62 approval pictures took every
+     slot and the roadmap, the credit report and the bank list never placed. */
+  test("the documents Chris names out loud come before the approval pictures", () => {
+    const order = [...BROLL_FOLDERS];
+    assert.ok(order.indexOf("deliverables") < order.indexOf("approvals"),
+      "deliverables must be offered before approvals or the specific documents never place");
+    assert.ok(order.indexOf("portal") < order.indexOf("approvals"),
+      "portal screens must be offered before approvals for the same reason");
   });
 });
 
