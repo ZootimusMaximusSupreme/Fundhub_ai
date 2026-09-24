@@ -933,3 +933,86 @@ Pending and stores **no reason** with it, and nothing on any client-facing page 
 So clip 6 is the closest real thing the product has: the credit analysis report's bad-items
 table, with its "why it matters" column and the order to fix them in. Renaming that screen
 is not this job — it is written down here so nobody reports it twice.
+
+## W5 What actually shipped — 2026-09-23
+
+Five real breaks were found by running the thing, not by reading it. Every one
+of them would have made the pilot look like a Submagic problem.
+
+### 1. No ad could ever have had B-roll on it
+
+Nothing in the repo loaded the B-roll library. The sweeper passed an empty list
+every time and `placeBrollAndExport` skips B-roll when the list is empty. The
+planner worked, the uploader worked, the clips were in Drive — and not one clip
+had ever been placed, or could have been.
+
+`listBrollClips` now reads the three folders. Three tests fail if the list comes
+back empty again, because an empty list is silent.
+
+### 2. The first take ever polled was thrown away
+
+`duration_seconds` is a whole-number column. Drive reports the length in
+milliseconds, so a 67.248-second take arrived as a fraction and Postgres refused
+the whole row: `invalid input syntax for type integer: "67.248"`. Nothing could
+reach Submagic at all. Now rounded.
+
+### 3. 62 approval pictures that could never match
+
+The planner matches the words in a file's NAME against what Chris says, and it
+does not bridge singular and plural. Not one of the 62 approval screenshots
+carried the word "approve". `bank` never matched "banks". `card` never matched
+"cards". 78 files renamed with the spoken words spelled out in full.
+
+Two were firing on the wrong thing: `what-you-own.png` matched "you" and so
+covered the opening line of every ad, and `send-a-file.png` matched "file".
+
+### 4. The approvals were crowding out the documents
+
+`BROLL_FOLDERS` listed approvals first. The planner takes clips in the order it
+gets them and its cursor only moves forward, so once all 62 approvals carried
+the same words they took the early slots and the roadmap, the credit report and
+the bank list never placed. AD 1 fell to 2 clips of 5. Order flipped to
+deliverables, portal, approvals.
+
+### 5. A stuck take said nothing
+
+The pilot reached `staged` and stopped. Every five minutes the sweeper tried the
+next step, the step answered "wait" with a reason, and a wait wrote no patch —
+so from the outside a take retrying every five minutes looked exactly like a
+take nobody was touching. Migration 392 adds `last_step`, `last_step_note` and
+`last_step_at`, written on every pass.
+
+### Also done
+
+* **Eight new clips.** 4K screen recordings of the real deliverables and portal,
+  converted to H.264, filed so the documents win the early moments. Six use the
+  built-in sample file, not a real client; the sample's street address is
+  replaced before any frame is drawn. The approval reel uses the already
+  blacked-out set.
+* **A moving clip now beats a picture of the same thing.** Submagic gives a
+  still only the full-frame layouts, so a picture hides Chris for its whole three
+  seconds. A video can sit beside him.
+* **Raw holds one take.** The other 13 went back to the SLO Ads root, so the
+  pilot is one project and not fourteen.
+* **`SUBMAGIC_TEMPLATE_NAME=Sara`** and **`DRIVE_BROLL_FOLDER_ID`** set on
+  Netlify.
+
+### Coverage, measured against the locked ads
+
+Before today: **zero clips on all seven ads**, because the library never loaded.
+
+After: **AD 2, 3, 4 and 5 place the full five**, with a video leading every one.
+AD 6 places four, AD 7 places three. AD 1 places two — its lines lean on words no
+clip carries yet (`score`, `inquiry`, `document` as spoken).
+
+### Still open
+
+* **Does the silence trim move the word times?** Unmeasured. The trim stays off
+  until the pilot answers it.
+* **Eye contact or our own B-roll, not both** on one create call. The
+  preset-then-`PUT` way round it is untested.
+* **Nobody has proved Submagic accepts our clips.** They are H.264 MP4 now
+  rather than the WebM they were recorded as, which removes the obvious risk.
+* **What a project and an export actually cost** is published nowhere. The
+  pilot's bill is the measurement.
+
