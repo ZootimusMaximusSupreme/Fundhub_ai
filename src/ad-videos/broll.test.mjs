@@ -9,7 +9,7 @@ import assert from "node:assert";
 
 import {
   planBroll, keywordsFromName, normaliseWords,
-  BROLL_FOLDERS, MAX_ITEM_SECONDS, DEFAULT_LEAD_IN_SECONDS, DEFAULT_MAX_CLIPS
+  BROLL_FOLDERS, MAX_ITEM_SECONDS, DEFAULT_LEAD_IN_SECONDS, DEFAULT_MAX_CLIPS, layoutFor
 } from "./broll.mjs";
 import { MAX_ITEM_SECONDS as PROVIDER_MAX, buildItems } from "../messaging/providers/submagic.mjs";
 
@@ -176,5 +176,34 @@ describe("a moving clip beats a picture of the same thing", () => {
     assert.equal(plan.placements.length, 1, "both match the same word, so only the first can place");
     assert.equal(plan.placements[0].userMediaId, "video",
       "offered first, the video must take the slot — a still hides the face for the whole beat");
+  });
+});
+
+/* ─────────────────────────────────────────────────────────────────────────
+   The face stays on screen when the clip is a video.
+
+   Submagic gives a still only frame-filling layouts, so a picture hides Chris
+   for its three seconds and nothing can change that. A video clip can sit
+   beside him. Measured 2026-09-24 on the first real take: every clip was going
+   out `cover`, so the face vanished four times in 67 seconds. This is the rule
+   that stops that.
+   ───────────────────────────────────────────────────────────────────────── */
+describe("a moving clip sits beside the face; a picture fills the frame", () => {
+  test("video gets split-35-65, a still gets cover", () => {
+    const words = ["your", "roadmap", "and", "your", "funding", "today"]
+      .map((t, i) => ({ text: t, start: i * 8, end: i * 8 + 0.9 }));
+    const clips = [
+      { name: "roadmap-document.mp4", mimeType: "video/mp4", userMediaId: "v" },
+      { name: "funding-snapshot.png", mimeType: "image/png", userMediaId: "s" }
+    ];
+    const plan = planBroll({ words, clips, leadInSeconds: 0 });
+    const by = Object.fromEntries(plan.placements.map((p) => [p.userMediaId, p.layout]));
+    assert.equal(by.v, "split-35-65", "a video must keep Chris on screen beside it");
+    assert.equal(by.s, "cover", "a still can only fill the frame");
+  });
+
+  test("a clip with no mime type is judged by its file name", () => {
+    assert.equal(layoutFor({ name: "credit-report.mp4" }), "split-35-65");
+    assert.equal(layoutFor({ name: "credit-report.jpg" }), "cover");
   });
 });

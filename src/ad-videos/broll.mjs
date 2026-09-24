@@ -58,8 +58,25 @@ export const DEFAULT_MIN_GAP_SECONDS = 4;
 /** A 1–2 minute ad. More than this and the talking head has disappeared. */
 export const DEFAULT_MAX_CLIPS = 5;
 
-/** Fixed layout. `cover` fills the frame, which is what a vertical ad needs. */
+/** The layout for a STILL. `cover` fills the frame — and it is the only kind
+    of layout Submagic gives a picture (cover, contain, rounded, square all fill
+    it), so a still hides Chris for the seconds it is up. Nothing to be done. */
 export const DEFAULT_LAYOUT = "cover";
+
+/** The layout for a VIDEO clip. The face is the ad; the clip is punctuation.
+    `split-35-65` keeps Chris on screen with the clip beside him, which is the
+    whole reason moving clips are offered before stills. Measured 2026-09-24 on
+    the first real take: every clip was going out `cover`, so the face vanished
+    four times in 67 seconds. */
+export const VIDEO_LAYOUT = "split-35-65";
+
+/** A moving clip sits beside the face; a picture has to fill the frame. */
+export function layoutFor(clip, fallback = DEFAULT_LAYOUT) {
+  const mime = String(clip?.mimeType || "");
+  const name = String(clip?.name || "");
+  const isVideo = mime.startsWith("video/") || /\.(mp4|mov|webm|m4v)$/i.test(name);
+  return isVideo ? VIDEO_LAYOUT : fallback;
+}
 
 const strip = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
@@ -193,7 +210,7 @@ export function planBroll({
       startTime,
       endTime,
       userMediaId: String(clip.userMediaId),
-      layout,
+      layout: layoutFor(clip, layout),
       clipName: clip.name || null,
       matchedWord: hit.word.text,
       matchedKeyword: hit.keyword
