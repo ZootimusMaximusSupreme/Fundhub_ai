@@ -77,20 +77,38 @@ describe("configuration", () => {
 });
 
 describe("create project", () => {
-  test("THE FOUR SWITCHES ARE FORCED, and a caller cannot turn them back on", async () => {
+  test("THE THREE SWITCHES ARE FORCED, and a caller cannot turn them back on", async () => {
     const impl = fakeFetch({ status: 200, body: { id: "proj_1" } });
     await createProject({
       title: "Ad 43 take 2", videoUrl: "https://cdn.test/043_t02.mp4",
       env: LIVE, fetchImpl: impl,
       // A caller trying to ask for the expensive, risky options.
-      autoRender: true, magicBrolls: true, removeSilencePace: "fast", removeBadTakes: true
+      autoRender: true, magicBrolls: true, removeBadTakes: true
     });
     const body = impl.calls[0].body;
     assert.equal(body.autoRender, false, "autoRender must stay off — the words are read before anything is placed");
     assert.equal(body.magicBrolls, false, "AI b-roll is 3 credits a clip against 15 a month");
     assert.equal(body.removeBadTakes, false);
-    assert.equal(body.removeSilencePace, undefined,
-      "silence cutting must not be sent — a shortened timeline is what makes item times ambiguous");
+  });
+
+  /* Owner decision 2026-09-23: Chris wants long pauses gone, so the silence trim
+     is no longer banned. It is still OFF unless one caller asks for it on one
+     take. These two guard that shape — a default that quietly trims would move
+     every B-roll clip on every ad before anyone noticed. */
+  test("the silence trim is OFF unless a caller asks for it", async () => {
+    const impl = fakeFetch({ status: 200, body: { id: "proj_1" } });
+    await createProject({ title: "t", videoUrl: "https://cdn.test/a.mp4", env: LIVE, fetchImpl: impl });
+    assert.equal(impl.calls[0].body.removeSilencePace, undefined,
+      "nothing may trim silence by default — an unproven trim moves every clip we place");
+  });
+
+  test("a caller that asks for the silence trim gets it", async () => {
+    const impl = fakeFetch({ status: 200, body: { id: "proj_1" } });
+    await createProject({
+      title: "t", videoUrl: "https://cdn.test/a.mp4", env: LIVE, fetchImpl: impl,
+      removeSilencePace: "fast"
+    });
+    assert.equal(impl.calls[0].body.removeSilencePace, "fast");
   });
 
   test("the brand spelling is always in the dictionary", async () => {
@@ -357,7 +375,7 @@ describe("uploading the take itself", () => {
     return impl;
   }
 
-  test("the file goes to /v1/projects/upload as multipart, with the four switches off", async () => {
+  test("the file goes to /v1/projects/upload as multipart, with the three switches off", async () => {
     const impl = formFetch({ body: { id: "proj-up" } });
     const res = await createProjectFromFile({
       title: "Ad 43 take 2", language: "en", file: MP4,
@@ -380,6 +398,8 @@ describe("uploading the take itself", () => {
     assert.equal(form.get("title"), "Ad 43 take 2");
     assert.equal(form.get("autoRender"), "false", "the words must be read before anything is placed");
     assert.equal(form.get("magicBrolls"), "false", "3 AI credits a clip against 15 a month");
+    assert.equal(form.get("removeSilencePace"), null,
+      "the upload route must not trim silence by default either");
     assert.equal(form.get("removeBadTakes"), "false", "a shortened timeline drifts off the transcript times");
     assert.equal(form.get("webhookUrl"), "https://fundhub.ai/api/public/submagic");
     assert.ok(JSON.parse(form.get("dictionary")).includes("Fundhub"));

@@ -276,3 +276,120 @@ word in its name. Nothing here is invented.
 | `deliverables/bank-lender-match-list.png` | `banks-approve-lender-match-list.png` | Chris always says "**banks**", plural. The file says `bank`, singular, so that half is dead. Adding `banks` and `approve` makes it fire on the real line in AD 1–6 instead of only on the word "list". |
 | `deliverables/credit-optimization-roadmap.png` | `roadmap-optimized-credit-plan.png` | `optimization` never fires because he says "**optimized**". Swapping the word makes this clip cover both "the **roadmap**" (AD 1, 4, 7) and "once your file is **optimized**" (AD 1, 3, 4, 5, 6, 7). |
 
+## W2 Repo wiring — done
+
+### What our code sends today
+
+| What Chris wants | Submagic field | Value we send | Wired? |
+|---|---|---|---|
+| No auto-edit before we read the words | `autoRender` | `false`, forced, a caller cannot turn it on | **Yes** |
+| No AI stock B-roll | `magicBrolls` | `false`, forced | **Yes** |
+| No mystery cuts | `removeBadTakes` | `false`, forced | **Yes** |
+| Dead space trimmed | `removeSilencePace` | **new 2026-09-23** — off by default, a caller may pass it on one take | **Yes, off** |
+| Spell Fundhub right | `dictionary` | `["Fundhub","fundhub.ai"]` plus extras | **Yes** |
+| One caption look | `templateName` | passes through; now also reads `SUBMAGIC_TEMPLATE_NAME` | **Yes, unset** |
+| Big words on the hook | `hookTitle` | passes through | **Yes, unset** |
+| Cleaner voice | `cleanAudio` | passes through, only when `true` | **Yes, unset** |
+| Tell us when it is done | `webhookUrl` | `SUBMAGIC_WEBHOOK_URL` | **Yes** |
+| Our own clips as B-roll | `items[]` type `user-media` | `buildItems()` refuses any other type | **Yes** |
+| Slow push-in on the face | `magicZooms` | not sent | **No — and leave it that way** |
+| Music bed | `music` | not sent | **No** |
+| Captions off | `disableCaptions` | not sent | **No** |
+
+Eye tracking is not in that table because Submagic's upload page does not name
+such a field. W1 confirms against the live page.
+
+### Dead space — the call
+
+**Approach A, gated on one measurement.** Turn the trim on for the pilot take
+only, then check one number before it goes on anything else.
+
+Why not the others. B is not real: the export call takes an id and nothing else,
+so there is no export preset to hide a trim in. C means Chris edits, and Chris
+films and approves — he does not edit.
+
+The risk in A, in one sentence: our order is make the project, read the words and
+their times, drop our clips on those times, then export — so if Submagic cuts the
+silence at export instead of at create, every word time we read is from the long
+version and every clip lands late.
+
+**The measurement that settles it, free, on the pilot:** the project comes back
+with a `durationSeconds`. Compare it to the length of the file we sent. Shorter
+means the trim already happened and the times we read are the real ones — leave
+it on. The same means the trim is waiting for export — turn it back off and the
+answer becomes C after all.
+
+### The code change, made
+
+`src/messaging/providers/submagic.mjs`
+
+* `createProject` and `createProjectFromFile` now take a `removeSilencePace`
+  argument. It is sent **only** when a caller passes something that is not
+  `false` or unset. The multipart route sends it as text, so `true` goes as
+  `"true"` and a mode such as `"light"` goes as itself — either shape works,
+  whichever one W1 finds on the live page.
+* The file header no longer says the trim is banned forever. It says it is off
+  by default and names the pilot measurement above.
+
+`src/ad-videos/pipeline.mjs`
+
+* `submagicCreate` now accepts and passes through `templateName`,
+  `removeSilencePace`, `hookTitle` and `cleanAudio`. Before this, the provider
+  supported all four and the pipeline sent none of them — so the caption look
+  could never have been set on a real run.
+* `templateName` falls back to `SUBMAGIC_TEMPLATE_NAME` from the environment,
+  so one template covers every ad without a code change.
+
+`src/messaging/providers/submagic.test.mjs`
+
+* The old guard said a caller may never ask for the trim. That was an owner rule
+  and Chris changed it. It is replaced by two guards of the same strength: the
+  trim is not sent by default on either route, and a caller that asks for it
+  gets it. Nothing was deleted or weakened to make a suite pass.
+
+Checks: lint clean on 2628 files, `tsc --noEmit` clean, 97 of 97 tests pass.
+
+### Merging clips — what the API can and cannot do
+
+Submagic takes **one** film per project: `POST /v1/projects/upload` has a single
+`file` field. There is no endpoint that joins two takes. `POST /v1/user-media/upload`
+adds clips, but those are B-roll laid **on top of** the film, capped at 12 seconds
+each — they are not a way to staple two takes end to end.
+
+So: **anything that needs joining is joined before upload.** One finished MP4 goes
+up, and Submagic's job is captions and our B-roll on top of it.
+
+### Cost guard
+
+* **30 project creates an hour.** That is the tight one at the front. One take,
+  one create. A crashed create still costs one, which is why our code writes the
+  claim before it calls and never spends a second one on the same take.
+* **50 exports an hour**, and every re-edit costs another export. A take that
+  gets its B-roll adjusted twice has cost two exports.
+* **No AI B-roll, ever.** 3 credits a clip against 15 a month is five clips for
+  a hundred ads.
+* **Nothing is sent at all unless `ADAPTERS_DRY_RUN=0` is set on Netlify.**
+  That is the default and it is deliberate: an edit that costs money should not
+  start because a deploy forgot a variable.
+* Submagic publishes **no list endpoint**. Nothing can ask "what did I already
+  make", so a double-create is money that cannot be found again.
+
+### Pilot plan — ONE file
+
+Do **not** put all 14 Raw files in. The sweeper polls the Raw folder
+(`DRIVE_RAW_FOLDER_ID` = `12L_RH8QycTZFeaXn4rHs9AIeGq7XokWU`) and takes whatever
+is in it.
+
+1. Raw holds exactly **one** take — the ad with the best B-roll cover on W3's
+   matrix. Everything else stays where it is.
+2. Set `SUBMAGIC_TEMPLATE_NAME` to W1's recommended template, and set
+   `removeSilencePace` for this one run only.
+3. Let it run: create, read the words, place our clips, export.
+4. Read the pilot number — `durationSeconds` against the raw file's length — and
+   write the answer on this board.
+5. Only then does take two go in.
+
+The first real call has to come from a deployed Netlify function, not a laptop:
+the key is stored with `--secret`, so a laptop reads a mask and gets a 401 that
+proves nothing.
+

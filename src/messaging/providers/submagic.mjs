@@ -61,9 +61,20 @@
 //   * ai-broll. 3 AI credits per clip against 15 credits a month is five clips
 //     for a hundred ads. buildItems() refuses any type that is not "user-media",
 //     and createProject() refuses a payload carrying magicBrolls.
-//   * removeSilencePace / removeBadTakes. Leaving them off is what removes the
-//     B-roll timing risk in the research: the timeline never shortens, so item
-//     times cannot drift off the transcript times.
+//   * removeBadTakes. Always false. A cut we did not ask for is a cut nobody
+//     can explain to Chris.
+//
+//   removeSilencePace is the ONE exception, added 2026-09-23. Chris wants long
+//   pauses gone. It is still OFF by default and it is never forced on: a caller
+//   has to pass it, one take at a time. The reason for the care is timing. Our
+//   order is create -> read the real words[] -> place our clips -> export. If
+//   Submagic trims the silence when the project is MADE, the words[] we read
+//   back are already on the short timeline and our clips land right. If it trims
+//   at EXPORT instead, the words[] are on the long timeline and every clip lands
+//   late. Nobody has measured which one it does. So: prove it on one take by
+//   comparing the durationSeconds that comes back against the length of the file
+//   we sent. Shorter means the trim already happened and this is safe to leave
+//   on. The same means the trim is waiting for export and this goes back off.
 //   * autoRender. Always false. The order is create → read the real words[] →
 //     place our clips → export.
 //   * Log the key. The chokepoint redacts error text; nothing here prints a
@@ -324,7 +335,7 @@ function verdictOf(res, what) {
    ───────────────────────────────────────────────────────────────────────── */
 export async function createProject({
   title, language = "en", videoUrl, webhookUrl, dictionary = [],
-  templateName, hookTitle, cleanAudio,
+  templateName, hookTitle, cleanAudio, removeSilencePace,
   env = process.env, fetchImpl, timeoutMs, signal
 } = {}) {
   const t = String(title || "").trim();
@@ -342,7 +353,7 @@ export async function createProject({
     title: t,
     language: String(language || "en"),
     videoUrl: v,
-    /* THE FOUR SWITCHES THAT ARE NOT NEGOTIABLE. See the file header. */
+    /* THE THREE SWITCHES THAT ARE NOT NEGOTIABLE. See the file header. */
     autoRender: false,
     magicBrolls: false,
     removeBadTakes: false,
@@ -352,6 +363,11 @@ export async function createProject({
   if (templateName) payload.templateName = String(templateName);
   if (hookTitle) payload.hookTitle = String(hookTitle);
   if (cleanAudio === true) payload.cleanAudio = true;
+  /* OFF unless the caller says otherwise. See the header: an unproven trim moves
+     every B-roll clip. `undefined` and `false` both mean do not send it. */
+  if (removeSilencePace !== undefined && removeSilencePace !== false) {
+    payload.removeSilencePace = removeSilencePace;
+  }
 
   const res = await call("POST", "/v1/projects", { body: payload, env, fetchImpl, timeoutMs, signal, what: "submagic create project" });
   const v2 = verdictOf(res, "submagic create project");
@@ -373,7 +389,7 @@ export async function createProject({
    no bet on whether the vendor's downloader likes our host, and the take never
    has to be readable by the world in order to be captioned.
 
-   Same four switches as createProject and for the same reasons — they are sent
+   Same switches as createProject and for the same reasons — they are sent
    as strings because a multipart field is text on the wire.
 
    Rate limit 30 an hour, same as the URL route. A failed upload costs one of
@@ -381,7 +397,7 @@ export async function createProject({
    ───────────────────────────────────────────────────────────────────────── */
 export async function createProjectFromFile({
   title, language = "en", file, fileName = "take.mp4", contentType = "video/mp4",
-  webhookUrl, dictionary = [], templateName, hookTitle, cleanAudio,
+  webhookUrl, dictionary = [], templateName, hookTitle, cleanAudio, removeSilencePace,
   env = process.env, fetchImpl, timeoutMs, signal, maxBytes = MAX_FILE_BYTES
 } = {}) {
   const t = String(title || "").trim();
@@ -407,7 +423,7 @@ export async function createProjectFromFile({
   const form = new FormData();
   form.append("title", t);
   form.append("language", String(language || "en"));
-  /* THE FOUR SWITCHES THAT ARE NOT NEGOTIABLE. See the file header. */
+  /* THE THREE SWITCHES THAT ARE NOT NEGOTIABLE. See the file header. */
   form.append("autoRender", "false");
   form.append("magicBrolls", "false");
   form.append("removeBadTakes", "false");
@@ -416,6 +432,12 @@ export async function createProjectFromFile({
   if (templateName) form.append("templateName", String(templateName));
   if (hookTitle) form.append("hookTitle", String(hookTitle));
   if (cleanAudio === true) form.append("cleanAudio", "true");
+  /* OFF unless the caller says otherwise. See the header. A multipart field is
+     text on the wire, so `true` goes as the string "true" and a mode such as
+     "light" goes as itself — whichever shape Submagic's page turns out to want. */
+  if (removeSilencePace !== undefined && removeSilencePace !== false) {
+    form.append("removeSilencePace", String(removeSilencePace));
+  }
   form.append("file", new Blob([file], { type: contentType }), String(fileName || "take.mp4"));
 
   /* No Content-Type header: FormData writes its own boundary, and setting one

@@ -209,7 +209,15 @@ export async function stage(row, { staging, env = process.env } = {}) {
    the call, and neither is ever re-spent.
    ───────────────────────────────────────────────────────────────────────── */
 export async function submagicCreate(row, {
-  submagic, drive, claim, env = process.env, webhookUrl, maxUploadBytes
+  submagic, drive, claim, env = process.env, webhookUrl, maxUploadBytes,
+  /* The caption look. One Fundhub template for every ad so a hundred of them
+     look like one brand. Unset means Submagic's own default. */
+  templateName,
+  /* Silence trim. OFF unless a caller passes it, one take at a time, and not
+     until the pilot has proved Submagic trims at create and not at export —
+     see the header of src/messaging/providers/submagic.mjs. */
+  removeSilencePace,
+  hookTitle, cleanAudio
 } = {}) {
   if (has(row.submagic_project_id)) return skip("already at Submagic");
   if (!submagic?.createProjectFromFile) return wait("the Submagic provider was not supplied");
@@ -255,7 +263,11 @@ export async function submagicCreate(row, {
     file: got.bytes,
     fileName: row.drive_raw_name || `take-${row.id}.mp4`,
     contentType: got.contentType || "video/mp4",
-    maxBytes: maxUploadBytes
+    maxBytes: maxUploadBytes,
+    templateName: templateName || env.SUBMAGIC_TEMPLATE_NAME || undefined,
+    removeSilencePace,
+    hookTitle,
+    cleanAudio
   });
 
   if (!res.ok) {
