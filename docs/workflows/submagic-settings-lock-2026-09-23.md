@@ -10,8 +10,10 @@ This board is not ad scripts. Ad scripts are a separate job.
 | W1 | API truth | The real field names in Submagic's docs — eye tracking, silence, merge, templates, costs | done |
 | W2 | Repo wiring | What our code already sends, what it does not, the dead-space code change, cost guard | claimed |
 | W3 | B-roll coverage | AD 1–7 matrix, real Drive clips, the file naming rule | done |
+| W4 | Recorded B-roll | The 8 missing screen clips — recorded, named for the matcher, 4K | done |
 
-No dependencies. All three run at once. W2 wrote the code change with the field
+W4 ran after W3, because W3 is what settled the naming rule. The first three had
+no dependencies and ran at once. W2 wrote the code change with the field
 **name** taken from our own measured spec; W1 confirms the field's **value shape**.
 
 ## The shared brief — what we already know, measured
@@ -817,3 +819,117 @@ call to find out, on the pilot.
 1. Does `removeSilencePace` shift the word times, or not.
 2. Does a preset-then-`PUT`-items call keep both eye contact and our clips.
 
+
+---
+
+## W4 Recorded B-roll
+
+Eight moving screen clips, recorded 2026-09-23. W3 measured that the whole B-roll
+library was still **pictures**. These are the first moving clips. Chris filmed nothing
+for these — they are screen recordings, no camera.
+
+Made by `scripts/broll-record.mjs`. It can be re-run at any time and will rebuild
+everything from scratch.
+
+### The eight clips
+
+| # | What is on screen | File name | Length | Size | Data on screen |
+|---|---|---|---|---|---|
+| 1 | The bank and lender match list, scrolling through the matched banks | `list-banks-bank-approve-approval-approved.webm` | 3.8s | 3840x2160 | Made-up. Sample file "Jordan Sample" |
+| 2 | The funding roadmap document, scrolling the month-by-month plan | `roadmap-document-documents.webm` | 3.8s | 3840x2160 | Made-up. Sample file |
+| 3 | The credit analysis report — the three bureaus and the three scores | `credit-score-scores-bureaus-bureau.webm` | 3.8s | 3840x2160 | Made-up. Sample file |
+| 4 | The funding snapshot — the amounts now and after the work | `funding-qualify-qualified.webm` | 3.8s | 3840x2160 | Made-up. Sample file |
+| 5 | The real soft-pull approval screen — "It is a soft inquiry" | `inquiry-inquiries-soft.webm` | 3.8s | 3840x2160 | Made-up. Every box left empty |
+| 6 | Why the banks say no — the bad items and the "why it matters" column | `declined-decline-why.webm` | 3.8s | 3840x2160 | Made-up. Sample file |
+| 7 | Four real approval emails, one after another | `approval-approved-approvals.webm` | 3.8s | 3840x2160 | **Real approvals, already blacked out at the source.** See the note below |
+| 8 | A dispute letter, scrolling | `letter-letters-accounts-account.webm` | 3.8s | 3840x2160 | Made-up. Sample name, real letter engine |
+
+Where they are on this Mac:
+
+```
+docs/workflows/slo-broll-2026-09-23-evidence/clips/
+```
+
+44 MB in total. That folder is gitignored (`docs/workflows/*-evidence/`), the same as
+every other picture and video dump in this repo, so the clips sit on disk and the
+script that makes them is what is in git.
+
+**Nobody has moved these to Drive yet.** They belong in the `broll` folder,
+`1GclLLeMNOVjVSQOJUVBgQYp7WAd3pF11`. Drive writes were refused in the session that made
+them.
+
+### The names are the whole job
+
+`src/ad-videos/broll.mjs` has no stemming: a clip tagged `bank` does not fire when Chris
+says "banks". So each name spells out every form of every word it has to catch, and
+carries no dollar amounts, take numbers or dates — those never match a spoken word.
+
+Proved by running the product's own reader, `keywordsFromName`, over the eight finished
+files:
+
+```
+approval-approved-approvals.webm                 -> ["approval","approved","approvals"]
+credit-score-scores-bureaus-bureau.webm          -> ["credit","score","scores","bureaus","bureau"]
+declined-decline-why.webm                        -> ["declined","decline","why"]
+funding-qualify-qualified.webm                   -> ["funding","qualify","qualified"]
+inquiry-inquiries-soft.webm                      -> ["inquiry","inquiries","soft"]
+letter-letters-accounts-account.webm             -> ["letter","letters","accounts","account"]
+list-banks-bank-approve-approval-approved.webm   -> ["list","banks","bank","approve","approval","approved"]
+roadmap-document-documents.webm                  -> ["roadmap","document","documents"]
+```
+
+That closes six of the holes W3's matrix listed as **N**: `document`, `score`, `inquiry`,
+`declined`, `qualify` and `accounts`. It also puts the word `approve` on a clip for the
+first time — W3 found 62 approval pictures and not one that fires when Chris says "the
+banks that will approve you".
+
+### Nobody real is on screen
+
+These run in paid ads, so the rule was: no real client, no real report, no real name, no
+real account number.
+
+* Clips 1, 2, 3, 4, 6 and 8 are the **real Fundhub deliverables** rendered for the
+  made-up sample file "Jordan Sample" that already lives inside
+  `scripts/black-reports/fundhub_gen.py`. No database was opened. Nothing was read from
+  the live site.
+* The sample file carries a full street address and the roadmap prints it in the "form
+  your LLC" step. The script swaps it for `1200 Sample Street` before a single frame is
+  drawn. A street address does not belong in an ad even with a made-up name beside it.
+* Clip 5 is the **real soft-pull screen** with its network answer stubbed. Nothing was
+  typed into any box. The Social Security line shows the page's own grey placeholder.
+* Clip 7 is **real client approvals**, taken from
+  `clickfunnels-fragments/slo/client-wins/` — the sanitized set, where every name is
+  blacked out in the picture itself. This is on purpose: the proof-cards law says an
+  approval card is built from the real screenshot and never invented, so a made-up
+  approval email was not an option.
+
+### 4K, and the format
+
+Every clip is **3840 x 2160**. Owner law `.claude/rules/video-4k-unless-ad.md` — some of
+these land in VSLs, not only ads, and 1080p cannot be upscaled later.
+
+**Measured, and it is a trap worth writing down:** Playwright only ever scales a page
+picture **down** into the video frame, never up, and `deviceScaleFactor` does not change
+what the recorder receives. A 1280x720 window asked to record at 3840x2160 gave a small
+picture sitting in the corner of a grey 4K frame. The fix is to make the window itself
+3840x2160 and zoom the page 3x, which lays the document out at the width it was designed
+for and paints every pixel.
+
+**The clips are `.webm`, not `.mp4`, and that is a real gap.** Turning VP8 into H.264
+needs an encoder this Mac does not have: no `ffmpeg` on the PATH, no Homebrew to install
+one, and Playwright's own bundled ffmpeg is built with **libvpx and png only**. That
+bundled one is still enough to cut the blank first half-second off each clip and fix the
+length at 3.8 seconds, which it did. The moment a real ffmpeg is on this machine,
+re-running `scripts/broll-record.mjs` writes `.mp4` instead — no other change needed.
+
+**Unproved:** whether Submagic's `POST /v1/user-media/upload` accepts a `.webm`. W1's
+read of the docs did not name the file types that endpoint takes. One upload answers it.
+
+### One substitution, named
+
+Clip 6 was asked for as "the portal showing a decline reason". **There is no such screen.**
+`public/app/client-control-panel.html` records a bank answer as Approved / Declined /
+Pending and stores **no reason** with it, and nothing on any client-facing page shows one.
+So clip 6 is the closest real thing the product has: the credit analysis report's bad-items
+table, with its "why it matters" column and the order to fix them in. Renaming that screen
+is not this job — it is written down here so nobody reports it twice.

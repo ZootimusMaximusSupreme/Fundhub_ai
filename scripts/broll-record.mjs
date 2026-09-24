@@ -199,9 +199,22 @@ function buildDeliverables() {
     "        open(out, 'w', encoding='utf-8').write(doc)",
     ""
   ].join("\n"));
-  sh("python3", ["fundhub_gen.py", "--out", STAGE], {
+  /* THE STREET ADDRESS IS SWAPPED FOR A PLAINLY MADE-UP ONE. The sample file carries
+     a full street address, and the roadmap prints it in the "form your LLC" step. A
+     real street address has no business on a paid ad even with a made-up name on it,
+     so it is replaced before a single frame is drawn. */
+  fs.writeFileSync(path.join(shim, "driver.py"), [
+    "import sys",
+    "import fundhub_gen as g",
+    "g.CLIENT['applicant'] = 'Jordan Sample'",
+    "g.CLIENT['address'] = '1200 Sample Street, San Antonio, TX 78242'",
+    `sys.argv = ['fundhub_gen.py', '--out', ${JSON.stringify(STAGE)}]`,
+    "g.main()",
+    ""
+  ].join("\n"));
+  sh("python3", [path.join(shim, "driver.py")], {
     cwd: path.join(ROOT, "scripts/black-reports"),
-    env: { ...process.env, PYTHONPATH: shim }
+    env: { ...process.env, PYTHONPATH: `${shim}:${path.join(ROOT, "scripts/black-reports")}` }
   });
   for (const f of fs.readdirSync(STAGE)) {
     if (f.endsWith(".pdf")) fs.rmSync(path.join(STAGE, f)); // the shim leaves 0-byte stubs
@@ -231,7 +244,7 @@ function buildApprovals() {
 function buildLetter() {
   const identity = {
     fullName: "Jordan Sample",
-    addressLine1: "5815 Knoll Krest St",
+    addressLine1: "1200 Sample Street",
     city: "San Antonio",
     state: "TX",
     zip: "78242"
