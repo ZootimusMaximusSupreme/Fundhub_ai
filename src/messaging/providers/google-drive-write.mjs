@@ -290,12 +290,19 @@ export async function listNewVideos({
   if (!tok.ok) return { ...tok, files: [] };
 
   const clauses = [`'${parent.replace(/'/g, "\\'")}' in parents`, "trashed = false"];
-  if (since) clauses.push(`createdTime > '${new Date(since).toISOString()}'`);
+  /* MODIFIED time, not CREATED time. `since` is when we last recorded a take.
+     A take filmed a week ago and moved into Raw today was CREATED a week ago,
+     so a created-time filter never sees it — measured 2026-09-24: the second
+     take, filmed 09-21, sat in Raw invisible while the poll asked for files
+     created after 01:45 that morning. Moving a file into a folder bumps its
+     modified time, which is the event the poll is actually waiting for. A file
+     seen twice is harmless: recordRawTake is idempotent on the Drive id. */
+  if (since) clauses.push(`modifiedTime > '${new Date(since).toISOString()}'`);
 
   const url = `${DRIVE_API}/files?${qs({
     q: clauses.join(" and "),
     fields: `files(${FILE_FIELDS})`,
-    orderBy: "createdTime",
+    orderBy: "modifiedTime",
     pageSize,
     ...SHARED
   })}`;

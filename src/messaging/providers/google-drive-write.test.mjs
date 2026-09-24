@@ -126,7 +126,9 @@ describe("finding new takes", () => {
     const url = decodeURIComponent(impl.drive()[0].url);
     assert.match(url, /'RAWID' in parents/);
     assert.match(url, /trashed = false/);
-    assert.match(url, /createdTime > '2026-09-23T09:00:00.000Z'/);
+    /* modifiedTime, not createdTime: a take filmed last week and moved into
+       Raw today was created last week. Measured 2026-09-24 — see listNewVideos. */
+    assert.match(url, /modifiedTime > '2026-09-23T09:00:00.000Z'/);
   });
 
   test("no folder id means no call at all", async () => {

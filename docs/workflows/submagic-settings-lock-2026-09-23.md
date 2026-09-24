@@ -1261,3 +1261,12 @@ Chris in chat; the same three went to the pulse number by SMS and to ntfy.
   defaults `dryRun = true` and `partner-production-floor.mjs` never passes
   `false`, so `PULSE_SMS_TO` — the number the ad-video text now uses — had
   never been exercised before tonight. Whether it is current is Chris's to say.
+
+### 18. The Drive poll could never find a second take
+
+`lastRawSeenAt` is the time we last *recorded* a take; the poll compared it to
+Drive's *created* time. Every take was filmed on 09-21, and moving a file into
+Raw does not change when it was created — so after the first take, no other
+could ever be seen. `SLO Ad 3 Take 1` sat in Raw invisible. The poll now keys
+on *modified* time, which a move into Raw bumps; a file seen twice is harmless
+because `recordRawTake` is idempotent on the Drive id.
