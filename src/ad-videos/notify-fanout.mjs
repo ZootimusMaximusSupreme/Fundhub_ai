@@ -1,10 +1,9 @@
 // The buzz when a finished ad is ready: Chris's phone by TEXT, and the ntfy topic.
 //
 // WHY THIS EXISTS. The pipeline's notify port was ntfy only. ntfy is a push app;
-// Chris asked to be TEXTED the finished video. src/pulse/notify.mjs already
-// holds the one sanctioned "text Chris" path — "Chris: dest from PULSE_SMS_TO
-// (or CHRIS_PULSE_SMS). Do not hardcode." — so this reuses its number lookup
-// and the Twilio provider it sends through. No number is written down here.
+// Chris asked to be TEXTED the finished video. The number is never written
+// down here. AD_VIDEO_SMS_TO is the finished-ad destination. PULSE_SMS_TO stays
+// the morning-check number and is only the fallback. The Twilio provider sends.
 //
 // TRANSMISSION STAYS IN THE PROVIDERS. This module calls two provider send()
 // functions and nothing else; there is no fetch in this file (CLAUDE.md §12).
@@ -14,7 +13,16 @@
 
 import { send as sendNtfy } from "../messaging/providers/ntfy.mjs";
 import { send as sendSms } from "../messaging/providers/twilio.mjs";
-import { chrisPulseSmsTo } from "../pulse/notify.mjs";
+import { chrisPulseSmsTo, normalizeUsNumber } from "../pulse/notify.mjs";
+
+export const AD_VIDEO_SMS_TO_ENV = "AD_VIDEO_SMS_TO";
+
+/* Finished-ad texts only. The pulse number is a different phone and must not
+   win while this one is set. Empty here falls back to the pulse lookup. */
+export function adVideoSmsTo(env = process.env) {
+  const raw = String((env && env[AD_VIDEO_SMS_TO_ENV]) || "").trim();
+  return normalizeUsNumber(raw) || chrisPulseSmsTo(env);
+}
 
 /** The text. Short, and every link on its own line so a phone makes each one tappable. */
 export function smsBody(notification = {}) {
@@ -33,7 +41,7 @@ export async function send(message = {}, options = {}) {
   try { out.ntfy = await sendNtfy(message, options); }
   catch (err) { out.ntfy = { ok: false, status: "failed", error: String((err && err.message) || err) }; }
 
-  const to = chrisPulseSmsTo(env);
+  const to = adVideoSmsTo(env);
   if (to) {
     try {
       out.sms = await sendSms(
@@ -44,7 +52,7 @@ export async function send(message = {}, options = {}) {
       out.sms = { ok: false, status: "failed", error: String((err && err.message) || err) };
     }
   } else {
-    out.sms = { ok: false, status: "skipped", error: "PULSE_SMS_TO is not set — no text was attempted" };
+    out.sms = { ok: false, status: "skipped", error: "AD_VIDEO_SMS_TO and PULSE_SMS_TO are not set — no text was attempted" };
   }
 
   const ntfyOk = out.ntfy?.ok === true || out.ntfy?.status === "sent";

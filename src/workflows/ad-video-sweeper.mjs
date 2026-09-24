@@ -101,9 +101,9 @@ export function portsFor({ env = process.env, naming, staging, saveFinished, can
     brollLibrary,
     submagic,
     drive,
-    /* Chris's phone by TEXT (PULSE_SMS_TO, via the Twilio provider) and the
-       ntfy topic. He asked to be texted the finished video. ntfy stays as the
-       second channel. See src/ad-videos/notify-fanout.mjs. */
+    /* Chris's phone by TEXT (AD_VIDEO_SMS_TO, else the pulse number, via the
+       Twilio provider) and the ntfy topic. He asked to be texted the finished
+       video. ntfy stays as the second channel. See src/ad-videos/notify-fanout.mjs. */
     notify: fanout,
     webhookUrl: env.SUBMAGIC_WEBHOOK_URL || null,
     paulFolderId: env.DRIVE_PAUL_FOLDER_ID || null,

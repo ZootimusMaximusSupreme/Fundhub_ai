@@ -50,6 +50,40 @@ describe("the pulse number reaches Twilio in the shape it wants", async () => {
   });
 });
 
+describe("the finished-ad text does not follow the pulse number", async () => {
+  const { adVideoSmsTo, send } = await import("./notify-fanout.mjs");
+  const pulse = "+15555550165";
+  const ad = "+15555550198";
+  const from = "+15555550168";
+
+  test("AD_VIDEO_SMS_TO wins when both numbers are set", () => {
+    assert.equal(adVideoSmsTo({ AD_VIDEO_SMS_TO: ad, PULSE_SMS_TO: pulse }), ad);
+  });
+
+  test("an empty ad-video number still uses the pulse number", () => {
+    assert.equal(adVideoSmsTo({ PULSE_SMS_TO: pulse }), pulse);
+    assert.equal(adVideoSmsTo({}), null);
+  });
+
+  test("the log's last two digits are that destination, not the Twilio from-number", async () => {
+    const lines = [];
+    const orig = console.log;
+    console.log = (...args) => { lines.push(args.map(String).join(" ")); };
+    try {
+      await send(
+        { id: "r-dest", notification: { title: "Ad is ready", click: "https://v.example/f.mp4", actions: [] } },
+        { env: { AD_VIDEO_SMS_TO: ad, PULSE_SMS_TO: pulse, TWILIO_SEND_FROM: from } }
+      );
+    } finally {
+      console.log = orig;
+    }
+    const line = lines.find((l) => l.includes("[ad-video-notify]")) || "";
+    assert.match(line, /to …98/);
+    assert.doesNotMatch(line, /…65/);
+    assert.doesNotMatch(line, /…68/);
+  });
+});
+
 describe("with a number set, the text is what counts", async () => {
   const { send } = await import("./notify-fanout.mjs");
   const notification = { title: "Ad 84 take 1 is ready", click: "https://v.example/f.mp4", actions: [] };
