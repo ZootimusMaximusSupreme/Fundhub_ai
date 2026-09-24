@@ -30,7 +30,7 @@ describe("the fan-out never throws and never sends from a test", async () => {
   test("with no number set, the text is skipped and said so", async () => {
     const res = await send({ id: "r1", notification }, { env: { NTFY_TOPIC: "" } });
     assert.equal(res.channels.sms, false);
-    assert.match(res.error || "", /PULSE_SMS_TO is not set|text not sent/);
+    assert.match(res.error || "", /no number set for a text/);
   });
 });
 
