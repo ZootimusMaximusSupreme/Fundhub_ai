@@ -35,8 +35,13 @@ describe("tagging", () => {
     assert.deepEqual(keywordsFromName("broll-01.mp4"), ["broll"]);
   });
 
-  test("the three Drive folders are the ones the upload script made", () => {
-    assert.deepEqual([...BROLL_FOLDERS].sort(), ["approvals", "deliverables", "portal"]);
+  test("the Drive folders the matcher reads include the proof folders", () => {
+    assert.deepEqual([...BROLL_FOLDERS].sort(), [
+      "approvals", "client-wins", "deliverables", "portal",
+      "video-testimonials", "written-testimonials"
+    ]);
+    assert.ok(!BROLL_FOLDERS.includes("old-approvals"),
+      "old-approvals is a leftover and must stay out of the matcher");
   });
 
   /* The order is the priority order — planBroll walks the clips as handed and the
@@ -49,6 +54,10 @@ describe("tagging", () => {
       "deliverables must be offered before approvals or the specific documents never place");
     assert.ok(order.indexOf("portal") < order.indexOf("approvals"),
       "portal screens must be offered before approvals for the same reason");
+    for (const proof of ["client-wins", "video-testimonials", "written-testimonials"]) {
+      assert.ok(order.indexOf("approvals") < order.indexOf(proof),
+        proof + " must come after the three original folders");
+    }
   });
 });
 

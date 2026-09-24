@@ -25,8 +25,10 @@
 // which is what makes a re-run safe: the sweeper can compute this twice and get
 // the same answer, so a retry cannot shuffle the B-roll.
 
-/** The three folders under `broll/` in the SLO Ads Drive folder. Kept in step
-    with scripts/slo-broll-upload.mjs, which is what put them there.
+/** Folders under `broll/` in the SLO Ads Drive folder that the matcher reads.
+    Measured live 2026-09-24: deliverables, portal, approvals, client-wins,
+    video-testimonials, and written-testimonials all sit inside that folder.
+    old-approvals is a leftover and is not read.
 
     THE ORDER IS THE PRIORITY ORDER AND IT MATTERS. planBroll walks the clips in
     the order it is handed them and the cursor only moves forward, so the first
@@ -37,8 +39,11 @@
     bank list never placed at all. AD 1 fell to 2 clips out of 5.
 
     So the specific documents Chris names out loud go first, the portal screens
-    next, and the approval pictures fill whatever is left. */
-export const BROLL_FOLDERS = Object.freeze(["deliverables", "portal", "approvals"]);
+    next, the approval pictures after that, and the proof folders last. */
+export const BROLL_FOLDERS = Object.freeze([
+  "deliverables", "portal", "approvals",
+  "client-wins", "video-testimonials", "written-testimonials"
+]);
 
 /** Vendor ceiling. Mirrors MAX_ITEM_SECONDS in the Submagic provider — repeated
     here so this module can be reasoned about on its own, and asserted equal in
