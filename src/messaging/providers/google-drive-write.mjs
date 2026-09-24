@@ -125,18 +125,58 @@ export async function driveAccessToken({ env = process.env, now = Date.now, fetc
 
   try {
     if (cfg.authMode === "oauth") {
-      const cand = (cfg.oauthCandidates || [])[0] || { credentials: cfg.oauthCredentials };
-      const tok = await fetchOAuthAccessToken({ ...cand.credentials, fetchImpl });
-      const writes = grantsWrite(tok.scope);
-      if (writes === false) {
-        return { ok: false, retryable: false,
-          error: `the stored Google token is read-only (${DRIVE_WRITE_SCOPE} was not granted). ` +
-                 `Nothing was written. The stored key is left exactly as it is.` };
+      /* EVERY STORED TOKEN GETS A TURN.
+
+         src/company-brain/config.mjs has always promised this in words — "Every
+         usable token, in order. The Drive client moves to the next one when
+         Google refuses a token or it has no Drive scope" — and this function
+         only ever tried `[0]`. Measured 2026-09-23 on production: the first
+         token answered `401 invalid_client`, the whole ad-video pipeline stalled
+         at `staged` behind it, and a second, working token was sitting right
+         there in the environment unused.
+
+         This is the fix the owner law in CLAUDE.md §11 asks for. Nothing is
+         unset, cleared or overwritten: a token Google refuses is stepped over
+         at the point of use and left exactly where it is. */
+      const cands = (cfg.oauthCandidates || []).length
+        ? cfg.oauthCandidates
+        : [{ credentials: cfg.oauthCredentials }];
+
+      let lastError = null;
+      let readOnlySeen = false;
+      let got = null;
+
+      for (const cand of cands) {
+        let tok;
+        try {
+          tok = await fetchOAuthAccessToken({ ...cand.credentials, fetchImpl });
+        } catch (err) {
+          /* Google refused this one. Try the next rather than stopping here. */
+          lastError = err;
+          continue;
+        }
+        if (grantsWrite(tok.scope) === false) {
+          readOnlySeen = true;
+          continue;
+        }
+        got = tok;
+        break;
       }
+
+      if (!got) {
+        if (lastError) throw lastError;
+        if (readOnlySeen) {
+          return { ok: false, retryable: false,
+            error: `every stored Google token is read-only (${DRIVE_WRITE_SCOPE} was not granted). ` +
+                   `Nothing was written. The stored keys are left exactly as they are.` };
+        }
+        return { ok: false, retryable: true, error: "no stored Google token could be exchanged" };
+      }
+
       cachedToken = {
-        accessToken: tok.accessToken,
-        expiresAtMs: now() + (tok.expiresIn || 3600) * 1000,
-        scope: tok.scope || null,
+        accessToken: got.accessToken,
+        expiresAtMs: now() + (got.expiresIn || 3600) * 1000,
+        scope: got.scope || null,
         authMode: "oauth"
       };
     } else {

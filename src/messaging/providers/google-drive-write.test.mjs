@@ -74,7 +74,7 @@ describe("scope", () => {
     assert.equal(res.ok, false);
     assert.equal(res.retryable, false);
     assert.match(res.error, /read-only/);
-    assert.match(res.error, /left exactly as it is/);
+    assert.match(res.error, /left exactly as (it is|they are)/);
     assert.equal(impl.drive().length, 0, "a write was attempted on a token that cannot write");
   });
 
