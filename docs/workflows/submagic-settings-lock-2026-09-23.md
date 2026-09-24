@@ -789,3 +789,31 @@ Claude Code with one command. Worth knowing; not needed to build the pipeline.
 5. **Whether the key works at all.** Unchanged from the brief above — it is stored
    with `--secret`, so the laptop reads a mask. First real call has to be from a
    deployed function.
+
+## Reconciliation — W2 closing the board
+
+### The two numbers that disagree
+
+W1 read **500 creates an hour** off the live page on 2026-09-23. Our own measured
+spec (`docs/specs/video-pipeline-unknowns-settled-2026-09-22.md`) read **30** off
+the same page one day earlier, and `RATE_LIMITS.create` in the provider says 30.
+
+Not resolved, and not worth resolving. **The code keeps 30.** Being careful with
+a number that decides how much money a sweeper can spend in an hour costs us
+nothing; being wrong the other way costs a bill. The real ceiling for our work is
+the read and the place-the-clips call at 100 an hour each, and those two agree.
+
+### The one thing that is now a decision for Chris, not for an agent
+
+Eye contact and our own B-roll cannot both be on the same create call.
+`eyeContactCorrection` only exists on a preset, and the docs say a create call
+that uses a preset gives up `items` — which is the exact field that puts our
+clips at exact seconds. There is a possible way round it (create with the preset,
+then `PUT` the items on afterwards) and **nobody has tested it.** It is one free
+call to find out, on the pilot.
+
+### Still unproved, both settle on the same pilot take
+
+1. Does `removeSilencePace` shift the word times, or not.
+2. Does a preset-then-`PUT`-items call keep both eye contact and our clips.
+
