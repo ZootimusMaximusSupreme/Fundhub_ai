@@ -128,7 +128,31 @@ test("driveConfigFromEnv prefers personal OAuth token JSON over service account"
   assert.equal(c.ready, true);
   assert.equal(c.authMode, "oauth");
   assert.equal(c.oauthCredentials.refreshToken, "rt-1");
-  assert.equal(c.serviceAccount, null);
+  /* CHANGED 2026-09-23. OAuth is still preferred — that is what the two lines
+     above prove, and nothing about a working setup moves. What changed is that
+     the service account is no longer thrown away when OAuth happens to be set.
+
+     It used to come back null here, which meant a stored service account was
+     not "second choice", it was unreachable. Production sat stalled at `staged`
+     for hours behind one OAuth token answering 401 invalid_client while a
+     perfectly good service account sat in the same environment, untried. */
+  assert.equal(c.serviceAccount.clientEmail, SA.clientEmail,
+    "the service account must be carried as a fallback, not discarded");
+});
+
+test("driveConfigFromEnv is still ready when the only OAuth token is unusable", () => {
+  /* An OAuth key that is set but carries no refresh token produces no candidate.
+     Before the fallback existed this returned ready:false and Drive was simply
+     down, service account or not. */
+  const c = driveConfigFromEnv({
+    GOOGLE_DRIVE_OAUTH_TOKEN_JSON: JSON.stringify({ client_id: "cid-1" }),
+    GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON: JSON.stringify({
+      client_email: SA.clientEmail,
+      private_key: SA.privateKey
+    })
+  });
+  assert.equal(c.ready, true, "a usable service account is enough to be ready");
+  assert.equal(c.serviceAccount.clientEmail, SA.clientEmail);
 });
 
 // ── auth ───────────────────────────────────────────────────────────────────

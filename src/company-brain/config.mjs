@@ -111,28 +111,11 @@ function oauthCandidatesFromEnv(env) {
  *   GOOGLE_DRIVE_DELEGATE_EMAIL — optional Workspace user (domain-wide
  *     delegation). If unset, the robot reads files shared with it.
  */
-export function driveConfigFromEnv(env = process.env) {
-  const oauth = oauthCandidatesFromEnv(env);
-  if (oauth) {
-    const first = oauth.candidates[0] || null;
-    return {
-      ready: !!first,
-      missing: first ? [] : oauth.missing,
-      authMode: "oauth",
-      oauthCredentials: first ? first.credentials : null,
-      // Every usable token, in order. The Drive client moves to the next one
-      // when Google refuses a token or it has no Drive scope.
-      oauthCandidates: oauth.candidates,
-      tokenSource: first ? first.tokenSource : null,
-      serviceAccount: null,
-      delegateEmail: null,
-      excludedFolderIds: []
-    };
-  }
-
+/* The service account, parsed once, so both branches of driveConfigFromEnv can
+   reach it. Never throws: a missing or broken value comes back as `missing`. */
+function serviceAccountFromEnv(env) {
   const raw = env.GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON || "";
   const delegateEmail = String(env.GOOGLE_DRIVE_DELEGATE_EMAIL || "").trim() || null;
-
   const missing = [];
   let serviceAccount = null;
 
@@ -155,14 +138,49 @@ export function driveConfigFromEnv(env = process.env) {
       missing.push("GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON(invalid_json)");
     }
   }
+  return { serviceAccount, delegateEmail, missing };
+}
+
+export function driveConfigFromEnv(env = process.env) {
+  const oauth = oauthCandidatesFromEnv(env);
+  if (oauth) {
+    const first = oauth.candidates[0] || null;
+    /* THE SERVICE ACCOUNT IS CARRIED HERE TOO, and it used not to be.
+
+       Setting any OAuth key at all made this branch return `serviceAccount:
+       null`, so a stored service account became unreachable — not preferred,
+       not fallback, simply invisible. Measured 2026-09-23 on production: the
+       one OAuth token answered `401 invalid_client`, the ad-video pipeline sat
+       at `staged` for hours, and GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON was set the
+       whole time and never tried once.
+
+       OAuth still goes first, so nothing about a working setup changes. This
+       only gives the client something to fall back to instead of stopping. */
+    const fallback = serviceAccountFromEnv(env);
+    return {
+      ready: !!first || !!fallback.serviceAccount,
+      missing: first || fallback.serviceAccount ? [] : oauth.missing,
+      authMode: "oauth",
+      oauthCredentials: first ? first.credentials : null,
+      // Every usable token, in order. The Drive client moves to the next one
+      // when Google refuses a token or it has no Drive scope.
+      oauthCandidates: oauth.candidates,
+      tokenSource: first ? first.tokenSource : null,
+      serviceAccount: fallback.serviceAccount,
+      delegateEmail: fallback.delegateEmail,
+      excludedFolderIds: []
+    };
+  }
+
+  const sa = serviceAccountFromEnv(env);
 
   return {
-    ready: missing.length === 0,
-    missing,
+    ready: sa.missing.length === 0,
+    missing: sa.missing,
     authMode: "service_account",
     oauthCredentials: null,
-    serviceAccount,
-    delegateEmail,
+    serviceAccount: sa.serviceAccount,
+    delegateEmail: sa.delegateEmail,
     // H-2 owner-set: empty = index everything
     excludedFolderIds: []
   };

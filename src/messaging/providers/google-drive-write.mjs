@@ -163,6 +163,32 @@ export async function driveAccessToken({ env = process.env, now = Date.now, fetc
         break;
       }
 
+      if (!got && cfg.serviceAccount) {
+        /* LAST RESORT, AND THE RIGHT CREDENTIAL FOR A SERVER ANYWAY.
+
+           A service account does not expire the way a desktop OAuth token does,
+           which is exactly why one is stored. Before 2026-09-23 it could not be
+           reached at all: setting any OAuth key made driveConfigFromEnv report
+           `serviceAccount: null`, so production sat stalled behind one dead
+           token with a working service account beside it, untried.
+
+           Nothing here changes a stored value. */
+        const tok = await fetchAccessToken({
+          clientEmail: cfg.serviceAccount.clientEmail,
+          privateKey: cfg.serviceAccount.privateKey,
+          delegateEmail: cfg.delegateEmail || undefined,
+          scope: DRIVE_WRITE_SCOPE,
+          fetchImpl
+        });
+        cachedToken = {
+          accessToken: tok.accessToken,
+          expiresAtMs: now() + (tok.expiresIn || 3600) * 1000,
+          scope: DRIVE_WRITE_SCOPE,
+          authMode: "service_account"
+        };
+        return { ok: true, ...cachedToken };
+      }
+
       if (!got) {
         if (lastError) throw lastError;
         if (readOnlySeen) {
