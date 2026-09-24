@@ -17,7 +17,22 @@ export function chrisPulseSmsTo(env = process.env) {
   const raw = String(
     (env && (env[PULSE_SMS_TO_ENV] || env[CHRIS_PULSE_SMS_ENV])) || ""
   ).trim();
-  return raw || null;
+  return normalizeUsNumber(raw) || null;
+}
+
+/* THE NUMBER IN THE SHAPE TWILIO WANTS. The provider refuses anything that is
+   not E.164 (+1 and ten digits for a US number). A value typed as
+   "602 555 1234", "(602) 555-1234" or "16025551234" is the same phone and used
+   to be a silent rejection. The stored value is never printed and never
+   changed; only what is handed to the provider is tidied. */
+export function normalizeUsNumber(raw) {
+  const s = String(raw == null ? "" : raw).trim();
+  if (!s) return "";
+  if (/^\+[1-9]\d{7,14}$/.test(s)) return s;
+  const digits = s.replace(/\D+/g, "");
+  if (digits.length === 10) return `+1${digits}`;
+  if (digits.length === 11 && digits.startsWith("1")) return `+${digits}`;
+  return s;
 }
 
 export function darwinWhatsAppNumber(env = process.env) {

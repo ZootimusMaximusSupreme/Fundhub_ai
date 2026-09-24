@@ -1251,3 +1251,13 @@ Chris in chat; the same three went to the pulse number by SMS and to ntfy.
   nothing logged per channel. `notify-fanout.mjs` now prints one line per
   channel (`sms: sent | ntfy: sent`), number never shown. Every take from here
   on is provable.
+
+### Leftover cards (not this job's holes — recorded, not fixed)
+
+* **`src/pulse` registry test is red on a clean tree**: "every routed api/
+  handler and live public/app desk is listed or explicitly unmonitored". Seen
+  while gating the pulse-number change; fails without any of tonight's edits.
+* **The daily pulse text has never actually been sent.** `daily-pulse.mjs`
+  defaults `dryRun = true` and `partner-production-floor.mjs` never passes
+  `false`, so `PULSE_SMS_TO` — the number the ad-video text now uses — had
+  never been exercised before tonight. Whether it is current is Chris's to say.
