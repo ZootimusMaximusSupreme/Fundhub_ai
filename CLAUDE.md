@@ -194,6 +194,10 @@ Grok and Composer do not touch websites or design HTML. Claude does that work. S
 
 For each ad, agents merge every take and clip into one best-of master, kill the editor defects in that law (dead air, repeats, false starts, filler, audio, captions, B-roll, and the rest), and never ship a lone take when others exist; Chris never opens Submagic. Same law: `.cursor/rules/ad-video-best-of-clips.mdc` and `.claude/rules/ad-video-best-of-clips.md`.
 
+### API only, no logins (owner-set 2026-09-24)
+
+Chris never logs into Submagic, ClickFunnels, or any other tool an agent can run by API. Agents use the API. If the API refuses, say that error in plain words. Same law: `.cursor/rules/chris-never-submagic.mdc` and `.claude/rules/chris-never-submagic.md`.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
