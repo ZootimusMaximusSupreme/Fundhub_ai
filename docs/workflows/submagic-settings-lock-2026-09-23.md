@@ -1016,3 +1016,57 @@ clip carries yet (`score`, `inquiry`, `document` as spoken).
 * **What a project and an export actually cost** is published nowhere. The
   pilot's bill is the measurement.
 
+
+## W6 The pilot run — what it found, live
+
+The pilot did its job. Four more real breaks, every one of them invisible until
+a real file went through, and every one of them would have looked like
+"Submagic is broken".
+
+### 6. The take was thrown away before it was ever polled
+
+`duration_seconds` is a whole-number column, Drive reports milliseconds, and a
+67.248-second take made Postgres refuse the entire row. Fixed by rounding. See
+W5 item 2 — this is the same break, found first.
+
+### 7. One dead Google login stopped everything
+
+The sweeper reached the take and answered
+`Google token exchange failed: oauth token refresh failed (401): invalid_client`.
+Two Google logins are stored on production. `driveAccessToken` only ever tried
+the first one, although `config.mjs` has promised the fall-through in writing
+for as long as it has existed. Now every stored token gets a turn.
+
+### 8. The service account could not be reached at all
+
+Worse than untried. `driveConfigFromEnv` returned `serviceAccount: null` the
+moment any OAuth key was set, so `GOOGLE_DRIVE_SERVICE_ACCOUNT_JSON` — the
+credential that does not expire, the right one for a server, sitting on
+production the whole time — was invisible to the code. OAuth still goes first;
+there is now something behind it.
+
+### 9. A 120 MB take cannot move in 26 seconds
+
+**This was the real one.** The sweeper was an Inngest cron, and an Inngest pass
+runs inside the synchronous `/api/inngest` request, which Netlify kills at **26
+seconds**. `submagicCreate` downloads the whole take out of Drive and pushes the
+whole take to Submagic. `SLO Ad 1 Take 1.mp4` is **120 MB**.
+
+Measured on production: the pass wrote its spend claim at 02:25:11, began the
+upload, and was killed before it could write a project id. The next pass found a
+claim with nothing behind it and refused to spend again — correctly, because
+Submagic publishes no list endpoint and nothing can ask whether the upload
+landed. The take stopped dead and only a person could free it.
+
+Moved to a Netlify **scheduled** function, which gets **15 minutes** — the same
+pattern `staff-message-sweeper`, `commas-inbox-sweeper`, `creative-job-runner`
+and the others in that directory already use. Unregistered from Inngest so two
+crons cannot race the same take. The workflow module is untouched; the new
+function calls its `sweep()`.
+
+### On the keys
+
+Nothing was unset, cleared or overwritten. The dead OAuth token is still stored
+exactly where it was — it is stepped over at the point of use. Both fixes are
+in the code around the key, which is what CLAUDE.md §11 asks for.
+
