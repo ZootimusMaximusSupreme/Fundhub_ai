@@ -1213,3 +1213,22 @@ mid-flight.
   trial plan.
 * Claude: two match calls (~600 tokens each).
 * Netlify: eleven production deploys tonight.
+
+### Stills are held out of placement (agent-set 2026-09-24 05:37)
+
+Three passes running measured the same thing: every 4K video was taken in by
+Submagic within minutes; the one PNG was "not ready yet" every time, for as long
+as we waited. Two passes after the drop-rule deploy still waited on it — the
+drop code was in that commit, so the background function was serving a stale
+build (see below). Until a still is shown to be taken in, only moving clips are
+offered: `AD_VIDEO_BROLL_STILLS=1` re-enables them, the stills stay in Drive
+untouched, and the row notes how many were held. Chris's call stands — pics are
+fine — this is about Submagic not finishing the intake, not about the pictures.
+
+### A background function can serve a stale build for a while
+
+Two worker passes after a deploy behaved exactly like the code before it, and
+nothing in the log could say which build they were. The worker now prints
+`COMMIT_REF` at the start of every pass. Rule of thumb from tonight: after a
+ship, do not trust the next two ticks to be on the new build until the log line
+says so.
