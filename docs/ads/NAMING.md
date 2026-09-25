@@ -36,13 +36,15 @@ Spaces stay. The dash before the angle is ` — ` (space, em dash, space). The t
 
 These angle names are the titles in `docs/ads/fundhub-297/FundHub-LOCKED-ADS.md`. Copy them. Do not rename the angle.
 
+Ad 5's angle is the title in `docs/ads/fundhub-297/FundHub-297-Ads-FINAL.pdf`. The markdown locked file still has the older Ad 5 opening.
+
 | Ad | File name for take 1 |
 |---|---|
 | 1 | `SLO Ad 1 — Straight offer, full read Take 1.mp4` |
 | 2 | `SLO Ad 2 — Straight offer, declined open Take 1.mp4` |
 | 3 | `SLO Ad 3 — Straight offer, what your file is worth Take 1.mp4` |
 | 4 | `SLO Ad 4 — Straight offer, the roadmap without the call Take 1.mp4` |
-| 5 | `SLO Ad 5 — Straight offer, max fundability Take 1.mp4` |
+| 5 | `SLO Ad 5 — Straight offer, max fundability, both sides of the file Take 1.mp4` |
 | 6 | `SLO Ad 6 — Haynes, you already know Take 1.mp4` |
 | 7 | `SLO Ad 7 — Haynes, the call that was never a roadmap Take 1.mp4` |
 
@@ -56,7 +58,7 @@ Same offer, same ad number, and the same angle are takes of one video. Join thos
 
 A different angle is a different video. Do not join it.
 
-Ad 7 has two different videos. One is the Haynes script above. The other is the two-sides script (personal and business). Those stay two files. Both saying "Ad 7" is not a reason to stick them together.
+The both-sides tape is Ad 5. Ad 7 is only the Haynes script above. Do not join them.
 
 ## Wrong names
 
