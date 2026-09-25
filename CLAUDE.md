@@ -54,22 +54,19 @@ Overshooting is fine. If in doubt, ask for the higher tier.
 
 This repo only. Do not read, reference, or modify systems outside it to "stay consistent" with them. If a task appears to require changes outside this repo, stop and say so.
 
-**Ask when you are not certain.** This is a hard rule, not a courtesy.
+**Look it up when you are not certain.** If the answer needs a fact you can look up (Drive, the repo, a transcript, the database), look it up and put it in the same answer. Do not stop and make Chris ask "how do you know" or "find out." Do not end on a question he has to ask next.
 
-Stop and ask a clarifying question when any of these are true:
+Ask him only when you are blocked on a decision only he can make (yes/no, live vs sandbox, delete data, repoint the database). When you do have to ask, ask that one decision, then wait. Do not ask and proceed in the same turn.
 
-* The request could reasonably mean more than one thing
-* You are inferring intent rather than reading it
-* The change touches a flow and the intended journey does not cover it
+Still do not proceed when any of these are true:
+
 * You are about to add a step, field, route, or dependency that was not explicitly asked for
-* You are about to modify a file you have not read
-* Confidence in the approach is below certain
+* You are about to change a file he did not ask to change
+* The request is two different decisions and only he can pick which one
 
-Ask one question. Wait. Do not ask and proceed in the same turn.
+Read the file before you change it. Do not ask him what is in a file you can open.
 
-**Guessing costs more than asking.** A wrong build is a day. A question is a minute.
-
-**Never invent.** If information is missing, that absence is the finding. Report it. Do not fill the gap with a plausible assumption.
+**Never invent.** If you looked and the fact is not there, that absence is the finding. Report it. Do not fill the gap with a guess.
 
 **A finding is not confirmed until you have looked everywhere it could live.** Searching one directory and stopping at the first result that supports a conclusion is how a false finding gets reported as fact. Before you call something missing, empty, or broken, search `src/`, `scripts/`, `db/` and `docs/` — data in this repo loads from CSVs and scripts, not only from migrations. Measured 2026-09-11: the `lenders` table was reported empty on the strength of one grep for `INSERT`. The book holds 313 banks in `docs/legacy-strong/lenders-legacy-strong.csv`, loaded by `scripts/lenders-import-alec.mjs`.
 
@@ -85,7 +82,7 @@ If something is genuinely unsafe or broken, say it once, plainly, and then drop 
 
 **This section qualifies the ones around it.** Where it and another section disagree, this one wins:
 
-* §2's "ask when you are not certain" does not apply to a call I have already made. Uncertainty about *how* to build it is still a question worth asking. Uncertainty about *whether I meant it* is not.
+* §2's look-it-up rule does not reopen a call I have already made. A fact you can look up is not a question for me. Ask only when you are blocked on a decision only I can make. Uncertainty about *whether I meant it* is not a reason to ask again.
 * §7 was removed entirely on 2026-09-08. No compliance label, no compliance advice, ever.
 * §9's task report and §10's summaries carry the decision as recorded fact, with no rider suggesting I revisit it.
 
@@ -99,11 +96,11 @@ It stays on until I turn it off.
 
 ### Do not volunteer fixes (owner-set 2026-09-08)
 
-Report on what I asked about. Nothing else.
+Do not fix a hole I did not name. Do not change a file I did not ask you to change.
 
-If you trip over something broken that I did not ask about, keep it to yourself. Do not append it to a summary, do not add a "while I was in there," do not open a section called "other things I noticed." This bites hardest during walkthroughs and audits, where a list of extra findings buries the one thing I asked for.
+If the answer I asked for needs a fact you can look up, look it up and put it in the same answer. Looking up that fact is not volunteering a fix.
 
-If I want the wider list I will ask for the wider list.
+If you trip over something broken that I did not ask about, do not fix it and do not turn the reply into a list of other holes. Do not add a "while I was in there." Do not open a section called "other things I noticed." This bites hardest during walkthroughs and audits, where a list of extra findings buries the one thing I asked for.
 
 **Hard lock (owner-set 2026-09-18):** This chat owns only the hole named in the paste. If you trip over another break, write one leftover card on the shared board and **STOP**. Do not VERIFY it. Do not FIX it. Do not spawn a fixer. Do not live-walk unnamed holes. Do not write “while proving hole 7 I also found N1–N27.” A dirty leftover on a path that used to work is a leftover, not the headline. See `.cursor/rules/no-extra-holes.mdc`.
 
@@ -201,6 +198,10 @@ Drive names are Offer, ad number, angle name, then take number. The angle is the
 ### API only, no logins (owner-set 2026-09-24)
 
 Chris never logs into Submagic, ClickFunnels, or any other tool an agent can run by API. Agents use the API. If the API refuses, say that error in plain words. Same law: `.cursor/rules/chris-never-submagic.mdc` and `.claude/rules/chris-never-submagic.md`.
+
+### Finish the answer (owner-set 2026-09-24)
+
+If the answer needs a fact you can look up, look it up and put it in the same answer. Do not stop and make Chris ask the next fact. Ask only when you are blocked on a decision only he can make. Same law: `.cursor/rules/finish-the-answer.mdc` and `.claude/rules/finish-the-answer.md`.
 
 ## 3. Before writing any code
 
@@ -411,7 +412,7 @@ If you catch yourself writing a sentence I would have to look up, rewrite it.
 * Lead with the answer, reasoning after.
 * When something breaks: fastest likely fix first, then the next two causes. No troubleshooting trees.
 * Flag risk in one line, not a paragraph. Skip obvious warnings.
-* One question at a time, and only when it actually blocks you.
+* Ask him only when you are blocked on a decision only he can make (yes/no, live vs sandbox, delete data, repoint the database). Do not end on a question he has to ask next. If the next fact is in Drive, the repo, a transcript, or the database, look it up and put it in the same answer.
 
 ## 11. Deployment and infrastructure
 
