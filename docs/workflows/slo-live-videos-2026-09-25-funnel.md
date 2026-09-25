@@ -100,3 +100,75 @@ are not the client door; `/app/client-portal.html` is.)
 
 `SLO_DEMO_PAY=1` on Netlify production. Until that is off (and a real Commas session mints), every
 click on the $297 button collects nothing.
+
+---
+
+# FIX — the $297 button now opens a real pay page (2026-09-25, later the same day)
+
+**PASS.** A buyer who presses **Get My Roadmap · $297** now gets a real Commas card page.
+No card was entered. Nothing was charged. No Commas catalog product was created.
+
+## What was wrong, and what changed
+
+Demo mode was only the env switch `SLO_DEMO_PAY`. `isSloDemoPay()` in `src/slo/offer.mjs` turns
+it on for the exact string `"1"` and nothing else, so no code change was needed.
+
+Netlify held `SLO_DEMO_PAY=1` on **production, deploy-preview and branch-deploy**. All three are
+now `0`. Nothing was unset or deleted. No credential was touched — `COMMAS_API_KEY`,
+`FANBASIS_CHECKOUT_API_KEY` and `COMMAS_WEBHOOK_SECRET` are exactly as they were.
+
+The value change alone did nothing: the live GET still answered `demo: true` 45 seconds later.
+Netlify bakes env into the function bundle, so production was redeployed once. `npm run ship`
+refused to start (another session had untracked files in the tree), so the same command ship runs
+was run directly: `netlify deploy --prod --build`. 309 database changes applied, 0 pending, both
+guards passed, build 2m 29s.
+
+## The Fanbasis key is REAL on production
+
+The earlier scorecard could not tell. It still cannot be read — the copy in local `.env` is a
+20-character mask and the Netlify CLI hands back the same mask, because a Netlify secret is
+write-only after it is set.
+
+Turning demo off answered it anyway: production minted two live Commas sessions on the first try.
+**The stored key works.** No 401. Nothing was rotated, replaced or removed.
+
+## Live prove — two presses, two real pay pages
+
+Both POSTs are the real widget door, cross-site from `https://apply.fundhub.ai`, as a throwaway
+plus-tag buyer. Card never touched.
+
+| Press | Buyer | Businesses | Answer | Pay page |
+|---|---|---|---|---|
+| 1 | `e2e+slo-paylink-1790377928@fundhub.ai` | 1 | `ok:true, demo:false, priceDisplay:"$297"` | `www.fanbasis.com/agency-checkout/fundhub-1/…` → `commas.com/checkout/…` |
+| 2 | `e2e+slo-paylink2-1790378134@fundhub.ai` | 2 | `ok:true, demo:false, priceDisplay:"$312"` | same host pair |
+
+Press 1 rendered: **Fundhub** logo, **Consulting Services Assessment**, **$297.00**, a
+**Pay $297.00** button, Card / Cash App Pay / US bank account / Crypto, and "Your statement will
+show a charge from COMMAS.COM". Press 2 rendered **$312.00** — the $15 order bump rides on the
+same card page, as designed. **Stopped there. No card number was typed.**
+
+The title on both is the keep string `Consulting Services Assessment`
+(`.cursor/rules/commas-catalog-hands-off.mdc`). Minting goes through
+`createCheckoutSession` → `POST /checkout-sessions`. `POST /public-api/products/create` was never
+called.
+
+## The page a buyer reads
+
+`GET https://fundhub.ai/api/public/slo-checkout` now answers:
+
+```
+{"demo":false,"checkout":{"ready":true},"priceDisplay":"$297",
+ "notices":{"charge":"Your card is charged once, today, for $297."}}
+```
+
+`https://apply.fundhub.ai/roadmap/` no longer contains the words "Demo checkout" or
+"not charged".
+
+## Scope — what was deliberately left alone
+
+Videos, the portal, the VSL 404 and the ClickFunnels TEST MODE badge were not touched. The
+deploy carried whatever was already committed on `main` by the other session running at the same
+time; no file of theirs was staged, stashed or edited here.
+
+**Still true from the earlier scorecard:** the CRS sandbox login is rejected (`CRS113`), so the
+pull after payment still fails. That is a separate hole and was not worked here.
