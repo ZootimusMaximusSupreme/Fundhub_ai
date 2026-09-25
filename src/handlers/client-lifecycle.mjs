@@ -24,6 +24,7 @@ import { advanceCardToStage } from "../workflows/cards.mjs";
 import { evaluateWaypoints } from "../waypoints/verify.mjs";
 // The one E.164 converter in the repo. Reused, not re-written (CLAUDE.md §8).
 import { normalizePhone } from "../messaging/providers/bland-voice.mjs";
+import { syncSloClickfunnelsContact } from "../slo/cf-contact.mjs";
 
 // Last question on the CF apply survey (Available Capital).
 // docs/clickfunnels/cf-survey-ground-truth.md — Survey Complete only when this lands.
@@ -524,6 +525,17 @@ export async function onDecisionRendered(event, db) {
       total_funding_estimate: p.fundingEstimate,
       analyzer_prequal_amount: p.fundingEstimate
     });
+    const stamped = await db.query(
+      `SELECT email, custom_fields->>'slo_ref' AS slo_ref FROM clients WHERE id = $1`,
+      [clientId]
+    );
+    const buyer = stamped.rows[0];
+    if (buyer?.email && buyer.slo_ref) {
+      await syncSloClickfunnelsContact({
+        email: buyer.email,
+        prequal: p.fundingEstimate
+      });
+    }
   }
   // Soft-pull decision lands on Decision Rendered so the sales board shows the file.
   if (event.orgId) {

@@ -98,6 +98,7 @@ import {
   isChecked
 } from "./fields.mjs";
 import { parseSloBusinesses, replaceSloBusinesses } from "./businesses.mjs";
+import { syncSloClickfunnelsContact } from "./cf-contact.mjs";
 
 const KIND = "soft_pull_consent";
 
@@ -225,7 +226,7 @@ export async function findSloOrder(db, { clientId, ref }) {
   const r = String(ref == null ? "" : ref).trim();
   if (!db || !id || !r) return null;
   const { rows } = await db.query(
-    `SELECT c.id, c.org_id, c.email, c.first_name, c.last_name,
+    `SELECT c.id, c.org_id, c.email, c.phone, c.first_name, c.last_name,
             pl.id             AS order_id,
             pl.link_ref       AS order_ref,
             pl.is_demo        AS order_is_demo,
@@ -407,6 +408,16 @@ export async function runSloPull(parsed, deps = {}) {
     },
     warnings: Array.isArray(parsed.warnings) ? parsed.warnings : []
   };
+
+  /* Paul reads this person in ClickFunnels. SSN stays in Fundhub. */
+  await (deps.syncCf || syncSloClickfunnelsContact)({
+    email: found.email,
+    firstName: parsed.firstName,
+    lastName: parsed.lastName,
+    phone: found.phone || null,
+    address: parsed.address,
+    businesses: parsed.businesses
+  }, { env });
 
   /* LIVE and not paid: the payment starts the pull. See the header. */
   if (!demoOrder && !paid) {

@@ -113,13 +113,13 @@ function scrubKey(text, key) {
 
    Returns { body, nextCursor } on success; nextCursor is the `Pagination-Next`
    response header (a string id) or null when there is no further page. */
-export async function cfFetch({ url, apiKey, ctx = {}, method = "GET" }) {
+export async function cfFetch({ url, apiKey, ctx = {}, method = "GET", body = undefined }) {
   const doFetch = ctx.fetch || globalThis.fetch;
   if (typeof doFetch !== "function") throw new Error("no fetch available");
 
   let res;
   try {
-    res = await doFetch(url, {
+    const init = {
       method,
       headers: {
         "content-type": "application/json",
@@ -129,7 +129,9 @@ export async function cfFetch({ url, apiKey, ctx = {}, method = "GET" }) {
         // mode here, not defensive boilerplate.
         "user-agent": "FundHub-Analytics/1.0 (+https://fundhub.ai)"
       }
-    });
+    };
+    if (body !== undefined) init.body = JSON.stringify(body);
+    res = await doFetch(url, init);
   } catch (err) {
     const e = new Error(`ClickFunnels unreachable: ${scrubKey(String(err?.message || err), apiKey)}`);
     e.platformMessage = "ClickFunnels could not be reached.";
@@ -202,6 +204,25 @@ async function resolveWorkspaceId(creds, ctx) {
   throw new Error(
     `no ClickFunnels workspace with subdomain "${creds.subdomain}" is visible to this API key`
   );
+}
+
+/* Upsert a Contact — POST /workspaces/{id}/contacts/upsert, match on email.
+   Docs: https://developers.myclickfunnels.com/reference/upsertcontacts.md
+   Empty fields are omitted. ClickFunnels does not clear a field when the
+   value is null. */
+export async function upsertContact(creds, contact, ctx = {}) {
+  if (!creds?.api_key || !creds?.subdomain) throw new Error("ClickFunnels credentials are missing");
+  if (!contact?.email_address) throw new Error("contact email is required");
+  const workspaceId = await resolveWorkspaceId(creds, ctx);
+  const url = `${baseUrl(creds.subdomain)}/workspaces/${workspaceId}/contacts/upsert`;
+  const { body } = await cfFetch({
+    url,
+    apiKey: creds.api_key,
+    ctx,
+    method: "POST",
+    body: { contact }
+  });
+  return body;
 }
 
 export async function listFunnels(connection, ctx = {}) {
