@@ -29,4 +29,4 @@ Logs: `dl-mm1.log`, `dl-mm2.log`, `dl-mm3.log` in that folder.
 | 758900481 | `transcript-758900481.txt` (MM #2) |
 | 801935913 | `transcript-801935913.txt` (MM #3) |
 
-**Status 2026-09-23 ~23:16 PDT:** `Raiyan MM 3.mp4` **done** (~854 MB). MM #1 ~3% (~1.3 GB total, ~15 min left). MM #2 ~5% (~720 MB total, ~8 min left). Both still downloading.
+**Status 2026-09-23 ~23:29 PDT:** All three MP4s **done** — MM #1 ~1.2 GB, MM #2 ~619 MB, MM #3 ~854 MB. Transcripts already on disk. yt-dlp warned MPEG-TS-in-MP4; remux with ffmpeg if a player chokes.
