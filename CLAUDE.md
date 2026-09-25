@@ -457,7 +457,7 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
   Deploying per-variable on 2026-08-06 burned the month's build credits and paused the live site. Never do it again. The same applies to any credential or config work: collect the whole set, verify with `netlify env:list --context production --plain`, then deploy exactly once.
 * **Apply new SQL yourself** when it lands in `db/schema`, `db/migrations` or `db/seed`:
   `DATABASE_URL="$(netlify env:get DATABASE_URL --context production)" node db/migrate.mjs`
-* **Never print a secret value back to me.** Confirm by name only.
+* **Secrets in chat (owner-set 2026-09-25):** Default confirm by name only. **Dictator mode** or you explicitly ask for a value → paste it when readable. Never in commits or tracked files. Same law: `.cursor/rules/secrets-env-law.mdc` / `.claude/rules/secrets-env-law.md`.
 
 ### Never remove a key (owner-set 2026-09-17)
 

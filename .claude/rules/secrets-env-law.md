@@ -1,8 +1,3 @@
----
-description: Env secrets gitignored — read .env; paste in chat when Chris asks or dictator mode
-alwaysApply: true
----
-
 # Secrets / env — owner law
 
 ## Env files are gitignored so agents can read them
@@ -48,4 +43,5 @@ If a probe is blocked because CLI output is masked, read local `.env` or use a o
 ❌ “Paste COMMAS_API_KEY so I can continue.”
 ❌ “You should rotate CLICKFUNNELS_WEBHOOK_SECRET to be safe.”
 ✅ Read `.env` / Netlify runtime; set missing vars yourself; never commit `.env`.
+✅ Dictator mode + he asked for the key → paste it in chat when the full value is readable.
 ```
