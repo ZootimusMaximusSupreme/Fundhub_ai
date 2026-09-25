@@ -29,12 +29,10 @@ input { font-family: inherit; }
 .chip:hover { border-color: #EFA43A; color: #EFA43A }
 .opt:hover { border-color: #EFA43A }
 .facade {
-  background-color: #0C0A07;
-  background-image:
-    repeating-linear-gradient(90deg, rgba(0,0,0,0) 0 13px, rgba(239,164,58,0.07) 13px 22px),
-    repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 17px, rgba(239,164,58,0.055) 17px 27px),
-    radial-gradient(120% 80% at 50% 120%, rgba(239,164,58,0.13), rgba(0,0,0,0) 70%);
+  background-color: #0D0B09;
+  background-image: radial-gradient(130% 92% at 50% 118%, rgba(239,164,58,0.17), rgba(0,0,0,0) 68%);
 }
+.card:hover .facade { background-color: #12100C; }
 @media (prefers-reduced-motion: reduce) {
   .tw1, .tw2, .glow, .blink { animation: none }
 }
@@ -62,19 +60,7 @@ input { font-family: inherit; }
     </div>
   </header>
 
-  <section id="top" style="position: relative; height: 470px; overflow: hidden; display: flex; align-items: center; justify-content: center">
-    <svg viewBox="-720 -235 1440 470" width="1440" height="470" style="position: absolute; left: 0; top: 0" aria-hidden="true">
-      <g class="glow">
-        <sc-for list="{{spill}}" as="d" hint-placeholder-count="30">
-          <circle cx="{{d.x}}" cy="{{d.y}}" r="{{d.r}}" fill="#EFA43A" opacity="{{d.o}}"></circle>
-        </sc-for>
-      </g>
-      <g>
-        <sc-for list="{{door}}" as="d" hint-placeholder-count="40">
-          <circle class="{{d.cl}}" style="{{d.st}}" cx="{{d.x}}" cy="{{d.y}}" r="{{d.r}}" fill="{{d.c}}"></circle>
-        </sc-for>
-      </g>
-    </svg>
+  <section id="top" style="position: relative; height: 470px; overflow: hidden; display: flex; align-items: center; justify-content: center; background-image: radial-gradient(760px 300px at 50% 118%, rgba(239,164,58,0.16), rgba(0,0,0,0) 72%)">
 
     <div style="position: relative; width: 860px; display: flex; flex-direction: column; align-items: center; gap: 26px">
       <h1 style="margin: 0; text-align: center; font-family: 'Archivo', sans-serif; font-weight: 300; font-size: 58px; line-height: 1.04; letter-spacing: -0.035em; color: #FFFFFF">Rentals across the Phoenix metro.</h1>
@@ -316,41 +302,6 @@ class Component extends DCLogic {
   }
   renderVals() {
     var self = this, st = this.state;
-    var h = function (n) { var s = Math.sin(n * 12.9898) * 43758.5453; return s - Math.floor(s); };
-    var AMBER = '#EFA43A', PALE = '#CFCCC6';
-    var k = 0;
-    var anim = function () {
-      return {
-        cl: h(k++) > 0.55 ? 'tw2' : 'tw1',
-        st: 'animation-duration:' + (3.4 + h(k++) * 6).toFixed(2) + 's;animation-delay:-' + (h(k++) * 9).toFixed(2) + 's'
-      };
-    };
-
-    var W = 74, yB = 150, yA = -66, R = 74;
-    var sdf = function (x, y) {
-      if (y > yA) return Math.max(Math.abs(x) - W, y - yB);
-      return Math.sqrt(x * x + (y - yA) * (y - yA)) - R;
-    };
-    var door = [], x, y, s, a;
-    for (x = -110; x <= 110; x += 5) {
-      for (y = -170; y <= 165; y += 5) {
-        s = sdf(x, y);
-        if (s > -1 || s < -8 || y > yB - 3) continue;
-        a = anim();
-        door.push({ x: +(x + (h(k++) - 0.5) * 2).toFixed(1), y: +(y + (h(k++) - 0.5) * 2).toFixed(1), r: +(0.8 + h(k++) * 0.7).toFixed(2), c: h(k++) > 0.5 ? AMBER : PALE, cl: a.cl, st: a.st });
-      }
-    }
-    var spill = [], i, t, hw;
-    for (i = 0; i < 380; i++) {
-      t = h(k++);
-      hw = 10 + t * 62;
-      spill.push({ x: +((h(k++) - 0.5) * 2 * hw).toFixed(1), y: +(yB - 250 + t * 250).toFixed(1), r: +(0.5 + h(k++) * 1.0).toFixed(2), o: +(0.05 + t * 0.4 * h(k++)).toFixed(2) });
-    }
-    for (i = 0; i < 260; i++) {
-      t = h(k++);
-      hw = 70 + t * 240;
-      spill.push({ x: +((h(k++) - 0.5) * 2 * hw).toFixed(1), y: +(yB + t * 95).toFixed(1), r: +(0.5 + h(k++) * 1.0).toFixed(2), o: +((1 - t) * 0.3 * h(k++)).toFixed(2) });
-    }
 
     var P = [
       { name: 'North Scottsdale Collection', city: 'Scottsdale', beds: '1–3 Beds', sqft: '760 sqft', price: '$1,950+', rent: 1950, rating: '4.8 ★', deal: '6 Weeks Free', floor: 680, tier: 3 },
@@ -408,7 +359,7 @@ class Component extends DCLogic {
     var fw = { none: 'a clean record', lease: 'a broken lease', evict: 'an eviction' }[st.flag] || '';
 
     return {
-      door: door, spill: spill, cities: cities,
+      cities: cities,
       fresh: P.slice(0, 8).map(card),
       phoenix: P.filter(function (p) { return p.city === 'Phoenix'; }).map(card),
       specials: [P[8], P[9], P[7], P[11]].map(card),
