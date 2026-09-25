@@ -13,6 +13,10 @@ For each ad, the pipeline looks at **every clip and every take** that belongs to
 
 The AI or Submagic ships **one finished video** made from the **best** of those clips — not the first file that showed up, not a single take in isolation.
 
+One video per ad. One video per VSL (and the portal welcome counts as its own long video). Every take that belongs to that video is merged into that one file. The clip order is the script order. Correct order = the order the lines appear in the script. Not camera order, not file-name order, not upload order, not "Take 1 then Take 6" unless that is also the script order.
+
+One video per angle. The angle is the name in `docs/ads/NAMING.md`. Two files that share an ad number but have different angle names are different videos. Read the words before a join. Do not join them.
+
 The finished ad must be the best of all clips and takes, and it must also kill these defects:
 
 - Dead space, long pauses, dead air, hanging tails
@@ -51,5 +55,5 @@ Joining and editorial cuts happen **before** Submagic sees the film (Submagic ta
 Ask: "Run the ad video pipeline on SLO Ad 3."
 
 ❌ Poll Raw, grab Take 1 alone, leave a long pause and a doubled hook, export, and ship while Take 2 sits in Drive.
-✅ Find every take and clip for Ad 3, keep the best lines once, trim dead air, merge one master, then Submagic once — Chris never touches Submagic.
+✅ Find every take and clip for Ad 3, keep the best lines once, trim dead air, join the takes in script order into one master, then Submagic once — Chris never touches Submagic.
 ```

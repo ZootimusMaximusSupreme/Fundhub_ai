@@ -192,7 +192,11 @@ Grok and Composer do not touch websites or design HTML. Claude does that work. S
 
 ### Ad video — best of all clips (owner-set 2026-09-24)
 
-For each ad, agents merge every take and clip into one best-of master, kill the editor defects in that law (dead air, repeats, false starts, filler, audio, captions, B-roll, and the rest), and never ship a lone take when others exist; Chris never opens Submagic. Same law: `.cursor/rules/ad-video-best-of-clips.mdc` and `.claude/rules/ad-video-best-of-clips.md`.
+For each ad, agents merge every take and clip into one best-of master, kill the editor defects in that law (dead air, repeats, false starts, filler, audio, captions, B-roll, and the rest), and never ship a lone take when others exist; one video per ad and one video per VSL (the portal welcome counts as its own long video), takes joined in script order; Chris never opens Submagic. Same law: `.cursor/rules/ad-video-best-of-clips.mdc` and `.claude/rules/ad-video-best-of-clips.md`.
+
+### Ad file names (owner-set 2026-09-24)
+
+Drive names are Offer, ad number, angle name, then take number. The angle is the script name. Same angle joins. A different angle is a different video. Book: `docs/ads/NAMING.md`. Same law: `.cursor/rules/ad-naming.mdc` and `.claude/rules/ad-naming.md`.
 
 ### API only, no logins (owner-set 2026-09-24)
 

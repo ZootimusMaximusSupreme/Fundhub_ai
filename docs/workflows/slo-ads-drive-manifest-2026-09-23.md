@@ -5,7 +5,7 @@ Drive id: `13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ`
 
 Organizer: `scripts/slo-ads-drive-organize.mjs`  
 
-**Naming law (Chris → self email, 2026-09-23, `IMG_0448.png`):** Riverside projects under **SLO Ads** are numbered **`Ad N — …`** (plus retarget / VSL / welcome titles). On Drive the same clips use **`SLO Ad N Take M.mp4`** (or the special names below). Not pipeline ids (`LOCKED-AD-*`, `VSL-01-*`, `043_t01_raw`).
+**Naming law (owner-set 2026-09-24):** `Offer / Ad # / Angle / Take #`. The file is `SLO Ad 7 — Haynes, the call that was never a roadmap Take 1.mp4`. The angle is the script name. Book: `docs/ads/NAMING.md`. Not pipeline ids (`086_t01_raw_2026-09-24.mp4`). The older `SLO Ad N Take M.mp4` line left the angle off. That shorter name is wrong.
 
 Reference: `docs/workflows/slo-video-script-check-2026-09-21.md` (speech ↔ script; filenames stay SLO).
 
