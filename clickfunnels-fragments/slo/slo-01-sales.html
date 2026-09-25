@@ -2142,23 +2142,22 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-b .cardw{max-width:660px;margin:26px auto 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;box-shadow:0 1px 3px rgba(10,10,10,.05);text-align:left}
 .fh-b .cardw p{margin-top:12px;font-size:15.5px;color:var(--gray);line-height:1.66}
 .fh-b .cardw p b{color:var(--ink);font-weight:600}
-.fh-b .proofgrid{max-width:900px;margin:30px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.fh-b .proofgrid{max-width:460px;margin:30px auto 0;display:grid;grid-template-columns:repeat(2,minmax(0,220px));gap:12px;justify-content:center}
 .fh-b .vslot{aspect-ratio:9/16;max-height:300px;border-radius:12px;background:#111113;border:1px solid #26262B;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px}
 .fh-b .vslot span{color:#8A8A93;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;line-height:1.5}
 .fh-b .foot-support{margin:10px auto 4px;text-align:center;font-size:12.5px;color:var(--gray)}
 .fh-b .foot-support a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .fh-b .proofgrid{width:calc(100% - 48px);align-items:start}
 .fh-b .proofgrid>*{min-width:0}
-/* The .fh-b .vslot rule above is shared verbatim with the /watch proof block
-   (src/ads/funnel-proof-scripts.test.mjs pins the two bodies equal), so its
-   max-height:300px is lifted here instead of edited there. Without this the
-   card is clamped to 300px tall and 9/16 shrinks its width to 168.8px inside a
-   much wider column — that gap on both sides is the empty space the owner saw
-   (2026-09-22). max-height:none lets each card fill its column at true 9:16. */
-.fh-b .proofgrid .vslot{max-height:none}
+/* Shared .fh-b .vslot keeps max-height:300px for /watch parity
+   (src/ads/funnel-proof-scripts.test.mjs). On /roadmap the pair stays
+   centered and fits a 1280px fold (owner 2026-09-25): ~220×391 each,
+   grid ≤460px — wider than 180 so labels never wrap a lone digit. */
+.fh-b .proofgrid .vslot{width:220px;max-width:220px;max-height:none;justify-self:center;padding:0;overflow:hidden}
+.fh-b .proofgrid .vslot video{width:100%;height:100%;object-fit:cover;display:block;border-radius:11px;background:#111}
 /* Phones: one video testimonial per row (owner 2026-09-22: "on mobile the video
-   testimonials should stack"). Three 9/16 slots across a 390px screen leave each
-   one 107px wide; stacked, each fills the column at true 9:16 (342x608 on a
+   testimonials should stack"). Two 9/16 slots across a 390px screen leave each
+   one ~183px wide; stacked, each fills the column at true 9:16 (342x608 on a
    390px phone). 699px is the inverse of the /watch block's min-width:700px, so
    both pages break together. The 380px cap only bites between about 430 and
    699, where a full-width 9:16 card would otherwise run past 950px tall; a
@@ -2199,13 +2198,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   </div>
   <div class="trustline">256-bit SSL secure &middot; Soft pull, no hard inquiry &middot; Zero score impact from that pull</div>
 
-  <!-- SLOT-TESTIMONIALS: 3 vertical video placeholders (owner, 2026-09-22: "we need the vertical video
-       placeholder"). Chris drops in real clips. Do not invent names, quotes, amounts or faces. -->
+  <!-- SLOT-TESTIMONIALS: 2 vertical videos (owner 2026-09-25: drop 3rd slot).
+       Slot 1 = Colin, Slot 2 = Sarah. Hosted on fundhub.ai/funnel. -->
   <div class="proofgrid">
     <span class="kicker" style="text-align:center;grid-column:1/-1">From people who bought it</span>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 1 ]</span></div>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 2 ]</span></div>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 3 ]</span></div>
+    <div class="vslot"><video controls playsinline preload="metadata" src="https://fundhub.ai/funnel/slo-testimonial-colin.mp4" title="Colin" aria-label="Colin testimonial"></video></div>
+    <div class="vslot"><video controls playsinline preload="metadata" src="https://fundhub.ai/funnel/slo-testimonial-sarah.mp4" title="Sarah" aria-label="Sarah testimonial"></video></div>
   </div>
 
   <footer>
