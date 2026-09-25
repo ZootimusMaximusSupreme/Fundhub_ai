@@ -134,3 +134,27 @@ until a dollar amount exists."
   `src/events/bus.mjs`, `clickfunnels-fragments/slo/slo-01-sales.html`.
 - Journeys read: `docs/journeys/slo-offer-intended.md`,
   `docs/journeys/slo-roadmap-widget-flow.md`.
+
+---
+
+## FIX — 2026-09-25 (live CRS switch)
+
+**What was wrong:** production talked to the credit sandbox
+(`api-sandbox.stitchcredit.com`) with `CRS_ALLOW_LIVE=0`. The stored login is the
+live CRS user (username ends in `bAPI` = FundHubAPI). The sandbox rejected that
+login (`401 Access Denied`). Buyers never got a dollar amount.
+
+**What changed (switches only — no password touch, no rotate, no demo pay):**
+
+| Setting | Before | After |
+|---|---|---|
+| `CRS_API_HOST` | `api-sandbox.stitchcredit.com` | `mware.crscreditapi.com` |
+| `CRS_ALLOW_LIVE` | `0` | `1` |
+| `CRS_ACTIVE_BUREAUS` | `TU,EX,EQ` | `EX,EQ` (TU still returns E1006 Invalid Add-On Configuration) |
+| `SLO_DEMO_PAY` | `0` (left alone) | `0` |
+
+Usernames and passwords were not read, not printed, and not overwritten. Netlify
+keeps the stored secrets; only the host and the live fence moved.
+
+**Prove:** follows the one production deploy below.
+
