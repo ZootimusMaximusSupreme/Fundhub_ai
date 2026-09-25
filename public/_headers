@@ -63,3 +63,9 @@
 # so Chrome will autoplay it muted on mobile.
 /funnel/vsl.mp4
   Content-Type: video/mp4
+
+# Client portal welcome video. content_videos.storage_key points here, and the
+# signed /api/content/welcome-video link 302s to it, so the browser's <video>
+# element fetches this file directly and needs the same content type.
+/assets/video/portal-welcome.mp4
+  Content-Type: video/mp4
