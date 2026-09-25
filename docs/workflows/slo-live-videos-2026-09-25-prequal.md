@@ -158,3 +158,50 @@ keeps the stored secrets; only the host and the live fence moved.
 
 **Prove:** follows the one production deploy below.
 
+
+---
+
+## FIX RESULT — 2026-09-25 evening
+
+### Verdict
+
+**PASS.** A paid SLO order can end with a dollar prequal amount. Live credit
+login works again. Buyers with a real credit file get Experian + Equifax (TU
+stays off). Expect about **10 seconds** on "Reading your file…" when the
+bureaus return a file — same estimate as the timing section above.
+
+### What we changed (already shipped)
+
+| Setting | After |
+|---|---|
+| `CRS_API_HOST` | `mware.crscreditapi.com` |
+| `CRS_ALLOW_LIVE` | `1` |
+| `CRS_ACTIVE_BUREAUS` | `EX,EQ` |
+| `SLO_DEMO_PAY` | `0` (unchanged) |
+
+No username/password was read, printed, rotated, or overwritten. One
+`npm run ship` landed at deploy `6ab703f60c341245a0881de7`.
+
+### Prove (no Chris credit, no card charge)
+
+1. **Live login** — paid sim order `slo_556afa2da01dc4733a3f79b0`, client
+   `e2e+slo-dollar-e94a6c9d@fundhub.ai`, fake SSN (not an issued number). 
+   Production `POST /api/public/slo-pull` started the pull. Soft-pull closed in
+   ~2s with: `EX: NoFileReturnedNoHit | EQ: NoFileReturnedNoHit`. That is a
+   bureau answer, not `401 Access Denied`. Login works.
+2. **Dollar amount** — same paid order. Fundable sim credit pack
+   (`scripts/sim/push-credit.mjs --profile fundable`) because the fake SSN has
+   no bureau file by design. `GET /api/public/slo-status` returned
+   `state: "done"`, `pa: 212000`,
+   `book_url: https://apply.fundhub.ai/roadmap-book?pa=212000`.
+
+### Timing (this prove)
+
+| Step | Wall clock |
+|---|---|
+| Live pull request → bureau no-hit failure | ~4–8 s end to end (~2 s for the two bureau calls) |
+| When a real file comes back (prior estimate) | ~10 s on "Reading your file…" |
+
+### Left alone
+
+Videos, testimonials, calendar, demo pay. TU still off (E1006 add-on).
