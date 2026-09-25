@@ -72,6 +72,6 @@ These are wrong on Drive:
 
 ## Where this applies
 
-Google Drive file names for these ads. The raw folder and the SLO Ads folder both use this name.
+Google Drive file names for these ads. **Filmed files live in SLO Ads root only** (see `.cursor/rules/slo-one-filmed-folder.mdc`).
 
 A new offer uses its own offer word in the first slot. The other three slots do not change.

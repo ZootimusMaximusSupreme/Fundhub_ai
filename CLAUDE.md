@@ -195,6 +195,10 @@ For each ad, agents merge every take and clip into one best-of master, kill the 
 
 Drive names are Offer, ad number, angle name, then take number. The angle is the script name. Same angle joins. A different angle is a different video. Book: `docs/ads/NAMING.md`. Same law: `.cursor/rules/ad-naming.mdc` and `.claude/rules/ad-naming.md`.
 
+### SLO filmed video — one folder (owner-set 2026-09-24)
+
+All filmed SLO MP4s live in **SLO Ads** Drive root only (`13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ`). `DRIVE_RAW_FOLDER_ID` is that same id. No Raw subfolder for Chris. Same law: `.cursor/rules/slo-one-filmed-folder.mdc` and `.claude/rules/slo-one-filmed-folder.md`.
+
 ### API only, no logins (owner-set 2026-09-24)
 
 Chris never logs into Submagic, ClickFunnels, or any other tool an agent can run by API. Agents use the API. If the API refuses, say that error in plain words. Same law: `.cursor/rules/chris-never-submagic.mdc` and `.claude/rules/chris-never-submagic.md`.

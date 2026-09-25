@@ -20,11 +20,11 @@ Next session: **ads vs VSLs strategy** using the table above + content map (port
 
 | Folder | Drive id | Role |
 |--------|----------|------|
-| SLO Ads | `13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ` | Marketing parent |
-| **Raw** | `12L_RH8QycTZFeaXn4rHs9AIeGq7XokWU` | **Phone shares here.** Sweeper polls **only** this folder (`DRIVE_RAW_FOLDER_ID`). |
+| **SLO Ads (filmed — one folder)** | `13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ` | All filmed MP4s. `DRIVE_RAW_FOLDER_ID` = this id (owner-set 2026-09-24). |
+| ~~Raw subfolder~~ | `12L_RH8QycTZFeaXn4rHs9AIeGq7XokWU` | Retired; consolidated 2026-09-24. |
 | paul-submagic | `1E7IwPDoVZHSoj4F4_71SZRRdNoQKG0t7` | Approved finals for Paul (`DRIVE_PAUL_FOLDER_ID`). |
 
-Takes sitting in **SLO Ads root** are **not** picked up. Move them:
+~~Takes sitting in **SLO Ads root** are **not** picked up. Move them:~~
 
 ```bash
 node --env-file=.env scripts/ad-video-move-takes-to-raw.mjs          # dry-run
