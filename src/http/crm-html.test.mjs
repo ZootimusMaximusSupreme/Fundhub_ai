@@ -48,6 +48,25 @@ test("client-portal.html ships no sample people and no fake upload or video", ()
   assert.ok(!html.includes("FHData.documents"), "client portal must not call the staff documents read");
 });
 
+// WHAT FUNDHUB SELLS, owner-set 2026-09-25: "we have 2 credit optimization
+// offers, a 297 offer, then the 2 e products and that's it for now." Read out of
+// the repo: REPAIR_DFY ($1,000 once) and REPAIR_TRIAL ($200 once) are the two
+// credit-optimization offers (src/config/offers.mjs, listed as "from the repo"
+// in docs/finance/slo-offer-model-2026-09-18.md §2); the $297 offer is the
+// blueprint (same doc §1) and on this screen that is the Capital Blueprint card;
+// the two e-products are Credit Mastery System and Capital Strategy Program,
+// sold at /education/ (public/education/index.html, keys in
+// src/education/enrollments.mjs PROGRAMS) and they have no card here, because
+// db/migrations/245_education_enrollments.sql records that offers.mjs holds no
+// entry for either one.
+//
+// So the grid offers THREE cards. The other three stay in the markup and ship
+// with the `hidden` class: they are OWNED ONLY, shown by repaintTiles() just to
+// the client who already holds them, so a buyer keeps what they paid for and
+// nobody is sold something that is not on the list.
+const OFFER_TILES = ["UWIQ_DELIVERABLES", "REPAIR_DFY", "REPAIR_TRIAL"];
+const OWNED_ONLY_TILES = ["SOFT_PULL", "FUNDING_DFY", "FUNDING_MASTERY"];
+
 test("client-portal offer tiles hide list prices except the fixed $32 soft pull", () => {
   const html = fs.readFileSync(path.join(APP, "client-portal.html"), "utf8");
   assert.match(html, /data-tile="SOFT_PULL"[\s\S]*?<div class="tp">\$32<\/div>/);
@@ -67,6 +86,55 @@ test("client-portal offer tiles hide list prices except the fixed $32 soft pull"
   assert.ok(!/\$1,000\+?/.test(html), "must not show $1,000 list prices on the client portal");
   assert.ok(!/\$200\b/.test(html), "must not show $200 on the client portal");
   assert.ok(html.includes("price:'$32'"), "soft pull $32 stays visible");
+});
+
+test("client-portal Unlock More offers only what Fundhub sells — three cards, and the rest owned-only", () => {
+  const html = fs.readFileSync(path.join(APP, "client-portal.html"), "utf8");
+
+  for (const key of OFFER_TILES) {
+    const m = html.match(new RegExp(`<article class="([^"]+)" data-tile="${key}">`));
+    assert.ok(m, `${key} card is on the page`);
+    assert.ok(!/\bhidden\b/.test(m[1]), `${key} is a real offer, so it ships visible`);
+  }
+
+  for (const key of OWNED_ONLY_TILES) {
+    const m = html.match(new RegExp(`<article class="([^"]+)" data-tile="${key}">`));
+    assert.ok(m, `${key} card is on the page`);
+    assert.ok(/\bhidden\b/.test(m[1]),
+      `${key} is owned only — it must ship hidden so a client is never sold it here`);
+  }
+
+  // Exactly those six cards, so a seventh cannot arrive unnoticed.
+  const all = [...html.matchAll(/<article class="[^"]*" data-tile="([A-Z_]+)">/g)].map((m) => m[1]);
+  assert.deepEqual(all.sort(), [...OFFER_TILES, ...OWNED_ONLY_TILES].sort());
+
+  // The paint function is the only thing that may show an owned-only card.
+  assert.match(html, /var OWNED_ONLY = \{ SOFT_PULL: 1, FUNDING_DFY: 1, FUNDING_MASTERY: 1 \};/);
+  assert.match(html, /if \(OWNED_ONLY\[key\]\) tiles\[i\]\.classList\.toggle\("hidden", !owned\);/);
+
+  // THE $297 BUYER KEEPS WHAT HE BOUGHT. A paid roadmap order counts as owning
+  // the Blueprint even with no entitlement written, and the soft pull he paid
+  // for inside it reads Done rather than being sold back to him at $32.
+  assert.match(html, /key === "UWIQ_DELIVERABLES" && !owned && sloPaid\) owned = true/);
+  assert.match(html, /key === "SOFT_PULL" && !owned && softPullDone/);
+  assert.match(html, /badge: "Done"/);
+
+  // Capital Academy opens on the one code that product grants, and nothing else.
+  assert.match(html, /FUNDING_MASTERY:\s*"funding-mastery-course"/);
+
+  // No dollar amount was added to any card priced on the call.
+  for (const key of ["FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL", "UWIQ_DELIVERABLES"]) {
+    const start = html.indexOf(`data-tile="${key}"`);
+    const card = html.slice(start, html.indexOf("</article>", start));
+    assert.ok(!/\$/.test(card), `${key} must carry no dollar amount`);
+    assert.match(card, /Talk to an advisor/);
+    assert.match(card, /<div class="tp">On your call<\/div>/);
+  }
+
+  // The line over the grid no longer quotes the $32 pull, because it is not sold here.
+  assert.match(html, /id="unlock-note">Everything here — book a call for pricing</);
+  assert.ok(!/id="unlock-note">Soft pull is/.test(html),
+    "the grid's header line must not price an offer the grid does not sell");
 });
 
 test("lenders.html with a client uses the match list, not the whole book", () => {

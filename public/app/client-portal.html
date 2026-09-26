@@ -764,14 +764,21 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="card" aria-labelledby="unlock-t">
         <div class="sec-hd">
           <div class="card-title" id="unlock-t">Unlock More</div>
-          <!-- The soft-pull half of this line is repainted away once the pull
-               has run — see repaintTiles(). Quoting a price for something she
-               has already had is the same mistake as locking it. -->
-          <span class="sec-note" id="unlock-note">Soft pull is $32. Everything else — book a call for pricing</span>
+          <!-- The $32 soft pull is no longer sold from this screen (owner-set
+               2026-09-25), so this line no longer quotes its price. Everything
+               on the grid is priced on the call. -->
+          <span class="sec-note" id="unlock-note">Everything here — book a call for pricing</span>
         </div>
         <div class="tiles" id="tiles">
 
-          <article class="tile locked" data-tile="SOFT_PULL">
+          <!-- OWNED ONLY (owner-set 2026-09-25). THE $32 SOFT PULL IS NOT ONE OF
+               THE FIVE OFFERS, and it never was a separate one: the $297 sale
+               charges this same products row — api/public/slo-checkout.mjs takes
+               `diagnostic`, which is this offer's productCode in
+               src/config/offers.mjs. So a locked "$32" card under a paid buyer's
+               own credit scores was selling him what he had already bought. The
+               card now appears only once the pull is his, where it reads Done. -->
+          <article class="tile locked hidden" data-tile="SOFT_PULL">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">UnderwriteIQ soft-pull assessment</div>
             <div class="td">A soft inquiry so we can see your file. Price is fixed.</div>
@@ -782,7 +789,12 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             </div>
           </article>
 
-          <article class="tile locked" data-tile="FUNDING_DFY">
+          <!-- OWNED ONLY (owner-set 2026-09-25). Funding, done-for-you is not on
+               the five-offer list, and it has never been a self-serve card: the
+               deposit and the success fee are closed on a call
+               (docs/finance/slo-offer-model-2026-09-18.md §3). A funding client
+               still sees this card, because it is then a thing they own. -->
+          <article class="tile locked hidden" data-tile="FUNDING_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Funding, done-for-you</div>
             <div class="td">We run the funding round with you. Plus 10% of what funds, due when money lands. Pricing is set on your call.</div>
@@ -815,6 +827,14 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             </div>
           </article>
 
+          <!-- THE $297 OFFER, and one of the five (owner-set 2026-09-25).
+               docs/finance/slo-offer-model-2026-09-18.md §1: "We sell a $297
+               blueprint." So this card stays a real offer for everyone, and a
+               buyer sees it owned — repaintTiles() opens it on the roadmap
+               entitlement or on portal-summary's `slo_paid`, with the five pack
+               rows in What You Own. No price is written on the card: the
+               closer's list price and the $297 front end are two different
+               sales, and the page must not pick one. -->
           <article class="tile locked" data-tile="UWIQ_DELIVERABLES">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Capital Blueprint</div>
@@ -834,7 +854,14 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             </div>
           </article>
 
-          <article class="tile locked" data-tile="FUNDING_MASTERY">
+          <!-- OWNED ONLY (owner-set 2026-09-25). Capital Academy is not on the
+               five-offer list, and nothing in this repo shows it is either of
+               the two e-products /education/ sells — see
+               db/migrations/245_education_enrollments.sql. So it is not sold
+               from this screen. It ships hidden, and repaintTiles() shows it
+               only to a client who already bought it (funding-mastery-course).
+               Those buyers keep their access. -->
+          <article class="tile locked hidden" data-tile="FUNDING_MASTERY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Capital Academy</div>
             <div class="td">The course. Pricing is set on your call.</div>
@@ -1527,6 +1554,33 @@ document.addEventListener("DOMContentLoaded", async function () {
   };
   /* Only these two open a course accordion. Other included tiles keep View status. */
   var COURSE_TILES = { UWIQ_DELIVERABLES: 1, FUNDING_MASTERY: 1 };
+  /* ══ WHAT FUNDHUB SELLS, AND WHAT THIS GRID MAY THEREFORE OFFER ═══════════
+     Owner-set 2026-09-25: "we have 2 credit optimization offers, a 297 offer,
+     then the 2 e products and that's it for now." Read out of the repo:
+
+       · the two credit-optimization offers — REPAIR_DFY and REPAIR_TRIAL,
+         src/config/offers.mjs, listed as "from the repo" in
+         docs/finance/slo-offer-model-2026-09-18.md §2. No price in this file,
+         not even in a comment: crm-html.test.mjs greps the whole page for one.
+       · the $297 offer — the blueprint, same doc §1 and
+         docs/journeys/slo-offer-intended.md
+       · the two e-products — Credit Mastery System and Capital Strategy
+         Program, public/education/index.html ("Two programs. One standard."),
+         keys pinned in src/education/enrollments.mjs PROGRAMS
+
+     THE TWO E-PRODUCTS GET NO CARD HERE, and that is a fact rather than a
+     choice: db/migrations/245_education_enrollments.sql records in its own
+     header that offers.mjs holds no entry for either program, an enrollment row
+     is a request and not access, and nothing in this repo proves either program
+     is Capital Academy. Inventing a card would mean inventing a price, an
+     entitlement and a checkout. They are sold at /education/, not from here.
+
+     So THREE cards are offers on this screen — Capital Blueprint, and the two
+     capital-readiness ones. The rest are OWNED ONLY: they ship with the
+     `hidden` class in the markup above and appear only for the client who
+     already holds them, so nobody loses what they bought and nobody is sold
+     something that is not on the list. */
+  var OWNED_ONLY = { SOFT_PULL: 1, FUNDING_DFY: 1, FUNDING_MASTERY: 1 };
   /* `subtype` is the documents-table name for the same thing the entitlement
      code names — src/documents/kinds.mjs SUBTYPES.deliverable. It is what turns
      "you own a Funding Snapshot" into "here is your Funding Snapshot", because
@@ -1568,6 +1622,9 @@ document.addEventListener("DOMContentLoaded", async function () {
      the Blueprint tile and its five pack rows in What You Own — nothing else:
      no door, no other tile, no funding view. */
   var sloPaid = false;       // portal-summary: a paid, non-demo SLO roadmap order
+  /* True only for the demo portal below (?demo=1 / fh_demo). It never reads a
+     real file, so no real client's screen can take a demo branch. */
+  var demoMode = false;
   var SLO_PACK = [
     { code: "credit-analysis-report", name: "Credit Analysis Report" },
     { code: "credit-optimization-roadmap", name: "Credit Optimization Roadmap" },
@@ -2054,10 +2111,15 @@ document.addEventListener("DOMContentLoaded", async function () {
         words = { badge: "Done", price: "Already run — this is where your scores came from" };
       }
       if (key === "UWIQ_DELIVERABLES" && !owned && sloPaid) owned = true;
+      /* An owned-only card is shown or hidden, never offered. */
+      if (OWNED_ONLY[key]) tiles[i].classList.toggle("hidden", !owned);
       paintTile(tiles[i], owned, words);
       if (owned) out.unlocked++; else out.locked++;
     }
-    if (entActive["metro2-letter-pack"]) {
+    /* Not on the demo: the demo exists so every card can be looked at, and
+       hiding the test run because the demo also holds the letter pack is the
+       one rule that would empty a card Chris asked to see. */
+    if (!demoMode && entActive["metro2-letter-pack"]) {
       var trial = document.querySelector('[data-tile="REPAIR_TRIAL"]');
       if (trial) trial.classList.add("hidden");
     }
@@ -2550,6 +2612,166 @@ document.addEventListener("DOMContentLoaded", async function () {
       var s = d && d.staff;
       return (s && s.client_id) ? String(s.client_id) : "";
     });
+  }
+
+  /* ══ THE DEMO PORTAL ══════════════════════════════════════════════════════
+     Owner ask 2026-09-25: "for the demo portal please make sure they are all
+     unlocked so daddy can see whats going on, please put sample data in as
+     well." So ONE URL — /app/client-portal.html?demo=1 — paints this screen
+     with every card unlocked and every list full of obviously fake content.
+
+     IT TALKS TO NOTHING. No entitlements read, no portal-summary, no session:
+     the sample below is the whole payload. That is the same shape the rest of
+     this app's demo mode already has — public/portal-login.html says of the
+     `fh_demo` key, "while it is set NOTHING in the app contacts the real
+     backend" — and it is what makes this safe in both directions. A real
+     client cannot land here, and the demo cannot read a real client.
+
+     THE `fh_demo` KEY OPENS THE SAME VIEW, because four app screens already
+     read it (documents.html, inquiry-remover.html, staff-teams.html,
+     hiring.html) and a second switch for one idea is how two demo modes drift.
+
+     NOTHING HERE IS A REAL PERSON. Names come from the demo furniture already
+     in src/demo/seed-ui-coverage.mjs (Harborwick, Quillcrest) on the same rule
+     as src/auth/demo-roster.mjs: every demo name starts with DEMO so it reads
+     as demo at a glance. No real client, no real address, no credit file. The
+     scores are the simulated set from src/demo/simulate-client.mjs and they
+     paint with `sample: true`, which is what puts "Sample scores. Not a real
+     credit pull." under them. */
+  function isDemoPortal() {
+    try {
+      if (FHData.param("demo") === "1") return true;
+      return localStorage.getItem("fh_demo") === "1";
+    } catch (e) { return false; }
+  }
+
+  /* A SAMPLE FILE THAT REALLY OPENS, and that no server had to invent. The
+     deliverables in the demo need a working Download or the row is a dead
+     link, so each one is built here as a blob in the browser — same origin,
+     opens in a tab, gone when the tab closes, and impossible to confuse with a
+     client's document because the first thing on it says so. */
+  function demoSampleFile(title, lines) {
+    var body = lines.map(function (l) { return "<p>" + esc(l) + "</p>"; }).join("");
+    var html = '<!doctype html><meta charset="utf-8"><title>' + esc(title) +
+      ' — SAMPLE</title><style>body{font:16px/1.6 system-ui,sans-serif;max-width:40em;' +
+      'margin:3em auto;padding:0 1.5em;color:#111}h1{font-size:1.5em}.s{background:#ffe9e9;' +
+      'border:1px solid #c33;color:#900;padding:.7em 1em;border-radius:8px;font-weight:700}' +
+      '</style><p class="s">SAMPLE — demo portal. Not a real client and not a real credit file.</p>' +
+      '<h1>' + esc(title) + '</h1>' + body;
+    try {
+      return URL.createObjectURL(new Blob([html], { type: "text/html" }));
+    } catch (e) { return null; }
+  }
+
+  function demoDocuments() {
+    var day = 0;
+    function doc(subtype, title, lines) {
+      day += 3;
+      var url = demoSampleFile(title, lines);
+      return {
+        id: "demo-" + subtype,
+        kind: "deliverable",
+        subtype: subtype,
+        title: title,
+        mime_type: "text/html",
+        created_at: new Date(Date.now() - day * 86400000).toISOString(),
+        download: url ? { url: url } : null
+      };
+    }
+    return [
+      doc("credit_analysis_report", "Credit Analysis Report", [
+        "Sample file for DEMO Client of Harborwick Supply Co.",
+        "Three bureaus read. Sample scores 718 / 724 / 731.",
+        "Four sample accounts reviewed, two sample reporting errors flagged."
+      ]),
+      doc("credit_optimization_roadmap", "Credit Optimization Roadmap", [
+        "Sample roadmap, in order, for DEMO Client.",
+        "Step 1 — bring the sample revolving balance under 30% of its limit.",
+        "Step 2 — dispute the two sample reporting errors from the report.",
+        "Step 3 — leave the sample oldest account open."
+      ]),
+      doc("funding_snapshot", "Funding Snapshot", [
+        "Sample snapshot for Harborwick Supply Co.",
+        "Sample pre-qualified range: $85,000.",
+        "Sample readiness: business entity on file, sample bank history 14 months."
+      ]),
+      doc("bank_lender_match_list", "Bank and Lender Match List", [
+        "Sample match list. These are placeholder names, not real banks.",
+        "Sample match 1 — Quillcrest Community Bank.",
+        "Sample match 2 — Harborwick Credit Union.",
+        "Sample match 3 — Northgate Business Lending."
+      ]),
+      doc("metro2_dispute_letter_pack", "Metro 2 Dispute Letter Pack", [
+        "Sample letter pack for DEMO Client.",
+        "Two sample letters, one per sample reporting error.",
+        "Nothing here is addressed and nothing here will be mailed."
+      ])
+    ];
+  }
+
+  function paintDemoPortal() {
+    demoMode = true;
+    /* Nothing downstream may wait on a client id that is never coming — the
+       dispute card in the next script tag awaits this promise. */
+    window.__fhClientId = Promise.resolve(null);
+
+    entActive = {};
+    var CODES = [
+      ["credit-analysis-report", "Credit Analysis Report"],
+      ["credit-optimization-roadmap", "Credit Optimization Roadmap"],
+      ["funding-snapshot", "Funding Snapshot"],
+      ["bank-lender-match-list", "Bank and Lender Match List"],
+      ["metro2-letter-pack", "Metro 2 Dispute Letter Pack"],
+      ["funding-mastery-course", "Funding Mastery course (A to Z)"]
+    ];
+    for (var i = 0; i < CODES.length; i++) {
+      entActive[CODES[i][0]] = {
+        entitlement_code: CODES[i][0], entitlement_name: CODES[i][1], active: true
+      };
+    }
+    /* Both of these are true for the demo on purpose: every offer card and
+       every deliverable is unlocked, which is the whole point of the ask. */
+    softPullDone = true;
+    sloPaid = true;
+    docsOnFile = demoDocuments();
+    stage = { key: "paid" };
+
+    paintIdentity("DEMO Client", "DEMO Advisor");
+    paintPortalScores({
+      experian: 718, equifax: 724, transunion: 731, experian_business: 62, sample: true
+    });
+    paintPrequal("$85,000");
+    setFundingVisible(true);
+    setUploadDoors({ funding: true, inquiry: true, bureau_response: true });
+    setInquiryCaseOpen(false);
+    paintOwn(entActive);
+    repaintTiles();
+    paintDocs(docsOnFile);
+    paintAgreements([{
+      title: "Capital Blueprint Agreement (SAMPLE)",
+      sent_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      status: "signed"
+    }]);
+    paintPays([{
+      product_name: "Capital Blueprint (SAMPLE)",
+      created_at: new Date(Date.now() - 20 * 86400000).toISOString(),
+      amount_paid: "$297.00",
+      status: "paid"
+    }], { items: [] });
+    paintMessages([
+      { created_at: new Date(Date.now() - 2 * 86400000).toISOString(),
+        rendered_body: "SAMPLE — Your roadmap is ready in your portal." },
+      { created_at: new Date(Date.now() - 19 * 86400000).toISOString(),
+        rendered_body: "SAMPLE — Thanks for your order. Your credit pull is running." }
+    ]);
+    paintStage();
+    FHData.banner("sample",
+      "Demo portal — every card is unlocked and everything on this page is sample data. No real client.");
+  }
+
+  if (isDemoPortal()) {
+    paintDemoPortal();
+    return;
   }
 
   var clientId = null;
