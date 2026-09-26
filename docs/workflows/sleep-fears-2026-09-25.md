@@ -56,3 +56,24 @@ Shared board for overnight fear lanes. Counts only. No emails, phones, or names.
 - The one existing converted referral still has null commission (no rule / no sale on that row).
 - ClickFunnels workspace still needs contact custom attributes named `a1` and `a2` for the cleanest webhook shape; formData + visit URL paths cover the miss without that.
 
+## Portal
+
+**Fear:** Someone pays $297 and cannot get into the portal.
+
+**Trace:** `/roadmap` till creates a client portal account only when checkout creates a **new** client. An email that already belongs to a CRM client records the order only (no account write — “an email is not a login”). The pull form also calls `ensureSloAccount`. Payment itself did not open the login for that existing-client gap.
+
+**Count (live DB, counts only, no PII):**
+- Paid diagnostic `$297+` payment_links (all-time unique buyers): **6**
+- With a client portal account: **6**
+- Missing a portal account: **0**
+
+**Fix shipped (commit `f0eff646`):** When a `$297` SLO payment clears, open the same invited client account the product already uses (`ensureSloAccount` / `ensureSloPortalForPaidClient`):
+- Commas: `payment.received` → paid `slo_*` payment_links row → portal account
+- ClickFunnels SLO paid webhook: after sale write → portal account (not behind the post-purchase chase flag)
+
+**Portal URL:** https://fundhub.ai/portal-login.html
+
+**Backfill:** none needed (0 missing).
+
+**Ship note:** local commit is on `main`. `npm run ship` failed repeatedly on Netlify (`zip: not a valid zip file` on function upload). Code is not proven live until a later ship succeeds.
+
