@@ -175,9 +175,20 @@
         return;
       }
       messages.forEach(function (m) {
-        var mine = state.staffId && m.sender_staff_id === state.staffId;
+        var mine = isPortal
+          ? m.sender_kind === "client"
+          : (state.staffId && m.sender_staff_id === state.staffId);
         var cls = mine ? "me" : (m.channel === "internal" ? "internal" : "them");
         addMsg(esc(m.rendered_body || ""), cls);
+      });
+    }
+
+    function loadPortalThread() {
+      if (!isPortal || isDemo) return;
+      api("/api/chat/portal-message").then(function (res) {
+        if (!res || !res.ok) return;
+        if (res.conversation_id) state.conversationId = res.conversation_id;
+        paintThread(res.messages || []);
       });
     }
 
@@ -234,8 +245,15 @@
         clearInterval(pollTimer);
         pollTimer = null;
       }
-      if (isPortal) return;
       if (!panel.classList.contains("open")) return;
+      if (isPortal) {
+        if (isDemo) return;
+        pollTimer = setInterval(function () {
+          if (!panel.classList.contains("open")) return;
+          loadPortalThread();
+        }, 4000);
+        return;
+      }
       if (state.mode !== "message" || state.msgKind !== "internal") return;
       if (!state.peerId && !state.conversationId) return;
       pollTimer = setInterval(function () {
@@ -368,8 +386,8 @@
             return;
           }
           state.conversationId = res.conversation_id;
-          var reply = res.reply && res.reply.text;
-          addMsg(esc(reply || "Sent to your team."), "them");
+          loadPortalThread();
+          syncPoll();
         });
         return;
       }
@@ -423,7 +441,9 @@
       if (panel.classList.contains("open")) {
         paintModes();
         paintFoot();
-        if (state.mode === "message" && !isPortal && state.msgKind === "internal" &&
+        if (isPortal) {
+          loadPortalThread();
+        } else if (state.mode === "message" && state.msgKind === "internal" &&
             (state.peerId || state.conversationId)) {
           loadInternalThread();
         } else if (!document.getElementById("fh-chat-body").children.length) {
@@ -455,9 +475,11 @@
         panel.classList.add("open");
         paintModes();
         paintFoot();
-        if (!document.getElementById("fh-chat-body").children.length) paintBodyWelcome();
+        if (isPortal) loadPortalThread();
+        else if (!document.getElementById("fh-chat-body").children.length) paintBodyWelcome();
         var precallInput = document.getElementById("fh-chat-input");
         if (precallInput) precallInput.focus();
+        syncPoll();
       }, popMs);
     }
   }

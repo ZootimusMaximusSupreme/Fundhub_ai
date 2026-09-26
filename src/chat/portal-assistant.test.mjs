@@ -118,7 +118,16 @@ test("portal-message stores the assistant reply as delivered, never queued", () 
   assert.doesNotMatch(src, /'outbound', \$4, \$5, 'queued'/);
 });
 
-test("the portal chat widget shows the reply text", () => {
+test("portal-message admits GET for the signed-in client's own thread", () => {
+  const src = readFileSync(path.join(ROOT, "api/chat/portal-message.mjs"), "utf8");
+  assert.match(src, /req\.method === "GET"/);
+  assert.match(src, /listThreadMessages/);
+  assert.match(src, /allow", "GET, POST"/);
+  assert.match(src, /client_id = \$2/);
+});
+
+test("the portal chat widget reloads the thread after send", () => {
   const js = readFileSync(path.join(ROOT, "public/app/chat-widget.js"), "utf8");
-  assert.match(js, /res\.reply && res\.reply\.text/);
+  assert.match(js, /loadPortalThread/);
+  assert.match(js, /\/api\/chat\/portal-message/);
 });

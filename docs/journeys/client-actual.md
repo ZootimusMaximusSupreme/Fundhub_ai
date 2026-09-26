@@ -77,7 +77,7 @@ flowchart TD
 | `/api/auth/magic-link-verify` | — | anyone |
 | `/api/auth/reset` | POST | anyone |
 | `/api/auth/session` | — | anyone |
-| `/api/chat/portal-message` | POST | client |
+| `/api/chat/portal-message` | GET, POST | client |
 | `/api/climate` | OPTIONS | anyone |
 | `/api/climate/config` | — | anyone |
 | `/api/climate/geocode` | OPTIONS | anyone |

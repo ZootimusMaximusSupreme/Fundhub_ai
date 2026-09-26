@@ -123,10 +123,15 @@ function mountInVm(opts, { token = "real-token", fetchImpl } = {}) {
       timers.push({ fn, ms: Number(ms) || 0 });
       return timers.length;
     },
+    setInterval(fn, ms) {
+      timers.push({ fn, ms: Number(ms) || 0, interval: true });
+      return timers.length;
+    },
+    clearInterval() {},
     fetch: (url, init) => {
       fetches.push({ url, init });
       if (fetchImpl) return fetchImpl(url, init);
-      return Promise.resolve({ json: async () => ({ ok: true, conversation_id: "c1" }) });
+      return Promise.resolve({ json: async () => ({ ok: true, conversation_id: "c1", messages: [] }) });
     },
     console
   };
@@ -192,18 +197,21 @@ describe("pre-call chat widget", () => {
     );
   });
 
-  test("stays closed on first paint, then pops open after login", () => {
+  test("stays closed on first paint, then pops open after login", async () => {
     const ui = mountInVm({
       portal: true, hadCall: false, autoOpenPrecall: true, popAfterMs: 1400
     });
     assert.equal(ui.panel.classList.contains("open"), false, "not already open on login");
-    assert.equal(ui.timers.length, 1);
-    assert.equal(ui.timers[0].ms, 1400);
+    assert.equal(ui.timers.some((t) => t.ms === 1400), true);
     ui.flushTimers();
     assert.equal(ui.panel.classList.contains("open"), true);
-    const texts = ui.bodyEl.children.map((c) => c.innerHTML).join(" ");
-    assert.equal(texts.includes(GREETING), true);
-    assert.equal(ui.fetches.length, 0, "greeting is local — do not POST it");
+    await Promise.resolve();
+    assert.equal(
+      ui.fetches.some((f) => f.url === "/api/chat/portal-message" && !(f.init && f.init.method)),
+      true,
+      "portal opens by GETting the thread"
+    );
+    assert.ok(!ui.fetches.some((f) => f.init && f.init.method === "POST"), "greeting is local — do not POST it");
   });
 
   test("does not auto-open after they have been on a call", () => {
@@ -227,9 +235,10 @@ describe("pre-call chat widget", () => {
   test("a signed-in portal reply POSTs /api/chat/portal-message", () => {
     const ui = mountInVm({ portal: true, hadCall: false, demo: false });
     ui.send();
-    assert.equal(ui.fetches.length, 1);
-    assert.equal(ui.fetches[0].url, "/api/chat/portal-message");
-    const body = JSON.parse(ui.fetches[0].init.body);
+    const post = ui.fetches.find((f) => f.init && f.init.method === "POST");
+    assert.ok(post, "portal send POSTs");
+    assert.equal(post.url, "/api/chat/portal-message");
+    const body = JSON.parse(post.init.body);
     assert.equal(body.body, "Can we start 10 minutes late");
     assert.ok(!ui.fetches.some((f) => String(f.url).includes("/api/chat/ask")));
   });
@@ -238,6 +247,19 @@ describe("pre-call chat widget", () => {
     assert.match(WIDGET_SRC, /\/api\/chat\/messages\?conversation_id=/);
     assert.match(WIDGET_SRC, /\/api\/chat\/messages\?kind=internal/);
     assert.match(WIDGET_SRC, /loadInternalThread/);
+  });
+
+  test("portal Message loads the thread via GET /api/chat/portal-message", () => {
+    assert.match(WIDGET_SRC, /function loadPortalThread/);
+    assert.match(WIDGET_SRC, /api\("\/api\/chat\/portal-message"\)/);
+  });
+
+  test("portal open GETs the thread before any send", async () => {
+    const ui = mountInVm({ portal: true, hadCall: true, autoOpenPrecall: false, demo: false });
+    ui.byId.get("fh-chat-fab").onclick();
+    await Promise.resolve();
+    assert.equal(ui.fetches[0].url, "/api/chat/portal-message");
+    assert.ok(!(ui.fetches[0].init && ui.fetches[0].init.method === "POST"));
   });
 
   test("demo portal does not fetch on send", () => {

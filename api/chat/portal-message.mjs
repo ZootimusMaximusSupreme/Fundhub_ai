@@ -1,11 +1,14 @@
-// POST /api/chat/portal-message — client → staff from the portal chat widget.
+// /api/chat/portal-message — client portal chat widget.
 //
-// Lands on the client's existing conversation for the channel (sms/email),
-// threaded — not a separate silo (spec §4.3).
+//   GET  — signed-in client reads THEIR OWN portal thread (sms preferred)
+//   POST — client → staff note; lands on the existing sms/email conversation
+//
+// Threaded on the client's conversation — not a separate silo (spec §4.3).
 
 import { db } from "../../src/db.mjs";
 import { requirePrincipal } from "../../src/http/middleware/requirePrincipal.mjs";
 import { upsertConversation, linkMessage } from "../../src/conversations/store.mjs";
+import { listThreadMessages } from "../../src/chat/internal.mjs";
 import { safeError } from "../../src/http/health.mjs";
 import {
   answerPortalMessage, portalAssistantContext
@@ -13,11 +16,6 @@ import {
 import { prequalFromCustomFields, formatPrequalUsd } from "../../src/http/portal-prequal.mjs";
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("allow", "POST");
-    return res.status(405).json({ ok: false, error: "method_not_allowed" });
-  }
-
   const principal = await requirePrincipal(req, res, ["client"], { db });
   if (!principal) return;
 
@@ -27,17 +25,48 @@ export default async function handler(req, res) {
     return res.status(403).json({ ok: false, error: "no_client_scope" });
   }
 
-  const body = req.body || {};
-  const text = String(body.body || "").trim();
-  if (!text) return res.status(400).json({ ok: false, error: "body_required" });
-  if (text.length > 8000) return res.status(400).json({ ok: false, error: "body_too_long" });
-
-  const channel = String(body.channel || "sms").toLowerCase();
-  if (channel !== "sms" && channel !== "email") {
-    return res.status(400).json({ ok: false, error: "channel_must_be_sms_or_email" });
-  }
-
   try {
+    if (req.method === "GET") {
+      /* Prefer the sms thread the widget posts to; else most recent client thread. */
+      const convo = await db.query(
+        `SELECT id FROM conversations
+          WHERE org_id = $1 AND client_id = $2
+          ORDER BY CASE WHEN channel = 'sms' THEN 0 ELSE 1 END,
+                   COALESCE(last_pulse_at, created_at) DESC
+          LIMIT 1`,
+        [orgId, clientId]
+      );
+      if (!convo.rows[0]) {
+        return res.status(200).json({ ok: true, conversation_id: null, messages: [] });
+      }
+      const conversationId = convo.rows[0].id;
+      const messages = await listThreadMessages(db, {
+        orgId,
+        conversationId,
+        limit: Number(req.query?.limit) || 100
+      });
+      return res.status(200).json({
+        ok: true,
+        conversation_id: conversationId,
+        messages
+      });
+    }
+
+    if (req.method !== "POST") {
+      res.setHeader("allow", "GET, POST");
+      return res.status(405).json({ ok: false, error: "method_not_allowed" });
+    }
+
+    const body = req.body || {};
+    const text = String(body.body || "").trim();
+    if (!text) return res.status(400).json({ ok: false, error: "body_required" });
+    if (text.length > 8000) return res.status(400).json({ ok: false, error: "body_too_long" });
+
+    const channel = String(body.channel || "sms").toLowerCase();
+    if (channel !== "sms" && channel !== "email") {
+      return res.status(400).json({ ok: false, error: "channel_must_be_sms_or_email" });
+    }
+
     const convo = await upsertConversation(db, {
       orgId,
       clientId,
