@@ -33,3 +33,26 @@ Shared board for overnight fear lanes. Counts only. No emails, phones, or names.
 **Break:** `CLICKFUNNELS_WEBHOOK_SECRET` on Netlify / local did not match the ClickFunnels “Fundhub platform” endpoint signing secret (CF last4 was `4f97`; stored secret last4 was not). Live POSTs to `https://fundhub.ai/api/webhooks/clickfunnels` returned `401 bad_signature`, so the closer never got the task.
 
 **Fix (2026-09-25):** Created a new CF outgoing webhook endpoint (same URL + appointment/contact/form events), set `CLICKFUNNELS_WEBHOOK_SECRET` on Netlify + local `.env` to that create-time secret (last4 `c2f0`), deleted the old mismatched endpoint. Replayed the missed 2026-09-23 appointment into CRM: closer task + booking row now present. Redeploy required so production functions load the new secret.
+
+## Affiliates
+
+**OK with a leftover.** Sign-up page and click recorder were already live. The break was referral attach.
+
+**Counts (live DB, no PII):**
+- affiliates active: 19
+- accounts with affiliate id: 12
+- affiliate link clicks: 11 (9 matched a real code)
+- affiliate_referrals: 1 (converted, commission_due null, no sale, no rule)
+- clients with affiliate_tier1_owner set: 0
+- entry.captured with a1 key: 687; with a1 nonempty: **0**
+
+**Break:** apply funnel `fh-attribution.js` stamped UTMs only. Share links put `?a1=` / `?ref=` on `/watch`, but the form never kept the code, so ClickFunnels webhooks wrote `a1: null` and AF-02 never wrote ownership or `affiliate_referrals`.
+
+**Fix (2026-09-25):** `public/funnel/fh-attribution.js` (+ synced `06-utm-hidden-fields.html`) now first-touch captures a1/a2 (ref/code → a1) and stamps hidden fields. Adapter also reads a1 from formData, custom attributes, and visit landing URL. UTM key list untouched.
+
+**Still broken / unproved:**
+- No new live referred purchase proved overnight (no card charge).
+- $297 Live Trial fee is owner-set 100% Fundhub (no affiliate cut on that product code). Funding (`card-stacking-dfy`) and repair (`repair-bundle`) are the commission products.
+- The one existing converted referral still has null commission (no rule / no sale on that row).
+- ClickFunnels workspace still needs contact custom attributes named `a1` and `a2` for the cleanest webhook shape; formData + visit URL paths cover the miss without that.
+

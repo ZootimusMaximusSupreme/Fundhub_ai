@@ -52,6 +52,9 @@ test("06 paste-in and /funnel/fh-attribution.js are the same script", () => {
   assert.equal(fromPublic, fromHtml.endsWith("\n") ? fromHtml : fromHtml + "\n");
   for (const k of UTM_NAMES) assert.ok(fromPublic.includes(`"${k}"`), k);
   assert.ok(fromPublic.includes("fh_attribution"));
+  /* Affiliate codes ride the same script but stay off ATTRIBUTION_KEYS (ad UTMs). */
+  assert.ok(fromPublic.includes('"a1"') && fromPublic.includes('"a2"'), "stamps a1/a2");
+  assert.ok(fromPublic.includes('qs.get("ref")'), "ref aliases to a1");
 });
 
 test("07 paste-in and /funnel/vsl-watch-beacon.js are the same script", () => {

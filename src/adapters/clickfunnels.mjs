@@ -195,6 +195,34 @@ function pickVisitAttribution(d, b, contact) {
   return Object.values(out).some(Boolean) ? out : null;
 }
 
+/* Affiliate codes are opaque tracking ids (AFF-000001, vanity slugs). Cap
+   matches api/public/affiliate-click.mjs MAX_CODE. First non-empty wins. */
+function pickAffiliateCode(...candidates) {
+  for (const c of candidates) {
+    if (c == null) continue;
+    const s = String(c).trim();
+    if (s) return s.slice(0, 64);
+  }
+  return null;
+}
+
+/* Visit landing URLs sometimes still carry ?a1= / ?ref= when the form field
+   never mapped. Prefer the named param; for a1 also accept ref and code. */
+function affiliateCodeFromUrl(rawUrl, which = "a1") {
+  if (!rawUrl) return null;
+  try {
+    const u = new URL(String(rawUrl), "https://apply.fundhub.ai");
+    if (which === "a2") return pickAffiliateCode(u.searchParams.get("a2"));
+    return pickAffiliateCode(
+      u.searchParams.get("a1"),
+      u.searchParams.get("ref"),
+      u.searchParams.get("code")
+    );
+  } catch {
+    return null;
+  }
+}
+
 // --- 2. Normalize the webhook body into a flat event ------------------------
 // Reads defensively from CF Classic + 2.0 shapes. Returns null when no usable
 // data is found (caller treats as no-op).
@@ -332,14 +360,34 @@ export function normalizeClickFunnelsEvent(body) {
   const answers = pickSurveyAnswers(rawAnswers) || fromAttrs || (rawAnswers && typeof rawAnswers === "object" ? rawAnswers : null);
 
   // Referral attribution params (a1=tier1 affiliate, a2=tier2 affiliate).
-  // CF appends these as query params on the funnel URL; they appear either at top-
-  // level, under data, or in contact.custom_fields. af-02 gates on these.
-  const a1 = String(
-    b.a1 || d.a1 || contact.a1 || contact.custom_fields?.a1 || contact.custom_attributes?.a1 || ""
-  ).trim() || null;
-  const a2 = String(
-    b.a2 || d.a2 || contact.a2 || contact.custom_fields?.a2 || contact.custom_attributes?.a2 || ""
-  ).trim() || null;
+  // Share links land as ?a1= / ?ref= / ?code=. public/funnel/fh-attribution.js
+  // stamps them as hidden form fields; CF may put them on custom_attributes,
+  // formData, or the visit landing URL. af-02 gates on these — a null here is
+  // why live entry.captured rows carried a1:null (measured 2026-09-25: 687/687).
+  const formBag =
+    (answers && typeof answers === "object" && !Array.isArray(answers) ? answers : null) ||
+    (rawAnswers && typeof rawAnswers === "object" && !Array.isArray(rawAnswers) ? rawAnswers : null) ||
+    {};
+  const visitForRef =
+    (d && d.visits && d.visits.first_visit) ||
+    (b && b.visits && b.visits.first_visit) ||
+    (contact && contact.visits && contact.visits.first_visit) ||
+    {};
+  const a1 = pickAffiliateCode(
+    b.a1, d.a1, contact.a1,
+    contact.custom_fields?.a1, contact.custom_attributes?.a1,
+    contact.custom_fields?.ref, contact.custom_attributes?.ref,
+    contact.custom_fields?.code, contact.custom_attributes?.code,
+    formBag.a1, formBag.ref, formBag.code,
+    d.formData?.a1, d.form_data?.a1, d.formData?.ref, d.form_data?.ref,
+    affiliateCodeFromUrl(visitForRef.landing_page || visitForRef.url)
+  );
+  const a2 = pickAffiliateCode(
+    b.a2, d.a2, contact.a2,
+    contact.custom_fields?.a2, contact.custom_attributes?.a2,
+    formBag.a2, d.formData?.a2, d.form_data?.a2,
+    affiliateCodeFromUrl(visitForRef.landing_page || visitForRef.url, "a2")
+  );
 
   const attribution = pickVisitAttribution(d, b, contact);
 

@@ -114,6 +114,45 @@ test("normalizeClickFunnelsEvent: extracts a1/a2 referral params from top-level"
   assert.equal(evt.a2, "sub-affiliate-xyz");
 });
 
+test("normalizeClickFunnelsEvent: extracts a1 from formData when top-level is empty", () => {
+  const evt = normalizeClickFunnelsEvent({
+    id: "sub_ref_form",
+    data: {
+      contact: { email: "ref2@example.com", first_name: "Ref" },
+      formData: { a1: "AFF-000063", business_name: "Acme" }
+    }
+  });
+  assert.equal(evt.a1, "AFF-000063");
+});
+
+test("normalizeClickFunnelsEvent: extracts a1 from visit landing URL query", () => {
+  const evt = normalizeClickFunnelsEvent({
+    id: "sub_ref_visit",
+    data: {
+      contact: {
+        email: "ref3@example.com",
+        first_name: "Ref",
+        visits: { first_visit: { landing_page: "https://apply.fundhub.ai/watch?a1=AFF-000001&utm_source=fb" } }
+      }
+    }
+  });
+  assert.equal(evt.a1, "AFF-000001");
+});
+
+test("normalizeClickFunnelsEvent: extracts a1 from custom_attributes.ref alias", () => {
+  const evt = normalizeClickFunnelsEvent({
+    id: "sub_ref_alias",
+    data: {
+      contact: {
+        email: "ref4@example.com",
+        first_name: "Ref",
+        custom_attributes: { ref: "AFF-000002" }
+      }
+    }
+  });
+  assert.equal(evt.a1, "AFF-000002");
+});
+
 test("normalizeClickFunnelsEvent: reads CF Classic top-level contact shape", () => {
   const evt = normalizeClickFunnelsEvent({
     type: "new_purchase",
