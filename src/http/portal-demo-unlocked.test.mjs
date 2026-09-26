@@ -60,6 +60,25 @@ describe("the demo portal is unlocked, and only the demo", () => {
     assert.equal(runDemoBlock({ param: "yes" }).ctx.isDemoPortal(), false);
   });
 
+  test("?demo=1 gets past the shell's sign-in bounce, using the shell's own demo key", () => {
+    // Measured live 2026-09-25: shell.js sends a visitor with no session to
+    // /portal-login.html before this page paints, so ?demo=1 showed a sign-in
+    // form. The escape is the app's own demo session key, written before
+    // shell.js (which is deferred) can build its session promise.
+    const shellTag = HTML.indexOf('<script defer src="shell.js">');
+    const setter = HTML.indexOf('localStorage.setItem("fh_demo_staff"');
+    assert.ok(setter > 0, "the demo writes the shell's own demo session key");
+    assert.ok(setter < shellTag, "and writes it before shell.js is loaded");
+    // Only on a deliberate ?demo=1, and it must not claim a staff role for the
+    // rest of the app: fh_role is the cached staff hint and stays untouched.
+    const block = HTML.slice(HTML.indexOf("<!-- ══ THE DEMO PORTAL GETS PAST"), shellTag);
+    assert.match(block, /q\.get\("demo"\) !== "1"\) return;/);
+    assert.ok(!/setItem\(\s*["']fh_role["']/.test(block),
+      "a demo visit must not cache a staff role for the rest of the app");
+    assert.match(block, /role: "owner"/,
+      "owner is the one role shell.js lets open a client's portal");
+  });
+
   test("demoMode is set in one place only — the demo paint function", () => {
     const sets = [...HTML.matchAll(/demoMode\s*=\s*true/g)];
     assert.equal(sets.length, 1, "exactly one thing may turn demo mode on");

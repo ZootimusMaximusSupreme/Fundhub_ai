@@ -433,6 +433,38 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
   .video-title{font-size:var(--fs-title)}
 }
 </style>
+<!-- ══ THE DEMO PORTAL GETS PAST THE SIGN-IN BOUNCE ═══════════════════════════
+     shell.js asks /api/auth/session and, with no session, sends the visitor to
+     /portal-login.html before this page paints anything. So ?demo=1 measured as
+     a sign-in form, not a portal (live, 2026-09-25).
+
+     IT USES THE DEMO SESSION THE SHELL ALREADY HAS. shell.js getSession() falls
+     back to `fh_demo_staff` in localStorage when the real session read fails —
+     that is the app's own demo mode, and public/login.html's demo buttons write
+     the same key. So this writes it too, for the owner role, which is the one
+     role deliberately allowed to open a client's portal (shell.js, ADMIN_BLOCKED).
+     Nothing here signs anybody in: the key is a local hint, the server is never
+     told, and every read on this screen is skipped in demo mode anyway.
+
+     UNDEFERRED AND ABOVE shell.js ON PURPOSE. shell.js carries `defer`, so this
+     has to have run before its session promise is built.
+
+     `fh_role` IS DELIBERATELY NOT WRITTEN. It is the cached staff hint the rest
+     of this page branches on, and a demo visit must not make the next real
+     screen think a staff member is signed in. -->
+<script>
+(function () {
+  "use strict";
+  try {
+    var q = new URLSearchParams(window.location.search);
+    if (q.get("demo") !== "1") return;
+    if (localStorage.getItem("fh_demo_staff")) return;
+    localStorage.setItem("fh_demo_staff", JSON.stringify({
+      id: "demo-owner", role: "owner", name: "DEMO Owner", email: "owner@demo.fundhub.local"
+    }));
+  } catch (e) {}
+})();
+</script>
 <script defer src="shell.js"></script>
 </head>
 <body class="no-funding no-docs no-own no-funding-door no-inquiry-door no-bureau-door no-upload-doors no-dispute-consent">
