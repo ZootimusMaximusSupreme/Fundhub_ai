@@ -234,6 +234,12 @@ describe("pre-call chat widget", () => {
     assert.ok(!ui.fetches.some((f) => String(f.url).includes("/api/chat/ask")));
   });
 
+  test("staff Message loads the thread via existing GET", () => {
+    assert.match(WIDGET_SRC, /\/api\/chat\/messages\?conversation_id=/);
+    assert.match(WIDGET_SRC, /\/api\/chat\/messages\?kind=internal/);
+    assert.match(WIDGET_SRC, /loadInternalThread/);
+  });
+
   test("demo portal does not fetch on send", () => {
     const ui = mountInVm({ portal: true, demo: true, hadCall: false }, { token: "demo" });
     ui.send();

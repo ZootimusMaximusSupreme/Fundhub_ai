@@ -93,8 +93,10 @@
       msgKind: isPortal ? "portal" : "internal",
       peerId: "",
       clientId: "",
-      conversationId: null
+      conversationId: null,
+      staffId: ""
     };
+    var pollTimer = null;
 
     var modes = isPortal
       ? [{ id: "message", label: "Message staff" }]
@@ -117,7 +119,13 @@
           state.conversationId = null;
           paintModes();
           paintFoot();
-          paintBodyWelcome();
+          if (state.mode === "message" && !isPortal && state.msgKind === "internal" &&
+              (state.peerId || state.conversationId)) {
+            loadInternalThread();
+          } else {
+            paintBodyWelcome();
+          }
+          syncPoll();
         };
       });
     }
@@ -147,6 +155,96 @@
       }
     }
 
+    function ensureStaffId(done) {
+      if (state.staffId || isPortal) {
+        done();
+        return;
+      }
+      api("/api/auth/session").then(function (res) {
+        if (res && res.staff && res.staff.id) state.staffId = res.staff.id;
+        done();
+      }, function () { done(); });
+    }
+
+    function paintThread(messages) {
+      var body = document.getElementById("fh-chat-body");
+      if (!body) return;
+      body.innerHTML = "";
+      if (!messages || !messages.length) {
+        paintBodyWelcome();
+        return;
+      }
+      messages.forEach(function (m) {
+        var mine = state.staffId && m.sender_staff_id === state.staffId;
+        var cls = mine ? "me" : (m.channel === "internal" ? "internal" : "them");
+        addMsg(esc(m.rendered_body || ""), cls);
+      });
+    }
+
+    function loadInternalThread() {
+      if (isPortal || state.mode !== "message" || state.msgKind !== "internal") return;
+      ensureStaffId(function () {
+        function fetchMsgs(cid) {
+          if (!cid) {
+            paintBodyWelcome();
+            return;
+          }
+          state.conversationId = cid;
+          api("/api/chat/messages?conversation_id=" + encodeURIComponent(cid)).then(function (res) {
+            if (!res || !res.ok) return;
+            paintThread(res.messages || []);
+          });
+        }
+        if (state.conversationId) {
+          fetchMsgs(state.conversationId);
+          return;
+        }
+        if (!state.peerId) {
+          paintBodyWelcome();
+          return;
+        }
+        api("/api/chat/messages?kind=internal").then(function (res) {
+          if (!res || !res.ok) {
+            paintBodyWelcome();
+            return;
+          }
+          var threads = res.threads || [];
+          var found = null;
+          for (var i = 0; i < threads.length; i++) {
+            var parts = threads[i].participants || [];
+            for (var j = 0; j < parts.length; j++) {
+              if (parts[j] && parts[j].id === state.peerId) {
+                found = threads[i];
+                break;
+              }
+            }
+            if (found) break;
+          }
+          if (found) fetchMsgs(found.id);
+          else {
+            state.conversationId = null;
+            paintBodyWelcome();
+          }
+        });
+      });
+    }
+
+    function syncPoll() {
+      if (pollTimer) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+      }
+      if (isPortal) return;
+      if (!panel.classList.contains("open")) return;
+      if (state.mode !== "message" || state.msgKind !== "internal") return;
+      if (!state.peerId && !state.conversationId) return;
+      pollTimer = setInterval(function () {
+        if (!panel.classList.contains("open")) return;
+        if (state.mode !== "message" || state.msgKind !== "internal") return;
+        loadInternalThread();
+      }, 4000);
+    }
+
     function paintFoot() {
       var foot = document.getElementById("fh-chat-foot");
       if (state.mode === "message" && !isPortal) {
@@ -166,6 +264,9 @@
           state.conversationId = null;
           paintModes();
           fillTarget();
+          if (state.msgKind === "internal" && state.peerId) loadInternalThread();
+          else paintBodyWelcome();
+          syncPoll();
         };
         fillTarget();
       } else {
@@ -202,7 +303,14 @@
               return '<option value="' + esc(s.id) + '">' + esc(s.name || s.email) + "</option>";
             }).join("");
           sel.value = state.peerId || "";
-          sel.onchange = function () { state.peerId = sel.value; };
+          sel.onchange = function () {
+            state.peerId = sel.value;
+            state.conversationId = null;
+            if (state.peerId) loadInternalThread();
+            else paintBodyWelcome();
+            syncPoll();
+          };
+          if (state.peerId) loadInternalThread();
         });
       } else {
         hint.textContent = "Client message — compliance gate applies.";
@@ -280,7 +388,8 @@
             return;
           }
           state.conversationId = res.conversation_id;
-          addMsg("Delivered (internal).", "internal");
+          loadInternalThread();
+          syncPoll();
         });
         return;
       }
@@ -314,13 +423,22 @@
       if (panel.classList.contains("open")) {
         paintModes();
         paintFoot();
-        if (!document.getElementById("fh-chat-body").children.length) paintBodyWelcome();
+        if (state.mode === "message" && !isPortal && state.msgKind === "internal" &&
+            (state.peerId || state.conversationId)) {
+          loadInternalThread();
+        } else if (!document.getElementById("fh-chat-body").children.length) {
+          paintBodyWelcome();
+        }
         var input = document.getElementById("fh-chat-input");
         if (input) input.focus();
+        syncPoll();
+      } else {
+        syncPoll();
       }
     };
     document.getElementById("fh-chat-close").onclick = function () {
       panel.classList.remove("open");
+      syncPoll();
     };
 
     paintModes();
