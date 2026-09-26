@@ -72,8 +72,13 @@ export function answerPreflight(req, res, methods) {
  * A return address for Commas' success page, when the widget asks for one.
  * https only, and only on an allow-listed origin, so it can never be used to
  * send a payer somewhere else. Anything else → null (the caller keeps its
- * default). Any query string or fragment the widget sent is dropped; the
- * success URL gets exactly ref + client_id added by withCheckoutIdentifiers.
+ * default). Any query string the widget sent is dropped; the success URL gets
+ * exactly ref + client_id added by withCheckoutIdentifiers.
+ *
+ * ONE fragment survives: #fhw, the id of the checkout widget on /roadmap.
+ * Without it the payer comes back to the top of a long sales page and the
+ * checkout form is what they see, which reads as a lost payment. Every other
+ * fragment is still dropped.
  */
 export function sloReturnUrl(raw) {
   const s = String(raw == null ? "" : raw).trim();
@@ -83,5 +88,5 @@ export function sloReturnUrl(raw) {
   if (u.protocol !== "https:") return null;
   if (!ORIGIN_SET.has(u.origin)) return null;
   if (u.username || u.password) return null;
-  return `${u.origin}${u.pathname}`;
+  return `${u.origin}${u.pathname}${u.hash === "#fhw" ? "#fhw" : ""}`;
 }

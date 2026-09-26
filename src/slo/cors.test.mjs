@@ -83,7 +83,7 @@ for (const [name, handler, methods] of [
   });
 }
 
-test("return_url: https on an allow-listed origin only; query and fragment dropped", () => {
+test("return_url: https on an allow-listed origin only; query dropped, and every fragment but #fhw", () => {
   assert.equal(sloReturnUrl("https://apply.fundhub.ai/roadmap"), "https://apply.fundhub.ai/roadmap");
   assert.equal(sloReturnUrl("https://apply.fundhub.ai/roadmap?x=1#top"), "https://apply.fundhub.ai/roadmap");
   assert.equal(sloReturnUrl("http://apply.fundhub.ai/roadmap"), null);
@@ -92,4 +92,14 @@ test("return_url: https on an allow-listed origin only; query and fragment dropp
   assert.equal(sloReturnUrl("javascript:alert(1)"), null);
   assert.equal(sloReturnUrl(""), null);
   assert.equal(sloReturnUrl(null), null);
+});
+
+/* #fhw is the checkout widget's id. It is the one fragment that survives, so
+   the payer lands on the checkout box and not at the top of the sales page. */
+test("return_url: #fhw survives; the query string still does not", () => {
+  assert.equal(sloReturnUrl("https://apply.fundhub.ai/roadmap/#fhw"), "https://apply.fundhub.ai/roadmap/#fhw");
+  assert.equal(sloReturnUrl("https://apply.fundhub.ai/roadmap/?x=1#fhw"), "https://apply.fundhub.ai/roadmap/#fhw");
+  assert.equal(sloReturnUrl("https://apply.fundhub.ai/roadmap?x=1#fhw"), "https://apply.fundhub.ai/roadmap#fhw");
+  assert.equal(sloReturnUrl("https://apply.fundhub.ai/roadmap/#fhw-other"), "https://apply.fundhub.ai/roadmap/");
+  assert.equal(sloReturnUrl("https://apply.fundhub.ai/roadmap/#FHW"), "https://apply.fundhub.ai/roadmap/");
 });
