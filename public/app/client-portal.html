@@ -259,7 +259,7 @@ body.no-dispute-consent #dispute-auth-card{display:none !important}
    the title, the copy and the price stay at full contrast. Unreadable text
    stops selling. */
 /* auto-fit so the row still fills when the promoted product is pulled out */
-.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0}
 .tile{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:15px 16px 14px;display:flex;flex-direction:column;gap:8px;overflow:hidden}
 .tile::before{content:"";position:absolute;top:0;left:0;right:0;height:2px;background:var(--spectrum);opacity:.34;filter:saturate(.55)}
 .tile.locked{background:var(--paper-dim)}
@@ -393,7 +393,7 @@ a.btn-unlock{display:inline-block;text-decoration:none}
 .dr-s.want{color:var(--amber);background:var(--amber-bg)}
 
 /* ── bottom rail: advisor + sales, compact ───────────────────────────────── */
-.rail{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.rail{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .rail .card{margin-bottom:0;padding:15px 17px}
 .rail .card-title{margin-bottom:10px}
 
@@ -1377,24 +1377,54 @@ document.addEventListener('DOMContentLoaded', function(){
     el.className = 'video-el';
     el.setAttribute('aria-label', v.title || 'Welcome video');
 
-    /* Only once the browser has actually accepted the file does the empty state
-       go away. A broken link leaves the card saying it is not available, which
-       is true. */
+    /* The frame opens to full height as soon as a link exists. iOS Safari does
+       not fetch metadata until the viewer taps play, so waiting for
+       loadedmetadata left the player at the 56px empty height: a thin black bar
+       with nothing to tap. */
+    var ghost = player.querySelector('.ghost');
+    empty.hidden = true;
+    if (ghost) ghost.hidden = true;
+
+    var loaded = false;
+    var retried = false;
     el.addEventListener('loadedmetadata', function(){
-      empty.hidden = true;
-      var ghost = player.querySelector('.ghost');
-      if (ghost) ghost.hidden = true;
+      loaded = true;
+      retried = false;
       var title = document.getElementById('video-title');
       if (title && v.title) title.textContent = v.title;
       var now = document.getElementById('vnow');
       if (now && v.duration_label) now.textContent = v.duration_label;
     });
     el.addEventListener('error', function(){
-      /* The row is on file and the bytes are not reachable. Say the true thing
-         rather than leaving a dead black rectangle. */
+      /* The signed link lives 15 minutes. After it lapses a seek or a resumed
+         range request fails even though the file is fine, so mint one fresh
+         link and pick up where the viewer was before giving up. */
+      if (!retried) {
+        retried = true;
+        var at = el.currentTime || 0;
+        fetch('/api/content/welcome-video' + q, {
+          headers: t ? { authorization: 'Bearer ' + t } : {},
+          credentials: 'same-origin'
+        }).then(function(r){ return r.json(); }).then(function(d2){
+          var s2 = d2 && d2.ok && d2.video && d2.video.stream && d2.video.stream.url;
+          if (!s2) return giveUp();
+          el.src = s2;
+          if (at) el.addEventListener('loadedmetadata', function(){ el.currentTime = at; }, { once: true });
+          el.load();
+        }, giveUp);
+        return;
+      }
+      giveUp();
+    });
+    function giveUp(){
+      /* A video that already played stays on screen with its own controls.
+         Only a file that never loaded says it is not available. */
+      if (loaded) return;
+      if (el.parentNode) el.parentNode.removeChild(el);
+      if (ghost) ghost.hidden = false;
       empty.hidden = false;
       empty.textContent = 'Welcome video is not available';
-    });
+    }
 
     var now2 = document.getElementById('vnow');
     if (now2) {
@@ -1531,6 +1561,29 @@ document.addEventListener("DOMContentLoaded", async function () {
   var entActive = null;      // entitlements: active code -> row
   var softPullDone = false;  // portal-summary: the pull has really run
   var docsOnFile = [];       // portal-summary: the client's real documents
+  /* THE $297 SLO ORDER IS THE CAPITAL BLUEPRINT PACK. It sells on product
+     'diagnostic', which grants only credit-analysis-report, so the Blueprint
+     tile stayed locked for a buyer holding every Blueprint file (live,
+     2026-09-25). portal-summary's `slo_paid` is the paid order itself. It opens
+     the Blueprint tile and its five pack rows in What You Own — nothing else:
+     no door, no other tile, no funding view. */
+  var sloPaid = false;       // portal-summary: a paid, non-demo $297 SLO order
+  var SLO_PACK = [
+    { code: "credit-analysis-report", name: "Credit Analysis Report" },
+    { code: "credit-optimization-roadmap", name: "Credit Optimization Roadmap" },
+    { code: "funding-snapshot", name: "Funding Snapshot" },
+    { code: "bank-lender-match-list", name: "Bank and Lender Match List" },
+    { code: "metro2-letter-pack", name: "Dispute Letter Pack" }
+  ];
+  function withSloPack(active) {
+    var out = {};
+    var k;
+    for (k in (active || {})) out[k] = active[k];
+    for (k = 0; k < SLO_PACK.length; k++) {
+      if (!out[SLO_PACK[k].code]) out[SLO_PACK[k].code] = { entitlement_name: SLO_PACK[k].name };
+    }
+    return out;
+  }
   // Whether an inquiry-removal case is open is already tracked, one screenful
   // down, as `inquiryCaseOpen` — the doors read it and so does the note below.
 
@@ -1758,7 +1811,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   function paintOwn(active) {
     var list = document.getElementById("own-list");
     if (!list) return;
-    var rows = ownRows(active);
+    var rows = ownRows(sloPaid ? withSloPack(active) : active);
     if (!rows.length) {
       setOwnVisible(false);
       return;
@@ -2000,6 +2053,7 @@ document.addEventListener("DOMContentLoaded", async function () {
         owned = true;
         words = { badge: "Done", price: "Already run — this is where your scores came from" };
       }
+      if (key === "UWIQ_DELIVERABLES" && !owned && sloPaid) owned = true;
       paintTile(tiles[i], owned, words);
       if (owned) out.unlocked++; else out.locked++;
     }
@@ -2641,6 +2695,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     "portal-summary", function (data) {
       docsOnFile = Array.isArray(data.documents) ? data.documents : [];
       softPullDone = data.soft_pull_complete === true;
+      sloPaid = data.slo_paid === true;
       if (!STAFF_ROLES[roleHint()]) paintDocs(docsOnFile);
       /* THE PAYMENTS TAB, FOR THE PERSON WHOSE MONEY IT IS. Staff already have
          the richer list from /api/dashboard/client above — painting twice would
