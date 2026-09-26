@@ -102,14 +102,13 @@ describe("What You Own — the course a client bought (hole 11)", () => {
     assert.ok(m, "the row carries a button");
     assert.equal(m[2], "Open course");
     const tile = m[1];
-    // OWNED ONLY (owner-set 2026-09-25): Capital Academy is not one of the five
-    // offers Fundhub sells, so its card ships hidden and is never offered here.
-    // It is shown only to the client who already bought it — which is exactly
-    // the client this row is drawn for, so the button still has a card to open.
-    assert.ok(HTML.includes(`<article class="tile locked hidden" data-tile="${tile}">`),
-      `card ${tile} exists on the page and ships owned-only (hidden)`);
-    assert.match(HTML, /var OWNED_ONLY = \{ SOFT_PULL: 1, FUNDING_DFY: 1, FUNDING_MASTERY: 1 \};/);
-    assert.match(HTML, /if \(OWNED_ONLY\[key\]\) tiles\[i\]\.classList\.toggle\("hidden", !owned\);/);
+    // The card is always on the grid (owner-set 2026-09-25: "please make sure
+    // all the offers are there"), so the button this row carries always has a
+    // card to open. An owned-only cut was tried earlier the same evening and
+    // reversed; nothing on the page may hide an offer card again.
+    assert.ok(HTML.includes(`<article class="tile locked" data-tile="${tile}">`),
+      `card ${tile} exists on the page and is not hidden from anyone`);
+    assert.ok(!/OWNED_ONLY/.test(HTML), "no owned-only hide list may return to this page");
     const card = HTML.slice(HTML.indexOf(`data-tile="${tile}"`), HTML.indexOf("</article>", HTML.indexOf(`data-tile="${tile}"`)));
     assert.match(card, /Capital Academy/, "the card the button opens is the one the row names");
     assert.match(card, /class="tile-course"/, "that card holds the course modules");

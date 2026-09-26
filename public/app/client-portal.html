@@ -764,21 +764,18 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
       <section class="card" aria-labelledby="unlock-t">
         <div class="sec-hd">
           <div class="card-title" id="unlock-t">Unlock More</div>
-          <!-- The $32 soft pull is no longer sold from this screen (owner-set
-               2026-09-25), so this line no longer quotes its price. Everything
-               on the grid is priced on the call. -->
-          <span class="sec-note" id="unlock-note">Everything here — book a call for pricing</span>
+          <!-- The soft-pull half of this line is repainted away once the pull
+               has run — see repaintTiles(). Quoting a price for something she
+               has already had is the same mistake as locking it. -->
+          <span class="sec-note" id="unlock-note">Soft pull is $32. Everything else — book a call for pricing</span>
         </div>
         <div class="tiles" id="tiles">
 
-          <!-- OWNED ONLY (owner-set 2026-09-25). THE $32 SOFT PULL IS NOT ONE OF
-               THE FIVE OFFERS, and it never was a separate one: the $297 sale
-               charges this same products row — api/public/slo-checkout.mjs takes
-               `diagnostic`, which is this offer's productCode in
-               src/config/offers.mjs. So a locked "$32" card under a paid buyer's
-               own credit scores was selling him what he had already bought. The
-               card now appears only once the pull is his, where it reads Done. -->
-          <article class="tile locked hidden" data-tile="SOFT_PULL">
+          <!-- EVERY OFFER STAYS ON THIS GRID (owner-set 2026-09-25: "please make
+               sure all the offers are there"). A card is hidden by nothing here.
+               An owned card repaints itself — this one reads Done once the pull
+               has run — but a client always sees the whole set. -->
+          <article class="tile locked" data-tile="SOFT_PULL">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">UnderwriteIQ soft-pull assessment</div>
             <div class="td">A soft inquiry so we can see your file. Price is fixed.</div>
@@ -789,12 +786,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             </div>
           </article>
 
-          <!-- OWNED ONLY (owner-set 2026-09-25). Funding, done-for-you is not on
-               the five-offer list, and it has never been a self-serve card: the
-               deposit and the success fee are closed on a call
-               (docs/finance/slo-offer-model-2026-09-18.md §3). A funding client
-               still sees this card, because it is then a thing they own. -->
-          <article class="tile locked hidden" data-tile="FUNDING_DFY">
+          <article class="tile locked" data-tile="FUNDING_DFY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Funding, done-for-you</div>
             <div class="td">We run the funding round with you. Plus 10% of what funds, due when money lands. Pricing is set on your call.</div>
@@ -827,14 +819,12 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             </div>
           </article>
 
-          <!-- THE $297 OFFER, and one of the five (owner-set 2026-09-25).
-               docs/finance/slo-offer-model-2026-09-18.md §1: "We sell a $297
-               blueprint." So this card stays a real offer for everyone, and a
-               buyer sees it owned — repaintTiles() opens it on the roadmap
-               entitlement or on portal-summary's `slo_paid`, with the five pack
-               rows in What You Own. No price is written on the card: the
-               closer's list price and the $297 front end are two different
-               sales, and the page must not pick one. -->
+          <!-- THE $297 OFFER. docs/finance/slo-offer-model-2026-09-18.md §1:
+               "We sell a $297 blueprint." A buyer sees it owned — repaintTiles()
+               opens it on the roadmap entitlement or on portal-summary's
+               `slo_paid`, with the five pack rows in What You Own. No price is
+               written on the card: the closer's list price and the $297 front
+               end are two different sales, and the page must not pick one. -->
           <article class="tile locked" data-tile="UWIQ_DELIVERABLES">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Capital Blueprint</div>
@@ -854,14 +844,7 @@ footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;al
             </div>
           </article>
 
-          <!-- OWNED ONLY (owner-set 2026-09-25). Capital Academy is not on the
-               five-offer list, and nothing in this repo shows it is either of
-               the two e-products /education/ sells — see
-               db/migrations/245_education_enrollments.sql. So it is not sold
-               from this screen. It ships hidden, and repaintTiles() shows it
-               only to a client who already bought it (funding-mastery-course).
-               Those buyers keep their access. -->
-          <article class="tile locked hidden" data-tile="FUNDING_MASTERY">
+          <article class="tile locked" data-tile="FUNDING_MASTERY">
             <div class="lockrow"><span class="lk">🔒</span> Locked</div>
             <div class="tt">Capital Academy</div>
             <div class="td">The course. Pricing is set on your call.</div>
@@ -1554,33 +1537,33 @@ document.addEventListener("DOMContentLoaded", async function () {
   };
   /* Only these two open a course accordion. Other included tiles keep View status. */
   var COURSE_TILES = { UWIQ_DELIVERABLES: 1, FUNDING_MASTERY: 1 };
-  /* ══ WHAT FUNDHUB SELLS, AND WHAT THIS GRID MAY THEREFORE OFFER ═══════════
-     Owner-set 2026-09-25: "we have 2 credit optimization offers, a 297 offer,
-     then the 2 e products and that's it for now." Read out of the repo:
+  /* ══ EVERY OFFER STAYS ON THIS GRID ══════════════════════════════════════
+     Owner-set 2026-09-25: "please make sure all the offers are there you
+     removed them." So nothing on this screen hides an offer card. All six are
+     in the markup above, all six paint, and the only thing that changes about
+     a card is whether it reads locked or owned.
 
-       · the two credit-optimization offers — REPAIR_DFY and REPAIR_TRIAL,
-         src/config/offers.mjs, listed as "from the repo" in
-         docs/finance/slo-offer-model-2026-09-18.md §2. No price in this file,
-         not even in a comment: crm-html.test.mjs greps the whole page for one.
-       · the $297 offer — the blueprint, same doc §1 and
-         docs/journeys/slo-offer-intended.md
-       · the two e-products — Credit Mastery System and Capital Strategy
-         Program, public/education/index.html ("Two programs. One standard."),
-         keys pinned in src/education/enrollments.mjs PROGRAMS
+     Earlier the same evening a shorter grid was tried — three cards, the rest
+     shown only to the client who already held them. Chris reversed it. This
+     note is here so nobody re-derives the cut from his earlier sentence about
+     which offers exist: the catalogue question and the "what does the client
+     see" question got different answers, and this one is the later.
 
-     THE TWO E-PRODUCTS GET NO CARD HERE, and that is a fact rather than a
-     choice: db/migrations/245_education_enrollments.sql records in its own
-     header that offers.mjs holds no entry for either program, an enrollment row
-     is a request and not access, and nothing in this repo proves either program
-     is Capital Academy. Inventing a card would mean inventing a price, an
-     entitlement and a checkout. They are sold at /education/, not from here.
+     Where the offers themselves are written down, for anyone who needs it:
+     src/config/offers.mjs is the catalogue, and the client-facing money lines
+     are listed as "from the repo" in
+     docs/finance/slo-offer-model-2026-09-18.md §2. No price belongs in THIS
+     file, not even inside a comment — src/http/crm-html.test.mjs greps the
+     whole page for one.
 
-     So THREE cards are offers on this screen — Capital Blueprint, and the two
-     capital-readiness ones. The rest are OWNED ONLY: they ship with the
-     `hidden` class in the markup above and appear only for the client who
-     already holds them, so nobody loses what they bought and nobody is sold
-     something that is not on the list. */
-  var OWNED_ONLY = { SOFT_PULL: 1, FUNDING_DFY: 1, FUNDING_MASTERY: 1 };
+     The two e-products Chris names — the Credit Mastery System and the Capital
+     Strategy Program — are sold at /education/ (public/education/index.html,
+     keys pinned in src/education/enrollments.mjs PROGRAMS) and have no card
+     here, because db/migrations/245_education_enrollments.sql records in its
+     own header that offers.mjs holds no entry for either one and that an
+     enrollment row is a request rather than access. A card for them would mean
+     inventing a price, an entitlement and a checkout. That absence is reported,
+     not filled in. */
   /* `subtype` is the documents-table name for the same thing the entitlement
      code names — src/documents/kinds.mjs SUBTYPES.deliverable. It is what turns
      "you own a Funding Snapshot" into "here is your Funding Snapshot", because
@@ -2111,8 +2094,6 @@ document.addEventListener("DOMContentLoaded", async function () {
         words = { badge: "Done", price: "Already run — this is where your scores came from" };
       }
       if (key === "UWIQ_DELIVERABLES" && !owned && sloPaid) owned = true;
-      /* An owned-only card is shown or hidden, never offered. */
-      if (OWNED_ONLY[key]) tiles[i].classList.toggle("hidden", !owned);
       paintTile(tiles[i], owned, words);
       if (owned) out.unlocked++; else out.locked++;
     }

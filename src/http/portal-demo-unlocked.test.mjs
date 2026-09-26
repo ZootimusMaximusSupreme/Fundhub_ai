@@ -142,15 +142,16 @@ describe("the demo portal is unlocked, and only the demo", () => {
       "the demo branch comes before every live read on this screen");
   });
 
-  test("a normal unpaid client is still shown only what Fundhub sells", () => {
-    // Unchanged by the demo: the three owned-only cards ship hidden, and the
-    // only thing that reveals one is real ownership.
-    for (const key of ["SOFT_PULL", "FUNDING_DFY", "FUNDING_MASTERY"]) {
-      assert.ok(HTML.includes(`<article class="tile locked hidden" data-tile="${key}">`),
-        `${key} still ships hidden for a real client`);
+  test("a normal client still sees every offer, and sees them locked", () => {
+    // The demo unlocks; it does not change what anyone else is shown. All six
+    // offer cards ship on the grid, and they ship LOCKED — so an unpaid client
+    // reads the real offers, not the demo's unlocked ones.
+    for (const key of ["SOFT_PULL", "FUNDING_DFY", "REPAIR_DFY", "REPAIR_TRIAL",
+      "UWIQ_DELIVERABLES", "FUNDING_MASTERY"]) {
+      assert.ok(HTML.includes(`<article class="tile locked" data-tile="${key}">`),
+        `${key} ships on the grid, locked, for a real client`);
     }
-    assert.match(HTML, /var OWNED_ONLY = \{ SOFT_PULL: 1, FUNDING_DFY: 1, FUNDING_MASTERY: 1 \};/);
-    assert.match(HTML, /if \(OWNED_ONLY\[key\]\) tiles\[i\]\.classList\.toggle\("hidden", !owned\);/);
+    assert.ok(!/OWNED_ONLY/.test(HTML), "no owned-only hide list may return to this page");
     // The sample figures live inside the demo block and nowhere a real client's
     // paint path can reach them. The block starts at its own banner comment,
     // because that comment names the demo furniture it is about to use.
