@@ -2,7 +2,7 @@
 
 ## Now — 2026-09-25
 
-- [ ] **Arizona MLO refinance funnel.** Use the Arizona mortgage-loan-officer license. Pull Arizona leads. Target homes that need a refinance. Then run that funnel.
+- [ ] **Arizona MLO refinance funnel.** White label is E Mortgage Capital (`https://www.emortgagecapital.com/`). Use the Arizona mortgage-loan-officer license. Pull Arizona leads. Target homes that need a refinance. Then run that funnel. Company NMLS 1416824. Their refi door is `/refinance` (also `/e-refi`).
 - [ ] **Film more ads.**
 - [ ] **Film more interviews.** Shoot long form, then cut it into short form.
 
