@@ -73,6 +73,32 @@ test("AG-04 row wins over the vendor file when it is ready", async () => {
   assert.equal(placed[0].agent.prompt, dbPrompt);
 });
 
+test("retired AG-04 does not placeCall and does not fall back to vendor", async () => {
+  const placed = [];
+  const db = withAgents(pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", phone: CLIENT_PHONE }]
+  }), [{
+    org_id: "org-1",
+    code: JOSH_CODE,
+    name: "Setter Josh",
+    status: "retired",
+    channel: "voice",
+    agent_class: "client_facing",
+    runtime: "bland",
+    prompt: "You are Josh. Still has a script, but retired must not dial."
+  }]);
+  const res = await handle({
+    event: ev("booking.created", {}, { clientId: "cl-1" }),
+    db,
+    step: fakeStep(),
+    placeCallImpl: stubPlaceCall(placed)
+  });
+  assert.equal(res.done, false);
+  assert.equal(res.reason, "agent_not_ready");
+  assert.equal(res.agentSource, "ag-04");
+  assert.equal(placed.length, 0);
+});
+
 test("quiet-hours-blocks-or-delays-josh: 8pm Arizona waits until 8am, then dials once", async () => {
   const placed = [];
   const sleeps = [];

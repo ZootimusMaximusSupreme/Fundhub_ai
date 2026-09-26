@@ -2,9 +2,11 @@
 // Source: the CRM system map AI SETTER section / vendor setter-prompt.js.
 // Trigger: booking.created. Dials Josh to confirm the Strategy Session.
 //
-// THE SCRIPT IS NOT REWRITTEN HERE. Prefer the live AG-04 row (Agent Editor).
-// If that row is missing or not ready, Bland's task is SETTER_TASK from
+// THE SCRIPT IS NOT REWRITTEN HERE. Prefer the AG-04 row (Agent Editor).
+// If that row is missing, Bland's task is SETTER_TASK from
 // vendor/inquiry-remover/src/agents/setter-prompt.js — imported, not copied.
+// If AG-04 exists but is not ready (retired / draft / no prompt), do NOT fall
+// back to the vendor file — that would keep dialing after an intentional stop.
 //
 // Transmission is only src/messaging/providers/bland-voice.mjs placeCall
 // (CLAUDE.md §12). That function honours MESSAGING_DRY_RUN / the outbound
@@ -40,7 +42,9 @@ async function resolveJoshAgent(database, orgId) {
     [orgId, JOSH_CODE]
   );
   const row = rows[0] || null;
-  if (row && agentReadiness(row).ok) return { agent: row, source: "ag-04" };
+  // Row present but not ready → return it as-is. handle() refuses placeCall.
+  // Never swap in the vendor "live" stand-in after a retire / draft stop.
+  if (row) return { agent: row, source: "ag-04" };
   return { agent: vendorJoshAgent(), source: "vendor_prompt" };
 }
 
@@ -60,6 +64,9 @@ export async function handle({ event, db: database, step, placeCallImpl = placeC
   if (!phone) return { done: false, reason: "no_phone" };
 
   const { agent, source } = await step.run("resolve-josh", () => resolveJoshAgent(database, event.orgId));
+  if (!agentReadiness(agent).ok) {
+    return { done: false, reason: "agent_not_ready", agentSource: source };
+  }
 
   // Same 8pm–8am Arizona window as SMS. Prove/sim files skip, same as texts.
   // Memoize the wake time so a replay after morning does not schedule a second dial.
