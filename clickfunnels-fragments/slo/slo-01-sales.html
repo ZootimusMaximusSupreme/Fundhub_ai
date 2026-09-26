@@ -2193,7 +2193,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
    699, where a full-width 9:16 card would otherwise run past 950px tall; a
    phone is narrower than the cap, so it still fills the column. */
 @media(max-width:699px){.fh-b .proofgrid{grid-template-columns:1fr;gap:16px;justify-items:center}
-.fh-b .proofgrid .vslot{width:100%;max-width:380px}}
+.fh-b .proofgrid .vslot{position:relative;width:100%;max-width:380px}
+.fh-b .proofgrid .vslot video{position:absolute;inset:0;width:100%;height:100%}}
 .fh-b .btn{display:block;width:100%;max-width:420px;margin:30px auto 0;background:#188bf6;color:#fff;font-family:var(--sans);font-size:17px;font-weight:600;padding:18px 26px;border:0;border-radius:9px;cursor:pointer;transition:background .15s;box-shadow:0 5px 18px rgba(24,139,246,.28);text-align:center;text-decoration:none}
 .fh-b .btn:hover{background:#0b78dd}
 .fh-b .marq{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:12px 0;margin-top:44px}
@@ -2232,8 +2233,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
        Slot 1 = Colin, Slot 2 = Sarah. Hosted on fundhub.ai/funnel. -->
   <div class="proofgrid">
     <span class="kicker" style="text-align:center;grid-column:1/-1">From people who bought it</span>
-    <div class="vslot"><video controls playsinline preload="metadata" src="https://fundhub.ai/funnel/slo-testimonial-colin.mp4" title="Colin" aria-label="Colin testimonial"></video></div>
-    <div class="vslot"><video controls playsinline preload="metadata" src="https://fundhub.ai/funnel/slo-testimonial-sarah.mp4" title="Sarah" aria-label="Sarah testimonial"></video></div>
+    <div class="vslot"><video controls playsinline preload="metadata" poster="https://fundhub.ai/funnel/slo-testimonial-colin-poster.jpg" src="https://fundhub.ai/funnel/slo-testimonial-colin.mp4" title="Colin" aria-label="Colin testimonial"></video></div>
+    <div class="vslot"><video controls playsinline preload="metadata" poster="https://fundhub.ai/funnel/slo-testimonial-sarah-poster.jpg" src="https://fundhub.ai/funnel/slo-testimonial-sarah.mp4" title="Sarah" aria-label="Sarah testimonial"></video></div>
   </div>
 
   <footer>
