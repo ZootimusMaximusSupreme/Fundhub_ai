@@ -377,15 +377,16 @@ test("POST from the widget carries the Allow-Origin header back", async () => {
 
 /* ── 2026-09-22 review ─────────────────────────────────────────────────────── */
 
-test("item 2: an EXISTING client's email records the order row only — nothing is written to that client", async () => {
+test("item 2: existing email — first-touch ad tags only; no account, businesses, or slo_ref", async () => {
   for (const env of [{ SLO_DEMO_PAY: "1" }, LIVE_ENV]) {
     const writes = [];
+    const attrCalls = [];
     const deps = sloDeps({
       env,
       ref: "slo_existing_1",
       resolveBuyer: async () => ({ clientId: CLIENT, created: false }),
       ensureAccount: async () => { writes.push("account"); return "acct"; },
-      upsertAttribution: async () => { writes.push("attribution"); },
+      upsertAttribution: async (_db, row) => { writes.push("attribution"); attrCalls.push(row); },
       mergeFields: async () => { writes.push("custom_fields"); },
       replaceBusinesses: async () => { writes.push("businesses"); },
       stampSlo: async () => { writes.push("slo_ref"); },
@@ -394,15 +395,36 @@ test("item 2: an EXISTING client's email records the order row only — nothing 
     const parsed = parseSloCheckoutBody({
       email: "someone.else@example.com",
       utm_source: "fb",
+      utm_content: "43",
       businesses: [business(), business({ name: "Beta Co" })]
     }, { now: NOW });
     const out = await runSloCheckout(parsed, deps);
     assert.equal(out.ok, true);
-    assert.deepEqual(writes, [], `${env.SLO_DEMO_PAY ? "demo" : "live"}: no client write before the order may write`);
+    assert.deepEqual(writes, ["attribution"], `${env.SLO_DEMO_PAY ? "demo" : "live"}: ad tags only on an existing email`);
+    assert.equal(attrCalls[0].attribution.utm_content, "43");
     assert.equal(deps.links.length, 1);
     assert.equal(deps.links[0].ref, "slo_existing_1");
     assert.equal(deps.links[0].businessCount, 2, "the ref and the business count live on the order row");
   }
+});
+
+test("item 2: existing email with no utm_* still writes nothing to the client", async () => {
+  const writes = [];
+  const deps = sloDeps({
+    env: { SLO_DEMO_PAY: "1" },
+    ref: "slo_existing_plain",
+    resolveBuyer: async () => ({ clientId: CLIENT, created: false }),
+    ensureAccount: async () => { writes.push("account"); return "acct"; },
+    upsertAttribution: async () => { writes.push("attribution"); },
+    mergeFields: async () => { writes.push("custom_fields"); },
+    replaceBusinesses: async () => { writes.push("businesses"); }
+  });
+  const out = await runSloCheckout(
+    parseSloCheckoutBody({ email: "plain@example.com", businesses: [business()] }, { now: NOW }),
+    deps
+  );
+  assert.equal(out.ok, true);
+  assert.deepEqual(writes, []);
 });
 
 test("item 2: a client this checkout CREATED gets its account, ad tags and businesses; slo_ref waits for the pull", async () => {
@@ -420,7 +442,7 @@ test("item 2: a client this checkout CREATED gets its account, ad tags and busin
     })
   );
   assert.equal(out.ok, true);
-  assert.deepEqual(writes, ["account", "attribution", "custom_fields", "businesses"]);
+  assert.deepEqual(writes, ["attribution", "account", "custom_fields", "businesses"]);
 });
 
 test("item 2: resolveSloBuyer returns an existing email's id WITHOUT touching the row", async () => {

@@ -25,11 +25,15 @@
 //
 // AN EMAIL IS NOT A LOGIN (2026-09-22 review). The buyer is found by email,
 // and anyone can type anyone's email. So when the email already belongs to a
-// client, this door writes NOTHING to that client: no name, phone, account,
-// ad tags, businesses or slo_ref. It records the order row only (the ref and
-// the business count). What that order may later write is decided by
-// src/slo/pull.mjs. A client this checkout creates is its own, and gets the
-// account, ad tags and businesses as before.
+// client, this door writes no name, phone, account, businesses or slo_ref.
+// It records the order row (ref + business count). What that order may later
+// write is decided by src/slo/pull.mjs.
+//
+// Ad tags are different (2026-09-25): when the page POSTs utm_* / landing_path,
+// they are written on every checkout — new or existing — through
+// client_ad_attribution first-touch COALESCE (blank cells only). That is the
+// existing tracker; no second store. A client this checkout creates still gets
+// the account, custom_fields copy of the tags, and businesses as before.
 //
 // DEMO PAY (SLO_DEMO_PAY="1", src/slo/offer.mjs isSloDemoPay). The order is
 // recorded exactly as a real one — the buyer, the account, the ad tags, the
@@ -236,16 +240,19 @@ export async function runSloCheckout(parsed, deps = {}) {
   if (!clientId) return { ok: false, error: "buyer_missing" };
   const newClient = buyer.created === true;
 
-  /* Writes to the CLIENT happen only for a client this checkout created. See
-     AN EMAIL IS NOT A LOGIN in the header. */
+  /* Ad tags: whenever the page sent them. First touch wins in the typed row.
+     Identity / account / businesses: only for a client this checkout created.
+     See AN EMAIL IS NOT A LOGIN in the header. */
+  if (parsed.attribution) {
+    await (deps.upsertAttribution || upsertClientAdAttribution)(dbh, {
+      orgId, clientId, attribution: parsed.attribution
+    });
+  }
   if (newClient) {
     await (deps.ensureAccount || ensureSloAccount)(dbh, {
       orgId, clientId, email: parsed.email, name: parsed.name
     });
     if (parsed.attribution) {
-      await (deps.upsertAttribution || upsertClientAdAttribution)(dbh, {
-        orgId, clientId, attribution: parsed.attribution
-      });
       await (deps.mergeFields || mergeCustomFields)(dbh, clientId, parsed.attribution);
     }
     /* The businesses the widget sent ride on the order. Rows are the SLO rows
