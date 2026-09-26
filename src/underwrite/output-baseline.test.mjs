@@ -277,12 +277,19 @@ const BASELINE = Object.freeze({
   generatorScript:        "0c427de4723017a5046c0dbe41863efa9199378ad99751d39ca050d825ad655e"
 });
 
-/** The four PDFs the in-process printer produces, and the words inside each. */
+/** The four PDFs the in-process printer produces, and the words inside each.
+ *
+ *  All four textSha moved on 2026-09-25, and only on the closing page, which all
+ *  four share. The owner replaced the `[ QR CODE ]` square — it drew those literal
+ *  words and encoded nothing — with one CTA, "Book your strategy call", on
+ *  https://apply.fundhub.ai/roadmap-book. So "SCAN TO BOOK YOUR CALL INSTANTLY"
+ *  and "[ QR CODE ]" left the text, and the printed address changed from the
+ *  resolved c.booking_url to that page. Page counts are unchanged. */
 const BASELINE_NODE_PDFS = Object.freeze([
-  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "b50624440e5469cfffe27e829e0c2afad3ac5c3965f8bfb8d8461a2543f6a091" },
-  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "43065fb2999aa7952ae423883df1f7478e5b88ea24e84ae42a5fdddd163bad42" },
-  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 8, textSha: "3279129eb17841fa3f1461b3731b789ca08bc4377b2caaab5ee3ec7354e6af35" },
-  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "d9b5579b74da266f79274034100d3cdfe5ffa0c6aafb8c529caabfcef84835f2" }
+  { filename: "Credit-Analysis-Report.pdf",     type: "credit_analysis",  pages: 4, textSha: "07f6f52fc59748d9636c159df97950e1e2a37ec909942191b8a2940b2fdf2548" },
+  { filename: "Funding-Snapshot.pdf",           type: "funding_snapshot", pages: 4, textSha: "fbd50425127b06b1403ae263618bad6c2d9064287a4036ffe91c1d232ceef659" },
+  { filename: "Bank-Lender-Match-List.pdf",     type: "lender_match",     pages: 8, textSha: "1633ece17b34a455a4933cc7b9f527ad62328691b55e5dc2206affd28f4318d4" },
+  { filename: "Credit-Optimization-Roadmap.pdf", type: "roadmap",         pages: 5, textSha: "4b3e4698ce339556fc0d2e272812503de54de13bd5059e220661c055dcf132a5" }
 ]);
 
 /** Every document a client receives, in order. [filename, type, bureau]. */

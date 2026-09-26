@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { renderDeliverableHtml } from "./index.mjs";
 import { buildLenderList } from "./lender-list.mjs";
-import { BOOK_CALL_URL, GOLD } from "./chrome.mjs";
+import { CLOSING_CTA_URL, GOLD } from "./chrome.mjs";
 import { lenderBuckets } from "./derive.mjs";
 import { emptyBlackReportClient } from "../underwrite/black-report-client.mjs";
 
@@ -549,7 +549,8 @@ describe("gold lender list: page-wide rules", () => {
   for (const [name, client] of Object.entries(CLIENTS)) {
     test(`${name}: booking link, no dead URL, no dash, no NaN, no banned phrase`, () => {
       const html = page(client);
-      assert.ok(html.includes(`href="${BOOK_CALL_URL}"`), "links to the booking page");
+      // This page's only booking link is the closing CTA (owner-set 2026-09-25).
+      assert.ok(html.includes(`href="${CLOSING_CTA_URL}"`), "links to the booking page");
       assert.ok(!html.includes("fundhubbookingurl"), "the dead template URL");
       assert.ok(!/[–—]/.test(noStyle(html)), "an em or en dash");
       assert.ok(!/\bNaN\b|\bundefined\b/.test(html), "NaN or undefined");

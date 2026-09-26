@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { esc } from "./escape.mjs";
 import { DELIVERABLE_DOCS, DELIVERABLE_VARIANTS, renderDeliverableHtml, renderAllDeliverables }
   from "./index.mjs";
+import { CLOSING_CTA_URL } from "./chrome.mjs";
 import { emptyBlackReportClient } from "../underwrite/black-report-client.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -112,10 +113,12 @@ describe("it is a web page now, not a printed sheet", () => {
   }
 });
 
-describe("the QR code stays a placeholder — no new dependency", () => {
-  test("every document shows the text placeholder", () => {
+describe("the closing QR is one CTA now (owner-set 2026-09-25)", () => {
+  test("every document closes on the booking CTA and draws no QR", () => {
     for (const doc of pages(ACADEMY)) {
-      assert.ok(doc.html.includes('<div class="qr">[ QR CODE ]</div>'), doc.key);
+      assert.ok(doc.html.includes(`<a class="book-btn" href="${CLOSING_CTA_URL}">Book your strategy call</a>`),
+        `${doc.key} has no closing CTA`);
+      assert.ok(!doc.html.includes("[ QR CODE ]"), `${doc.key} still draws the QR placeholder`);
       assert.ok(!doc.html.includes("data:image/png;base64"), `${doc.key} has no generated QR image`);
     }
   });

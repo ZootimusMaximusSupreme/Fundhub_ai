@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 
 import { renderDeliverableHtml } from "./index.mjs";
 import { buildFundingSnapshot } from "./funding-snapshot.mjs";
-import { cover, ctaPage, BOOK_CALL_URL, GOLD } from "./chrome.mjs";
+import { cover, ctaPage, BOOK_CALL_URL, CLOSING_CTA_URL, GOLD } from "./chrome.mjs";
 import { lenderBuckets, fastestWins } from "./derive.mjs";
 import { emptyBlackReportClient } from "../underwrite/black-report-client.mjs";
 
@@ -92,7 +92,10 @@ describe("W4a: every gold section, in the gold order", () => {
     const html = PAGES.jordan;
     assert.ok(html.includes('<div class="cover"><div class="spec-top"></div>'));
     assert.ok(html.includes('<div class="cta-page"><div class="spec-top"></div>'));
-    assert.ok(html.includes('<div class="qr">[ QR CODE ]</div>'));
+    // Owner-set 2026-09-25: the closing panel is marked by its one CTA, not by the
+    // [ QR CODE ] square that used to sit under it.
+    assert.ok(html.includes(`<a class="book-btn" href="${CLOSING_CTA_URL}">Book your strategy call</a>`));
+    assert.ok(!html.includes("[ QR CODE ]"));
     // 01, Personal Cards, Installment, Mortgage, Child Support, 05 lenders.
     assert.equal((html.match(/<table class="fh">/g) || []).length, 6);
     assert.ok(!/<table>/.test(html), "no old-look table is left");

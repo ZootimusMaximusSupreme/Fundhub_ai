@@ -4,6 +4,7 @@
 
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
+import { CLOSING_CTA_URL } from "../deliverables/chrome.mjs";
 
 const W = 612;
 const H = 792;
@@ -477,20 +478,18 @@ class Report {
   }
 
   /**
-   * The close. Same layout as the designed reference set's last page: the
-   * headline, a scan block, and the booking link written out underneath.
+   * The close. The headline, one CTA, and the booking link written out underneath.
    *
    * THE LINK IS REAL. The reference PDFs print `www.fundhubbookingurl.template`
    * — a placeholder in the template nobody ever replaced — and this printer used
    * to fall back to the bare string "fundhub.ai", which is the marketing site
-   * and not a booking page. It now comes from the one resolver every text
-   * message and email already uses (../insights/meet.mjs salesMeetBookingUrl),
-   * through black-report-client's bookingUrlFor.
+   * and not a booking page.
    *
-   * The scan block is drawn, not encoded. The reference set prints the literal
-   * words "[ QR CODE ]" in the same spot, so this matches it; a real scannable
-   * code needs a QR encoder, and CLAUDE.md section 8 forbids adding a dependency
-   * without asking.
+   * Owner-set 2026-09-25: the closing link is CLOSING_CTA_URL, the same address the
+   * hosted closing panel uses. It replaced the reference set's `[ QR CODE ]` square,
+   * which drew those literal words and encoded nothing. `c.booking_url` (resolved by
+   * black-report-client's bookingUrlFor) is no longer printed on this page; the
+   * client record still carries it for the other printers.
    */
   cta(c) {
     this.addPage(true);
@@ -517,35 +516,28 @@ class Report {
       this.page.drawText(line, { x: 48, y: ly, size: 10, font: this.font, color: rgb(0.72, 0.72, 0.72) });
       ly -= 14;
     }
-    const boxW = 150;
-    const boxX = (W - boxW) / 2;
-    const boxY = H - 470;
-    this.page.drawRectangle({
-      x: boxX, y: boxY, width: boxW, height: boxW,
-      borderColor: rgb(0.35, 0.35, 0.35), borderWidth: 1
+    /* Owner-set 2026-09-25: the [ QR CODE ] box is gone. It never encoded anything
+       — it drew those literal words in a bordered square — so one CTA stands in its
+       place, the same button and the same address the hosted closing panel shows
+       (src/deliverables/chrome.mjs CLOSING_CTA_URL). A sheet cannot be tapped, so
+       the address is written out underneath and the caption no longer says scan. */
+    const label = "Book your strategy call";
+    const btnY = H - 400;
+    const btnW = this.bold.widthOfTextAtSize(label, 11) + 44;
+    this.page.drawRectangle({ x: (W - btnW) / 2, y: btnY, width: btnW, height: 34, color: WHITE });
+    this.page.drawText(label, {
+      x: W / 2 - this.bold.widthOfTextAtSize(label, 11) / 2,
+      y: btnY + 12, size: 11, font: this.bold, color: BLACK
     });
-    const ph = "[ QR CODE ]";
-    this.page.drawText(ph, {
-      x: W / 2 - this.font.widthOfTextAtSize(ph, 9) / 2,
-      y: boxY + boxW / 2 - 4, size: 9, font: this.font, color: rgb(0.55, 0.55, 0.55)
+    this.page.drawText(CLOSING_CTA_URL, {
+      x: W / 2 - this.bold.widthOfTextAtSize(CLOSING_CTA_URL, 12) / 2,
+      y: btnY - 34, size: 12, font: this.bold, color: WHITE
     });
-    const caption = "SCAN TO BOOK YOUR CALL INSTANTLY";
-    this.page.drawText(caption, {
-      x: W / 2 - this.font.widthOfTextAtSize(caption, 8) / 2,
-      y: boxY - 28, size: 8, font: this.font, color: rgb(0.62, 0.62, 0.62)
+    const sub = "Or copy this link into your browser";
+    this.page.drawText(sub, {
+      x: W / 2 - this.font.widthOfTextAtSize(sub, 8) / 2,
+      y: btnY - 50, size: 8, font: this.font, color: rgb(0.55, 0.55, 0.55)
     });
-    const url = clean(c.booking_url || "");
-    if (url) {
-      this.page.drawText(url, {
-        x: W / 2 - this.bold.widthOfTextAtSize(url, 12) / 2,
-        y: boxY - 58, size: 12, font: this.bold, color: WHITE
-      });
-      const sub = "Or copy this link into your browser";
-      this.page.drawText(sub, {
-        x: W / 2 - this.font.widthOfTextAtSize(sub, 8) / 2,
-        y: boxY - 74, size: 8, font: this.font, color: rgb(0.55, 0.55, 0.55)
-      });
-    }
     this.page.drawText("systems nominal  fundhub.ai", {
       x: 48, y: 48, size: 7, font: this.font, color: rgb(0.49, 0.49, 0.49)
     });

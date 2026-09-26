@@ -32,6 +32,15 @@ export const isGold = (opts) => opts?.look === GOLD;
  */
 export const BOOK_CALL_URL = "https://apply.fundhub.ai/schedule/phonecall";
 
+/**
+ * The one CTA at the end of the pack. Owner-set 2026-09-25: the closing panel's
+ * fake [ QR CODE ] box is gone and this button replaces it. Only the closing CTA
+ * moved — BOOK_CALL_URL still carries the body-text booking lines in the roadmap,
+ * the credit analysis and the funding snapshot, and it does not change.
+ * src/underwrite/black-report-node.mjs cta() prints the same address.
+ */
+export const CLOSING_CTA_URL = "https://apply.fundhub.ai/roadmap-book";
+
 /** Python PB — was a page break, is now the gap that opened the next sheet. */
 export const PB = '<div class="pagebreak"></div>';
 
@@ -181,14 +190,16 @@ function goldCover(client, doctype, title, med) {
  * The gold closing panel (fundhub_pdf_template.py CLOSING), with two changes the
  * owner made: the first sentence is the honest one off the file (ctaLead), not
  * the gold pack's "You have clean bureaus ready for funding now" on every file;
- * and the link is BOOK_CALL_URL, a real button and a real link, not the dead
- * www.fundhubbookingurl.template. The QR box is kept as the gold pack drew it
- * (no QR package is added) and it is itself a link to the same page, so the
- * caption says tap, not scan.
+ * and the link is a real button and a real link, not the dead
+ * www.fundhubbookingurl.template.
+ *
+ * Owner-set 2026-09-25: the gold pack's [ QR CODE ] box is gone. It never encoded
+ * anything — it drew the literal words in a dashed square — so the button below is
+ * the whole control, and its address is CLOSING_CTA_URL.
  */
 function goldCtaPage(client) {
-  const url = esc(BOOK_CALL_URL);
-  const shown = esc(BOOK_CALL_URL.replace(/^https:\/\//, ""));
+  const url = esc(CLOSING_CTA_URL);
+  const shown = esc(CLOSING_CTA_URL.replace(/^https:\/\//, ""));
   return `
 <div class="cta-page"><div class="spec-top"></div><div class="clo-in">
   <div class="cov-head"><div class="wordmark">fundhub.</div><div class="cov-tag">${spaced("next steps")}</div></div>
@@ -197,8 +208,6 @@ function goldCtaPage(client) {
     <div class="clo-rule"></div>
     <p class="clo-sub">${esc(ctaLead(client))}</p>
     <div class="clo-cta"><a class="book-btn" href="${url}">Book your strategy call</a></div>
-    <a class="qr-link" href="${url}" aria-label="Book your strategy call">${qrHtml()}</a>
-    <div class="qr-cap">${spaced("tap to book your call")}</div>
     <a class="clo-url" href="${url}">${shown}</a>
     <div class="clo-alt">Or copy this link into your browser</div>
   </div>
