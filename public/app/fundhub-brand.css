@@ -243,7 +243,7 @@ button.link-btn:disabled,
 }
 
 /* Empty welcome-video block: one line, not a 410px hole */
-.player:has(.video-empty){
+.player:has(.video-empty:not([hidden])){
   aspect-ratio:auto;
   max-height:none;
   min-height:0;
@@ -251,7 +251,7 @@ button.link-btn:disabled,
   padding:16px;
   background:var(--soft, #F4F4F5);
 }
-.player:has(.video-empty) .ghost{display:none}
+.player:has(.video-empty:not([hidden])) .ghost{display:none}
 
 /* Money columns — right-align tabular figures (§7) */
 td.money, th.money, td .age, th[data-s="age"]{
