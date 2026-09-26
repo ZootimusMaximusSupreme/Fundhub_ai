@@ -128,22 +128,21 @@ async function replyFor(database, { orgId, clientId, question, conversationId, c
 
   const answer = await answerPortalMessage({ question, context });
 
-  if (answer.ok) {
-    try {
-      const saved = await database.query(
-        `INSERT INTO messages (
-           org_id, client_id, conversation_id, direction, channel,
-           rendered_body, status, provider, compliance_check_passed, sender_kind
-         ) VALUES ($1, $2, $3, 'outbound', $4, $5, 'delivered', 'internal', true, 'agent')
-         RETURNING id`,
-        [orgId, clientId, conversationId, channel, answer.text]
-      );
-      await linkMessage(database, {
-        messageId: saved.rows[0].id,
-        conversationId
-      });
-    } catch { /* the reply still goes to the screen; the thread copy is a bonus */ }
-  }
+  /* Persist assistant or canned fallback — the portal reloads from this thread. */
+  try {
+    const saved = await database.query(
+      `INSERT INTO messages (
+         org_id, client_id, conversation_id, direction, channel,
+         rendered_body, status, provider, compliance_check_passed, sender_kind
+       ) VALUES ($1, $2, $3, 'outbound', $4, $5, 'delivered', 'internal', true, 'agent')
+       RETURNING id`,
+      [orgId, clientId, conversationId, channel, answer.text]
+    );
+    await linkMessage(database, {
+      messageId: saved.rows[0].id,
+      conversationId
+    });
+  } catch { /* the reply still goes to the POST body; the thread copy is a bonus */ }
 
   return { text: answer.text, source: answer.ok ? "assistant" : "fallback" };
 }
