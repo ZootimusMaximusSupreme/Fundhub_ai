@@ -196,7 +196,7 @@ test.describe("client portal go-live UX", () => {
 
     await tile.locator(".tc-mod summary").first().click();
     await expect(tile.locator(".tc-mod").first()).toHaveAttribute("open", "");
-    await expect(tile.locator(".tc-empty").first()).toContainText(/Video will show here/i);
+    await expect(tile.locator(".tc-empty").first()).toContainText(/Coming soon/i);
   });
 
   test("unlocked Funding Mastery tile expands the same way", async ({ page }) => {
