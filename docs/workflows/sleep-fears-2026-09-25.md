@@ -56,3 +56,16 @@ Zero auth-style failures (`login_failed` / CRS113 / Access Denied) in the ledger
 **Released tonight:** 0 (queue empty; no in-scope failed rows to requeue).
 
 **Still “stuck”:** only the 37 failed above, for the reasons in the table — not a sweeper outage.
+
+## Chris access
+
+**CRM: ok.** **Portal: ok.** No code change. No password reset. No secrets.
+
+| Door | URL | Result |
+|---|---|---|
+| CRM (staff / owner) | https://fundhub.ai/login.html → lands on https://fundhub.ai/app/pipeline.html | Password login for `chris@fundhub.ai` (owner, active, has hash) returned 200 twice; form login landed on Pipeline as Chris · owner. |
+| Client portal (owner / staff door) | https://fundhub.ai/app/client-portal.html with a client id after CRM sign-in | Staff session stays; page shows Chris · owner and loads the file. Bare `/app/client-portal.html` (no id) stays signed in but cannot load a file until a client id is in the URL. |
+
+Not the $297 purchaser portal-provisioning lane. Chris has no `accounts` client row — that is correct for the owner. His door is staff password login, then the portal with a client id (same as PORTALS → Client Portal from a file).
+
+Env password name used for the prove: `STAFF_INITIAL_PASSWORD` (matches stored hash). Value not printed. No card charge, no credit pull, no outbound flip, no `INNGEST` change.
