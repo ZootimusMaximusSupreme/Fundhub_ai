@@ -2,8 +2,17 @@
 // Reuses resolveClient. Does not invent a second client door.
 
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
+import {
+  issuePortalLinkForClient,
+  MAGIC_LINK_TEMPLATE_KEY
+} from "../auth/magic-link.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 import { SLO_DEMO_CHECKOUT_URL, SLO_PRODUCT_CODE, SLO_PURPOSE, SLO_SOURCE } from "./offer.mjs";
+
+/** Stable sendTemplated event id — one portal login mail per paid SLO buyer. */
+export function sloPortalLoginEventId(clientId) {
+  return `slo-portal-login:${clientId}`;
+}
 
 /**
  * resolveSloBuyer — the client this checkout is for, and whether THIS checkout
@@ -59,11 +68,13 @@ export function isSloCheckoutLinkRef(linkRef) {
 
 /**
  * After the $297 clears: open the same portal login checkout already creates
- * for a brand-new buyer. Checkout skips this when the email already belongs to
- * a client (AN EMAIL IS NOT A LOGIN). Payment is the moment that gap closes.
- * Idempotent — returns the existing account id when one is already there.
+ * for a brand-new buyer, then queue EMAIL-PORTAL-MAGIC-LINK once so they can
+ * sign in. Checkout skips the account when the email already belongs to a
+ * client (AN EMAIL IS NOT A LOGIN). Payment is the moment that gap closes.
+ * Idempotent — same account id, and a second webhook does not queue a second
+ * mail (stable sendTemplated event id).
  */
-export async function ensureSloPortalForPaidClient(db, { orgId, clientId }) {
+export async function ensureSloPortalForPaidClient(db, { orgId, clientId }, deps = {}) {
   if (!orgId || !clientId) return null;
   const { rows } = await db.query(
     `SELECT email, first_name, last_name
@@ -75,7 +86,35 @@ export async function ensureSloPortalForPaidClient(db, { orgId, clientId }) {
   const c = rows[0];
   if (!c?.email) return null;
   const name = [c.first_name, c.last_name].filter(Boolean).join(" ").trim() || null;
-  return ensureSloAccount(db, { orgId, clientId, email: c.email, name });
+  const accountId = await ensureSloAccount(db, { orgId, clientId, email: c.email, name });
+  if (!accountId) return null;
+
+  /* NON-FATAL. The invited account is the product of this call; a mail-queue
+     miss must not undo it. A second payment.received for the same buyer is
+     gated by the stable event id below (and by sendTemplated ON CONFLICT). */
+  try {
+    await queueSloPortalLoginOnce(db, { orgId, clientId }, deps);
+  } catch (err) {
+    console.warn(
+      `[ensureSloPortalForPaidClient] portal login email: ${String(err?.message || err).slice(0, 160)}`
+    );
+  }
+  return accountId;
+}
+
+async function queueSloPortalLoginOnce(db, { orgId, clientId }, deps = {}) {
+  const eventId = sloPortalLoginEventId(clientId);
+  const providerRef = `workflow:${MAGIC_LINK_TEMPLATE_KEY}:${eventId}`;
+  const prior = await db.query(
+    `SELECT 1 AS ok FROM messages
+      WHERE org_id = $1::uuid AND provider_ref = $2
+      LIMIT 1`,
+    [orgId, providerRef]
+  );
+  if (prior.rows[0]) return { ok: true, sent: false, reason: "already" };
+
+  const issue = deps.issuePortalLinkForClient || issuePortalLinkForClient;
+  return issue(db, { orgId, clientId, eventId });
 }
 
 export async function resolveProductIdByCode(db, orgId, code) {

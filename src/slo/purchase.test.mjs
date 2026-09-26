@@ -134,6 +134,12 @@ function paidWebhookDb({ existingSale = null, bookings = [], closerTasks = [] } 
         store.accounts.push(row);
         return { rows: [row] };
       }
+      /* Portal login mail is covered in buyer-portal.test.mjs. This stub
+         pretends the pay-login message already exists so ensureSloPortal
+         does not walk the real magic-link queries. */
+      if (/FROM messages/.test(sql) && /provider_ref/.test(sql)) {
+        return { rows: [{ ok: 1 }] };
+      }
       if (/custom_fields = custom_fields \|\|/.test(sql)) {
         store.fields = JSON.parse(params[1]);
         return { rows: [] };

@@ -147,7 +147,11 @@ function portalBase(env = process.env) {
 export async function requestMagicLink(db, {
   email, ip, userAgent, orgId, env = process.env,
   ttlMinutes = LINK_TTL_MINUTES,
-  queueEmail = true
+  queueEmail = true,
+  /* Optional stable id for sendTemplated's provider_ref. Pay / webhook
+     callers pass one so a replayed event cannot queue a second mail.
+     Self-service leave this unset — each request is its own send. */
+  eventId = null
 } = {}) {
   const mail = normalizeEmail(email);
   if (!mail || !LOOKS_LIKE_EMAIL.test(mail)) {
@@ -210,7 +214,7 @@ export async function requestMagicLink(db, {
       clientId: subject.clientId,
       channel: "email",
       templateKey: MAGIC_LINK_TEMPLATE_KEY,
-      eventId: `magic-link:${ins.rows[0].id}`,
+      eventId: eventId || `magic-link:${ins.rows[0].id}`,
       context: {
         magic_link: {
           url,
@@ -263,7 +267,7 @@ export async function requestMagicLink(db, {
       → { ok: false, reason }                         no client, or no address */
 export async function issuePortalLinkForClient(db, {
   orgId, clientId, ttlMinutes = LINK_TTL_MINUTES, queueEmail = true,
-  ip, userAgent, env = process.env
+  ip, userAgent, env = process.env, eventId = null
 } = {}) {
   if (!clientId) return { ok: false, reason: "client_required" };
 
@@ -274,7 +278,7 @@ export async function issuePortalLinkForClient(db, {
   if (!email) return { ok: false, reason: "no_email_on_file" };
 
   const out = await requestMagicLink(db, {
-    email, orgId: org, ip, userAgent, env, ttlMinutes, queueEmail
+    email, orgId: org, ip, userAgent, env, ttlMinutes, queueEmail, eventId
   });
   if (!out.ok) return { ok: false, reason: out.error || "request_failed" };
   if (out.limited) return { ok: true, sent: false, limited: true, retryAfterMinutes: out.retryAfterMinutes };
