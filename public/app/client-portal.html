@@ -1561,13 +1561,13 @@ document.addEventListener("DOMContentLoaded", async function () {
   var entActive = null;      // entitlements: active code -> row
   var softPullDone = false;  // portal-summary: the pull has really run
   var docsOnFile = [];       // portal-summary: the client's real documents
-  /* THE $297 SLO ORDER IS THE CAPITAL BLUEPRINT PACK. It sells on product
+  /* THE SLO ROADMAP ORDER IS THE CAPITAL BLUEPRINT PACK. It sells on product
      'diagnostic', which grants only credit-analysis-report, so the Blueprint
      tile stayed locked for a buyer holding every Blueprint file (live,
      2026-09-25). portal-summary's `slo_paid` is the paid order itself. It opens
      the Blueprint tile and its five pack rows in What You Own — nothing else:
      no door, no other tile, no funding view. */
-  var sloPaid = false;       // portal-summary: a paid, non-demo $297 SLO order
+  var sloPaid = false;       // portal-summary: a paid, non-demo SLO roadmap order
   var SLO_PACK = [
     { code: "credit-analysis-report", name: "Credit Analysis Report" },
     { code: "credit-optimization-roadmap", name: "Credit Optimization Roadmap" },

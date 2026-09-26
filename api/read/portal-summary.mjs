@@ -189,13 +189,14 @@ export default async function handler(req, res) {
        screen has always needed. These are additions, so a table that will not
        answer must cost the caller the fact it could not read and nothing else —
        the same reasoning as the signing block near the top of this file. */
-    const [callHeld, signedAt, paid, advisor, invoiceDue, payments] = await Promise.all([
+    const [callHeld, signedAt, paid, advisor, invoiceDue, payments, sloPaid] = await Promise.all([
       readCallHeld(orgId, clientId),
       readAgreementSignedAt(orgId, clientId),
       readPaymentPosted(orgId, clientId),
       readAdvisor(orgId, clientId, cf),
       readInvoiceDue(orgId, clientId),
-      readPayments(orgId, clientId)
+      readPayments(orgId, clientId),
+      readSloPaid(orgId, clientId)
     ]);
 
     /* SOFT PULL IS TRUE ON EITHER SIGNAL. The custom-field flags are set by the
@@ -258,6 +259,9 @@ export default async function handler(req, res) {
          the read failed — the screen must say it could not check, never print
          "no payments yet" over a payment that exists. */
       payments,
+      /* A PAID SLO ROADMAP ORDER. The screen opens the Capital Blueprint tile
+         on this — see readSloPaid. */
+      slo_paid: sloPaid,
       advisor,
       stage: portalStage({
         softPullComplete,
@@ -392,6 +396,33 @@ function readPaymentPosted(orgId, clientId) {
       [orgId, clientId]
     );
     return r.rows.length > 0;
+  });
+}
+
+/* SHE PAID FOR THE SLO ROADMAP — the Capital Blueprint pack.
+   That order sells on product 'diagnostic', which grants only
+   credit-analysis-report, so no entitlement can answer this. The order itself
+   does: a /roadmap Commas order row (link_ref slo_*) the webhook marked paid,
+   or the transaction the ClickFunnels SLO webhook writes (src/slo/purchase.mjs,
+   raw_payload.source 'slo'). Not slo_ref on the client — src/slo/pull.mjs
+   stamps that before payment can clear. Demo rows never count. */
+function readSloPaid(orgId, clientId) {
+  return safeRead("slo_paid", false, async () => {
+    const r = await db.query(
+      `SELECT
+         EXISTS (SELECT 1 FROM payment_links
+                  WHERE org_id = $1 AND client_id = $2
+                    AND link_ref LIKE 'slo\\_%'
+                    AND status = 'paid'
+                    AND is_demo IS NOT TRUE) AS by_order,
+         EXISTS (SELECT 1 FROM transactions
+                  WHERE org_id = $1 AND client_id = $2
+                    AND status = 'succeeded'
+                    AND is_demo IS NOT TRUE
+                    AND raw_payload->>'source' = 'slo') AS by_funnel`,
+      [orgId, clientId]
+    );
+    return r.rows[0]?.by_order === true || r.rows[0]?.by_funnel === true;
   });
 }
 
