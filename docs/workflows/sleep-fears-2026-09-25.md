@@ -1,90 +1,35 @@
 # Sleep fears — 2026-09-25
 
-Board for tonight’s “does the live path work” checks. No PII. Hostnames and on/off flags only.
+Shared board for overnight fear lanes. Counts only. No emails, phones, or names.
 
-## CRS
+## Leads
 
-**Verdict: ON. No switch changed.**
+**Path traced:** `apply.fundhub.ai/roadmap` → widget `startCheckout` POSTs `utm_*` (from `fh_attribution` / URL) → `POST /api/public/slo-checkout` → `pickAttribution` → `client_ad_attribution` (+ `custom_fields` copy when the checkout creates the client).
 
-| Flag | Production now |
-|---|---|
-| `CRS_API_HOST` | `mware.crscreditapi.com` |
-| `CRS_ALLOW_LIVE` | `1` |
-| `CRS_ACTIVE_BUREAUS` | `EX,EQ` |
-| `ADAPTERS_DRY_RUN` | `0` |
+**Tracker:** existing `client_ad_attribution` (migration 286). No new tracker.
 
-Not sandbox. Allow-live is on. Password not read for a change, not printed, not rotated.
+**Counts (purpose=`diagnostic`, last 14 days, exclude demo / prove / sandbox / do-not-pay):**
 
-**Latest soft_pull_requests (2026-09-25 evening, last 7 rows):**
+| | links | with `utm_content` / ad id | missing ad tag |
+|---|---:|---:|---:|
+| Realish checkouts | 16 | 5 | 11 |
+| Of missing: existing email at checkout | | | 8 (no attribution row — tags were skipped on purpose) |
+| Of missing: new client at checkout | | | 3 (POST had no `utm_*`; page path works when tags are sent) |
 
-| status | fail class | note |
-|---|---|---|
-| fulfilled ×3 | none | result row present (`crs_softview`) |
-| failed ×4 | no_file | `NoFileReturnedNoHit` on EX and EQ — bureau answered; not 401 |
+**Last 7 days realish:** 2 links, 0 with ad id.
 
-Zero auth-style failures (`login_failed` / CRS113 / Access Denied) in the ledger. Older Aug 2026 TU rows are add-on config (E1006), not login.
+**Drop found:** checkout wrote ad tags only when it *created* the client. An existing email kept the order row and dropped the page’s `utm_*`.
 
-**Laptop login probe** (same host flags, local env password, no order, no SSN): returned Access Denied (CRS113). Production ledger above already proves live login from the deployed path earlier tonight; laptop probe is not a production-switch defect. No password change.
+**Fix (2026-09-25):** `api/public/slo-checkout.mjs` always upserts `client_ad_attribution` when the POST includes attribution (first-touch COALESCE). Still no name / phone / account / businesses on an existing email.
 
-**Action taken:** none. Switches already match the earlier-today fix.
+**Not a page bug:** live `/roadmap` already merges attribution into the checkout body. Sep 22 demos with `utm_content` proved storage when tags are sent.
 
-## Emails
+## Booking
 
-**Verdict: OK** — live path is sending; nothing purchase / portal / deliverable is sitting in `queued`.
+**Where the closer sees it:** CRM Calendar (`/app/calendar.html`) and Closer Dashboard / Call cockpit **Up next** — both read open `tasks` with title `Strategy session booked` and `assignee_role=closer`. A matching `bookings` row is written beside that.
 
-| Check | Result |
-|---|---|
-| `messaging_settings.outbound_enabled` | on (1 org) |
-| Email routing | `resend` enabled |
-| Production `MESSAGING_DRY_RUN` | `0` |
-| Production `INNGEST_EVENT_KEY` | set (not unset) |
-| Email `queued` now | **0** |
-| Email `failed` backlog | **37** (see below — none released) |
-| Provider accepted last 24h (`provider_message_id` on sent/delivered) | **1** |
-| Dispatch lag (system email, 7d) | p50 ~24s, p90 ~5m — sweeper cadence healthy |
+**Live prove (no new real slot booked):** ClickFunnels had a real `appointments/scheduled_event.created` on 2026-09-23 (Meeting with Chris, start 2026-09-24 18:30 UTC). Fundhub had **no** booking row, **no** closer task, and **no** `booking.created` event for it. Last CRM booking.created before the fix was 2026-09-19 (sim/probe only). Closer and booking rows that *did* land always matched 1:1 when the webhook was accepted.
 
-**Why nothing was “stuck queued”:** the Inngest message-dispatch sweeper + Resend are draining. Recent purchase/portal/deliverable template keys (portal magic link, welcome, contract, invoice, U02 deliverables, offers) show `delivered` with provider ids. No code change. No blast. Outbound switch left on.
+**Break:** `CLICKFUNNELS_WEBHOOK_SECRET` on Netlify / local did not match the ClickFunnels “Fundhub platform” endpoint signing secret (CF last4 was `4f97`; stored secret last4 was not). Live POSTs to `https://fundhub.ai/api/webhooks/clickfunnels` returned `401 bad_signature`, so the closer never got the task.
 
-**Failed backlog (37) — not released tonight:**
-
-| Count | Class | Why left alone |
-|---|---|---|
-| 13 | synthetic journey fence | Correct refuse; never send to test records |
-| 12 | `example.com` / sim addresses | Provider rejected; not real clients |
-| 12 | Aug soft-pull assessment (staff), Resend was still in test mode | Outside this lane’s purchase/portal/deliverable release list; CRS-adjacent; would be a month-late re-blast |
-
-**Released tonight:** 0 (queue empty; no in-scope failed rows to requeue).
-
-**Still “stuck”:** only the 37 failed above, for the reasons in the table — not a sweeper outage.
-
-## Chris access
-
-**CRM: ok.** **Portal: ok.** No code change. No password reset. No secrets.
-
-| Door | URL | Result |
-|---|---|---|
-| CRM (staff / owner) | https://fundhub.ai/login.html → lands on https://fundhub.ai/app/pipeline.html | Password login for `chris@fundhub.ai` (owner, active, has hash) returned 200 twice; form login landed on Pipeline as Chris · owner. |
-| Client portal (owner / staff door) | https://fundhub.ai/app/client-portal.html with a client id after CRM sign-in | Staff session stays; page shows Chris · owner and loads the file. Bare `/app/client-portal.html` (no id) stays signed in but cannot load a file until a client id is in the URL. |
-
-Not the $297 purchaser portal-provisioning lane. Chris has no `accounts` client row — that is correct for the owner. His door is staff password login, then the portal with a client id (same as PORTALS → Client Portal from a file).
-
-Env password name used for the prove: `STAFF_INITIAL_PASSWORD` (matches stored hash). Value not printed. No card charge, no credit pull, no outbound flip, no `INNGEST` change.
-
-## Portal
-
-**Fear:** Someone pays $297 and cannot get into the portal.
-
-**Trace:** `/roadmap` till creates a client portal account only when checkout creates a **new** client. An email that already belongs to a CRM client records the order only (no account write — “an email is not a login”). The pull form also calls `ensureSloAccount`. Payment itself did not open the login for that existing-client gap.
-
-**Count (live DB, counts only, no PII):**
-- Paid diagnostic `$297+` payment_links (all-time unique buyers): **6**
-- With a client portal account: **6**
-- Missing a portal account: **0**
-
-**Fix shipped:** When a `$297` SLO payment clears, open the same invited client account the product already uses (`ensureSloAccount` / `ensureSloPortalForPaidClient`):
-- Commas: `payment.received` → paid `slo_*` payment_links row → portal account
-- ClickFunnels SLO paid webhook: after sale write → portal account (not behind the post-purchase chase flag)
-
-**Portal URL:** https://fundhub.ai/portal-login.html
-
-**Backfill:** none needed (0 missing).
+**Fix (2026-09-25):** Created a new CF outgoing webhook endpoint (same URL + appointment/contact/form events), set `CLICKFUNNELS_WEBHOOK_SECRET` on Netlify + local `.env` to that create-time secret (last4 `c2f0`), deleted the old mismatched endpoint. Replayed the missed 2026-09-23 appointment into CRM: closer task + booking row now present. Redeploy required so production functions load the new secret.
