@@ -52,6 +52,32 @@ export async function ensureSloAccount(db, { orgId, clientId, email, name }) {
   return ins.rows[0]?.id || null;
 }
 
+/** /roadmap checkout refs are `slo_<hex>`. Soft-pull $32 links stay `pl_*`. */
+export function isSloCheckoutLinkRef(linkRef) {
+  return String(linkRef || "").startsWith("slo_");
+}
+
+/**
+ * After the $297 clears: open the same portal login checkout already creates
+ * for a brand-new buyer. Checkout skips this when the email already belongs to
+ * a client (AN EMAIL IS NOT A LOGIN). Payment is the moment that gap closes.
+ * Idempotent — returns the existing account id when one is already there.
+ */
+export async function ensureSloPortalForPaidClient(db, { orgId, clientId }) {
+  if (!orgId || !clientId) return null;
+  const { rows } = await db.query(
+    `SELECT email, first_name, last_name
+       FROM clients
+      WHERE id = $1::uuid AND org_id = $2::uuid
+      LIMIT 1`,
+    [clientId, orgId]
+  );
+  const c = rows[0];
+  if (!c?.email) return null;
+  const name = [c.first_name, c.last_name].filter(Boolean).join(" ").trim() || null;
+  return ensureSloAccount(db, { orgId, clientId, email: c.email, name });
+}
+
 export async function resolveProductIdByCode(db, orgId, code) {
   if (!orgId || !code) return null;
   const { rows } = await db.query(

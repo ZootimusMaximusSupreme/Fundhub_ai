@@ -69,3 +69,22 @@ Zero auth-style failures (`login_failed` / CRS113 / Access Denied) in the ledger
 Not the $297 purchaser portal-provisioning lane. Chris has no `accounts` client row — that is correct for the owner. His door is staff password login, then the portal with a client id (same as PORTALS → Client Portal from a file).
 
 Env password name used for the prove: `STAFF_INITIAL_PASSWORD` (matches stored hash). Value not printed. No card charge, no credit pull, no outbound flip, no `INNGEST` change.
+
+## Portal
+
+**Fear:** Someone pays $297 and cannot get into the portal.
+
+**Trace:** `/roadmap` till creates a client portal account only when checkout creates a **new** client. An email that already belongs to a CRM client records the order only (no account write — “an email is not a login”). The pull form also calls `ensureSloAccount`. Payment itself did not open the login for that existing-client gap.
+
+**Count (live DB, counts only, no PII):**
+- Paid diagnostic `$297+` payment_links (all-time unique buyers): **6**
+- With a client portal account: **6**
+- Missing a portal account: **0**
+
+**Fix shipped:** When a `$297` SLO payment clears, open the same invited client account the product already uses (`ensureSloAccount` / `ensureSloPortalForPaidClient`):
+- Commas: `payment.received` → paid `slo_*` payment_links row → portal account
+- ClickFunnels SLO paid webhook: after sale write → portal account (not behind the post-purchase chase flag)
+
+**Portal URL:** https://fundhub.ai/portal-login.html
+
+**Backfill:** none needed (0 missing).

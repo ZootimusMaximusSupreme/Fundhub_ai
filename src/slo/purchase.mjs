@@ -13,7 +13,7 @@ import {
 } from "../handlers/customer-insights.mjs";
 import { BOOKING_STATUS } from "../bookings/store.mjs";
 import { asUuid, findActiveConnection, normCfId } from "./connections.mjs";
-import { stampSloRef } from "./buyer.mjs";
+import { ensureSloPortalForPaidClient, stampSloRef } from "./buyer.mjs";
 
 /** ClickFunnels post-purchase only (stamp, CSM chase, booking chase-complete).
  *  Unset / false / anything else = off. Same fail-closed grammar as
@@ -421,6 +421,12 @@ export async function handleSloPaidWebhook(db, body, { env = process.env } = {})
     if (!rec.ok) {
       return { written, reason: rec.reason };
     }
+    /* Portal login is not behind SLO_POST_PURCHASE_ENABLED — every paid buyer
+       gets the same invited client account the Commas till opens. */
+    await ensureSloPortalForPaidClient(db, {
+      orgId,
+      clientId: extracted.clientId
+    });
     if (isSloPostPurchaseEnabled(env)) {
       await afterSloPaid(db, {
         orgId,

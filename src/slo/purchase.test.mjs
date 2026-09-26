@@ -119,7 +119,21 @@ function paidWebhookDb({ existingSale = null, bookings = [], closerTasks = [] } 
           }]
         };
       }
-      if (/FROM clients/.test(sql)) return { rows: [{ id: CLIENT }] };
+      if (/FROM clients/.test(sql)) {
+        if (/SELECT email/.test(sql)) {
+          return { rows: [{ email: "buyer@example.com", first_name: "Pat", last_name: "Lee" }] };
+        }
+        return { rows: [{ id: CLIENT }] };
+      }
+      if (/FROM accounts/.test(sql) && /kind = 'client'/.test(sql)) {
+        return { rows: store.accounts || [] };
+      }
+      if (/INSERT INTO accounts/.test(sql)) {
+        const row = { id: "acct-slo-1", org_id: params[0], email: params[1], name: params[2], client_id: params[3] };
+        store.accounts = store.accounts || [];
+        store.accounts.push(row);
+        return { rows: [row] };
+      }
       if (/custom_fields = custom_fields \|\|/.test(sql)) {
         store.fields = JSON.parse(params[1]);
         return { rows: [] };
@@ -204,6 +218,17 @@ function paidWebhookDb({ existingSale = null, bookings = [], closerTasks = [] } 
   };
   return db;
 }
+
+test("handleSloPaidWebhook opens a portal login even when post-purchase chase is off", async () => {
+  _resetOrgCache();
+  const db = paidWebhookDb();
+  const res = await handleSloPaidWebhook(db, paidBody(), { env: {} });
+  assert.equal(res.reason, "recorded");
+  assert.equal(db.store.tasks.length, 0, "CSM chase stays behind the flag");
+  assert.equal((db.store.accounts || []).length, 1);
+  assert.equal(db.store.accounts[0].email, "buyer@example.com");
+  assert.equal(db.store.accounts[0].client_id, CLIENT);
+});
 
 test("handleSloPaidWebhook writes one sale from the map and named client", async () => {
   _resetOrgCache();

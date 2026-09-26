@@ -4,6 +4,19 @@
 import { on } from "../events/registry.mjs";
 import { markPaid, markPaidBySession } from "../payment-links/index.mjs";
 import { toCents } from "../commissions/money.mjs";
+import {
+  ensureSloPortalForPaidClient,
+  isSloCheckoutLinkRef
+} from "../slo/buyer.mjs";
+
+async function openSloPortalIfPaid(db, link) {
+  if (!link || !isSloCheckoutLinkRef(link.link_ref)) return;
+  if (!link.org_id || !link.client_id) return;
+  await ensureSloPortalForPaidClient(db, {
+    orgId: link.org_id,
+    clientId: link.client_id
+  });
+}
 
 export async function onPaymentReceivedForLink(event, db) {
   const p = event.payload || {};
@@ -21,14 +34,18 @@ export async function onPaymentReceivedForLink(event, db) {
       commasSessionId: sessionId || p.providerRef || null,
       paidAmountCents
     });
-    if (byRef) return;
+    if (byRef) {
+      await openSloPortalIfPaid(db, byRef);
+      return;
+    }
   }
 
   if (sessionId) {
-    await markPaidBySession(db, {
+    const bySession = await markPaidBySession(db, {
       commasSessionId: sessionId,
       paidAmountCents
     });
+    await openSloPortalIfPaid(db, bySession);
   }
 }
 

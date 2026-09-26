@@ -104,4 +104,72 @@ describe("onPaymentReceivedForLink", () => {
     await onPaymentReceivedForLink({ payload: { ref: "pl_missing", amount: 10 } }, db);
     assert.equal(rows[0].status, "created");
   });
+
+  test("a paid $297 SLO link opens the portal login for that client", async () => {
+    const ORG = "11111111-1111-4111-8111-111111111111";
+    const CLIENT = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+    const rows = [{
+      link_ref: "slo_abcdef0123456789abcdef",
+      status: "sent",
+      org_id: ORG,
+      client_id: CLIENT
+    }];
+    const accounts = [];
+    const db = {
+      calls: [],
+      query: async (sql, params) => {
+        db.calls.push({ sql: String(sql), params });
+        const text = String(sql);
+        if (/link_ref = \$1/i.test(text)) {
+          const [link_ref, , commas_session_id, paid_amount_cents, openStatuses] = params;
+          const row = rows.find((r) => r.link_ref === link_ref && openStatuses.includes(r.status));
+          if (!row) return { rows: [] };
+          row.status = "paid";
+          row.commas_session_id = commas_session_id ?? row.commas_session_id;
+          row.paid_amount_cents = paid_amount_cents;
+          return { rows: [row] };
+        }
+        if (/SELECT email, first_name, last_name/.test(text)) {
+          return { rows: [{ email: "slo.buyer@example.com", first_name: "Sam", last_name: "Buyer" }] };
+        }
+        if (/FROM accounts/.test(text) && /kind = 'client'/.test(text)) {
+          return { rows: accounts };
+        }
+        if (/INSERT INTO accounts/.test(text)) {
+          const row = { id: "acct-1", org_id: params[0], email: params[1], name: params[2], client_id: params[3] };
+          accounts.push(row);
+          return { rows: [row] };
+        }
+        return { rows: [] };
+      }
+    };
+    await onPaymentReceivedForLink(
+      { payload: { ref: "slo_abcdef0123456789abcdef", amount: 297, providerRef: "txn_slo" } },
+      db
+    );
+    assert.equal(rows[0].status, "paid");
+    assert.equal(accounts.length, 1);
+    assert.equal(accounts[0].email, "slo.buyer@example.com");
+    assert.equal(accounts[0].client_id, CLIENT);
+  });
+
+  test("a paid soft-pull pl_ link does not invent an SLO portal write", async () => {
+    const rows = [{
+      link_ref: "pl_softpull1",
+      status: "sent",
+      org_id: "11111111-1111-4111-8111-111111111111",
+      client_id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+    }];
+    const db = fakeDb(rows);
+    await onPaymentReceivedForLink(
+      { payload: { ref: "pl_softpull1", amount: 32, providerRef: "txn_32" } },
+      db
+    );
+    assert.equal(rows[0].status, "paid");
+    assert.equal(
+      db.calls.filter((c) => /INSERT INTO accounts/.test(c.sql)).length,
+      0,
+      "$32 soft-pull stays off the SLO portal path"
+    );
+  });
 });
