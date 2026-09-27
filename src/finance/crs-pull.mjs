@@ -254,6 +254,89 @@ async function persistOutcomeTier(db, { clientId, crsResultId, outcomeTier, simu
   );
 }
 
+/** Companies already saved on the client. A blank name or state is skipped. */
+export async function loadSavedCompanies(db, { orgId, clientId }) {
+  const res = await db.query(
+    `SELECT name, age_months, entity_data
+       FROM businesses
+      WHERE org_id = $1 AND client_id = $2
+      ORDER BY created_at ASC`,
+    [orgId, clientId]
+  );
+  return (res.rows || []).map((row) => {
+    let entity = row.entity_data;
+    if (typeof entity === "string") {
+      try { entity = JSON.parse(entity); } catch { entity = {}; }
+    }
+    entity = entity && typeof entity === "object" ? entity : {};
+    const age = Number(row.age_months);
+    return {
+      name: String(row.name || "").trim(),
+      state: String(entity.state || "").trim().toUpperCase(),
+      ageMonths: Number.isFinite(age) ? age : null
+    };
+  }).filter((row) => row.name && /^[A-Z]{2}$/.test(row.state));
+}
+
+/** One Experian Business report per saved company. A miss is skipped. */
+async function orderSavedBusinessReports(db, crs, { orgId, clientId }) {
+  if (typeof crs?.orderBusinessReport !== "function") return [];
+  let companies = [];
+  try {
+    companies = await loadSavedCompanies(db, { orgId, clientId });
+  } catch (err) {
+    console.error("crs-pull: could not read saved companies —", err?.message || err);
+    return [];
+  }
+  const reports = [];
+  for (const company of companies) {
+    try {
+      const out = await crs.orderBusinessReport({ name: company.name, state: company.state });
+      if (out?.ok && out.report) {
+        reports.push({
+          name: company.name,
+          state: company.state,
+          ageMonths: company.ageMonths,
+          bin: out.bin || null,
+          report: out.report
+        });
+      }
+    } catch (err) {
+      console.error("crs-pull: business report skipped —", err?.message || err);
+    }
+  }
+  return reports;
+}
+
+/**
+ * The engine scores one business report. The oldest company is that report.
+ * Each other company is scored on its own report and only its business
+ * dollars are added, so personal funding is counted once.
+ */
+export function scoreBuyerTotal(runTierEngine, merged, tierOpts) {
+  const reports = (Array.isArray(merged?.businessReports) ? merged.businessReports : [])
+    .filter((row) => row && row.report);
+  const ranked = [...reports].sort((a, b) => {
+    const aa = Number.isFinite(Number(a.ageMonths)) ? Number(a.ageMonths) : -1;
+    const bb = Number.isFinite(Number(b.ageMonths)) ? Number(b.ageMonths) : -1;
+    return bb - aa;
+  });
+  const tierResult = runTierEngine(merged, {
+    ...tierOpts,
+    businessReport: ranked[0]?.report ?? null
+  });
+  const personal = Number(tierResult?.preapprovals?.totalPersonal);
+  let businessSum = Number(tierResult?.preapprovals?.totalBusiness) || 0;
+  for (const extra of ranked.slice(1)) {
+    const next = runTierEngine(merged, { ...tierOpts, businessReport: extra.report });
+    businessSum += Number(next?.preapprovals?.totalBusiness) || 0;
+  }
+  const fundingEstimate = Number.isFinite(personal)
+    ? personal + businessSum
+    : (tierResult?.preapprovals?.totalCombined ?? null);
+  return { tierResult, fundingEstimate };
+}
+
 async function finishStored(db, {
   orgId,
   clientId,
@@ -271,7 +354,7 @@ async function finishStored(db, {
      stored, every time. */
   const simulated = merged.simulated === true;
   const tierIdentity = identityForTier({ identity, realIdentity, merged });
-  const tierResult = runTierEngine(merged, {
+  const tierOpts = {
     submittedName: submittedNameFromIdentity(tierIdentity),
     submittedAddress: submittedAddressFromIdentity(tierIdentity),
     formData: {
@@ -279,9 +362,9 @@ async function finishStored(db, {
       email: tierIdentity?.email || null,
       phone: null
     }
-  });
+  };
+  const { tierResult, fundingEstimate } = scoreBuyerTotal(runTierEngine, merged, tierOpts);
   const outcomeTier = tierResult.outcome;
-  const fundingEstimate = tierResult.preapprovals?.totalCombined ?? null;
 
   await persistOutcomeTier(db, {
     clientId,
@@ -611,7 +694,11 @@ export async function runCrsPull(db, {
          otherwise skip the gate with it. On the production host identityForBureau
          has already run the same check, so this is a second pass; on the sandbox
          host it is the only one. A fence that quietly relaxes a gate is not a
-         rehearsal of the real flow, it is a different flow. */
+         rehearsal of the real flow, it is a different flow.
+
+         A saved company is a second call, orderBusinessReport, after the
+         personal bureaus. A simulation skips that call too. A company the
+         bureau cannot find does not fail the personal pull. */
       if (simulated) {
         assertIdentityAllowed({ host, bureau, identity: bureauIdentity, env });
         out = simulatedBureauResponse({ bureau, requestId });
@@ -635,6 +722,10 @@ export async function runCrsPull(db, {
     else errors[bureau] = out.error || `no report returned by ${bureau}`;
     statuses[bureau] = out.fileStatus || (out.ok && out.report ? "file_returned" : "error");
   }
+
+  const businessReports = (!simulated && Object.keys(reports).length > 0)
+    ? await orderSavedBusinessReports(db, crs, { orgId, clientId })
+    : [];
 
   if (Object.keys(reports).length === 0) {
     const detail = Object.entries(errors)
@@ -662,14 +753,16 @@ export async function runCrsPull(db, {
      mergeBureauReports maps bureau reports and has no business knowing whether
      a pull happened. Spreading it on afterwards also means a real payload keeps
      byte-for-byte the shape it has always had. */
+  const mergedBase = mergeBureauReports({ reports, errors, statuses, requestIds, environment });
+  if (businessReports.length) mergedBase.businessReports = businessReports;
   const merged = simulated
     ? {
-        ...mergeBureauReports({ reports, errors, statuses, requestIds, environment }),
+        ...mergedBase,
         simulated: true,
         simulatedNotice: SIMULATED_MARKER,
         hostEnvironment
       }
-    : mergeBureauReports({ reports, errors, statuses, requestIds, environment });
+    : mergedBase;
 
   /* ONE ROW, ONE TRANSACTION. Storing the result, closing the request and
      ingesting the tradelines either all land or none do. A replay of the same

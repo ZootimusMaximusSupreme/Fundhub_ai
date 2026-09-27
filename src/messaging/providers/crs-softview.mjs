@@ -30,6 +30,13 @@ const REPORT_PATHS = Object.freeze({
   EQ: "/api/equifax/credit-report/standard/efx-prequal-fico9"
 });
 
+/* Company search and report. Not a consumer identity, so they do not go
+   through the personal-file gate. The host check above still applies. */
+const BUSINESS_PATHS = new Set([
+  "/api/ccc/exp/search",
+  "/api/ccc/exp/report"
+]);
+
 function bureauForReportPath(pathname) {
   for (const [bureau, orderPath] of Object.entries(REPORT_PATHS)) {
     if (pathname === orderPath) return bureau;
@@ -103,7 +110,7 @@ export function requestCrsSandbox({
   }
 
   const bureau = bureauForReportPath(target.pathname);
-  if (!AUTH_PATHS.has(target.pathname) && !bureau) {
+  if (!AUTH_PATHS.has(target.pathname) && !BUSINESS_PATHS.has(target.pathname) && !bureau) {
     return Promise.resolve(refused("CRS request refused: endpoint not allowed"));
   }
   if (bureau) {

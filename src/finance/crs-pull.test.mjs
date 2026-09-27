@@ -50,12 +50,14 @@ function fakeDb(initialRequest) {
     results,
     events,
     clients,
+    businesses: [],
     async query(sql, params = []) {
       if (/pg_advisory_xact_lock/.test(sql)) return { rows: [] };
 
       // loadClientIdentity's lookup. No row means no identity on file, which
       // is the refusal this file's gate tests want.
       if (/FROM clients c/.test(sql)) return { rows: [] };
+      if (/FROM businesses/.test(sql)) return { rows: this.businesses };
 
       if (/FROM soft_pull_requests WHERE id = \$1/.test(sql)) {
         const row = requests.get(params[0]);
@@ -645,4 +647,59 @@ test("the canned answer carries no bureau data and no vendor request id", () => 
   const identity = providerResultIdFor({ requestIds: { EX: out.requestId }, simulated: true });
   assert.match(identity, /^crs-simulated-bundle:/);
   assert.notEqual(identity, providerResultIdFor({ requestIds: { EX: out.requestId } }));
+});
+
+test("two saved companies add both business amounts onto one personal total", async () => {
+  const db = fakeDb(request("request-biz"));
+  db.businesses.push(
+    { name: "Older LLC", age_months: 30, entity_data: { state: "CA" } },
+    { name: "Newer LLC", age_months: 6, entity_data: { state: "TX" } }
+  );
+  const seen = [];
+  const client = fakeClient({
+    EX: { ok: true, requestId: "REQ-EX", report: report(720) },
+    EQ: { ok: true, requestId: "REQ-EQ", report: report(710) }
+  });
+  client.orderBusinessReport = async ({ name }) => {
+    seen.push(name);
+    return { ok: true, bin: name, report: { dollars: name === "Older LLC" ? 80000 : 20000 } };
+  };
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-biz", client,
+    bureaus: ["EX", "EQ"],
+    runTierEngine(_merged, opts) {
+      const business = opts.businessReport?.dollars || 0;
+      return {
+        ok: true,
+        outcome: "FULL_FUNDING",
+        preapprovals: {
+          totalPersonal: 100000,
+          totalBusiness: business,
+          totalCombined: 100000 + business
+        }
+      };
+    }
+  });
+  assert.equal(out.ok, true);
+  assert.deepEqual(seen, ["Older LLC", "Newer LLC"]);
+  assert.equal(out.fundingEstimate, 200000);
+  assert.equal(db.results[0].result.businessReports.length, 2);
+  assert.equal(out.outcomeTier, "FULL_FUNDING");
+});
+
+test("a business report that fails does not fail the personal pull", async () => {
+  const db = fakeDb(request("request-biz-miss"));
+  db.businesses.push({ name: "Ghost LLC", age_months: 24, entity_data: { state: "NV" } });
+  const client = fakeClient({
+    EX: { ok: true, requestId: "REQ-EX", report: report(720) }
+  });
+  client.orderBusinessReport = async () => {
+    throw new Error("vendor down");
+  };
+  const out = await runCrsPull(db, {
+    orgId: ORG, clientId: CLIENT, requestId: "request-biz-miss", client,
+    bureaus: ["EX"]
+  });
+  assert.equal(out.ok, true);
+  assert.equal(db.results[0].result.businessReports, undefined);
 });

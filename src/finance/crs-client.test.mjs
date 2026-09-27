@@ -280,3 +280,46 @@ test("CRS client: non-2xx errors redact password, token and SSN", async () => {
   assert.doesNotMatch(result.error, /unit-password|unit-bearer-sensitive|666154480/);
   assert.match(result.error, /redacted/);
 });
+
+test("CRS client: a company search with no match does not order a report", async () => {
+  const urls = [];
+  const client = createCrsClient({
+    env: LIVE_ENV,
+    fetchImpl: async (url) => {
+      urls.push(url);
+      if (url.endsWith("/api/users/login")) {
+        return response(200, { token: "unit-bearer-biz", refreshToken: "r", expires: 3600 });
+      }
+      if (url.endsWith("/ccc/exp/search")) return response(200, { results: [] });
+      return response(500, { messages: ["should not order"] });
+    }
+  });
+  const out = await client.orderBusinessReport({ name: "Acme LLC", state: "ca" });
+  assert.equal(out.ok, false);
+  assert.equal(out.error, "no business match");
+  assert.equal(urls.some((url) => url.endsWith("/ccc/exp/report")), false);
+});
+
+test("CRS client: a company match orders that business report", async () => {
+  const bodies = [];
+  const client = createCrsClient({
+    env: LIVE_ENV,
+    fetchImpl: async (url, init) => {
+      if (url.endsWith("/api/users/login")) {
+        return response(200, { token: "unit-bearer-biz", refreshToken: "r", expires: 3600 });
+      }
+      bodies.push({ url, body: JSON.parse(init.body) });
+      if (url.endsWith("/ccc/exp/search")) return response(200, { results: [{ bin: "BIN9" }] });
+      if (url.endsWith("/ccc/exp/report")) {
+        return response(200, { data: { businessHeader: { bin: "BIN9" } } });
+      }
+      return response(404, {});
+    }
+  });
+  const out = await client.orderBusinessReport({ name: "Acme LLC", state: "CA" });
+  assert.equal(out.ok, true);
+  assert.equal(out.bin, "BIN9");
+  assert.equal(out.report.data.businessHeader.bin, "BIN9");
+  assert.deepEqual(bodies[0].body, { name: "Acme LLC", state: "CA" });
+  assert.deepEqual(bodies[1].body, { bin: "BIN9" });
+});

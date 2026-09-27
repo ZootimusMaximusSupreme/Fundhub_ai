@@ -173,6 +173,20 @@ export function crsConfigFromEnv(env = process.env) {
 /* The report shapes CRS returns carry these at the top level — see the vendor's
    sandbox payload library. Used only to tell "the order returned the report" from
    "the order returned a receipt and the report needs retrieving". */
+function binFromBusinessSearch(body) {
+  if (!body || typeof body !== "object") return null;
+  if (typeof body.bin === "string" && body.bin.trim()) return body.bin.trim();
+  const lists = [body.results, body.data?.results, Array.isArray(body.data) ? body.data : null];
+  for (const list of lists) {
+    if (!Array.isArray(list)) continue;
+    for (const row of list) {
+      const bin = row?.bin || row?.BIN;
+      if (typeof bin === "string" && bin.trim()) return bin.trim();
+    }
+  }
+  return null;
+}
+
 function looksLikeReport(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return false;
   return Array.isArray(body.creditFiles)
@@ -469,6 +483,35 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
     return reportResult({ bureau, body: res.body, requestId, status: res.status });
   }
 
+  /**
+   * orderBusinessReport — Experian Business for one saved company.
+   * Search by name and state, then order that match. A miss or a vendor
+   * error comes back ok:false. It does not throw, so one company cannot
+   * cancel the personal pull.
+   */
+  async function orderBusinessReport({ name, state } = {}) {
+    const company = String(name ?? "").trim();
+    const st = String(state ?? "").trim().toUpperCase();
+    if (!company || !/^[A-Z]{2}$/.test(st)) {
+      return { ok: false, report: null, bin: null, error: "name and state are required" };
+    }
+    const search = await authed("/ccc/exp/search", { body: { name: company, state: st } });
+    if (search.blocked || !search.ok) {
+      return { ok: false, report: null, bin: null,
+        error: safeResponseError(search, "business search failed") };
+    }
+    const bin = binFromBusinessSearch(search.body);
+    if (!bin) {
+      return { ok: false, report: null, bin: null, error: "no business match" };
+    }
+    const report = await authed("/ccc/exp/report", { body: { bin } });
+    if (report.blocked || !report.ok || !report.body || typeof report.body !== "object") {
+      return { ok: false, report: null, bin,
+        error: safeResponseError(report, "business report failed") };
+    }
+    return { ok: true, report: report.body, bin, error: null };
+  }
+
   return {
     config,
     host: config.host,
@@ -478,6 +521,7 @@ export function createCrsClient({ env = process.env, fetchImpl, now = Date.now }
     getToken,
     orderPrequal,
     retrievePrequal,
+    orderBusinessReport,
     // Test seam only — lets a test assert the cache without exporting the
     // token itself, which has no business leaving this closure.
     _tokenState: () => ({ hasToken: !!token, hasRefresh: !!refreshToken, expiresAt })
