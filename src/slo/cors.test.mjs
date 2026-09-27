@@ -13,6 +13,7 @@ import checkout from "../../api/public/slo-checkout.mjs";
 import pull from "../../api/public/slo-pull.mjs";
 import status from "../../api/public/slo-status.mjs";
 import repair from "../../api/public/slo-repair-checkout.mjs";
+import interest from "../../api/public/slo-interest.mjs";
 
 function fakeRes() {
   return {
@@ -58,7 +59,8 @@ for (const [name, handler, methods] of [
   ["slo-checkout", checkout, "GET, POST, OPTIONS"],
   ["slo-pull", pull, "POST, OPTIONS"],
   ["slo-status", status, "GET, OPTIONS"],
-  ["slo-repair-checkout", repair, "POST, OPTIONS"]
+  ["slo-repair-checkout", repair, "POST, OPTIONS"],
+  ["slo-interest", interest, "GET, POST, OPTIONS"]
 ]) {
   test(`${name}: OPTIONS from the widget is answered with its origin, and reads nothing`, async () => {
     const res = fakeRes();

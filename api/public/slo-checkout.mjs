@@ -81,6 +81,7 @@ import { answerPreflight, applySloCors, sloReturnUrl } from "../../src/slo/cors.
 import { pickAttribution } from "../../src/ads/attribution-keys.mjs";
 import { upsertClientAdAttribution } from "../../src/ads/store.mjs";
 import { mergeCustomFields } from "../../src/workflows/custom-fields.mjs";
+import { classifyVisitor } from "../../src/slo/visitor.mjs";
 
 const METHODS = "GET, POST, OPTIONS";
 
@@ -267,6 +268,11 @@ export async function runSloCheckout(parsed, deps = {}) {
   }
   const productId = await (deps.resolveProduct || resolveDiagnosticProductId)(dbh, orgId);
 
+  const who = classifyVisitor({
+    email: parsed.email,
+    userAgent: deps.userAgent,
+    webdriver: deps.webdriver === true
+  });
   await (deps.emit || emit)(
     dbh,
     "slo.checkout_started",
@@ -280,6 +286,8 @@ export async function runSloCheckout(parsed, deps = {}) {
       name: parsed.name,
       client_id: clientId,
       demo,
+      actor: who.actor,
+      actor_reason: who.reason,
       occurredAt: new Date().toISOString()
     },
     { orgId, clientId, allowNonCanonical: true, idempotencyKey: `slo-checkout:${ref}` }
@@ -365,7 +373,8 @@ export default async function handler(req, res, deps = {}) {
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
-  const parsed = parseSloCheckoutBody(readBody(req));
+  const raw = readBody(req);
+  const parsed = parseSloCheckoutBody(raw);
   if (!parsed.ok) {
     const out = { ok: false, error: parsed.error };
     if (Array.isArray(parsed.errors)) out.errors = parsed.errors;
@@ -373,7 +382,13 @@ export default async function handler(req, res, deps = {}) {
   }
 
   try {
-    const result = await runSloCheckout(parsed, { ...deps, env });
+    const h = req?.headers || {};
+    const result = await runSloCheckout(parsed, {
+      ...deps,
+      env,
+      userAgent: deps.userAgent || h["user-agent"] || h["User-Agent"] || "",
+      webdriver: raw?.webdriver === true || raw?.webdriver === "true"
+    });
     if (!result.ok) {
       const status = result.error === "checkout_not_configured" ? 503 : 502;
       return res.status(status).json(result);

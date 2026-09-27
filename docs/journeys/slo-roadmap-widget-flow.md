@@ -10,6 +10,20 @@ Traced from code on branch `feat/roadmap-widget`:
 Updated 2026-09-22 after the independent review (email takeover, pay bypass,
 retry, address rules, address check, phone, Google autocomplete).
 
+## Saved before Pay
+
+Step 1 (first name, last name, email, phone) is posted to
+`POST /api/public/slo-interest` once the email is real, including when they
+leave the page without pressing Pay. A page open on the widget is one
+`slo.visit` per browser session. Neither call creates a client, a card page,
+or an email.
+
+Each of those rows, and `slo.checkout_started` when they press Pay, carries
+`actor`: `person` or `agent`, and `actor_reason`. An agent is an automated
+browser, a `@fundhub.ai` email, or a test email. A normal browser with any
+other email is a person. Pressing Pay also tells Meta `InitiateCheckout`, and
+that ping is skipped for an agent.
+
 ## One order, start to finish
 
 ```mermaid

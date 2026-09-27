@@ -200,6 +200,9 @@ const API_KEYS = [
      whether Commas checkout is on, so it is a real uptime door: if this is
      down the sales page has no price and the pay button cannot mint a link. */
   "public/slo-checkout",
+  /* Step 1 of /roadmap, saved before Pay. A plain GET answers 200 and writes
+     nothing, so a ping cannot file a fake lead. */
+  "public/slo-interest",
   /* The /roadmap widget's status read after the soft pull. A plain GET with no
      ref or client_id answers 400, which counts as up, and reads nothing. */
   "public/slo-status",

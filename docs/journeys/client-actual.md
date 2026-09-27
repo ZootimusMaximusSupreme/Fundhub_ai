@@ -26,7 +26,7 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_hiring[Hiring — 1 route]
-    CAN --> A_public[public — 16 routes]
+    CAN --> A_public[public — 17 routes]
     CAN --> A_push[push — 3 routes]
     CAN --> A_read[Reading data — 5 routes]
     CAN --> A_top_level[Everything else — 9 routes]
@@ -66,7 +66,7 @@ flowchart TD
 
 ## What they can reach
 
-**51 of 249 routes.**
+**52 of 250 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -103,6 +103,7 @@ flowchart TD
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
 | `/api/public/slo-checkout` | — | anyone |
+| `/api/public/slo-interest` | — | anyone |
 | `/api/public/slo-pull` | POST | anyone |
 | `/api/public/slo-repair-checkout` | — | anyone |
 | `/api/public/slo-status` | — | anyone |
@@ -124,12 +125,12 @@ flowchart TD
 
 ### Worth knowing
 
-- **27 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
+- **28 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
 - **6 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**198 of 249 routes.**
+**198 of 250 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

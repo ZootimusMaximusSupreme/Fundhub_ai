@@ -186,6 +186,7 @@ import publicClimateMatch from "../../api/public/climate-match.mjs";
 import publicPartnerApply from "../../api/public/partner-apply.mjs";
 import publicFunnelCheckout from "../../api/public/funnel-checkout.mjs";
 import publicSloCheckout from "../../api/public/slo-checkout.mjs";
+import publicSloInterest from "../../api/public/slo-interest.mjs";
 import publicSloPull from "../../api/public/slo-pull.mjs";
 import publicSloStatus from "../../api/public/slo-status.mjs";
 import publicSloRepairCheckout from "../../api/public/slo-repair-checkout.mjs";
@@ -749,6 +750,10 @@ export const ROUTES = {
   /* The $297 SLO diagnostic. Pay on Commas, then land on /roadmap/pull.html.
      No auth — same class as public/optimize. Keep title Assessment. */
   "public/slo-checkout": publicSloCheckout,
+  /* Step 1 of the /roadmap widget, saved before Pay. GET answers {ok:true}
+     and writes nothing. POST writes a visit or a name/email/phone. No client,
+     no card, no mail. */
+  "public/slo-interest": publicSloInterest,
   /* POST only. Identity + checkbox consent, then diagnostic.paid. GET 405.
      Do not ping with a body — that would store an SSN and fire C-00. */
   "public/slo-pull": publicSloPull,

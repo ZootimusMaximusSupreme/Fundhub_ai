@@ -124,6 +124,8 @@ test("runSloCheckout mints Assessment at $297 and sends them to the pull form", 
   assert.equal(sent[0].metadata.client_id, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   assert.equal(events[0].name, "slo.checkout_started");
   assert.equal(events[0].payload.email, "buyer@example.com");
+  assert.equal(events[0].payload.actor, "agent");
+  assert.equal(events[0].payload.actor_reason, "test_email");
   assert.equal(deps.links[0].ref, "slo_test_ref_1");
   assert.equal(deps.links[0].clientId, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
   assert.equal(deps.links[0].commasSessionId, "cs_slo_1");
