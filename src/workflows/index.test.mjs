@@ -124,6 +124,8 @@ const EXPECTED_WORKFLOW_IDS = [
   "s-nobook-chase",
   "s-offer-bucket",
   "s-portal-invite",
+  "slo-genuine-followup",
+  "slo-genuine-reply",
   "slo-pack-delivery",
   "subscription-billing-sweeper",
   "sys-01-client-value-calculator",

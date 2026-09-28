@@ -13,7 +13,7 @@ Shared rules for every job:
 | Job | Owns | Status |
 |---|---|---|
 | Time on the roadmap page | `public/funnel/fh-attribution.js`, `api/public/slo-interest.mjs` | done |
-| The genuine text and email | messaging only. Do not edit `fh-attribution.js` | claimed |
+| The genuine text and email | messaging only. Do not edit `fh-attribution.js` | done |
 | Ad watch curve, rule, and a ping | Meta data, a rule, a text to Chris. No dashboard HTML | claimed |
 | RB2B pixel | `public/funnel/rb2b.js` only. Stays off with no account id | claimed |
 
@@ -45,3 +45,43 @@ Shared rules for every job:
 - Sat and scrolled to checkout: high `seconds_on_page` and `reached_form = true`.
 
 **Files:** `public/funnel/fh-attribution.js` (+ synced `06-utm-hidden-fields.html`), `api/public/slo-interest.mjs`, `src/http/slo-interest.test.mjs`. Also loads `/funnel/rb2b.js` (404 ignored). Not shipped — needs deploy for live `/roadmap`.
+
+## Genuine text
+
+**Finished both message 1 and message 2.** Inbound SMS/email already exists (`message.inbound` via Twilio + Mailgun → `src/handlers/comms.mjs`). Message 2 listens on that same event.
+
+### When they fire
+
+| Message | When |
+|---|---|
+| SMS 1 + Email 1 | ~15 minutes after `slo.contact_started`, if still unpaid, actor=person, real phone, not a test/agent email |
+| SMS 2 + Email 2 | Only after they reply (inbound SMS or email). Not before. Skips STOP/opt-out keywords |
+
+No backfill — only contacts that hit Inngest after `skipInngest` is off for `kind: "contact"`. Outbound uses `sendTemplated` → queued `messages` → existing Twilio/mail providers. No second sender. Prove path: unit tests with fake emit / `actor=agent` skip (no live customer text).
+
+### Exact copy shipped
+
+**SMS 1**
+> Hey, it's Chris at Fundhub. Not trying to sell you anything. I want to know what we could do to make the page better, and the offer better. I've been in this for 10 years and I've seen a lot of people get burned. What are your concerns?
+
+**Email 1** — subject: `What almost stopped you?`
+> Hey — it's Chris at Fundhub.
+>
+> Not trying to sell you anything. I want to know what we could do to make the page better, and the offer better. I've been in this for 10 years and I've seen a lot of people get burned.
+>
+> What are your concerns?
+>
+> Just hit reply.
+>
+> Chris
+
+**SMS 2 / Email 2** (email subject: `One more question`)
+> If we fixed that, would you want to be a Fundhub customer?
+
+### Files
+
+- `src/workflows/slo-genuine-followup.mjs` (+ test)
+- `db/seed/027_slo_genuine_followup.sql` (templates)
+- `api/public/slo-interest.mjs` — contacts no longer `skipInngest`
+- Registered in `src/workflows/index.mjs`; emitter listed in `api/read/workflows.mjs`
+- Not shipped — needs deploy + seed apply for live sends

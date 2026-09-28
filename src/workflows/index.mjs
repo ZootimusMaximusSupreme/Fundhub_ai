@@ -74,6 +74,7 @@ import { sDocCollection } from './s-doc-collection.mjs';
 import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mjs';
 import { sOfferBucket } from './s-offer-bucket.mjs';
 import { sloPackDelivery } from './slo-pack-delivery.mjs';
+import { sloGenuineFollowup, sloGenuineReply } from './slo-genuine-followup.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
 import { sys01LtvCalculator } from './sys-01-ltv-calculator.mjs';
 import { u02AnalyzerCompleteDelivery } from './u-02-analyzer-complete-delivery.mjs';
@@ -424,6 +425,10 @@ export const functions = [
   s08PostCallFundingDeclined,
   sOfferBucket,
   sloPackDelivery,
+  /* Genuine text/email after /roadmap contact and no $297 pay. Message 2 only
+     after message.inbound. Never texts actor=agent or test emails. */
+  sloGenuineFollowup,
+  sloGenuineReply,
   sys01ClientValueCalculator,
   sys01LtvCalculator,
   u02AnalyzerCompleteDelivery,

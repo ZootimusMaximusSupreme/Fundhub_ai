@@ -150,6 +150,12 @@ export const EVENT_EMITTERS = {
     ],
     note: "3 rows on file."
   },
+  "slo.contact_started": {
+    emitters: [
+      { how: "The /roadmap step-1 door (api/public/slo-interest.mjs) when someone leaves name, email, and phone. Fans out to Inngest for the genuine unpaid follow-up.", gate: null }
+    ],
+    note: "Non-canonical allowNonCanonical event. Visits and engage stay skipInngest."
+  },
   "payment.received": {
     emitters: [
       { how: "The Commas payment webhook.", gate: "COMMAS_WEBHOOK_SECRET" }
