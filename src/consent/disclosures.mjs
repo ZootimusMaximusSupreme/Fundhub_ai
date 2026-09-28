@@ -61,11 +61,42 @@ export const SOFT_PULL_DISCLOSURES = Object.freeze({
       "",
       "I understand that withdrawing it does not undo a report already obtained, and does not affect anything already done with a report obtained while this authorization was in effect."
     ].join("\n")
+  }),
+  // *** OWNER-SET: Chris, 2026-09-27 — "in the softpull agreement, we also make
+  // sure they consent to sms." v1 is untouched and stays exactly as approved;
+  // this is a NEW key, which is the only way this file allows new wording. ***
+  //
+  // v1's four paragraphs, verbatim, plus the texting agreement. Same rule as
+  // v1 on what may NOT be here: no claim about what the pull will find, what it
+  // will change, or what funding it may lead to.
+  //
+  // The last line is not decoration. Tying texts to the purchase is what turns
+  // an agreement into a condition of sale, so it says plainly that it is not one.
+  "soft-pull-v2": Object.freeze({
+    version: "soft-pull-v2",
+    title: "Soft Pull and Text Message Authorization",
+    text: [
+      "I authorize Fundhub to obtain my consumer credit report through a soft inquiry.",
+      "",
+      "A soft inquiry does not affect my credit score and is not visible to lenders reviewing my file.",
+      "",
+      "I understand this authorization stays in effect until it expires or until I withdraw it, and that I may withdraw it at any time, for any reason, without giving a reason.",
+      "",
+      "I understand that withdrawing it does not undo a report already obtained, and does not affect anything already done with a report obtained while this authorization was in effect.",
+      "",
+      "I agree that Fundhub may call me and send me text messages at the phone number I gave, including messages sent by an automatic dialing system, about my file and the services I asked for.",
+      "",
+      "Message and data rates may apply, and how often I am messaged varies. I can reply STOP at any time to stop the texts, or HELP for help.",
+      "",
+      "I understand that agreeing to calls and texts is not a condition of buying anything from Fundhub, and that I may withdraw it at any time without affecting my order or my soft pull authorization."
+    ].join("\n")
   })
 });
 
-/** The version new captures default to when the caller names none. */
-export const CURRENT_SOFT_PULL_VERSION = "soft-pull-v1";
+/** The version new captures default to when the caller names none.
+ *  soft-pull-v2 since 2026-09-27: the soft pull agreement now also carries the
+ *  texting agreement. v1 rows keep v1's words — see WHY VERSIONS ARE APPEND-ONLY. */
+export const CURRENT_SOFT_PULL_VERSION = "soft-pull-v2";
 
 /* Every version ever shown for dispute-letter authorization. Add to this map;
    never edit an entry. Owner-set 2026-08-15 (W2a). No credit-outcome promises. */

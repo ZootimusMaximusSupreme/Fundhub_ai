@@ -123,9 +123,16 @@ test("step 3 runs the pull, and the paid return opens step 3", () => {
   assert.match(widgetScript, /if\(b\.next==='pay'\)\{o\.locked=true;showPane\('reading'\);poll\(o\);return;\}/);
 });
 
-test("the consent box uses the pull form's words", () => {
+test("the consent box uses the pull form's words, and covers texts too", () => {
   assert.match(html, /name="consent"/);
   assert.match(html, /I authorize Fundhub Credit Solutions LLC to run a soft pull of my credit report\. A soft pull does not affect my credit score\./);
+  /* Owner-set 2026-09-27: the soft pull agreement also carries the texting
+     agreement, so the box a person ticks has to say so. The words the ROW
+     stores are the server's (soft-pull-v2) — src/consent/disclosures.test.mjs
+     holds those. This only holds what the screen shows. */
+  assert.match(html, /I also agree Fundhub may call and text me at the number I gave, including automated texts, about my file\./);
+  assert.match(html, /Message and data rates may apply\. Reply STOP to stop\./);
+  assert.match(html, /Agreeing to texts is not a condition of buying anything\./);
 });
 
 test("prices: first business free, each extra from the server (default 1500 cents)", () => {
