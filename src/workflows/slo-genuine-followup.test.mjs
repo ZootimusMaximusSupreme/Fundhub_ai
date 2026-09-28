@@ -30,14 +30,27 @@ function templates() {
 function genuineDb(seed = {}) {
   const base = pgFake(seed);
   const paid = seed.paidDiagnostic || false;
+  const bookings = seed.bookings || [];
   return {
     ...base,
+    bookings,
     async query(sql, params = []) {
       if (/FROM payment_links pl/.test(sql) && /JOIN clients c/.test(sql)) {
         return { rows: paid ? [{ "?column?": 1 }] : [] };
       }
-      if (/slo_text_slot' IS NOT NULL/.test(sql)) {
-        const n = base.clients.filter((c) => c.custom_fields && c.custom_fields.slo_text_slot).length;
+      // Cap = people who agreed (slo_roadmap_free_at) AND booked — not texts sent.
+      if (/custom_fields->>\$2 IS NOT NULL/.test(sql) && /FROM bookings b/.test(sql) && /booking\.created/.test(sql)) {
+        const orgId = params[0];
+        const freeKey = params[1] || "slo_roadmap_free_at";
+        const n = base.clients.filter((c) => {
+          if (c.org_id !== orgId) return false;
+          if (!(c.custom_fields && c.custom_fields[freeKey])) return false;
+          const bookedRow = bookings.some((b) => b.client_id === c.id);
+          const bookedEvent = (base.events || []).some(
+            (e) => e.client_id === c.id && e.name === "booking.created"
+          );
+          return bookedRow || bookedEvent;
+        }).length;
         return { rows: [{ n }] };
       }
       if (/custom_fields->>\$2 AS m1/.test(sql)) {
@@ -132,6 +145,152 @@ test("handleM1: after the wait, queues SMS and email for an unpaid person", asyn
     [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
   );
   assert.ok(db.clients[0].custom_fields[LOCK_M1]);
+});
+
+test("handleM1: offered-but-unbooked free texts do not burn the first-five cap", async () => {
+  const offered = Array.from({ length: 5 }, (_, i) => ({
+    id: `cl-offered-${i}`,
+    org_id: "org-1",
+    email: `offered${i}@gmail.com`,
+    custom_fields: { slo_text_slot: String(i + 1) }
+  }));
+  const db = genuineDb({
+    clients: [
+      ...offered,
+      {
+        id: "cl-1",
+        org_id: "org-1",
+        email: "pat@gmail.com",
+        phone: "+14155550134",
+        custom_fields: {}
+      }
+    ],
+    templates: templates()
+  });
+  const res = await handleM1({
+    event: ev("slo.contact_started", personPayload, { id: "evt-still-free" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.slot, "1");
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key).sort(),
+    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
+  );
+});
+
+test("handleM1: after five agreed-and-booked, abandoners get the gift text", async () => {
+  const booked = Array.from({ length: 5 }, (_, i) => ({
+    id: `cl-booked-${i}`,
+    org_id: "org-1",
+    email: `booked${i}@gmail.com`,
+    custom_fields: {
+      slo_roadmap_free_at: "2026-09-27T18:00:00.000Z",
+      slo_text_slot: String(i + 1)
+    }
+  }));
+  const db = genuineDb({
+    clients: [
+      ...booked,
+      {
+        id: "cl-1",
+        org_id: "org-1",
+        email: "pat@gmail.com",
+        phone: "+14155550134",
+        custom_fields: {}
+      }
+    ],
+    bookings: booked.map((c) => ({ client_id: c.id, org_id: "org-1" })),
+    templates: templates()
+  });
+  const res = await handleM1({
+    event: ev("slo.contact_started", personPayload, { id: "evt-gift" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.slot, null);
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key).sort(),
+    [EMAIL_GIFT_KEY, SMS_GIFT_KEY].sort()
+  );
+});
+
+test("handleM1: yes with no booking yet does not burn a first-five seat", async () => {
+  const agreedOnly = Array.from({ length: 5 }, (_, i) => ({
+    id: `cl-yes-${i}`,
+    org_id: "org-1",
+    email: `yes${i}@gmail.com`,
+    custom_fields: {
+      slo_roadmap_free_at: "2026-09-27T18:00:00.000Z",
+      slo_text_slot: String(i + 1)
+    }
+  }));
+  const db = genuineDb({
+    clients: [
+      ...agreedOnly,
+      {
+        id: "cl-1",
+        org_id: "org-1",
+        email: "pat@gmail.com",
+        phone: "+14155550134",
+        custom_fields: {}
+      }
+    ],
+    bookings: [],
+    events: [],
+    templates: templates()
+  });
+  const res = await handleM1({
+    event: ev("slo.contact_started", personPayload, { id: "evt-yes-unbooked" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.ok(res.slot);
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key).sort(),
+    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
+  );
+});
+
+test("handleM1: booking.created event counts as booked for the free cap", async () => {
+  const booked = Array.from({ length: 5 }, (_, i) => ({
+    id: `cl-ev-${i}`,
+    org_id: "org-1",
+    email: `ev${i}@gmail.com`,
+    custom_fields: { slo_roadmap_free_at: "2026-09-27T18:00:00.000Z" }
+  }));
+  const db = genuineDb({
+    clients: [
+      ...booked,
+      {
+        id: "cl-1",
+        org_id: "org-1",
+        email: "pat@gmail.com",
+        phone: "+14155550134",
+        custom_fields: {}
+      }
+    ],
+    events: booked.map((c) => ({
+      client_id: c.id,
+      org_id: "org-1",
+      name: "booking.created"
+    })),
+    templates: templates()
+  });
+  const res = await handleM1({
+    event: ev("slo.contact_started", personPayload, { id: "evt-by-event" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.slot, null);
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key).sort(),
+    [EMAIL_GIFT_KEY, SMS_GIFT_KEY].sort()
+  );
 });
 
 test("handleM1: agent emit is a no-op (prove path without texting a customer)", async () => {

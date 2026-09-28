@@ -18,7 +18,7 @@ import { sendTemplated } from "./messaging.mjs";
 import { claimCustomFieldLock, mergeCustomFields } from "./custom-fields.mjs";
 import { classifyVisitor } from "../slo/visitor.mjs";
 import { SLO_PURPOSE, SLO_SOURCE } from "../slo/offer.mjs";
-import { declinesRoadmap, DISCOUNT_REF_KEY, FIRST_FIVE, REPLIED_KEY, SLOT_KEY, discountCheckoutUrl, newDiscountRef } from "../slo/discount-197.mjs";
+import { declinesRoadmap, DISCOUNT_REF_KEY, FIRST_FIVE, FREE_KEY, REPLIED_KEY, SLOT_KEY, discountCheckoutUrl, newDiscountRef } from "../slo/discount-197.mjs";
 import { enrollSloDrip } from "../slo/drip-plan.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { formatQuestionList } from "../insights/questions.mjs";
@@ -128,14 +128,30 @@ export async function handleM1({ event, db, step }) {
   return { done: true, sent: true, clientId, sms, email, slot };
 }
 
-/** Slot 1–5 for the first real texts. Later people get no slot. */
+/**
+ * Free Meet text while fewer than FIRST_FIVE people have both agreed
+ * (slo_roadmap_free_at) and booked. Offered-but-unbooked does not consume a seat.
+ */
 export async function assignTextSlot(db, { orgId, clientId }) {
   const r = await db.query(
     `SELECT count(*)::int AS n
-       FROM clients
-      WHERE org_id = $1
-        AND custom_fields->>'slo_text_slot' IS NOT NULL`,
-    [orgId]
+       FROM clients c
+      WHERE c.org_id = $1
+        AND c.custom_fields->>$2 IS NOT NULL
+        AND (
+          EXISTS (
+            SELECT 1 FROM bookings b
+             WHERE b.client_id = c.id
+               AND b.org_id = c.org_id
+          )
+          OR EXISTS (
+            SELECT 1 FROM events e
+             WHERE e.client_id = c.id
+               AND e.org_id = c.org_id
+               AND e.name = 'booking.created'
+          )
+        )`,
+    [orgId, FREE_KEY]
   );
   const used = Number(r.rows[0]?.n || 0);
   if (used >= FIRST_FIVE) return null;
