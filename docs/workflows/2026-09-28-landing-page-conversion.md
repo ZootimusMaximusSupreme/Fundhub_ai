@@ -108,3 +108,81 @@ NOT A FINDING ABOUT THE ADS — this is all pre-campaign traffic.
 
 The ClickFunnels nightly sync is a no-op because of the row-level-security
 scope. One leftover card, per the hard lock. Not touched.
+
+---
+
+# Campaign structure — what is there vs what it should be (2026-09-28)
+
+Measured from the database, not assumed.
+
+## What the media buyer built
+
+```
+Campaign: oPur: TOF-SLO: $297          objective = SALES (purchase)
+  └─ Ad set: oPur: TOF-SLO: 25-55M: SBOs: 2.5M   (2.5M people, ACTIVE)
+       ├─ oVid: SLO1   ├─ oVid: SLO2
+       ├─ oVid: SLO3   └─ oVid: SLO4
+```
+
+One campaign. One ad set. Four videos. ~$100/day. Cold audience only.
+
+This is the standard consolidated setup. It is the right shape for a big budget
+with a pixel that has already seen hundreds of sales. It is the wrong shape for
+a pixel that has seen **zero**.
+
+## The three problems
+
+**1. It asks Meta to find buyers using an example of zero.**
+The ad set optimizes for Purchase. Meta needs **50 purchases in 7 days** to stop
+guessing. At $297 that is about $15,000 a week in sales. At $100/day it will
+never get there, so it guesses forever. That is exactly what "Learning Limited"
+means. It is also why the worst ad (SLO4) ate 53% of the budget — with no sales
+to learn from, there is nothing to steer by.
+
+**2. Four videos is not enough any more.**
+Meta's Andromeda algorithm (fully rolled out July 2025) rewards creative
+*volume and variety*. The current bar is **15–20 genuinely different videos a
+week**, or 50+ if repurposing. Four is 2024 thinking. And it has to be different
+*reasons to buy*, not four ways of saying the same line. This is the most likely
+single cause of the $70 CPM.
+
+**3. Every impression is bought ice cold.**
+Cold traffic is the most expensive traffic there is. There is no warm-audience
+layer, so you pay top price for every single view.
+
+## What it should look like
+
+Three campaigns, not one. Same ~$100/day.
+
+| Campaign | Optimizes for | Structure | Budget |
+|---|---|---|---|
+| **A. Content bin (cold)** | Engagement, then ThruPlay | 5–12 ad sets, **one video each**, same cold audience, ad-set budget optimization | $5–10/day per ad set |
+| **B. Direct response (warm)** | Purchase | One ad set. Audience = anyone who watched 10 sec of a bin video or touched the FB/IG page, 365-day window | The rest |
+| **C. Cyclic copies of B** | Initiate Checkout, then View Content / Landing Page View | Duplicate B, change only the event | Small |
+
+**Why A works:** engagement costs about **$0.01** a person. You build a warm
+list cheaply, and warm traffic has a far lower CPM than cold. That is the direct
+fix for the $70 CPM.
+
+**Why C works:** it is Haynes' fix for Learning Limited. Nobody buys 50 times a
+week at $297, but plenty of people will hit checkout or land on the page. Those
+cheaper events fire often enough to feed the algorithm real data, and the
+purchase campaign gets smarter off the back of it.
+
+**Content bin rule:** one video per ad set, all ad sets in one campaign, same
+audience in every ad set. It is a spider web, not a sequence — let Meta pick
+who sees what.
+
+## Order of operations
+
+1. **Film more videos.** 15–20 different angles, different reasons to buy. This
+   is the number one lever and nothing else matters as much.
+2. **Stand up Campaign A** with those videos. Cheap.
+3. **Move direct response to the warm audience** once A has run 3–5 days.
+4. **Add the cyclic copies** for the cheaper events.
+5. **Then** spend $1,500–$3,000 and read the result.
+
+## Not changing
+
+- The $297 price. Locked (`f441f41`). Correct for this buyer.
+- Nothing in the live account. This is a recommendation, not an action.
