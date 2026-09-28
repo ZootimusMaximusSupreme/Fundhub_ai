@@ -18,7 +18,7 @@ page. Colin's must be formatted tall (vertical).
 | W1 — Words | this session | **done (hooks awaiting Chris)** | Transcripts, hook per video, captions, `content/testimonials/testimonials.json` |
 | W2 — Video prep | this session | **done** | Colin sideways → tall, encode all 3 web-ready into `public/funnel/` |
 | W3 — Thumbnail template | this session | **done** | Brand-matched HTML template + Playwright renderer → PNG |
-| W4 — Live page | this session | **built, shipping** | 3 slots in the fragment, posters + captions, push, prove live |
+| W4 — Live page | this session | **built + proved, deploy blocked** | 3 slots in the fragment, posters + captions, push, prove live |
 
 **Waiting on what:** W1, W2, W3 all start now. W3 needs W1's final headline words before it
 renders for real. W4 needs W2's videos and W3's thumbnails.
@@ -180,16 +180,60 @@ marked copies via `_mark-shots.mjs`.
 
 ---
 
+## BLOCKED — the deploy, not the work
+
+`npm run ship` refuses: **"uncommitted changes. Commit them first, then ship."**
+The dirty files are **another session's work in flight**, not this one's —
+`TODO.md`, `api/read/underwrite.mjs`, `src/underwrite/report.mjs`,
+`src/workflows/index.mjs`, `clickfunnels-fragments/07-vsl-watch-beacon.html`,
+`public/funnel/vsl-watch-beacon.js` and the rest, plus new `db/seed/028` and
+`029`. Everything from this run is committed.
+
+They are not this session's to commit, and six of the suite's current failures
+come from them, so committing would push unfinished work live.
+
+`publish = "public"` in `netlify.toml`, so `fundhub.ai/funnel/*` is served from
+`public/funnel/`. Measured just now: `slo-testimonial-colin.mp4` **206** (the old
+162 MB cut), `slo-testimonial-gene.mp4` **404**, `slo-testimonial-gene-poster.jpg`
+**404**. So the deploy has to land **before** the ClickFunnels push, or Gene's
+slot 404s on a live page.
+
+Order when it is unblocked:
+
+1. `npm run ship`
+2. `node scripts/cf-push-custom-html.mjs push --only=slo-297-sales` (page `25426320`)
+3. Prove `https://apply.fundhub.ai/roadmap/` with a cache bust
+
+## Tests
+
+Measured 2026-09-27 on this Mac, three runs:
+
+| Tree | tests | pass | fail | skip |
+|---|---|---|---|---|
+| `1fd02515` — before any of this work | 11443 | 11425 | **14** | 4 |
+| `76ac804d` — this work, committed, clean | 11443 | 11425 | **14** | 4 |
+| working tree today (this work + the other session's) | 11480 | 11456 | 20 | 4 |
+
+The 14 are the same named tests in both clean runs — **this work introduced
+none**. The extra 6 arrive with the other session's uncommitted changes.
+
+`npm run lint` clean (2737 files). `npx tsc --noEmit` clean.
+
 ## What went wrong on the way, kept so it is not repeated
 
-**A `git reset --hard` plus a clean ran in this repo at about 21:58 on
-2026-09-27**, from outside this session. It took every untracked file with it —
-`src/slo/discount-197.mjs`, `src/slo/drip-plan.mjs`, `src/underwrite/company-audit.mjs`,
-`src/underwrite/funding-sequence.mjs`, `src/workflows/slo-infinite-drip.mjs`,
-`src/workflows/slo-no-reply-197.mjs`, `db/seed/028` and `029`, `docs/underwriteiq/`,
-every `scripts/tmp/*` folder — and reverted the uncommitted edits to a dozen
-tracked files. None of it was ever staged, so it is not in the object store and
-git cannot bring it back. There are no Time Machine local snapshots on this Mac.
+**A `git reset --hard` showed in the reflog at about 21:58 on 2026-09-27** and
+for a few minutes every untracked file in the repo was gone — `src/slo/discount-197.mjs`,
+`src/underwrite/company-audit.mjs`, `db/seed/028` and `029`, `docs/underwriteiq/`,
+every `scripts/tmp/*` folder — with a dozen tracked files reverted too. It was
+reported here as lost.
+
+**It was not lost. All of it came back within the hour**, intact and the right
+size, and is sitting in the working tree now. Another session was mid-operation.
+Nothing needs recovering.
+
+What it cost was this session's own untracked files, which had to be rebuilt, and
+the lesson stands: **commit in the same session** (`CLAUDE.md`, commit-locally
+law). Everything from this run was committed within minutes of being made.
 
 **The generated block orphaned the old markup.** `build-slots.mjs` took the first
 `</div>` after `<div class="proofgrid">` as the end of the block. That closes the
