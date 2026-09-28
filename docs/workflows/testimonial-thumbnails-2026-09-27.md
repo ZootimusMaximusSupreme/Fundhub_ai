@@ -16,9 +16,9 @@ page. Colin's must be formatted tall (vertical).
 | Task | Owner | Status | What it owns |
 |---|---|---|---|
 | W1 — Words | this session | **done (hooks awaiting Chris)** | Transcripts, hook per video, captions, `content/testimonials/testimonials.json` |
-| W2 — Video prep | unclaimed | pending | Colin sideways → tall, encode all 3 web-ready into `public/funnel/` |
-| W3 — Thumbnail template | unclaimed | pending | Brand-matched HTML template + Playwright renderer → PNG |
-| W4 — Live page | unclaimed | blocked | 3 slots in the fragment, posters + captions, push, prove live |
+| W2 — Video prep | this session | **done** | Colin sideways → tall, encode all 3 web-ready into `public/funnel/` |
+| W3 — Thumbnail template | this session | **done** | Brand-matched HTML template + Playwright renderer → PNG |
+| W4 — Live page | this session | **built, shipping** | 3 slots in the fragment, posters + captions, push, prove live |
 
 **Waiting on what:** W1, W2, W3 all start now. W3 needs W1's final headline words before it
 renders for real. W4 needs W2's videos and W3's thumbnails.
@@ -127,19 +127,80 @@ accurate to about ±2s. They are a pointer to the line, not a cut point.
 **W3 and W4 read `content/testimonials/testimonials.json`. Do not retype these words.**
 
 ### W2 — Video prep
-_not started_
+
+Owner said on 2026-09-27 to use the **new** Colin file. Done.
+
+| id | What shipped to `public/funnel/` | Size | Was |
+|---|---|---|---|
+| colin | `slo-testimonial-colin.mp4` — **608×1080**, 2:09 | 34 MB | 162 MB, sideways 1080p |
+| gene | `slo-testimonial-gene.mp4` — 720×1280, 2:00 | 23 MB | did not exist |
+| sarah | `slo-testimonial-sarah.mp4` — 720×1280, 0:36 | 11 MB | 8 MB |
+
+Colin was 1920×1080 sideways. Cropped to `crop=608:1080:646:0` — the widest true
+9:16 a 1080-tall frame allows, centred on his face. **Nothing was upscaled**, so
+he ships at 608 wide rather than 720. H.264 CRF 22, AAC 128k, `+faststart`.
+
+Posters at `slo-testimonial-<id>-poster.jpg`, made from the rendered thumbnails.
 
 ### W3 — Thumbnail template
-_not started_
+
+- `scripts/testimonials/thumbnail.html` — the editable 9:16 template. Opens in a
+  browser on its own. `1rem` is 1% of canvas width, so it serves any output size.
+- `scripts/testimonials/render-thumbnails.mjs` — drives it with Playwright, one
+  PNG per record at the frame's own size, writes `thumbnail_path` back.
+- `scripts/testimonials/fundhub-wordmark.svg` — the real lowercase `fundhub.`
+  mark, pulled out of the sales fragment's inline base64. Not redrawn.
+
+Brand: Inter 800 for the headline, JetBrains Mono for the kicker, `#A8D8B0` (the
+mint stop of the page's `--spectrum`) for accent words.
+
+Two things the renderer now refuses to ship: a headline in a fallback font
+(Inter failed to load) and a blank picture (the frame did not load). Both had
+happened silently.
 
 ### W4 — Live page
-_not started_
+
+`scripts/testimonials/build-slots.mjs` writes the slots into
+`clickfunnels-fragments/slo/slo-01-sales.html` from the JSON. Grid went 2 → 3
+columns. `--check` fails if the page and the data drift apart.
+
+Play button copies the VSL's unmute pill exactly — `#188bf6`, mono caps, pill
+radius (owner 2026-09-27: "same setup as the VSL... same colour"). Nothing
+autoplays; the VSL stays the only video on the page that starts by itself.
+Starting one testimonial pauses the others.
+
+`scripts/testimonials/proof-slots.mjs` proves it locally, serving
+`fundhub.ai/funnel/*` from `public/funnel/` so it shows the files about to ship.
+**PASS at 1280 and 390** — 3 cards, 3 pills, 3 captions, 0 autoplay, pill is
+`rgb(24,139,246)`, click plays and stops the others, no sideways scroll, no
+stray players.
+
+Shots (gitignored): `docs/workflows/testimonial-thumbnails-2026-09-27-evidence/`,
+marked copies via `_mark-shots.mjs`.
 
 ---
 
+## What went wrong on the way, kept so it is not repeated
+
+**A `git reset --hard` plus a clean ran in this repo at about 21:58 on
+2026-09-27**, from outside this session. It took every untracked file with it —
+`src/slo/discount-197.mjs`, `src/slo/drip-plan.mjs`, `src/underwrite/company-audit.mjs`,
+`src/underwrite/funding-sequence.mjs`, `src/workflows/slo-infinite-drip.mjs`,
+`src/workflows/slo-no-reply-197.mjs`, `db/seed/028` and `029`, `docs/underwriteiq/`,
+every `scripts/tmp/*` folder — and reverted the uncommitted edits to a dozen
+tracked files. None of it was ever staged, so it is not in the object store and
+git cannot bring it back. There are no Time Machine local snapshots on this Mac.
+
+**The generated block orphaned the old markup.** `build-slots.mjs` took the first
+`</div>` after `<div class="proofgrid">` as the end of the block. That closes the
+first slot, not the grid — so the old Sarah slot survived outside the grid, where
+nothing sized it and it painted at 720×1280 across the page. It looked like a
+screenshot artifact for four rounds. Hit-testing the pixels found it. Fixed by
+counting div depth; `proof-slots.mjs` now fails on any player outside the grid.
+
 ## Blockers and open questions
 
-### FINDING — all three videos already have captions burned into the picture
+### CLOSED — all three videos already have captions burned into the picture
 
 Measured 2026-09-27 from frames sampled every 2 seconds across all three files. Every one carries
 word-by-word coloured captions (the Submagic style) burned into the video itself, roughly:
@@ -161,13 +222,17 @@ reads as broken. W3 must handle it, not ignore it. Three ways, cheapest first:
 3. Gene has open blue sky across the whole top third of frame. His headline goes up there and never
    touches the caption band. Colin and Sarah have no equivalent clean zone.
 
-Chris has not been asked to choose. W3 picks whichever works per video and shows him the result.
+**Resolved:** option 2. Gene has a caption on **every frame of his two minutes** —
+scanned at 2 fps end to end, there is no clean frame to pick. So the dark wash
+goes fully opaque across each person's own caption band, positioned from the
+measured position: colin 78-93%, gene 84-87%, sarah 64-76% of frame height.
+Gene's starts at 79%, just under his chin, so his face stays lit.
 
-### OPEN — Gene has no slot on the live page yet
+### CLOSED — Gene has no slot on the live page yet
 
-The fragment has two slots (Colin, Sarah). Gene is a third. W4 widens `SLOT-TESTIMONIALS` to three
-and has to re-check the phone stack and the 1280px desktop fit, because the 2026-09-25 board shows
-the pair was already tuned to just fit.
+Done. Three columns at `repeat(3,minmax(0,1fr))`, gap 18px, inside the same 900px
+max-width. Each slot is 288×512 on a 1280px desktop. On a phone they stack one per
+row at up to 380px, unchanged from the 2026-09-22 rule.
 
 ## Notes worth keeping
 
