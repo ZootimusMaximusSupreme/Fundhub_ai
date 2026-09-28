@@ -203,6 +203,10 @@ const API_KEYS = [
   /* Step 1 of /roadmap, saved before Pay. A plain GET answers 200 and writes
      nothing, so a ping cannot file a fake lead. */
   "public/slo-interest",
+  /* RB2B visitor identity webhook. A plain GET answers 200 and writes nothing,
+     so a ping cannot file a fake lead. POST is the write door and needs the
+     shared secret in the query string. */
+  "public/rb2b-webhook",
   /* The /roadmap widget's status read after the soft pull. A plain GET with no
      ref or client_id answers 400, which counts as up, and reads nothing. */
   "public/slo-status",

@@ -123,3 +123,12 @@ Same buzz as finished ad videos: text to `AD_VIDEO_SMS_TO` (fallback `PULSE_SMS_
 - Public marketing pages without `fh-attribution.js` now load `/funnel/rb2b.js` (script tag only).
 - Apply funnel + `/roadmap` already load `fh-attribution.js` → get the pixel once `rb2b.js` is live.
 - Not installed on `/app/*`, `login.html`, `portal-login.html`, `crm.html`, client `progress.html` / `contract.html`, or partner board/live desks.
+
+## RB2B email storage (2026-09-27)
+
+**Where the row lives:** `events` table, `name = 'rb2b.visitor_identified'`, one row per email (`idempotency_key = rb2b:<email>`). Payload holds email, name, linkedin_url, company, job_title, page_url, seen_at. Repeat visits update the same row (latest page wins). No client. No mail. No drip. Form emails stay on `slo.contact_started`.
+
+**Live webhook URL:** `https://fundhub.ai/api/public/rb2b-webhook?secret=<RB2B_WEBHOOK_SECRET>`  
+(Secret is in local `.env` and Netlify as `RB2B_WEBHOOK_SECRET`. RB2B docs: no signature — secret must be in the URL query string.)
+
+**Chris — one RB2B step:** Open https://app.rb2b.com/integrations/webhook → paste that full URL → Save. (RB2B has no API to register the webhook for you.)

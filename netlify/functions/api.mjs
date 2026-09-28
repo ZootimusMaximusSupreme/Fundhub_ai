@@ -190,6 +190,7 @@ import publicSloInterest from "../../api/public/slo-interest.mjs";
 import publicSloPull from "../../api/public/slo-pull.mjs";
 import publicSloStatus from "../../api/public/slo-status.mjs";
 import publicSloRepairCheckout from "../../api/public/slo-repair-checkout.mjs";
+import publicRb2bWebhook from "../../api/public/rb2b-webhook.mjs";
 import trialsEligibility from "../../api/trials/eligibility.mjs";
 import trialsProvision from "../../api/trials/provision.mjs";
 import trialsDashboard from "../../api/trials/dashboard.mjs";
@@ -754,6 +755,11 @@ export const ROUTES = {
      and writes nothing. POST writes a visit or a name/email/phone. No client,
      no card, no mail. */
   "public/slo-interest": publicSloInterest,
+  /* RB2B identified-visitor push. GET answers {ok:true} and writes nothing.
+     POST needs ?secret= (RB2B_WEBHOOK_SECRET) — they document no signature,
+     only a self-contained URL. Stores into events as rb2b.visitor_identified.
+     No client, no mail, no Inngest. */
+  "public/rb2b-webhook": publicRb2bWebhook,
   /* POST only. Identity + checkbox consent, then diagnostic.paid. GET 405.
      Do not ping with a body — that would store an SSN and fire C-00. */
   "public/slo-pull": publicSloPull,
