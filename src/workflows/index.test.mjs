@@ -126,6 +126,8 @@ const EXPECTED_WORKFLOW_IDS = [
   "s-portal-invite",
   "slo-genuine-followup",
   "slo-genuine-reply",
+  "slo-infinite-drip",
+  "slo-no-reply-197",
   "slo-pack-delivery",
   "slo-paid-form-nudge",
   "subscription-billing-sweeper",

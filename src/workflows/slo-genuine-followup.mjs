@@ -15,14 +15,20 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
-import { claimCustomFieldLock } from "./custom-fields.mjs";
+import { claimCustomFieldLock, mergeCustomFields } from "./custom-fields.mjs";
 import { classifyVisitor } from "../slo/visitor.mjs";
 import { SLO_PURPOSE, SLO_SOURCE } from "../slo/offer.mjs";
+import { agreesToRoadmap, DIG_KEY, FIRST_FIVE, REPLIED_KEY, SLOT_KEY } from "../slo/discount-197.mjs";
+import { enrollSloDrip } from "../slo/drip-plan.mjs";
+import { createTask } from "../lib/create-task.mjs";
+import { formatQuestionList } from "../insights/questions.mjs";
+import { meetBookingUrl } from "../insights/meet.mjs";
 
 export const SMS_M1_KEY = "SMS-SLO-GENUINE-01";
 export const EMAIL_M1_KEY = "EMAIL-SLO-GENUINE-01";
 export const SMS_M2_KEY = "SMS-SLO-GENUINE-02";
 export const EMAIL_M2_KEY = "EMAIL-SLO-GENUINE-02";
+export const SMS_DIG_KEY = "SMS-SLO-DIG";
 
 export const LOCK_M1 = "slo_genuine_m1_sent_at";
 export const LOCK_M2 = "slo_genuine_m2_sent_at";
@@ -113,7 +119,33 @@ export async function handleM1({ event, db, step }) {
       orgId, clientId, channel: "email", templateKey: EMAIL_M1_KEY, eventId, context: CHRIS
     }));
 
+  await step.run("assign-text-slot", () => assignTextSlot(db, { orgId, clientId }));
+
   return { done: true, sent: true, clientId, sms, email };
+}
+
+/** Slot 1–5 for the first real texts. Later people get no slot. */
+export async function assignTextSlot(db, { orgId, clientId }) {
+  const r = await db.query(
+    `SELECT count(*)::int AS n
+       FROM clients
+      WHERE org_id = $1
+        AND custom_fields->>'slo_text_slot' IS NOT NULL`,
+    [orgId]
+  );
+  const used = Number(r.rows[0]?.n || 0);
+  if (used >= FIRST_FIVE) return null;
+  const slot = String(used + 1);
+  await mergeCustomFields(db, clientId, { [SLOT_KEY]: slot });
+  return slot;
+}
+
+async function clientFields(db, clientId) {
+  const r = await db.query(
+    `SELECT custom_fields FROM clients WHERE id = $1`,
+    [clientId]
+  );
+  return r.rows[0]?.custom_fields || {};
 }
 
 /** True when this client got message 1 and has not gotten message 2. */
@@ -129,6 +161,50 @@ export async function awaitingGenuineM2(db, clientId) {
   return Boolean(row.m1) && !row.m2;
 }
 
+export async function handleFirstFiveReply({ event, db, step, clientId, body, fields }) {
+  const orgId = event.orgId;
+  const eventId = event.id;
+  if (!fields[DIG_KEY]) {
+    const claimed = await step.run("claim-dig", () =>
+      claimCustomFieldLock(db, clientId, DIG_KEY));
+    if (!claimed) return { done: false, reason: "already_sent_dig" };
+    const sms = await step.run("send-dig", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "sms", templateKey: SMS_DIG_KEY, eventId, context: CHRIS
+      }));
+    return { done: true, sent: true, lane: "dig", clientId, sms };
+  }
+  if (!agreesToRoadmap(body)) {
+    await step.run("enroll-drip", () => enrollSloDrip(db, clientId));
+    return { done: true, sent: false, reason: "first_five_no_agree", clientId };
+  }
+  const claimed = await step.run("claim-free", () =>
+    claimCustomFieldLock(db, clientId, "slo_roadmap_free_at"));
+  if (!claimed) return { done: false, reason: "already_free" };
+  const bookUrl = meetBookingUrl();
+  const task = await step.run("task-interview", () =>
+    createTask(db, {
+      orgId,
+      clientId,
+      title: "Free roadmap, then the video interview",
+      sourceWorkflow: "slo-first-five-interview",
+      assigneeRole: "csm",
+      eventId,
+      meetingUrl: bookUrl,
+      body: [
+        "They agreed. The roadmap is free.",
+        "Do the soft pull on the interview before you hand them the roadmap. That is how we know the file is real.",
+        bookUrl
+          ? `Then send this Google Meet link: ${bookUrl}`
+          : "Then book the Google Meet (INSIGHT_MEET_BOOKING_URL).",
+        "Ask these questions and save the answers.",
+        formatQuestionList("post"),
+        `[event:${eventId}]`
+      ].join("\n")
+    }));
+  return { done: true, sent: false, lane: "free_roadmap", clientId, task };
+}
+
 export async function handleReply({ event, db, step }) {
   const payload = event.payload || {};
   const channel = payload.channel || "sms";
@@ -141,6 +217,16 @@ export async function handleReply({ event, db, step }) {
 
   const clientId = await step.run("resolve-client", () => resolveClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
+
+  await step.run("mark-replied", () =>
+    mergeCustomFields(db, clientId, { [REPLIED_KEY]: new Date().toISOString() }));
+
+  const fields = await step.run("read-lane", () => clientFields(db, clientId));
+  if (fields[SLOT_KEY]) {
+    return handleFirstFiveReply({
+      event, db, step, clientId, body: payload.body, fields
+    });
+  }
 
   const waiting = await step.run("check-awaiting-m2", () =>
     awaitingGenuineM2(db, clientId));

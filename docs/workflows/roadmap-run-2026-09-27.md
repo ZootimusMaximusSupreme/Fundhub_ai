@@ -154,3 +154,7 @@ The long drip is not sending. Cold, warm, and hot (N-01, N-02, N-03) were turned
 ### Tomorrow
 
 Cost to get an email, which ad got the cheap page open, and whether anyone answered the text. No reply yet means there is nothing to rewrite the offer from.
+
+### $197 if they stay quiet
+
+The discount price is $197, not $199. If they do not reply, a text and an email go out a day later with that price, a pay link, and Colin and Sarah's videos. The first five who reply get a follow-up text that asks what is actually in the way. If they say yes, the roadmap is free and a task opens for the Google Meet interview. Person 6 and after who reply still get the "would you be a customer?" note. Seed `028_slo_discount_197.sql`.

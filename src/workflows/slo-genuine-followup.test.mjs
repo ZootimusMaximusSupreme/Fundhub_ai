@@ -8,6 +8,7 @@ import {
   EMAIL_M1_KEY,
   SMS_M2_KEY,
   EMAIL_M2_KEY,
+  SMS_DIG_KEY,
   LOCK_M1,
   LOCK_M2
 } from "./slo-genuine-followup.mjs";
@@ -218,4 +219,61 @@ test("handleReply: STOP does not schedule message 2", async () => {
   });
   assert.equal(res.reason, "opt_out");
   assert.equal(db.messages.length, 0);
+});
+
+test("handleReply: first five get the dig text, not the customer question", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: { [LOCK_M1]: "2026-09-27T18:20:00.000Z", slo_text_slot: "1" }
+    }],
+    templates: [
+      ...templates(),
+      { org_id: "org-1", template_key: SMS_DIG_KEY, channel: "sms", body: "dig", compliance_passed: true }
+    ]
+  });
+  const res = await handleReply({
+    event: ev("message.inbound", {
+      from: "+14155550134",
+      body: "I was worried about getting burned",
+      channel: "sms"
+    }, { id: "evt-dig", clientId: "cl-1" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.lane, "dig");
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_DIG_KEY]);
+});
+
+test("handleReply: a yes after the dig books the free roadmap interview", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: {
+        [LOCK_M1]: "2026-09-27T18:20:00.000Z",
+        slo_text_slot: "1",
+        slo_dig_sent_at: "2026-09-27T19:00:00.000Z"
+      }
+    }],
+    templates: templates()
+  });
+  const res = await handleReply({
+    event: ev("message.inbound", {
+      from: "+14155550134",
+      body: "Yes I want the roadmap",
+      channel: "sms"
+    }, { id: "evt-yes", clientId: "cl-1" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.lane, "free_roadmap");
+  assert.equal(db.messages.length, 0);
+  assert.equal(db.tasks.length, 1);
+  assert.equal(db.tasks[0].assignee_role, "csm");
 });
