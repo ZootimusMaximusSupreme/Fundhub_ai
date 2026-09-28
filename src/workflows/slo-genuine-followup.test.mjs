@@ -10,6 +10,8 @@ import {
   EMAIL_GIFT_KEY,
   SMS_COUPON_KEY,
   EMAIL_COUPON_KEY,
+  SMS_FIRST5_REPLY_KEY,
+  EMAIL_FIRST5_REPLY_KEY,
   LOCK_M1,
   LOCK_M2
 } from "./slo-genuine-followup.mjs";
@@ -22,7 +24,9 @@ function templates() {
     { org_id: "org-1", template_key: SMS_GIFT_KEY, channel: "sms", body: "gift sms", compliance_passed: true },
     { org_id: "org-1", template_key: EMAIL_GIFT_KEY, channel: "email", subject: "Gift", body: "gift email", compliance_passed: true },
     { org_id: "org-1", template_key: SMS_COUPON_KEY, channel: "sms", body: "coupon {{pay_url}}", compliance_passed: true },
-    { org_id: "org-1", template_key: EMAIL_COUPON_KEY, channel: "email", subject: "33% off", body: "coupon email {{pay_url}}", compliance_passed: true }
+    { org_id: "org-1", template_key: EMAIL_COUPON_KEY, channel: "email", subject: "33% off", body: "coupon email {{pay_url}}", compliance_passed: true },
+    { org_id: "org-1", template_key: SMS_FIRST5_REPLY_KEY, channel: "sms", body: "you're in {{book_url}}", compliance_passed: true },
+    { org_id: "org-1", template_key: EMAIL_FIRST5_REPLY_KEY, channel: "email", subject: "You're in", body: "you're in email {{book_url}}", compliance_passed: true }
   ];
 }
 
@@ -408,7 +412,12 @@ test("handleReply: the first five who answer get the free Google Meet", async ()
     step: fakeStep()
   });
   assert.equal(res.lane, "free_roadmap");
-  assert.equal(db.messages.length, 0);
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key).sort(),
+    [EMAIL_FIRST5_REPLY_KEY, SMS_FIRST5_REPLY_KEY].sort()
+  );
+  assert.ok(db.messages.every((m) => /https?:\/\//.test(m.rendered_body)));
+  assert.ok(!db.messages.some((m) => m.template_key === SMS_COUPON_KEY));
   assert.equal(db.tasks.length, 1);
 });
 
@@ -433,5 +442,6 @@ test("handleReply: the first five who say no do not get the free roadmap", async
     step: fakeStep()
   });
   assert.equal(res.reason, "first_five_no_agree");
+  assert.equal(db.messages.length, 0);
   assert.equal(db.tasks.length, 0);
 });

@@ -17,7 +17,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { sendTemplated } from "./messaging.mjs";
 import { claimCustomFieldLock, mergeCustomFields } from "./custom-fields.mjs";
 import { classifyVisitor } from "../slo/visitor.mjs";
-import { SLO_PURPOSE, SLO_SOURCE } from "../slo/offer.mjs";
+import { SLO_PURPOSE, SLO_SOURCE, sloRoadmapBookUrl } from "../slo/offer.mjs";
 import { declinesRoadmap, DISCOUNT_REF_KEY, FIRST_FIVE, FREE_KEY, REPLIED_KEY, SLOT_KEY, discountCheckoutUrl, newDiscountRef } from "../slo/discount-197.mjs";
 import { enrollSloDrip } from "../slo/drip-plan.mjs";
 import { createTask } from "../lib/create-task.mjs";
@@ -32,6 +32,8 @@ export const SMS_GIFT_KEY = "SMS-SLO-GIFT-01";
 export const EMAIL_GIFT_KEY = "EMAIL-SLO-GIFT-01";
 export const SMS_COUPON_KEY = "SMS-SLO-COUPON-01";
 export const EMAIL_COUPON_KEY = "EMAIL-SLO-COUPON-01";
+export const SMS_FIRST5_REPLY_KEY = "SMS-SLO-FIRST5-REPLY";
+export const EMAIL_FIRST5_REPLY_KEY = "EMAIL-SLO-FIRST5-REPLY";
 
 export const LOCK_M1 = "slo_genuine_m1_sent_at";
 export const LOCK_M2 = "slo_genuine_m2_sent_at";
@@ -191,7 +193,16 @@ export async function handleFirstFiveReply({ event, db, step, clientId, body }) 
   const claimed = await step.run("claim-free", () =>
     claimCustomFieldLock(db, clientId, "slo_roadmap_free_at"));
   if (!claimed) return { done: false, reason: "already_free" };
-  const bookUrl = meetBookingUrl();
+  const bookUrl = meetBookingUrl() || sloRoadmapBookUrl();
+  const context = { ...CHRIS, book_url: bookUrl };
+  const sms = await step.run("send-sms-first5-reply", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "sms", templateKey: SMS_FIRST5_REPLY_KEY, eventId, context
+    }));
+  const email = await step.run("send-email-first5-reply", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "email", templateKey: EMAIL_FIRST5_REPLY_KEY, eventId, context
+    }));
   const task = await step.run("task-interview", () =>
     createTask(db, {
       orgId,
@@ -212,7 +223,7 @@ export async function handleFirstFiveReply({ event, db, step, clientId, body }) 
         `[event:${eventId}]`
       ].join("\n")
     }));
-  return { done: true, sent: false, lane: "free_roadmap", clientId, task };
+  return { done: true, sent: true, lane: "free_roadmap", clientId, sms, email, bookUrl, task };
 }
 
 export async function handleReply({ event, db, step }) {
