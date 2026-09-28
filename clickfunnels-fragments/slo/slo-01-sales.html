@@ -622,6 +622,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw-steps button{flex:1;min-width:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:#8A8A93;border:1px solid #E4E4E7;border-radius:8px;padding:9px 6px;background:#fff;cursor:pointer;line-height:1.4}
 .cfw-steps button.on{color:#0A0A0A;border-color:#0A0A0A;cursor:default}
 .cfw-step{display:none}.cfw-step.on{display:block}
+.cfw-addline{font-size:12.5px;color:#52525B;line-height:1.5;margin:6px 0 2px}
 .cfw label{display:block;font-size:12.5px;font-weight:600;color:#52525B;margin-top:12px;line-height:1.4}
 .cfw label .opt{font-weight:500;color:#8A8A93;text-transform:lowercase}
 .cfw .why{display:block;font-weight:500;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#3E8E58;margin-top:2px}
@@ -1373,11 +1374,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
                                         409 existing_account: the message goes under Email
        GET  slo-status                  polled every second after step 3
        POST slo-repair-checkout         only after a pull result on the repair path
-     Step 1 · Info: first, last, email, phone, businesses (first free, $15 each extra).
+     Step 1 · Info: first, last, email, phone. Nothing else.
      Step 2 · Card: the total, then the Commas card page. It returns to this page
                     with ?ref=&client_id=, which opens step 3.
      Step 3 · Soft pull: legal name, DOB, social, home address, previous address,
-                    consent, and the pull runs.
+                    businesses (first included, each extra $15 — the add-on sits
+                    here, after the card), consent, and the pull runs.
      Nothing about repair or letter mailing shows before a pull result.
      The widget never decides demo or live. The server's answer does.
      UTM: read from sessionStorage fh_attribution (fh-attribution.js at the end of this file).
@@ -1407,8 +1409,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
       <label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
 
-      <div data-bizlist></div>
-      <button type="button" class="cfw-add" data-add>+ Add a business ($15)</button>
       <button type="submit" class="cfw-btn">Continue</button>
       <div class="cfw-note">Step 1 of 3. Your card is next, then the short soft pull form.</div>
     </form>
@@ -1463,6 +1463,14 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
             <label>ZIP<input type="text" name="prev_zip" data-f="prev_zip" autocomplete="off" inputmode="numeric" maxlength="10"></label>
           </div>
         </div>
+      </div>
+
+      <div class="cfw-box">
+        <span class="cfw-kick">Your businesses</span>
+        <p class="cfw-addline">We pull business credit too. Your first business is included. Each extra one is $15.</p>
+      <div data-bizlist></div>
+      <button type="button" class="cfw-add" data-add>+ Add a business ($15)</button>
+        <div class="cfw-totline" data-bizline hidden></div>
       </div>
 
       <div class="cfw-note"><b>Check every answer before you continue.</b> Your legal name, date of birth, Social Security number and address &mdash; including the state &mdash; have to match your credit file exactly. One wrong character and the bureaus return nothing.</div>
@@ -1554,6 +1562,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   var payBtn=root.querySelector('[data-pay]'),pullBtn=root.querySelector('[data-pull]');
   var totalEl=root.querySelector('[data-total]'),totLine=root.querySelector('[data-totline]');
   var formErr=root.querySelector('[data-formerr]'),demoEl=root.querySelector('[data-demo]'),liveNote=root.querySelector('[data-livenote]');
+  var bizLine=root.querySelector('[data-bizline]');
   var moved=root.querySelector('[data-moved]'),prevBox=root.querySelector('[data-prev]');
   var ssnInput=s3.querySelector('[name="ssn"]'),showBtn=root.querySelector('[data-show]');
   var step=1;
@@ -1691,8 +1700,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(squeeze(em.value)))bad(em,'Please enter a real email address.');
     if(!squeeze(ph.value))bad(ph,'Please enter your phone number.');
     else if(!phone10(ph.value))bad(ph,'Use a 10-digit phone number.');
-    /* Businesses are priced on the order, so they are asked before the card. */
-    checkBusinesses(bad);
     return ok;
   }
   function contact(){
@@ -1729,15 +1736,22 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     });
     addBtn.hidden=rows.length>=price.max;
     addBtn.textContent='+ Add a business ('+money(price.each)+')';
-    paintTotal();
+    paintTotal();paintExtras();
   }
   function bizCount(){return Math.max(1,bizRows().length);}
+  /* STEP 2 is the base price on its own. Businesses are chosen on step 3, after
+     the card, so nothing they do there can change what this button charges. */
   function paintTotal(){
-    var n=bizCount(),c=price.base+price.each*(n-1);
-    totalEl.textContent=money(c);
-    payBtn.textContent='Get My Roadmap · '+money(c);
-    if(n>1){totLine.textContent=n+' businesses · first one free, '+money(price.each)+' each extra';totLine.hidden=false;}
-    else{totLine.hidden=true;totLine.textContent='';}
+    totalEl.textContent=money(price.base);
+    payBtn.textContent='Get My Roadmap · '+money(price.base);
+    totLine.hidden=true;totLine.textContent='';
+  }
+  /* STEP 3's own line: what the extra businesses add. */
+  function paintExtras(){
+    if(!bizLine)return;
+    var n=bizCount(),extra=price.each*(n-1);
+    if(n>1){bizLine.textContent=n+' businesses · first one included, '+money(price.each)+' each extra · '+money(extra)+' added';bizLine.hidden=false;}
+    else{bizLine.hidden=true;bizLine.textContent='';}
   }
   addBtn.addEventListener('click',function(){
     if(bizRows().length>=price.max)return;
@@ -1789,6 +1803,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     one('ssn',vSsn(ssnInput.value));
     checkAddress(function(k){return s3.querySelector('[name="'+k+'"]');},'your',bad);
     if(moved.checked)checkAddress(function(k){return s3.querySelector('[name="prev_'+k+'"]');},'your previous',bad);
+    checkBusinesses(bad);
     var c=s3.querySelector('[name="consent"]');
     if(!c.checked)bad(c,'Please check the box to authorize the soft pull before we can continue.');
     return ok;

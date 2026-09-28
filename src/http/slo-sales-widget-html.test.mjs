@@ -71,11 +71,24 @@ test("nothing about the credit file is asked before the card", () => {
   }
 });
 
-test("businesses are priced before the card, so they are asked on step 1", () => {
+test("step 1 is contact only — businesses are the add-on on step 3", () => {
   const step1 = html.slice(html.indexOf('<form class="cfw-step s1 on"'), html.indexOf('<form class="cfw-step s2"'));
-  assert.match(step1, /<div data-bizlist><\/div>/);
-  assert.match(step1, /data-add>\+ Add a business/);
-  assert.match(widgetScript, /checkBusinesses\(bad\);\n    return ok;/, "step 1 validates them");
+  assert.ok(!step1.includes("data-bizlist"), "no business block on step 1");
+  assert.ok(!step1.includes("data-add"), "no Add a business button on step 1");
+  for (const name of ["c_first", "c_last", "email", "phone"]) assert.ok(step1.includes(`name="${name}"`), name);
+
+  const step3 = html.slice(html.indexOf('<form class="cfw-step s3"'));
+  assert.match(step3, /<div data-bizlist><\/div>/);
+  assert.match(step3, /data-add>\+ Add a business/);
+  assert.match(step3, /Your first business is included\. Each extra one is \$15\./);
+});
+
+test("the card charges the base price on its own — step 3 cannot change it", () => {
+  assert.match(widgetScript, /function paintTotal\(\)\{\n\s*totalEl\.textContent=money\(price\.base\);/);
+  assert.match(widgetScript, /payBtn\.textContent='Get My Roadmap · '\+money\(price\.base\);/);
+  /* the extras get their own line on step 3, never the pay button */
+  assert.match(widgetScript, /function paintExtras\(\)\{/);
+  assert.match(html, /data-bizline hidden/);
 });
 
 test("step 2 pays and nothing else: no defer_pull, and the pull is never sent with the card", () => {
@@ -117,7 +130,7 @@ test("the consent box uses the pull form's words", () => {
 
 test("prices: first business free, each extra from the server (default 1500 cents)", () => {
   assert.match(widgetScript, /var price=\{base:29700,each:1500,max:20\};/);
-  assert.match(widgetScript, /c=price\.base\+price\.each\*\(n-1\)/);
+  assert.match(widgetScript, /extra=price\.each\*\(n-1\)/);
   assert.match(html, /\+ Add a business \(\$15\)/);
 });
 

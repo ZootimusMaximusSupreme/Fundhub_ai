@@ -112,12 +112,12 @@ button scrolls to it. No page on the way links to `roadmap/pay.html` any more.
 
 ```mermaid
 flowchart TD
-    A[Step 1 Info: first, last, email, phone, businesses] -->|Continue, checked in the page| B[Step 2 Card: total today, then Get My Roadmap]
+    A[Step 1 Info: first, last, email, phone. Nothing else] -->|Continue, checked in the page| B[Step 2 Card: $297 base, then Get My Roadmap]
     B -->|page re-checks step 1| C[POST slo-checkout]
     C -->|field errors| A
     C -->|demo:true, no card page exists| S3
     C -->|demo:false + checkoutUrl| G[Commas card page]
-    G -->|returns to /roadmap?ref=&client_id=| S3[Step 3 Soft pull: legal name, DOB, social, home address, previous address, consent. Google address autocomplete only when GET slo-checkout gives mapsBrowserKey]
+    G -->|returns to /roadmap?ref=&client_id=| S3[Step 3 Soft pull: legal name, DOB, social, home address, previous address, BUSINESS ADD-ON first included / $15 each extra, consent]
     S3 -->|Start My Soft Pull: page checks every box first| D[POST slo-pull. No defer_pull, ever]
     D -->|field errors| S3
     D -->|address_unverified: warning under the street box| S3
@@ -144,7 +144,9 @@ flowchart TD
 | `console.info("fh-widget time-to-bucket <ms>")` when state becomes done. | Measured from the Pay press (across the card page through a stored timestamp). |
 | Nothing about the credit file — social, date of birth, address, consent — appears anywhere before step 3, and step 3 opens only once an order exists. | Step 2 never calls `slo-pull`; tab 3 does nothing until `order` is set; the paid return (`?ref=&client_id=`) paints step 3 before the browser draws. |
 | A buyer who has paid is never sent back to step 1. | Tabs 1 and 2 are dead once the order is locked; `existing_account` on a locked order shows "your payment is still landing" on step 3 instead of routing to the Email box. |
-| Businesses are asked on step 1, because they set the price on the card step. A reload after the card page sends no `businesses` key, so the rows stored at checkout are left alone. | `checkStep1` validates them; `bizPayload()` is empty after a reload and the key is omitted. |
+| Businesses are the ADD-ON and live on step 3, after the card (owner-set 2026-09-27: "business goes to the 3, it's a one click upsell"). Step 1 is contact only. | The block moved into `.s3`; `checkStep3` validates it; `paintExtras()` shows what the extras add. |
+| The card step charges the base price alone. Nothing chosen on step 3 can change what that button charged. | `paintTotal()` reads `price.base` only; `startCheckout` sends `business_count: 1` and no business list. |
+| **MEASURED 2026-09-27, and it is a gap, not a design:** an extra business picked on step 3 is NOT charged. `runSloPull` records the difference as `slo_business_owed_cents` on the client and says in its own header that "nothing here can charge a card". The only charge path in this repo is `createCheckoutSession`, which mints a hosted Commas card page — its three types are `onetime_non_reusable`, `onetime_reusable`, `subscription`, and none of them charges a card already on file. `slo-repair-checkout`, the one other post-purchase offer, sends the buyer to a second card page for exactly this reason. So a true one-click upsell (tap, saved card, done) cannot be built from what is here today. | `src/slo/pull.mjs`, `src/payments/commas-api.mjs`, `api/public/slo-repair-checkout.mjs`. |
 | Nothing about repair or letter mailing shows before a pull result. | The offer pane is filled only from `repair_offer`. |
 | The page takes a phone number in step 1 and sends it as `phone`. | slo-checkout stores it as +1XXXXXXXXXX on a client it creates; an existing client's phone is not touched. |
 | `address_unverified` puts "We couldn't find that address. Check the street and ZIP, or tap Pay again to use it as typed." under the street box. | The next Pay with the same address (kept in memory only) sends `address_confirmed: true`. |
