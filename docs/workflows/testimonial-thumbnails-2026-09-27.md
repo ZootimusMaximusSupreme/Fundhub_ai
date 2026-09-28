@@ -283,3 +283,13 @@ row at up to 380px, unchanged from the 2026-09-22 rule.
 - The 4K law (`.claude/rules/video-4k-unless-ad.md`) says a non-ad video at 1080p is a defect.
   All three of today's files are under 4K (1920×1080 and 720×1280). Chris chose the new 1080p
   Colin on 2026-09-27 with that stated. Recorded, not reopened. Nothing gets upscaled.
+
+## LIVE — 2026-09-27
+
+Pushed `slo-297-sales` (page `25426320`), `ok: true`. Assets shipped in build
+`02849c1d`. Proved on `https://apply.fundhub.ai/roadmap/` and on the
+myclickfunnels origin: **3 `.tcard`, 0 old `vslot><video controls` slots**.
+The first read after the push was stale CDN (`cf-cache-status: EXPIRED`) — a
+plain `?cb=` was not enough, a no-cache header was.
+
+All three videos and posters return 200/206 from `fundhub.ai/funnel/`.

@@ -16,7 +16,8 @@ fbq('track', 'PageView');
 </script>
 <noscript><img height="1" width="1" style="display:none" alt=""
 src="https://www.facebook.com/tr?id=2403674420141513&ev=PageView&noscript=1"/></noscript>
-
+<!-- Microsoft Clarity (Fundhub) -->
+<script src="https://fundhub.ai/js/clarity.js" defer></script>
 <meta name="cf-page-token" content="cfp_ubEE2JF6AB5SdJK7S8jsPkYm">
 <script src="https://sdk.myclickfunnels.com/sdk.js" defer></script>
 </head>
@@ -208,7 +209,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 
 .fh-root .quals{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:24px}
 .fh-root .qual{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px 22px;text-align:left}
-.fh-root .qual .qh{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px}
+.fh-root .qual .qh{font-family:var(--sans);font-weight:800;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;margin-bottom:12px}
 .fh-root .qual .yes{color:#3E8E58}
 .fh-root .qual .no{color:#B4544C}
 .fh-root .qual ul{list-style:none}
@@ -636,14 +637,16 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   .fh-root .shelves span.course-pill{transition:none}
   .fh-root .shelves span.course-pill.is-lit{box-shadow:none}
 }
-/* Checkout widget: our own two-step widget on this page (owner-set 2026-09-22). Script: after the SPLIT-LINE. */
+/* Checkout widget: our own three-step widget on this page (owner-set 2026-09-27:
+   1 info, 2 card, 3 soft pull). Script: after the SPLIT-LINE. */
 .cfw{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0A0A0A;padding:10px 12px 14px;text-align:left;line-height:1.5;font-size:15px}
 .cfw *{box-sizing:border-box;margin:0}
 .cfw [hidden]{display:none!important}
 .cfw-steps{display:flex;gap:8px;margin-bottom:4px}
-.cfw-steps button{flex:1;min-width:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:#8A8A93;border:1px solid #E4E4E7;border-radius:8px;padding:9px 6px;background:#fff;cursor:pointer;line-height:1.4}
+.cfw-steps button{flex:1;min-width:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:#8A8A93;border:1px solid #E4E4E7;border-radius:8px;padding:9px 6px;background:#fff;cursor:pointer;line-height:1.4}
 .cfw-steps button.on{color:#0A0A0A;border-color:#0A0A0A;cursor:default}
 .cfw-step{display:none}.cfw-step.on{display:block}
+.cfw-addline{font-size:12.5px;color:#52525B;line-height:1.5;margin:6px 0 2px}
 .cfw label{display:block;font-size:12.5px;font-weight:600;color:#52525B;margin-top:12px;line-height:1.4}
 .cfw label .opt{font-weight:500;color:#8A8A93;text-transform:lowercase}
 .cfw .why{display:block;font-weight:500;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:#3E8E58;margin-top:2px}
@@ -706,17 +709,24 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw-plan:hover{border-color:#188bf6;box-shadow:0 0 0 3px rgba(24,139,246,.12)}
 .cfw-plan[disabled]{opacity:.6;cursor:wait}
 .cfw-link{display:inline-block;margin-top:16px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
-@media(max-width:380px){.cfw-steps button{font-size:9.5px;letter-spacing:.08em}.cfw .row-sfx{grid-template-columns:1fr 88px}}
+/* Paid return. The tiny script at the top of #fhw adds fh-paid before the
+   browser draws, so the payer lands straight on step 3 (the soft pull form)
+   and never sees step 1 or the card step again. Step 3 carries the hidden
+   attribute in the markup, hence the !important. The widget script drops the
+   class as soon as it owns which pane shows. */
+.fh-paid .cfw-steps,.fh-paid .cfw-step{display:none!important}
+.fh-paid .cfw-step.s3{display:block!important}
+@media(max-width:380px){.cfw-steps button{font-size:9px;letter-spacing:.04em;padding:9px 3px}.cfw .row-sfx{grid-template-columns:1fr 88px}}
 @media(prefers-reduced-motion:reduce){.cfw-spin{animation:none}}
 /* FH-DECK-CSS:END */
 /* FH-PEEK-CSS:START — What You Get sample covers, folder, lightbox, tabs, sample pages (owner paste 2026-09-22) */
 .fh-root .srow .txt{flex:1 1 auto;min-width:0}
-.fh-root .thumb{flex:0 0 auto;width:88px;height:114px;position:relative;display:block;margin-left:6px}
-.fh-root .thumb .cover,.fh-root .thumb .folder{position:absolute;top:0;left:0;width:160px;height:207px;transform:scale(.55) rotate(-1.2deg);transform-origin:top left}
-.fh-root .thumb:hover .cover,.fh-root .thumb:hover .folder{transform:scale(.55) rotate(0) translateY(-3px)}
+.fh-root .thumb{flex:0 0 auto;width:97px;height:125px;position:relative;display:block;margin-left:6px}
+.fh-root .thumb .cover,.fh-root .thumb .folder{position:absolute;top:0;left:0;width:160px;height:207px;transform:scale(.605) rotate(-1.2deg);transform-origin:top left}
+.fh-root .thumb:hover .cover,.fh-root .thumb:hover .folder{transform:scale(.605) rotate(0) translateY(-3px)}
 .fh-root .thumb .folder{padding:14px;min-height:0;align-content:flex-start}
 .fh-root .thumb .folder .tab{font-size:12px;padding:5px 8px}
-@media(max-width:640px){.fh-root .thumb{width:72px;height:94px}.fh-root .thumb .cover,.fh-root .thumb .folder{transform:scale(.45) rotate(-1.2deg)}.fh-root .thumb:hover .cover,.fh-root .thumb:hover .folder{transform:scale(.45)}}
+@media(max-width:640px){.fh-root .thumb{width:79px;height:103px}.fh-root .thumb .cover,.fh-root .thumb .folder{transform:scale(.495) rotate(-1.2deg)}.fh-root .thumb:hover .cover,.fh-root .thumb:hover .folder{transform:scale(.495)}}
 .fh-root .peekline{margin:10px auto 0;max-width:52ch;font-size:15.5px;color:var(--gray);line-height:1.6}
 .fh-root .cover{position:relative;aspect-ratio:8.5/11;background:#111113;border:1px solid #26262B;border-radius:6px;padding:10px 10px 8px;color:#fff;overflow:hidden;box-shadow:0 10px 26px rgba(10,10,10,.22);transform:rotate(-1.2deg);transition:transform .15s}
 .fh-root .cv-wm{font-family:var(--sans);font-weight:800;font-size:11px;letter-spacing:-.03em}
@@ -725,10 +735,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .cv-title{margin-top:8px;font-family:var(--sans);font-weight:700;font-size:11px;line-height:1.15;letter-spacing:-.02em}
 .fh-root .cv-foot{position:absolute;left:10px;right:10px;bottom:16px;display:flex;flex-wrap:wrap;gap:3px 8px;font-family:var(--mono);font-size:5px;letter-spacing:.1em;text-transform:uppercase;color:#8A8A93}
 .fh-root .cv-conf{position:absolute;left:10px;bottom:6px;font-family:var(--mono);font-size:4.5px;letter-spacing:.16em;text-transform:uppercase;color:#52525B}
-.fh-root .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:22px;letter-spacing:.3em;color:rgba(255,255,255,.14);transform:rotate(-24deg);pointer-events:none}
+.fh-root .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:600;font-size:16px;letter-spacing:.14em;white-space:nowrap;color:rgba(255,255,255,.42);transform:rotate(-24deg);pointer-events:none}
 .fh-root .folder{position:relative;background:#F4F4F5;border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-wrap:wrap;gap:6px;min-height:150px;align-content:flex-start;overflow:hidden}
 .fh-root .folder .tab{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--gray);background:#fff;border:1px solid var(--line);border-radius:4px;padding:4px 7px}
-.fh-root .folder .wm{color:rgba(10,10,10,.08);font-size:20px}
+.fh-root .folder .wm{color:rgba(10,10,10,.34);font-size:15px}
 .fh-root .lb{position:fixed;inset:0;z-index:80}
 .fh-root .lb-bg{position:absolute;inset:0;background:rgba(10,10,10,.62)}
 .fh-root .lb-card{position:relative;max-width:680px;width:calc(100% - 24px);margin:5vh auto 0;max-height:88vh;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 22px 16px;box-shadow:0 30px 60px rgba(10,10,10,.35)}
@@ -781,7 +791,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 
     <!-- SECTION 1: ABOVE THE FOLD -->
     <section class="hero">
-      <span class="eyebrow">For business owners going after the most funding their file can carry</span>
+      <span class="eyebrow">For business owners going after maximum funding</span>
       <h1>Your Credit File Could Be Worth $100K to $1M in Funding, and We'll Get You There.</h1>
       <p class="lede">We pull your credit with a soft inquiry. 10 seconds later you have the exact steps to get you the most amount of funding in the shortest period of time possible. Yours to keep.</p>
     </section>
@@ -815,7 +825,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     </script>
 
     <a class="btn" href="#fh-order">Show Me How Much I Qualify For</a>
-    <div class="cta-note">Soft pull only. Your score doesn't move. Not happy with what you get, email us within 15 days and we'll refund you.</div>
+    <div class="cta-note">Soft pull only. Score doesn't move. 7-day refund if you're not happy.</div>
 
     <!-- SECTION 2: THE PAIN -->
     <section class="sect">
@@ -847,11 +857,11 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <span class="kicker">What You Get</span>
       <div class="h2">Here's What You Get.</div>
       <div class="rows" id="fh-course-rows">
-        <div class="srow"><span class="n">01</span><div class="txt"><div class="t">Credit Analysis Report</div><div class="d">Your credit pulled from all three bureaus. Where your score sits today and where it can sit once your file is cleaned up. Every card with the exact balance to bring it down to. Every harmful item on there, named.</div></div><a class="thumb" href="#" data-page="analysis" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">credit analysis report</div><div class="cv-title">Financial Profile Assessment</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">SAMPLE</div></div></a></div>
-        <div class="srow"><span class="n">02</span><div class="txt"><div class="t">Dispute Letter Pack</div><div class="d">Every letter written for you with your accounts in it, to all three bureaus <b>and</b> directly to the creditors. <b>All six rounds</b>, round one dated and ready to mail. Print. Sign. Mail.</div></div><a class="thumb" href="#" data-page="pack" aria-label="Sample page"><div class="folder"><div class="tab">01</div><div class="tab">02</div><div class="tab">03</div><div class="tab">04</div><div class="tab">05</div><div class="tab">06</div><div class="tab">08</div><div class="wm">SAMPLE</div></div></a></div>
-        <div class="srow"><span class="n">03</span><div class="txt"><div class="t">Credit Optimization Roadmap</div><div class="d">What to do first, what comes after that, and when. Month by month, built off your own file. Some files take six months, some take one, and it tells you which on the first page.</div></div><a class="thumb" href="#" data-page="roadmap" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">credit optimization roadmap</div><div class="cv-title">Alex's 6-Month Business Readiness Roadmap</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">SAMPLE</div></div></a></div>
-        <div class="srow"><span class="n">04</span><div class="txt"><div class="t">Funding Snapshot</div><div class="d">How much we think you'll qualify for right now, and how much once your file is optimized. The distance between those two is what the rest of the package closes.</div></div><a class="thumb" href="#" data-page="snapshot" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">funding snapshot</div><div class="cv-title">Capital Readiness Snapshot</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">SAMPLE</div></div></a></div>
-        <div class="srow"><span class="n">05</span><div class="txt"><div class="t">Bank &amp; Lender Match List</div><div class="d">The banks most likely to approve a file like yours where you live, the score floor on each one, and the order to apply in so you're not stacking declines.</div></div><a class="thumb" href="#" data-page="lenders" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">bank &amp; lender match list</div><div class="cv-title">Capital Partner Shortlist</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">SAMPLE</div></div></a></div>
+        <div class="srow"><span class="n">01</span><div class="txt"><div class="t">Credit Analysis Report</div><div class="d">Your credit pulled from all three bureaus. Where your score sits today and where it can sit once your file is cleaned up. Every card with the exact balance to bring it down to. Every harmful item on there, named.</div></div><a class="thumb" href="#" data-page="analysis" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">credit analysis report</div><div class="cv-title">Financial Profile Assessment</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">CLICK HERE</div></div></a></div>
+        <div class="srow"><span class="n">02</span><div class="txt"><div class="t">Dispute Letter Pack</div><div class="d">Every letter written for you with your accounts in it, to all three bureaus <b>and</b> directly to the creditors. <b>All six rounds</b>, round one dated and ready to mail. Print. Sign. Mail.</div></div><a class="thumb" href="#" data-page="pack" aria-label="Sample page"><div class="folder"><div class="tab">01</div><div class="tab">02</div><div class="tab">03</div><div class="tab">04</div><div class="tab">05</div><div class="tab">06</div><div class="tab">08</div><div class="wm">CLICK HERE</div></div></a></div>
+        <div class="srow"><span class="n">03</span><div class="txt"><div class="t">Credit Optimization Roadmap</div><div class="d">What to do first, what comes after that, and when. Month by month, built off your own file. Some files take six months, some take one, and it tells you which on the first page.</div></div><a class="thumb" href="#" data-page="roadmap" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">credit optimization roadmap</div><div class="cv-title">Alex's 6-Month Business Readiness Roadmap</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">CLICK HERE</div></div></a></div>
+        <div class="srow"><span class="n">04</span><div class="txt"><div class="t">Funding Snapshot</div><div class="d">How much we think you'll qualify for right now, and how much once your file is optimized. The distance between those two is what the rest of the package closes.</div></div><a class="thumb" href="#" data-page="snapshot" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">funding snapshot</div><div class="cv-title">Capital Readiness Snapshot</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">CLICK HERE</div></div></a></div>
+        <div class="srow"><span class="n">05</span><div class="txt"><div class="t">Bank &amp; Lender Match List</div><div class="d">The banks most likely to approve a file like yours where you live, the score floor on each one, and the order to apply in so you're not stacking declines.</div></div><a class="thumb" href="#" data-page="lenders" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">bank &amp; lender match list</div><div class="cv-title">Capital Partner Shortlist</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span><span>outcome: sample</span><span>median: sample</span></div><div class="cv-conf">fundhub confidential</div><div class="wm">CLICK HERE</div></div></a></div>
       </div>
       <!-- SLOT-SNEAK-PEEKS: sample pages only. Alex Rivera. SAMPLE watermark on every one.
            These are CSS-rendered covers so nothing has to be hosted. Swap any cover for a real
@@ -1047,7 +1057,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       </div>
       <div class="cardw">
         <span class="kicker">The Guarantee</span>
-        <p>If you're not happy with what you get, <b>we'll refund you.</b> Just email us within 15 days.</p>
+        <p>If you're not happy with what you get, <b>we'll refund you.</b> Just email us within 7 days.</p>
       </div>
       <a class="btn fh-go-pay" href="#fh-order">Get My Roadmap</a>
     </section>
@@ -1291,20 +1301,20 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       </div>
       <div class="quals">
         <div class="qual">
-          <div class="qh yes">This is for you if:</div>
+          <div class="qh yes"><b>This is for you if:</b></div>
           <ul>
-            <li>You want to know exactly how much you qualify for before you apply anywhere</li>
-            <li>Your credit is clean and you still came back short, or it needs work and you want the order to fix it in</li>
-            <li>You'd rather have the finished plan than spend six months learning it</li>
-            <li>You're ready to mail the letters and follow the steps</li>
+            <li>You want to know <b>exactly how much you qualify for</b> <b>before you apply</b> anywhere</li>
+            <li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>
+            <li>You'd rather have the <b>finished plan</b> than spend six months learning it</li>
+            <li>You're ready to <b>mail the letters</b> and follow the steps</li>
           </ul>
         </div>
         <div class="qual">
-          <div class="qh no">This is NOT for you if:</div>
+          <div class="qh no"><b>This is NOT for you if:</b></div>
           <ul>
-            <li>You'd rather learn all of it yourself the long way</li>
-            <li>You expect the funding to show up without doing the steps</li>
-            <li>You want somebody to get on the phone and pitch you</li>
+            <li>You'd rather <b>learn all of it yourself</b> <b>the long way</b></li>
+            <li>You expect the funding to show up <b>without doing the steps</b></li>
+            <li>You want somebody to get on the phone and <b>pitch you</b></li>
           </ul>
         </div>
       </div>
@@ -1331,7 +1341,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <div class="h2">Our Best Clients Had These Same Questions.</div>
       <div class="faq">
         <details><summary>Will this hurt my credit score?</summary><div class="a">No. We pull your credit with a soft inquiry. It doesn't show up on your report and your score doesn't move.</div></details>
-        <details><summary>How do I know this is legit?</summary><div class="a">I've been doing this for ten years. Hundreds of files, thousands of data points, and nobody else in this industry offers this type of help. <b>If you're not happy with what you get, email us within 15 days and we'll refund you.</b></div></details>
+        <details><summary>How do I know this is legit?</summary><div class="a">I've been doing this for ten years. Hundreds of files, thousands of data points, and nobody else in this industry offers this type of help. <b>If you're not happy with what you get, email us within 7 days and we'll refund you.</b></div></details>
         <details><summary>How is this different from a funding course?</summary><div class="a">A course charges five to ten thousand dollars to teach you how to do it, and you dig the answers out yourself. This is the finished file. Every letter written, every step in order, built off your own credit.</div></details>
         <details><summary>What if my file needs a lot of work?</summary><div class="a">Then the roadmap says so and tells you how long. Some files need six months of dispute rounds. Some need two cards paid down. You'll know which one you are the day you open it.</div></details>
         <details><summary>Can you do the work for me?</summary><div class="a">This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response.</div></details>
@@ -1360,7 +1370,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       </div>
       <div class="cardw">
         <span class="kicker">The Guarantee</span>
-        <p>If you're not happy with what you get, <b>email us within 15 days and we'll refund you.</b></p>
+        <p>If you're not happy with what you get, <b>email us within 7 days and we'll refund you.</b></p>
       </div>
     </section>
 
@@ -1371,29 +1381,49 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 <!-- ================= SPLIT-LINE ==================
      ABOVE: the sales page. BELOW: the checkout widget, then the page bottom.
      This whole file is still ONE Custom JS/HTML element.
-     The checkout is OUR OWN two-step widget (owner-set 2026-09-22), not a
-     ClickFunnels order form. It talks to https://fundhub.ai/api/public/:
+     The checkout is OUR OWN three-step widget (owner-set 2026-09-27: info, then
+     card, then soft pull), not a ClickFunnels order form. Nothing about the
+     credit file is asked before the card is paid. It talks to
+     https://fundhub.ai/api/public/:
        GET  slo-checkout?businesses=n   price, and whether Pay is DEMO (charges nothing)
-       POST slo-checkout                starts the order (ref + client_id)
-       POST slo-pull                    identity + consent. LIVE sends defer_pull:true,
-                                        then goes to the Commas card page, which returns
-                                        to this page with ?ref=&client_id=
+       POST slo-checkout                STEP 2. Starts the order (ref + client_id) and
+                                        hands back the Commas card page URL. DEMO answers
+                                        demo:true with no card page.
+       POST slo-pull                    STEP 3, after the card. Identity + consent, and
+                                        the pull starts in that request because the order
+                                        is already paid. No defer_pull is ever sent.
                                         422 address_unverified: a warning under the street
-                                        box; Pay again with the same address sends
+                                        box; submit again with the same address sends
                                         address_confirmed:true
                                         409 existing_account: the message goes under Email
-       GET  slo-status                  polled every second after submit
+       GET  slo-status                  polled every second after step 3
        POST slo-repair-checkout         only after a pull result on the repair path
-     Step 1 · Contact: first, last, email, phone.
-     Step 2 · Payment: legal name, DOB, social, home address, previous address,
-                       businesses (first free, each extra $15), consent, Pay.
+     Step 1 · Info: first, last, email, phone. Nothing else.
+     Step 2 · Card: the total, then the Commas card page. It returns to this page
+                    with ?ref=&client_id=, which opens step 3.
+     Step 3 · Soft pull: legal name, DOB, social, home address, previous address,
+                    businesses (first included, each extra $15 — the add-on sits
+                    here, after the card), consent, and the pull runs.
      Nothing about repair or letter mailing shows before a pull result.
      The widget never decides demo or live. The server's answer does.
      UTM: read from sessionStorage fh_attribution (fh-attribution.js at the end of this file).
      ================================================ -->
 <div class="fh-widget-slot" id="fh-cf-form">
   <div class="cfw" id="fhw">
-    <div class="cfw-steps" data-tabs><button type="button" class="on" data-tab="1">1 &middot; Contact</button><button type="button" data-tab="2">2 &middot; Payment</button></div>
+    <script>
+    /* FIRST PAINT on the paid return. The card page sends the payer back to
+       ?ref=&client_id=#fhw, and the big widget script at the end of this file
+       does not run until the whole page is parsed. Without this, the checkout
+       form is what they see for that gap, and it reads as a lost payment.
+       Marks documentElement so the CSS hides the forms before anything draws. */
+    (function(){try{
+      var q=new URLSearchParams(location.search),r=q.get('ref'),c=q.get('client_id');
+      if(r&&c&&/^slo_[A-Za-z0-9_-]{6,100}$/.test(r)&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c))
+        document.documentElement.className+=' fh-paid';
+    }catch(e){}})();
+    </script>
+    <div class="cfw-formerr" data-formerr role="alert" hidden></div>
+    <div class="cfw-steps" data-tabs><button type="button" class="on" data-tab="1">1 &middot; Info</button><button type="button" data-tab="2">2 &middot; Card</button><button type="button" data-tab="3">3 &middot; Soft pull</button></div>
 
     <form class="cfw-step s1 on" novalidate autocomplete="on">
       <div class="row2">
@@ -1402,11 +1432,22 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       </div>
       <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
       <label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
+
       <button type="submit" class="cfw-btn">Continue</button>
-      <div class="cfw-note">Step 1 of 2. The short form for your soft pull is next.</div>
+      <div class="cfw-note">Step 1 of 3. Your card is next, then the short soft pull form.</div>
     </form>
 
     <form class="cfw-step s2" novalidate autocomplete="off">
+      <div class="cfw-total"><span>Total today</span><b data-total>$297</b></div>
+      <div class="cfw-totline" data-totline hidden></div>
+      <div class="cfw-demo" data-demo hidden></div>
+      <button type="submit" class="cfw-btn" data-pay>Get My Roadmap</button>
+      <div class="cfw-note"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Secure checkout &middot; soft pull only &middot; not happy, email us within 7 days and we'll refund you</div>
+      <div class="cfw-note" data-livenote hidden>Next: your card, on the secure card page</div>
+      <a class="cfw-back" href="#" data-back>Back to step 1</a>
+    </form>
+
+    <form class="cfw-step s3" novalidate autocomplete="off">
       <div class="cfw-box">
         <span class="cfw-kick">Your legal name, as on your Social Security card</span>
         <div class="row2">
@@ -1448,20 +1489,19 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         </div>
       </div>
 
+      <div class="cfw-box">
+        <span class="cfw-kick">Your businesses</span>
+        <p class="cfw-addline">We pull business credit too. Your first business is included. Each extra one is $15.</p>
       <div data-bizlist></div>
       <button type="button" class="cfw-add" data-add>+ Add a business ($15)</button>
+        <div class="cfw-totline" data-bizline hidden></div>
+      </div>
 
       <div class="cfw-note"><b>Check every answer before you continue.</b> Your legal name, date of birth, Social Security number and address &mdash; including the state &mdash; have to match your credit file exactly. One wrong character and the bureaus return nothing.</div>
-      <label class="check consent"><input type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub Credit Solutions LLC to run a soft pull of my credit report. A soft pull does not affect my credit score.</span></label>
-
-      <div class="cfw-total"><span>Total today</span><b data-total>$297</b></div>
-      <div class="cfw-totline" data-totline hidden></div>
-      <div class="cfw-demo" data-demo hidden></div>
-      <div class="cfw-formerr" data-formerr role="alert" hidden></div>
-      <button type="submit" class="cfw-btn" data-pay>Get My Roadmap</button>
-      <div class="cfw-note"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Secure checkout &middot; soft pull only &middot; not happy, email us within 15 days and we'll refund you</div>
-      <div class="cfw-note" data-livenote hidden>Next: your card, on the secure card page</div>
-      <a class="cfw-back" href="#" data-back>Back to step 1</a>
+      <label class="check consent"><input type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub Credit Solutions LLC to run a soft pull of my credit report. A soft pull does not affect my credit score. I also agree Fundhub may call and text me at the number I gave, including automated texts, about my file. Message and data rates may apply. Reply STOP to stop. Agreeing to texts is not a condition of buying anything.</span></label>
+      <button type="submit" class="cfw-btn" data-pull>Start My Soft Pull</button>
+      <div class="cfw-note"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Soft pull only &middot; it does not move your score &middot; your file is read in seconds</div>
+    </form>
     </form>
 
     <div class="cfw-state" data-state="paying" hidden>
@@ -1472,9 +1512,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 
     <div class="cfw-state" data-state="reading" hidden role="status">
       <div class="cfw-spin" aria-hidden="true"></div>
-      <h3>Reading your file&hellip;</h3>
-      <p>Order placed. We're pulling your credit with a soft inquiry and building your roadmap. Keep this page open.</p>
-      <div class="cfw-bureaus"><span data-b="TU">TransUnion</span><span data-b="EX">Experian</span><span data-b="EQ">Equifax</span></div>
+      <h3>Underwriting&hellip;</h3>
+      <p>Your payment went through. We're reading your credit file now. This usually takes a few seconds. Keep this page open.</p>
+      <!-- A chip appears only once that bureau has answered. Production asks
+           Experian and Equifax, so a TransUnion chip sitting on "pending" for
+           the whole wait reads as stuck. paintBureaus() does the showing. -->
+      <div class="cfw-bureaus"><span data-b="TU" hidden>TransUnion</span><span data-b="EX" hidden>Experian</span><span data-b="EQ" hidden>Equifax</span></div>
     </div>
 
     <div class="cfw-state" data-state="done" hidden role="status">
@@ -1496,16 +1539,16 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     </div>
 
     <div class="cfw-state" data-state="failed" hidden role="alert">
-      <h3>We couldn't read your file this time.</h3>
-      <p>This usually means a detail didn't match what the bureaus have. Check your details and try again.</p>
-      <p data-frozen hidden>A frozen credit file can't be read. Lift the freeze with that bureau, then try again.</p>
+      <h3>We couldn't read your credit file.</h3>
+      <p>Your payment went through and your order is saved. The bureaus came back with nothing, which usually means one detail didn't match your file. Check your details and try again.</p>
+      <p data-frozen hidden>Your credit file is frozen, and a frozen file can't be read. Lift the freeze with that bureau, then try again.</p>
       <button type="button" class="cfw-btn" data-retry>Check my details</button>
       <p class="cfw-small">Still stuck? Email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a> or <a data-talk href="https://apply.fundhub.ai/roadmap-book">book a call with us</a>.</p>
     </div>
 
     <div class="cfw-state" data-state="slow" hidden role="status">
       <h3>This is taking longer than usual.</h3>
-      <p>Your order is saved. Press the button to check again.</p>
+      <p>Your payment went through and your order is saved. The bureaus are still answering. Press the button to check again.</p>
       <button type="button" class="cfw-btn" data-recheck>Check again</button>
       <p class="cfw-small">Still stuck? Email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a>.</p>
     </div>
@@ -1523,24 +1566,29 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   var ORIGINS=['https://apply.fundhub.ai','https://fundhub.ai','https://www.fundhub.ai'];
   var UTM=['utm_source','utm_medium','utm_campaign','utm_content','utm_term'];
   var EXTRA=['landing_path','referrer_domain'];
-  var BIZ_KEYS=['name','address','apt','city','state','zip','ein','phone','started'];
+  var BIZ_KEYS=['name','address','apt','city','state','zip','ein','phone','started','naics'];
   var POLL_MS=1000,POLL_MAX_MS=90000;
   var GENERIC='Something went wrong on our side. Please try again, or email support@fundhub.ai.';
   var ADDR_MSG="We couldn't find that address. Check the street and ZIP, or tap Pay again to use it as typed.";
   var STATES='AL:Alabama|AK:Alaska|AZ:Arizona|AR:Arkansas|CA:California|CO:Colorado|CT:Connecticut|DE:Delaware|DC:District of Columbia|FL:Florida|GA:Georgia|HI:Hawaii|ID:Idaho|IL:Illinois|IN:Indiana|IA:Iowa|KS:Kansas|KY:Kentucky|LA:Louisiana|ME:Maine|MD:Maryland|MA:Massachusetts|MI:Michigan|MN:Minnesota|MS:Mississippi|MO:Missouri|MT:Montana|NE:Nebraska|NV:Nevada|NH:New Hampshire|NJ:New Jersey|NM:New Mexico|NY:New York|NC:North Carolina|ND:North Dakota|OH:Ohio|OK:Oklahoma|OR:Oregon|PA:Pennsylvania|RI:Rhode Island|SC:South Carolina|SD:South Dakota|TN:Tennessee|TX:Texas|UT:Utah|VT:Vermont|VA:Virginia|WA:Washington|WV:West Virginia|WI:Wisconsin|WY:Wyoming|PR:Puerto Rico|VI:U.S. Virgin Islands|GU:Guam|AS:American Samoa|MP:Northern Mariana Islands|AA:Armed Forces Americas|AE:Armed Forces Europe|AP:Armed Forces Pacific';
+
+  /* Every official 6-digit NAICS code, Census 2022 NAICS (census.gov/naics, 6-digit_2022_Codes.xlsx), 1012 codes. */
+  var NAICS="111110:Soybean Farming|111120:Oilseed (except Soybean) Farming|111130:Dry Pea and Bean Farming|111140:Wheat Farming|111150:Corn Farming|111160:Rice Farming|111191:Oilseed and Grain Combination Farming|111199:All Other Grain Farming|111211:Potato Farming|111219:Other Vegetable (except Potato) and Melon Farming|111310:Orange Groves|111320:Citrus (except Orange) Groves|111331:Apple Orchards|111332:Grape Vineyards|111333:Strawberry Farming|111334:Berry (except Strawberry) Farming|111335:Tree Nut Farming|111336:Fruit and Tree Nut Combination Farming|111339:Other Noncitrus Fruit Farming|111411:Mushroom Production|111419:Other Food Crops Grown Under Cover|111421:Nursery and Tree Production|111422:Floriculture Production|111910:Tobacco Farming|111920:Cotton Farming|111930:Sugarcane Farming|111940:Hay Farming|111991:Sugar Beet Farming|111992:Peanut Farming|111998:All Other Miscellaneous Crop Farming|112111:Beef Cattle Ranching and Farming|112112:Cattle Feedlots|112120:Dairy Cattle and Milk Production|112130:Dual-Purpose Cattle Ranching and Farming|112210:Hog and Pig Farming|112310:Chicken Egg Production|112320:Broilers and Other Meat Type Chicken Production|112330:Turkey Production|112340:Poultry Hatcheries|112390:Other Poultry Production|112410:Sheep Farming|112420:Goat Farming|112511:Finfish Farming and Fish Hatcheries|112512:Shellfish Farming|112519:Other Aquaculture|112910:Apiculture|112920:Horses and Other Equine Production|112930:Fur-Bearing Animal and Rabbit Production|112990:All Other Animal Production|113110:Timber Tract Operations|113210:Forest Nurseries and Gathering of Forest Products|113310:Logging|114111:Finfish Fishing|114112:Shellfish Fishing|114119:Other Marine Fishing|114210:Hunting and Trapping|115111:Cotton Ginning|115112:Soil Preparation, Planting, and Cultivating|115113:Crop Harvesting, Primarily by Machine|115114:Postharvest Crop Activities (except Cotton Ginning)|115115:Farm Labor Contractors and Crew Leaders|115116:Farm Management Services|115210:Support Activities for Animal Production|115310:Support Activities for Forestry|211120:Crude Petroleum Extraction|211130:Natural Gas Extraction|212114:Surface Coal Mining|212115:Underground Coal Mining|212210:Iron Ore Mining|212220:Gold Ore and Silver Ore Mining|212230:Copper, Nickel, Lead, and Zinc Mining|212290:Other Metal Ore Mining|212311:Dimension Stone Mining and Quarrying|212312:Crushed and Broken Limestone Mining and Quarrying|212313:Crushed and Broken Granite Mining and Quarrying|212319:Other Crushed and Broken Stone Mining and Quarrying|212321:Construction Sand and Gravel Mining|212322:Industrial Sand Mining|212323:Kaolin, Clay, and Ceramic and Refractory Minerals Mining|212390:Other Nonmetallic Mineral Mining and Quarrying|213111:Drilling Oil and Gas Wells|213112:Support Activities for Oil and Gas Operations|213113:Support Activities for Coal Mining|213114:Support Activities for Metal Mining|213115:Support Activities for Nonmetallic Minerals (except Fuels) Mining|221111:Hydroelectric Power Generation|221112:Fossil Fuel Electric Power Generation|221113:Nuclear Electric Power Generation|221114:Solar Electric Power Generation|221115:Wind Electric Power Generation|221116:Geothermal Electric Power Generation|221117:Biomass Electric Power Generation|221118:Other Electric Power Generation|221121:Electric Bulk Power Transmission and Control|221122:Electric Power Distribution|221210:Natural Gas Distribution|221310:Water Supply and Irrigation Systems|221320:Sewage Treatment Facilities|221330:Steam and Air-Conditioning Supply|236115:New Single-Family Housing Construction (except For-Sale Builders)|236116:New Multifamily Housing Construction (except For-Sale Builders)|236117:New Housing For-Sale Builders|236118:Residential Remodelers|236210:Industrial Building Construction|236220:Commercial and Institutional Building Construction|237110:Water and Sewer Line and Related Structures Construction|237120:Oil and Gas Pipeline and Related Structures Construction|237130:Power and Communication Line and Related Structures Construction|237210:Land Subdivision|237310:Highway, Street, and Bridge Construction|237990:Other Heavy and Civil Engineering Construction|238110:Poured Concrete Foundation and Structure Contractors|238120:Structural Steel and Precast Concrete Contractors|238130:Framing Contractors|238140:Masonry Contractors|238150:Glass and Glazing Contractors|238160:Roofing Contractors|238170:Siding Contractors|238190:Other Foundation, Structure, and Building Exterior Contractors|238210:Electrical Contractors and Other Wiring Installation Contractors|238220:Plumbing, Heating, and Air-Conditioning Contractors|238290:Other Building Equipment Contractors|238310:Drywall and Insulation Contractors|238320:Painting and Wall Covering Contractors|238330:Flooring Contractors|238340:Tile and Terrazzo Contractors|238350:Finish Carpentry Contractors|238390:Other Building Finishing Contractors|238910:Site Preparation Contractors|238990:All Other Specialty Trade Contractors|311111:Dog and Cat Food Manufacturing|311119:Other Animal Food Manufacturing|311211:Flour Milling|311212:Rice Milling|311213:Malt Manufacturing|311221:Wet Corn Milling and Starch Manufacturing|311224:Soybean and Other Oilseed Processing|311225:Fats and Oils Refining and Blending|311230:Breakfast Cereal Manufacturing|311313:Beet Sugar Manufacturing|311314:Cane Sugar Manufacturing|311340:Nonchocolate Confectionery Manufacturing|311351:Chocolate and Confectionery Manufacturing from Cacao Beans|311352:Confectionery Manufacturing from Purchased Chocolate|311411:Frozen Fruit, Juice, and Vegetable Manufacturing|311412:Frozen Specialty Food Manufacturing|311421:Fruit and Vegetable Canning|311422:Specialty Canning|311423:Dried and Dehydrated Food Manufacturing|311511:Fluid Milk Manufacturing|311512:Creamery Butter Manufacturing|311513:Cheese Manufacturing|311514:Dry, Condensed, and Evaporated Dairy Product Manufacturing|311520:Ice Cream and Frozen Dessert Manufacturing|311611:Animal (except Poultry) Slaughtering|311612:Meat Processed from Carcasses|311613:Rendering and Meat Byproduct Processing|311615:Poultry Processing|311710:Seafood Product Preparation and Packaging|311811:Retail Bakeries|311812:Commercial Bakeries|311813:Frozen Cakes, Pies, and Other Pastries Manufacturing|311821:Cookie and Cracker Manufacturing|311824:Dry Pasta, Dough, and Flour Mixes Manufacturing from Purchased Flour|311830:Tortilla Manufacturing|311911:Roasted Nuts and Peanut Butter Manufacturing|311919:Other Snack Food Manufacturing|311920:Coffee and Tea Manufacturing|311930:Flavoring Syrup and Concentrate Manufacturing|311941:Mayonnaise, Dressing, and Other Prepared Sauce Manufacturing|311942:Spice and Extract Manufacturing|311991:Perishable Prepared Food Manufacturing|311999:All Other Miscellaneous Food Manufacturing|312111:Soft Drink Manufacturing|312112:Bottled Water Manufacturing|312113:Ice Manufacturing|312120:Breweries|312130:Wineries|312140:Distilleries|312230:Tobacco Manufacturing|313110:Fiber, Yarn, and Thread Mills|313210:Broadwoven Fabric Mills|313220:Narrow Fabric Mills and Schiffli Machine Embroidery|313230:Nonwoven Fabric Mills|313240:Knit Fabric Mills|313310:Textile and Fabric Finishing Mills|313320:Fabric Coating Mills|314110:Carpet and Rug Mills|314120:Curtain and Linen Mills|314910:Textile Bag and Canvas Mills|314994:Rope, Cordage, Twine, Tire Cord, and Tire Fabric Mills|314999:All Other Miscellaneous Textile Product Mills|315120:Apparel Knitting Mills|315210:Cut and Sew Apparel Contractors|315250:Cut and Sew Apparel Manufacturing (except Contractors)|315990:Apparel Accessories and Other Apparel Manufacturing|316110:Leather and Hide Tanning and Finishing|316210:Footwear Manufacturing|316990:Other Leather and Allied Product Manufacturing|321113:Sawmills|321114:Wood Preservation|321211:Hardwood Veneer and Plywood Manufacturing|321212:Softwood Veneer and Plywood Manufacturing|321215:Engineered Wood Member Manufacturing|321219:Reconstituted Wood Product Manufacturing|321911:Wood Window and Door Manufacturing|321912:Cut Stock, Resawing Lumber, and Planing|321918:Other Millwork (including Flooring)|321920:Wood Container and Pallet Manufacturing|321991:Manufactured Home (Mobile Home) Manufacturing|321992:Prefabricated Wood Building Manufacturing|321999:All Other Miscellaneous Wood Product Manufacturing|322110:Pulp Mills|322120:Paper Mills|322130:Paperboard Mills|322211:Corrugated and Solid Fiber Box Manufacturing|322212:Folding Paperboard Box Manufacturing|322219:Other Paperboard Container Manufacturing|322220:Paper Bag and Coated and Treated Paper Manufacturing|322230:Stationery Product Manufacturing|322291:Sanitary Paper Product Manufacturing|322299:All Other Converted Paper Product Manufacturing|323111:Commercial Printing (except Screen and Books)|323113:Commercial Screen Printing|323117:Books Printing|323120:Support Activities for Printing|324110:Petroleum Refineries|324121:Asphalt Paving Mixture and Block Manufacturing|324122:Asphalt Shingle and Coating Materials Manufacturing|324191:Petroleum Lubricating Oil and Grease Manufacturing|324199:All Other Petroleum and Coal Products Manufacturing|325110:Petrochemical Manufacturing|325120:Industrial Gas Manufacturing|325130:Synthetic Dye and Pigment Manufacturing|325180:Other Basic Inorganic Chemical Manufacturing|325193:Ethyl Alcohol Manufacturing|325194:Cyclic Crude, Intermediate, and Gum and Wood Chemical Manufacturing|325199:All Other Basic Organic Chemical Manufacturing|325211:Plastics Material and Resin Manufacturing|325212:Synthetic Rubber Manufacturing|325220:Artificial and Synthetic Fibers and Filaments Manufacturing|325311:Nitrogenous Fertilizer Manufacturing|325312:Phosphatic Fertilizer Manufacturing|325314:Fertilizer (Mixing Only) Manufacturing|325315:Compost Manufacturing|325320:Pesticide and Other Agricultural Chemical Manufacturing|325411:Medicinal and Botanical Manufacturing|325412:Pharmaceutical Preparation Manufacturing|325413:In-Vitro Diagnostic Substance Manufacturing|325414:Biological Product (except Diagnostic) Manufacturing|325510:Paint and Coating Manufacturing|325520:Adhesive Manufacturing|325611:Soap and Other Detergent Manufacturing|325612:Polish and Other Sanitation Good Manufacturing|325613:Surface Active Agent Manufacturing|325620:Toilet Preparation Manufacturing|325910:Printing Ink Manufacturing|325920:Explosives Manufacturing|325991:Custom Compounding of Purchased Resins|325992:Photographic Film, Paper, Plate, Chemical, and Copy Toner Manufacturing|325998:All Other Miscellaneous Chemical Product and Preparation Manufacturing|326111:Plastics Bag and Pouch Manufacturing|326112:Plastics Packaging Film and Sheet (including Laminated) Manufacturing|326113:Unlaminated Plastics Film and Sheet (except Packaging) Manufacturing|326121:Unlaminated Plastics Profile Shape Manufacturing|326122:Plastics Pipe and Pipe Fitting Manufacturing|326130:Laminated Plastics Plate, Sheet (except Packaging), and Shape Manufacturing|326140:Polystyrene Foam Product Manufacturing|326150:Urethane and Other Foam Product (except Polystyrene) Manufacturing|326160:Plastics Bottle Manufacturing|326191:Plastics Plumbing Fixture Manufacturing|326199:All Other Plastics Product Manufacturing|326211:Tire Manufacturing (except Retreading)|326212:Tire Retreading|326220:Rubber and Plastics Hoses and Belting Manufacturing|326291:Rubber Product Manufacturing for Mechanical Use|326299:All Other Rubber Product Manufacturing|327110:Pottery, Ceramics, and Plumbing Fixture Manufacturing|327120:Clay Building Material and Refractories Manufacturing|327211:Flat Glass Manufacturing|327212:Other Pressed and Blown Glass and Glassware Manufacturing|327213:Glass Container Manufacturing|327215:Glass Product Manufacturing Made of Purchased Glass|327310:Cement Manufacturing|327320:Ready-Mix Concrete Manufacturing|327331:Concrete Block and Brick Manufacturing|327332:Concrete Pipe Manufacturing|327390:Other Concrete Product Manufacturing|327410:Lime Manufacturing|327420:Gypsum Product Manufacturing|327910:Abrasive Product Manufacturing|327991:Cut Stone and Stone Product Manufacturing|327992:Ground or Treated Mineral and Earth Manufacturing|327993:Mineral Wool Manufacturing|327999:All Other Miscellaneous Nonmetallic Mineral Product Manufacturing|331110:Iron and Steel Mills and Ferroalloy Manufacturing|331210:Iron and Steel Pipe and Tube Manufacturing from Purchased Steel|331221:Rolled Steel Shape Manufacturing|331222:Steel Wire Drawing|331313:Alumina Refining and Primary Aluminum Production|331314:Secondary Smelting and Alloying of Aluminum|331315:Aluminum Sheet, Plate, and Foil Manufacturing|331318:Other Aluminum Rolling, Drawing, and Extruding|331410:Nonferrous Metal (except Aluminum) Smelting and Refining|331420:Copper Rolling, Drawing, Extruding, and Alloying|331491:Nonferrous Metal (except Copper and Aluminum) Rolling, Drawing, and Extruding|331492:Secondary Smelting, Refining, and Alloying of Nonferrous Metal (except Copper and Aluminum)|331511:Iron Foundries|331512:Steel Investment Foundries|331513:Steel Foundries (except Investment)|331523:Nonferrous Metal Die-Casting Foundries|331524:Aluminum Foundries (except Die-Casting)|331529:Other Nonferrous Metal Foundries (except Die-Casting)|332111:Iron and Steel Forging|332112:Nonferrous Forging|332114:Custom Roll Forming|332117:Powder Metallurgy Part Manufacturing|332119:Metal Crown, Closure, and Other Metal Stamping (except Automotive)|332215:Metal Kitchen Cookware, Utensil, Cutlery, and Flatware (except Precious) Manufacturing|332216:Saw Blade and Handtool Manufacturing|332311:Prefabricated Metal Building and Component Manufacturing|332312:Fabricated Structural Metal Manufacturing|332313:Plate Work Manufacturing|332321:Metal Window and Door Manufacturing|332322:Sheet Metal Work Manufacturing|332323:Ornamental and Architectural Metal Work Manufacturing|332410:Power Boiler and Heat Exchanger Manufacturing|332420:Metal Tank (Heavy Gauge) Manufacturing|332431:Metal Can Manufacturing|332439:Other Metal Container Manufacturing|332510:Hardware Manufacturing|332613:Spring Manufacturing|332618:Other Fabricated Wire Product Manufacturing|332710:Machine Shops|332721:Precision Turned Product Manufacturing|332722:Bolt, Nut, Screw, Rivet, and Washer Manufacturing|332811:Metal Heat Treating|332812:Metal Coating, Engraving (except Jewelry and Silverware), and Allied Services to Manufacturers|332813:Electroplating, Plating, Polishing, Anodizing, and Coloring|332911:Industrial Valve Manufacturing|332912:Fluid Power Valve and Hose Fitting Manufacturing|332913:Plumbing Fixture Fitting and Trim Manufacturing|332919:Other Metal Valve and Pipe Fitting Manufacturing|332991:Ball and Roller Bearing Manufacturing|332992:Small Arms Ammunition Manufacturing|332993:Ammunition (except Small Arms) Manufacturing|332994:Small Arms, Ordnance, and Ordnance Accessories Manufacturing|332996:Fabricated Pipe and Pipe Fitting Manufacturing|332999:All Other Miscellaneous Fabricated Metal Product Manufacturing|333111:Farm Machinery and Equipment Manufacturing|333112:Lawn and Garden Tractor and Home Lawn and Garden Equipment Manufacturing|333120:Construction Machinery Manufacturing|333131:Mining Machinery and Equipment Manufacturing|333132:Oil and Gas Field Machinery and Equipment Manufacturing|333241:Food Product Machinery Manufacturing|333242:Semiconductor Machinery Manufacturing|333243:Sawmill, Woodworking, and Paper Machinery Manufacturing|333248:All Other Industrial Machinery Manufacturing|333310:Commercial and Service Industry Machinery Manufacturing|333413:Industrial and Commercial Fan and Blower and Air Purification Equipment Manufacturing|333414:Heating Equipment (except Warm Air Furnaces) Manufacturing|333415:Air-Conditioning and Warm Air Heating Equipment and Commercial and Industrial Refrigeration Equipment Manufacturing|333511:Industrial Mold Manufacturing|333514:Special Die and Tool, Die Set, Jig, and Fixture Manufacturing|333515:Cutting Tool and Machine Tool Accessory Manufacturing|333517:Machine Tool Manufacturing|333519:Rolling Mill and Other Metalworking Machinery Manufacturing|333611:Turbine and Turbine Generator Set Units Manufacturing|333612:Speed Changer, Industrial High-Speed Drive, and Gear Manufacturing|333613:Mechanical Power Transmission Equipment Manufacturing|333618:Other Engine Equipment Manufacturing|333912:Air and Gas Compressor Manufacturing|333914:Measuring, Dispensing, and Other Pumping Equipment Manufacturing|333921:Elevator and Moving Stairway Manufacturing|333922:Conveyor and Conveying Equipment Manufacturing|333923:Overhead Traveling Crane, Hoist, and Monorail System Manufacturing|333924:Industrial Truck, Tractor, Trailer, and Stacker Machinery Manufacturing|333991:Power-Driven Handtool Manufacturing|333992:Welding and Soldering Equipment Manufacturing|333993:Packaging Machinery Manufacturing|333994:Industrial Process Furnace and Oven Manufacturing|333995:Fluid Power Cylinder and Actuator Manufacturing|333996:Fluid Power Pump and Motor Manufacturing|333998:All Other Miscellaneous General Purpose Machinery Manufacturing|334111:Electronic Computer Manufacturing|334112:Computer Storage Device Manufacturing|334118:Computer Terminal and Other Computer Peripheral Equipment Manufacturing|334210:Telephone Apparatus Manufacturing|334220:Radio and Television Broadcasting and Wireless Communications Equipment Manufacturing|334290:Other Communications Equipment Manufacturing|334310:Audio and Video Equipment Manufacturing|334412:Bare Printed Circuit Board Manufacturing|334413:Semiconductor and Related Device Manufacturing|334416:Capacitor, Resistor, Coil, Transformer, and Other Inductor Manufacturing|334417:Electronic Connector Manufacturing|334418:Printed Circuit Assembly (Electronic Assembly) Manufacturing|334419:Other Electronic Component Manufacturing|334510:Electromedical and Electrotherapeutic Apparatus Manufacturing|334511:Search, Detection, Navigation, Guidance, Aeronautical, and Nautical System and Instrument Manufacturing|334512:Automatic Environmental Control Manufacturing for Residential, Commercial, and Appliance Use|334513:Instruments and Related Products Manufacturing for Measuring, Displaying, and Controlling Industrial Process Variables|334514:Totalizing Fluid Meter and Counting Device Manufacturing|334515:Instrument Manufacturing for Measuring and Testing Electricity and Electrical Signals|334516:Analytical Laboratory Instrument Manufacturing|334517:Irradiation Apparatus Manufacturing|334519:Other Measuring and Controlling Device Manufacturing|334610:Manufacturing and Reproducing Magnetic and Optical Media|335131:Residential Electric Lighting Fixture Manufacturing|335132:Commercial, Industrial, and Institutional Electric Lighting Fixture Manufacturing|335139:Electric Lamp Bulb and Other Lighting Equipment Manufacturing|335210:Small Electrical Appliance Manufacturing|335220:Major Household Appliance Manufacturing|335311:Power, Distribution, and Specialty Transformer Manufacturing|335312:Motor and Generator Manufacturing|335313:Switchgear and Switchboard Apparatus Manufacturing|335314:Relay and Industrial Control Manufacturing|335910:Battery Manufacturing|335921:Fiber Optic Cable Manufacturing|335929:Other Communication and Energy Wire Manufacturing|335931:Current-Carrying Wiring Device Manufacturing|335932:Noncurrent-Carrying Wiring Device Manufacturing|335991:Carbon and Graphite Product Manufacturing|335999:All Other Miscellaneous Electrical Equipment and Component Manufacturing|336110:Automobile and Light Duty Motor Vehicle Manufacturing|336120:Heavy Duty Truck Manufacturing|336211:Motor Vehicle Body Manufacturing|336212:Truck Trailer Manufacturing|336213:Motor Home Manufacturing|336214:Travel Trailer and Camper Manufacturing|336310:Motor Vehicle Gasoline Engine and Engine Parts Manufacturing|336320:Motor Vehicle Electrical and Electronic Equipment Manufacturing|336330:Motor Vehicle Steering and Suspension Components (except Spring) Manufacturing|336340:Motor Vehicle Brake System Manufacturing|336350:Motor Vehicle Transmission and Power Train Parts Manufacturing|336360:Motor Vehicle Seating and Interior Trim Manufacturing|336370:Motor Vehicle Metal Stamping|336390:Other Motor Vehicle Parts Manufacturing|336411:Aircraft Manufacturing|336412:Aircraft Engine and Engine Parts Manufacturing|336413:Other Aircraft Parts and Auxiliary Equipment Manufacturing|336414:Guided Missile and Space Vehicle Manufacturing|336415:Guided Missile and Space Vehicle Propulsion Unit and Propulsion Unit Parts Manufacturing|336419:Other Guided Missile and Space Vehicle Parts and Auxiliary Equipment Manufacturing|336510:Railroad Rolling Stock Manufacturing|336611:Ship Building and Repairing|336612:Boat Building|336991:Motorcycle, Bicycle, and Parts Manufacturing|336992:Military Armored Vehicle, Tank, and Tank Component Manufacturing|336999:All Other Transportation Equipment Manufacturing|337110:Wood Kitchen Cabinet and Countertop Manufacturing|337121:Upholstered Household Furniture Manufacturing|337122:Nonupholstered Wood Household Furniture Manufacturing|337126:Household Furniture (except Wood and Upholstered) Manufacturing|337127:Institutional Furniture Manufacturing|337211:Wood Office Furniture Manufacturing|337212:Custom Architectural Woodwork and Millwork Manufacturing|337214:Office Furniture (except Wood) Manufacturing|337215:Showcase, Partition, Shelving, and Locker Manufacturing|337910:Mattress Manufacturing|337920:Blind and Shade Manufacturing|339112:Surgical and Medical Instrument Manufacturing|339113:Surgical Appliance and Supplies Manufacturing|339114:Dental Equipment and Supplies Manufacturing|339115:Ophthalmic Goods Manufacturing|339116:Dental Laboratories|339910:Jewelry and Silverware Manufacturing|339920:Sporting and Athletic Goods Manufacturing|339930:Doll, Toy, and Game Manufacturing|339940:Office Supplies (except Paper) Manufacturing|339950:Sign Manufacturing|339991:Gasket, Packing, and Sealing Device Manufacturing|339992:Musical Instrument Manufacturing|339993:Fastener, Button, Needle, and Pin Manufacturing|339994:Broom, Brush, and Mop Manufacturing|339995:Burial Casket Manufacturing|339999:All Other Miscellaneous Manufacturing|423110:Automobile and Other Motor Vehicle Merchant Wholesalers|423120:Motor Vehicle Supplies and New Parts Merchant Wholesalers|423130:Tire and Tube Merchant Wholesalers|423140:Motor Vehicle Parts (Used) Merchant Wholesalers|423210:Furniture Merchant Wholesalers|423220:Home Furnishing Merchant Wholesalers|423310:Lumber, Plywood, Millwork, and Wood Panel Merchant Wholesalers|423320:Brick, Stone, and Related Construction Material Merchant Wholesalers|423330:Roofing, Siding, and Insulation Material Merchant Wholesalers|423390:Other Construction Material Merchant Wholesalers|423410:Photographic Equipment and Supplies Merchant Wholesalers|423420:Office Equipment Merchant Wholesalers|423430:Computer and Computer Peripheral Equipment and Software Merchant Wholesalers|423440:Other Commercial Equipment Merchant Wholesalers|423450:Medical, Dental, and Hospital Equipment and Supplies Merchant Wholesalers|423460:Ophthalmic Goods Merchant Wholesalers|423490:Other Professional Equipment and Supplies Merchant Wholesalers|423510:Metal Service Centers and Other Metal Merchant Wholesalers|423520:Coal and Other Mineral and Ore Merchant Wholesalers|423610:Electrical Apparatus and Equipment, Wiring Supplies, and Related Equipment Merchant Wholesalers|423620:Household Appliances, Electric Housewares, and Consumer Electronics Merchant Wholesalers|423690:Other Electronic Parts and Equipment Merchant Wholesalers|423710:Hardware Merchant Wholesalers|423720:Plumbing and Heating Equipment and Supplies (Hydronics) Merchant Wholesalers|423730:Warm Air Heating and Air-Conditioning Equipment and Supplies Merchant Wholesalers|423740:Refrigeration Equipment and Supplies Merchant Wholesalers|423810:Construction and Mining (except Oil Well) Machinery and Equipment Merchant Wholesalers|423820:Farm and Garden Machinery and Equipment Merchant Wholesalers|423830:Industrial Machinery and Equipment Merchant Wholesalers|423840:Industrial Supplies Merchant Wholesalers|423850:Service Establishment Equipment and Supplies Merchant Wholesalers|423860:Transportation Equipment and Supplies (except Motor Vehicle) Merchant Wholesalers|423910:Sporting and Recreational Goods and Supplies Merchant Wholesalers|423920:Toy and Hobby Goods and Supplies Merchant Wholesalers|423930:Recyclable Material Merchant Wholesalers|423940:Jewelry, Watch, Precious Stone, and Precious Metal Merchant Wholesalers|423990:Other Miscellaneous Durable Goods Merchant Wholesalers|424110:Printing and Writing Paper Merchant Wholesalers|424120:Stationery and Office Supplies Merchant Wholesalers|424130:Industrial and Personal Service Paper Merchant Wholesalers|424210:Drugs and Druggists' Sundries Merchant Wholesalers|424310:Piece Goods, Notions, and Other Dry Goods Merchant Wholesalers|424340:Footwear Merchant Wholesalers|424350:Clothing and Clothing Accessories Merchant Wholesalers|424410:General Line Grocery Merchant Wholesalers|424420:Packaged Frozen Food Merchant Wholesalers|424430:Dairy Product (except Dried or Canned) Merchant Wholesalers|424440:Poultry and Poultry Product Merchant Wholesalers|424450:Confectionery Merchant Wholesalers|424460:Fish and Seafood Merchant Wholesalers|424470:Meat and Meat Product Merchant Wholesalers|424480:Fresh Fruit and Vegetable Merchant Wholesalers|424490:Other Grocery and Related Products Merchant Wholesalers|424510:Grain and Field Bean Merchant Wholesalers|424520:Livestock Merchant Wholesalers|424590:Other Farm Product Raw Material Merchant Wholesalers|424610:Plastics Materials and Basic Forms and Shapes Merchant Wholesalers|424690:Other Chemical and Allied Products Merchant Wholesalers|424710:Petroleum Bulk Stations and Terminals|424720:Petroleum and Petroleum Products Merchant Wholesalers (except Bulk Stations and Terminals)|424810:Beer and Ale Merchant Wholesalers|424820:Wine and Distilled Alcoholic Beverage Merchant Wholesalers|424910:Farm Supplies Merchant Wholesalers|424920:Book, Periodical, and Newspaper Merchant Wholesalers|424930:Flower, Nursery Stock, and Florists' Supplies Merchant Wholesalers|424940:Tobacco Product and Electronic Cigarette Merchant Wholesalers|424950:Paint, Varnish, and Supplies Merchant Wholesalers|424990:Other Miscellaneous Nondurable Goods Merchant Wholesalers|425120:Wholesale Trade Agents and Brokers|441110:New Car Dealers|441120:Used Car Dealers|441210:Recreational Vehicle Dealers|441222:Boat Dealers|441227:Motorcycle, ATV, and All Other Motor Vehicle Dealers|441330:Automotive Parts and Accessories Retailers|441340:Tire Dealers|444110:Home Centers|444120:Paint and Wallpaper Retailers|444140:Hardware Retailers|444180:Other Building Material Dealers|444230:Outdoor Power Equipment Retailers|444240:Nursery, Garden Center, and Farm Supply Retailers|445110:Supermarkets and Other Grocery Retailers (except Convenience Retailers)|445131:Convenience Retailers|445132:Vending Machine Operators|445230:Fruit and Vegetable Retailers|445240:Meat Retailers|445250:Fish and Seafood Retailers|445291:Baked Goods Retailers|445292:Confectionery and Nut Retailers|445298:All Other Specialty Food Retailers|445320:Beer, Wine, and Liquor Retailers|449110:Furniture Retailers|449121:Floor Covering Retailers|449122:Window Treatment Retailers|449129:All Other Home Furnishings Retailers|449210:Electronics and Appliance Retailers|455110:Department Stores|455211:Warehouse Clubs and Supercenters|455219:All Other General Merchandise Retailers|456110:Pharmacies and Drug Retailers|456120:Cosmetics, Beauty Supplies, and Perfume Retailers|456130:Optical Goods Retailers|456191:Food (Health) Supplement Retailers|456199:All Other Health and Personal Care Retailers|457110:Gasoline Stations with Convenience Stores|457120:Other Gasoline Stations|457210:Fuel Dealers|458110:Clothing and Clothing Accessories Retailers|458210:Shoe Retailers|458310:Jewelry Retailers|458320:Luggage and Leather Goods Retailers|459110:Sporting Goods Retailers|459120:Hobby, Toy, and Game Retailers|459130:Sewing, Needlework, and Piece Goods Retailers|459140:Musical Instrument and Supplies Retailers|459210:Book Retailers and News Dealers|459310:Florists|459410:Office Supplies and Stationery Retailers|459420:Gift, Novelty, and Souvenir Retailers|459510:Used Merchandise Retailers|459910:Pet and Pet Supplies Retailers|459920:Art Dealers|459930:Manufactured (Mobile) Home Dealers|459991:Tobacco, Electronic Cigarette, and Other Smoking Supplies Retailers|459999:All Other Miscellaneous Retailers|481111:Scheduled Passenger Air Transportation|481112:Scheduled Freight Air Transportation|481211:Nonscheduled Chartered Passenger Air Transportation|481212:Nonscheduled Chartered Freight Air Transportation|481219:Other Nonscheduled Air Transportation|482111:Line-Haul Railroads|482112:Short Line Railroads|483111:Deep Sea Freight Transportation|483112:Deep Sea Passenger Transportation|483113:Coastal and Great Lakes Freight Transportation|483114:Coastal and Great Lakes Passenger Transportation|483211:Inland Water Freight Transportation|483212:Inland Water Passenger Transportation|484110:General Freight Trucking, Local|484121:General Freight Trucking, Long-Distance, Truckload|484122:General Freight Trucking, Long-Distance, Less Than Truckload|484210:Used Household and Office Goods Moving|484220:Specialized Freight (except Used Goods) Trucking, Local|484230:Specialized Freight (except Used Goods) Trucking, Long-Distance|485111:Mixed Mode Transit Systems|485112:Commuter Rail Systems|485113:Bus and Other Motor Vehicle Transit Systems|485119:Other Urban Transit Systems|485210:Interurban and Rural Bus Transportation|485310:Taxi and Ridesharing Services|485320:Limousine Service|485410:School and Employee Bus Transportation|485510:Charter Bus Industry|485991:Special Needs Transportation|485999:All Other Transit and Ground Passenger Transportation|486110:Pipeline Transportation of Crude Oil|486210:Pipeline Transportation of Natural Gas|486910:Pipeline Transportation of Refined Petroleum Products|486990:All Other Pipeline Transportation|487110:Scenic and Sightseeing Transportation, Land|487210:Scenic and Sightseeing Transportation, Water|487990:Scenic and Sightseeing Transportation, Other|488111:Air Traffic Control|488119:Other Airport Operations|488190:Other Support Activities for Air Transportation|488210:Support Activities for Rail Transportation|488310:Port and Harbor Operations|488320:Marine Cargo Handling|488330:Navigational Services to Shipping|488390:Other Support Activities for Water Transportation|488410:Motor Vehicle Towing|488490:Other Support Activities for Road Transportation|488510:Freight Transportation Arrangement|488991:Packing and Crating|488999:All Other Support Activities for Transportation|491110:Postal Service|492110:Couriers and Express Delivery Services|492210:Local Messengers and Local Delivery|493110:General Warehousing and Storage|493120:Refrigerated Warehousing and Storage|493130:Farm Product Warehousing and Storage|493190:Other Warehousing and Storage|512110:Motion Picture and Video Production|512120:Motion Picture and Video Distribution|512131:Motion Picture Theaters (except Drive-Ins)|512132:Drive-In Motion Picture Theaters|512191:Teleproduction and Other Postproduction Services|512199:Other Motion Picture and Video Industries|512230:Music Publishers|512240:Sound Recording Studios|512250:Record Production and Distribution|512290:Other Sound Recording Industries|513110:Newspaper Publishers|513120:Periodical Publishers|513130:Book Publishers|513140:Directory and Mailing List Publishers|513191:Greeting Card Publishers|513199:All Other Publishers|513210:Software Publishers|516110:Radio Broadcasting Stations|516120:Television Broadcasting Stations|516210:Media Streaming Distribution Services, Social Networks, and Other Media Networks and Content Providers|517111:Wired Telecommunications Carriers|517112:Wireless Telecommunications Carriers (except Satellite)|517121:Telecommunications Resellers|517122:Agents for Wireless Telecommunications Services|517410:Satellite Telecommunications|517810:All Other Telecommunications|518210:Computing Infrastructure Providers, Data Processing, Web Hosting, and Related Services|519210:Libraries and Archives|519290:Web Search Portals and All Other Information Services|521110:Monetary Authorities-Central Bank|522110:Commercial Banking|522130:Credit Unions|522180:Savings Institutions and Other Depository Credit Intermediation|522210:Credit Card Issuing|522220:Sales Financing|522291:Consumer Lending|522292:Real Estate Credit|522299:International, Secondary Market, and All Other Nondepository Credit Intermediation|522310:Mortgage and Nonmortgage Loan Brokers|522320:Financial Transactions Processing, Reserve, and Clearinghouse Activities|522390:Other Activities Related to Credit Intermediation|523150:Investment Banking and Securities Intermediation|523160:Commodity Contracts Intermediation|523210:Securities and Commodity Exchanges|523910:Miscellaneous Intermediation|523940:Portfolio Management and Investment Advice|523991:Trust, Fiduciary, and Custody Activities|523999:Miscellaneous Financial Investment Activities|524113:Direct Life Insurance Carriers|524114:Direct Health and Medical Insurance Carriers|524126:Direct Property and Casualty Insurance Carriers|524127:Direct Title Insurance Carriers|524128:Other Direct Insurance (except Life, Health, and Medical) Carriers|524130:Reinsurance Carriers|524210:Insurance Agencies and Brokerages|524291:Claims Adjusting|524292:Pharmacy Benefit Management and Other Third Party Administration of Insurance and Pension Funds|524298:All Other Insurance Related Activities|525110:Pension Funds|525120:Health and Welfare Funds|525190:Other Insurance Funds|525910:Open-End Investment Funds|525920:Trusts, Estates, and Agency Accounts|525990:Other Financial Vehicles|531110:Lessors of Residential Buildings and Dwellings|531120:Lessors of Nonresidential Buildings (except Miniwarehouses)|531130:Lessors of Miniwarehouses and Self-Storage Units|531190:Lessors of Other Real Estate Property|531210:Offices of Real Estate Agents and Brokers|531311:Residential Property Managers|531312:Nonresidential Property Managers|531320:Offices of Real Estate Appraisers|531390:Other Activities Related to Real Estate|532111:Passenger Car Rental|532112:Passenger Car Leasing|532120:Truck, Utility Trailer, and RV (Recreational Vehicle) Rental and Leasing|532210:Consumer Electronics and Appliances Rental|532281:Formal Wear and Costume Rental|532282:Video Tape and Disc Rental|532283:Home Health Equipment Rental|532284:Recreational Goods Rental|532289:All Other Consumer Goods Rental|532310:General Rental Centers|532411:Commercial Air, Rail, and Water Transportation Equipment Rental and Leasing|532412:Construction, Mining, and Forestry Machinery and Equipment Rental and Leasing|532420:Office Machinery and Equipment Rental and Leasing|532490:Other Commercial and Industrial Machinery and Equipment Rental and Leasing|533110:Lessors of Nonfinancial Intangible Assets (except Copyrighted Works)|541110:Offices of Lawyers|541120:Offices of Notaries|541191:Title Abstract and Settlement Offices|541199:All Other Legal Services|541211:Offices of Certified Public Accountants|541213:Tax Preparation Services|541214:Payroll Services|541219:Other Accounting Services|541310:Architectural Services|541320:Landscape Architectural Services|541330:Engineering Services|541340:Drafting Services|541350:Building Inspection Services|541360:Geophysical Surveying and Mapping Services|541370:Surveying and Mapping (except Geophysical) Services|541380:Testing Laboratories and Services|541410:Interior Design Services|541420:Industrial Design Services|541430:Graphic Design Services|541490:Other Specialized Design Services|541511:Custom Computer Programming Services|541512:Computer Systems Design Services|541513:Computer Facilities Management Services|541519:Other Computer Related Services|541611:Administrative Management and General Management Consulting Services|541612:Human Resources Consulting Services|541613:Marketing Consulting Services|541614:Process, Physical Distribution, and Logistics Consulting Services|541618:Other Management Consulting Services|541620:Environmental Consulting Services|541690:Other Scientific and Technical Consulting Services|541713:Research and Development in Nanotechnology|541714:Research and Development in Biotechnology (except Nanobiotechnology)|541715:Research and Development in the Physical, Engineering, and Life Sciences (except Nanotechnology and Biotechnology)|541720:Research and Development in the Social Sciences and Humanities|541810:Advertising Agencies|541820:Public Relations Agencies|541830:Media Buying Agencies|541840:Media Representatives|541850:Indoor and Outdoor Display Advertising|541860:Direct Mail Advertising|541870:Advertising Material Distribution Services|541890:Other Services Related to Advertising|541910:Marketing Research and Public Opinion Polling|541921:Photography Studios, Portrait|541922:Commercial Photography|541930:Translation and Interpretation Services|541940:Veterinary Services|541990:All Other Professional, Scientific, and Technical Services|551111:Offices of Bank Holding Companies|551112:Offices of Other Holding Companies|551114:Corporate, Subsidiary, and Regional Managing Offices|561110:Office Administrative Services|561210:Facilities Support Services|561311:Employment Placement Agencies|561312:Executive Search Services|561320:Temporary Help Services|561330:Professional Employer Organizations|561410:Document Preparation Services|561421:Telephone Answering Services|561422:Telemarketing Bureaus and Other Contact Centers|561431:Private Mail Centers|561439:Other Business Service Centers (including Copy Shops)|561440:Collection Agencies|561450:Credit Bureaus|561491:Repossession Services|561492:Court Reporting and Stenotype Services|561499:All Other Business Support Services|561510:Travel Agencies|561520:Tour Operators|561591:Convention and Visitors Bureaus|561599:All Other Travel Arrangement and Reservation Services|561611:Investigation and Personal Background Check Services|561612:Security Guards and Patrol Services|561613:Armored Car Services|561621:Security Systems Services (except Locksmiths)|561622:Locksmiths|561710:Exterminating and Pest Control Services|561720:Janitorial Services|561730:Landscaping Services|561740:Carpet and Upholstery Cleaning Services|561790:Other Services to Buildings and Dwellings|561910:Packaging and Labeling Services|561920:Convention and Trade Show Organizers|561990:All Other Support Services|562111:Solid Waste Collection|562112:Hazardous Waste Collection|562119:Other Waste Collection|562211:Hazardous Waste Treatment and Disposal|562212:Solid Waste Landfill|562213:Solid Waste Combustors and Incinerators|562219:Other Nonhazardous Waste Treatment and Disposal|562910:Remediation Services|562920:Materials Recovery Facilities|562991:Septic Tank and Related Services|562998:All Other Miscellaneous Waste Management Services|611110:Elementary and Secondary Schools|611210:Junior Colleges|611310:Colleges, Universities, and Professional Schools|611410:Business and Secretarial Schools|611420:Computer Training|611430:Professional and Management Development Training|611511:Cosmetology and Barber Schools|611512:Flight Training|611513:Apprenticeship Training|611519:Other Technical and Trade Schools|611610:Fine Arts Schools|611620:Sports and Recreation Instruction|611630:Language Schools|611691:Exam Preparation and Tutoring|611692:Automobile Driving Schools|611699:All Other Miscellaneous Schools and Instruction|611710:Educational Support Services|621111:Offices of Physicians (except Mental Health Specialists)|621112:Offices of Physicians, Mental Health Specialists|621210:Offices of Dentists|621310:Offices of Chiropractors|621320:Offices of Optometrists|621330:Offices of Mental Health Practitioners (except Physicians)|621340:Offices of Physical, Occupational and Speech Therapists, and Audiologists|621391:Offices of Podiatrists|621399:Offices of All Other Miscellaneous Health Practitioners|621410:Family Planning Centers|621420:Outpatient Mental Health and Substance Abuse Centers|621491:HMO Medical Centers|621492:Kidney Dialysis Centers|621493:Freestanding Ambulatory Surgical and Emergency Centers|621498:All Other Outpatient Care Centers|621511:Medical Laboratories|621512:Diagnostic Imaging Centers|621610:Home Health Care Services|621910:Ambulance Services|621991:Blood and Organ Banks|621999:All Other Miscellaneous Ambulatory Health Care Services|622110:General Medical and Surgical Hospitals|622210:Psychiatric and Substance Abuse Hospitals|622310:Specialty (except Psychiatric and Substance Abuse) Hospitals|623110:Nursing Care Facilities (Skilled Nursing Facilities)|623210:Residential Intellectual and Developmental Disability Facilities|623220:Residential Mental Health and Substance Abuse Facilities|623311:Continuing Care Retirement Communities|623312:Assisted Living Facilities for the Elderly|623990:Other Residential Care Facilities|624110:Child and Youth Services|624120:Services for the Elderly and Persons with Disabilities|624190:Other Individual and Family Services|624210:Community Food Services|624221:Temporary Shelters|624229:Other Community Housing Services|624230:Emergency and Other Relief Services|624310:Vocational Rehabilitation Services|624410:Child Care Services|711110:Theater Companies and Dinner Theaters|711120:Dance Companies|711130:Musical Groups and Artists|711190:Other Performing Arts Companies|711211:Sports Teams and Clubs|711212:Racetracks|711219:Other Spectator Sports|711310:Promoters of Performing Arts, Sports, and Similar Events with Facilities|711320:Promoters of Performing Arts, Sports, and Similar Events without Facilities|711410:Agents and Managers for Artists, Athletes, Entertainers, and Other Public Figures|711510:Independent Artists, Writers, and Performers|712110:Museums|712120:Historical Sites|712130:Zoos and Botanical Gardens|712190:Nature Parks and Other Similar Institutions|713110:Amusement and Theme Parks|713120:Amusement Arcades|713210:Casinos (except Casino Hotels)|713290:Other Gambling Industries|713910:Golf Courses and Country Clubs|713920:Skiing Facilities|713930:Marinas|713940:Fitness and Recreational Sports Centers|713950:Bowling Centers|713990:All Other Amusement and Recreation Industries|721110:Hotels (except Casino Hotels) and Motels|721120:Casino Hotels|721191:Bed-and-Breakfast Inns|721199:All Other Traveler Accommodation|721211:RV (Recreational Vehicle) Parks and Campgrounds|721214:Recreational and Vacation Camps (except Campgrounds)|721310:Rooming and Boarding Houses, Dormitories, and Workers' Camps|722310:Food Service Contractors|722320:Caterers|722330:Mobile Food Services|722410:Drinking Places (Alcoholic Beverages)|722511:Full-Service Restaurants|722513:Limited-Service Restaurants|722514:Cafeterias, Grill Buffets, and Buffets|722515:Snack and Nonalcoholic Beverage Bars|811111:General Automotive Repair|811114:Specialized Automotive Repair|811121:Automotive Body, Paint, and Interior Repair and Maintenance|811122:Automotive Glass Replacement Shops|811191:Automotive Oil Change and Lubrication Shops|811192:Car Washes|811198:All Other Automotive Repair and Maintenance|811210:Electronic and Precision Equipment Repair and Maintenance|811310:Commercial and Industrial Machinery and Equipment (except Automotive and Electronic) Repair and Maintenance|811411:Home and Garden Equipment Repair and Maintenance|811412:Appliance Repair and Maintenance|811420:Reupholstery and Furniture Repair|811430:Footwear and Leather Goods Repair|811490:Other Personal and Household Goods Repair and Maintenance|812111:Barber Shops|812112:Beauty Salons|812113:Nail Salons|812191:Diet and Weight Reducing Centers|812199:Other Personal Care Services|812210:Funeral Homes and Funeral Services|812220:Cemeteries and Crematories|812310:Coin-Operated Laundries and Drycleaners|812320:Drycleaning and Laundry Services (except Coin-Operated)|812331:Linen Supply|812332:Industrial Launderers|812910:Pet Care (except Veterinary) Services|812921:Photofinishing Laboratories (except One-Hour)|812922:One-Hour Photofinishing|812930:Parking Lots and Garages|812990:All Other Personal Services|813110:Religious Organizations|813211:Grantmaking Foundations|813212:Voluntary Health Organizations|813219:Other Grantmaking and Giving Services|813311:Human Rights Organizations|813312:Environment, Conservation and Wildlife Organizations|813319:Other Social Advocacy Organizations|813410:Civic and Social Organizations|813910:Business Associations|813920:Professional Organizations|813930:Labor Unions and Similar Labor Organizations|813940:Political Organizations|813990:Other Similar Organizations (except Business, Professional, Labor, and Political Organizations)|814110:Private Households|921110:Executive Offices|921120:Legislative Bodies|921130:Public Finance Activities|921140:Executive and Legislative Offices, Combined|921150:American Indian and Alaska Native Tribal Governments|921190:Other General Government Support|922110:Courts|922120:Police Protection|922130:Legal Counsel and Prosecution|922140:Correctional Institutions|922150:Parole Offices and Probation Offices|922160:Fire Protection|922190:Other Justice, Public Order, and Safety Activities|923110:Administration of Education Programs|923120:Administration of Public Health Programs|923130:Administration of Human Resource Programs (except Education, Public Health, and Veterans' Affairs Programs)|923140:Administration of Veterans' Affairs|924110:Administration of Air and Water Resource and Solid Waste Management Programs|924120:Administration of Conservation Programs|925110:Administration of Housing Programs|925120:Administration of Urban Planning and Community and Rural Development|926110:Administration of General Economic Programs|926120:Regulation and Administration of Transportation Programs|926130:Regulation and Administration of Communications, Electric, Gas, and Other Utilities|926140:Regulation of Agricultural Marketing and Commodities|926150:Regulation, Licensing, and Inspection of Miscellaneous Commercial Sectors|927110:Space Research and Technology|928110:National Security|928120:International Affairs";
 
   var price={base:29700,each:1500,max:20};
   var order=null;   /* {ref, client_id, demo, checkoutUrl, sig, locked} kept in memory only */
   var addrWarned=null; /* the address the server could not find; Pay again with it = use it as typed */
   var t0=0,busy=false,pollToken=0,logged=false;
 
-  var s1=root.querySelector('.s1'),s2=root.querySelector('.s2');
+  var s1=root.querySelector('.s1'),s2=root.querySelector('.s2'),s3=root.querySelector('.s3');
   var tabs=root.querySelectorAll('[data-tab]'),tabBar=root.querySelector('[data-tabs]');
   var bizList=root.querySelector('[data-bizlist]'),addBtn=root.querySelector('[data-add]');
-  var payBtn=root.querySelector('[data-pay]'),totalEl=root.querySelector('[data-total]'),totLine=root.querySelector('[data-totline]');
+  var payBtn=root.querySelector('[data-pay]'),pullBtn=root.querySelector('[data-pull]');
+  var totalEl=root.querySelector('[data-total]'),totLine=root.querySelector('[data-totline]');
   var formErr=root.querySelector('[data-formerr]'),demoEl=root.querySelector('[data-demo]'),liveNote=root.querySelector('[data-livenote]');
+  var bizLine=root.querySelector('[data-bizline]');
   var moved=root.querySelector('[data-moved]'),prevBox=root.querySelector('[data-prev]');
-  var ssnInput=s2.querySelector('[name="ssn"]'),showBtn=root.querySelector('[data-show]');
+  var ssnInput=s3.querySelector('[name="ssn"]'),showBtn=root.querySelector('[data-show]');
   var step=1;
 
   function each(list,fn){Array.prototype.forEach.call(list,fn);}
@@ -1558,6 +1606,14 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     sel.innerHTML=h;
   }
   each(root.querySelectorAll('select[data-states]'),fillStates);
+  var naicsHtml=null;
+  function fillNaics(sel){
+    if(!naicsHtml){
+      naicsHtml='<option value="">Pick one</option>';
+      NAICS.split('|').forEach(function(p){var i=p.indexOf(':'),c=p.slice(0,i),t=p.slice(i+1).replace(/&/g,'&amp;').replace(/</g,'&lt;');naicsHtml+='<option value="'+c+'">'+c+' '+t+'</option>';});
+    }
+    sel.innerHTML=naicsHtml;
+  }
 
   /* ---- errors under each box ---- */
   function slotFor(input){
@@ -1687,10 +1743,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       +'<label>City<input type="text" data-k="city" autocomplete="off" maxlength="28"></label>'
       +'<div class="row2"><label>State<select data-k="state" autocomplete="off" data-states></select></label>'
       +'<label>ZIP<input type="text" data-k="zip" autocomplete="off" inputmode="numeric" maxlength="10"></label></div>'
-      +'<div class="row2"><label>EIN <span class="opt">optional</span><input type="text" data-k="ein" autocomplete="off" inputmode="numeric" maxlength="10" placeholder="12-3456789"></label>'
+      +'<div class="row2"><label>EIN<input type="text" data-k="ein" autocomplete="off" inputmode="numeric" maxlength="10" placeholder="12-3456789"></label>'
       +'<label>Phone <span class="opt">optional</span><input type="tel" data-k="phone" autocomplete="off" inputmode="tel" maxlength="20"></label></div>'
-      +'<label>Month and year it started<input type="text" data-k="started" autocomplete="off" inputmode="numeric" maxlength="7" placeholder="MM/YYYY"></label>';
+      +'<label>Month and year it started<input type="text" data-k="started" autocomplete="off" inputmode="numeric" maxlength="7" placeholder="MM/YYYY"></label>'
+      +'<label>Industry code (NAICS)<select data-k="naics" autocomplete="off" data-naics></select></label>';
     fillStates(d.querySelector('select[data-states]'));
+    fillNaics(d.querySelector('select[data-naics]'));
     return d;
   }
   function renumber(){
@@ -1702,15 +1760,22 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     });
     addBtn.hidden=rows.length>=price.max;
     addBtn.textContent='+ Add a business ('+money(price.each)+')';
-    paintTotal();
+    paintTotal();paintExtras();
   }
   function bizCount(){return Math.max(1,bizRows().length);}
+  /* STEP 2 is the base price on its own. Businesses are chosen on step 3, after
+     the card, so nothing they do there can change what this button charges. */
   function paintTotal(){
-    var n=bizCount(),c=price.base+price.each*(n-1);
-    totalEl.textContent=money(c);
-    payBtn.textContent='Get My Roadmap · '+money(c);
-    if(n>1){totLine.textContent=n+' businesses · first one free, '+money(price.each)+' each extra';totLine.hidden=false;}
-    else{totLine.hidden=true;totLine.textContent='';}
+    totalEl.textContent=money(price.base);
+    payBtn.textContent='Get My Roadmap · '+money(price.base);
+    totLine.hidden=true;totLine.textContent='';
+  }
+  /* STEP 3's own line: what the extra businesses add. */
+  function paintExtras(){
+    if(!bizLine)return;
+    var n=bizCount(),extra=price.each*(n-1);
+    if(n>1){bizLine.textContent=n+' businesses · first one included, '+money(price.each)+' each extra · '+money(extra)+' added';bizLine.hidden=false;}
+    else{bizLine.hidden=true;bizLine.textContent='';}
   }
   addBtn.addEventListener('click',function(){
     if(bizRows().length>=price.max)return;
@@ -1732,12 +1797,13 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       if(!n)bad(nm,'Please enter the legal business name.');
       else if(letters.length<2||n.length>100)bad(nm,'Use the name as filed with the state.');
       checkAddress(function(k){return bizInput(row,k);},'the business',bad);
-      var ein=bizInput(row,'ein');if(squeeze(ein.value)&&digits(ein.value).length!==9)bad(ein,'An EIN has 9 digits, like 12-3456789.');
+      var ein=bizInput(row,'ein');if(!squeeze(ein.value))bad(ein,'Please enter the business EIN.');else if(digits(ein.value).length!==9)bad(ein,'An EIN has 9 digits, like 12-3456789.');
       var ph=bizInput(row,'phone');if(squeeze(ph.value)&&!phone10(ph.value))bad(ph,'Use a 10-digit phone number.');
       var st=bizInput(row,'started'),my=monthYear(st.value),now=new Date();
       if(!squeeze(st.value))bad(st,'Please enter the month and year it started, like 03/2021.');
       else if(!my)bad(st,'Use month and year, like 03/2021.');
       else if(my.y*12+my.mo>now.getUTCFullYear()*12+now.getUTCMonth()+1)bad(st,'That date is in the future. Please check it.');
+      var nc=bizInput(row,'naics');if(!/^\d{6}$/.test(nc.value))bad(nc,'Please pick the industry code for this business.');
     });
   }
   function bizPayload(){
@@ -1748,38 +1814,38 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     });
   }
 
-  /* ---- step 2 ---- */
+  /* ---- step 3: the soft pull. Asked AFTER the card (owner-set 2026-09-27). ---- */
   moved.addEventListener('change',function(){prevBox.hidden=!moved.checked;});
-  function checkStep2(){
-    clearAll(s2);hideFormErr();var ok=true;
+  function checkStep3(){
+    clearAll(s3);hideFormErr();var ok=true;
     function bad(el,msg){setErr(el,msg);ok=false;}
-    function one(name,msg){var el=s2.querySelector('[name="'+name+'"]');if(msg)bad(el,msg);}
-    one('first_name',vName(val(s2,'first_name'),'your legal first name',20,true));
-    one('middle_name',vName(val(s2,'middle_name'),'your middle name',15,false));
-    one('last_name',vName(val(s2,'last_name'),'your legal last name',32,true));
-    one('dob',vDob(val(s2,'dob')));
+    function one(name,msg){var el=s3.querySelector('[name="'+name+'"]');if(msg)bad(el,msg);}
+    one('first_name',vName(val(s3,'first_name'),'your legal first name',20,true));
+    one('middle_name',vName(val(s3,'middle_name'),'your middle name',15,false));
+    one('last_name',vName(val(s3,'last_name'),'your legal last name',32,true));
+    one('dob',vDob(val(s3,'dob')));
     one('ssn',vSsn(ssnInput.value));
-    checkAddress(function(k){return s2.querySelector('[name="'+k+'"]');},'your',bad);
-    if(moved.checked)checkAddress(function(k){return s2.querySelector('[name="prev_'+k+'"]');},'your previous',bad);
+    checkAddress(function(k){return s3.querySelector('[name="'+k+'"]');},'your',bad);
+    if(moved.checked)checkAddress(function(k){return s3.querySelector('[name="prev_'+k+'"]');},'your previous',bad);
     checkBusinesses(bad);
-    var c=s2.querySelector('[name="consent"]');
+    var c=s3.querySelector('[name="consent"]');
     if(!c.checked)bad(c,'Please check the box to authorize the soft pull before we can continue.');
     return ok;
   }
   function identity(){
-    var o={first_name:val(s2,'first_name'),last_name:val(s2,'last_name'),dob:isoDob(val(s2,'dob')),ssn:digits(ssnInput.value),
-      address:val(s2,'address'),city:val(s2,'city'),state:val(s2,'state'),zip:val(s2,'zip')};
-    var mid=val(s2,'middle_name'),sfx=val(s2,'suffix'),apt=val(s2,'apt');
+    var o={first_name:val(s3,'first_name'),last_name:val(s3,'last_name'),dob:isoDob(val(s3,'dob')),ssn:digits(ssnInput.value),
+      address:val(s3,'address'),city:val(s3,'city'),state:val(s3,'state'),zip:val(s3,'zip')};
+    var mid=val(s3,'middle_name'),sfx=val(s3,'suffix'),apt=val(s3,'apt');
     if(mid)o.middle_name=mid;if(sfx)o.suffix=sfx;if(apt)o.apt=apt;
     if(moved.checked){
       o.moved_recently=true;
-      ['address','apt','city','state','zip'].forEach(function(k){var v=val(s2,'prev_'+k);if(v)o['prev_'+k]=v;});
+      ['address','apt','city','state','zip'].forEach(function(k){var v=val(s3,'prev_'+k);if(v)o['prev_'+k]=v;});
     }
     return o;
   }
   function addrSig(){
-    var k=['address','city','state','zip'],o=k.map(function(n){return val(s2,n);});
-    if(moved.checked)k.forEach(function(n){o.push(val(s2,'prev_'+n));});
+    var k=['address','city','state','zip'],o=k.map(function(n){return val(s3,n);});
+    if(moved.checked)k.forEach(function(n){o.push(val(s3,'prev_'+n));});
     return JSON.stringify(o);
   }
   function clearSecrets(){ssnInput.value='';ssnInput.classList.add('mask');showBtn.textContent='Show';showBtn.setAttribute('aria-pressed','false');}
@@ -1809,28 +1875,38 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   /* ---- steps and panes ---- */
   function go(n){
     step=n;
-    s1.classList.toggle('on',n===1);s2.classList.toggle('on',n===2);
+    s1.classList.toggle('on',n===1);s2.classList.toggle('on',n===2);s3.classList.toggle('on',n===3);
     each(tabs,function(t){t.classList.toggle('on',t.getAttribute('data-tab')===String(n));});
     var r=root.getBoundingClientRect();if(r.top<0)root.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function showPane(name){
     var form=name==='form';
+    /* From here the script owns which pane shows, so the first-paint class
+       comes off — otherwise its !important would pin the reading pane open. */
+    document.documentElement.classList.remove('fh-paid');
     tabBar.hidden=!form;
-    s1.hidden=!form;s2.hidden=!form;
+    s1.hidden=!form;s2.hidden=!form;s3.hidden=!form;
+    if(!form)hideFormErr();
     each(root.querySelectorAll('.cfw-state'),function(p){p.hidden=p.getAttribute('data-state')!==name;});
     if(!form){var r=root.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*0.6)root.scrollIntoView({behavior:'smooth',block:'start'});}
   }
   function onContinue(){
-    if(order&&order.locked){go(2);return;}
+    /* Paid: steps 1 and 2 are behind them. The soft pull is all that is left. */
+    if(order&&order.locked){go(3);return;}
     if(!checkStep1()){var f=s1.querySelector('.err');if(f)f.focus();return;}
     var c=contact();
-    var lf=s2.querySelector('[name="first_name"]'),ll=s2.querySelector('[name="last_name"]');
+    var lf=s3.querySelector('[name="first_name"]'),ll=s3.querySelector('[name="last_name"]');
     if(!lf.value)lf.value=c.first_name;if(!ll.value)ll.value=c.last_name;
     go(2);
   }
   s1.addEventListener('submit',function(e){e.preventDefault();onContinue();});
   each(tabs,function(t){t.addEventListener('click',function(){
-    if(t.getAttribute('data-tab')==='1')go(1);else if(step!==2)onContinue();
+    var want=t.getAttribute('data-tab'),paid=!!(order&&order.locked);
+    /* After the card there is nothing to go back to, and step 3 never opens
+       before an order exists — the card comes first. */
+    if(want==='1'){if(!paid)go(1);return;}
+    if(want==='2'){if(paid)return;if(step===1)onContinue();else go(2);return;}
+    if(order)go(3);
   });});
   root.querySelector('[data-back]').addEventListener('click',function(e){e.preventDefault();go(1);});
 
@@ -1849,7 +1925,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     EXTRA.forEach(function(k){if(s[k])out[k]=String(s[k]).slice(0,200);});
     return out;
   }
-  function returnUrl(){return ORIGINS.indexOf(location.origin)>-1?location.origin+location.pathname:HOME;}
+  /* #fhw is this widget's id: the card page has to send them back to the
+     checkout box, not to the top of the sales page. src/slo/cors.mjs keeps
+     that one fragment and drops every other. */
+  function returnUrl(){return (ORIGINS.indexOf(location.origin)>-1?location.origin+location.pathname:HOME)+'#fhw';}
   function bookUrl(pa){
     var q=new URLSearchParams(),n=Number(pa),a=attribution();
     if(pa!=null&&Number.isInteger(n)&&n>0)q.set('pa',String(n));
@@ -1873,12 +1952,16 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       else if(e&&e.message&&loose.indexOf(e.message)<0)loose.push(e.message);
     });
     ((b&&Array.isArray(b.warnings))?b.warnings:[]).forEach(function(w){var el=w&&w.field?find(w.field):null;if(el&&w.message)setErr(el,w.message,true);});
-    if(first)go(s1.contains(first)?1:2);
+    if(first)go(s1.contains(first)?1:(s3.contains(first)?3:2));
     if(loose.length)showFormErr(loose.join(' '));
     if(first)first.focus();
     return !!first||loose.length>0;
   }
-  function setBusy(on){busy=on;payBtn.disabled=on;if(on)payBtn.textContent='Working…';else paintTotal();}
+  function setBusy(on){
+    busy=on;payBtn.disabled=on;pullBtn.disabled=on;
+    if(on){payBtn.textContent='Working…';pullBtn.textContent='Working…';}
+    else{paintTotal();pullBtn.textContent='Start My Soft Pull';}
+  }
 
   function startCheckout(c,biz,sig){
     var body={email:c.email,first_name:c.first_name,last_name:c.last_name,phone:c.phone,return_url:returnUrl()};
@@ -1897,10 +1980,11 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   function sendPull(o,biz){
     var body=identity();
     body.ref=o.ref;body.client_id=o.client_id;body.consent=true;
+    /* Businesses were priced and stored at checkout. A reload after the card
+       page leaves these boxes empty, and a body with no businesses key leaves
+       the stored rows alone — so only send them when this page still has them. */
     if(biz.length)body.businesses=biz;
-    /* LIVE: store identity + consent now; the payment starts the pull. */
-    if(!o.demo)body.defer_pull=true;
-    /* Second Pay with the same address after "We couldn't find that address". */
+    /* Second try with the same address after "We couldn't find that address". */
     if(addrWarned&&addrWarned===addrSig())body.address_confirmed=true;
     var req=call('POST','slo-pull',body);
     body=null;
@@ -1908,13 +1992,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       var b=r.body||{};
       if(r.ok&&b.ok===true){
         clearSecrets();
-        if(b.next==='pay'){
-          if(!o.checkoutUrl){order=null;showPane('form');go(2);showFormErr(msgFor('not_found'));return;}
-          try{sessionStorage.setItem('fh_widget_t0',String(t0));}catch(e){}
-          showPane('paying');
-          location.href=o.checkoutUrl;
-          return;
-        }
+        /* next:'pay' means the card went through but the payment webhook has not
+           landed on our side yet. Identity and consent are stored, so that
+           webhook starts the pull the moment it arrives. Wait on the poll. */
+        if(b.next==='pay'){o.locked=true;showPane('reading');poll(o);return;}
         /* DEMO, NO PULL: the server stored nothing and ran no pull. Straight to booking. */
         if(b.next==='book'){
           o.locked=true;
@@ -1928,11 +2009,20 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         showPane('reading');poll(o);
         return;
       }
-      showPane('form');go(2);
+      showPane('form');go(3);
+      /* Paid, but our side has not recorded the payment yet, AND this email
+         already had a file with us — so the server's unpaid gate refused and
+         stored nothing. The card is done, so never send them back to step 1
+         over it. Hold them here; the payment lands in seconds and the same
+         button goes through. */
+      if(b.error==='existing_account'&&o.locked){
+        showFormErr('Your payment is still landing on our side. Give it a few seconds, then press Start My Soft Pull again.');
+        return;
+      }
       if(b.error==='address_unverified'){
         addrWarned=addrSig();
         showApiErrors(b);
-        var w=(b.warnings&&b.warnings[0]&&b.warnings[0].field)||'address',st=find(w)||s2.querySelector('[name="address"]');
+        var w=(b.warnings&&b.warnings[0]&&b.warnings[0].field)||'address',st=find(w)||s3.querySelector('[name="address"]');
         if(st&&!(st.parentNode.querySelector('.ferr')||{}).textContent)setErr(st,ADDR_MSG,true);
         if(st)st.focus();
         return;
@@ -1941,17 +2031,38 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       if(!showApiErrors(b))showFormErr(msgFor(b.error));
     });
   }
+  /* STEP 2 — the card. Nothing about the soft pull is asked or sent here. The
+     order is recorded, then the buyer goes to the Commas card page and comes
+     back to this page with ?ref=&client_id=, which opens step 3. DEMO has no
+     card page, so it walks straight to step 3. */
   s2.addEventListener('submit',function(e){
     e.preventDefault();if(busy)return;
     hideFormErr();
-    var locked=!!(order&&order.locked);
-    if(!locked&&!checkStep1()){go(1);var f1=s1.querySelector('.err');if(f1)f1.focus();return;}
-    if(!checkStep2()){var f2=s2.querySelector('.err');if(f2)f2.focus();return;}
+    if(order&&order.locked){go(3);return;}
+    if(!checkStep1()){go(1);var f1=s1.querySelector('.err');if(f1)f1.focus();return;}
     setBusy(true);t0=Date.now();logged=false;
     var biz=bizPayload(),c=contact(),sig=JSON.stringify([c.email,c.first_name,c.last_name,c.phone,biz]);
-    var start=(order&&(order.locked||order.sig===sig))?Promise.resolve(order):startCheckout(c,biz,sig);
-    start.then(function(o){return o?sendPull(o,biz):null;})
-      .catch(function(){showPane('form');go(2);showFormErr(GENERIC);})
+    var start=(order&&order.sig===sig&&(order.demo||order.checkoutUrl))?Promise.resolve(order):startCheckout(c,biz,sig);
+    start.then(function(o){
+      if(!o)return;
+      if(o.demo){go(3);return;}
+      try{sessionStorage.setItem('fh_widget_t0',String(t0));}catch(err){}
+      showPane('paying');
+      location.href=o.checkoutUrl;
+    }).catch(function(){showPane('form');go(2);showFormErr(GENERIC);})
+      .then(function(){setBusy(false);});
+  });
+
+  /* STEP 3 — the soft pull, after the card. The order is paid (or demo), so
+     slo-pull starts the pull in this request. */
+  s3.addEventListener('submit',function(e){
+    e.preventDefault();if(busy)return;
+    hideFormErr();
+    if(!order){showPane('form');go(1);showFormErr(msgFor('not_found'));return;}
+    if(!checkStep3()){var f3=s3.querySelector('.err');if(f3)f3.focus();return;}
+    setBusy(true);if(!t0)t0=Date.now();logged=false;
+    sendPull(order,bizPayload())
+      .catch(function(){showPane('form');go(3);showFormErr(GENERIC);})
       .then(function(){setBusy(false);});
   });
 
@@ -1963,6 +2074,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       el.setAttribute('data-name',name);
       el.className=s==='file_returned'?'ok':(s==='frozen'||s==='no_file'||s==='error')?'bad':'';
       el.textContent=name+(BUREAU_WORD[s]?' · '+BUREAU_WORD[s]:'');
+      /* Nothing back yet (missing or pending) -> no chip at all. */
+      el.hidden=!BUREAU_WORD[s];
     });
   }
   function poll(o){
@@ -2000,7 +2113,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     each(root.querySelectorAll('[data-talk]'),function(a){a.href=bookUrl(null);});
     showPane('failed');
   }
-  root.querySelector('[data-retry]').addEventListener('click',function(){showPane('form');go(2);});
+  root.querySelector('[data-retry]').addEventListener('click',function(){showPane('form');go(3);});
   root.querySelector('[data-recheck]').addEventListener('click',function(){if(order){showPane('reading');poll(order);}});
 
   /* ---- the repair offer: only after a pull result on the repair path ---- */
@@ -2041,7 +2154,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(window.google&&window.google.maps&&window.google.maps.places){placesAttach();return true;}
     window.fhwPlacesReady=function(){try{placesAttach();}catch(e){}};
     window.gm_authFailure=function(){
-      each(s2.querySelectorAll('[data-places]'),function(i){i.disabled=false;i.style.backgroundImage='';i.placeholder=i.name==='address'?'123 Main St':'';});
+      each(s3.querySelectorAll('[data-places]'),function(i){i.disabled=false;i.style.backgroundImage='';i.placeholder=i.name==='address'?'123 Main St':'';});
     };
     var tag=document.createElement('script');
     tag.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(key)+'&libraries=places&callback=fhwPlacesReady';
@@ -2052,7 +2165,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   function placesAttach(){
     var P=window.google&&window.google.maps&&window.google.maps.places;if(!P||!P.Autocomplete)return;
     ['','prev_'].forEach(function(pre){
-      var input=s2.querySelector('[name="'+pre+'address"]');if(!input||input.getAttribute('data-places'))return;
+      var input=s3.querySelector('[name="'+pre+'address"]');if(!input||input.getAttribute('data-places'))return;
       input.setAttribute('data-places','1');
       var ac=new P.Autocomplete(input,{componentRestrictions:{country:placesCountries},fields:['address_components'],types:['address']});
       ac.addListener('place_changed',function(){placeFill(pre,ac.getPlace());});
@@ -2065,10 +2178,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     var city=part('locality')||part('sublocality')||part('postal_town')||part('neighborhood');
     var st=part('administrative_area_level_1',true),country=part('country',true);
     if(country&&country!=='US')st=country;
-    function put(name,v){var el=s2.querySelector('[name="'+pre+name+'"]');if(el&&v){el.value=v;clearErr(el);}}
+    function put(name,v){var el=s3.querySelector('[name="'+pre+name+'"]');if(el&&v){el.value=v;clearErr(el);}}
     if(street)put('address',street.slice(0,48));
     put('city',city.slice(0,28));
-    var sel=s2.querySelector('[name="'+pre+'state"]');
+    var sel=s3.querySelector('[name="'+pre+'state"]');
     if(sel&&st&&sel.querySelector('option[value="'+st+'"]')){sel.value=st;clearErr(sel);}
     put('zip',part('postal_code'));
   }
@@ -2088,15 +2201,14 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(b.mapsBrowserKey)placesInit(b.mapsBrowserKey);
   },function(){});
 
-  /* ---- back from the Commas card page: ?ref=&client_id= -> resume polling ---- */
+  /* ---- back from the Commas card page: ?ref=&client_id= -> open step 3 ---- */
   var qp=new URLSearchParams(location.search),rRef=qp.get('ref'),rCid=qp.get('client_id');
   if(rRef&&rCid&&/^slo_[A-Za-z0-9_-]{6,100}$/.test(rRef)&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rCid)){
     order={ref:rRef,client_id:rCid,demo:false,checkoutUrl:null,sig:null,locked:true};
     try{t0=Number(sessionStorage.getItem('fh_widget_t0'))||0;sessionStorage.removeItem('fh_widget_t0');}catch(e){}
     if(!t0)t0=Date.now();
-    showPane('reading');
-    setTimeout(function(){root.scrollIntoView({behavior:'smooth',block:'start'});},300);
-    poll(order);
+    showPane('form');go(3);
+    setTimeout(function(){root.scrollIntoView({behavior:'auto',block:'start'});},300);
   }
 })();
 </script>
@@ -2165,29 +2277,46 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-b .cardw{max-width:660px;margin:26px auto 0;background:#fff;border:1px solid var(--line);border-radius:12px;padding:22px 24px;box-shadow:0 1px 3px rgba(10,10,10,.05);text-align:left}
 .fh-b .cardw p{margin-top:12px;font-size:15.5px;color:var(--gray);line-height:1.66}
 .fh-b .cardw p b{color:var(--ink);font-weight:600}
-.fh-b .proofgrid{max-width:900px;margin:30px auto 0;display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.fh-b .proofgrid{max-width:900px;margin:30px auto 0;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;justify-content:center}
 .fh-b .vslot{aspect-ratio:9/16;max-height:300px;border-radius:12px;background:#111113;border:1px solid #26262B;display:flex;align-items:center;justify-content:center;text-align:center;padding:14px}
 .fh-b .vslot span{color:#8A8A93;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;line-height:1.5}
 .fh-b .foot-support{margin:10px auto 4px;text-align:center;font-size:12.5px;color:var(--gray)}
 .fh-b .foot-support a{color:inherit;text-decoration:underline;text-underline-offset:3px}
 .fh-b .proofgrid{width:calc(100% - 48px);align-items:start}
 .fh-b .proofgrid>*{min-width:0}
-/* The .fh-b .vslot rule above is shared verbatim with the /watch proof block
-   (src/ads/funnel-proof-scripts.test.mjs pins the two bodies equal), so its
-   max-height:300px is lifted here instead of edited there. Without this the
-   card is clamped to 300px tall and 9/16 shrinks its width to 168.8px inside a
-   much wider column — that gap on both sides is the empty space the owner saw
-   (2026-09-22). max-height:none lets each card fill its column at true 9:16. */
-.fh-b .proofgrid .vslot{max-height:none}
+/* Shared .fh-b .vslot keeps max-height:300px for /watch parity
+   (src/ads/funnel-proof-scripts.test.mjs). On /roadmap the pair fills the
+   same content width as .wrap (owner 2026-09-25: "make them larger to fit
+   the margins and padding") — max-width 900px minus the 24px side padding,
+   so each 9:16 slot is ~416×740 on a desktop and neither overflows. */
+.fh-b .proofgrid .vslot{width:100%;max-width:none;max-height:none;justify-self:center;padding:0;overflow:hidden}
+.fh-b .proofgrid .vslot video{width:100%;height:100%;object-fit:cover;display:block;border-radius:11px;background:#111}
+/* One testimonial = video + the caption under it (owner 2026-09-27: "a short
+   caption under the video"). The caption has to live outside .vslot, which
+   clips to 9:16. */
+.fh-b .tcard{margin:0;min-width:0;display:flex;flex-direction:column;gap:11px}
+.fh-b .proofgrid .tcard .vslot{position:relative}
+.fh-b .tcap{font-family:var(--sans);font-size:13px;line-height:1.55;color:var(--gray);text-align:left}
+.fh-b .tcap b{color:var(--ink2);font-weight:600}
+/* Play affordance copies the VSL's unmute pill (owner 2026-09-27: "same setup
+   as the VSL, same colour"). Same #188bf6, same mono caps, same pill. These do
+   NOT autoplay — the VSL is the only video on this page that does. */
+.fh-b .tplay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,10,10,.24);border:0;padding:0;margin:0;cursor:pointer;transition:opacity .2s;z-index:2}
+.fh-b .tplay.hidden{opacity:0;pointer-events:none}
+.fh-b .tplay-pill{display:flex;align-items:center;gap:9px;background:#188bf6;color:#fff;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:12px 18px;border-radius:999px;box-shadow:0 8px 26px rgba(10,10,10,.35)}
+.fh-b .tplay:hover .tplay-pill{background:#0b78dd}
+.fh-b .tplay-pill svg{width:13px;height:13px;flex:0 0 auto}
 /* Phones: one video testimonial per row (owner 2026-09-22: "on mobile the video
-   testimonials should stack"). Three 9/16 slots across a 390px screen leave each
-   one 107px wide; stacked, each fills the column at true 9:16 (342x608 on a
+   testimonials should stack"). Two 9/16 slots across a 390px screen leave each
+   one ~183px wide; stacked, each fills the column at true 9:16 (342x608 on a
    390px phone). 699px is the inverse of the /watch block's min-width:700px, so
    both pages break together. The 380px cap only bites between about 430 and
    699, where a full-width 9:16 card would otherwise run past 950px tall; a
    phone is narrower than the cap, so it still fills the column. */
 @media(max-width:699px){.fh-b .proofgrid{grid-template-columns:1fr;gap:16px;justify-items:center}
-.fh-b .proofgrid .vslot{width:100%;max-width:380px}}
+.fh-b .proofgrid .tcard{width:100%;max-width:380px}
+.fh-b .proofgrid .vslot{position:relative;width:100%;max-width:380px}
+.fh-b .proofgrid .vslot video{position:absolute;inset:0;width:100%;height:100%}}
 .fh-b .btn{display:block;width:100%;max-width:420px;margin:30px auto 0;background:#188bf6;color:#fff;font-family:var(--sans);font-size:17px;font-weight:600;padding:18px 26px;border:0;border-radius:9px;cursor:pointer;transition:background .15s;box-shadow:0 5px 18px rgba(24,139,246,.28);text-align:center;text-decoration:none}
 .fh-b .btn:hover{background:#0b78dd}
 .fh-b .marq{background:#fff;border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;padding:12px 0;margin-top:44px}
@@ -2217,19 +2346,87 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 
 <div class="fh-b">
   <div class="secure-foot">
-    <span class="sf-l"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Your card and social are encrypted in transit and used for this order and the soft pull only.</span>
+    <span class="sf-l"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Your details are encrypted in transit and used for this order only.</span>
     <span class="sf-r">Questions before you buy: <b><a href="mailto:support@fundhub.ai">support@fundhub.ai</a></b> &middot; <b><a href="tel:+15613048368">(561) 304-8368</a></b></span>
   </div>
   <div class="trustline">256-bit SSL secure &middot; Soft pull, no hard inquiry &middot; Zero score impact from that pull</div>
 
-  <!-- SLOT-TESTIMONIALS: 3 vertical video placeholders (owner, 2026-09-22: "we need the vertical video
-       placeholder"). Chris drops in real clips. Do not invent names, quotes, amounts or faces. -->
+  <!-- SLOT-TESTIMONIALS: generated by scripts/testimonials/build-slots.mjs from
+       content/testimonials/testimonials.json. Do not hand-edit — re-run the
+       script. 3 approved: Colin Schmidt, Gene, Sarah. -->
   <div class="proofgrid">
     <span class="kicker" style="text-align:center;grid-column:1/-1">From people who bought it</span>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 1 ]</span></div>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 2 ]</span></div>
-    <div class="vslot"><span>[ VIDEO TESTIMONIAL 3 ]</span></div>
+    <figure class="tcard">
+      <div class="vslot">
+        <video playsinline preload="metadata"
+          poster="https://fundhub.ai/funnel/slo-testimonial-colin-poster.jpg"
+          src="https://fundhub.ai/funnel/slo-testimonial-colin.mp4"
+          title="Colin Schmidt" aria-label="Colin Schmidt testimonial"></video>
+        <button class="tplay" type="button" aria-label="Play Colin Schmidt's testimonial">
+          <span class="tplay-pill">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            Play
+          </span>
+        </button>
+      </div>
+      <figcaption class="tcap"><b>Colin Schmidt, ran a funding company.</b> He says he doesn't endorse people in this industry, but he went through the roadmap and would not change a thing in it.</figcaption>
+    </figure>
+    <figure class="tcard">
+      <div class="vslot">
+        <video playsinline preload="metadata"
+          poster="https://fundhub.ai/funnel/slo-testimonial-gene-poster.jpg"
+          src="https://fundhub.ai/funnel/slo-testimonial-gene.mp4"
+          title="Gene" aria-label="Gene testimonial"></video>
+        <button class="tplay" type="button" aria-label="Play Gene's testimonial">
+          <span class="tplay-pill">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            Play
+          </span>
+        </button>
+      </div>
+      <figcaption class="tcap"><b>Gene, owner of three LLCs.</b> His scores started in the low 600s, the dispute letters moved him to 780 and then 810, and that opened up about $420,000 in business funding over three years.</figcaption>
+    </figure>
+    <figure class="tcard">
+      <div class="vslot">
+        <video playsinline preload="metadata"
+          poster="https://fundhub.ai/funnel/slo-testimonial-sarah-poster.jpg"
+          src="https://fundhub.ai/funnel/slo-testimonial-sarah.mp4"
+          title="Sarah" aria-label="Sarah testimonial"></video>
+        <button class="tplay" type="button" aria-label="Play Sarah's testimonial">
+          <span class="tplay-pill">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="6 4 20 12 6 20 6 4"/></svg>
+            Play
+          </span>
+        </button>
+      </div>
+      <figcaption class="tcap"><b>Sarah, on Chris's sales team.</b> Her credit was in bad shape, so she ran the roadmap, pinpointed exactly what to fix, and is set to be approved for around $80,000.</figcaption>
+    </figure>
   </div>
+  <script>
+  (function(){
+    // Click to play. No autoplay — the VSL at the top is the only video on this
+    // page that starts by itself. Starting one stops the others so three
+    // testimonials can never talk over each other.
+    var cards=document.querySelectorAll('.fh-b .proofgrid .tcard');
+    Array.prototype.forEach.call(cards,function(card){
+      var v=card.querySelector('video'),o=card.querySelector('.tplay');
+      if(!v||!o)return;
+      function go(){
+        Array.prototype.forEach.call(cards,function(other){
+          if(other===card)return;
+          var ov=other.querySelector('video');
+          if(ov&&!ov.paused)ov.pause();
+        });
+        v.controls=true;
+        var p=v.play();if(p&&p.catch)p.catch(function(){});
+        o.classList.add('hidden');
+      }
+      o.addEventListener('click',go);
+      v.addEventListener('click',function(){if(!o.classList.contains('hidden'))go();});
+    });
+  })();
+  </script>
+  <!-- /SLOT-TESTIMONIALS -->
 
   <footer>
   <div class="wrap">
