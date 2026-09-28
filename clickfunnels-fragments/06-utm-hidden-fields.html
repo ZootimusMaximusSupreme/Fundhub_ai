@@ -195,6 +195,23 @@
       phone: field(form, "phone")
     }, beacon);
   }
+  function postRaw(body, beacon) {
+    if (typeof nativeFetch !== "function" && !(beacon && navigator.sendBeacon)) return;
+    var payload = JSON.stringify(body);
+    var url = "https://fundhub.ai/api/public/slo-interest";
+    if (beacon && navigator.sendBeacon) {
+      try { navigator.sendBeacon(url, new Blob([payload], { type: "text/plain" })); return; } catch (e) {}
+    }
+    if (typeof nativeFetch !== "function") return;
+    try {
+      nativeFetch.call(window, url, {
+        method: "POST",
+        headers: { "content-type": "application/json", accept: "application/json" },
+        body: payload,
+        keepalive: true
+      }).catch(function () {});
+    } catch (e3) {}
+  }
   if (widget()) {
     try {
       if (!sessionStorage.getItem("fh_visit_sent")) {
@@ -213,7 +230,82 @@
       var form = step1();
       if (form && ev.target === form) sendContact(false);
     }, true);
-    window.addEventListener("pagehide", function () { sendContact(true); });
+
+    /* Time on /roadmap + whether #fhw entered the viewport. One engage row
+       per session on the server (upsert). Heartbeat while the tab is visible
+       so a killed tab still left a number; pagehide sends the last reading. */
+    var activeMs = 0;
+    var lastVisibleAt = document.visibilityState === "hidden" ? 0 : Date.now();
+    var reachedForm = false;
+    var engagePulse = null;
+    function tabVisible() { return document.visibilityState !== "hidden"; }
+    function settleClock() {
+      if (lastVisibleAt) {
+        activeMs += Date.now() - lastVisibleAt;
+        lastVisibleAt = 0;
+      }
+    }
+    function resumeClock() {
+      if (tabVisible() && !lastVisibleAt) lastVisibleAt = Date.now();
+    }
+    function secondsOnPage() {
+      var total = activeMs;
+      if (lastVisibleAt) total += Date.now() - lastVisibleAt;
+      return Math.floor(total / 1000);
+    }
+    function sendEngage(beacon) {
+      var body = {
+        kind: "engage",
+        session_id: sid(),
+        webdriver: navigator.webdriver === true,
+        seconds_on_page: secondsOnPage(),
+        reached_form: reachedForm === true
+      };
+      var data = read();
+      KEYS.concat(EXTRA).forEach(function (k) { if (data[k]) body[k] = data[k]; });
+      postRaw(body, beacon);
+    }
+    function startEngagePulse() {
+      if (engagePulse) return;
+      engagePulse = setInterval(function () {
+        if (tabVisible()) sendEngage(false);
+      }, 30000);
+    }
+    function stopEngagePulse() {
+      if (!engagePulse) return;
+      clearInterval(engagePulse);
+      engagePulse = null;
+    }
+    if (typeof IntersectionObserver === "function") {
+      var io = new IntersectionObserver(function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          if (entries[i].isIntersecting) {
+            reachedForm = true;
+            try { io.disconnect(); } catch (e4) {}
+            break;
+          }
+        }
+      }, { threshold: 0.05 });
+      try { io.observe(widget()); } catch (e5) {}
+    } else {
+      reachedForm = true;
+    }
+    document.addEventListener("visibilitychange", function () {
+      if (tabVisible()) {
+        resumeClock();
+        startEngagePulse();
+      } else {
+        settleClock();
+        stopEngagePulse();
+        sendEngage(true);
+      }
+    });
+    if (tabVisible()) startEngagePulse();
+    window.addEventListener("pagehide", function () {
+      settleClock();
+      sendContact(true);
+      sendEngage(true);
+    });
     document.addEventListener("click", function (ev) {
       var node = ev.target;
       var btn = null;
@@ -232,5 +324,14 @@
       window.fbq("track", "InitiateCheckout", { value: n > 0 ? n : 297, currency: "USD" });
     }, true);
   }
+
+  /* Other job owns the pixel file. Load it when present; ignore a 404. */
+  try {
+    var rb = document.createElement("script");
+    rb.src = "https://fundhub.ai/funnel/rb2b.js";
+    rb.async = true;
+    rb.onerror = function () {};
+    (document.head || document.documentElement).appendChild(rb);
+  } catch (e6) {}
 })();
 </script>

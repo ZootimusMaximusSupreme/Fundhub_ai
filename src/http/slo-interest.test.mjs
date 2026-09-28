@@ -41,7 +41,8 @@ test("a step-1 email is saved with no client and no card", async () => {
   assert.equal(out.saved, true);
   assert.equal(cap.events.length, 1);
   assert.equal(cap.events[0].name, "slo.contact_started");
-  assert.equal(cap.events[0].opts.skipInngest, true);
+  assert.equal(cap.events[0].opts.skipInngest, false,
+    "a real contact must reach Inngest for the genuine follow-up");
   assert.equal(cap.events[0].opts.idempotencyKey, "slo-contact:pat@gmail.com:2026-09-27");
   assert.equal(cap.events[0].payload.email, "pat@gmail.com");
   assert.equal(cap.events[0].payload.name, "Pat Lee");
@@ -73,6 +74,7 @@ test("a page open from an automated browser is an agent visit", async () => {
   assert.equal(out.actor, "agent");
   assert.equal(cap.events[0].name, "slo.visit");
   assert.equal(cap.events[0].opts.idempotencyKey, "slo-visit:session-12345678");
+  assert.equal(cap.events[0].opts.skipInngest, true, "visits stay local-only");
   assert.equal(cap.events[0].payload.email, undefined);
 });
 
@@ -103,4 +105,108 @@ test("POST from the sales page saves the contact", async () => {
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.actor, "person");
   assert.equal(cap.events[0].name, "slo.contact_started");
+});
+
+test("engage stores seconds and whether the form was reached", async () => {
+  const cap = capture();
+  const out = await recordInterest({
+    kind: "engage",
+    session_id: "engage-session-01",
+    seconds_on_page: 47,
+    reached_form: true,
+    landing_path: "/roadmap/",
+    utm_source: "fb"
+  }, {
+    emit: cap.emit,
+    userAgent: "Mozilla/5.0",
+    orgId: "org-engage",
+    db: { query: async () => ({ rows: [] }) }
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.actor, "person");
+  assert.equal(out.saved, true);
+  assert.equal(cap.events.length, 1);
+  assert.equal(cap.events[0].name, "slo.engagement");
+  assert.equal(cap.events[0].opts.idempotencyKey, "slo-engage:engage-session-01");
+  assert.equal(cap.events[0].opts.skipInngest, true);
+  assert.equal(cap.events[0].payload.seconds_on_page, 47);
+  assert.equal(cap.events[0].payload.reached_form, true);
+  assert.equal(cap.events[0].payload.session_id, "engage-session-01");
+  assert.equal(cap.events[0].payload.actor, "person");
+  assert.equal(cap.events[0].payload.attribution.utm_source, "fb");
+  assert.equal(cap.events[0].payload.client_id, undefined);
+  assert.equal(cap.events[0].payload.email, undefined);
+});
+
+test("engage keeps one row and raises seconds / form reach on update", async () => {
+  const row = {
+    id: "evt-engage-1",
+    payload: {
+      actor: "person",
+      actor_reason: "browser",
+      session_id: "engage-session-02",
+      seconds_on_page: 30,
+      reached_form: false,
+      landing_path: "/roadmap/"
+    }
+  };
+  const updates = [];
+  const db = {
+    async query(sql, params) {
+      if (/SELECT id, payload FROM events/.test(sql)) return { rows: [row] };
+      if (/UPDATE events SET payload/.test(sql)) {
+        updates.push(params[0]);
+        row.payload = params[0];
+        return { rows: [{ id: row.id }] };
+      }
+      throw new Error(`unexpected sql: ${sql}`);
+    }
+  };
+  const out = await recordInterest({
+    kind: "engage",
+    session_id: "engage-session-02",
+    seconds_on_page: 90,
+    reached_form: true,
+    webdriver: false
+  }, {
+    db,
+    orgId: "org-engage",
+    userAgent: "Mozilla/5.0",
+    emit: async () => { throw new Error("must update, not insert"); }
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.saved, true);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].seconds_on_page, 90);
+  assert.equal(updates[0].reached_form, true);
+});
+
+test("engage from an automated browser is an agent", async () => {
+  const cap = capture();
+  const out = await recordInterest({
+    kind: "engage",
+    session_id: "engage-bot-12345",
+    seconds_on_page: 12,
+    reached_form: false,
+    webdriver: true
+  }, {
+    emit: cap.emit,
+    userAgent: "Mozilla/5.0",
+    orgId: "org-engage",
+    db: { query: async () => ({ rows: [] }) }
+  });
+  assert.equal(out.actor, "agent");
+  assert.equal(cap.events[0].payload.actor_reason, "automated_browser");
+  assert.equal(cap.events[0].payload.reached_form, false);
+  assert.equal(cap.events[0].payload.seconds_on_page, 12);
+});
+
+test("engage without a session is refused", async () => {
+  const out = await recordInterest({
+    kind: "engage",
+    seconds_on_page: 5,
+    reached_form: false
+  }, { emit: async () => { throw new Error("no"); } });
+  assert.equal(out.ok, false);
+  assert.equal(out.error, "session_invalid");
 });
