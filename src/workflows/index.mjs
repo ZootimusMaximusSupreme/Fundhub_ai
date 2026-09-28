@@ -434,6 +434,8 @@ export const functions = [
   sloGenuineReply,
   /* One text and email when a real $297 payment still has an empty soft-pull form. */
   sloPaidFormNudge,
+  sloInfiniteDrip,
+  sloNoReply197,
   sys01ClientValueCalculator,
   sys01LtvCalculator,
   u02AnalyzerCompleteDelivery,
