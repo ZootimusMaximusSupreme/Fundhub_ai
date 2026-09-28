@@ -15,15 +15,15 @@ Shared rules for every job:
 | Time on the roadmap page | `public/funnel/fh-attribution.js`, `api/public/slo-interest.mjs` | done |
 | The genuine text and email | messaging only. Do not edit `fh-attribution.js` | done |
 | Ad watch curve, rule, and a ping | Meta data, a rule, a text to Chris. No dashboard HTML | done |
-| RB2B pixel | `public/funnel/rb2b.js` only. Stays off with no account id | claimed |
+| RB2B pixel | `public/funnel/rb2b.js` + public marketing pages | done |
 
 ## RB2B
 
-- Loader: `public/funnel/rb2b.js` (no-ops until an id is present).
-- Snippet source: https://support.rb2b.com/en/articles/9117086-rb2b-install-guide-for-react-js
-- Script URL pattern (from that page): `https://s3-us-west-2.amazonaws.com/b2bjsstore/b/<RB2B_ID>/reb2b.js.gz`
-- Env: `RB2B_ID` — public pixel/account id from the RB2B dashboard Script section. **Unset. Pixel is off.**
-- Before anyone is identified: Chris creates an RB2B account at https://www.rb2b.com/ (do not sign him up from here; no card from agents), copies the unique id from Script in the dashboard, sets `RB2B_ID` in Netlify + local `.env`, and exposes it as `window.RB2B_ID` (or `data-rb2b-id` on the script tag) when `/funnel/rb2b.js` loads. Do not use ClickFunnels admin for this.
+- Loader: `public/funnel/rb2b.js` — Chris’s real snippet, id baked in.
+- Public account id: `Z6PVLHZEJL6R` (not a secret). Also `RB2B_ID` in local `.env` and Netlify (production / deploy-preview / branch-deploy).
+- Script URL: `https://ddwl4m2hdecbv.cloudfront.net/b/Z6PVLHZEJL6R/Z6PVLHZEJL6R.js.gz`
+- Domain in RB2B: `fundhub.ai` (covers `apply.fundhub.ai` and other subdomains — do not change).
+- Pixel **on** for public pages: apply funnel steps that load `fh-attribution.js` (which appends `/funnel/rb2b.js`), plus fundhub.ai marketing HTML that loads `/funnel/rb2b.js` directly. Not on staff `/app`, CRM, or employee portal.
 
 ## Time on page
 
@@ -115,3 +115,11 @@ Same buzz as finished ad videos: text to `AD_VIDEO_SMS_TO` (fallback `PULSE_SMS_
 **Drive:** SLO Ads folder (`13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ`) — 85 non-video files; **no** filenames mentioning curve / Andromeda / watch. Opened: `FundHub-Ad-Scripts-Batch-1` (internal “Andromeda era: 15–20+ creatives/week” — not Meta law); `Ad Scaling Framework.docx` (third-party SOP mentions Andromeda while scaling); `TLDR - Direct Response Ad Creation Framework SOP` (hook in first 3–5s — generic DR, not Meta quartiles). No dedicated curve notes on Drive.
 
 **Shipped in repo:** `docs/ads/curve-optimization.md`; table `ad_watch_curve_diagnoses` → FK `ad_metrics_daily_id` (migration `395`). Saturday oPur numbers in the doc; **SLO4** sample film note: new cold open (face + overlay + first line under five seconds) — 339 plays, 22 at 25%.
+
+## RB2B install result (2026-09-27)
+
+- Baked id `Z6PVLHZEJL6R` into `public/funnel/rb2b.js` (CloudFront URL above).
+- Set `RB2B_ID` in local `.env` (gitignored) and Netlify production / deploy-preview / branch-deploy.
+- Public marketing pages without `fh-attribution.js` now load `/funnel/rb2b.js` (script tag only).
+- Apply funnel + `/roadmap` already load `fh-attribution.js` → get the pixel once `rb2b.js` is live.
+- Not installed on `/app/*`, `login.html`, `portal-login.html`, `crm.html`, client `progress.html` / `contract.html`, or partner board/live desks.
