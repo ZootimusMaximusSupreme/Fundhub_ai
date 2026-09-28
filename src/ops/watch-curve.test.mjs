@@ -26,6 +26,19 @@ describe("diesBefore25Percent", () => {
     assert.match(out.note, /Need/);
   });
 
+  test("early leave plus a tap through is a hop, not a broken opening", () => {
+    const out = diesBefore25Percent({ plays: 200, p25: 40, clicks: 80 });
+    assert.equal(out.dying, false);
+    assert.equal(out.hopped, true);
+    assert.match(out.note, /hop/i);
+  });
+
+  test("early leave with almost no taps is still a broken opening", () => {
+    const out = diesBefore25Percent({ plays: 200, p25: 40, clicks: 10 });
+    assert.equal(out.dying, true);
+    assert.equal(out.hopped, false);
+  });
+
   test("unknown Meta numbers → not dying", () => {
     assert.equal(diesBefore25Percent({}).dying, false);
     assert.equal(diesBefore25Percent({ plays: null, p25: 10 }).dying, false);

@@ -16,7 +16,7 @@ import notify from "../ad-videos/notify-fanout.mjs";
 export const DIES_BEFORE_25_THRESHOLD = 0.5;
 
 /** Pure score. Returns { dying, rate, plays, p25, note }. */
-export function diesBefore25Percent({ plays, p25 } = {}) {
+export function diesBefore25Percent({ plays, p25, clicks } = {}) {
   if (plays == null || p25 == null || plays === "" || p25 === "") {
     return { dying: false, rate: null, plays: null, p25: null, note: "Meta did not report plays and p25." };
   }
@@ -38,15 +38,20 @@ export function diesBefore25Percent({ plays, p25 } = {}) {
   if (rate == null) {
     return { dying: false, rate: null, plays: playN, p25: p25N, note: "Nothing to divide by." };
   }
-  const dying = rate < DIES_BEFORE_25_THRESHOLD;
+  const clickN = clicks == null || clicks === "" ? null : Number(clicks);
+  const hopped = Number.isFinite(clickN) && clickN >= p25N && clickN > 0;
+  const dying = rate < DIES_BEFORE_25_THRESHOLD && !hopped;
   return {
     dying,
+    hopped: rate < DIES_BEFORE_25_THRESHOLD && hopped,
     rate: Math.round(rate * 10000) / 10000,
     plays: playN,
     p25: p25N,
-    note: dying
-      ? "Most plays never reach 25%. The opening is the problem."
-      : "Enough people reach 25% that this is not a dying-before-25 call."
+    note: hopped && rate < DIES_BEFORE_25_THRESHOLD
+      ? "They left the video early and tapped through. That is a hop, not a broken opening."
+      : dying
+        ? "Most plays never reach 25%, and they are not tapping through. The opening is the problem."
+        : "Enough people reach 25% that this is not a dying-before-25 call."
   };
 }
 
@@ -69,7 +74,7 @@ const DYING_ADS_SQL = `
          m.video_p25_watched
     FROM ads a
     JOIN LATERAL (
-      SELECT date, video_plays, video_p25_watched
+      SELECT date, video_plays, video_p25_watched, clicks
         FROM ad_metrics_daily
        WHERE ad_id = a.id
          AND video_plays IS NOT NULL
@@ -97,7 +102,8 @@ export async function notifyDyingBefore25(db, { partnerId, send = notify.send, e
   for (const row of rows) {
     const score = diesBefore25Percent({
       plays: row.video_plays,
-      p25: row.video_p25_watched
+      p25: row.video_p25_watched,
+      clicks: row.clicks
     });
     if (!score.dying) {
       skipped += 1;

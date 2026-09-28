@@ -33,6 +33,8 @@ Use quartile counts vs **plays** (starts), not vs impressions. NULL quartiles me
 
 **Do not** recut the ending first when p25/plays is the problem — that matches Meta’s quartile definition (failure before 25% of length).
 
+**A short watch is not always a failure.** Some people leave the ad because it already did its job: they tap through to the page. If link clicks or landing-page views are at least as common as the people who reached 25%, that is a **hop**, not a broken opening. Do not recut that ad for watch time. The purchase is the score. A person can also watch the whole ad, or a whole VSL, and buy nothing. They spaced out. A long watch with no tap is the **ask**. A short watch with a tap is a hop. Neither one is a sale.
+
 **Optional opening signal:** Compare **2-second continuous plays** to **plays**. If 2s/plays is already poor, the drop is in the first two seconds (visual + first syllables). If 2s is decent but 25% is poor, the hook sentence or pacing between ~2s and ~25% of runtime may be wrong (often still labeled **opening** for filming: tighten or replace the hook **words**, or cut dead air in that span).
 
 ### Middle (`diagnosis = middle`)
