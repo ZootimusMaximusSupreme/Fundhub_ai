@@ -2976,6 +2976,10 @@ document.addEventListener("DOMContentLoaded", async function () {
         paintEmptyIdentity();
       }
     });
+  } else if (repSession && repSession.staff && repSession.staff.authorized_rep) {
+    var activeFile = document.querySelector("#rep-files button[aria-current='true']");
+    var fileName = activeFile ? activeFile.textContent : "";
+    paintIdentity(fileName || (repSession.staff.name || ""), "");
   } else {
     nameFromSession().then(function (nm) {
       paintIdentity(nm, "");
