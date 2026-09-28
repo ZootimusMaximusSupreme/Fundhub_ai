@@ -17,7 +17,7 @@ flowchart TD
     WHO -->|No| DENY[Refused — 403 forbidden]
     WHO -->|Yes| CAN[Can reach]
     CAN --> A_affiliates[affiliates — 1 route]
-    CAN --> A_auth[Signing in and out — 6 routes]
+    CAN --> A_auth[Signing in and out — 7 routes]
     CAN --> A_chat[chat — 1 route]
     CAN --> A_climate[climate — 2 routes]
     CAN --> A_consent[consent — 1 route]
@@ -26,16 +26,16 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 1 route]
     CAN --> A_hiring[Hiring — 1 route]
-    CAN --> A_public[public — 17 routes]
+    CAN --> A_public[public — 18 routes]
     CAN --> A_push[push — 3 routes]
     CAN --> A_read[Reading data — 5 routes]
     CAN --> A_top_level[Everything else — 9 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 198 routes]
+    WHO -->|Yes| CANT[Blocked — 199 routes]
     CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_analytics[analytics — 4 blocked]
-    CANT --> B_auth[Signing in and out — 6 blocked]
+    CANT --> B_auth[Signing in and out — 7 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
     CANT --> B_campaigns[Campaigns — 10 blocked]
@@ -66,11 +66,12 @@ flowchart TD
 
 ## What they can reach
 
-**52 of 250 routes.**
+**54 of 253 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
 | `/api/affiliates/refer` | POST | client |
+| `/api/auth/authorized-rep-file` | GET, POST | client |
 | `/api/auth/login` | GET | anyone |
 | `/api/auth/logout` | — | anyone |
 | `/api/auth/magic-link` | — | anyone |
@@ -102,6 +103,7 @@ flowchart TD
 | `/api/public/optimize` | GET, POST | anyone |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
+| `/api/public/rb2b-webhook` | — | anyone |
 | `/api/public/slo-checkout` | — | anyone |
 | `/api/public/slo-interest` | — | anyone |
 | `/api/public/slo-pull` | POST | anyone |
@@ -125,12 +127,12 @@ flowchart TD
 
 ### Worth knowing
 
-- **28 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
+- **29 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/rb2b-webhook`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
 - **6 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**198 of 250 routes.**
+**199 of 253 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -145,6 +147,7 @@ flowchart TD
 | `/api/analytics/youtube-sync` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/applications` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/auth/admin-reset` | POST | owner, admin |
+| `/api/auth/authorized-rep` | POST | owner, admin |
 | `/api/auth/invite` | POST | owner, admin |
 | `/api/auth/send-portal-link` | POST | owner, admin |
 | `/api/auth/staff-role` | POST | owner, admin |

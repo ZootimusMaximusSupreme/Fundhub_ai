@@ -218,6 +218,7 @@ export async function loginAccount(db, { email, password, ip, userAgent, env = p
   const s = await createAccountSession(db, { accountId: acct.id, orgId: org, ip, userAgent, env });
   await db.query(`UPDATE accounts SET last_login_at = now() WHERE id = $1`, [acct.id]);
   const verified = await verifyAccountSession(db, s.token, { env });
+  if (!verified) return { ok: false, status: 401, error: "invalid_credentials" };
 
   return {
     ok: true,

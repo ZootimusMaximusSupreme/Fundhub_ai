@@ -22,16 +22,16 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_gifts[gifts — 1 route]
     CAN --> A_hiring[Hiring — 1 route]
-    CAN --> A_public[public — 17 routes]
+    CAN --> A_public[public — 18 routes]
     CAN --> A_read[Reading data — 3 routes]
     CAN --> A_top_level[Everything else — 5 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 211 routes]
+    WHO -->|Yes| CANT[Blocked — 213 routes]
     CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_analytics[analytics — 4 blocked]
-    CANT --> B_auth[Signing in and out — 6 blocked]
+    CANT --> B_auth[Signing in and out — 8 blocked]
     CANT --> B_banking[banking — 3 blocked]
     CANT --> B_brand[brand — 1 blocked]
     CANT --> B_campaigns[Campaigns — 10 blocked]
@@ -63,7 +63,7 @@ flowchart TD
 
 ## What they can reach
 
-**39 of 250 routes.**
+**40 of 253 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -92,6 +92,7 @@ flowchart TD
 | `/api/public/optimize` | GET, POST | anyone |
 | `/api/public/partner-apply` | POST | anyone |
 | `/api/public/partner-page` | GET | anyone |
+| `/api/public/rb2b-webhook` | — | anyone |
 | `/api/public/slo-checkout` | — | anyone |
 | `/api/public/slo-interest` | — | anyone |
 | `/api/public/slo-pull` | POST | anyone |
@@ -109,12 +110,12 @@ flowchart TD
 
 ### Worth knowing
 
-- **28 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
+- **29 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/rb2b-webhook`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
 - **6 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**211 of 250 routes.**
+**213 of 253 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -130,6 +131,8 @@ flowchart TD
 | `/api/analytics/youtube-sync` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/applications` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/auth/admin-reset` | POST | owner, admin |
+| `/api/auth/authorized-rep` | POST | owner, admin |
+| `/api/auth/authorized-rep-file` | GET, POST | client |
 | `/api/auth/invite` | POST | owner, admin |
 | `/api/auth/send-portal-link` | POST | owner, admin |
 | `/api/auth/staff-role` | POST | owner, admin |
