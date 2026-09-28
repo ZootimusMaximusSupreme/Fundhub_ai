@@ -1,0 +1,50 @@
+[
+  {
+    "id": "colin",
+    "client_name": "Colin Schmidt",
+    "business_type": "Ran a funding company",
+    "video_src": "https://fundhub.ai/funnel/slo-testimonial-colin.mp4",
+    "transcript_path": "content/testimonials/transcripts/colin.txt",
+    "hook_source_quote": "I've never seen anything in the last 12 years of being in the industry that could take exactly what was in my brain and pretty much give people the results that they're looking for.",
+    "hook_source_timestamp": "0:24",
+    "thumbnail_headline": "Never seen this in 12 years",
+    "thumbnail_accent_words": "12 years",
+    "caption": "Colin Schmidt, ran a funding company. He says he doesn't endorse people in this industry, but he went through the roadmap and would not change a thing in it.",
+    "best_frame_timestamp": "",
+    "thumbnail_path": "",
+    "sort_order": 0,
+    "status": "draft"
+  },
+  {
+    "id": "gene",
+    "client_name": "Gene",
+    "business_type": "Owner, three LLCs",
+    "video_src": "https://fundhub.ai/funnel/slo-testimonial-gene.mp4",
+    "transcript_path": "content/testimonials/transcripts/gene.txt",
+    "hook_source_quote": "I did receive some good business funding at the rate of about $420,000 over the last three years.",
+    "hook_source_timestamp": "1:02",
+    "thumbnail_headline": "About $420,000 over three years",
+    "thumbnail_accent_words": "$420,000",
+    "caption": "Gene, owner of three LLCs. His scores started in the low 600s, the dispute letters moved him to 780 and then 810, and that opened up about $420,000 in business funding over three years.",
+    "best_frame_timestamp": "",
+    "thumbnail_path": "",
+    "sort_order": 1,
+    "status": "draft"
+  },
+  {
+    "id": "sarah",
+    "client_name": "Sarah",
+    "business_type": "Sales team at Fundhub",
+    "video_src": "https://fundhub.ai/funnel/slo-testimonial-sarah.mp4",
+    "transcript_path": "content/testimonials/transcripts/sarah.txt",
+    "hook_source_quote": "And even though I haven't gotten it just yet, I'm set to be approved for around $80,000.",
+    "hook_source_timestamp": "0:28",
+    "thumbnail_headline": "Set to be approved for around $80,000",
+    "thumbnail_accent_words": "$80,000",
+    "caption": "Sarah, on Chris's sales team. Her credit was in bad shape, so she ran the roadmap, pinpointed exactly what to fix, and is set to be approved for around $80,000.",
+    "best_frame_timestamp": "",
+    "thumbnail_path": "",
+    "sort_order": 2,
+    "status": "draft"
+  }
+]
