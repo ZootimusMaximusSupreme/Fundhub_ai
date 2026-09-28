@@ -2870,6 +2870,20 @@ document.addEventListener("DOMContentLoaded", async function () {
     clientId = await window.__fhClientId;
   }
 
+  /* The file he is looking at lives on the session, not in the saved account.
+     The saved account still names the first file after he switches. */
+  var repSession = await session();
+  if (repSession && repSession.staff && repSession.staff.authorized_rep && repSession.staff.client_id) {
+    clientId = String(repSession.staff.client_id);
+    window.__fhClientId = Promise.resolve(clientId);
+    try {
+      var saved = JSON.parse(localStorage.getItem("fh_account") || "{}");
+      saved.clientId = clientId;
+      saved.client_id = clientId;
+      localStorage.setItem("fh_account", JSON.stringify(saved));
+    } catch (e) {}
+  }
+
   await paintRepFiles();
 
   if (!clientId) {
