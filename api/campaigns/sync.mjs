@@ -105,6 +105,7 @@ import {
   normalizeInsight,
   VIDEO_INSIGHT_REQUEST_FIELDS
 } from "../../src/adplatforms/meta.mjs";
+import { notifyDyingBefore25 } from "../../src/ops/watch-curve.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
 const API_VERSION = () => process.env.META_API_VERSION || "v21.0";
@@ -292,10 +293,10 @@ function tokenFor(connection) {
    back to our own ad row; Meta includes it at this level anyway, and asking
    costs nothing.
 
-   THE FIELD LIST IS NOT EDITED HERE. The eight video names come from one
-   exported list in src/adplatforms/meta.mjs so that what we ask Meta for and
-   what the parser knows how to read can never drift apart. This function only
-   moved where the call is made. */
+   THE FIELD LIST IS NOT EDITED HERE. The video names (eight counts plus the
+   play curve) come from one exported list in src/adplatforms/meta.mjs so that
+   what we ask Meta for and what the parser knows how to read can never drift
+   apart. This function only moved where the call is made. */
 export function insightsRequestUrl(connection, { since, until, version = API_VERSION() } = {}) {
   const params = new URLSearchParams({
     fields: [
@@ -483,11 +484,12 @@ async function upsertAd(tx, { orgId, partnerId, connectionId, campaignId, adSetI
 
 /* storeInsights → the number of days actually written
 
-   THE EIGHT VIDEO COLUMNS PASS THROUGH AS NULL WHEN META DID NOT ANSWER. Never
-   0: a photo ad has no video numbers at all and a video nobody watched has real
-   zeros, and 378_ad_video_metrics.sql exists to keep those two facts apart. So
-   these ten parameters are `?? null` and the four money/count ones above them
-   keep their `?? 0`, because those columns are NOT NULL (046:440-448).
+   THE EIGHT VIDEO COUNT COLUMNS PLUS video_play_curve PASS THROUGH AS NULL
+   WHEN META DID NOT ANSWER. Never 0 / never []: a photo ad has no video numbers
+   at all and a video nobody watched has real zeros, and 378 / 394 exist to keep
+   those facts apart. So these video parameters are `?? null` and the four
+   money/count ones above them keep their `?? 0`, because those columns are NOT
+   NULL (046:440-448).
 
    A FAILED INSERT IS NO LONGER CAUGHT HERE, AND THE COUNT NO LONGER LIES. This
    used to end `.catch(...)` and then increment `stored` regardless, so a write
@@ -499,21 +501,25 @@ async function upsertAd(tx, { orgId, partnerId, connectionId, campaignId, adSetI
    Letting it throw hands the failure to the campaign that owns this transaction
    (see the handler). That one campaign rolls back and is named in the answer;
    the campaigns that already committed are untouched. The reason still travels
-   all the way to the response — on a database where migration 378 has not been
-   applied, "column does not exist" is exactly what the reader needs to see. */
+   all the way to the response — on a database where migration 378 / 394 has not
+   been applied, "column does not exist" is exactly what the reader needs to see. */
 async function storeInsights(tx, { orgId, partnerId, adId, insights }) {
   let stored = 0;
   for (const raw of insights || []) {
     const row = normalizeInsight(raw);
     const day = raw.date_start || raw.date || null;
     if (!day || !adId) continue;
+    const curve = row.video_play_curve == null
+      ? null
+      : JSON.stringify(row.video_play_curve);
     await tx.query(
       `INSERT INTO ad_metrics_daily (
          org_id, partner_id, ad_id, date, spend_cents, impressions, clicks, ctr, roas,
          video_continuous_2s_watched, video_plays,
          video_p25_watched, video_p50_watched, video_p75_watched,
-         video_p95_watched, video_p100_watched, video_thruplay_watched
-       ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+         video_p95_watched, video_p100_watched, video_thruplay_watched,
+         video_play_curve
+       ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb)
        ON CONFLICT (ad_id, date) DO UPDATE SET
          spend_cents = EXCLUDED.spend_cents,
          impressions = EXCLUDED.impressions,
@@ -528,6 +534,7 @@ async function storeInsights(tx, { orgId, partnerId, adId, insights }) {
          video_p95_watched = EXCLUDED.video_p95_watched,
          video_p100_watched = EXCLUDED.video_p100_watched,
          video_thruplay_watched = EXCLUDED.video_thruplay_watched,
+         video_play_curve = EXCLUDED.video_play_curve,
          synced_at = now()`,
       [orgId, partnerId, adId, day, row.spend_cents ?? 0,
        row.impressions ?? 0, row.clicks ?? 0, row.ctr ?? null, row.roas ?? null,
@@ -535,7 +542,7 @@ async function storeInsights(tx, { orgId, partnerId, adId, insights }) {
        row.video_p25_watched ?? null,
        row.video_p50_watched ?? null, row.video_p75_watched ?? null,
        row.video_p95_watched ?? null, row.video_p100_watched ?? null,
-       row.video_thruplay_watched ?? null]
+       row.video_thruplay_watched ?? null, curve]
     );
     stored += 1;
   }
@@ -838,6 +845,22 @@ export async function syncPartnerConnections({ partnerId, connectionId = null, d
         [connection.id, String(err.message || err).slice(0, 500)]
       )).catch(() => null);
     }
+  }
+
+  /* Watch-curve dying alert. Read-only on Meta. Uses the same phone/ntfy path
+     as the ad-video pipeline. A buzz failure must not undo a good sync. */
+  try {
+    const scoped = {
+      query: (sql, params) => inScope((tx) => tx.query(sql, params))
+    };
+    stats.watch_curve = await notifyDyingBefore25(scoped, { partnerId });
+  } catch (err) {
+    stats.watch_curve = {
+      checked: 0,
+      alerted: 0,
+      skipped: 0,
+      error: String((err && err.message) || err).slice(0, 300)
+    };
   }
 
   return stats;

@@ -1,0 +1,132 @@
+// Watch curve — when a running video ad dies before 25%, buzz Chris.
+//
+// Definitions are Meta's (see docs/ads/watch-curve.md). The rule lives in
+// .cursor/rules/ad-watch-curve.mdc. This module only scores and notifies.
+//
+// "Dies before 25%" = most plays never reach the quarter mark:
+//   video_p25_watched / video_plays < 0.5
+// with at least MIN_N_RATE plays (same floor as every other rate here).
+//
+// Ping path: the same ntfy + SMS fan-out the ad-video pipeline uses
+// (src/ad-videos/notify-fanout.mjs). No new vendor.
+
+import { MIN_N_RATE } from "./discoveries.mjs";
+import notify from "../ad-videos/notify-fanout.mjs";
+
+export const DIES_BEFORE_25_THRESHOLD = 0.5;
+
+/** Pure score. Returns { dying, rate, plays, p25, note }. */
+export function diesBefore25Percent({ plays, p25 } = {}) {
+  if (plays == null || p25 == null || plays === "" || p25 === "") {
+    return { dying: false, rate: null, plays: null, p25: null, note: "Meta did not report plays and p25." };
+  }
+  const playN = Number(plays);
+  const p25N = Number(p25);
+  if (!Number.isFinite(playN) || !Number.isFinite(p25N) || playN < 0 || p25N < 0) {
+    return { dying: false, rate: null, plays: null, p25: null, note: "Meta did not report plays and p25." };
+  }
+  if (playN < MIN_N_RATE) {
+    return {
+      dying: false,
+      rate: null,
+      plays: playN,
+      p25: p25N,
+      note: `Need ${MIN_N_RATE} plays. Have ${playN}. Too few to call.`
+    };
+  }
+  const rate = playN === 0 ? null : p25N / playN;
+  if (rate == null) {
+    return { dying: false, rate: null, plays: playN, p25: p25N, note: "Nothing to divide by." };
+  }
+  const dying = rate < DIES_BEFORE_25_THRESHOLD;
+  return {
+    dying,
+    rate: Math.round(rate * 10000) / 10000,
+    plays: playN,
+    p25: p25N,
+    note: dying
+      ? "Most plays never reach 25%. The opening is the problem."
+      : "Enough people reach 25% that this is not a dying-before-25 call."
+  };
+}
+
+/** One or two sentences for the phone. */
+export function dyingAlertCopy(adName) {
+  const name = String(adName || "A Fundhub ad").trim() || "A Fundhub ad";
+  return {
+    title: `${name}: people leave before the quarter mark`,
+    body: "Most plays never reach 25%. Change the opening — new first line, same body."
+  };
+}
+
+const DYING_ADS_SQL = `
+  SELECT a.id AS ad_id,
+         a.org_id,
+         a.partner_id,
+         a.name AS ad_name,
+         m.date AS metric_date,
+         m.video_plays,
+         m.video_p25_watched
+    FROM ads a
+    JOIN LATERAL (
+      SELECT date, video_plays, video_p25_watched
+        FROM ad_metrics_daily
+       WHERE ad_id = a.id
+         AND video_plays IS NOT NULL
+         AND video_p25_watched IS NOT NULL
+       ORDER BY date DESC
+       LIMIT 1
+    ) m ON true
+    LEFT JOIN ad_watch_curve_alerts al ON al.ad_id = a.id
+   WHERE a.partner_id = $1
+     AND upper(coalesce(a.status, '')) = 'ACTIVE'
+     AND (al.dies_before_25_alerted_on IS NULL
+          OR al.dies_before_25_alerted_on < CURRENT_DATE)
+`;
+
+/**
+ * After a Meta sync: find running ads that die before 25% and buzz Chris once
+ * per ad per day. Read-only on campaigns/budgets. Never pauses anything.
+ */
+export async function notifyDyingBefore25(db, { partnerId, send = notify.send, env = process.env } = {}) {
+  if (!partnerId) return { checked: 0, alerted: 0, skipped: 0 };
+  const rows = await db.query(DYING_ADS_SQL, [partnerId]).then((r) => r.rows);
+  let alerted = 0;
+  let skipped = 0;
+
+  for (const row of rows) {
+    const score = diesBefore25Percent({
+      plays: row.video_plays,
+      p25: row.video_p25_watched
+    });
+    if (!score.dying) {
+      skipped += 1;
+      continue;
+    }
+    const copy = dyingAlertCopy(row.ad_name);
+    const res = await send({
+      id: row.ad_id,
+      notification: {
+        title: copy.title,
+        body: copy.body,
+        priority: 4,
+        tags: ["warning", "ad"]
+      }
+    }, { env });
+    if (res?.ok === true || res?.status === "sent") {
+      await db.query(
+        `INSERT INTO ad_watch_curve_alerts (ad_id, org_id, partner_id, dies_before_25_alerted_on, updated_at)
+         VALUES ($1,$2,$3,CURRENT_DATE,now())
+         ON CONFLICT (ad_id) DO UPDATE SET
+           dies_before_25_alerted_on = CURRENT_DATE,
+           updated_at = now()`,
+        [row.ad_id, row.org_id, row.partner_id]
+      );
+      alerted += 1;
+    }
+  }
+
+  return { checked: rows.length, alerted, skipped };
+}
+
+export default { diesBefore25Percent, dyingAlertCopy, notifyDyingBefore25 };

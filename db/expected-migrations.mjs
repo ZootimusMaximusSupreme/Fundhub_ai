@@ -277,6 +277,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/391_ad_video_spend_claims.sql",
   "migrations/392_ad_video_step_note.sql",
   "migrations/393_ad_scripts_ad_id.sql",
+  "migrations/394_ad_video_play_curve.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",
@@ -301,6 +302,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/024_partner_welcome_password.sql",
   "seed/025_creditor_bureau_map.sql",
   "seed/026_waypoint_nudge_templates.sql",
+  "seed/027_slo_genuine_followup.sql",
   "seed/295_sms_copy_2026_09.sql"
 ]);
 

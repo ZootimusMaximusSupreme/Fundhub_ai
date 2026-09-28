@@ -14,7 +14,7 @@ Shared rules for every job:
 |---|---|---|
 | Time on the roadmap page | `public/funnel/fh-attribution.js`, `api/public/slo-interest.mjs` | done |
 | The genuine text and email | messaging only. Do not edit `fh-attribution.js` | done |
-| Ad watch curve, rule, and a ping | Meta data, a rule, a text to Chris. No dashboard HTML | claimed |
+| Ad watch curve, rule, and a ping | Meta data, a rule, a text to Chris. No dashboard HTML | done |
 | RB2B pixel | `public/funnel/rb2b.js` only. Stays off with no account id | claimed |
 
 ## RB2B
@@ -85,3 +85,25 @@ No backfill — only contacts that hit Inngest after `skipInngest` is off for `k
 - `api/public/slo-interest.mjs` — contacts no longer `skipInngest`
 - Registered in `src/workflows/index.mjs`; emitter listed in `api/read/workflows.mjs`
 - Not shipped — needs deploy + seed apply for live sends
+
+## Watch curve
+
+**Done (not shipped).** Meta definitions quoted in `docs/ads/watch-curve.md`. Rule in both homes: `.cursor/rules/ad-watch-curve.mdc` + `.claude/rules/ad-watch-curve.md` + short line in `CLAUDE.md`.
+
+### Meta quotes used
+
+- **Play** (`video_play_actions` / Help Center): starts to play; excludes replays.
+- **25%** (Help `279891745529019`): played at 25% of length, including skips to that point.
+- **ThruPlay** (Help `471190536725647`): completion or at least 15 seconds.
+- **Curve** (Marketing API Insights): `video_play_curve_actions` — percentage still watching per second bucket 0–21. **Confirmed.** Stored as `ad_metrics_daily.video_play_curve` (migration `394`).
+
+### Code
+
+- Request + parse: `src/adplatforms/meta.mjs` (curve field added; quartiles kept; no invented 3-sec field).
+- Persist: `api/campaigns/sync.mjs` `storeInsights`.
+- Dying ping: `src/ops/watch-curve.mjs` — `p25/plays < 0.5` on ACTIVE ads with enough plays → `src/ad-videos/notify-fanout.mjs` (SMS + ntfy). Once per ad per day via `ad_watch_curve_alerts`.
+- Campaign oPur TOF-SLO: not paused, budgets untouched (read-only path).
+
+### How Chris gets the ping
+
+Same buzz as finished ad videos: text to `AD_VIDEO_SMS_TO` (fallback `PULSE_SMS_TO`) plus ntfy topic. Fires after Meta campaign sync when a running ad is dying before 25%.

@@ -22,10 +22,12 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 import {
   watchedActionCount,
+  playCurveActions,
   videoMetrics,
   normalizeInsight,
   VIDEO_INSIGHT_FIELDS,
-  VIDEO_INSIGHT_REQUEST_FIELDS
+  VIDEO_INSIGHT_REQUEST_FIELDS,
+  VIDEO_PLAY_CURVE_FIELD
 } from "./meta.mjs";
 
 /* One field as Meta sends it. */
@@ -99,8 +101,9 @@ describe("watchedActionCount — one Meta action array, one number", () => {
   });
 });
 
-describe("videoMetrics — the eight fields, keyed by our column names", () => {
+describe("videoMetrics — the eight count fields plus the curve", () => {
   test("every column comes back, and each carries its own field's number", () => {
+    const curve = [100, 90, 80, 70, 60, 50, 40, 30, 20, 15, 12, 10, 8, 6, 5, 4, 3, 2, 1, 1, 0, 0];
     const row = {
       video_continuous_2_sec_watched_actions: views(1000),
       video_play_actions: plays(1800),
@@ -109,7 +112,8 @@ describe("videoMetrics — the eight fields, keyed by our column names", () => {
       video_p75_watched_actions: views(120),
       video_p95_watched_actions: views(70),
       video_p100_watched_actions: views(60),
-      video_thruplay_watched_actions: views(310)
+      video_thruplay_watched_actions: views(310),
+      video_play_curve_actions: [{ action_type: "video_view", value: curve }]
     };
     assert.deepStrictEqual(videoMetrics(row), {
       video_continuous_2s_watched: 1000,
@@ -119,16 +123,18 @@ describe("videoMetrics — the eight fields, keyed by our column names", () => {
       video_p75_watched: 120,
       video_p95_watched: 70,
       video_p100_watched: 60,
-      video_thruplay_watched: 310
+      video_thruplay_watched: 310,
+      video_play_curve: curve
     });
   });
 
-  test("a photo ad — no video fields at all — is eight nulls, not eight zeros", () => {
+  test("a photo ad — no video fields at all — is eight null counts and a null curve", () => {
     const out = videoMetrics({ spend: "10.00", impressions: "500" });
     for (const [, column] of VIDEO_INSIGHT_FIELDS) {
       assert.strictEqual(out[column], null, `${column} was invented as ${out[column]}`);
       assert.notStrictEqual(out[column], 0, `${column} turned "no video" into "nobody watched"`);
     }
+    assert.strictEqual(out.video_play_curve, null);
   });
 
   test("one field missing does not blank the others", () => {
@@ -147,11 +153,11 @@ describe("videoMetrics — the eight fields, keyed by our column names", () => {
 });
 
 describe("the request list and the parser cannot drift apart", () => {
-  test("eight fields are asked for, and they are the eight that are parsed", () => {
-    assert.strictEqual(VIDEO_INSIGHT_REQUEST_FIELDS.length, 8);
+  test("eight count fields plus the curve are asked for", () => {
+    assert.strictEqual(VIDEO_INSIGHT_REQUEST_FIELDS.length, 9);
     assert.deepStrictEqual(
       [...VIDEO_INSIGHT_REQUEST_FIELDS],
-      VIDEO_INSIGHT_FIELDS.map(([metaField]) => metaField)
+      [...VIDEO_INSIGHT_FIELDS.map(([metaField]) => metaField), VIDEO_PLAY_CURVE_FIELD]
     );
   });
 
@@ -164,7 +170,8 @@ describe("the request list and the parser cannot drift apart", () => {
       "video_p75_watched_actions",
       "video_p95_watched_actions",
       "video_p100_watched_actions",
-      "video_thruplay_watched_actions"
+      "video_thruplay_watched_actions",
+      "video_play_curve_actions"
     ]);
   });
 
@@ -258,11 +265,12 @@ describe("normalizeInsight carries the video numbers without disturbing the old 
     assert.strictEqual(out.video_p75_watched, 90);
   });
 
-  test("an insight row with no video fields carries eight nulls", () => {
+  test("an insight row with no video fields carries eight null counts and a null curve", () => {
     const out = normalizeInsight({ spend: "1.00", impressions: "10", date_start: "2026-09-08" });
     for (const [, column] of VIDEO_INSIGHT_FIELDS) {
       assert.strictEqual(out[column], null, `${column} was ${out[column]} instead of null`);
     }
+    assert.strictEqual(out.video_play_curve, null);
   });
 
   test("null survives being turned into JSON and back — it does not become 0", () => {
@@ -270,5 +278,20 @@ describe("normalizeInsight carries the video numbers without disturbing the old 
     assert.strictEqual(out.video_p50_watched, null);
     assert.ok(Object.prototype.hasOwnProperty.call(out, "video_p50_watched"),
       "the key vanished, so a reader cannot tell 'not reported' from 'not asked for'");
+  });
+});
+
+describe("playCurveActions — Meta's second-by-second curve", () => {
+  test("the documented list of percentages is kept as numbers", () => {
+    const value = ["100", "88.5", "70", "50"];
+    assert.deepStrictEqual(
+      playCurveActions([{ action_type: "video_view", value }]),
+      [100, 88.5, 70, 50]
+    );
+  });
+
+  test("absent curve is null, never an empty list", () => {
+    assert.strictEqual(playCurveActions(undefined), null);
+    assert.strictEqual(playCurveActions([]), null);
   });
 });

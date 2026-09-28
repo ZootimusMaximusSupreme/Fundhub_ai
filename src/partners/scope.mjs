@@ -151,7 +151,9 @@ export const PARTNER_SCOPED_TABLES = new Set([
   // 172_wl_marketing.sql
   "partner_ai_usage", "partner_page_section_versions", "marketing_content_queue",
   // 377_marketing_label_spine.sql
-  "ad_scripts"
+  "ad_scripts",
+  // 394_ad_video_play_curve.sql
+  "ad_watch_curve_alerts"
 ]);
 
 /* assertCanReadRow — the generic form of assertCanReadClient, for the creative

@@ -164,10 +164,11 @@ export async function fetchInsights(connection, { externalId, since, until }, ct
    video_play_actions is how many plays STARTED at all. It is the honest
    denominator for a hook-style rate and it is free on this same request.
 
-   NOT ASKED FOR YET, AND THE OBVIOUS NEXT STEP: video_play_curve_actions
-   returns a per-second retention curve for the ad — where in the video people
-   actually leave, second by second — on this same call for no extra cost. It is
-   better than the five percentage points below. See 378's header.
+   video_play_curve_actions is Meta's second-by-second retention curve (confirmed
+   on developers.facebook.com Ad Account Insights, 2026-09-27). It is a LIST of
+   percentages, not one count — so it is not in VIDEO_INSIGHT_FIELDS (those all
+   go through watchedActionCount). It is still on the same request. Stored as
+   jsonb on ad_metrics_daily.video_play_curve (394).
 
    REQUEST_FIELDS is exported so the request and the parser can never drift
    apart: the list a caller asks Meta for is literally the list this file knows
@@ -183,10 +184,15 @@ export const VIDEO_INSIGHT_FIELDS = Object.freeze([
   ["video_thruplay_watched_actions",         "video_thruplay_watched"]
 ]);
 
+/* Meta's exact field name for the second-by-second curve. Do not rename. */
+export const VIDEO_PLAY_CURVE_FIELD = "video_play_curve_actions";
+export const VIDEO_PLAY_CURVE_COLUMN = "video_play_curve";
+
 /* The names to put in the insights request's `fields` parameter. */
-export const VIDEO_INSIGHT_REQUEST_FIELDS = Object.freeze(
-  VIDEO_INSIGHT_FIELDS.map(([metaField]) => metaField)
-);
+export const VIDEO_INSIGHT_REQUEST_FIELDS = Object.freeze([
+  ...VIDEO_INSIGHT_FIELDS.map(([metaField]) => metaField),
+  VIDEO_PLAY_CURVE_FIELD
+]);
 
 /* watchedActionCount — turn one of Meta's action arrays into one number, or
    null.
@@ -245,13 +251,41 @@ function countOrNull(raw) {
   return Math.trunc(n);
 }
 
+/* playCurveActions — Meta's video_play_curve_actions → number[] or null.
+ *
+ * Shape (Ad Account Insights): a list of { action_type, value }, where value
+ * is the array of percentages for buckets 0–21. Absent / empty / unreadable →
+ * null (same rule as the count fields: photo ads have no curve). */
+export function playCurveActions(field) {
+  if (field === null || field === undefined) return null;
+  if (Array.isArray(field) && field.length && typeof field[0] === "number") {
+    return field.map((n) => Number(n)).filter((n) => Number.isFinite(n));
+  }
+  if (!Array.isArray(field) || field.length === 0) return null;
+
+  let best = null;
+  let fallback = null;
+  for (const entry of field) {
+    if (!entry || typeof entry !== "object") continue;
+    const raw = entry.value;
+    if (!Array.isArray(raw) || raw.length === 0) continue;
+    const nums = raw.map((v) => Number(v)).filter((n) => Number.isFinite(n));
+    if (nums.length === 0) continue;
+    if (entry.action_type === "video_view") best = nums;
+    else if (fallback === null) fallback = nums;
+  }
+  return best !== null ? best : fallback;
+}
+
 /* videoMetrics — every video field on one insights row, keyed by OUR column
-   names. Each key is always present; its value is a number or null. */
+   names. Count keys are always present (number or null). The curve key is
+   always present (number[] or null). */
 export function videoMetrics(row = {}) {
   const out = {};
   for (const [metaField, column] of VIDEO_INSIGHT_FIELDS) {
     out[column] = watchedActionCount(row[metaField]);
   }
+  out[VIDEO_PLAY_CURVE_COLUMN] = playCurveActions(row[VIDEO_PLAY_CURVE_FIELD]);
   return out;
 }
 
@@ -273,8 +307,8 @@ export function normalizeInsight(row) {
     conversions,
     cpa_cents: conversions > 0 ? Math.round(toCents(row.spend) / conversions) : null,
     roas: num(row.purchase_roas?.[0]?.value),
-    // The eight video numbers. null when Meta did not report them — see
-    // videoMetrics above and 378_ad_video_metrics.sql.
+    // The eight video counts plus the play curve. null when Meta did not
+    // report them — see videoMetrics, 378, and 394.
     ...videoMetrics(row)
   };
 }
@@ -351,7 +385,9 @@ export async function requestClientAdAccountAccess(
 
 export default {
   PLATFORM, createCampaign, createAdSet, createAd, updateBudget, pause, resume, fetchInsights,
-  watchedActionCount, videoMetrics, VIDEO_INSIGHT_FIELDS, VIDEO_INSIGHT_REQUEST_FIELDS,
+  watchedActionCount, playCurveActions, videoMetrics,
+  VIDEO_INSIGHT_FIELDS, VIDEO_INSIGHT_REQUEST_FIELDS,
+  VIDEO_PLAY_CURVE_FIELD, VIDEO_PLAY_CURVE_COLUMN,
   normalizeMetaBusinessId, normalizeMetaAdAccountId, pendingAdAccountPlaceholder,
   requestManagedBusiness, requestClientAdAccountAccess
 };
