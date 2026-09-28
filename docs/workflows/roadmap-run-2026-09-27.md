@@ -132,3 +132,25 @@ Same buzz as finished ad videos: text to `AD_VIDEO_SMS_TO` (fallback `PULSE_SMS_
 (Secret is in local `.env` and Netlify as `RB2B_WEBHOOK_SECRET`. RB2B docs: no signature — secret must be in the URL query string.)
 
 **Chris — one RB2B step:** Open https://app.rb2b.com/integrations/webhook → paste that full URL → Save. (RB2B has no API to register the webhook for you.)
+
+## Merged status
+
+### Ads
+
+One campaign is on: oPur: TOF-SLO: $297, $100 a day, started Saturday. Four videos, all to https://apply.fundhub.ai/roadmap/. Late afternoon: about $181 spent, 2,036 people saw them, 107 opened the page, 0 purchases. Spend is too small to judge the page. SLO1 gets the cheap page opens. SLO4 spends the most and keeps the fewest people. Ignore the old ClickFunnels count of 296. Use Meta's 107.
+
+### Measuring, already on
+
+The first box (name, email, phone) is saved even if they leave without paying. A Fundhub or test email is marked agent. Any other email is a person. We record how long they stay and whether the form came on screen. About 15 minutes after a real person leaves their info and does not pay, they get a text and an email asking what their concerns are. If they answer: "If we fixed that, would you want to be a Fundhub customer?" If an ad dies before the quarter mark and people are not tapping through, Chris gets a text to change the opening. If they leave the video early because they already clicked, that is a hop. Do not tell him to recut it. A full watch is not a sale. The purchase is the score. Playbook: `docs/ads/curve-optimization.md` (definitions also in `docs/ads/watch-curve.md`). Table `ad_watch_curve_diagnoses` can hold the diagnosis, whether the fix is the picture, the words, or both, and the film note. It does not fill itself every morning yet.
+
+### RB2B
+
+The account id is set: Z6PVLHZEJL6R. The pixel is live on public pages via `public/funnel/rb2b.js`. Staff screens are off. RB2B does not give phone numbers. It gives name, job, LinkedIn, and work email for some US visitors. Webhook storage is in the repo: rows go in the `events` table as `rb2b.visitor_identified`, at `https://fundhub.ai/api/public/rb2b-webhook` (secret in the query string). Our own visit tracker, when last counted, only had about one hour of history (15 person visits, 0 paid). Do not replace Meta's 107 with that 15.
+
+### Emails
+
+The long drip is not sending. Cold, warm, and hot (N-01, N-02, N-03) were turned off on August 22. Paying takes someone out. After the work is done they are supposed to come back in. N-04 (after funding closeout) and N-06 (another funding wave) are wired and send. The repair-done note (N-05) and the Analyzer-rerun note (N-08) are written and not wired. The AI emails that would use their file are not running. Tonight's two genuine notes are not that long drip. Seed `027_slo_genuine_followup` and the Inngest path are present.
+
+### Tomorrow
+
+Cost to get an email, which ad got the cheap page open, and whether anyone answered the text. No reply yet means there is nothing to rewrite the offer from.
