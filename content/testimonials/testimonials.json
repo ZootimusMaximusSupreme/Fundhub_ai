@@ -13,10 +13,11 @@
     "best_frame_timestamp": "1:26",
     "thumbnail_path": "public/testimonials/thumbnails/colin.png",
     "sort_order": 0,
-    "status": "draft",
+    "status": "approved",
     "thumbnail_band_top": "62%",
     "thumbnail_band_bottom": "100%",
-    "thumbnail_foot_top": "80%"
+    "thumbnail_foot_top": "80%",
+    "poster_src": "https://fundhub.ai/funnel/slo-testimonial-colin-poster.jpg"
   },
   {
     "id": "gene",
@@ -32,10 +33,11 @@
     "best_frame_timestamp": "1:04",
     "thumbnail_path": "public/testimonials/thumbnails/gene.png",
     "sort_order": 1,
-    "status": "draft",
+    "status": "approved",
     "thumbnail_band_top": "3%",
     "thumbnail_band_bottom": "36%",
-    "thumbnail_foot_top": "79%"
+    "thumbnail_foot_top": "79%",
+    "poster_src": "https://fundhub.ai/funnel/slo-testimonial-gene-poster.jpg"
   },
   {
     "id": "sarah",
@@ -51,9 +53,10 @@
     "best_frame_timestamp": "0:28",
     "thumbnail_path": "public/testimonials/thumbnails/sarah.png",
     "sort_order": 2,
-    "status": "draft",
+    "status": "approved",
     "thumbnail_band_top": "54%",
     "thumbnail_band_bottom": "97%",
-    "thumbnail_foot_top": "88%"
+    "thumbnail_foot_top": "88%",
+    "poster_src": "https://fundhub.ai/funnel/slo-testimonial-sarah-poster.jpg"
   }
 ]
