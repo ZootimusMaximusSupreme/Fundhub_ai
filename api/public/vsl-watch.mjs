@@ -107,6 +107,7 @@
 
 import { db } from "../../src/db.mjs";
 import { safeError } from "../../src/http/health.mjs";
+import { classifyVisitor } from "../../src/slo/visitor.mjs";
 import {
   parseWatchBeacon,
   overBodyCap,
@@ -162,6 +163,21 @@ function applyCors(req, res) {
    type says application/json; anything else stays a string. A page-hide beacon
    is sent as text/plain on purpose, to skip the browser's preflight question,
    so the string branch is the ORDINARY path here and not a fallback. */
+/* stampWatchActor — person or agent, decided here, not by the page.
+
+   The page may report navigator.webdriver. It may not pick the label.
+   The User-Agent on the request is the browser's own, so a headless
+   robot is caught even when an old copy of the page script forgets `wd`. */
+export function stampWatchActor(value, req) {
+  const headers = req?.headers || {};
+  const userAgent = headers["user-agent"] || headers["User-Agent"] || "";
+  const who = classifyVisitor({
+    userAgent,
+    webdriver: value.webdriver === true
+  });
+  return { ...value, actor: who.actor, actorReason: who.reason };
+}
+
 function readBody(req) {
   if (req.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
   if (typeof req.body === "string") {
@@ -218,7 +234,7 @@ export default async function handler(req, res, deps = {}) {
   }
 
   try {
-    const out = await recordWatchBeacon(parsed.value, {
+    const out = await recordWatchBeacon(stampWatchActor(parsed.value, req), {
       db: deps.db || db,
       ...(deps.withVslVisitor ? { withVslVisitor: deps.withVslVisitor } : {}),
       ...(deps.resolveDefaultOrg ? { resolveDefaultOrg: deps.resolveDefaultOrg } : {}),

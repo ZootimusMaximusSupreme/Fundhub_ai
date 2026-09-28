@@ -22,7 +22,7 @@ import {
   MAX_SAMPLES,
   WATCH_LIMITS
 } from "./watch-beacon.mjs";
-import { corsHeaders, allowedOrigins } from "../../api/public/vsl-watch.mjs";
+import { corsHeaders, allowedOrigins, stampWatchActor } from "../../api/public/vsl-watch.mjs";
 import { checkVisitorRate } from "./watch-store.mjs";
 
 const VID = "vid-aaaaaaaaaaaaaaaa";      // 20 chars, inside the 16-64 range
@@ -82,11 +82,38 @@ describe("VSL watch beacon — NULL means unknown and must survive", () => {
       "watchedFraction",
       "unmuted", "finished", "autoplayBlocked",
       "replayCount", "rewindCount", "skipCount",
-      "utmContent", "pageUrl", "referrer", "deviceHint",
+      "utmContent", "pageUrl", "referrer", "deviceHint", "webdriver",
       "samples", "sampleCount"
     ]) {
       assert.strictEqual(r.value[k], null, `${k} should be null when the beacon did not say`);
     }
+  });
+
+  test("wd true is the automated-browser flag, and a word in its place is refused", () => {
+    assert.equal(parseWatchBeacon(good({ wd: true })).value.webdriver, true);
+    assert.equal(parseWatchBeacon(good({ wd: false })).value.webdriver, false);
+    assert.equal(parseWatchBeacon(good({ wd: "true" })).ok, false);
+  });
+
+  test("the door marks a robot browser as an agent and a normal browser as a person", () => {
+    const value = parseWatchBeacon(good()).value;
+    const robot = stampWatchActor(value, {
+      headers: { "user-agent": "Mozilla/5.0 HeadlessChrome/120" }
+    });
+    assert.equal(robot.actor, "agent");
+    assert.equal(robot.actorReason, "bot_browser");
+
+    const auto = stampWatchActor({ ...value, webdriver: true }, {
+      headers: { "user-agent": "Mozilla/5.0" }
+    });
+    assert.equal(auto.actor, "agent");
+    assert.equal(auto.actorReason, "automated_browser");
+
+    const person = stampWatchActor(value, {
+      headers: { "user-agent": "Mozilla/5.0" }
+    });
+    assert.equal(person.actor, "person");
+    assert.equal(person.actorReason, "browser");
   });
 
   test("false is a measurement and is NOT turned into null", () => {

@@ -155,6 +155,30 @@ describe("POST /api/public/vsl-watch", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     assert.equal(row.unmuted, true);
     assert.equal(row.device_hint, "mobile");
     assert.equal(row.page_url, "https://apply.fundhub.ai/watch");
+    assert.equal(row.actor, "person");
+    assert.equal(row.actor_reason, "browser");
+  });
+
+  test("a robot browser is saved as an agent, and a later ordinary beacon cannot undo that", async () => {
+    const vid = newVisitor();
+    const sid = newSession();
+    const first = await post(
+      { v: VIDEO, vid, sid, dur: 207.215, pos: 4, wd: true },
+      { headers: { "user-agent": "Mozilla/5.0" } }
+    );
+    assert.equal(first.code, 200);
+    let row = await sessionRow(vid);
+    assert.equal(row.actor, "agent");
+    assert.equal(row.actor_reason, "automated_browser");
+
+    await post(
+      { v: VIDEO, vid, sid, pos: 20 },
+      { headers: { "user-agent": "Mozilla/5.0" } }
+    );
+    row = await sessionRow(vid);
+    assert.equal(row.actor, "agent", "an agent must stay an agent");
+    assert.equal(row.actor_reason, "automated_browser");
+    assert.equal(Number(row.max_position_seconds), 20);
   });
 
   test("the fraction is stored, and it is ours rather than the caller's", async () => {

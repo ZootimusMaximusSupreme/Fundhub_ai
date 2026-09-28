@@ -192,6 +192,16 @@ flowchart TD
 * **No screen reads this yet.** Front end last (CLAUDE.md §3a). Proven by
   `src/vsl/vsl-funnels.pg.test.mjs`.
 
+## Person or agent (396)
+
+Each new viewing is marked **person** or **agent**, the same way the roadmap page
+already marks a visit. The server reads the browser's own User-Agent, and the
+page script also sends whether the browser says it is automated (`wd`). A robot
+browser stays an agent even if a later report looks ordinary. Viewings saved
+before this have no mark. That blank means we do not know. It is not a person.
+You or Colin on a normal phone still count as a person, because the page cannot
+see a name.
+
 ## UNVERIFIED — traced but never run
 
 * **No row has ever been written.** There is no Postgres on the machine this was written

@@ -306,6 +306,12 @@ export function parseWatchBeacon(body) {
   const blocked = flag(body.blocked);
   if (!blocked.ok) return { ok: false, error: "bad_blocked" };
 
+  /* The page may say the browser is automated. It may not name itself a
+     person. The door decides person or agent from this flag plus the
+     User-Agent header. A missing flag is unknown, not a person. */
+  const webdriver = flag(body.wd);
+  if (!webdriver.ok) return { ok: false, error: "bad_webdriver" };
+
   const replays = whole(body.replays, { min: 0, max: MAX_COUNT });
   if (!replays.ok) return { ok: false, error: "bad_replays" };
   const rewinds = whole(body.rewinds, { min: 0, max: MAX_COUNT });
@@ -378,6 +384,7 @@ export function parseWatchBeacon(body) {
       unmuted: unmuted.value,
       finished: finished.value,
       autoplayBlocked: blocked.value,
+      webdriver: webdriver.value,
       replayCount: replays.value,
       rewindCount: rewinds.value,
       skipCount: skips.value,

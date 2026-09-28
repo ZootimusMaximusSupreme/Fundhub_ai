@@ -303,6 +303,9 @@
         page: pageUrl(),
         ref:  referrerOrigin(),
         device: deviceHint(),
+        /* True when this browser says it is automated. The server decides
+           person or agent. This flag is not a name the page can pick. */
+        wd: typeof navigator !== "undefined" && navigator.webdriver === true,
 
         samples: rows.length ? rows.slice(0, MAX_ROWS) : null,
         /* A RUNNING TOTAL for the whole viewing, not this message's count.

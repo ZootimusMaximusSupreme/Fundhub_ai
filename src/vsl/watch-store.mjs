@@ -178,8 +178,8 @@ export async function upsertWatchSession(tx, orgId, v) {
         max_position_seconds, watched_fraction, max_position_after_unmute_seconds,
         unmuted, finished, autoplay_blocked,
         replay_count, rewind_count, skip_count,
-        utm_content, page_url, referrer, device_hint)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        utm_content, page_url, referrer, device_hint, actor, actor_reason)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
      ON CONFLICT (visitor_id, session_key) DO UPDATE SET
        video_duration_seconds = EXCLUDED.video_duration_seconds,
        max_position_seconds   = EXCLUDED.max_position_seconds,
@@ -194,14 +194,17 @@ export async function upsertWatchSession(tx, orgId, v) {
        utm_content            = EXCLUDED.utm_content,
        page_url               = EXCLUDED.page_url,
        referrer               = EXCLUDED.referrer,
-       device_hint            = EXCLUDED.device_hint
+       device_hint            = EXCLUDED.device_hint,
+       actor                  = EXCLUDED.actor,
+       actor_reason           = EXCLUDED.actor_reason
      RETURNING id`,
     [
       orgId, v.videoKey, v.durationSeconds, v.visitorId, v.sessionKey,
       v.maxPositionSeconds, v.watchedFraction, v.maxPositionAfterUnmuteSeconds,
       v.unmuted, v.finished, v.autoplayBlocked,
       v.replayCount, v.rewindCount, v.skipCount,
-      v.utmContent, v.pageUrl, v.referrer, v.deviceHint
+      v.utmContent, v.pageUrl, v.referrer, v.deviceHint,
+      v.actor, v.actorReason
     ]
   );
   return rows[0].id;
