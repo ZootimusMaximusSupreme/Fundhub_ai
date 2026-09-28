@@ -18,7 +18,7 @@ import { sendTemplated } from "./messaging.mjs";
 import { claimCustomFieldLock, mergeCustomFields } from "./custom-fields.mjs";
 import { classifyVisitor } from "../slo/visitor.mjs";
 import { SLO_PURPOSE, SLO_SOURCE } from "../slo/offer.mjs";
-import { agreesToRoadmap, DIG_KEY, FIRST_FIVE, REPLIED_KEY, SLOT_KEY } from "../slo/discount-197.mjs";
+import { declinesRoadmap, DISCOUNT_REF_KEY, FIRST_FIVE, REPLIED_KEY, SLOT_KEY, discountCheckoutUrl, newDiscountRef } from "../slo/discount-197.mjs";
 import { enrollSloDrip } from "../slo/drip-plan.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { formatQuestionList } from "../insights/questions.mjs";
@@ -26,9 +26,12 @@ import { meetBookingUrl } from "../insights/meet.mjs";
 
 export const SMS_M1_KEY = "SMS-SLO-GENUINE-01";
 export const EMAIL_M1_KEY = "EMAIL-SLO-GENUINE-01";
-export const SMS_M2_KEY = "SMS-SLO-GENUINE-02";
-export const EMAIL_M2_KEY = "EMAIL-SLO-GENUINE-02";
-export const SMS_DIG_KEY = "SMS-SLO-DIG";
+export const SMS_FIRST5_KEY = "SMS-SLO-FIRST5-01";
+export const EMAIL_FIRST5_KEY = "EMAIL-SLO-FIRST5-01";
+export const SMS_GIFT_KEY = "SMS-SLO-GIFT-01";
+export const EMAIL_GIFT_KEY = "EMAIL-SLO-GIFT-01";
+export const SMS_COUPON_KEY = "SMS-SLO-COUPON-01";
+export const EMAIL_COUPON_KEY = "EMAIL-SLO-COUPON-01";
 
 export const LOCK_M1 = "slo_genuine_m1_sent_at";
 export const LOCK_M2 = "slo_genuine_m2_sent_at";
@@ -109,19 +112,20 @@ export async function handleM1({ event, db, step }) {
     claimCustomFieldLock(db, clientId, LOCK_M1));
   if (!claimed) return { done: false, reason: "already_sent_m1" };
 
+  const slot = await step.run("assign-text-slot", () => assignTextSlot(db, { orgId, clientId }));
+  const smsKey = slot ? SMS_FIRST5_KEY : SMS_GIFT_KEY;
+  const emailKey = slot ? EMAIL_FIRST5_KEY : EMAIL_GIFT_KEY;
   const eventId = event.id;
   const sms = await step.run("send-sms-m1", () =>
     sendTemplated(db, {
-      orgId, clientId, channel: "sms", templateKey: SMS_M1_KEY, eventId, context: CHRIS
+      orgId, clientId, channel: "sms", templateKey: smsKey, eventId, context: CHRIS
     }));
   const email = await step.run("send-email-m1", () =>
     sendTemplated(db, {
-      orgId, clientId, channel: "email", templateKey: EMAIL_M1_KEY, eventId, context: CHRIS
+      orgId, clientId, channel: "email", templateKey: emailKey, eventId, context: CHRIS
     }));
 
-  await step.run("assign-text-slot", () => assignTextSlot(db, { orgId, clientId }));
-
-  return { done: true, sent: true, clientId, sms, email };
+  return { done: true, sent: true, clientId, sms, email, slot };
 }
 
 /** Slot 1–5 for the first real texts. Later people get no slot. */
@@ -161,20 +165,10 @@ export async function awaitingGenuineM2(db, clientId) {
   return Boolean(row.m1) && !row.m2;
 }
 
-export async function handleFirstFiveReply({ event, db, step, clientId, body, fields }) {
+export async function handleFirstFiveReply({ event, db, step, clientId, body }) {
   const orgId = event.orgId;
   const eventId = event.id;
-  if (!fields[DIG_KEY]) {
-    const claimed = await step.run("claim-dig", () =>
-      claimCustomFieldLock(db, clientId, DIG_KEY));
-    if (!claimed) return { done: false, reason: "already_sent_dig" };
-    const sms = await step.run("send-dig", () =>
-      sendTemplated(db, {
-        orgId, clientId, channel: "sms", templateKey: SMS_DIG_KEY, eventId, context: CHRIS
-      }));
-    return { done: true, sent: true, lane: "dig", clientId, sms };
-  }
-  if (!agreesToRoadmap(body)) {
+  if (declinesRoadmap(body)) {
     await step.run("enroll-drip", () => enrollSloDrip(db, clientId));
     return { done: true, sent: false, reason: "first_five_no_agree", clientId };
   }
@@ -224,8 +218,13 @@ export async function handleReply({ event, db, step }) {
   const fields = await step.run("read-lane", () => clientFields(db, clientId));
   if (fields[SLOT_KEY]) {
     return handleFirstFiveReply({
-      event, db, step, clientId, body: payload.body, fields
+      event, db, step, clientId, body: payload.body
     });
+  }
+
+  if (declinesRoadmap(payload.body)) {
+    await step.run("enroll-drip-no", () => enrollSloDrip(db, clientId));
+    return { done: true, sent: false, reason: "declined", clientId };
   }
 
   const waiting = await step.run("check-awaiting-m2", () =>
@@ -240,22 +239,28 @@ export async function handleReply({ event, db, step }) {
     }));
   if (paid) return { done: true, sent: false, reason: "already_paid" };
 
-  const claimed = await step.run("claim-m2", () =>
+  const claimed = await step.run("claim-coupon", () =>
     claimCustomFieldLock(db, clientId, LOCK_M2));
   if (!claimed) return { done: false, reason: "already_sent_m2" };
 
   const orgId = event.orgId;
   const eventId = event.id;
-  const sms = await step.run("send-sms-m2", () =>
+  const ref = newDiscountRef();
+  const payUrl = discountCheckoutUrl(ref);
+  await step.run("save-coupon-ref", () =>
+    mergeCustomFields(db, clientId, { [DISCOUNT_REF_KEY]: ref }));
+  const context = { ...CHRIS, pay_url: payUrl };
+  const sms = await step.run("send-sms-coupon", () =>
     sendTemplated(db, {
-      orgId, clientId, channel: "sms", templateKey: SMS_M2_KEY, eventId, context: CHRIS
+      orgId, clientId, channel: "sms", templateKey: SMS_COUPON_KEY, eventId, context
     }));
-  const email = await step.run("send-email-m2", () =>
+  const email = await step.run("send-email-coupon", () =>
     sendTemplated(db, {
-      orgId, clientId, channel: "email", templateKey: EMAIL_M2_KEY, eventId, context: CHRIS
+      orgId, clientId, channel: "email", templateKey: EMAIL_COUPON_KEY, eventId, context
     }));
+  await step.run("enroll-drip", () => enrollSloDrip(db, clientId));
 
-  return { done: true, sent: true, clientId, sms, email };
+  return { done: true, sent: true, clientId, sms, email, payUrl };
 }
 
 export const sloGenuineFollowup = inngest.createFunction(

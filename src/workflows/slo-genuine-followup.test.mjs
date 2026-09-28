@@ -4,11 +4,12 @@ import {
   eligibleForGenuineM1,
   handleM1,
   handleReply,
-  SMS_M1_KEY,
-  EMAIL_M1_KEY,
-  SMS_M2_KEY,
-  EMAIL_M2_KEY,
-  SMS_DIG_KEY,
+  SMS_FIRST5_KEY,
+  EMAIL_FIRST5_KEY,
+  SMS_GIFT_KEY,
+  EMAIL_GIFT_KEY,
+  SMS_COUPON_KEY,
+  EMAIL_COUPON_KEY,
   LOCK_M1,
   LOCK_M2
 } from "./slo-genuine-followup.mjs";
@@ -16,10 +17,12 @@ import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 function templates() {
   return [
-    { org_id: "org-1", template_key: SMS_M1_KEY, channel: "sms", body: "m1 sms", compliance_passed: true },
-    { org_id: "org-1", template_key: EMAIL_M1_KEY, channel: "email", subject: "What almost stopped you?", body: "m1 email", compliance_passed: true },
-    { org_id: "org-1", template_key: SMS_M2_KEY, channel: "sms", body: "m2 sms", compliance_passed: true },
-    { org_id: "org-1", template_key: EMAIL_M2_KEY, channel: "email", subject: "One more question", body: "m2 email", compliance_passed: true }
+    { org_id: "org-1", template_key: SMS_FIRST5_KEY, channel: "sms", body: "first5 sms", compliance_passed: true },
+    { org_id: "org-1", template_key: EMAIL_FIRST5_KEY, channel: "email", subject: "Free", body: "first5 email", compliance_passed: true },
+    { org_id: "org-1", template_key: SMS_GIFT_KEY, channel: "sms", body: "gift sms", compliance_passed: true },
+    { org_id: "org-1", template_key: EMAIL_GIFT_KEY, channel: "email", subject: "Gift", body: "gift email", compliance_passed: true },
+    { org_id: "org-1", template_key: SMS_COUPON_KEY, channel: "sms", body: "coupon {{pay_url}}", compliance_passed: true },
+    { org_id: "org-1", template_key: EMAIL_COUPON_KEY, channel: "email", subject: "33% off", body: "coupon email {{pay_url}}", compliance_passed: true }
   ];
 }
 
@@ -32,6 +35,10 @@ function genuineDb(seed = {}) {
     async query(sql, params = []) {
       if (/FROM payment_links pl/.test(sql) && /JOIN clients c/.test(sql)) {
         return { rows: paid ? [{ "?column?": 1 }] : [] };
+      }
+      if (/slo_text_slot' IS NOT NULL/.test(sql)) {
+        const n = base.clients.filter((c) => c.custom_fields && c.custom_fields.slo_text_slot).length;
+        return { rows: [{ n }] };
       }
       if (/custom_fields->>\$2 AS m1/.test(sql)) {
         const c = base.clients.find((row) => row.id === params[0]);
@@ -122,7 +129,7 @@ test("handleM1: after the wait, queues SMS and email for an unpaid person", asyn
   assert.deepEqual(sleeps, ["wait-15-min"]);
   assert.deepEqual(
     db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_M1_KEY, SMS_M1_KEY].sort()
+    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
   );
   assert.ok(db.clients[0].custom_fields[LOCK_M1]);
 });
@@ -174,7 +181,7 @@ test("handleReply: does not send message 2 until message 1 was sent", async () =
   assert.equal(db.messages.length, 0);
 });
 
-test("handleReply: after a real answer, queues SMS and email 2", async () => {
+test("handleReply: after a real answer, the gift becomes the 33% coupon", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
@@ -195,11 +202,11 @@ test("handleReply: after a real answer, queues SMS and email 2", async () => {
     step: fakeStep()
   });
   assert.equal(res.sent, true);
+  assert.match(res.payUrl, /offer=197/);
   assert.deepEqual(
     db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_M2_KEY, SMS_M2_KEY].sort()
+    [EMAIL_COUPON_KEY, SMS_COUPON_KEY].sort()
   );
-  assert.ok(db.clients[0].custom_fields[LOCK_M2]);
 });
 
 test("handleReply: STOP does not schedule message 2", async () => {
@@ -221,7 +228,7 @@ test("handleReply: STOP does not schedule message 2", async () => {
   assert.equal(db.messages.length, 0);
 });
 
-test("handleReply: first five get the dig text, not the customer question", async () => {
+test("handleReply: the first five who answer get the free Google Meet", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
@@ -230,43 +237,12 @@ test("handleReply: first five get the dig text, not the customer question", asyn
       phone: "+14155550134",
       custom_fields: { [LOCK_M1]: "2026-09-27T18:20:00.000Z", slo_text_slot: "1" }
     }],
-    templates: [
-      ...templates(),
-      { org_id: "org-1", template_key: SMS_DIG_KEY, channel: "sms", body: "dig", compliance_passed: true }
-    ]
-  });
-  const res = await handleReply({
-    event: ev("message.inbound", {
-      from: "+14155550134",
-      body: "I was worried about getting burned",
-      channel: "sms"
-    }, { id: "evt-dig", clientId: "cl-1" }),
-    db,
-    step: fakeStep()
-  });
-  assert.equal(res.lane, "dig");
-  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_DIG_KEY]);
-});
-
-test("handleReply: a yes after the dig books the free roadmap interview", async () => {
-  const db = genuineDb({
-    clients: [{
-      id: "cl-1",
-      org_id: "org-1",
-      email: "pat@gmail.com",
-      phone: "+14155550134",
-      custom_fields: {
-        [LOCK_M1]: "2026-09-27T18:20:00.000Z",
-        slo_text_slot: "1",
-        slo_dig_sent_at: "2026-09-27T19:00:00.000Z"
-      }
-    }],
     templates: templates()
   });
   const res = await handleReply({
     event: ev("message.inbound", {
       from: "+14155550134",
-      body: "Yes I want the roadmap",
+      body: "The hardest part is I don't trust anyone",
       channel: "sms"
     }, { id: "evt-yes", clientId: "cl-1" }),
     db,
@@ -275,5 +251,28 @@ test("handleReply: a yes after the dig books the free roadmap interview", async 
   assert.equal(res.lane, "free_roadmap");
   assert.equal(db.messages.length, 0);
   assert.equal(db.tasks.length, 1);
-  assert.equal(db.tasks[0].assignee_role, "csm");
+});
+
+test("handleReply: the first five who say no do not get the free roadmap", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: { [LOCK_M1]: "2026-09-27T18:20:00.000Z", slo_text_slot: "1" }
+    }],
+    templates: templates()
+  });
+  const res = await handleReply({
+    event: ev("message.inbound", {
+      from: "+14155550134",
+      body: "No",
+      channel: "sms"
+    }, { id: "evt-no", clientId: "cl-1" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.reason, "first_five_no_agree");
+  assert.equal(db.tasks.length, 0);
 });

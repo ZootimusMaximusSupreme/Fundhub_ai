@@ -36,7 +36,14 @@ export function agreesToRoadmap(body) {
   return YES_RE.test(text);
 }
 
-/** 1–5 when this person is still inside the cap, otherwise null. */
+const NO_RE = /^(no|nah|nope|no thanks|not interested)\b/i;
+
+/** True when they turned the offer down. A real answer is not a no. */
+export function declinesRoadmap(body) {
+  const text = String(body || "").trim();
+  if (!text) return false;
+  return NO_RE.test(text);
+}
 export function nextTextSlot(usedCount) {
   const n = Number(usedCount);
   if (!Number.isInteger(n) || n < 0) return null;
