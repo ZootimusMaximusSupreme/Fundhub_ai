@@ -127,6 +127,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "slo-genuine-followup",
   "slo-genuine-reply",
   "slo-pack-delivery",
+  "slo-paid-form-nudge",
   "subscription-billing-sweeper",
   "sys-01-client-value-calculator",
   "sys-01-ltv-calculator",

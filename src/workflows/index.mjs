@@ -75,6 +75,7 @@ import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mj
 import { sOfferBucket } from './s-offer-bucket.mjs';
 import { sloPackDelivery } from './slo-pack-delivery.mjs';
 import { sloGenuineFollowup, sloGenuineReply } from './slo-genuine-followup.mjs';
+import { sloPaidFormNudge } from './slo-paid-form-nudge.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
 import { sys01LtvCalculator } from './sys-01-ltv-calculator.mjs';
 import { u02AnalyzerCompleteDelivery } from './u-02-analyzer-complete-delivery.mjs';
@@ -429,6 +430,8 @@ export const functions = [
      after message.inbound. Never texts actor=agent or test emails. */
   sloGenuineFollowup,
   sloGenuineReply,
+  /* One text and email when a real $297 payment still has an empty soft-pull form. */
+  sloPaidFormNudge,
   sys01ClientValueCalculator,
   sys01LtvCalculator,
   u02AnalyzerCompleteDelivery,

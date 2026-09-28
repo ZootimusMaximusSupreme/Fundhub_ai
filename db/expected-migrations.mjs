@@ -305,6 +305,9 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/025_creditor_bureau_map.sql",
   "seed/026_waypoint_nudge_templates.sql",
   "seed/027_slo_genuine_followup.sql",
+  "seed/028_slo_discount_197.sql",
+  "seed/029_slo_infinite_drip.sql",
+  "seed/030_slo_paid_form_nudge.sql",
   "seed/295_sms_copy_2026_09.sql"
 ]);
 
