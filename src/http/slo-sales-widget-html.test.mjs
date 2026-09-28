@@ -59,6 +59,25 @@ test("three steps, in this order: info, card, soft pull", () => {
   assert.match(html, /<form class="cfw-step s3"/);
 });
 
+test("the words social and SSN appear nowhere a buyer can read before step 3", () => {
+  /* Owner-set 2026-09-27: "on the primary page remove anything that says ssn
+     or social. the first page." The field itself has to stay on step 3 — that
+     IS the soft pull — but nothing before it may say the word. */
+  const a = html.indexOf('<form class="cfw-step s3"');
+  const b = html.indexOf("</form>", a) + "</form>".length;
+  const strip = (x) => x
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]+>/g, " ");
+  for (const [where, chunk] of [["before step 3", html.slice(0, a)], ["after step 3", html.slice(b)]]) {
+    const hit = strip(chunk).match(/\b(social|ssn)\b/i);
+    assert.equal(hit, null, `"${hit?.[0]}" is readable ${where} — it belongs only on the soft pull step`);
+  }
+  /* and it is still asked where it has to be */
+  assert.match(html.slice(a, b), /Social Security number/);
+});
+
 test("nothing about the credit file is asked before the card", () => {
   const upToCard = html.slice(0, html.indexOf('<form class="cfw-step s3"'));
   for (const field of ['name="ssn"', 'name="dob"', 'name="consent"', 'name="prev_address"']) {
