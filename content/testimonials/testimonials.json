@@ -10,10 +10,14 @@
     "thumbnail_headline": "Never seen this in 12 years",
     "thumbnail_accent_words": "12 years",
     "caption": "Colin Schmidt, ran a funding company. He says he doesn't endorse people in this industry, but he went through the roadmap and would not change a thing in it.",
-    "best_frame_timestamp": "",
-    "thumbnail_path": "",
+    "best_frame_timestamp": "1:26",
+    "thumbnail_path": "public/testimonials/thumbnails/colin.png",
     "sort_order": 0,
-    "status": "draft"
+    "status": "draft",
+    "thumbnail_band_top": "62%",
+    "thumbnail_band_bottom": "100%",
+    "thumbnail_play_top": "44%",
+    "thumbnail_foot_top": "80%"
   },
   {
     "id": "gene",
@@ -26,10 +30,14 @@
     "thumbnail_headline": "About $420,000 over three years",
     "thumbnail_accent_words": "$420,000",
     "caption": "Gene, owner of three LLCs. His scores started in the low 600s, the dispute letters moved him to 780 and then 810, and that opened up about $420,000 in business funding over three years.",
-    "best_frame_timestamp": "",
-    "thumbnail_path": "",
+    "best_frame_timestamp": "1:04",
+    "thumbnail_path": "public/testimonials/thumbnails/gene.png",
     "sort_order": 1,
-    "status": "draft"
+    "status": "draft",
+    "thumbnail_band_top": "3%",
+    "thumbnail_band_bottom": "36%",
+    "thumbnail_play_top": "62%",
+    "thumbnail_foot_top": "72%"
   },
   {
     "id": "sarah",
@@ -42,9 +50,13 @@
     "thumbnail_headline": "Set to be approved for around $80,000",
     "thumbnail_accent_words": "$80,000",
     "caption": "Sarah, on Chris's sales team. Her credit was in bad shape, so she ran the roadmap, pinpointed exactly what to fix, and is set to be approved for around $80,000.",
-    "best_frame_timestamp": "",
-    "thumbnail_path": "",
+    "best_frame_timestamp": "0:28",
+    "thumbnail_path": "public/testimonials/thumbnails/sarah.png",
     "sort_order": 2,
-    "status": "draft"
+    "status": "draft",
+    "thumbnail_band_top": "54%",
+    "thumbnail_band_bottom": "97%",
+    "thumbnail_play_top": "42%",
+    "thumbnail_foot_top": "90%"
   }
 ]
