@@ -38,12 +38,12 @@ body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:var(--
   top:var(--band-top);
   bottom:calc(100% - var(--band-bottom));
   background:linear-gradient(180deg,
-    rgba(10,10,10,0)    0%,
-    rgba(10,10,10,.62)  9%,
-    rgba(10,10,10,.93) 20%,
-    rgba(10,10,10,.94) 80%,
-    rgba(10,10,10,.62) 93%,
-    rgba(10,10,10,0)  100%);
+    rgba(10,10,10,0)     0%,
+    rgba(10,10,10,.66)   9%,
+    rgba(10,10,10,.985) 20%,
+    rgba(10,10,10,.985) 80%,
+    rgba(10,10,10,.66)  93%,
+    rgba(10,10,10,0)   100%);
 }
 
 /* Small wash at the very bottom: seats the wordmark and catches any burned-in
@@ -51,7 +51,7 @@ body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:var(--
 .foot-scrim{
   position:absolute;left:0;right:0;bottom:0;
   top:var(--foot-top);
-  background:linear-gradient(180deg,rgba(10,10,10,0) 0%,rgba(10,10,10,.86) 34%,rgba(10,10,10,.95) 100%);
+  background:linear-gradient(180deg,rgba(10,10,10,0) 0%,rgba(10,10,10,.55) 10%,rgba(10,10,10,1) 21%,rgba(10,10,10,1) 100%);
 }
 
 .block{
@@ -82,19 +82,19 @@ body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:var(--
 
 /* Play button — a clean ring, nothing skeuomorphic */
 .play{
-  position:absolute;left:50%;top:var(--play-top,50%);transform:translate(-50%,-50%);
-  width:19rem;height:19rem;border-radius:50%;
-  background:rgba(255,255,255,.13);
-  border:.7rem solid rgba(255,255,255,.93);
+  position:absolute;right:6.5rem;bottom:3.6rem;
+  width:10.4rem;height:10.4rem;border-radius:50%;
+  background:rgba(255,255,255,.14);
+  border:.55rem solid rgba(255,255,255,.93);
   display:flex;align-items:center;justify-content:center;
-  box-shadow:0 1rem 4rem rgba(0,0,0,.3);
+  box-shadow:0 .8rem 3rem rgba(0,0,0,.35);
 }
 .play::after{
   content:"";
-  border-left:6.2rem solid #fff;
-  border-top:3.9rem solid transparent;
-  border-bottom:3.9rem solid transparent;
-  margin-left:2rem;
+  border-left:3.5rem solid #fff;
+  border-top:2.2rem solid transparent;
+  border-bottom:2.2rem solid transparent;
+  margin-left:1.1rem;
 }
 
 .mark{position:absolute;left:6.5rem;bottom:4.6rem;display:flex;align-items:center;gap:2.4rem}
