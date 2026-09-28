@@ -107,3 +107,11 @@ No backfill — only contacts that hit Inngest after `skipInngest` is off for `k
 ### How Chris gets the ping
 
 Same buzz as finished ad videos: text to `AD_VIDEO_SMS_TO` (fallback `PULSE_SMS_TO`) plus ntfy topic. Fires after Meta campaign sync when a running ad is dying before 25%.
+
+## Curve research
+
+**Meta (fetched 2026-09-27):** Help `1792720544284355` lists video engagement metrics including 2-second continuous plays and 3-second video plays in Ads Manager; Help `279891745529019` defines 25% as played at a quarter of length including skip-ahead; Help `471190536725647` defines ThruPlay as completion or ≥15s (≥97% for shorter videos). **Andromeda:** Meta engineering post (Dec 2024) — retrieval narrows tens of millions of candidates to thousands; hierarchical index for growing creative volume from Advantage+ / GenAI; precomputed ad embeddings; future work mentions more diverse candidates. No Meta claim that “similar creatives are suppressed.”
+
+**Drive:** SLO Ads folder (`13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ`) — 85 non-video files; **no** filenames mentioning curve / Andromeda / watch. Opened: `FundHub-Ad-Scripts-Batch-1` (internal “Andromeda era: 15–20+ creatives/week” — not Meta law); `Ad Scaling Framework.docx` (third-party SOP mentions Andromeda while scaling); `TLDR - Direct Response Ad Creation Framework SOP` (hook in first 3–5s — generic DR, not Meta quartiles). No dedicated curve notes on Drive.
+
+**Shipped in repo:** `docs/ads/curve-optimization.md`; table `ad_watch_curve_diagnoses` → FK `ad_metrics_daily_id` (migration `395`). Saturday oPur numbers in the doc; **SLO4** sample film note: new cold open (face + overlay + first line under five seconds) — 339 plays, 22 at 25%.
