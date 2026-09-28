@@ -10,7 +10,7 @@ import { db } from "../../src/db.mjs";
 import { requireRole } from "../../src/http/middleware/requireRole.mjs";
 import { isUuid } from "../../src/http/read-api.mjs";
 import { requireClientInOrg } from "../../src/http/client-scope.mjs";
-import { addAuthorizedRep, removeAuthorizedRep } from "../../src/auth/authorized-rep.mjs";
+import { addAuthorizedRep, removeAuthorizedRep, liveRepContact } from "../../src/auth/authorized-rep.mjs";
 import { requestMagicLink, magicLinkUrl } from "../../src/auth/magic-link.mjs";
 
 const SAY = {
@@ -25,8 +25,8 @@ const SAY = {
 };
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    res.setHeader("Allow", "POST");
+  if (req.method !== "GET" && req.method !== "POST") {
+    res.setHeader("Allow", "GET, POST");
     return res.status(405).json({ ok: false, error: "method_not_allowed" });
   }
 
@@ -34,11 +34,21 @@ export default async function handler(req, res) {
   if (!staff) return;
 
   const body = req.body || {};
-  const clientId = String(body.client_id || "").trim();
+  const clientId = String(
+    (req.method === "GET" ? (req.query && req.query.client_id) : body.client_id) || ""
+  ).trim();
   if (!isUuid(clientId)) {
     return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
   }
   if (!(await requireClientInOrg(res, db, staff, clientId))) return;
+
+  if (req.method === "GET") {
+    const rep = await liveRepContact(db, clientId);
+    return res.status(200).json({
+      ok: true,
+      rep: rep ? { name: rep.name, email: rep.email, phone: rep.phone } : null
+    });
+  }
 
   if (body.remove === true) {
     const out = await removeAuthorizedRep(db, { orgId: staff.org_id, clientId });

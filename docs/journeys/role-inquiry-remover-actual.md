@@ -254,7 +254,7 @@ flowchart TD
 | `/api/affiliates/refer` | POST | client |
 | `/api/ai-bureau-config` | POST | owner, admin, funding_advisor |
 | `/api/auth/admin-reset` | POST | owner, admin |
-| `/api/auth/authorized-rep` | POST | owner, admin |
+| `/api/auth/authorized-rep` | GET, POST | owner, admin |
 | `/api/auth/authorized-rep-file` | GET, POST | client |
 | `/api/auth/invite` | POST | owner, admin |
 | `/api/auth/send-portal-link` | POST | owner, admin |

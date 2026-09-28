@@ -348,6 +348,13 @@
      a toast that vanishes is what left the closer guessing. */
   .portal-link .action-btn[disabled]{opacity:.5;cursor:not-allowed;}
   .portal-link-sent{font-size:var(--fs-body);line-height:1.45;color:var(--text-dim);margin:8px 0 0;}
+  .rep-label{display:block;font-size:var(--fs-caption);color:var(--text-dim);margin:8px 0 4px;}
+  .rep-field{
+    display:block;width:100%;box-sizing:border-box;margin:0 0 8px;
+    font-family:'Inter',sans-serif;font-size:var(--fs-body);color:var(--text);
+    border:1px solid var(--line);border-radius:5px;background:var(--paper);padding:10px 8px;
+  }
+  #ccp-rep-remove{margin-top:8px;}
 
   .action-error{
     display:flex;gap:8px;background:var(--red-bg);border:1px solid var(--red-line);border-radius:6px;
@@ -1099,6 +1106,19 @@
         <div class="portal-link" id="ccp-portal-link-wrap" hidden>
           <button type="button" class="action-btn" id="ccp-portal-link" style="cursor:pointer;"><span id="ccp-portal-link-label">Send portal sign-in link</span> <span class="arrow">→</span></button>
           <p id="ccp-portal-link-status" class="portal-link-sent" role="status" aria-live="polite"></p>
+        </div>
+        <div class="portal-link" id="ccp-rep-wrap" hidden>
+          <p class="consent-state" id="ccp-rep-now">Nobody else can open this file.</p>
+          <label class="rep-label" for="ccp-rep-name">Name</label>
+          <input type="text" id="ccp-rep-name" class="rep-field" autocomplete="name">
+          <label class="rep-label" for="ccp-rep-email">Email</label>
+          <input type="email" id="ccp-rep-email" class="rep-field" autocomplete="email">
+          <label class="rep-label" for="ccp-rep-phone">Phone</label>
+          <input type="tel" id="ccp-rep-phone" class="rep-field" autocomplete="tel">
+          <button type="button" class="action-btn" id="ccp-rep-add" style="cursor:pointer;"><span id="ccp-rep-add-label">Add this person to the file</span></button>
+          <button type="button" class="action-btn" id="ccp-rep-remove" hidden>Take them off this file</button>
+          <p id="ccp-rep-status" class="portal-link-sent" role="status" aria-live="polite"></p>
+          <input type="text" id="ccp-rep-url" class="rep-field" readonly hidden aria-label="Sign-in link">
         </div>
       </div>
 
@@ -3375,6 +3395,108 @@ document.addEventListener("DOMContentLoaded", function () {
         setTimeout(release, SEND_COOLDOWN_MS);
       });
     });
+  })();
+
+  /* Who else can open this file. Owner and admin only. Hidden for everyone else. */
+  (function wireAuthorizedRep() {
+    var wrap = $("ccp-rep-wrap");
+    var now = $("ccp-rep-now");
+    var name = $("ccp-rep-name");
+    var email = $("ccp-rep-email");
+    var phone = $("ccp-rep-phone");
+    var add = $("ccp-rep-add");
+    var addLabel = $("ccp-rep-add-label");
+    var remove = $("ccp-rep-remove");
+    var status = $("ccp-rep-status");
+    var urlBox = $("ccp-rep-url");
+    if (!wrap || !add || !name || !email || !phone) return;
+
+    var viewerRole = "";
+    try { viewerRole = String(localStorage.getItem("fh_role") || "").trim().toLowerCase(); }
+    catch (e) { viewerRole = ""; }
+    if (viewerRole !== "owner" && viewerRole !== "admin") return;
+    wrap.hidden = false;
+
+    function say(message) { if (status) status.textContent = message || ""; }
+    function paint(rep) {
+      if (!now) return;
+      if (!rep) {
+        now.textContent = "Nobody else can open this file.";
+        if (remove) remove.hidden = true;
+        return;
+      }
+      now.textContent = (rep.name || "This person") + " can open this file. Texts and emails go to " + (rep.email || "them") + ".";
+      if (remove) remove.hidden = false;
+    }
+    function authHeaders() {
+      var t = "";
+      try { t = localStorage.getItem("fh_token") || ""; } catch (e) {}
+      var h = { accept: "application/json" };
+      if (t) h.authorization = "Bearer " + t;
+      return h;
+    }
+    function load() {
+      if (!id) { paint(null); return; }
+      fetch("/api/auth/authorized-rep?client_id=" + encodeURIComponent(id), {
+        headers: authHeaders(),
+        credentials: "same-origin"
+      }).then(function (r) { return r.json(); }).then(function (body) {
+        paint(body && body.ok ? body.rep : null);
+      }, function () { paint(null); });
+    }
+    if (!id) {
+      add.disabled = true;
+      say("Open a client file first.");
+      return;
+    }
+    load();
+
+    add.addEventListener("click", function () {
+      if (add.disabled) return;
+      if (!window.FHData || typeof FHData.write !== "function") {
+        say("Not available — the data layer has not loaded.");
+        return;
+      }
+      add.disabled = true;
+      if (addLabel) addLabel.textContent = "Adding…";
+      FHData.write("/api/auth/authorized-rep", {
+        client_id: id,
+        name: name.value,
+        email: email.value,
+        phone: phone.value
+      }).then(function (res) {
+        add.disabled = false;
+        if (addLabel) addLabel.textContent = "Add this person to the file";
+        if (!res || !res.ok) {
+          say((res && res.error) || "Could not add them.");
+          return;
+        }
+        var link = res.data && res.data.url;
+        say(res.data && res.data.sent ? "Added. The sign-in email is queued." : "Added. The sign-in email did not queue. Use the link.");
+        if (urlBox && link) {
+          urlBox.hidden = false;
+          urlBox.value = link;
+        }
+        load();
+      });
+    });
+
+    if (remove) {
+      remove.addEventListener("click", function () {
+        if (!window.confirm("Take them off this file? They will not be able to open it.")) return;
+        remove.disabled = true;
+        FHData.write("/api/auth/authorized-rep", { client_id: id, remove: true }).then(function (res) {
+          remove.disabled = false;
+          if (!res || !res.ok) {
+            say((res && res.error) || "Could not take them off.");
+            return;
+          }
+          if (urlBox) { urlBox.hidden = true; urlBox.value = ""; }
+          say("Taken off this file.");
+          load();
+        });
+      });
+    }
   })();
 
   /* ── THE ROUND'S THREE MOVES ───────────────────────────────────────────────

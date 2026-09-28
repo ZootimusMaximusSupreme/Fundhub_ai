@@ -147,7 +147,7 @@ flowchart TD
 | `/api/analytics/youtube-sync` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/applications` | GET, POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/auth/admin-reset` | POST | owner, admin |
-| `/api/auth/authorized-rep` | POST | owner, admin |
+| `/api/auth/authorized-rep` | GET, POST | owner, admin |
 | `/api/auth/invite` | POST | owner, admin |
 | `/api/auth/send-portal-link` | POST | owner, admin |
 | `/api/auth/staff-role` | POST | owner, admin |
