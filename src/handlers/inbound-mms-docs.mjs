@@ -7,6 +7,7 @@ import { storeAndRegister } from "../documents/register.mjs";
 import { storeFromEnv } from "../documents/store.mjs";
 import { KINDS } from "../documents/kinds.mjs";
 import { phoneCandidates } from "../mail/suppression.mjs";
+import { clientIdForRepPhone } from "../auth/authorized-rep.mjs";
 import { byCode } from "../agents/registry.mjs";
 import { callModel } from "../agents/model.mjs";
 import { mediaFromBytes } from "../repair/response-agent.mjs";
@@ -197,17 +198,20 @@ async function findClientByPhone(db, orgId, phone) {
   }
 
   const candidates = phoneCandidates(phone);
-  if (!candidates.length) return none;
-  const loose = await db.query(
-    `SELECT id FROM clients WHERE org_id=$1 AND ${PHONE_DIGITS_SQL} = ANY($2)`,
-    [orgId, candidates]
-  );
-  if (loose.rows.length === 1) {
-    return { clientId: loose.rows[0].id, matches: 1, ambiguous: false };
+  if (candidates.length) {
+    const loose = await db.query(
+      `SELECT id FROM clients WHERE org_id=$1 AND ${PHONE_DIGITS_SQL} = ANY($2)`,
+      [orgId, candidates]
+    );
+    if (loose.rows.length === 1) {
+      return { clientId: loose.rows[0].id, matches: 1, ambiguous: false };
+    }
+    if (loose.rows.length > 1) {
+      return { clientId: null, matches: loose.rows.length, ambiguous: true };
+    }
   }
-  if (loose.rows.length > 1) {
-    return { clientId: null, matches: loose.rows.length, ambiguous: true };
-  }
+  const repFile = await clientIdForRepPhone(db, orgId, phone);
+  if (repFile) return { clientId: repFile, matches: 1, ambiguous: false };
   return none;
 }
 

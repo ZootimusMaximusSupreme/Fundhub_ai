@@ -35,6 +35,7 @@ import { advanceCardToStage } from "../workflows/cards.mjs";
 import { threadMessage as threadStoredMessage } from "../conversations/store.mjs";
 // One phone-matching rule for the whole repo — see the note on the export.
 import { phoneCandidates } from "../mail/suppression.mjs";
+import { clientIdForRepPhone } from "../auth/authorized-rep.mjs";
 // Bookings are stored as bookings now, not only as a to-do. See the booking
 // section below and db/migrations/225_bookings.sql.
 import {
@@ -100,6 +101,8 @@ async function findClient(db, orgId, { email, phone } = {}) {
       );
       if (d.rows[0]) return d.rows[0].id;
     }
+    const repFile = await clientIdForRepPhone(db, orgId, ph);
+    if (repFile) return repFile;
   }
   return null;
 }

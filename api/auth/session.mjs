@@ -79,7 +79,8 @@ export default async function handler(req, res) {
     principal_kind: p.kind,    // unambiguous, for anything that should not read `role`
     client_id: p.clientId,
     affiliate_id: p.affiliateId,
-    partner_id: p.partnerId    // partner-surface screens; CRM uses org-brand
+    partner_id: p.partnerId,   // partner-surface screens; CRM uses org-brand
+    authorized_rep: p.authorizedRep === true
   };
 
   const payload = {

@@ -38,6 +38,7 @@ import { isSynthetic } from "./live-fence.mjs";
 import { isDraftTemplateCopy, isDraftTemplateRow } from "./draft-guard.mjs";
 import { fenceVerdict, MESSAGING_DRY_RUN } from "../lib/dry-run.mjs";
 import { signUnsubscribeUrl, withUnsubscribeFooter } from "./unsubscribe.mjs";
+import { destinationAddress } from "../auth/authorized-rep.mjs";
 
 /* If the document-check agent is retired, leftover queued SMS-DOC-02 must not
    transmit. The code below treats "no row" as retired, so this literal MUST
@@ -327,7 +328,12 @@ async function addressFor(db, message, providerName) {
     `SELECT ${field} AS address FROM clients WHERE id = $1 LIMIT 1`,
     [message.client_id]
   );
-  return rows[0]?.address || null;
+  const fallback = rows[0]?.address || null;
+  if (field === "email" || field === "phone") {
+    const channel = field === "email" ? "email" : message.channel;
+    return destinationAddress(db, message.client_id, channel, fallback);
+  }
+  return fallback;
 }
 
 /* subjectFor — the email subject line.

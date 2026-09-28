@@ -5,7 +5,7 @@ import { verifyUnsubscribeRequest } from "../messaging/unsubscribe.mjs";
 
 // In-memory DB fake covering message_templates, messages, opt_outs, conversations
 // and the client record sendTemplated reads merge-tag context from.
-function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, failOn = null } = {}) {
+function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, failOn = null, rep = null } = {}) {
   const messages = [];
   const events = [];          // staff_events, the telemetry seam's output
   const conversations = [];   // the thread the Messaging screen lists
@@ -21,6 +21,9 @@ function pgFake({ templates = [], optOuts = [], clients = [], openShift = null, 
       const sql = statement;
       this.sql.push(String(statement));
       if (failOn && failOn.test(sql)) throw Object.assign(new Error("simulated outage"), { code: "08006" });
+      if (/client_authorized_reps/.test(sql)) {
+        return { rows: rep ? [rep] : [] };
+      }
       if (/SELECT first_name, last_name, email, phone, custom_fields FROM clients/.test(sql)) {
         const c = clients.find((c) => c.id === params[0]);
         return { rows: c ? [c] : [] };
@@ -102,6 +105,21 @@ async function quietly(fn) {
 const BASE = { orgId: "org-1", clientId: "cl-1", channel: "sms", eventId: "evt-1" };
 
 const tpl = (key, body) => ({ org_id: "org-1", template_key: key, body, compliance_passed: true });
+
+test("sendTemplated: a linked representative gets the text, and the kid's name stays", async () => {
+  const db = pgFake({
+    templates: [tpl("N-01-SMS", "Hi {{contact.first_name}}")],
+    clients: [{
+      id: "cl-1", first_name: "Kid", last_name: "File",
+      email: "kid@x.io", phone: "+15551110000", custom_fields: {}
+    }],
+    rep: { email: "dad@x.io", phone: "+15552220000", name: "Dad" }
+  });
+  const res = await sendTemplated(db, { ...BASE, templateKey: "N-01-SMS" });
+  assert.equal(res.sent, true);
+  assert.equal(db.messages[0].to_address, "+15552220000");
+  assert.equal(db.messages[0].rendered_body, "Hi Kid");
+});
 
 test("sendTemplated: normal send queues a message with rendered body", async () => {
   const db = pgFake({ templates: [tpl("N-01-SMS", "Hi {{first_name}}, apply now!")] });

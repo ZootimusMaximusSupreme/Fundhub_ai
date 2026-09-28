@@ -310,6 +310,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/029_slo_infinite_drip.sql",
   "seed/030_slo_paid_form_nudge.sql",
   "seed/031_slo_first_text.sql",
+  "seed/032_slo_first_text_meet.sql",
   "seed/295_sms_copy_2026_09.sql"
 ]);
 

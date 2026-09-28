@@ -21,6 +21,7 @@ import { mergeCustomFields } from "./custom-fields.mjs";
 import { removeTags, addTags } from "./tags.mjs";
 import { moveCardToStage } from "./cards.mjs";
 import { sendTemplated } from "./messaging.mjs";
+import { clientIdForRepPhone } from "../auth/authorized-rep.mjs";
 import { createTask } from "../lib/create-task.mjs";
 
 export const SMS_RESCHEDULE_TEMPLATE_KEY = "SMS-DPC04-RESCHEDULE-REBOOKING";
@@ -32,7 +33,8 @@ const SOURCE_WORKFLOW = "dpc-03-inbound-reply-router";
 async function findClientByPhone(db, orgId, phone) {
   if (!orgId || !phone) return null;
   const r = await db.query(`SELECT id FROM clients WHERE org_id=$1 AND phone=$2 LIMIT 1`, [orgId, phone]);
-  return r.rows[0]?.id || null;
+  if (r.rows[0]) return r.rows[0].id;
+  return clientIdForRepPhone(db, orgId, phone);
 }
 
 function parseDecision(body) {

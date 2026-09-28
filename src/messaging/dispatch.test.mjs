@@ -55,6 +55,7 @@ function fakeDb({
   return {
     updates,
     query: async (sql, params) => {
+      if (sql.includes("client_authorized_reps")) return { rows: [] };
       if (sql.includes("FROM opt_outs")) {
         return { rows: optedOut.has(`${params[0]}:${params[1]}`) ? [{ x: 1 }] : [] };
       }

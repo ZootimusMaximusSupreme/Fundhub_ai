@@ -10,6 +10,7 @@ import { newToken, hashToken, normalizeIp, ttlMs } from "./session.mjs";
 import { hashPassword, verifyPassword, validatePassword } from "./hash.mjs";
 import { resolveDefaultOrg } from "./org.mjs";
 import { demoLoginRefusal } from "./demo-logins.mjs";
+import { actingClientId } from "./authorized-rep.mjs";
 
 const truncate = (s, n) => (s == null ? null : String(s).slice(0, n));
 
@@ -49,7 +50,7 @@ export async function verifyAccountSession(db, token, { env = process.env } = {}
           SELECT 1 FROM accounts a
            WHERE a.id = s.account_id AND a.status = 'active'
         )
-      RETURNING s.id, s.account_id, s.org_id, s.expires_at`,
+      RETURNING s.id, s.account_id, s.org_id, s.expires_at, s.active_client_id`,
     [hashToken(token), new Date(Date.now() + ttlMs(env))]
   );
   if (!r.rows[0]) return null;
@@ -59,6 +60,31 @@ export async function verifyAccountSession(db, token, { env = process.env } = {}
        FROM accounts WHERE id = $1`, [r.rows[0].account_id]);
   const row = a.rows[0];
   if (!row) return null;
+
+  const session = { id: r.rows[0].id, expiresAt: r.rows[0].expires_at };
+  if (row.kind === "authorized_rep") {
+    const clientId = await actingClientId(db, {
+      accountId: row.id,
+      orgId: row.org_id,
+      sessionId: session.id,
+      activeClientId: r.rows[0].active_client_id
+    });
+    return {
+      principal: {
+        kind: "client",
+        authorizedRep: true,
+        accountKind: "authorized_rep",
+        accountId: row.id,
+        orgId: row.org_id,
+        email: row.email,
+        name: row.name,
+        clientId,
+        affiliateId: null,
+        partnerId: null
+      },
+      session
+    };
+  }
 
   return {
     principal: {
@@ -71,7 +97,7 @@ export async function verifyAccountSession(db, token, { env = process.env } = {}
       affiliateId: row.affiliate_id,
       partnerId: row.partner_id
     },
-    session: { id: r.rows[0].id, expiresAt: r.rows[0].expires_at }
+    session
   };
 }
 
@@ -191,15 +217,12 @@ export async function loginAccount(db, { email, password, ip, userAgent, env = p
 
   const s = await createAccountSession(db, { accountId: acct.id, orgId: org, ip, userAgent, env });
   await db.query(`UPDATE accounts SET last_login_at = now() WHERE id = $1`, [acct.id]);
+  const verified = await verifyAccountSession(db, s.token, { env });
 
   return {
     ok: true,
     token: s.token,
     expiresAt: s.expiresAt,
-    principal: {
-      kind: acct.kind, accountId: acct.id, orgId: org,
-      email: acct.email, name: acct.name,
-      clientId: acct.client_id, affiliateId: acct.affiliate_id, partnerId: acct.partner_id
-    }
+    principal: verified.principal
   };
 }

@@ -31,6 +31,7 @@ import { threadMessage } from "../conversations/store.mjs";
 import { UNSUBSCRIBE_TAG_RE, unsubscribeTagValue } from "../messaging/unsubscribe.mjs";
 // The one E.164 converter in the repo. Reused, not re-written (CLAUDE.md §8).
 import { normalizePhone } from "../messaging/providers/bland-voice.mjs";
+import { applyRepToContext } from "../auth/authorized-rep.mjs";
 
 /* Which column on the client record is the destination for a channel.
    The destination is recorded in the terms of the CHANNEL, not of whichever
@@ -185,6 +186,7 @@ export async function sendTemplated(db, { orgId, clientId, channel, templateKey,
   // Loaded only once a real template exists — a template_pending no-op costs no query.
   // An explicitly-passed `context` wins over the record, so a caller can still override.
   const base = await clientContext(db, clientId);
+  await applyRepToContext(db, clientId, base);
 
   /* {{unsubscribe}} — the client's own signed unsubscribe link (N11). Only
      for an email to a known client whose template actually holds the tag, so

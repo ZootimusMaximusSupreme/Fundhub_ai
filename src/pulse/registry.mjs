@@ -37,6 +37,8 @@ const API_KEYS = [
   "ai-bureau-config",
   "applications",
   "auth/admin-reset",
+  "auth/authorized-rep",
+  "auth/authorized-rep-file",
   "auth/invite",
   "auth/login",
   "auth/logout",

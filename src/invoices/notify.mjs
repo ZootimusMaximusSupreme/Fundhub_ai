@@ -20,6 +20,7 @@
 import { renderTemplate } from "../lib/render-template.mjs";
 import { drain } from "../messaging/outbox.mjs";
 import { threadMessage } from "../conversations/store.mjs";
+import { destinationAddress } from "../auth/authorized-rep.mjs";
 
 export const INVOICE_TEMPLATE_KEY = "INVOICE-SENT-EMAIL";
 
@@ -94,7 +95,8 @@ export async function emailInvoice(db, { orgId, invoiceId, purpose = "sent", now
     const inv = rows[0];
     if (!inv) return { ok: false, reason: "not_found" };
     if (inv.status === "void") return { ok: false, reason: "voided" };
-    if (!inv.client_email) return { ok: false, reason: "no_email" };
+    const toEmail = await destinationAddress(db, inv.client_id, "email", inv.client_email);
+    if (!toEmail) return { ok: false, reason: "no_email" };
 
     const tpl = (await db.query(
       `SELECT template_key, subject, body, compliance_passed
@@ -121,7 +123,7 @@ export async function emailInvoice(db, { orgId, invoiceId, purpose = "sent", now
       [orgId, inv.client_id, tpl.template_key,
        renderTemplate(tpl.body, context),
        `invoice:${inv.id}:${purpose}`,
-       inv.client_email,
+       toEmail,
        tpl.subject ? renderTemplate(tpl.subject, context) : null]);
 
     if (!ins.rows[0]) return { ok: false, reason: "already_emailed" };

@@ -73,6 +73,7 @@
 
 import { upsertConversation, linkMessage } from "../conversations/store.mjs";
 import { dispatchMessage, OUTCOME } from "./dispatch.mjs";
+import { destinationAddress } from "../auth/authorized-rep.mjs";
 import { logStaffEvent } from "../shifts/telemetry.mjs";
 
 /** Channels a staff member may compose on.
@@ -234,7 +235,8 @@ async function addressFor(db, clientId, channel) {
     `SELECT ${column} AS address FROM clients WHERE id = $1 LIMIT 1`,
     [clientId]
   );
-  return r.rows[0]?.address || null;
+  const fallback = r.rows[0]?.address || null;
+  return destinationAddress(db, clientId, channel, fallback);
 }
 
 /**

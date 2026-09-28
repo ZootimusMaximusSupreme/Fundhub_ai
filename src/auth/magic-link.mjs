@@ -46,7 +46,7 @@
 import { newToken, hashToken, normalizeIp } from "./session.mjs";
 import { hashPassword } from "./hash.mjs";
 import { resolveDefaultOrg } from "./org.mjs";
-import { createAccountSession } from "./account-session.mjs";
+import { createAccountSession, verifyAccountSession } from "./account-session.mjs";
 import { sendTemplated } from "../workflows/messaging.mjs";
 
 /** How long a link is good for. Short because the whole point of a mailed
@@ -344,8 +344,21 @@ async function resolveLinkSubject(db, orgId, email) {
     // A suspended account is refused, and refused SILENTLY — the caller still
     // gets the uniform reply. Telling somebody their account is suspended is
     // telling them it exists.
-    if (a.kind !== "client" || a.status === "suspended") {
+    if (a.status === "suspended" || (a.kind !== "client" && a.kind !== "authorized_rep")) {
       return { outcome: "not_eligible", accountId: a.id, clientId: a.client_id };
+    }
+    if (a.kind === "authorized_rep") {
+      const file = await db.query(
+        `SELECT client_id FROM client_authorized_reps
+          WHERE account_id = $1 AND removed_at IS NULL
+          ORDER BY created_at ASC, client_id ASC
+          LIMIT 1`,
+        [a.id]
+      );
+      if (!file.rows[0]) {
+        return { outcome: "not_eligible", accountId: a.id, clientId: null };
+      }
+      return { outcome: "issued", accountId: a.id, clientId: file.rows[0].client_id };
     }
     return { outcome: "issued", accountId: a.id, clientId: a.client_id };
   }
@@ -412,21 +425,14 @@ export async function verifyMagicLink(db, token, {
     accountId, orgId: link.org_id, ip, userAgent, env
   });
   await db.query(`UPDATE accounts SET last_login_at = now() WHERE id = $1`, [accountId]);
-
-  const who = await db.query(
-    `SELECT id, org_id, kind, email, name, client_id, affiliate_id, partner_id
-       FROM accounts WHERE id = $1`, [accountId]);
-  const a = who.rows[0];
+  const verified = await verifyAccountSession(db, session.token, { env });
+  if (!verified) return { ok: false, status: 401, error: "invalid_link" };
 
   return {
     ok: true,
     token: session.token,
     expiresAt: session.expiresAt,
-    principal: {
-      kind: a.kind, accountId: a.id, orgId: a.org_id,
-      email: a.email, name: a.name,
-      clientId: a.client_id, affiliateId: a.affiliate_id, partnerId: a.partner_id
-    }
+    principal: verified.principal
   };
 }
 
@@ -435,7 +441,8 @@ export async function verifyMagicLink(db, token, {
    the window this re-read closes. Returning null lands on invalid_link. */
 async function existingActiveAccount(db, accountId) {
   const r = await db.query(
-    `SELECT id FROM accounts WHERE id = $1 AND status = 'active' AND kind = 'client'`,
+    `SELECT id FROM accounts
+      WHERE id = $1 AND status = 'active' AND kind IN ('client', 'authorized_rep')`,
     [accountId]);
   if (r.rows[0]) return r.rows[0].id;
 
@@ -445,7 +452,8 @@ async function existingActiveAccount(db, accountId) {
      accounts_active_needs_hash) and it does not have one, so it gets the same
      unguessable one a provisioned account gets — see provisionClientAccount. */
   const inv = await db.query(
-    `SELECT id FROM accounts WHERE id = $1 AND status = 'invited' AND kind = 'client'`,
+    `SELECT id FROM accounts
+      WHERE id = $1 AND status = 'invited' AND kind IN ('client', 'authorized_rep')`,
     [accountId]);
   if (!inv.rows[0]) return null;
 

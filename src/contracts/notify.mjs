@@ -53,6 +53,7 @@ import { dispatchOne } from "../messaging/dispatch.mjs";
 import { settingsFor } from "../messaging/outbox.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { threadMessage } from "../conversations/store.mjs";
+import { destinationAddress } from "../auth/authorized-rep.mjs";
 
 /** The two pieces of copy this feature sends. Seeded in db/seed/008. */
 export const SEND_TEMPLATE_KEY = "CONTRACT-SEND-EMAIL";
@@ -129,7 +130,10 @@ export async function queueSignerMessages(db, {
       out.skipped.push({ name: signer.name, reason: "not_their_turn_yet" });
       continue;
     }
-    if (!signer.email) {
+    const toEmail = signer.client_id
+      ? await destinationAddress(db, signer.client_id, "email", signer.email)
+      : signer.email;
+    if (!toEmail) {
       out.skipped.push({ name: signer.name, reason: "no_email" });
       continue;
     }
@@ -151,7 +155,7 @@ export async function queueSignerMessages(db, {
        ON CONFLICT (org_id, provider_ref) WHERE provider_ref IS NOT NULL DO NOTHING
        RETURNING id, created_at`,
       [orgId, signer.client_id || null, template.template_key, body,
-       `contract:${contract.id}:${signer.id}:${purpose}`, signer.email, subject]);
+       `contract:${contract.id}:${signer.id}:${purpose}`, toEmail, subject]);
 
     if (rows[0]) {
       out.queued.push(rows[0].id);
