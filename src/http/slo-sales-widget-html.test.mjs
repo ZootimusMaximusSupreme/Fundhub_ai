@@ -1,5 +1,6 @@
-// The /roadmap sales page carries its own two-step checkout widget
-// (owner-set 2026-09-22): clickfunnels-fragments/slo/slo-01-sales.html.
+// The /roadmap sales page carries its own three-step checkout widget
+// (owner-set 2026-09-27 — 1 info, 2 card, 3 soft pull):
+// clickfunnels-fragments/slo/slo-01-sales.html.
 // These checks read the page source. They pin the owner decisions and the API
 // contract in docs/journeys/slo-roadmap-widget-flow.md so a later edit cannot
 // quietly undo them. The browser walk is a separate proof.
@@ -49,10 +50,64 @@ test("demo or live is read from the server, never decided by the page", () => {
   assert.doesNotMatch(widgetScript, /SLO_DEMO_PAY/);
 });
 
-test("LIVE stores identity with defer_pull, then goes to the Commas card page", () => {
-  assert.match(widgetScript, /if\(!o\.demo\)body\.defer_pull=true;/);
-  assert.match(widgetScript, /if\(b\.next==='pay'\)\{/);
-  assert.match(widgetScript, /location\.href=o\.checkoutUrl;/);
+test("three steps, in this order: info, card, soft pull", () => {
+  assert.match(html, /data-tab="1">1 &middot; Info</);
+  assert.match(html, /data-tab="2">2 &middot; Card</);
+  assert.match(html, /data-tab="3">3 &middot; Soft pull</);
+  assert.match(html, /<form class="cfw-step s1 on"/);
+  assert.match(html, /<form class="cfw-step s2"/);
+  assert.match(html, /<form class="cfw-step s3"/);
+});
+
+test("nothing about the credit file is asked before the card", () => {
+  const upToCard = html.slice(0, html.indexOf('<form class="cfw-step s3"'));
+  for (const field of ['name="ssn"', 'name="dob"', 'name="consent"', 'name="prev_address"']) {
+    assert.ok(!upToCard.includes(field), `${field} must live on step 3, after the card`);
+  }
+  /* And they do all live on step 3. */
+  const step3 = html.slice(html.indexOf('<form class="cfw-step s3"'));
+  for (const field of ['name="ssn"', 'name="dob"', 'name="consent"', 'name="prev_address"']) {
+    assert.ok(step3.includes(field), field);
+  }
+});
+
+test("businesses are priced before the card, so they are asked on step 1", () => {
+  const step1 = html.slice(html.indexOf('<form class="cfw-step s1 on"'), html.indexOf('<form class="cfw-step s2"'));
+  assert.match(step1, /<div data-bizlist><\/div>/);
+  assert.match(step1, /data-add>\+ Add a business/);
+  assert.match(widgetScript, /checkBusinesses\(bad\);\n    return ok;/, "step 1 validates them");
+});
+
+test("step 2 pays and nothing else: no defer_pull, and the pull is never sent with the card", () => {
+  assert.doesNotMatch(widgetScript, /defer_pull/, "the pull is never deferred now — the card comes first");
+  const step2 = widgetScript.slice(
+    widgetScript.indexOf("s2.addEventListener('submit'"),
+    widgetScript.indexOf("s3.addEventListener('submit'")
+  );
+  assert.ok(step2.length > 0, "both submit handlers exist, step 2 before step 3");
+  assert.ok(!step2.includes("sendPull"), "step 2 must not start the pull");
+  assert.match(step2, /location\.href=o\.checkoutUrl;/, "live goes to the Commas card page");
+  assert.match(step2, /if\(o\.demo\)\{go\(3\);return;\}/, "demo has no card page, so it walks to step 3");
+});
+
+test("a paid buyer is never bounced back to step 1 by the unpaid-order gate", () => {
+  /* The gate answers existing_account only while the order still reads unpaid.
+     After the card that is a timing gap, not a dead end. */
+  assert.match(
+    widgetScript,
+    /if\(b\.error==='existing_account'&&o\.locked\)\{\n\s*showFormErr\('Your payment is still landing on our side\./
+  );
+});
+
+test("step 3 runs the pull, and the paid return opens step 3", () => {
+  const step3 = widgetScript.slice(widgetScript.indexOf("s3.addEventListener('submit'"));
+  assert.match(step3, /sendPull\(order,bizPayload\(\)\)/);
+  assert.match(step3, /checkStep3\(\)/);
+  /* ?ref=&client_id= back from the card page lands on the soft pull form. */
+  assert.match(widgetScript, /showPane\('form'\);go\(3\);/);
+  assert.match(html, /\.fh-paid \.cfw-step\.s3\{display:block!important\}/);
+  /* The webhook may not have landed yet: wait on the poll, never re-charge. */
+  assert.match(widgetScript, /if\(b\.next==='pay'\)\{o\.locked=true;showPane\('reading'\);poll\(o\);return;\}/);
 });
 
 test("the consent box uses the pull form's words", () => {
@@ -171,7 +226,7 @@ test("item 10: Google autocomplete loads only when the server hands a browser ke
       createElement: (tag) => ({ tag }),
       head: { appendChild: (el) => { appended.push(el); } }
     },
-    s2: { querySelectorAll: () => [], querySelector: () => null },
+    s3: { querySelectorAll: () => [], querySelector: () => null },
     each: () => {},
     encodeURIComponent,
     placesAttach: () => { throw new Error("must not attach without Google loaded"); }
@@ -201,7 +256,7 @@ test("item 10: a picked place fills street, city, state and ZIP (US only)", () =
   const boxes = {};
   const sel = { value: "", querySelector: (q) => (/value="TX"|value="PR"/.test(q) ? {} : null) };
   const ctx = vm.createContext({
-    s2: { querySelector: (q) => {
+    s3: { querySelector: (q) => {
       const name = q.match(/name="([^"]+)"/)[1];
       if (/state$/.test(name)) return sel;
       return (boxes[name] = boxes[name] || { value: "" });
