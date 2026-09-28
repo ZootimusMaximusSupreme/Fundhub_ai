@@ -186,3 +186,49 @@ who sees what.
 
 - The $297 price. Locked (`f441f41`). Correct for this buyer.
 - Nothing in the live account. This is a recommendation, not an action.
+
+---
+
+# Can we diagnose the problem at $1,000? (measured 2026-09-28)
+
+**No. Two of the five steps are dark.**
+
+| Step | Lives in | Working? |
+|---|---|---|
+| How many people saw the ad | Meta → our database | **Yes** |
+| How many clicked the link / cost per page view | Meta Ads Manager | **Yes, but only in Ads Manager.** We do not store it. Paul can read it. |
+| How many reached the sales page | ClickFunnels | **No** — frozen since 2026-09-22 |
+| How many started checkout | ClickFunnels / pixel | **No** — same freeze |
+| Which ad brought the person | our database (UTMs) | **No** — see below |
+
+## What is actually in the database
+
+- **3 new client records since the ads started** (Sept 26–28). The funnel is
+  alive; people are arriving.
+- **1 of those 3 has an ad-attribution row, and every UTM on it is NULL.**
+  `lane = unknown`, `ad_id = NULL`, `utm_source/campaign/content/term` all NULL.
+  Only `landing_path = /roadmap/` came through — so we know they hit the $297
+  sales page, and nothing about which ad sent them.
+- **`funnel_page_stats` last recorded 2026-09-22**, four days before the first
+  SLO ad ran.
+
+A pixel and a UTM are two different things. The pixel tells **Meta** what
+happened. The UTM tells **us** which ad did it. The pixel side is Chris's call
+and logged as fine. The UTM side is measurably empty: one row, all nulls.
+
+## What $1,000 would and would not tell you
+
+**Would:** which video holds attention (video curve already works), and the
+top-line funnel shape *if Paul reads it out of Ads Manager by hand.*
+
+**Would not:** whether people reach the page and bounce, or never reach it at
+all. Those two have opposite fixes — one is a page problem, one is an ad
+problem — and nothing recording today can tell them apart. It also cannot say
+which ad produced a buyer, so "cut the losers" has no sales data to cut on.
+
+## Verdict
+
+At $1,000 you get a number with no explanation. The cheapest thing that changes
+that is the ClickFunnels step data and the UTMs, not more spend.
+
+**Not fixed. Not asked for. One leftover card, per the hard lock.**
