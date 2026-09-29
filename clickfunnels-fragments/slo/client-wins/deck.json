@@ -22,6 +22,44 @@
       }
     },
     {
+      "id": "g-20k-instant",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 20000,
+      "amount_text_on_crop": "Instant Approved ... Credit Limit $20,000.00",
+      "lender": "unnamed",
+      "product": "Credit card",
+      "source": "Drive: Inbox — Sort or Delete/Screen Shot 2021-12-03 at 6.33.38 PM.png",
+      "alt": "Credit card application instant approved with a $20,000 credit limit",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-20k-instant.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799050/file/210c1d12a38d697e7006dcb55c0ed87c.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799050
+      }
+    },
+    {
+      "id": "g-20500k-visa-platinum",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 20500,
+      "amount_text_on_crop": "accepted and approved ... Credit Limit $20,500.00",
+      "lender": "unnamed",
+      "product": "Visa Platinum card",
+      "source": "Drive: Inbox — Sort or Delete/Screen Shot 2022-06-10 at 9.19.16 PM.png",
+      "alt": "Visa Platinum card approval showing a $20,500 credit limit",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-20500k-visa-platinum.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799051/file/b65a93e538362181b600efb127bb8eb6.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799051
+      }
+    },
+    {
       "id": "d-23k-chase-freedom",
       "kind": "win",
       "category": "credit_card",
@@ -98,6 +136,25 @@
       }
     },
     {
+      "id": "g-25k-umpqua",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 25000,
+      "amount_text_on_crop": "Your credit line is $25,000.",
+      "lender": "Umpqua Bank",
+      "product": "Visa Business Card",
+      "source": "repo: client-wins/deck/win-25000-umpqua-bank.png (Canva Client Wins deck)",
+      "alt": "Umpqua Bank Visa Business Card approval showing a $25,000 credit line",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-25k-umpqua.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799052/file/239eadd60f0f5f2d4225380aedd56bcc.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799052
+      }
+    },
+    {
       "id": "d-30k-navy",
       "kind": "win",
       "category": "credit_card",
@@ -117,6 +174,82 @@
       }
     },
     {
+      "id": "g-30k-service-cu",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 30000,
+      "amount_text_on_crop": "approved for a Visa Everyday Elite Signature ... with a credit limit of $30,000.00",
+      "lender": "Service Credit Union",
+      "product": "Visa Everyday Elite Signature",
+      "source": "Drive: Inbox — Sort or Delete/Screen Shot 2022-05-13 at 6.05.55 PM.png",
+      "alt": "Service Credit Union Visa approval showing a $30,000 credit limit",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-30k-service-cu.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799053/file/a993eb38e1f20541a5c9087b847dbe15.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799053
+      }
+    },
+    {
+      "id": "g-30k-first-tech",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 30000,
+      "amount_text_on_crop": "Credit Limit: $30,000.00",
+      "lender": "First Tech",
+      "product": "Choice Rewards World MasterCard",
+      "source": "Drive: Inbox — Sort or Delete/Screen Shot 2021-11-29 at 2.59.32 PM.png",
+      "alt": "First Tech Choice Rewards World MasterCard approval showing a $30,000 credit limit",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-30k-first-tech.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799054/file/71fa63dbdb21c0b558ec9c72f785df96.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799054
+      }
+    },
+    {
+      "id": "g-35k-first-tech-a",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 35000,
+      "amount_text_on_crop": "Credit Limit: $35,000.00",
+      "lender": "First Tech",
+      "product": "Choice Rewards World MasterCard",
+      "source": "Drive: Inbox — Sort or Delete/Screen Shot 2022-05-14 at 12.23.35 PM.png",
+      "alt": "First Tech Choice Rewards World MasterCard approval showing a $35,000 credit limit",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-35k-first-tech-a.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799055/file/1ade97d8b38632a8f450b28a37ece951.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799055
+      }
+    },
+    {
+      "id": "g-35k-first-tech-b",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 35000,
+      "amount_text_on_crop": "Credit Limit: $35,000.00",
+      "lender": "First Tech",
+      "product": "Choice Rewards World MasterCard",
+      "source": "Drive: Inbox — Sort or Delete/Screen Shot 2022-07-08 at 12.47.30 PM.png",
+      "alt": "First Tech Choice Rewards World MasterCard approval showing a $35,000 credit limit",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-35k-first-tech-b.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799056/file/8ca9ed1342b48d020f6f02f123637c96.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799056
+      }
+    },
+    {
       "id": "d-41k-chase-ink",
       "kind": "win",
       "category": "credit_card",
@@ -133,6 +266,25 @@
         "width": 1200,
         "height": 900,
         "cf_image_id": 23715357
+      }
+    },
+    {
+      "id": "g-48k-elan",
+      "kind": "win",
+      "category": "credit_card",
+      "amount_dollars": 48000,
+      "amount_text_on_crop": "Your credit line is $48,000.",
+      "lender": "Elan Financial Services",
+      "product": "Visa Business Card",
+      "source": "Drive: Inbox — Sort or Delete/Screen Shot 2022-08-17 at 6.55.31 PM.png",
+      "alt": "Elan Financial Services Visa Business Card approval showing a $48,000 credit line",
+      "crop": "clickfunnels-fragments/slo/client-wins/deck/g-48k-elan.jpg",
+      "verified": "ok: amount read off crop, PII blurred",
+      "image": {
+        "url": "https://statics.myclickfunnels.com/workspace/edLgGE/image/23799057/file/be2a89db678ef66704dd04e25dc828b5.jpg",
+        "width": 1200,
+        "height": 900,
+        "cf_image_id": 23799057
       }
     },
     {
@@ -197,7 +349,7 @@
       "kind": "win",
       "category": "credit_card",
       "amount_dollars": 54500,
-      "amount_text_on_crop": "Credit Access Line\u2020: $54,500",
+      "amount_text_on_crop": "Credit Access Line†: $54,500",
       "lender": "Chase",
       "product": "Ink Business Unlimited card",
       "source": "Drive: Fundhub ads/broll/approvals/54k-ink-business.jpg",
