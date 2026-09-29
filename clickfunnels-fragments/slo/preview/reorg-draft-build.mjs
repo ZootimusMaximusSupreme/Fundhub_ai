@@ -258,8 +258,6 @@ const FIXES = [
      · business age changes the amount: 0.5x / 1x / 2x by age
        (src/underwrite/business-funding.mjs)
      · home state AND business state each open local banks (src/lenders/match.mjs)
-     · roadmap business steps: LLC, EIN, DUNS, business checking, net-30
-       vendors that report (src/deliverables/roadmap.mjs)
      · every buyer, clean file or not, gets one name, one address, and a dispute
        of every inquiry with no matching open account (owner decision 2026-09-03,
        src/metro2/diy/personal-info-floor.mjs; letter types in letter-pack-filter.mjs)
@@ -270,13 +268,18 @@ const FIXES = [
      · unlimited funding over time is true: structure aged companies right, run
        five to ten of them; it takes time and each one needs revenue
      · the page must not read as a credit repair package, so proof leads with
-       funding, not with the score climb */
+       funding, not with the score climb
+     · the business side is the Experian Business check: business credit scores,
+       blemishes, business card balances, NAICS code flags, name flags, and the
+       exact fixes so a lender sees a credible business. Experian Business only
+       for now. No DUNS, no net-30, no vendor accounts ("that's not real"). The
+       roadmap.mjs DUNS / net-30 steps are what UnderwriteIQ is changing. */
   ["Some files take six months, some take one, and it tells you which on the first page.",
-   `Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business: LLC, EIN, DUNS number, business checking, and vendor accounts that report.")}`],
+   `Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business: the exact fixes for its Experian Business profile.")}`],
   ["<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>",
    `<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>\n            <li>${G("Your score is <b>already high</b> and you want the <b>most your file and your business</b> can get")}</li>`],
   ["<details><summary>Will this hurt my credit score?</summary>",
-   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. Every inquiry costs you fundability, and so does a second name or address on any bureau. Your letters go after both, even on a clean file. Then the business side: every aged company you own can get funded in its own name, so the roadmap lines up personal first, then each business.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
+   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. Every inquiry costs you fundability, and so does a second name or address on any bureau. Your letters go after both, even on a clean file. Then the business side: we check each company's Experian Business report for the flags a lender sees, and every aged company you own can get funded in its own name.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
   ['<div class="fhx-sec" data-tag="4 · What You Get',
    `<div class="fhx-sec" data-tag="NEW · For people who already have good credit">
 <section class="sect">
@@ -286,7 +289,7 @@ const FIXES = [
         <div class="srow"><span class="n"></span><div><div class="t">${G("Your inquiries")}</div><div class="d">${G("Any inquiry on your file costs you fundability, even at 800. The report lists every one, and your letters dispute each inquiry that has no matching open account.")}</div></div></div>
         <div class="srow"><span class="n"></span><div><div class="t">${G("Your personal data")}</div><div class="d">${G("A second name or address on any bureau can flag your file. Even on a clean file, your letters cut it down to one name and one address.")}</div></div></div>
         <div class="srow"><span class="n"></span><div><div class="t">${G("Your business")}</div><div class="d">${G("How long it has been open changes how much you can get. The state it's in opens its own local banks, on top of the ones in your home state. Every business you add is counted, and each aged one adds to your total.")}</div></div></div>
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business credit profile")}</div><div class="d">${G("The roadmap walks you through it step by step: LLC, EIN, DUNS number, business checking, and vendor accounts that report, so your business can get funded in its own name.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business credit")}</div><div class="d">${G("We pull your business's Experian Business report and check it for every flag a lender looks at: its credit scores, blemishes, card balances that run too high, and flags on its industry code (NAICS) and business name. You get the exact fixes, so a lender sees a credible business and you get the most funding your file supports.")}</div></div></div>
         <div class="srow"><span class="n"></span><div><div class="t">${G("Unlimited funding over time")}</div><div class="d">${G("Structure your companies right and every aged one can get funded in its own name. You can run five to ten of them. It takes time, and each one needs revenue, but you can keep getting funded for as long as you keep building.")}</div></div></div>
       </div>
     </section>
@@ -304,13 +307,13 @@ const FIXES = [
      service, so they stay off this page. */
   ["<footer>", (() => {
     const items = [
-      "Tri-bureau soft pull", "Soft inquiry · no score impact", "Five documents built from your file",
+      "Tri-bureau soft pull", "Soft inquiry · no score impact", "Experian Business flags checked", "Five documents built from your file",
       "In your portal in about 10 seconds", "Name, address and inquiry letters included",
       "Lenders matched to your state", "Every aged company counted", "7-day refund", "We never sell your data",
     ];
     const set = `<div class="marq-set">${items.map((s) => `<span>${s}</span><i></i>`).join("")}</div>`;
     return `<div class="fhx-sec" data-tag="NEW · Scrolling bar, same as /watch, with roadmap copy">` +
-      `<div class="marq" aria-hidden="true"><div class="marq-track" style="animation-duration:44s">${set}${set}</div></div></div>\n  <footer>`;
+      `<div class="marq" aria-hidden="true"><div class="marq-track" style="animation-duration:48s">${set}${set}</div></div></div>\n  <footer>`;
   })()],
   // Approvals carousel
   ["real credit card and line of credit approvals.</p>", `real credit card and line of credit approvals ${G("from Fundhub clients")}.</p>`],
