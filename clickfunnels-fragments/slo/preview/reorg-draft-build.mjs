@@ -114,18 +114,72 @@ const CHECKOUT2 = CHECKOUT.replace(/<li><b>[^<]+<\/b>[^<]*<\/li>/g, () => {
 });
 
 /* ---------- assemble in the new order ---------- */
+const G = (t) => `<span class="fhx-new">${t}</span>`;
+
+/* ---------- round 3 (Chris, 2026-09-29): outcome first ----------
+   "Why does this matter to me?" Every block leads with what the buyer gets,
+   then the facts. The facts underneath are unchanged and sourced as before. */
+const row = (t, d) => `<div class="srow"><span class="n"></span><div><div class="t">${G(t)}</div><div class="d">${G(d)}</div></div></div>`;
+const FIRST_WIN = `<section class="sect">
+      <span class="kicker">${G("Your fastest first win")}</span>
+      <div class="h2">${G("Your First Win Can Come Inside a Month.")}</div>
+      <div class="prose" style="margin-top:10px"><p>${G("Pay one card down to the number your roadmap gives you. Card balances report once a month, so your middle score can move within about 30 days, before a single letter comes back.")}</p></div>
+      <figure class="fh-snapfig"><div class="fh-snapdoc"><div class="fh-snaphead">Funding Snapshot &middot; sample</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td>funding gap</td><td></td><td><b>$61,500</b></td></tr></table><div class="wm-s">SAMPLE</div></div><figcaption>${G("From a sample Funding Snapshot for a made-up client. Yours is built from your own credit file.")}</figcaption></figure>
+    </section>`;
+const GOOD_CREDIT = `<section class="sect">
+      <span class="kicker">${G("Already have good credit?")}</span>
+      <div class="h2">${G("A High Score Isn't the Same as a File Set Up for Maximum Funding.")}</div>
+      <div class="prose" style="margin-top:10px"><p class="lead">${G("Your score gets you in the door. Your file decides how much they hand you.")}</p></div>
+      <div class="rows">
+        ${row("Bigger limits on the score you already have", "A stray inquiry, a second address or an old name can shrink your yes. Your letters clear them, even on a clean file.")}
+        ${row("Your business funded in its own name", "We check your Experian Business report and give you the exact fixes, so a lender sees a business worth funding.")}
+        ${row("Funding that keeps coming", "A new company aging every quarter, and each one adds to what you can get.")}
+      </div>
+    </section>`;
+const CHECKLIST = `<div class="fh-work">
+        <div class="fh-work-h">${G("Your part, and how long it takes")}</div>
+        <ul>
+          <li><span>${G("Read your Funding Snapshot and roadmap")}</span><b>${G("about 20 minutes")}</b></li>
+          <li><span>${G("Pay down the cards your roadmap names")}</span><b>${G("this month")}</b></li>
+          <li><span>${G("Print, sign and mail round one")}</span><b>${G("about an hour")}</b></li>
+          <li><span>${G("Wait for the bureaus to answer")}</span><b>${G("30 days plus mail time, each round")}</b></li>
+          <li><span>${G("Apply in the order on your lender list")}</span><b>${G("when your roadmap says go")}</b></li>
+        </ul>
+      </div>
+      `;
+const NEW_CSS = `
+.fh-root .fh-snapfig{max-width:460px;margin:22px auto 0}
+.fh-root .fh-snapdoc{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:0 14px 34px rgba(17,17,19,.10);transform:rotate(-.8deg)}
+.fh-root .fh-snaphead{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2);margin-bottom:10px}
+.fh-root .fh-snapdoc table{width:100%;border-collapse:collapse;font-size:14px}
+.fh-root .fh-snapdoc th,.fh-root .fh-snapdoc td{padding:8px 6px;border-top:1px solid var(--line);text-align:left}
+.fh-root .fh-snapdoc th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);border-top:0}
+.fh-root .fh-snapdoc .wm-s{position:absolute;right:14px;bottom:10px;font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:rgba(17,17,19,.18)}
+.fh-root .fh-snapfig figcaption{margin-top:10px;font-size:12.5px;color:var(--gray2);text-align:center}
+.fh-root .fh-work{margin-top:22px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px 18px;text-align:left}
+.fh-root .fh-work-h{font-weight:700;margin-bottom:8px}
+.fh-root .fh-work ul{list-style:none;padding:0;margin:0}
+.fh-root .fh-work li{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:9px 0;border-top:1px solid var(--line);font-size:14.5px}
+.fh-root .fh-work li:first-child{border-top:0}
+.fh-root .fh-work li b{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--gray2);text-align:right;max-width:45%}
+.fh-root .fh-tprod{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);margin-bottom:4px}
+.fh-root .sp-why{font-weight:600;margin:4px 0 12px;font-size:14px}
+.fh-root .sp-what{margin:-6px 0 12px;font-size:13px;color:var(--gray2)}
+`;
 const tag = (n, label, html) => `\n<div class="fhx-sec" data-tag="${n} · ${label}">\n${html}\n</div><!--/fhx-sec-->\n`;
 const body =
-  tag(1, "Screen one · unchanged position", HERO) +
-  tag(2, "Video testimonials · MOVED UP from below the checkout", `<div class="fh-b fhx-testi">${TESTIMONIALS}</div>`) +
-  tag(3, "Credibility · was The Bridge; the repeat Proof paragraph is removed", BRIDGE) +
-  tag(4, "What You Get · Funding Snapshot moved to first; Why $297 moved into the FAQ; mini course, advisors, community hidden", wygHead + "</section>\n" + LIGHTBOX) +
-  tag(5, "Approvals carousel · split out of What You Get; now opens on the biggest win", `<section class="sect"><span class="kicker">Approvals</span>${DECK}</section>\n${DECK_JS}`) +
-  tag(6, "What happens after you buy · MOVED UP", NEXT) +
-  tag(7, "Who it's for · industry pills moved here", QUAL.replace(/<\/section>\s*$/, `${INDS}\n    </section>\n`)) +
-  tag(8, "Guarantee · its own section now", `<section class="sect">${GUARANTEE_CARD}${GET_BTN}</section>`) +
-  tag(9, "FAQ · broker answer added from The Pain", FAQ2) +
-  tag(10, "Checkout · order summary in the same order as What You Get", CHECKOUT2);
+  tag(1, "Screen one", HERO) +
+  tag(2, "Video testimonials · each tagged with the product behind it", `<div class="fh-b fhx-testi">${TESTIMONIALS}</div>`) +
+  tag(3, "What You Get · MOVED UP right under the testimonials · every card leads with why it matters", wygHead + "</section>\n" + LIGHTBOX) +
+  tag(4, "NEW · Your fastest first win, with the Funding Snapshot table", FIRST_WIN) +
+  tag(5, "Already have good credit? · shorter, outcome first", GOOD_CREDIT) +
+  tag(6, "Why this works · was The Bridge", BRIDGE) +
+  tag(7, "Approvals · opens on the biggest win", `<section class="sect"><span class="kicker">Approvals</span>${DECK}</section>\n${DECK_JS}`) +
+  tag(8, "What happens after you buy · plus your part and how long it takes", NEXT) +
+  tag(9, "Who it's for", QUAL.replace(/<\/section>\s*$/, `${INDS}\n    </section>\n`)) +
+  tag(10, "Guarantee", `<section class="sect">${GUARANTEE_CARD}${GET_BTN}</section>`) +
+  tag(11, "FAQ · opens with the 800-score question", FAQ2) +
+  tag(12, "Checkout", CHECKOUT2);
 
 /* ---------- bad-copy marks: [css selector, text it must contain, what's wrong, suggestion] ---------- */
 const NOTES = [
@@ -215,7 +269,6 @@ console.log("built 01-sales-reorg-draft.html");
    · first business included, each extra $15 (checkout widget, this file)
    · Gene's numbers are his own caption; the approvals deck's source file says
      only "Client Wins deck", so it is labelled "from Fundhub clients", nothing more */
-const G = (t) => `<span class="fhx-new">${t}</span>`;
 const FIXES = [
   // Screen one
   ['<span class="eyebrow">For business owners going after maximum funding</span>',
@@ -226,7 +279,12 @@ const FIXES = [
   [/<p class="lede">We pull your credit with a soft inquiry\. 10 seconds later[^<]*<\/p>/,
    `<p class="lede">${G("<b>$297.</b> We soft-pull your credit, and about 10 seconds later five documents built from your own file are waiting in your portal.")} Yours to keep.</p>`],
   ["Show Me How Much I Qualify For", G("Get My $297 Funding Roadmap")],
-  // Testimonials
+  // Testimonials: the product behind each result (item 7). At push, add these
+  // to content/testimonials/testimonials.json + build-slots.mjs, or the slot
+  // rebuild drops them.
+  ['<figcaption class="tcap"><b>Colin Schmidt, ran a funding company.</b>', `<figcaption class="tcap"><span class="fh-tprod">${G("$297 Funding Roadmap · reviewed it")}</span><b>Colin Schmidt, ran a funding company.</b>`],
+  ['<figcaption class="tcap"><b>Gene, owner of three LLCs.</b>', `<figcaption class="tcap"><span class="fh-tprod">${G("The roadmap strategy · used it")}</span><b>Gene, owner of three LLCs.</b>`],
+  [`<figcaption class="tcap"><b>Sarah, on Chris's sales team.</b>`, `<figcaption class="tcap"><span class="fh-tprod">${G("$297 Funding Roadmap · ran it")}</span><b>Sarah, on Chris's sales team.</b>`],
   [">From people who bought it<", `>${G("People who used the roadmap")}<`],
   ["<b>Colin Schmidt, ran a funding company.</b>", `<b>${G("Colin Schmidt ran a funding company and reviewed the roadmap.")}</b>`],
   ["<b>Gene, owner of three LLCs.</b> His scores started in the low 600s, the dispute letters moved him to 780 and then 810, and that opened up about $420,000 in business funding over three years.",
@@ -234,13 +292,13 @@ const FIXES = [
   // Credibility
   ['<span class="kicker">The Bridge</span>', `<span class="kicker">${G("Why this works")}</span>`],
   ["We Spent Thousands of Hours Building the System That Reads Your File the Way a Lender's Underwriter Does.",
-   G("It Reads Your File the Way a Bank's Underwriter Does.")],
+   G("We Review Your File the Way a Lender Does.")],
   ["<p>UnderwriteIQ reads your credit file line by line", `<p>${G("Our software")} reads your credit file line by line`],
   ["run it through UnderwriteIQ, and the whole package is in your account in",
    `run it through ${G("our software")}, and the whole package is in your ${G("portal")} in`],
   // What You Get
   ["<div class=\"h2\">Here's What You Get.</div>",
-   `<div class="h2">${G("Five Documents Built From Your Own Credit File. Plus a Free Bonus.")}</div>`],
+   `<div class="h2">${G("Everything You Need to Get Funded, Built From Your Own Credit File.")}</div><div class="prose" style="margin-top:8px"><p>${G("Five documents, plus a free bonus.")}</p></div>`],
   ["<span>outcome: sample</span><span>median: sample</span>", ""],
   ['<div class="cv-conf">fundhub confidential</div>', ""],
   ['<div class="cv-title">Capital Readiness Snapshot</div>', `<div class="cv-title">${G("Funding Snapshot")}</div>`],
@@ -248,18 +306,20 @@ const FIXES = [
   ["<div class=\"cv-title\">Alex's 6-Month Business Readiness Roadmap</div>", `<div class="cv-title">${G("Alex's Credit Optimization Roadmap")}</div>`],
   ['<div class="cv-title">Capital Partner Shortlist</div>', `<div class="cv-title">${G("Bank &amp; Lender Match List")}</div>`],
   ["Your credit pulled from all three bureaus. Where your score sits today and where it can sit once your file is cleaned up. Every card with the exact balance to bring it down to. Every harmful item on there, named.",
-   G("What's hurting your file, item by item, on all three bureaus, including every inquiry and any name or address that doesn't match from one bureau to the next. Clean file? It shows that too.")],
-  ["<b>All six rounds</b>, round one dated and ready to mail. Print. Sign. Mail.",
-   `<b>All six rounds</b>, round one dated and ready to mail. ${G("Each next round waits 30 days plus mail time.")} Print. Sign. Mail. ${G("Clean file? You still get the name, address and inquiry letters.")}`],
+   G("<b>Stop getting declined for reasons nobody told you.</b> Every item costing you money on all three bureaus, including inquiries and any name or address that doesn't match. Clean file? It shows that too.")],
+  ["Every letter written for you with your accounts in it, to all three bureaus <b>and</b> directly to the creditors. <b>All six rounds</b>, round one dated and ready to mail. Print. Sign. Mail.",
+   `${G("<b>Get the items costing you money taken off, without paying a credit repair company.</b>")} Every letter written for you with your accounts in it, to all three bureaus <b>and</b> directly to the creditors. <b>All six rounds</b>, round one dated and ready to mail. ${G("Each next round waits 30 days plus mail time.")} Print. Sign. Mail. ${G("Clean file? You still get the name, address and inquiry letters.")}`],
+  ["How much we think you'll qualify for right now, and how much once your file is optimized. The distance between those two is what the rest of the package closes.",
+   G("<b>Know what you can get before a bank ever sees your file.</b> How much you qualify for today, how much once your file is fixed, and the gap between them.")],
+  ["The banks most likely to approve a file like yours where you live, the score floor on each one, and the order to apply in so you're not stacking declines.",
+   G("<b>Apply only where you'll get a yes, in an order that stacks approvals instead of declines.</b> The banks most likely to approve a file like yours where you live, and the score floor on each.")],
   // Owner-set 2026-09-29: inquiries DO cost fundability. The sample must not say they don't.
   ["+'<div class=\"sp-sec\"><div class=\"sp-h\">04 / what does not affect your funding</div><div class=\"sp-c\"><b>Inquiries.</b> Seven across the three bureaus. They do not affect funding decisions at Fundhub. Cleanup only.</div></div>'", ""],
-  ['<div class="tab">08</div>', `<div class="tab">${G("07")}</div>`],
-  ["['tracker','08 Tracker']", "['tracker','07 Tracker']"],
-  ["Dispute Letter Pack &middot; 08 Round tracker", "Dispute Letter Pack &middot; 07 Round tracker"],
+  ['<div class="tab">08</div>', `<div class="tab">${G("07")}</div><div class="tab">08</div>`],
   // Owner-set 2026-09-29: never name the Social Security number before step 3 of checkout.
   [" &middot; SSN ending 3391", ""],
   ["Tap any cover for a sample page. Yours prints with your own data.",
-   `Tap any cover for a sample page. ${G("All five show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15.")}`],
+   `Tap any cover for a sample page. ${G("Your five documents show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15.")}`],
   /* Good credit, still short (Chris, 2026-09-29: "what if somebody has an 800
      credit score"). Every line is a thing the documents or the engine do:
      · personal data cleanup, mismatched identity data can flag a file
@@ -283,27 +343,12 @@ const FIXES = [
        exact fixes so a lender sees a credible business. Experian Business only
        for now. No DUNS, no net-30, no vendor accounts ("that's not real"). The
        roadmap.mjs DUNS / net-30 steps are what UnderwriteIQ is changing. */
-  ["Some files take six months, some take one, and it tells you which on the first page.",
-   `Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business.")}`],
+  ["What to do first, what comes after that, and when. Month by month, built off your own file. Some files take six months, some take one, and it tells you which on the first page.",
+   `${G("<b>Reach your highest number fastest, with nothing to guess.</b>")} What to do first, what comes after that, and when. Month by month, built off your own file. Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business.")}`],
   ["<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>",
    `<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>\n            <li>${G("Your score is <b>already high</b> and you want the <b>most your file and your business</b> can get")}</li>`],
   ["<details><summary>Will this hurt my credit score?</summary>",
-   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. Every inquiry costs you fundability, and so does a second name or address on any bureau. Your letters go after both, even on a clean file. Then the business side: your free Business Duplication Map checks each company's Experian Business report for the flags a lender sees, and shows where and when to open the next one, so every company ages into its own funding.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
-  ['<div class="fhx-sec" data-tag="4 · What You Get',
-   `<div class="fhx-sec" data-tag="NEW · For people who already have good credit">
-<section class="sect">
-      <span class="kicker">${G("Already have good credit?")}</span>
-      <div class="h2">${G("A High Score Isn't the Same as a File Set Up for Maximum Funding.")}</div>
-      <div class="rows">
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Your inquiries")}</div><div class="d">${G("Any inquiry on your file costs you fundability, even at 800. The report lists every one, and your letters dispute each inquiry that has no matching open account.")}</div></div></div>
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Your personal data")}</div><div class="d">${G("A second name or address on any bureau can flag your file. Even on a clean file, your letters cut it down to one name and one address.")}</div></div></div>
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business")}</div><div class="d">${G("How long it has been open changes how much you can get. The state it's in opens its own local banks, on top of the ones in your home state. Every business you add is counted, and each aged one adds to your total.")}</div></div></div>
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business credit")}</div><div class="d">${G("We pull your business's Experian Business report and check it for every flag a lender looks at: its credit scores, blemishes, card balances that run too high, and flags on its industry code (NAICS) and business name. You get the exact fixes, so a lender sees a credible business and you get the most funding your file supports.")}</div></div></div>
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Unlimited funding over time")}</div><div class="d">${G("Structure your companies right and every aged one can get funded in its own name. You can run five to ten of them. It takes time, and each one needs revenue, but you can keep getting funded for as long as you keep building. Your free Business Duplication Map lays out which company comes next, where to open it, and when.")}</div></div></div>
-      </div>
-    </section>
-</div><!--/fhx-sec-->
-<div class="fhx-sec" data-tag="4 · What You Get`],
+   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("Because your score doesn't set your limit. Your file does. A funding-ready file has a 700+ middle score, cards under 30% used, no negative items, no inquiries, and one name and one address on every bureau. Miss one and you get a smaller yes, or a no. You'll see what yours is missing, fix it, and set up your business to get funded in its own name.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
   /* Scrolling bar at the bottom (Chris, 2026-09-29: "add that rotating thing"
      from apply.fundhub.ai/watch, clickfunnels-fragments/01-vsl.html). This page
      already carries the .fh-b .marq styles; only the markup was missing. Same
@@ -331,10 +376,44 @@ const FIXES = [
      where and when to open the next company. No sample page exists, so the
      cover is not clickable and says so. */
   [/(\n\s*<\/div>\n\s*<!-- SLOT-SNEAK-PEEKS)/,
-   `\n        <div class="srow"><span class="n">+</span><div class="txt"><div class="t">${G("Free Bonus: Business Duplication Map")}</div><div class="d">${G("How you keep getting funded. Every company you own gets its Experian Business check and the exact fixes, and you see what each one can get now and when it passes 12 and 24 months. Then where to open your next company, and when, so you can go from one company to five or ten.")}</div></div><div class="thumb" aria-hidden="true"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">business duplication map</div><div class="cv-title">${G("Business Duplication Map")}</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span></div><div class="wm">FREE BONUS</div></div></div></div>$1`],
+   `\n        <div class="srow"><span class="n">+</span><div class="txt"><div class="t">${G("Free Bonus: Business Duplication Map")}</div><div class="d">${G("<b>Keep getting funded after round one.</b> Your Experian Business check with the exact fixes, then a plan to open one to two new companies a quarter, set up right: a clean name, the right NAICS code, reporting from day one. So aged companies keep coming ready for funding.")}</div></div><a class="thumb" href="#" data-page="duplication" aria-label="Sample page"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">business duplication map</div><div class="cv-title">${G("Business Duplication Map")}</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span></div><div class="wm">CLICK HERE</div></div></a></div>$1`],
   ["<li><b>Bank &amp; Lender Match List</b>, the banks most likely to approve you where you live, and the order to apply</li>",
    `<li><b>Bank &amp; Lender Match List</b>, the banks most likely to approve you where you live, and the order to apply</li>\n          <li>${G("<b>Free bonus: Business Duplication Map</b>, how you go from one company to five or ten, each one funded")}</li>`],
-  ["Funding Snapshot moved to first;", "Funding Snapshot moved to first; NEW free bonus: Business Duplication Map;"],
+  /* Samples (round 3). Each opens with why the buyer needs it and shows only
+     what that document adds, so the Chase paydown and the funding numbers stop
+     repeating. One disclaimer for every sample. No apostrophes in these: they
+     sit inside single-quoted script strings. */
+  ['<div class="lb-note">Sample file. Yours prints with your own data.</div>', `<div class="lb-note">${G("Sample file for a made-up client. Yours is built from your own credit file. Estimates, not an offer of credit.")}</div>`],
+  [`analysis:'<div class="sp"><div class="sp-doc">Credit Analysis Report &middot; Alex Rivera</div>'`, `analysis:'<div class="sp"><div class="sp-doc">Credit Analysis Report &middot; Alex Rivera</div><div class="sp-why">${G("Why you need this: you stop getting declined for reasons nobody told you.")}</div>'`],
+  [`roadmap:'<div class="sp"><div class="sp-doc">Credit Optimization Roadmap &middot; Alex Rivera</div>'`, `roadmap:'<div class="sp"><div class="sp-doc">Credit Optimization Roadmap &middot; Alex Rivera</div><div class="sp-why">${G("Why you need this: you reach your highest number fastest, with nothing to guess.")}</div>'`],
+  [`snapshot:'<div class="sp"><div class="sp-doc">Funding Snapshot &middot; Alex Rivera</div>'`, `snapshot:'<div class="sp"><div class="sp-doc">Funding Snapshot &middot; Alex Rivera</div><div class="sp-why">${G("Why you need this: you know what you can get before a bank ever sees your file.")}</div>'`],
+  [`lenders:'<div class="sp"><div class="sp-doc">Bank &amp; Lender Match List &middot; Alex Rivera</div>'`, `lenders:'<div class="sp"><div class="sp-doc">Bank &amp; Lender Match List &middot; Alex Rivera</div><div class="sp-why">${G("Why you need this: you apply only where you will get a yes, in an order that stacks approvals.")}</div>'`],
+  [`round1:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 03 Round 1 &middot; Experian</div>`, `round1:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 03 Round 1 &middot; Experian</div><div class="sp-why">${G("Why you need this: the items costing you money come off, and no credit repair company gets paid to do it.")}</div><div class="sp-what">${G("What this letter does: asks Experian to fix or delete two items reported wrong on your file.")}</div>`],
+  ['<td>Experian</td><td><i class="tg bad">DIRTY</i></td>', `<td>Experian</td><td><i class="tg bad">${G("DISPUTE 2")}</i></td>`],
+  ['<td>TransUnion</td><td><i class="tg bad">DIRTY</i></td>', `<td>TransUnion</td><td><i class="tg bad">${G("DISPUTE 1")}</i></td>`],
+  [/<table><tr><th>card<\/th><th>balance<\/th><th>limit<\/th><th>util<\/th><th>pay down to<\/th><th>status<\/th><\/tr>[\s\S]*?Target: under \$1,450 across all cards\.<\/div>/,
+   `<table><tr><th>card</th><th>balance</th><th>limit</th><th>util</th><th>status</th></tr><tr><td>Chase Sapphire Preferred</td><td>$$4,120</td><td>$$5,000</td><td>82%</td><td><i class="tg bad">CRITICAL</i></td></tr><tr><td>Amex Blue Cash</td><td>$$1,980</td><td>$$6,000</td><td>33%</td><td><i class="tg warn">HIGH</i></td></tr><tr><td>Discover it</td><td>$$210</td><td>$$3,500</td><td>6%</td><td><i class="tg ok">${G("OK")}</i></td></tr></table><div class="sp-c">${G("Total revolving $$6,310 of $$14,500, 44% used. Your roadmap sets the paydown.")}</div>`],
+  [/\+'<div class="sp-sec"><div class="sp-h">08 \/ the bottom line<\/div>[\s\S]*?never what a bank will hand over\.<\/div><\/div><\/div>',/, "+'</div>',"],
+  [/\+'<div class="sp-sec"><div class="sp-h">07 \/ before and after<\/div>[\s\S]*?Individual results vary\.<\/div><\/div><\/div>',/, "+'</div>',"],
+  [/\+'<div class="sp-sec"><div class="sp-h">03 \/ what is costing you money, in order<\/div>[\s\S]*?<\/ol><\/div>'/, ""],
+  [/\+'<div class="sp-sec"><div class="sp-h">06 \/ your next step<\/div>[\s\S]*?Do not open new accounts before funding\.<\/div><\/div><\/div>',/,
+   `+'<div class="sp-sec"><div class="sp-h">what the gap means</div><div class="sp-c">${G("$$61,500 more in funding once your file is fixed. The rest of the package is how you close it.")}</div></div></div>',`],
+  ["<li>Pay the Chase Sapphire down to $500 first.</li>", `<li>${G("Finish month one of your roadmap first.")}</li>`],
+  ["Dispute Letter Pack &middot; 06 Complaints &middot; cover sheet", `Dispute Letter Pack &middot; ${G("06 Rounds 4 and 5")} &middot; complaints`],
+  ["<tr><td>CFPB</td>", `<tr><td>${G("R4")} CFPB</td>`],
+  ["<tr><td>State AG</td><td></td><td></td><td></td><td></td><td></td></tr></table>", `<tr><td>${G("R5")} State AG</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>${G("R6")}</td><td></td><td></td><td></td><td></td><td></td></tr></table>`],
+  ["['complaints','06 Complaints'],['tracker','08 Tracker']", "['complaints','06 Rounds 4 and 5'],['final','07 Round 6'],['tracker','08 Tracker']"],
+  [`tracker:'<div class="sp">`, `final:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 07 Round 6 &middot; final notice</div><div class="warn">SEND THIS ONLY IF rounds 4 and 5 did not remove the item.</div><div class="sp-sec"><div class="sp-h">what round 6 is</div><div class="sp-c">The last letter to the bureau: a final notice, sent again after both complaints. Each round stands on stronger law than the one before it.</div></div></div>',
+        duplication:'<div class="sp"><div class="sp-doc">Business Duplication Map &middot; Alex Rivera</div><div class="sp-why">${G("Why you need this: you keep getting funded after round one, one aged company after another.")}</div>'
+          +'<div class="sp-sec"><div class="sp-h">your business today &middot; Rivera Supply LLC, Arizona, 14 months old</div><table><tr><th>Experian Business check</th><th>status</th><th>the fix</th></tr><tr><td>Business credit score</td><td><i class="tg ok">OK</i></td><td>Keep it reporting</td></tr><tr><td>Blemishes</td><td><i class="tg bad">1 COLLECTION</i></td><td>Settle it and have it updated</td></tr><tr><td>Business card balance</td><td><i class="tg warn">64% USED</i></td><td>Pay it down before you apply</td></tr><tr><td>NAICS code</td><td><i class="tg bad">FLAGGED</i></td><td>Use the code that matches what you sell</td></tr><tr><td>Business name</td><td><i class="tg warn">DOES NOT MATCH</i></td><td>One exact name everywhere</td></tr></table></div>'
+          +'<div class="sp-sec"><div class="sp-h">what a company can get as it ages</div><table><tr><th>age</th><th>business funding</th></tr><tr><td>under 12 months</td><td>half your card funding</td></tr><tr><td>12 to 24 months</td><td>equal to your card funding</td></tr><tr><td>24 months and up</td><td><b>double your card funding</b></td></tr></table><div class="sp-c">Rivera Supply turns 24 months in July 2027. That is when its number doubles.</div></div>'
+          +'<div class="sp-sec"><div class="sp-h">your quarterly plan</div><table><tr><th>quarter</th><th>step</th></tr><tr><td>Q4 2026</td><td>Open company two, set up right: clean name, right NAICS code, reporting from day one</td></tr><tr><td>Q1 2027</td><td>Open company three the same way</td></tr><tr><td>Q3 2027</td><td>Rivera Supply passes 24 months</td></tr><tr><td>Q4 2027</td><td>Company two passes 12 months</td></tr></table><div class="sp-c">Keep opening one to two a quarter and aged companies keep coming ready for funding.</div></div></div>',
+        tracker:'<div class="sp">`],
+  [/<div class="sp-h">\d\d \/ /g, '<div class="sp-h">'],
+  // What happens next: the buyer's part, with the time each step takes (item 5)
+  [/(<div class="prose" style="margin-top:20px">\s*<p>Everything is yours to keep\. One payment, no contract\.<\/p>\s*<\/div>)/, `${CHECKLIST}$1`],
+  // Footer (item 21)
+  ['<div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>', ""],
   // Approvals carousel
   ["real credit card and line of credit approvals.</p>", `real credit card and line of credit approvals ${G("from Fundhub clients")}.</p>`],
   // What happens after you buy
@@ -356,7 +435,7 @@ const FIXES = [
    `$1${G("Gene runs three LLCs and opened up about $$420,000 in business funding with the roadmap. Colin Schmidt, who ran a funding company, reviewed the roadmap and wouldn't change a thing. You can call us at (561) 304-8368 before you buy. And if you're not happy, email us within 7 days for a full refund.")}$2`],
   [BROKER_BODY, G("A broker hands you a list of banks. This reads your own file first, fixes what's hurting it, and gives you the order to apply in so the declines don't stack.")],
   ["This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response.",
-   G("No. This is do-it-yourself. You mail your own letters, so you hold every receipt and see every reply.")],
+   G("No. This is do-it-yourself. You mail your own letters, so you hold every receipt and see every reply. If you want help later, every document ends with a button to book a call with our team.")],
   ["About ten seconds after the form.", G("About ten seconds after the soft pull finishes.")],
   // Checkout
   ["How Much Is Your File Worth? Find Out in Ten Seconds.", G("Get Your Funding Roadmap · $297")],
@@ -395,6 +474,7 @@ if (process.argv.includes("--live")) {
 .fh-root .deck-runway > .slimrow{grid-template-columns:minmax(0,520px) !important;grid-template-areas:"comm" !important;justify-content:center}
 .fh-root .fh-proofline{max-width:560px;margin:12px auto 0;font-size:15px;line-height:1.5;text-align:center;color:#3F3F46}
 .fh-root .fh-sumnote{margin-top:10px;font-size:13px;color:#52525B}
+${NEW_CSS}
 </style>
 `;
   if (!existsSync(FROZEN)) writeFileSync(FROZEN, s);
@@ -414,6 +494,7 @@ fixed += `
 .btn .fhx-new{background:transparent;box-shadow:0 0 0 2px #22C55E}
 .fhx-proofline{max-width:560px;margin:12px auto 0;font-size:15px;line-height:1.5;text-align:center;color:#3F3F46}
 .fhx-sumnote{margin-top:10px;font-size:13px;color:#52525B}
+${NEW_CSS}
 .fhx-sec{position:relative;outline:2px dashed #2F6FEB;outline-offset:6px;margin:34px 0}
 .fhx-sec::before{content:attr(data-tag);display:block;font:700 11px/1.3 system-ui,sans-serif;color:#fff;background:#2F6FEB;padding:5px 9px;border-radius:4px;margin-bottom:10px;width:max-content;max-width:100%}
 html.fhx-clean .fhx-new{background:none;box-shadow:none}
