@@ -509,3 +509,74 @@ test("item 10: GET carries mapsBrowserKey from GOOGLE_MAPS_BROWSER_KEY, null whe
   assert.equal(sloPageConfig({ ...LIVE_ENV, GOOGLE_MAPS_BROWSER_KEY: "   " }).mapsBrowserKey, null);
   assert.equal(sloPageConfig({ ...LIVE_ENV, GOOGLE_MAPS_API_KEY: "server-secret" }).mapsBrowserKey, null);
 });
+
+/* ── The card is typed on /roadmap (owner-set 2026-09-29) ─────────────────── */
+
+test("a real Commas link turns into an embedded session the page can draw a card form from", async () => {
+  const embeddedAsks = [];
+  const deps = sloDeps({
+    ref: "slo_embed_ref",
+    createCheckoutSession: async () => ({
+      ok: true,
+      /* the shape Commas really answers: the handle and the session id are both in the link */
+      paymentLink: "https://www.fanbasis.com/agency-checkout/fundhub-1/ol7zk",
+      productId: "ol7zk"
+    }),
+    createEmbeddedCheckoutSession: async (opts) => {
+      embeddedAsks.push(opts);
+      return {
+        ok: true,
+        creatorId: opts.creatorId,
+        productId: opts.productId,
+        sessionSecret: "550e8400-e29b-41d4-a716-446655440000",
+        environment: "production"
+      };
+    }
+  });
+  const out = await runSloCheckout({ email: "buyer@example.com", name: "Pat Lee" }, deps);
+
+  assert.equal(out.ok, true);
+  assert.deepEqual(out.embedded, {
+    creatorId: "fundhub-1",
+    productId: "ol7zk",
+    sessionSecret: "550e8400-e29b-41d4-a716-446655440000",
+    environment: "production"
+  });
+  /* The embedded form charges the session we just minted under the keep title,
+     so the amount follows the order. Nothing creates a catalog product. */
+  assert.equal(embeddedAsks.length, 1);
+  assert.equal(embeddedAsks[0].creatorId, "fundhub-1");
+  assert.equal(embeddedAsks[0].productId, "ol7zk");
+  assert.equal(embeddedAsks[0].metadata.link_ref, "slo_embed_ref");
+  /* The hosted link is still recorded — the payment webhook is matched to it. */
+  assert.equal(deps.links[0].checkoutUrl, "https://www.fanbasis.com/agency-checkout/fundhub-1/ol7zk");
+});
+
+test("an embedded mint that fails leaves the order good and the card box absent — never a redirect", async () => {
+  const deps = sloDeps({
+    ref: "slo_embed_fail",
+    createCheckoutSession: async () => ({
+      ok: true,
+      paymentLink: "https://www.fanbasis.com/agency-checkout/fundhub-1/ol7zk",
+      productId: "ol7zk"
+    }),
+    createEmbeddedCheckoutSession: async () => ({ ok: false, reason: "embedded_http_500" })
+  });
+  const out = await runSloCheckout({ email: "buyer@example.com" }, deps);
+  assert.equal(out.ok, true, "the order is recorded either way");
+  assert.equal(out.embedded, null, "no secret means the widget shows no card box and says so");
+  assert.equal(deps.links.length, 1);
+});
+
+test("demo takes no card at all, so it mints no embedded session", async () => {
+  let asked = 0;
+  const out = await runSloCheckout({ email: "buyer@example.com" }, sloDeps({
+    demo: true,
+    ref: "slo_demo_embed",
+    createCheckoutSession: async () => { throw new Error("demo must not call Commas"); },
+    createEmbeddedCheckoutSession: async () => { asked += 1; return { ok: true }; }
+  }));
+  assert.equal(out.demo, true);
+  assert.equal(out.embedded, undefined);
+  assert.equal(asked, 0);
+});

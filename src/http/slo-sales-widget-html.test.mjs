@@ -110,6 +110,30 @@ test("the card charges the base price on its own — step 3 cannot change it", (
   assert.match(html, /data-bizline hidden/);
 });
 
+test("step 2 takes the card on this page — Commas' own boxes, mounted here", () => {
+  const step2 = html.slice(html.indexOf('<form class="cfw-step s2"'), html.indexOf('<form class="cfw-step s3"'));
+  assert.match(step2, /<div class="cfw-cardmount" data-cardmount>/, "the card form has a home on step 2");
+  assert.match(step2, /data-pay>Get My Roadmap/);
+  /* Our own card <input>s are gone on purpose: Commas publishes no endpoint
+     that accepts a card number, so ours could only ever be thrown away — and
+     they were, after the buyer typed the card a second time on a Commas page. */
+  for (const field of ['name="card_number"', 'name="card_exp"', 'name="card_cvc"', 'name="card_zip"']) {
+    assert.ok(!step2.includes(field), `${field} must not be a Fundhub input`);
+  }
+  assert.match(widgetScript, /cdn\.embedded\.fanbasis\.io\/embed\/index\.js/, "the Commas embedded SDK is loaded");
+  assert.match(widgetScript, /window\.PaymentCheckout\.create\(cfg\)/);
+  assert.match(widgetScript, /card\.attachToElement\(cardMount\)/);
+  assert.match(widgetScript, /showSubmitButton:false/, "our own button submits, so there is only one");
+});
+
+test("no card number is ever posted to Fundhub", () => {
+  /* The only bodies this widget sends are the four documented doors. If a card
+     field name ever turns up in the script again, something is collecting one. */
+  for (const bad of ["card_number", "card_exp", "card_cvc", "card_zip", "cc-number", "cc-csc"]) {
+    assert.ok(!widgetScript.includes(bad), `${bad} must not appear in the widget script`);
+  }
+});
+
 test("step 2 pays and nothing else: no defer_pull, and the pull is never sent with the card", () => {
   assert.doesNotMatch(widgetScript, /defer_pull/, "the pull is never deferred now — the card comes first");
   const step2 = widgetScript.slice(
@@ -118,8 +142,22 @@ test("step 2 pays and nothing else: no defer_pull, and the pull is never sent wi
   );
   assert.ok(step2.length > 0, "both submit handlers exist, step 2 before step 3");
   assert.ok(!step2.includes("sendPull"), "step 2 must not start the pull");
-  assert.match(step2, /location\.href=o\.checkoutUrl;/, "live goes to the Commas card page");
-  assert.match(step2, /if\(o\.demo\)\{go\(3\);return;\}/, "demo has no card page, so it walks to step 3");
+  assert.match(step2, /card\.submitForm\(\)/, "the typed card is charged in place");
+  assert.match(step2, /if\(order&&order\.demo\)\{order\.locked=true;go\(3\);return;\}/, "demo takes no card, so it walks to step 3");
+});
+
+test("paying never navigates away — no hosted Commas page anywhere on step 2", () => {
+  /* The owner law (2026-09-29): the buyer types the card on /roadmap. The
+     hosted payment_link is still minted server-side for the webhook to match
+     against, but this page must never send anybody to it. */
+  assert.ok(!widgetScript.includes("location.href=o.checkoutUrl"), "the old redirect is gone");
+  assert.ok(!/location\.href\s*=\s*[^;]*checkoutUrl/.test(
+    widgetScript.slice(widgetScript.indexOf("function beginCard"), widgetScript.indexOf("s3.addEventListener('submit'"))
+  ), "step 2 sets no location.href from a checkout URL");
+  assert.doesNotMatch(widgetScript, /location\.href\s*=\s*['"]https:\/\/(?:www\.)?(?:fanbasis|commas)\./i);
+  /* Success is an event on the embedded form, and it opens step 3 right here. */
+  assert.match(widgetScript, /card\.on\('checkout:success'/);
+  assert.match(widgetScript, /card\.on\('form:submission_error'/, "a decline shows Commas' words on our page");
 });
 
 test("a paid buyer is never bounced back to step 1 by the unpaid-order gate", () => {

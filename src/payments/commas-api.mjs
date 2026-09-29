@@ -195,19 +195,55 @@ export const CHECKOUT_API_KEY_ENV = "FANBASIS_CHECKOUT_API_KEY";
 export const DEFAULT_CHECKOUT_API_BASE = "https://www.fanbasis.com/public-api";
 export const CHECKOUT_API_BASE_ENV = "FANBASIS_CHECKOUT_API_BASE";
 
+/* TWO NAMES HOLD THIS CREDENTIAL, AND THE ORDER MATTERS.
+   Measured 2026-09-29 against www.fanbasis.com/public-api: the value stored as
+   FANBASIS_CHECKOUT_API_KEY (production and local .env, same value) answers
+   401 "Invalid API key or unauthorized user context" on every route, so every
+   real $297 mint was failing — the buyer's contact was saved and no card page
+   ever came back. CORTANA_COMMAS_API_KEY answers 200 on the same routes for
+   the same seller (handle `fundhub-1`, the keep catalog).
+   So the working name is tried first. The broken value is left exactly where
+   it is — CLAUDE.md §11 forbids removing a stored credential, and a key that
+   is merely unusable is handled at the point of use, not deleted. */
+export const CHECKOUT_API_KEY_ENVS = Object.freeze([
+  "CORTANA_COMMAS_API_KEY",
+  CHECKOUT_API_KEY_ENV
+]);
+
 export function checkoutConfig(env = process.env) {
-  const apiKey = String(env?.[CHECKOUT_API_KEY_ENV] || "").trim();
+  let apiKey = "";
+  let keyEnv = null;
+  for (const name of CHECKOUT_API_KEY_ENVS) {
+    const v = String(env?.[name] || "").trim();
+    if (v) { apiKey = v; keyEnv = name; break; }
+  }
   if (!apiKey) {
     return {
       ok: false,
-      reason: `${CHECKOUT_API_KEY_ENV} is not set — cannot mint a Commas checkout session`
+      reason: `${CHECKOUT_API_KEY_ENVS.join(" / ")} is not set — cannot mint a Commas checkout session`
     };
   }
   return {
     ok: true,
     apiKey,
+    keyEnv,
     base: String(env?.[CHECKOUT_API_BASE_ENV] || DEFAULT_CHECKOUT_API_BASE).replace(/\/+$/, "")
   };
+}
+
+/* The SDK wants the word, not the host. Sandbox lives on qa.dev-fan-basis.com;
+   anything else is production. Never 'qa' — the SDK rejects it. */
+export function checkoutEnvironmentName(cfg) {
+  return /qa\.dev-fan-basis\.com/i.test(String(cfg?.base || "")) ? "sandbox" : "production";
+}
+
+/* The seller handle, read off a minted payment_link rather than stored twice.
+   Commas builds every link as .../agency-checkout/<handle>/<product-id>, and
+   the embedded SDK needs that same handle as creatorId. Reading it back from
+   the response means one less env var that can drift away from the account. */
+export function parseCreatorHandle(paymentLink) {
+  const m = String(paymentLink || "").match(/\/agency-checkout\/([^/?#]+)\//);
+  return m ? m[1] : null;
 }
 
 /* withCheckoutIdentifiers — put the two ids the thank-you page needs onto the
@@ -376,6 +412,103 @@ export async function createCheckoutSession({
       ok: false,
       status: 0,
       reason: `checkout_unreachable: ${String(err?.message || err).slice(0, 200)}`
+    };
+  }
+}
+
+/* ── Embedded checkout: the card boxes live on OUR page ────────────────────
+ *
+ * createEmbeddedCheckoutSession — POST /checkout-sessions/embedded
+ *   → { checkout_session_secret }
+ *
+ * WHY THIS EXISTS AND WHAT IT IS NOT.
+ * Commas has no endpoint that takes a card number. The whole public API was
+ * read on 2026-09-29 (commasdocs.com / apidocs.fan): the only two ways to
+ * take money from a new buyer are the hosted payment_link above, and this —
+ * a session secret that the Commas SDK turns into a payment form rendered in
+ * an iframe on our own page. The one route with "charge" in its name,
+ * POST /customers/:customerId/charge, re-bills a card Commas is ALREADY
+ * holding for an existing customer; it cannot accept a card being typed for
+ * the first time. So a raw card number never reaches a Fundhub server, and
+ * there is no code here that could send one.
+ *
+ * The buyer still never leaves /roadmap. That is the whole point of it.
+ *
+ * productId is the id the hosted mint just returned. In Commas a checkout
+ * session and a product are the same record — the hosted response's `id` is
+ * the hashid in its own payment_link — so the embedded form charges the
+ * variable amount that session was minted for ($297 plus each extra
+ * business), not a fixed dashboard price. Nothing here creates a catalog
+ * product; it points at the session createCheckoutSession already made under
+ * the keep title.
+ */
+export async function createEmbeddedCheckoutSession({
+  creatorId,
+  productId,
+  metadata = null,
+  env = process.env,
+  fetchImpl = fetch
+} = {}) {
+  const cfg = checkoutConfig(env);
+  if (!cfg.ok) return { ok: false, reason: cfg.reason };
+
+  const creator = String(creatorId || "").trim();
+  const product = String(productId || "").trim();
+  if (!creator) return { ok: false, reason: "embedded_creator_required" };
+  if (!product) return { ok: false, reason: "embedded_product_required" };
+
+  const body = { creator_id: creator, product_id: product };
+  if (metadata && typeof metadata === "object") {
+    const meta = {};
+    for (const [k, v] of Object.entries(metadata)) {
+      if (v == null) continue;
+      meta[k] = String(v);
+    }
+    if (Object.keys(meta).length) body.metadata = meta;
+  }
+
+  try {
+    const res = await fetchImpl(`${cfg.base}/checkout-sessions/embedded`, {
+      method: "POST",
+      headers: {
+        "x-api-key": cfg.apiKey,
+        "content-type": "application/json",
+        accept: "application/json"
+      },
+      body: JSON.stringify(body)
+    });
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      return { ok: false, status: res.status, reason: "embedded_invalid_json", body: text.slice(0, 300) };
+    }
+    if (!res.ok) {
+      return {
+        ok: false,
+        status: res.status,
+        reason: json.message || json.error || `embedded_http_${res.status}`,
+        body: text.slice(0, 300)
+      };
+    }
+    const secret = json?.data?.checkout_session_secret;
+    if (!secret) {
+      return { ok: false, status: res.status, reason: "embedded_missing_secret", body: text.slice(0, 300) };
+    }
+    return {
+      ok: true,
+      status: res.status,
+      creatorId: creator,
+      productId: product,
+      sessionSecret: String(secret),
+      environment: checkoutEnvironmentName(cfg)
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      status: 0,
+      reason: `embedded_unreachable: ${String(err?.message || err).slice(0, 200)}`
     };
   }
 }

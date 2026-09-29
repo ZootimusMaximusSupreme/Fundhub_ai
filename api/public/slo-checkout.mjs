@@ -17,6 +17,12 @@
 //        mapsBrowserKey: GOOGLE_MAPS_BROWSER_KEY, or null when unset. The
 //        widget loads Google address autocomplete only when it is not null.
 //        Never the server key (GOOGLE_MAPS_API_KEY).
+// Owner-set 2026-09-29: the card is typed ON /roadmap. POST answers an
+// `embedded` block (creatorId, productId, sessionSecret, environment) and the
+// widget renders Commas' own card form inside step 2. Nobody is sent to a
+// Commas page. Commas has no endpoint that accepts a card number, so no card
+// number is ever posted here — see createEmbeddedCheckoutSession.
+//
 // POST — { email, first_name?, last_name?, phone?, businesses?, business_count?,
 //          return_url?, utm_*? }
 //        The amount is $297 + $15 × (n − 1), n = businesses on the order.
@@ -54,7 +60,12 @@ import { db } from "../../src/db.mjs";
 import { resolveDefaultOrg } from "../../src/auth/org.mjs";
 import { emit } from "../../src/events/bus.mjs";
 import { safeError } from "../../src/http/health.mjs";
-import { checkoutConfig, createCheckoutSession } from "../../src/payments/commas-api.mjs";
+import {
+  checkoutConfig,
+  createCheckoutSession,
+  createEmbeddedCheckoutSession,
+  parseCreatorHandle
+} from "../../src/payments/commas-api.mjs";
 import { formatCents } from "../../src/config/offers.mjs";
 import {
   SLO_BOOK_URL,
@@ -341,10 +352,44 @@ export async function runSloCheckout(parsed, deps = {}) {
     businessCount: businesses
   });
 
+  /* THE CARD IS TYPED ON /roadmap, NOT ON A COMMAS PAGE (owner-set 2026-09-29).
+     The hosted link above is still minted and still recorded, because that row
+     is what the payment webhook is matched back to. It is no longer where the
+     buyer is sent. This second call turns the same session into an embedded
+     one, and the widget renders Commas' own card form inside step 2.
+     A raw card number never touches this server — see the header on
+     createEmbeddedCheckoutSession for why no vendor route accepts one.
+     If the embedded mint fails the order is still good and the answer is still
+     ok; the widget says the card box could not load and offers a retry. It
+     must NOT quietly fall back to sending them to the hosted page. */
+  const creatorId = parseCreatorHandle(checkoutUrl);
+  let embedded = null;
+  if (creatorId && commasSessionId) {
+    const emb = await (deps.createEmbeddedCheckoutSession || createEmbeddedCheckoutSession)({
+      creatorId,
+      productId: commasSessionId,
+      metadata,
+      env,
+      ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {})
+    });
+    if (emb?.ok) {
+      embedded = {
+        creatorId: emb.creatorId,
+        productId: emb.productId,
+        sessionSecret: emb.sessionSecret,
+        environment: emb.environment
+      };
+    }
+  }
+
   return {
     ok: true,
     demo: false,
+    /* Still answered, and still NOT for the /roadmap widget: public/roadmap/pay.html
+       is a separate hosted-redirect door that reads it. The widget reads
+       `embedded` and never navigates to this URL. */
     checkoutUrl,
+    embedded,
     ref,
     client_id: clientId,
     priceCents: amountCents,

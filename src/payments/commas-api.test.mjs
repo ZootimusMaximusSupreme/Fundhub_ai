@@ -5,6 +5,10 @@ import {
   getPayment,
   reconcilePayment,
   createCheckoutSession,
+  createEmbeddedCheckoutSession,
+  checkoutConfig,
+  checkoutEnvironmentName,
+  parseCreatorHandle,
   withCheckoutIdentifiers,
   DEFAULT_API_BASE,
   API_KEY_ENV
@@ -286,5 +290,102 @@ test("createCheckoutSession refuses unsafe product titles before calling fetch",
   });
   assert.equal(res.ok, false);
   assert.equal(res.reason, "commas_unsafe_copy");
+  assert.equal(fetchImpl.calls.length, 0);
+});
+
+/* ── Embedded checkout: the card boxes on our own page ───────────────────── */
+
+test("the working key name wins, and the broken one is still accepted alone", () => {
+  /* Measured 2026-09-29: the value stored as FANBASIS_CHECKOUT_API_KEY answers
+     401 on every route, CORTANA_COMMAS_API_KEY answers 200 for the same seller.
+     Both names are read; the working one is preferred. Neither is ever removed. */
+  const both = checkoutConfig({
+    CORTANA_COMMAS_API_KEY: "good",
+    FANBASIS_CHECKOUT_API_KEY: "stale"
+  });
+  assert.equal(both.ok, true);
+  assert.equal(both.apiKey, "good");
+  assert.equal(both.keyEnv, "CORTANA_COMMAS_API_KEY");
+
+  const legacyOnly = checkoutConfig({ FANBASIS_CHECKOUT_API_KEY: "stale" });
+  assert.equal(legacyOnly.ok, true);
+  assert.equal(legacyOnly.apiKey, "stale");
+
+  assert.equal(checkoutConfig({}).ok, false);
+});
+
+test("the seller handle is read off the minted link, not stored twice", () => {
+  assert.equal(
+    parseCreatorHandle("https://www.fanbasis.com/agency-checkout/fundhub-1/ol7zk"),
+    "fundhub-1"
+  );
+  /* No handle to find => no embedded session is attempted. */
+  assert.equal(parseCreatorHandle("https://pay.example.test/slo"), null);
+  assert.equal(parseCreatorHandle(null), null);
+});
+
+test("the SDK gets the word 'sandbox', never the host's 'qa'", () => {
+  assert.equal(checkoutEnvironmentName({ base: "https://www.fanbasis.com/public-api" }), "production");
+  assert.equal(checkoutEnvironmentName({ base: "https://qa.dev-fan-basis.com/public-api" }), "sandbox");
+});
+
+test("createEmbeddedCheckoutSession returns the secret the card form is built from", async () => {
+  const fetchImpl = fakeFetch([{
+    status: 200,
+    body: JSON.stringify({
+      status: "success",
+      data: { id: 3204, checkout_session_secret: "550e8400-e29b-41d4-a716-446655440000" }
+    })
+  }]);
+  const res = await createEmbeddedCheckoutSession({
+    creatorId: "fundhub-1",
+    productId: "ol7zk",
+    metadata: { link_ref: "slo_abc", client_id: null },
+    env: CHECKOUT_ENV,
+    fetchImpl
+  });
+  assert.equal(res.ok, true);
+  assert.equal(res.sessionSecret, "550e8400-e29b-41d4-a716-446655440000");
+  assert.equal(res.environment, "production");
+
+  const call = fetchImpl.calls[0];
+  assert.equal(call.url, "https://x.test/api/checkout-sessions/embedded");
+  assert.equal(call.opts.headers["x-api-key"], "ck_test");
+  const sent = JSON.parse(call.opts.body);
+  assert.equal(sent.creator_id, "fundhub-1");
+  assert.equal(sent.product_id, "ol7zk");
+  assert.equal(sent.metadata.link_ref, "slo_abc");
+  assert.ok(!("client_id" in sent.metadata), "null metadata is dropped, not sent as 'null'");
+  /* Nothing card-shaped can be here — no vendor route accepts one. */
+  assert.ok(!/card|cvv|cvc|pan|number/i.test(call.opts.body.replace(/checkout_session|creator_id|product_id/g, "")));
+});
+
+test("a refused or unreachable embedded mint is a value, never a throw", async () => {
+  const bad = await createEmbeddedCheckoutSession({
+    creatorId: "fundhub-1",
+    productId: "ol7zk",
+    env: CHECKOUT_ENV,
+    fetchImpl: fakeFetch([{ status: 401, body: JSON.stringify({ message: "Invalid API key" }) }])
+  });
+  assert.equal(bad.ok, false);
+  assert.equal(bad.reason, "Invalid API key");
+
+  const down = await createEmbeddedCheckoutSession({
+    creatorId: "fundhub-1",
+    productId: "ol7zk",
+    env: CHECKOUT_ENV,
+    fetchImpl: fakeFetch([{ throws: "socket hang up" }])
+  });
+  assert.equal(down.ok, false);
+  assert.match(down.reason, /^embedded_unreachable/);
+
+  const noKey = await createEmbeddedCheckoutSession({ creatorId: "a", productId: "b", env: {} });
+  assert.equal(noKey.ok, false);
+});
+
+test("an embedded mint without a creator or a product never calls out", async () => {
+  const fetchImpl = fakeFetch([]);
+  assert.equal((await createEmbeddedCheckoutSession({ productId: "ol7zk", env: CHECKOUT_ENV, fetchImpl })).reason, "embedded_creator_required");
+  assert.equal((await createEmbeddedCheckoutSession({ creatorId: "fundhub-1", env: CHECKOUT_ENV, fetchImpl })).reason, "embedded_product_required");
   assert.equal(fetchImpl.calls.length, 0);
 });
