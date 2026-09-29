@@ -136,7 +136,7 @@ test("eligibleForGenuineM1: no phone still passes (email goes; SMS waits)", () =
   assert.equal(gate.email, "pat@gmail.com");
 });
 
-test("handleM1: after the wait, queues SMS and email for an unpaid person", async () => {
+test("handleM1: after the wait, queues coupon SMS and email for an unpaid person", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
@@ -161,178 +161,38 @@ test("handleM1: after the wait, queues SMS and email for an unpaid person", asyn
   assert.deepEqual(sleeps, ["wait-15-min"]);
   assert.deepEqual(
     db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
+    [EMAIL_COUPON_KEY, SMS_COUPON_KEY].sort()
   );
   assert.ok(db.clients[0].custom_fields[LOCK_M1]);
-});
-
-test("handleM1: offered-but-unbooked free texts do not burn the first-five cap", async () => {
-  const offered = Array.from({ length: 5 }, (_, i) => ({
-    id: `cl-offered-${i}`,
-    org_id: "org-1",
-    email: `offered${i}@gmail.com`,
-    custom_fields: { slo_text_slot: String(i + 1) }
-  }));
-  const db = genuineDb({
-    clients: [
-      ...offered,
-      {
-        id: "cl-1",
-        org_id: "org-1",
-        email: "pat@gmail.com",
-        phone: "+14155550134",
-        custom_fields: {}
-      }
-    ],
-    templates: templates()
-  });
-  const res = await handleM1({
-    event: ev("slo.contact_started", personPayload, { id: "evt-still-free" }),
-    db,
-    step: fakeStep()
-  });
-  assert.equal(res.sent, true);
-  assert.equal(res.slot, "1");
-  assert.deepEqual(
-    db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
-  );
-});
-
-test("handleM1: after five agreed-and-booked, abandoners get the gift text", async () => {
-  const booked = Array.from({ length: 5 }, (_, i) => ({
-    id: `cl-booked-${i}`,
-    org_id: "org-1",
-    email: `booked${i}@gmail.com`,
-    custom_fields: {
-      slo_roadmap_free_at: "2026-09-27T18:00:00.000Z",
-      slo_text_slot: String(i + 1)
-    }
-  }));
-  const db = genuineDb({
-    clients: [
-      ...booked,
-      {
-        id: "cl-1",
-        org_id: "org-1",
-        email: "pat@gmail.com",
-        phone: "+14155550134",
-        custom_fields: {}
-      }
-    ],
-    bookings: booked.map((c) => ({ client_id: c.id, org_id: "org-1" })),
-    templates: templates()
-  });
-  const res = await handleM1({
-    event: ev("slo.contact_started", personPayload, { id: "evt-gift" }),
-    db,
-    step: fakeStep()
-  });
-  assert.equal(res.sent, true);
-  assert.equal(res.slot, null);
-  assert.deepEqual(
-    db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_GIFT_KEY, SMS_GIFT_KEY].sort()
-  );
-});
-
-test("handleM1: yes with no booking yet does not burn a first-five seat", async () => {
-  const agreedOnly = Array.from({ length: 5 }, (_, i) => ({
-    id: `cl-yes-${i}`,
-    org_id: "org-1",
-    email: `yes${i}@gmail.com`,
-    custom_fields: {
-      slo_roadmap_free_at: "2026-09-27T18:00:00.000Z",
-      slo_text_slot: String(i + 1)
-    }
-  }));
-  const db = genuineDb({
-    clients: [
-      ...agreedOnly,
-      {
-        id: "cl-1",
-        org_id: "org-1",
-        email: "pat@gmail.com",
-        phone: "+14155550134",
-        custom_fields: {}
-      }
-    ],
-    bookings: [],
-    events: [],
-    templates: templates()
-  });
-  const res = await handleM1({
-    event: ev("slo.contact_started", personPayload, { id: "evt-yes-unbooked" }),
-    db,
-    step: fakeStep()
-  });
-  assert.equal(res.sent, true);
-  assert.ok(res.slot);
-  assert.deepEqual(
-    db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
-  );
-});
-
-test("handleM1: booking.created event counts as booked for the free cap", async () => {
-  const booked = Array.from({ length: 5 }, (_, i) => ({
-    id: `cl-ev-${i}`,
-    org_id: "org-1",
-    email: `ev${i}@gmail.com`,
-    custom_fields: { slo_roadmap_free_at: "2026-09-27T18:00:00.000Z" }
-  }));
-  const db = genuineDb({
-    clients: [
-      ...booked,
-      {
-        id: "cl-1",
-        org_id: "org-1",
-        email: "pat@gmail.com",
-        phone: "+14155550134",
-        custom_fields: {}
-      }
-    ],
-    events: booked.map((c) => ({
-      client_id: c.id,
-      org_id: "org-1",
-      name: "booking.created"
-    })),
-    templates: templates()
-  });
-  const res = await handleM1({
-    event: ev("slo.contact_started", personPayload, { id: "evt-by-event" }),
-    db,
-    step: fakeStep()
-  });
-  assert.equal(res.sent, true);
-  assert.equal(res.slot, null);
-  assert.deepEqual(
-    db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_GIFT_KEY, SMS_GIFT_KEY].sort()
-  );
+  assert.ok(db.clients[0].custom_fields[LOCK_M2]);
+  assert.ok(res.payUrl);
+  assert.ok(!db.messages.some((m) =>
+    m.template_key === SMS_FIRST5_KEY || m.template_key === EMAIL_FIRST5_KEY
+    || m.template_key === SMS_GIFT_KEY || m.template_key === EMAIL_GIFT_KEY));
 });
 
 test("handleM1: agent emit is a no-op (prove path without texting a customer)", async () => {
-  const db = genuineDb({ templates: templates() });
+  const db = genuineDb({ clients: [], templates: templates() });
   const res = await handleM1({
-    event: ev("slo.contact_started", {
-      actor: "agent",
-      actor_reason: "company_email",
-      email: "agent@fundhub.ai",
-      phone: "+14155550199"
-    }),
+    event: ev("slo.contact_started", { ...personPayload, actor: "agent" }, { id: "evt-agent" }),
     db,
     step: fakeStep()
   });
-  assert.equal(res.done, false);
+  assert.equal(res.sent, undefined);
   assert.equal(res.reason, "not_person");
   assert.equal(db.messages.length, 0);
 });
 
 test("handleM1: paid diagnostic skips the send", async () => {
   const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: {}
+    }],
     paidDiagnostic: true,
-    clients: [{ id: "cl-1", org_id: "org-1", email: "pat@gmail.com", custom_fields: {} }],
     templates: templates()
   });
   const res = await handleM1({
@@ -345,7 +205,7 @@ test("handleM1: paid diagnostic skips the send", async () => {
   assert.equal(db.messages.length, 0);
 });
 
-test("handleM1: email-only opt-in still queues the email", async () => {
+test("handleM1: email-only opt-in still queues the coupon email", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
@@ -363,7 +223,7 @@ test("handleM1: email-only opt-in still queues the email", async () => {
   });
   assert.equal(res.sent, true);
   assert.equal(res.sms, null);
-  assert.deepEqual(db.messages.map((m) => m.template_key), [EMAIL_FIRST5_KEY]);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [EMAIL_COUPON_KEY]);
 });
 
 test("handleCheckoutM1Sms: full M1 when phone lands at checkout and nothing was sent", async () => {
@@ -389,19 +249,19 @@ test("handleCheckoutM1Sms: full M1 when phone lands at checkout and nothing was 
   assert.equal(res.lane, "full_m1");
   assert.deepEqual(
     db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
+    [EMAIL_COUPON_KEY, SMS_COUPON_KEY].sort()
   );
   assert.ok(db.clients[0].custom_fields[LOCK_M1]);
 });
 
-test("handleCheckoutM1Sms: sends unpaid SMS once phone lands after M1 email", async () => {
+test("handleCheckoutM1Sms: sends unpaid coupon SMS once phone lands after M1 email", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
       org_id: "org-1",
       email: "pat@gmail.com",
       phone: "+14155550134",
-      custom_fields: { [LOCK_M1]: "2026-09-29T18:00:00.000Z", slo_text_slot: "1" }
+      custom_fields: { [LOCK_M1]: "2026-09-29T18:00:00.000Z" }
     }],
     templates: templates()
   });
@@ -416,7 +276,7 @@ test("handleCheckoutM1Sms: sends unpaid SMS once phone lands after M1 email", as
   });
   assert.equal(res.sent, true);
   assert.equal(res.lane, "sms_only");
-  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_FIRST5_KEY]);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_COUPON_KEY]);
 });
 
 test("handleReply: does not send message 2 until message 1 was sent", async () => {
