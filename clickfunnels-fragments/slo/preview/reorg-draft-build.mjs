@@ -139,7 +139,7 @@ const NOTES = [
   [".srow", "Capital Partner Shortlist", "Clearest item, but it still has two names.", "Bank & Lender Match List on the card, the sample, and inside the file."],
   [".peekline", "", "Where the documents live is never said plainly. The page says \"in your account,\" \"portal,\" and \"prints.\" Business credit ($15 for each extra business) only shows up at checkout.", "All five show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15."],
   [".deck-foot", "", "These 16 approvals most likely came from done-for-you clients, not $297 roadmap buyers. Proof has to come from the thing being sold.", "Say where they came from (\"from our done-for-you clients\"), or keep only roadmap-buyer wins here."],
-  [".srow .t", "You Fill Out the Form", "Says the form takes about ten seconds. It is really three steps: your info, card, then a soft pull that asks for your Social Security number. The card step is missing.", "01 Your info · 02 Pay $297 by card · 03 Soft pull: name, date of birth, Social Security number, address · 04 Your five documents, about 10 seconds later. Time the real form and put that number in."],
+  [".srow .t", "You Fill Out the Form", "Says the form takes about ten seconds. It is really three steps: your info, card, then a soft pull that asks for your Social Security number. The card step is missing.", "01 Your info · 02 Pay $297 by card · 03 Soft pull · 04 Your five documents, about 10 seconds later. Time the real form and put that number in."],
   [".srow .d", "Run it yourself", "Blunt, and it has a stray space at the end.", "Every step is in order. You work it at your own pace."],
   [".prose p", "Every day you wait", "Pressure line. A skeptical buyer reads it as a sales push.", "Cut it."],
   [".cardw p", "If you're not happy with what you get, <b>we'll", "Doesn't say how to get the refund or how much comes back. The guarantee also shows up twice (here and at checkout).", "Email support@fundhub.ai within 7 days and you get the full $297 back. Keep it in one place."],
@@ -243,6 +243,8 @@ const FIXES = [
   ['<div class="tab">08</div>', `<div class="tab">${G("07")}</div>`],
   ["['tracker','08 Tracker']", "['tracker','07 Tracker']"],
   ["Dispute Letter Pack &middot; 08 Round tracker", "Dispute Letter Pack &middot; 07 Round tracker"],
+  // Owner-set 2026-09-29: never name the Social Security number before step 3 of checkout.
+  [" &middot; SSN ending 3391", ""],
   ["Tap any cover for a sample page. Yours prints with your own data.",
    `Tap any cover for a sample page. ${G("All five show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15.")}`],
   // Approvals carousel
@@ -252,7 +254,7 @@ const FIXES = [
    [
      ["01", "Your Info", "First name, last name, email, phone."],
      ["02", "Pay $297 by Card", "One payment, no contract."],
-     ["03", "Soft Pull", "Legal name, date of birth, Social Security number, and address. It's a soft inquiry, so your score doesn't move."],
+     ["03", "Soft Pull", "We pull your credit with a soft inquiry, so your score doesn't move."],
      ["04", "Your Five Documents", "About ten seconds later they're in your portal. How much you qualify for now, how much once your file is optimized, and every step between. You work it at your own pace."],
    ].map(([n, t, d]) => `<div class="srow"><span class="n">${n}</span><div><div class="t">${G(t)}</div><div class="d">${G(d)}</div></div></div>`).join("\n        ")],
   // Who it's for
@@ -326,8 +328,8 @@ if (process.argv.includes("--share")) {
   const cut1 = share.indexOf("<!-- SLOT-UTM");
   share = share.slice(0, cut0) +
     `<div class="fhx-checkout"><b>Checkout form sits here on the live page</b>` +
-    `<span>Step 1 · Info (first, last, email, phone) &nbsp;→&nbsp; Step 2 · Card ($297) &nbsp;→&nbsp; Step 3 · Soft pull (legal name, date of birth, Social Security number, address, businesses)</span>` +
-    `<i>Left out of this shared copy so nothing here can take a card or a Social Security number.</i></div>\n` +
+    `<span>Step 1 · Info (first, last, email, phone) &nbsp;→&nbsp; Step 2 · Card ($297) &nbsp;→&nbsp; Step 3 · Soft pull</span>` +
+    `<i>Left out of this shared copy so nothing here can take a card or personal details.</i></div>\n` +
     share.slice(cut1);
   share = share.replace(/<script src="https:\/\/fundhub\.ai\/funnel\/fh-attribution\.js"><\/script>/, "");
   share = share.replace(/(<video[^>]*?)\s+src="https:\/\/fundhub\.ai\/funnel\/[^"]+\.mp4"/g, "$1");
