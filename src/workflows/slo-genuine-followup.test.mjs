@@ -4,6 +4,7 @@ import {
   eligibleForGenuineM1,
   handleM1,
   handleReply,
+  handleCheckoutM1Sms,
   SMS_FIRST5_KEY,
   EMAIL_FIRST5_KEY,
   SMS_GIFT_KEY,
@@ -94,6 +95,17 @@ function genuineDb(seed = {}) {
         }
         return { rows: [] };
       }
+      if (/SELECT phone FROM clients WHERE id = \$1/.test(sql)) {
+        const c = base.clients.find((row) => row.id === params[0]);
+        return { rows: c ? [{ phone: c.phone || null }] : [] };
+      }
+      if (/FROM messages/.test(sql) && /template_key = ANY/.test(sql)) {
+        const keys = params[1] || [];
+        const hit = base.messages.some(
+          (m) => m.client_id === params[0] && m.channel === "sms" && keys.includes(m.template_key)
+        );
+        return { rows: hit ? [{ "?column?": 1 }] : [] };
+      }
       return base.query(sql, params);
     }
   };
@@ -117,8 +129,11 @@ test("eligibleForGenuineM1: agent is skipped (no real customer text)", () => {
   assert.equal(eligibleForGenuineM1({ ...personPayload, email: "x@example.com" }).ok, false);
 });
 
-test("eligibleForGenuineM1: no phone is skipped", () => {
-  assert.equal(eligibleForGenuineM1({ ...personPayload, phone: null }).reason, "no_phone");
+test("eligibleForGenuineM1: no phone still passes (email goes; SMS waits)", () => {
+  const gate = eligibleForGenuineM1({ ...personPayload, phone: null });
+  assert.equal(gate.ok, true);
+  assert.equal(gate.phone, null);
+  assert.equal(gate.email, "pat@gmail.com");
 });
 
 test("handleM1: after the wait, queues SMS and email for an unpaid person", async () => {
@@ -328,6 +343,80 @@ test("handleM1: paid diagnostic skips the send", async () => {
   assert.equal(res.sent, false);
   assert.equal(res.reason, "already_paid");
   assert.equal(db.messages.length, 0);
+});
+
+test("handleM1: email-only opt-in still queues the email", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: null,
+      custom_fields: {}
+    }],
+    templates: templates()
+  });
+  const res = await handleM1({
+    event: ev("slo.contact_started", { ...personPayload, phone: null }, { id: "evt-email-only" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.sms, null);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [EMAIL_FIRST5_KEY]);
+});
+
+test("handleCheckoutM1Sms: full M1 when phone lands at checkout and nothing was sent", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: {}
+    }],
+    templates: templates()
+  });
+  const res = await handleCheckoutM1Sms({
+    event: ev("slo.checkout_started", {
+      email: "pat@gmail.com",
+      client_id: "cl-1"
+    }, { id: "evt-checkout-full", clientId: "cl-1" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.lane, "full_m1");
+  assert.deepEqual(
+    db.messages.map((m) => m.template_key).sort(),
+    [EMAIL_FIRST5_KEY, SMS_FIRST5_KEY].sort()
+  );
+  assert.ok(db.clients[0].custom_fields[LOCK_M1]);
+});
+
+test("handleCheckoutM1Sms: sends unpaid SMS once phone lands after M1 email", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: { [LOCK_M1]: "2026-09-29T18:00:00.000Z", slo_text_slot: "1" }
+    }],
+    templates: templates()
+  });
+  const res = await handleCheckoutM1Sms({
+    event: ev("slo.checkout_started", {
+      email: "pat@gmail.com",
+      client_id: "cl-1",
+      actor: "person"
+    }, { id: "evt-checkout-sms", clientId: "cl-1" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.lane, "sms_only");
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_FIRST5_KEY]);
 });
 
 test("handleReply: does not send message 2 until message 1 was sent", async () => {

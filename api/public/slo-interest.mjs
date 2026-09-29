@@ -139,19 +139,18 @@ export async function recordInterest(body, deps = {}) {
     idempotencyKey = `slo-contact:${email}:${phoenixDay(deps.now)}`;
     payload.email = email;
     payload.name = [first, last].filter(Boolean).join(" ").trim() || null;
-    // Empty or invalid phone stays null. The genuine follow-up needs a phone;
-    // we still save the email, but we do not start that job until a phone lands.
+    // Empty or invalid phone stays null. Email still starts the follow-up;
+    // SMS waits until a phone lands (contact upgrade or checkout catch-up).
     payload.phone = phone.error ? null : phone.value;
   }
 
   const db = deps.db || defaultDb;
 
-  // Visits stay local-only. A contact with a phone fans out to Inngest so the
-  // genuine unpaid follow-up can wait 15 minutes and text/email if they bounce
-  // (src/workflows/slo-genuine-followup.mjs). Contact without a phone is saved
-  // for the day but skips Inngest — the page often posts email before phone.
+  // Visits stay local-only. A contact (email, with or without phone) fans out
+  // to Inngest so the genuine unpaid follow-up can wait 15 minutes and
+  // email/text if they bounce (src/workflows/slo-genuine-followup.mjs).
   // Agent / test actors still emit; that workflow skips them.
-  const skipInngest = kind !== "contact" || !payload.phone;
+  const skipInngest = kind !== "contact";
   const sent = await (deps.emit || emit)(
     db,
     name,

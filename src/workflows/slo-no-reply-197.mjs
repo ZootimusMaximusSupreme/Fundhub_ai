@@ -93,10 +93,13 @@ export async function handleNoReply({ event, db, step, mint = mintDiscountLink }
 
   const eventId = event.id;
   const context = { ...CHRIS, pay_url: payUrl };
-  const sms = await step.run("send-sms-197", () =>
-    sendTemplated(db, {
-      orgId, clientId, channel: "sms", templateKey: SMS_197_KEY, eventId, context
-    }));
+  let sms = null;
+  if (gate.phone) {
+    sms = await step.run("send-sms-197", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "sms", templateKey: SMS_197_KEY, eventId, context
+      }));
+  }
   const email = await step.run("send-email-197", () =>
     sendTemplated(db, {
       orgId, clientId, channel: "email", templateKey: EMAIL_197_KEY, eventId, context

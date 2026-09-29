@@ -24,6 +24,7 @@ import { affiliatePayoutRun } from './affiliate-payout-run.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
 import { metaCampaignSyncSweeper } from './meta-campaign-sync-sweeper.mjs';
 import { clickfunnelsAnalyticsSweeper } from './clickfunnels-analytics-sweeper.mjs';
+import { clarityInsightsSweeper } from './clarity-insights-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
@@ -74,7 +75,7 @@ import { sDocCollection } from './s-doc-collection.mjs';
 import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mjs';
 import { sOfferBucket } from './s-offer-bucket.mjs';
 import { sloPackDelivery } from './slo-pack-delivery.mjs';
-import { sloGenuineFollowup, sloGenuineReply } from './slo-genuine-followup.mjs';
+import { sloGenuineFollowup, sloGenuineReply, sloGenuineCheckoutSms } from './slo-genuine-followup.mjs';
 import { sloPaidFormNudge } from './slo-paid-form-nudge.mjs';
 import { sloNoReply197 } from './slo-no-reply-197.mjs';
 import { sloInfiniteDrip } from './slo-infinite-drip.mjs';
@@ -309,6 +310,7 @@ export const functions = [
      screen already shows. */
   metaCampaignSyncSweeper,
   clickfunnelsAnalyticsSweeper,
+  clarityInsightsSweeper,
 
   /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in
      this platform charged a card on a cycle: 075_subscriptions.sql recorded the
@@ -432,6 +434,7 @@ export const functions = [
      after message.inbound. Never texts actor=agent or test emails. */
   sloGenuineFollowup,
   sloGenuineReply,
+  sloGenuineCheckoutSms,
   /* One text and email when a real $297 payment still has an empty soft-pull form. */
   sloPaidFormNudge,
   sloInfiniteDrip,

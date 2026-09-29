@@ -7,8 +7,9 @@
 // Copy is Chris's. Not a pitch. Outbound goes through sendTemplated →
 // messages queued → src/messaging/providers (Twilio / mail). No second sender.
 //
-// Skips actor=agent, company/test emails (classifyVisitor), missing phone,
-// and anyone who already has a paid diagnostic payment_links row.
+// Skips actor=agent, company/test emails (classifyVisitor), and anyone who
+// already has a paid diagnostic payment_links row. Email-only opt-in still
+// gets the email; SMS waits for a phone (or catches up at checkout).
 // No backfill: only contacts that fire Inngest after skipInngest is off.
 
 import { inngest } from "./client.mjs";
@@ -40,6 +41,8 @@ export const LOCK_M2 = "slo_genuine_m2_sent_at";
 
 export const WAIT_M1 = "15m";
 
+export const M1_SMS_KEYS = [SMS_FIRST5_KEY, SMS_GIFT_KEY, SMS_M1_KEY];
+
 const CHRIS = { sender_name: "Chris", sender: { name: "Chris" } };
 
 /* Opt-out only. A real answer like "YES" or "price" must still unlock message 2. */
@@ -70,16 +73,36 @@ export async function hasPaidDiagnostic(db, { orgId, email, clientId } = {}) {
   return Boolean(r.rows[0]);
 }
 
-/** Gates that do not need the database. */
+/** Gates that do not need the database. Phone is optional — email still goes. */
 export function eligibleForGenuineM1(payload = {}) {
   if (payload.actor !== "person") return { ok: false, reason: "not_person" };
-  const phone = String(payload.phone || "").trim();
-  if (!phone) return { ok: false, reason: "no_phone" };
   const email = String(payload.email || "").trim().toLowerCase();
   if (!email) return { ok: false, reason: "no_email" };
   const who = classifyVisitor({ email });
   if (who.actor !== "person") return { ok: false, reason: who.reason || "not_person" };
+  const phone = String(payload.phone || "").trim() || null;
   return { ok: true, email, phone };
+}
+
+async function loadClientPhone(db, clientId) {
+  if (!clientId) return null;
+  const r = await db.query(`SELECT phone FROM clients WHERE id = $1 LIMIT 1`, [clientId]);
+  return String(r.rows[0]?.phone || "").trim() || null;
+}
+
+/** True when this client already has a genuine M1 SMS row. */
+export async function hasGenuineM1Sms(db, clientId) {
+  if (!clientId) return false;
+  const r = await db.query(
+    `SELECT 1
+       FROM messages
+      WHERE client_id = $1
+        AND channel = 'sms'
+        AND template_key = ANY($2::text[])
+      LIMIT 1`,
+    [clientId, M1_SMS_KEYS]
+  );
+  return Boolean(r.rows[0]);
 }
 
 export async function handleM1({ event, db, step }) {
@@ -118,16 +141,81 @@ export async function handleM1({ event, db, step }) {
   const smsKey = slot ? SMS_FIRST5_KEY : SMS_GIFT_KEY;
   const emailKey = slot ? EMAIL_FIRST5_KEY : EMAIL_GIFT_KEY;
   const eventId = event.id;
-  const sms = await step.run("send-sms-m1", () =>
-    sendTemplated(db, {
-      orgId, clientId, channel: "sms", templateKey: smsKey, eventId, context: CHRIS
-    }));
+  // Phone may land after opt-in (checkout during the wait). Prefer event, else row.
+  const phone = gate.phone
+    || (await step.run("load-phone", () => loadClientPhone(db, clientId)));
   const email = await step.run("send-email-m1", () =>
     sendTemplated(db, {
       orgId, clientId, channel: "email", templateKey: emailKey, eventId, context: CHRIS
     }));
+  let sms = null;
+  if (phone) {
+    sms = await step.run("send-sms-m1", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "sms", templateKey: smsKey, eventId, context: CHRIS
+      }));
+  }
 
   return { done: true, sent: true, clientId, sms, email, slot };
+}
+
+/**
+ * Phone landed at checkout. If unpaid M1 never went, send email + SMS now.
+ * If M1 email already went with no SMS, send only the SMS.
+ */
+export async function handleCheckoutM1Sms({ event, db, step }) {
+  const payload = event.payload || {};
+  const orgId = event.orgId;
+  const clientId = payload.client_id || event.clientId || null;
+  if (!clientId) return { done: false, reason: "no_client" };
+
+  const email = String(payload.email || "").trim().toLowerCase()
+    || (await step.run("load-email", async () => {
+      const r = await db.query(`SELECT email FROM clients WHERE id = $1 LIMIT 1`, [clientId]);
+      return String(r.rows[0]?.email || "").trim().toLowerCase();
+    }));
+  if (!email) return { done: false, reason: "no_email" };
+  const who = classifyVisitor({ email });
+  if (who.actor !== "person") return { done: false, reason: who.reason || "not_person" };
+
+  const phone = await step.run("load-phone", () => loadClientPhone(db, clientId));
+  if (!phone) return { done: false, sent: false, reason: "no_phone" };
+
+  const paid = await step.run("check-paid", () =>
+    hasPaidDiagnostic(db, { orgId, clientId, email }));
+  if (paid) return { done: true, sent: false, reason: "already_paid" };
+
+  const fields = await step.run("read-fields", () => clientFields(db, clientId));
+  const eventId = event.id;
+
+  // Full M1 never claimed — send email + SMS (no 15m wait; they already reached checkout).
+  if (!fields[LOCK_M1]) {
+    const claimed = await step.run("claim-m1", () =>
+      claimCustomFieldLock(db, clientId, LOCK_M1));
+    if (!claimed) return { done: false, reason: "already_sent_m1" };
+    const slot = await step.run("assign-text-slot", () => assignTextSlot(db, { orgId, clientId }));
+    const smsKey = slot ? SMS_FIRST5_KEY : SMS_GIFT_KEY;
+    const emailKey = slot ? EMAIL_FIRST5_KEY : EMAIL_GIFT_KEY;
+    const sms = await step.run("send-sms-m1", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "sms", templateKey: smsKey, eventId, context: CHRIS
+      }));
+    const mail = await step.run("send-email-m1", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "email", templateKey: emailKey, eventId, context: CHRIS
+      }));
+    return { done: true, sent: true, clientId, sms, email: mail, slot, lane: "full_m1" };
+  }
+
+  const already = await step.run("already-sms", () => hasGenuineM1Sms(db, clientId));
+  if (already) return { done: true, sent: false, reason: "already_sent_sms" };
+
+  const smsKey = fields[SLOT_KEY] ? SMS_FIRST5_KEY : SMS_GIFT_KEY;
+  const sms = await step.run("send-sms-catchup", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "sms", templateKey: smsKey, eventId, context: CHRIS
+    }));
+  return { done: true, sent: true, clientId, sms, lane: "sms_only" };
 }
 
 /**
@@ -300,4 +388,10 @@ export const sloGenuineReply = inngest.createFunction(
   { id: "slo-genuine-reply", name: "SLO — genuine follow-up after reply (message 2)" },
   { event: "message.inbound" },
   ({ event, step }) => handleReply({ event: event.data, db, step })
+);
+
+export const sloGenuineCheckoutSms = inngest.createFunction(
+  { id: "slo-genuine-checkout-sms", name: "SLO — unpaid M1 SMS when phone lands at checkout" },
+  { event: "slo.checkout_started" },
+  ({ event, step }) => handleCheckoutM1Sms({ event: event.data, db, step })
 );

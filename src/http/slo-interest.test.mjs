@@ -94,7 +94,7 @@ test("GET writes nothing", async () => {
   assert.equal(res.headers["access-control-allow-origin"], "https://apply.fundhub.ai");
 });
 
-test("a contact without a phone is saved but does not start the follow-up", async () => {
+test("a contact without a phone is saved and still starts the follow-up", async () => {
   const cap = capture();
   const out = await recordInterest({
     kind: "contact",
@@ -103,8 +103,8 @@ test("a contact without a phone is saved but does not start the follow-up", asyn
   }, { emit: cap.emit, userAgent: "Mozilla/5.0", now: new Date("2026-09-27T18:00:00Z") });
   assert.equal(out.ok, true);
   assert.equal(cap.events[0].payload.phone, null);
-  assert.equal(cap.events[0].opts.skipInngest, true,
-    "no phone yet — do not start the 15-minute text job");
+  assert.equal(cap.events[0].opts.skipInngest, false,
+    "email-only contact still starts the 15-minute follow-up for email");
 });
 
 test("a later phone on the same email upgrades the row and starts follow-up", async () => {

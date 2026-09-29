@@ -152,9 +152,15 @@ export const EVENT_EMITTERS = {
   },
   "slo.contact_started": {
     emitters: [
-      { how: "The /roadmap step-1 door (api/public/slo-interest.mjs) when someone leaves name, email, and phone. Fans out to Inngest for the genuine unpaid follow-up.", gate: null }
+      { how: "The /roadmap step-1 door (api/public/slo-interest.mjs) when someone leaves name and email (phone optional). Fans out to Inngest for the genuine unpaid follow-up.", gate: null }
     ],
     note: "Non-canonical allowNonCanonical event. Visits and engage stay skipInngest."
+  },
+  "slo.checkout_started": {
+    emitters: [
+      { how: "The /roadmap $297 till (api/public/slo-checkout.mjs) when someone starts checkout. Fans out so an unpaid M1 SMS can catch up if a phone just landed.", gate: null }
+    ],
+    note: "Non-canonical allowNonCanonical event."
   },
   "payment.received": {
     emitters: [
