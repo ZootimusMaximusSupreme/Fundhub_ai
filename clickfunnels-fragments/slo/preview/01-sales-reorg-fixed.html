@@ -946,7 +946,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
           +'<div class="sp-sec"><div class="sp-h">month 1 &middot; steps 2 and 3, round one letters</div><ul class="sp-ul"><li><b>Experian first.</b> Midland Credit Management collection $412. Capital One Platinum charge-off $1,860.</li><li><b>TransUnion.</b> Midland Credit Management collection $412.</li><li><b>Do not open any new accounts</b> until the personal side is locked in.</li></ul></div>'
           +'</div>',
         snapshot:'<div class="sp"><div class="sp-doc">How Much You Qualify For &middot; Alex Rivera</div><div class="sp-why"><span class="fhx-new">Why you need this: you know what you can get before a bank ever sees your file.</span></div>'
-          +'<div class="sp-sec"><div class="sp-h">your numbers right now</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td><span class="fhx-new">left on the table</span></td><td></td><td><b>$61,500</b></td></tr></table></div>'
+          +'<div class="sp-sec"><div class="sp-h">your numbers right now</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td><span class="fhx-new">value of the roadmap</span></td><td></td><td><b>$61,500</b></td></tr></table></div>'
           
           
           +'<div class="sp-sec"><div class="sp-h"><span class="fhx-new">what you are leaving on the table</span></div><div class="sp-c"><span class="fhx-new">$61,500 you are leaving on the table right now. The rest of the package is how you go get it.</span></div></div></div>',
@@ -1010,7 +1010,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <span class="kicker"><span class="fhx-new">Your fastest first win</span></span>
       <div class="h2"><span class="fhx-new">Your First Win Can Come Inside a Month.</span></div>
       <div class="prose" style="margin-top:10px"><p><span class="fhx-new">Pay one card down to the balance your roadmap gives you. Card balances report once a month, so your middle score can move within about 30 days, before a single letter comes back.</span></p></div>
-      <figure class="fh-snapfig"><div class="fh-snapdoc"><div class="fh-snaphead">How Much You Qualify For &middot; sample</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td><span class="fhx-new">left on the table</span></td><td></td><td><b>$61,500</b></td></tr></table><div class="wm-s">SAMPLE</div></div><figcaption><span class="fhx-new">From a sample report for a made-up client. Yours is built from your own credit file.</span></figcaption></figure>
+      <figure class="fh-snapfig"><div class="fh-snapdoc"><div class="fh-snaphead">How Much You Qualify For &middot; sample</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr class="fh-val"><td>value of the roadmap</td><td></td><td class="fh-val-b"><span class="fh-plus">+$61,500</span></td></tr></table><div class="wm-s">SAMPLE</div></div><figcaption><span class="fhx-new">From a sample report for a made-up client. Yours is built from your own credit file.</span></figcaption></figure>
     </section>
 </div><!--/fhx-sec-->
 
@@ -2597,12 +2597,14 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fhx-sumnote{margin-top:10px;font-size:13px;color:#52525B}
 
 .fh-root .fh-snapfig{max-width:460px;margin:22px auto 0}
-.fh-root .fh-snapdoc{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:0 14px 34px rgba(17,17,19,.10);transform:rotate(-.8deg)}
+.fh-root .fh-snapdoc{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:0 14px 34px rgba(17,17,19,.10);transform:none}
 .fh-root .fh-snaphead{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2);margin-bottom:10px}
 .fh-root .fh-snapdoc table{width:100%;border-collapse:collapse;font-size:14px}
 .fh-root .fh-snapdoc th,.fh-root .fh-snapdoc td{padding:8px 6px;border-top:1px solid var(--line);text-align:left}
 .fh-root .fh-snapdoc th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);border-top:0}
 .fh-root .fh-snapdoc .wm-s{position:absolute;right:14px;bottom:10px;font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:rgba(17,17,19,.18)}
+.fh-root .fh-snapdoc td.fh-val-b{position:relative;overflow:visible}
+.fh-root .fh-snapdoc .fh-plus{position:absolute;left:0;top:50%;transform:translate(calc(-50% - 6px),-50%);color:#15803D;font-weight:700;white-space:nowrap}
 .fh-root .fh-snapfig figcaption{margin-top:10px;font-size:12.5px;color:var(--gray2);text-align:center}
 .fh-root .fh-work{margin-top:22px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px 18px;text-align:left}
 .fh-root .fh-work-h{font-weight:700;margin-bottom:8px}
@@ -2619,6 +2621,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .sp-lock b{font-size:16px}
 .fh-root .sp-lock span{font-size:13.5px;color:var(--gray2)}
 .fh-root .sp-lock .btn{margin-top:6px;max-width:320px;padding:12px 18px;font-size:15px}
+.fh-root .wm{color:rgba(255,255,255,.88)}
+.fh-root .folder .wm{color:rgba(10,10,10,.92)}
 
 .fhx-sec{position:relative;outline:2px dashed #2F6FEB;outline-offset:6px;margin:34px 0}
 .fhx-sec::before{content:attr(data-tag);display:block;font:700 11px/1.3 system-ui,sans-serif;color:#fff;background:#2F6FEB;padding:5px 9px;border-radius:4px;margin-bottom:10px;width:max-content;max-width:100%}

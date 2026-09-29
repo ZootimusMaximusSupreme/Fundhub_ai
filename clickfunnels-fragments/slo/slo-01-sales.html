@@ -933,7 +933,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
           +'<div class="sp-sec"><div class="sp-h">month 1 &middot; steps 2 and 3, round one letters</div><ul class="sp-ul"><li><b>Experian first.</b> Midland Credit Management collection $412. Capital One Platinum charge-off $1,860.</li><li><b>TransUnion.</b> Midland Credit Management collection $412.</li><li><b>Do not open any new accounts</b> until the personal side is locked in.</li></ul></div>'
           +'</div>',
         snapshot:'<div class="sp"><div class="sp-doc">How Much You Qualify For &middot; Alex Rivera</div><div class="sp-why">Why you need this: you know what you can get before a bank ever sees your file.</div>'
-          +'<div class="sp-sec"><div class="sp-h">your numbers right now</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td>left on the table</td><td></td><td><b>$61,500</b></td></tr></table></div>'
+          +'<div class="sp-sec"><div class="sp-h">your numbers right now</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td>value of the roadmap</td><td></td><td><b>$61,500</b></td></tr></table></div>'
           
           
           +'<div class="sp-sec"><div class="sp-h">what you are leaving on the table</div><div class="sp-c">$61,500 you are leaving on the table right now. The rest of the package is how you go get it.</div></div></div>',
@@ -997,7 +997,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <span class="kicker">Your fastest first win</span>
       <div class="h2">Your First Win Can Come Inside a Month.</div>
       <div class="prose" style="margin-top:10px"><p>Pay one card down to the balance your roadmap gives you. Card balances report once a month, so your middle score can move within about 30 days, before a single letter comes back.</p></div>
-      <figure class="fh-snapfig"><div class="fh-snapdoc"><div class="fh-snaphead">How Much You Qualify For &middot; sample</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td>left on the table</td><td></td><td><b>$61,500</b></td></tr></table><div class="wm-s">SAMPLE</div></div><figcaption>From a sample report for a made-up client. Yours is built from your own credit file.</figcaption></figure>
+      <figure class="fh-snapfig"><div class="fh-snapdoc"><div class="fh-snaphead">How Much You Qualify For &middot; sample</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr class="fh-val"><td>value of the roadmap</td><td></td><td class="fh-val-b"><span class="fh-plus">+$61,500</span></td></tr></table><div class="wm-s">SAMPLE</div></div><figcaption>From a sample report for a made-up client. Yours is built from your own credit file.</figcaption></figure>
     </section>
 
 
@@ -2585,6 +2585,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .fh-snapdoc th,.fh-root .fh-snapdoc td{padding:8px 6px;border-top:1px solid var(--line);text-align:left}
 .fh-root .fh-snapdoc th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);border-top:0}
 .fh-root .fh-snapdoc .wm-s{position:absolute;right:14px;bottom:10px;font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:rgba(17,17,19,.18)}
+.fh-root .fh-snapdoc td.fh-val-b{position:relative;overflow:visible}
+.fh-root .fh-snapdoc .fh-plus{position:absolute;left:0;top:50%;transform:translate(calc(-50% - 6px),-50%);color:#15803D;font-weight:700;white-space:nowrap}
 .fh-root .fh-snapfig figcaption{margin-top:10px;font-size:12.5px;color:var(--gray2);text-align:center}
 .fh-root .fh-work{margin-top:22px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px 18px;text-align:left}
 .fh-root .fh-work-h{font-weight:700;margin-bottom:8px}

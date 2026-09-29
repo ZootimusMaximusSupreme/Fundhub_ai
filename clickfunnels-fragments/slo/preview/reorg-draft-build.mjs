@@ -124,7 +124,7 @@ const FIRST_WIN = `<section class="sect">
       <span class="kicker">${G("Your fastest first win")}</span>
       <div class="h2">${G("Your First Win Can Come Inside a Month.")}</div>
       <div class="prose" style="margin-top:10px"><p>${G("Pay one card down to the balance your roadmap gives you. Card balances report once a month, so your middle score can move within about 30 days, before a single letter comes back.")}</p></div>
-      <figure class="fh-snapfig"><div class="fh-snapdoc"><div class="fh-snaphead">How Much You Qualify For &middot; sample</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td>funding gap</td><td></td><td><b>$61,500</b></td></tr></table><div class="wm-s">SAMPLE</div></div><figcaption>${G("From a sample report for a made-up client. Yours is built from your own credit file.")}</figcaption></figure>
+      <figure class="fh-snapfig"><div class="fh-snapdoc"><div class="fh-snaphead">How Much You Qualify For &middot; sample</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr class="fh-val"><td>value of the roadmap</td><td></td><td class="fh-val-b"><span class="fh-plus">+$61,500</span></td></tr></table><div class="wm-s">SAMPLE</div></div><figcaption>${G("From a sample report for a made-up client. Yours is built from your own credit file.")}</figcaption></figure>
     </section>`;
 const GOOD_CREDIT = `<section class="sect">
       <span class="kicker">${G("Already have good credit?")}</span>
@@ -156,6 +156,8 @@ const NEW_CSS = `
 .fh-root .fh-snapdoc th,.fh-root .fh-snapdoc td{padding:8px 6px;border-top:1px solid var(--line);text-align:left}
 .fh-root .fh-snapdoc th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gray2);border-top:0}
 .fh-root .fh-snapdoc .wm-s{position:absolute;right:14px;bottom:10px;font-family:var(--mono);font-size:11px;letter-spacing:.3em;color:rgba(17,17,19,.18)}
+.fh-root .fh-snapdoc td.fh-val-b{position:relative;overflow:visible}
+.fh-root .fh-snapdoc .fh-plus{position:absolute;left:0;top:50%;transform:translate(calc(-50% - 6px),-50%);color:#15803D;font-weight:700;white-space:nowrap}
 .fh-root .fh-snapfig figcaption{margin-top:10px;font-size:12.5px;color:var(--gray2);text-align:center}
 .fh-root .fh-work{margin-top:22px;border:1px solid var(--line);border-radius:12px;background:#fff;padding:16px 18px;text-align:left}
 .fh-root .fh-work-h{font-weight:700;margin-bottom:8px}
@@ -316,8 +318,8 @@ const FIXES = [
   ['<div class="t">Funding Snapshot</div>', `<div class="t">${G("How Much You Qualify For")}</div>`],
   ['<div class="cv-doc">funding snapshot</div>', '<div class="cv-doc">how much you qualify for</div>'],
   ['<li><b>Funding Snapshot</b>, how much you qualify for right now and how much once your file is optimized</li>', `<li><b>${G("How Much You Qualify For")}</b>${G(", today and once your file is optimized")}</li>`],
-  // "Funding gap" read like jargon. It is money left on the table (Chris, 2026-09-29).
-  ['<tr><td>funding gap</td>', `<tr><td>${G("left on the table")}</td>`],
+  // Same row inside the sample lightbox. The card itself is set in FIRST_WIN.
+  ['<tr><td>funding gap</td>', `<tr><td>${G("value of the roadmap")}</td>`],
   ['<div class="cv-title">Financial Profile Assessment</div>', `<div class="cv-title">${G("Credit Analysis Report")}</div>`],
   ["<div class=\"cv-title\">Alex's 6-Month Business Readiness Roadmap</div>", `<div class="cv-title">${G("Alex's Credit Optimization Roadmap")}</div>`],
   ['<div class="cv-title">Capital Partner Shortlist</div>', `<div class="cv-title">${G("Bank &amp; Lender Match List")}</div>`],
