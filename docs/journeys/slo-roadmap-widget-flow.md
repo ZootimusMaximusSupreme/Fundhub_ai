@@ -108,7 +108,7 @@ that request was fulfilled with.
 ## The widget screens (front end, 2026-09-27)
 
 Source: `clickfunnels-fragments/slo/slo-01-sales.html`, the `#fhw` widget after
-the SPLIT-LINE comment. Every "Get My Roadmap" and "Show Me How Much I Qualify For"
+the SPLIT-LINE comment. Every "Get My Roadmap" and "Get My $297 Funding Roadmap"
 button scrolls to it. No page on the way links to `roadmap/pay.html` any more.
 
 ```mermaid

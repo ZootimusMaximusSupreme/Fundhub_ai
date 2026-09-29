@@ -360,7 +360,9 @@ test("item 8: the lander never offers done-for-you; the Dispute Letter Pack copy
   assert.doesNotMatch(html, /Credits toward your deposit if you ever go done-for-you/);
   assert.doesNotMatch(html, /your \$297 counts toward it/);
   assert.doesNotMatch(html, /If you'd rather we run it, you'll see that option after checkout/);
-  assert.match(html, /<summary>Can you do the work for me\?<\/summary><div class="a">This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response\.<\/div>/);
+  /* Rewritten 2026-09-29 (roadmap reorder, owner-approved): the answer now says
+     "No" outright. Still do-it-yourself, still no done-for-you offer. */
+  assert.match(html, /<summary>Can you do the work for me\?<\/summary><div class="a">No\. This is do-it-yourself\. You mail your own letters, so you hold every receipt and see every reply\.<\/div>/);
   assert.match(html, /Zero score impact from that pull<\/div>/);
   assert.match(html, /Print\. Sign\. Mail\./);
 });
