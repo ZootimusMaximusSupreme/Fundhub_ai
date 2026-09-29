@@ -12,6 +12,7 @@
  *
  * Run:  node clickfunnels-fragments/slo/preview/reorg-draft-build.mjs
  * Out:  clickfunnels-fragments/slo/preview/01-sales-reorg-draft.html
+ * Add --share to also build 01-sales-reorg-share.html, a self-contained copy to publish as a link.
  */
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -195,3 +196,49 @@ const TOOLKIT = `
 const out = PREFIX + body + SUFFIX + TOOLKIT;
 writeFileSync(join(here, "01-sales-reorg-draft.html"), wrapFragment(out));
 console.log("built 01-sales-reorg-draft.html");
+
+/* ---------- --share: one self-contained page Chris can send as a link ----------
+   A shared page can load nothing from fundhub.ai or ClickFunnels, so every
+   picture is shrunk and baked in. The videos are too big to bake in (the VSL
+   is 57 MB), so each one shows its cover picture. The checkout form is left
+   out: it is a real card and Social Security form, and a shared copy must not
+   be able to send anything. */
+if (process.argv.includes("--share")) {
+  const { execFileSync } = await import("node:child_process");
+  const { mkdtempSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const tmp = mkdtempSync(join(tmpdir(), "fh-share-"));
+  let share = out;
+  const cut0 = share.indexOf("<!-- ================= SPLIT-LINE");
+  const cut1 = share.indexOf("<!-- SLOT-UTM");
+  share = share.slice(0, cut0) +
+    `<div class="fhx-checkout"><b>Checkout form sits here on the live page</b>` +
+    `<span>Step 1 · Info (first, last, email, phone) &nbsp;→&nbsp; Step 2 · Card ($297) &nbsp;→&nbsp; Step 3 · Soft pull (legal name, date of birth, Social Security number, address, businesses)</span>` +
+    `<i>Left out of this shared copy so nothing here can take a card or a Social Security number.</i></div>\n` +
+    share.slice(cut1);
+  share = share.replace(/<script src="https:\/\/fundhub\.ai\/funnel\/fh-attribution\.js"><\/script>/, "");
+  share = share.replace(/(<video[^>]*?)\s+src="https:\/\/fundhub\.ai\/funnel\/[^"]+\.mp4"/g, "$1");
+  share = share.replace("Tap for sound", "Video plays on the live page");
+  share = share.replace(/(<span class="tplay-pill">[\s\S]*?<\/svg>)\s*Play/g, "$1 Plays on the live page");
+
+  const urls = [...new Set(share.match(/https:\/\/(?:statics\.myclickfunnels\.com|fundhub\.ai\/funnel)\/[^"')\s]+\.jpg/g))];
+  for (const [i, u] of urls.entries()) {
+    const f = join(tmp, `${i}.jpg`);
+    const res = await fetch(u);
+    if (!res.ok) throw new Error(`${res.status} ${u}`);
+    writeFileSync(f, Buffer.from(await res.arrayBuffer()));
+    execFileSync("sips", ["-Z", "900", "-s", "format", "jpeg", "-s", "formatOptions", "72", f, "--out", f], { stdio: "ignore" });
+    share = share.split(u).join("data:image/jpeg;base64," + readFileSync(f).toString("base64"));
+  }
+
+  const head = `<title>Roadmap Page Redraft</title>
+<style>
+body{background:#FCFCFC;color:#111113}
+.fhx-checkout{max-width:720px;margin:24px auto;padding:18px 20px;border:2px dashed #2F6FEB;border-radius:10px;background:#F3F7FF;color:#111113;font:14px/1.5 system-ui,sans-serif;display:grid;gap:6px}
+.fhx-checkout i{color:#555}
+.fhx-banner{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
+</style>
+`;
+  writeFileSync(join(here, "01-sales-reorg-share.html"), head + share);
+  console.log(`built 01-sales-reorg-share.html (${urls.length} pictures baked in)`);
+}
