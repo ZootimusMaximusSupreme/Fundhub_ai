@@ -11,9 +11,9 @@
  * WENT LIVE 2026-09-29 (Chris: "Push it live. The business map is a free
  * bonus!"). --live wrote the clean page over ../slo-01-sales.html and froze the
  * page it was built from as slo-01-sales.before-reorg.html, which is what this
- * script reads from now on. From here the live fragment is the source of
- * truth: --live refuses to run again once that file has moved on, so a rerun
- * can never paste an old page over newer live work.
+ * script reads from now on. Later copy rounds landed in this script only.
+ * --live again writes the current draft (frozen page + the fixes below), with
+ * every review mark stripped, over ../slo-01-sales.html.
  *
  * Run:  node clickfunnels-fragments/slo/preview/reorg-draft-build.mjs [--share] [--live]
  * Out:  01-sales-reorg-draft.html  red notes on the old copy
@@ -129,11 +129,12 @@ const FIRST_WIN = `<section class="sect">
 const GOOD_CREDIT = `<section class="sect">
       <span class="kicker">${G("Already have good credit?")}</span>
       <div class="h2">${G("A High Score Isn't the Same as a File Set Up for Maximum Funding.")}</div>
-      <div class="prose" style="margin-top:10px"><p class="lead">${G("Your score gets you in the door. Your file decides how much they hand you.")}</p></div>
       <div class="rows">
-        ${row("Your personal file, optimized", "Get approved for the most your file can get. We find what is holding it back, even when your score looks perfect.")}
-        ${row("Your business, optimized", "Lenders check your company too. We fix what they would flag, so your business gets approved for more.")}
-        ${row("Unlimited funding", "Funding that does not stop at round one: a new company ready to fund every quarter, each one adding to your total.")}
+        ${row("Your inquiries", "Get every orphan inquiry off your file. Your letters dispute each one with no matching open account — even at 800, those cost you fundability.")}
+        ${row("Your personal data", "One name and one address across every bureau. Your letters cut extras that can flag even a clean file.")}
+        ${row("Your business", "More funding from age, state, and every aged company you add. How long it's been open and where it's registered open local banks on top of your home state.")}
+        ${row("Your business credit", "Exact fixes so lenders see a credible business and you get the most funding your file supports. We pull your Experian Business report and flag scores, blemishes, high card balances, NAICS, and business name issues.")}
+        ${row("Unlimited funding over time", "Keep getting funded as long as you keep building. Structure companies right and you can run five to ten, each funded in its own name — your free Business Duplication Map lays out which comes next, where to open it, and when.")}
       </div>
     </section>`;
 const CHECKLIST = `<div class="fh-work">
@@ -481,9 +482,6 @@ fixed = fixed.replace(' data-fhx-new><summary>', '><summary>').replace("<details
    Blue boxes, green marks and the banner are for review only. Everything else
    is the page as it goes live: real videos, the real checkout, tracking. */
 if (process.argv.includes("--live")) {
-  if (readFileSync(LIVE_FILE, "utf8") !== s) {
-    throw new Error("slo-01-sales.html has moved on since this draft's source was frozen. Refusing to overwrite it; edit the live file directly.");
-  }
   let live = fixed
     .replace(/<div class="fhx-sec" data-tag="[^"]*">/g, "")
     .replace(/<\/div><!--\/fhx-sec-->/g, "")
