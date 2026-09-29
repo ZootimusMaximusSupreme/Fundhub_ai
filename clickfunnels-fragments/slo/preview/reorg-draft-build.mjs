@@ -215,7 +215,7 @@ const FIXES = [
    `<h1>Your Credit File Could Be Worth $100K to $1M in Funding. ${G("See Exactly How Much, and the Steps to Get It.")}</h1>` +
    `\n      <p class="fhx-proofline">${G("<b>Gene</b> runs three LLCs. With the roadmap, he opened up about $420,000 in business funding over three years.")}</p>`],
   [/<p class="lede">We pull your credit with a soft inquiry\. 10 seconds later[^<]*<\/p>/,
-   `<p class="lede">${G("<b>$297.</b> We soft-pull your credit, and about 10 seconds later five documents built from your own file are waiting in your portal.")} Yours to keep.</p>`],
+   `<p class="lede">${G("<b>$297.</b> We soft-pull your credit, and about 10 seconds later six documents built from your own file are waiting in your portal.")} Yours to keep.</p>`],
   ["Show Me How Much I Qualify For", G("Get My $297 Funding Roadmap")],
   // Testimonials
   [">From people who bought it<", `>${G("People who used the roadmap")}<`],
@@ -231,7 +231,7 @@ const FIXES = [
    `run it through ${G("our software")}, and the whole package is in your ${G("portal")} in`],
   // What You Get
   ["<div class=\"h2\">Here's What You Get.</div>",
-   `<div class="h2">${G("Five Documents, Built From Your Own Credit File, Waiting in Your Portal Today.")}</div>`],
+   `<div class="h2">${G("Six Documents, Built From Your Own Credit File, Waiting in Your Portal Today.")}</div>`],
   ["<span>outcome: sample</span><span>median: sample</span>", ""],
   ['<div class="cv-conf">fundhub confidential</div>', ""],
   ['<div class="cv-title">Capital Readiness Snapshot</div>', `<div class="cv-title">${G("Funding Snapshot")}</div>`],
@@ -250,7 +250,7 @@ const FIXES = [
   // Owner-set 2026-09-29: never name the Social Security number before step 3 of checkout.
   [" &middot; SSN ending 3391", ""],
   ["Tap any cover for a sample page. Yours prints with your own data.",
-   `Tap any cover for a sample page. ${G("All five show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15.")}`],
+   `Tap any cover for a sample page. ${G("All six show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15.")}`],
   /* Good credit, still short (Chris, 2026-09-29: "what if somebody has an 800
      credit score"). Every line is a thing the documents or the engine do:
      · personal data cleanup, mismatched identity data can flag a file
@@ -275,11 +275,11 @@ const FIXES = [
        for now. No DUNS, no net-30, no vendor accounts ("that's not real"). The
        roadmap.mjs DUNS / net-30 steps are what UnderwriteIQ is changing. */
   ["Some files take six months, some take one, and it tells you which on the first page.",
-   `Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business: the exact fixes for its Experian Business profile.")}`],
+   `Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business.")}`],
   ["<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>",
    `<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>\n            <li>${G("Your score is <b>already high</b> and you want the <b>most your file and your business</b> can get")}</li>`],
   ["<details><summary>Will this hurt my credit score?</summary>",
-   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. Every inquiry costs you fundability, and so does a second name or address on any bureau. Your letters go after both, even on a clean file. Then the business side: we check each company's Experian Business report for the flags a lender sees, and every aged company you own can get funded in its own name.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
+   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. Every inquiry costs you fundability, and so does a second name or address on any bureau. Your letters go after both, even on a clean file. Then the business side: your Business Duplication Map checks each company's Experian Business report for the flags a lender sees, and shows where and when to open the next one, so every company ages into its own funding.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
   ['<div class="fhx-sec" data-tag="4 · What You Get',
    `<div class="fhx-sec" data-tag="NEW · For people who already have good credit">
 <section class="sect">
@@ -290,7 +290,7 @@ const FIXES = [
         <div class="srow"><span class="n"></span><div><div class="t">${G("Your personal data")}</div><div class="d">${G("A second name or address on any bureau can flag your file. Even on a clean file, your letters cut it down to one name and one address.")}</div></div></div>
         <div class="srow"><span class="n"></span><div><div class="t">${G("Your business")}</div><div class="d">${G("How long it has been open changes how much you can get. The state it's in opens its own local banks, on top of the ones in your home state. Every business you add is counted, and each aged one adds to your total.")}</div></div></div>
         <div class="srow"><span class="n"></span><div><div class="t">${G("Your business credit")}</div><div class="d">${G("We pull your business's Experian Business report and check it for every flag a lender looks at: its credit scores, blemishes, card balances that run too high, and flags on its industry code (NAICS) and business name. You get the exact fixes, so a lender sees a credible business and you get the most funding your file supports.")}</div></div></div>
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Unlimited funding over time")}</div><div class="d">${G("Structure your companies right and every aged one can get funded in its own name. You can run five to ten of them. It takes time, and each one needs revenue, but you can keep getting funded for as long as you keep building.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Unlimited funding over time")}</div><div class="d">${G("Structure your companies right and every aged one can get funded in its own name. You can run five to ten of them. It takes time, and each one needs revenue, but you can keep getting funded for as long as you keep building. Your Business Duplication Map lays out which company comes next, where to open it, and when.")}</div></div></div>
       </div>
     </section>
 </div>
@@ -307,14 +307,25 @@ const FIXES = [
      service, so they stay off this page. */
   ["<footer>", (() => {
     const items = [
-      "Tri-bureau soft pull", "Soft inquiry · no score impact", "Experian Business flags checked", "Five documents built from your file",
+      "Tri-bureau soft pull", "Soft inquiry · no score impact", "Experian Business flags checked", "Six documents built from your file",
       "In your portal in about 10 seconds", "Name, address and inquiry letters included",
-      "Lenders matched to your state", "Every aged company counted", "7-day refund", "We never sell your data",
+      "Lenders matched to your state", "Business Duplication Map", "7-day refund", "We never sell your data",
     ];
     const set = `<div class="marq-set">${items.map((s) => `<span>${s}</span><i></i>`).join("")}</div>`;
     return `<div class="fhx-sec" data-tag="NEW · Scrolling bar, same as /watch, with roadmap copy">` +
       `<div class="marq" aria-hidden="true"><div class="marq-track" style="animation-duration:48s">${set}${set}</div></div></div>\n  <footer>`;
   })()],
+  /* Document #6, the Business Duplication Map (Chris, 2026-09-29: "add it to
+     the funnel"). NOT BUILT YET. The row says only what Chris approved:
+     each company's Experian Business check and fixes, what each can get now
+     and when it passes 12 and 24 months (business-funding.mjs age steps),
+     where and when to open the next company. No sample page exists, so the
+     cover is not clickable and says so. */
+  [/(\n\s*<\/div>\n\s*<!-- SLOT-SNEAK-PEEKS)/,
+   `\n        <div class="srow"><span class="n">06</span><div class="txt"><div class="t">${G("Business Duplication Map")}</div><div class="d">${G("How you keep getting funded. Every company you own gets its Experian Business check and the exact fixes, and you see what each one can get now and when it passes 12 and 24 months. Then where to open your next company, and when, so you can go from one company to five or ten.")}</div></div><div class="thumb" aria-hidden="true"><div class="cover"><div class="cv-wm">fundhub.</div><div class="cv-kick">underwrite iq / client deliverable</div><div class="cv-doc">business duplication map</div><div class="cv-title">${G("Business Duplication Map")}</div><div class="cv-foot"><span>Alex Rivera</span><span>Sep 2026</span></div><div class="wm">SAMPLE SOON</div></div></div></div>$1`],
+  ["<li><b>Bank &amp; Lender Match List</b>, the banks most likely to approve you where you live, and the order to apply</li>",
+   `<li><b>Bank &amp; Lender Match List</b>, the banks most likely to approve you where you live, and the order to apply</li>\n          <li>${G("<b>Business Duplication Map</b>, how you go from one company to five or ten, each one funded")}</li>`],
+  ["Funding Snapshot moved to first;", "Funding Snapshot moved to first; NEW #6 Business Duplication Map;"],
   // Approvals carousel
   ["real credit card and line of credit approvals.</p>", `real credit card and line of credit approvals ${G("from Fundhub clients")}.</p>`],
   // What happens after you buy
@@ -323,7 +334,7 @@ const FIXES = [
      ["01", "Your Info", "First name, last name, email, phone."],
      ["02", "Pay $297 by Card", "One payment, no contract."],
      ["03", "Soft Pull", "We pull your credit with a soft inquiry, so your score doesn't move."],
-     ["04", "Your Five Documents", "About ten seconds later they're in your portal. How much you qualify for now, how much once your file is optimized, and every step between. You work it at your own pace."],
+     ["04", "Your Six Documents", "About ten seconds later they're in your portal. How much you qualify for now, how much once your file is optimized, and every step between. You work it at your own pace."],
    ].map(([n, t, d]) => `<div class="srow"><span class="n">${n}</span><div><div class="t">${G(t)}</div><div class="d">${G(d)}</div></div></div>`).join("\n        ")],
   // Who it's for
   [/<div class="prose" style="margin-top:10px">\s*<p>Every day you wait[^<]*<\/p>\s*<\/div>/, ""],
@@ -341,7 +352,7 @@ const FIXES = [
   // Checkout
   ["How Much Is Your File Worth? Find Out in Ten Seconds.", G("Get Your Funding Roadmap · $297")],
   ["where your score sits today and where it can sit once your file is cleaned up</li>", `${G("what's hurting your file, item by item, on all three bureaus")}</li>`],
-  [/(<li><b>Bank &amp; Lender Match List<\/b>[^<]*<\/li>\s*<\/ul>)/,
+  [/(<\/ul>)(?=\s*<div class="tot">)/,
    `$1\n        <p class="fhx-sumnote">${G("Your first business is included. Each extra business is $$15, added at the soft-pull step.")}</p>`],
 ];
 
