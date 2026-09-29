@@ -211,6 +211,10 @@ If the answer needs a fact you can look up, look it up and put it in the same an
 
 Video ad drop-off uses Meta's own definitions. Most plays never reach 25% → fix the opening first. Dying ads buzz Chris on the ad-video notify path. Same law: `.cursor/rules/ad-watch-curve.mdc` and `.claude/rules/ad-watch-curve.md`. Book: `docs/ads/watch-curve.md`.
 
+### Page edits — marked draft first (owner-set 2026-09-29)
+
+When Chris asks to change a page, he sees a marked draft before anything goes live: red boxes on bad lines with a fix under each, then the fixes in green on the same shared link, pushed live only when he says, with every mark stripped. Same law: `.cursor/rules/page-edits-marked-draft.mdc` and `.claude/rules/page-edits-marked-draft.md`.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
