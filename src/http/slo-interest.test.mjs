@@ -94,17 +94,78 @@ test("GET writes nothing", async () => {
   assert.equal(res.headers["access-control-allow-origin"], "https://apply.fundhub.ai");
 });
 
+test("a contact without a phone is saved but does not start the follow-up", async () => {
+  const cap = capture();
+  const out = await recordInterest({
+    kind: "contact",
+    email: "early@gmail.com",
+    first_name: "Early"
+  }, { emit: cap.emit, userAgent: "Mozilla/5.0", now: new Date("2026-09-27T18:00:00Z") });
+  assert.equal(out.ok, true);
+  assert.equal(cap.events[0].payload.phone, null);
+  assert.equal(cap.events[0].opts.skipInngest, true,
+    "no phone yet — do not start the 15-minute text job");
+});
+
+test("a later phone on the same email upgrades the row and starts follow-up", async () => {
+  const row = {
+    id: "evt-contact-1",
+    payload: {
+      actor: "person",
+      actor_reason: "browser",
+      email: "later@gmail.com",
+      name: "Later Buyer",
+      phone: null
+    }
+  };
+  const updates = [];
+  const fanouts = [];
+  const db = {
+    async query(sql, params) {
+      if (/SELECT id, payload FROM events/.test(sql)) return { rows: [row] };
+      if (/UPDATE events SET payload/.test(sql)) {
+        updates.push(params[0]);
+        row.payload = params[0];
+        return { rows: [{ id: row.id }] };
+      }
+      throw new Error(`unexpected sql: ${sql}`);
+    }
+  };
+  const out = await recordInterest({
+    kind: "contact",
+    email: "later@gmail.com",
+    first_name: "Later",
+    last_name: "Buyer",
+    phone: "4155550199"
+  }, {
+    db,
+    orgId: "org-contact",
+    userAgent: "Mozilla/5.0",
+    now: new Date("2026-09-27T18:00:00Z"),
+    emit: async () => ({ id: null, deduped: true }),
+    fanout: async (job) => { fanouts.push(job); }
+  });
+  assert.equal(out.ok, true);
+  assert.equal(out.saved, true);
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].phone, "+14155550199");
+  assert.equal(fanouts.length, 1);
+  assert.equal(fanouts[0].name, "slo.contact_started");
+  assert.equal(fanouts[0].payload.phone, "+14155550199");
+});
+
 test("POST from the sales page saves the contact", async () => {
   const cap = capture();
   const res = fakeRes();
   await handler({
     method: "POST",
     headers: { origin: "https://apply.fundhub.ai", "user-agent": "Mozilla/5.0" },
-    body: { kind: "contact", email: "buyer@gmail.com", first_name: "Bo" }
+    body: { kind: "contact", email: "buyer@gmail.com", first_name: "Bo", phone: "4155550100" }
   }, res, { emit: cap.emit, now: new Date("2026-09-27T18:00:00Z") });
   assert.equal(res.statusCode, 200);
   assert.equal(res.body.actor, "person");
   assert.equal(cap.events[0].name, "slo.contact_started");
+  assert.equal(cap.events[0].opts.skipInngest, false);
 });
 
 test("engage stores seconds and whether the form was reached", async () => {

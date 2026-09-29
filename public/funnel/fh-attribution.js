@@ -131,20 +131,30 @@
       }).catch(function () {});
     } catch (e3) {}
   }
+  function phone10(v) {
+    var d = String(v || "").replace(/\D/g, "");
+    if (d.length === 11 && d.charAt(0) === "1") d = d.slice(1);
+    return d.length === 10 ? d : "";
+  }
   function sendContact(beacon) {
     var form = step1();
     if (!form) return;
     var email = field(form, "email").toLowerCase();
     if (!emailOk(email)) return;
+    // Wait for a real phone. Posting on email alone used to lock the day with
+    // no phone, so the unpaid follow-up text never had a number to send to.
+    var phone = field(form, "phone");
+    if (!phone10(phone)) return;
     var sent = "";
-    try { sent = sessionStorage.getItem("fh_contact_email") || ""; } catch (e) {}
+    // New key so an old email-only lock in this tab does not block the phone post.
+    try { sent = sessionStorage.getItem("fh_contact_with_phone") || ""; } catch (e) {}
     if (sent === email) return;
-    try { sessionStorage.setItem("fh_contact_email", email); } catch (e2) {}
+    try { sessionStorage.setItem("fh_contact_with_phone", email); } catch (e2) {}
     postInterest("contact", {
       email: email,
       first_name: field(form, "c_first"),
       last_name: field(form, "c_last"),
-      phone: field(form, "phone")
+      phone: phone
     }, beacon);
   }
   function postRaw(body, beacon) {

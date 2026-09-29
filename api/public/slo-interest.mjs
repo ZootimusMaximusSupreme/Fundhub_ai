@@ -20,6 +20,7 @@ import { pickAttribution } from "../../src/ads/attribution-keys.mjs";
 import { parseSloPhone } from "./slo-checkout.mjs";
 import { classifyVisitor, phoenixDay } from "../../src/slo/visitor.mjs";
 import { answerPreflight, applySloCors } from "../../src/slo/cors.mjs";
+import { inngest } from "../../src/workflows/client.mjs";
 
 const METHODS = "GET, POST, OPTIONS";
 const SESSION = /^[A-Za-z0-9_-]{8,80}$/;
@@ -138,24 +139,74 @@ export async function recordInterest(body, deps = {}) {
     idempotencyKey = `slo-contact:${email}:${phoenixDay(deps.now)}`;
     payload.email = email;
     payload.name = [first, last].filter(Boolean).join(" ").trim() || null;
+    // Empty or invalid phone stays null. The genuine follow-up needs a phone;
+    // we still save the email, but we do not start that job until a phone lands.
     payload.phone = phone.error ? null : phone.value;
   }
 
-  // Visits stay local-only. A real step-1 contact fans out to Inngest so the
+  const db = deps.db || defaultDb;
+
+  // Visits stay local-only. A contact with a phone fans out to Inngest so the
   // genuine unpaid follow-up can wait 15 minutes and text/email if they bounce
-  // (src/workflows/slo-genuine-followup.mjs). Agent / test actors still emit;
-  // that workflow skips them.
+  // (src/workflows/slo-genuine-followup.mjs). Contact without a phone is saved
+  // for the day but skips Inngest — the page often posts email before phone.
+  // Agent / test actors still emit; that workflow skips them.
+  const skipInngest = kind !== "contact" || !payload.phone;
   const sent = await (deps.emit || emit)(
-    deps.db || defaultDb,
+    db,
     name,
     payload,
     {
       orgId: deps.orgId,
       allowNonCanonical: true,
-      skipInngest: kind !== "contact",
+      skipInngest,
       idempotencyKey
     }
   );
+
+  // Same email already saved today without a phone (typed email first). Phone
+  // just arrived — patch the row and start the follow-up now.
+  if (
+    kind === "contact" &&
+    payload.phone &&
+    sent?.deduped === true
+  ) {
+    const orgId = deps.orgId || (await (deps.defaultOrgId || defaultOrgId)(db));
+    const existing = await db.query(
+      `SELECT id, payload FROM events
+       WHERE org_id = $1 AND idempotency_key = $2
+       LIMIT 1`,
+      [orgId, idempotencyKey]
+    );
+    const row = existing.rows[0];
+    const prev = row?.payload && typeof row.payload === "object" ? row.payload : null;
+    if (row && prev && !prev.phone) {
+      const merged = {
+        ...prev,
+        ...payload,
+        phone: payload.phone,
+        name: payload.name || prev.name || null
+      };
+      await db.query(`UPDATE events SET payload = $1 WHERE id = $2`, [merged, row.id]);
+      if (typeof deps.fanout === "function") {
+        await deps.fanout({
+          name: "slo.contact_started",
+          id: row.id,
+          payload: merged,
+          orgId
+        });
+      } else if (process.env.INNGEST_EVENT_KEY) {
+        void inngest
+          .send({
+            name: "slo.contact_started",
+            data: { id: row.id, payload: merged, orgId, clientId: null }
+          })
+          .catch(() => {});
+      }
+      return { ok: true, actor: who.actor, saved: true };
+    }
+  }
+
   return { ok: true, actor: who.actor, saved: sent?.deduped !== true };
 }
 
