@@ -93,6 +93,7 @@ import { pickAttribution } from "../../src/ads/attribution-keys.mjs";
 import { upsertClientAdAttribution } from "../../src/ads/store.mjs";
 import { mergeCustomFields } from "../../src/workflows/custom-fields.mjs";
 import { classifyVisitor } from "../../src/slo/visitor.mjs";
+import { attributeWithUpline } from "../../src/affiliates/economics.mjs";
 
 const METHODS = "GET, POST, OPTIONS";
 
@@ -105,6 +106,44 @@ function readBody(req) {
 
 const cleanStr = (v, max = 200) => (v == null ? "" : String(v).trim().slice(0, max));
 const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
+/** Affiliate share codes look like AFF-000121. A checkout ref is slo_<hex>. */
+export function parseAffiliateTrackingId(body) {
+  if (!body || typeof body !== "object") return null;
+  const a1 = cleanStr(body.a1, 64);
+  const aliased = cleanStr(body.ref || body.code, 64);
+  const cand = a1 || (/^AFF-\d+$/i.test(aliased) ? aliased : "");
+  return /^AFF-\d+$/i.test(cand) ? cand.toUpperCase() : null;
+}
+
+export async function attributeSloAffiliate(db, { orgId, clientId, trackingId } = {}) {
+  if (!db || !orgId || !clientId || !trackingId) {
+    return { attributed: false, reason: "missing_args" };
+  }
+  const aff = (await db.query(
+    `SELECT id FROM affiliates
+      WHERE org_id = $1 AND upper(tracking_id) = upper($2)
+      LIMIT 1`,
+    [orgId, trackingId]
+  )).rows[0];
+  if (!aff) return { attributed: false, reason: "unknown_tracking_id" };
+
+  await db.query(
+    `UPDATE clients
+        SET custom_fields = COALESCE(custom_fields, '{}'::jsonb) || $2::jsonb
+      WHERE id = $1
+        AND COALESCE(custom_fields->>'affiliate_tier1_owner', '') = ''`,
+    [clientId, JSON.stringify({ affiliate_tier1_owner: trackingId })]
+  );
+
+  return attributeWithUpline(db, {
+    orgId,
+    affiliateId: aff.id,
+    clientId,
+    trackingIdUsed: trackingId,
+    source: "slo-checkout"
+  });
+}
 
 /** A US phone as +1XXXXXXXXXX. Blank → { value: null }. Not 10 digits (or 11
  *  starting with 1) → { error }. Formatting characters are ignored. */
@@ -224,7 +263,8 @@ export function parseSloCheckoutBody(body, { now = new Date() } = {}) {
     businessRows,
     // null unless https on an allow-listed origin; see src/slo/cors.mjs.
     returnUrl: sloReturnUrl(body.return_url ?? body.returnUrl),
-    attribution: pickAttribution(body)
+    attribution: pickAttribution(body),
+    affiliateTrackingId: parseAffiliateTrackingId(body)
   };
 }
 
@@ -252,12 +292,29 @@ export async function runSloCheckout(parsed, deps = {}) {
   if (!clientId) return { ok: false, error: "buyer_missing" };
   const newClient = buyer.created === true;
 
+  /* Blank phone only — never overwrite a number already on the file. An
+     email-only opt-in may have created the client; checkout is where the
+     phone often lands, and the unpaid M1 SMS catch-up needs it on the row. */
+  if (parsed.phone) {
+    await dbh.query(
+      `UPDATE clients
+          SET phone = COALESCE(NULLIF(BTRIM(phone), ''), $1)
+        WHERE id = $2::uuid AND org_id = $3::uuid`,
+      [parsed.phone, clientId, orgId]
+    );
+  }
+
   /* Ad tags: whenever the page sent them. First touch wins in the typed row.
      Identity / account / businesses: only for a client this checkout created.
      See AN EMAIL IS NOT A LOGIN in the header. */
   if (parsed.attribution) {
     await (deps.upsertAttribution || upsertClientAdAttribution)(dbh, {
       orgId, clientId, attribution: parsed.attribution
+    });
+  }
+  if (parsed.affiliateTrackingId) {
+    await (deps.attributeAffiliate || attributeSloAffiliate)(dbh, {
+      orgId, clientId, trackingId: parsed.affiliateTrackingId
     });
   }
   if (newClient) {

@@ -442,6 +442,14 @@ export async function runSloPull(parsed, deps = {}) {
     return { ok: true, demo: true, deferred: false, pull_requested: started, attempt, next: "building", ...summary };
   }
 
+  let a1 = null;
+  const owner = await dbh.query(
+    `SELECT custom_fields->>'affiliate_tier1_owner' AS a1
+       FROM clients WHERE id = $1::uuid LIMIT 1`,
+    [clientId]
+  );
+  a1 = String(owner.rows[0]?.a1 || "").trim() || null;
+
   await (deps.emit || emit)(
     dbh,
     "diagnostic.paid",
@@ -449,7 +457,8 @@ export async function runSloPull(parsed, deps = {}) {
       source: SLO_SOURCE,
       ref: parsed.ref,
       attempt,
-      occurredAt: new Date().toISOString()
+      occurredAt: new Date().toISOString(),
+      ...(a1 ? { a1 } : {})
     },
     { orgId, clientId, idempotencyKey: `slo-pull:${parsed.ref}:${attempt}` }
   );

@@ -18,7 +18,9 @@
 //    signup — on an outcome that actually completed:
 //      a funded engagement          (funding_rounds.funded_amount > 0)
 //      a completed repair enrolment (a paid repair product on the sale)
-//    A deposit is not an outcome. Idempotent per source event.
+//      a paid $297 roadmap order    (diagnostic + paid slo_* payment_links row)
+//      a Capital Blueprint sale     (consulting-package)
+//    A $32 soft-pull diagnostic is not a roadmap sale. Idempotent per source event.
 //
 // 3. TIER 2 UNLOCKS on the FIRST funded referral OR the FIRST recruited
 //    affiliate, whichever happens first, and unlocking is one-way. Once unlocked,
@@ -50,6 +52,8 @@ import { toCents, fromCents, percentOf, applySplit } from "../commissions/money.
 
 export const FUNDING_PRODUCT_CODES = ["card-stacking-dfy"];
 export const REPAIR_PRODUCT_CODES = ["repair-bundle"];
+/* Capital Blueprint ($5,000). Code only — never the dollar amount. */
+export const BLUEPRINT_PRODUCT_CODES = ["consulting-package"];
 
 export const TIER = { ONE: "tier1", TWO: "tier2" };
 
@@ -193,6 +197,30 @@ export async function qualifyingOutcome(db, { orgId, clientId, saleId } = {}) {
   if (REPAIR_PRODUCT_CODES.includes(code)) {
     return { qualifies: true, kind: "repair_enrolment", productCode: code,
              clientId: sale.client_id };
+  }
+
+  if (BLUEPRINT_PRODUCT_CODES.includes(code)) {
+    return { qualifies: true, kind: "blueprint_sale", productCode: code,
+             clientId: sale.client_id };
+  }
+
+  /* The $297 roadmap uses the same `diagnostic` product code as the $32
+     soft-pull. A paid `slo_*` payment_links row is the order, not the amount. */
+  if (code === "diagnostic") {
+    const slo = await db.query(
+      `SELECT 1 FROM payment_links
+        WHERE org_id = $1
+          AND client_id = $2
+          AND link_ref LIKE 'slo_%'
+          AND status = 'paid'
+          AND COALESCE(is_demo, false) = false
+        LIMIT 1`,
+      [orgId, sale.client_id]
+    );
+    if (slo.rows[0]) {
+      return { qualifies: true, kind: "slo_roadmap", productCode: code,
+               clientId: sale.client_id };
+    }
   }
 
   return { qualifies: false, reason: code ? `not_qualifying:${code}` : "no_product" };

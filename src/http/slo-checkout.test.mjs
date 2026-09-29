@@ -5,6 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import handler, {
   parseSloCheckoutBody,
+  parseAffiliateTrackingId,
   parseSloPhone,
   runSloCheckout,
   sloPageConfig
@@ -53,6 +54,41 @@ test("parseSloCheckoutBody needs a real email", () => {
   assert.equal(ok.attribution, null);
 });
 
+test("parseAffiliateTrackingId keeps AFF codes and drops checkout refs", () => {
+  assert.equal(parseAffiliateTrackingId({ a1: "aff-000121" }), "AFF-000121");
+  assert.equal(parseAffiliateTrackingId({ ref: "AFF-000121" }), "AFF-000121");
+  assert.equal(parseAffiliateTrackingId({ ref: "slo_abc123" }), null);
+  assert.equal(parseAffiliateTrackingId({ email: "a@b.co" }), null);
+});
+
+test("parseSloCheckoutBody keeps an affiliate code off the UTMs", () => {
+  const ok = parseSloCheckoutBody({
+    email: "buyer@example.com",
+    a1: "AFF-000121",
+    utm_source: "fb"
+  });
+  assert.equal(ok.ok, true);
+  assert.equal(ok.affiliateTrackingId, "AFF-000121");
+  assert.equal(ok.attribution.utm_source, "fb");
+});
+
+test("runSloCheckout attributes a buyer when a1 is a live affiliate code", async () => {
+  const seen = [];
+  const parsed = parseSloCheckoutBody({
+    email: "buyer@example.com",
+    name: "Pat Lee",
+    a1: "AFF-000121"
+  });
+  const out = await runSloCheckout(parsed, sloDeps({
+    attributeAffiliate: async (_db, args) => { seen.push(args); return { attributed: true }; },
+    createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo", productId: "cs_slo_1" })
+  }));
+  assert.equal(out.ok, true);
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].trackingId, "AFF-000121");
+  assert.equal(seen[0].clientId, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa");
+});
+
 test("parseSloCheckoutBody keeps Creative Factory UTMs and drops junk", () => {
   const ok = parseSloCheckoutBody({
     email: "buyer@example.com",
@@ -82,7 +118,12 @@ function sloDeps(over = {}) {
   return {
     env: LIVE_ENV,
     orgId: "org-1",
-    db: { query() { throw new Error("slo checkout must not query through the runner"); } },
+    db: {
+      async query(sql) {
+        if (/UPDATE clients\s+SET phone = COALESCE/.test(sql)) return { rows: [] };
+        throw new Error("slo checkout must not query through the runner");
+      }
+    },
     resolveBuyer: async () => ({ clientId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", created: true }),
     ensureAccount: async () => "acct-1",
     resolveProduct: async () => "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",

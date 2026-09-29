@@ -10,14 +10,14 @@ import { db, close } from "../db.mjs";
 import {
   attribute, qualifyingOutcome, findRule, commissionFor, basisFor,
   convert, maybeUnlockTier2, voidReferral, unratedConversions,
-  FUNDING_PRODUCT_CODES, REPAIR_PRODUCT_CODES, TIER
+  FUNDING_PRODUCT_CODES, REPAIR_PRODUCT_CODES, BLUEPRINT_PRODUCT_CODES, TIER
 } from "./economics.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const TAG = "econ-test";
 
 describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
-  let org, affA, affB, recruiter, client1, client2, fundingProduct, repairProduct, diagProduct;
+  let org, affA, affB, recruiter, client1, client2, fundingProduct, repairProduct, diagProduct, blueprintProduct;
 
   const mkClient = async (name) => (await db.query(
     `INSERT INTO clients (org_id, first_name, last_name) VALUES ($1,$2,$3) RETURNING id`,
@@ -40,6 +40,7 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     fundingProduct = await productId(FUNDING_PRODUCT_CODES[0]);
     repairProduct = await productId(REPAIR_PRODUCT_CODES[0]);
     diagProduct = await productId("diagnostic");
+    blueprintProduct = await productId(BLUEPRINT_PRODUCT_CODES[0]);
     await wipe();
   });
 
@@ -74,6 +75,8 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
         WHERE org_id = $1 AND notes LIKE 'Owner-set %'`,
       [org]
     );
+    await db.query(`DELETE FROM payment_links WHERE client_id IN
+                     (SELECT id FROM clients WHERE first_name = $1)`, [TAG]);
     await db.query(`DELETE FROM sale_payments WHERE sale_id IN
                      (SELECT id FROM sales WHERE client_id IN
                         (SELECT id FROM clients WHERE first_name = $1))`, [TAG]);
@@ -171,6 +174,31 @@ describe("affiliate economics", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     const q = await qualifyingOutcome(db, { orgId: org, clientId: client2, saleId: diag });
     assert.equal(q.qualifies, false);
     assert.match(q.reason, /not_qualifying:diagnostic/);
+  });
+
+  test("a paid roadmap order qualifies; a $32 diagnostic still does not", async () => {
+    const sale = await mkSale(client1, diagProduct, 297);
+    await db.query(
+      `INSERT INTO payment_links
+         (org_id, client_id, purpose, amount_cents, link_ref, checkout_url, status, is_demo)
+       VALUES ($1,$2,'diagnostic',29700,$3,'https://pay.example.test/slo','paid', false)`,
+      [org, client1, `slo_${client1.replace(/-/g, "").slice(0, 24)}`]
+    );
+    const q = await qualifyingOutcome(db, { orgId: org, clientId: client1, saleId: sale });
+    assert.equal(q.qualifies, true);
+    assert.equal(q.kind, "slo_roadmap");
+
+    const bare = await mkSale(client2, diagProduct, 32);
+    const no = await qualifyingOutcome(db, { orgId: org, clientId: client2, saleId: bare });
+    assert.equal(no.qualifies, false);
+    assert.match(no.reason, /not_qualifying:diagnostic/);
+  });
+
+  test("a Capital Blueprint sale qualifies", async () => {
+    const sale = await mkSale(client1, blueprintProduct, 5000);
+    const q = await qualifyingOutcome(db, { orgId: org, clientId: client1, saleId: sale });
+    assert.equal(q.qualifies, true);
+    assert.equal(q.kind, "blueprint_sale");
   });
 
   test("routing is by product code, never by amount", async () => {

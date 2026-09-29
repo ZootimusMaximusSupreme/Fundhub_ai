@@ -70,6 +70,9 @@
           var parsed = JSON.parse(next.body);
           if (parsed && typeof parsed === "object") {
             parsed.webdriver = navigator.webdriver === true;
+            var stored = read();
+            if (stored.a1 && !parsed.a1) parsed.a1 = stored.a1;
+            if (stored.a2 && !parsed.a2) parsed.a2 = stored.a2;
             next = {};
             for (var k in opt) next[k] = opt[k];
             next.body = JSON.stringify(parsed);
@@ -143,8 +146,8 @@
     if (!emailOk(email)) return;
     // Wait for a real phone. Posting on email alone used to lock the day with
     // no phone, so the unpaid follow-up text never had a number to send to.
-    var phone = field(form, "phone");
-    if (!phone10(phone)) return;
+    var phone = phone10(field(form, "phone"));
+    if (!phone) return;
     var sent = "";
     // New key so an old email-only lock in this tab does not block the phone post.
     try { sent = sessionStorage.getItem("fh_contact_with_phone") || ""; } catch (e) {}
@@ -154,6 +157,8 @@
       email: email,
       first_name: field(form, "c_first"),
       last_name: field(form, "c_last"),
+      // Digits only — server turns this into +1XXXXXXXXXX. Raw formatting used
+      // to survive the post and then get nulled if parse failed mid-type.
       phone: phone
     }, beacon);
   }
