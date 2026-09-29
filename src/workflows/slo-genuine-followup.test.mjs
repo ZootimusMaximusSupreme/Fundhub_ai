@@ -5,6 +5,8 @@ import {
   handleM1,
   handleReply,
   handleCheckoutM1Sms,
+  SMS_M1_KEY,
+  EMAIL_M1_KEY,
   SMS_FIRST5_KEY,
   EMAIL_FIRST5_KEY,
   SMS_GIFT_KEY,
@@ -20,6 +22,8 @@ import { pgFake, fakeStep, ev } from "./test-support.mjs";
 
 function templates() {
   return [
+    { org_id: "org-1", template_key: SMS_M1_KEY, channel: "sms", body: "genuine sms", compliance_passed: true },
+    { org_id: "org-1", template_key: EMAIL_M1_KEY, channel: "email", subject: "Concerns?", body: "genuine email", compliance_passed: true },
     { org_id: "org-1", template_key: SMS_FIRST5_KEY, channel: "sms", body: "first5 sms", compliance_passed: true },
     { org_id: "org-1", template_key: EMAIL_FIRST5_KEY, channel: "email", subject: "Free", body: "first5 email", compliance_passed: true },
     { org_id: "org-1", template_key: SMS_GIFT_KEY, channel: "sms", body: "gift sms", compliance_passed: true },
@@ -63,6 +67,12 @@ function genuineDb(seed = {}) {
         if (!c) return { rows: [] };
         const cf = c.custom_fields || {};
         return { rows: [{ m1: cf[params[1]] || null, m2: cf[params[2]] || null }] };
+      }
+      if (/SELECT id FROM clients WHERE org_id=\$1 AND phone=\$2/.test(sql)) {
+        const c = base.clients.find(
+          (row) => row.org_id === params[0] && row.phone === params[1]
+        );
+        return { rows: c ? [{ id: c.id }] : [] };
       }
       if (/SELECT id, ghl_contact_id FROM clients WHERE org_id/.test(sql)) {
         const c = base.clients.find(
@@ -136,7 +146,7 @@ test("eligibleForGenuineM1: no phone still passes (email goes; SMS waits)", () =
   assert.equal(gate.email, "pat@gmail.com");
 });
 
-test("handleM1: after the wait, queues coupon SMS and email for an unpaid person", async () => {
+test("handleM1: after the wait, queues dig SMS and email for an unpaid person", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
@@ -161,13 +171,13 @@ test("handleM1: after the wait, queues coupon SMS and email for an unpaid person
   assert.deepEqual(sleeps, ["wait-15-min"]);
   assert.deepEqual(
     db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_COUPON_KEY, SMS_COUPON_KEY].sort()
+    [EMAIL_M1_KEY, SMS_M1_KEY].sort()
   );
   assert.ok(db.clients[0].custom_fields[LOCK_M1]);
-  assert.ok(db.clients[0].custom_fields[LOCK_M2]);
-  assert.ok(res.payUrl);
+  assert.equal(db.clients[0].custom_fields[LOCK_M2], undefined);
   assert.ok(!db.messages.some((m) =>
-    m.template_key === SMS_FIRST5_KEY || m.template_key === EMAIL_FIRST5_KEY
+    m.template_key === SMS_COUPON_KEY || m.template_key === EMAIL_COUPON_KEY
+    || m.template_key === SMS_FIRST5_KEY || m.template_key === EMAIL_FIRST5_KEY
     || m.template_key === SMS_GIFT_KEY || m.template_key === EMAIL_GIFT_KEY));
 });
 
@@ -205,7 +215,7 @@ test("handleM1: paid diagnostic skips the send", async () => {
   assert.equal(db.messages.length, 0);
 });
 
-test("handleM1: email-only opt-in still queues the coupon email", async () => {
+test("handleM1: email-only opt-in still queues the dig email", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
@@ -223,7 +233,7 @@ test("handleM1: email-only opt-in still queues the coupon email", async () => {
   });
   assert.equal(res.sent, true);
   assert.equal(res.sms, null);
-  assert.deepEqual(db.messages.map((m) => m.template_key), [EMAIL_COUPON_KEY]);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [EMAIL_M1_KEY]);
 });
 
 test("handleCheckoutM1Sms: full M1 when phone lands at checkout and nothing was sent", async () => {
@@ -249,12 +259,12 @@ test("handleCheckoutM1Sms: full M1 when phone lands at checkout and nothing was 
   assert.equal(res.lane, "full_m1");
   assert.deepEqual(
     db.messages.map((m) => m.template_key).sort(),
-    [EMAIL_COUPON_KEY, SMS_COUPON_KEY].sort()
+    [EMAIL_M1_KEY, SMS_M1_KEY].sort()
   );
   assert.ok(db.clients[0].custom_fields[LOCK_M1]);
 });
 
-test("handleCheckoutM1Sms: sends unpaid coupon SMS once phone lands after M1 email", async () => {
+test("handleCheckoutM1Sms: sends unpaid dig SMS once phone lands after M1 email", async () => {
   const db = genuineDb({
     clients: [{
       id: "cl-1",
@@ -276,7 +286,7 @@ test("handleCheckoutM1Sms: sends unpaid coupon SMS once phone lands after M1 ema
   });
   assert.equal(res.sent, true);
   assert.equal(res.lane, "sms_only");
-  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_COUPON_KEY]);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_M1_KEY]);
 });
 
 test("handleReply: does not send message 2 until message 1 was sent", async () => {
@@ -319,6 +329,61 @@ test("handleReply: after a real answer, the gift becomes the 33% coupon", async 
     db.messages.map((m) => m.template_key).sort(),
     [EMAIL_COUPON_KEY, SMS_COUPON_KEY].sort()
   );
+});
+
+test("handleReply: fuck off does not send the coupon", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: { [LOCK_M1]: "2026-09-27T18:20:00.000Z" }
+    }],
+    templates: templates()
+  });
+  const res = await handleReply({
+    event: ev("message.inbound", {
+      from: "+14155550134",
+      body: "fuck off",
+      channel: "sms"
+    }, { id: "evt-hostile", clientId: "cl-1" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, false);
+  assert.equal(res.reason, "brush_off");
+  assert.equal(db.messages.length, 0);
+  assert.ok(db.clients[0].custom_fields[LOCK_M2]);
+});
+
+test("handleReply: nah go fuck yourself resolves by phone and does not send the coupon", async () => {
+  const db = genuineDb({
+    clients: [{
+      id: "cl-1",
+      org_id: "org-1",
+      email: "pat@gmail.com",
+      phone: "+14155550134",
+      custom_fields: { [LOCK_M1]: "2026-09-27T18:20:00.000Z" }
+    }],
+    templates: templates()
+  });
+  // No clientId on the event — SMS-only inbound, the gap that used to stop at no_client.
+  const res = await handleReply({
+    event: ev("message.inbound", {
+      from: "+14155550134",
+      body: "Nah go fuck yourself",
+      channel: "sms"
+    }, { id: "evt-sms-only" }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.clientId, "cl-1");
+  assert.equal(res.sent, false);
+  assert.equal(res.reason, "brush_off");
+  assert.equal(db.messages.length, 0);
+  assert.ok(!db.messages.some((m) =>
+    m.template_key === SMS_COUPON_KEY || m.template_key === EMAIL_COUPON_KEY));
 });
 
 test("handleReply: STOP does not schedule message 2", async () => {

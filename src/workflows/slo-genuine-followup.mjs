@@ -2,10 +2,14 @@
 // does not pay the $297 diagnostic.
 //
 // Message 1 — ~15 minutes after slo.contact_started, if still unpaid.
-// Abandoners get the coupon only (SMS/EMAIL-SLO-COUPON-01). Not the free
-// Meet / "roadmap for free" first-five copy, and not the gift tease.
+// Fixed dig templates (SMS/EMAIL-SLO-GENUINE-01). No model. Not the free
+// Meet / gift tease. Coupon is only after a real reply (message 2).
 // Silence still gets SMS/EMAIL-SLO-197 from slo-no-reply-197.
 // People who already hold slo_text_slot still get the first-five reply path.
+//
+// Message 2 — message.inbound. Resolve SMS by phone. Judge only that first
+// reply (tiny hostile/brush-off gate). Real answer → SMS/EMAIL-SLO-COUPON-01.
+// Hostile / dismissive → no coupon, stop that branch.
 //
 // Copy is Chris's. Outbound goes through sendTemplated → messages queued →
 // src/messaging/providers (Twilio / mail). No second sender.
@@ -23,10 +27,12 @@ import { claimCustomFieldLock, mergeCustomFields } from "./custom-fields.mjs";
 import { classifyVisitor } from "../slo/visitor.mjs";
 import { SLO_PURPOSE, SLO_SOURCE, sloRoadmapBookUrl } from "../slo/offer.mjs";
 import { declinesRoadmap, DISCOUNT_REF_KEY, FIRST_FIVE, FREE_KEY, REPLIED_KEY, SLOT_KEY, discountCheckoutUrl, newDiscountRef } from "../slo/discount-197.mjs";
+import { earnsCoupon, looksHostileOrBrushOff } from "../slo/reply-gate.mjs";
 import { enrollSloDrip } from "../slo/drip-plan.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { formatQuestionList } from "../insights/questions.mjs";
 import { meetBookingUrl } from "../insights/meet.mjs";
+import { normalizePhone } from "../messaging/providers/bland-voice.mjs";
 
 export const SMS_M1_KEY = "SMS-SLO-GENUINE-01";
 export const EMAIL_M1_KEY = "EMAIL-SLO-GENUINE-01";
@@ -44,32 +50,43 @@ export const LOCK_M2 = "slo_genuine_m2_sent_at";
 
 export const WAIT_M1 = "15m";
 
-export const M1_SMS_KEYS = [SMS_COUPON_KEY, SMS_FIRST5_KEY, SMS_GIFT_KEY, SMS_M1_KEY];
+export const M1_SMS_KEYS = [SMS_M1_KEY, SMS_FIRST5_KEY, SMS_GIFT_KEY, SMS_COUPON_KEY];
 
 const CHRIS = { sender_name: "Chris", sender: { name: "Chris" } };
 
-/** Mint the $197 link and queue coupon SMS/email (existing template bodies). */
-async function sendCouponPair({ db, step, orgId, clientId, eventId, phone, smsStep, emailStep }) {
-  const ref = newDiscountRef();
-  const payUrl = discountCheckoutUrl(ref);
-  await step.run("save-coupon-ref", () =>
-    mergeCustomFields(db, clientId, { [DISCOUNT_REF_KEY]: ref }));
-  const context = { ...CHRIS, pay_url: payUrl };
-  const email = await step.run(emailStep, () =>
-    sendTemplated(db, {
-      orgId, clientId, channel: "email", templateKey: EMAIL_COUPON_KEY, eventId, context
-    }));
-  let sms = null;
-  if (phone) {
-    sms = await step.run(smsStep, () =>
-      sendTemplated(db, {
-        orgId, clientId, channel: "sms", templateKey: SMS_COUPON_KEY, eventId, context
-      }));
+/** Non-creating SMS lookup — same rule as dpc-03 / comms inbound. */
+async function findClientByPhone(db, orgId, phone) {
+  const raw = String(phone || "").trim();
+  if (!orgId || !raw) return null;
+  const ph = normalizePhone(raw) || raw;
+  const r = await db.query(
+    `SELECT id FROM clients WHERE org_id=$1 AND phone=$2 LIMIT 1`,
+    [orgId, ph]
+  );
+  if (r.rows[0]) return r.rows[0].id;
+  if (ph !== raw) {
+    const again = await db.query(
+      `SELECT id FROM clients WHERE org_id=$1 AND phone=$2 LIMIT 1`,
+      [orgId, raw]
+    );
+    if (again.rows[0]) return again.rows[0].id;
   }
-  // Coupon already went as M1 — do not send it again on reply.
-  await step.run("claim-m2-after-coupon", () =>
-    claimCustomFieldLock(db, clientId, LOCK_M2));
-  return { sms, email, payUrl };
+  return null;
+}
+
+/** Attach inbound SMS/email to the person. Prefer clientId, then email, then phone. */
+async function resolveReplyClient(db, event) {
+  if (event.clientId) return resolveClient(db, event);
+  const p = event.payload || {};
+  if (String(p.email || "").trim()) return resolveClient(db, event);
+  const channel = p.channel || "sms";
+  if (channel === "email" && p.from) {
+    return resolveClient(db, {
+      ...event,
+      payload: { ...p, email: p.from }
+    });
+  }
+  return findClientByPhone(db, event.orgId, p.from || p.phone);
 }
 
 /* Opt-out only. A real answer like "YES" or "price" must still unlock message 2. */
@@ -168,13 +185,19 @@ export async function handleM1({ event, db, step }) {
   // Phone may land after opt-in (checkout during the wait). Prefer event, else row.
   const phone = gate.phone
     || (await step.run("load-phone", () => loadClientPhone(db, clientId)));
-  const pair = await sendCouponPair({
-    db, step, orgId, clientId, eventId, phone,
-    smsStep: "send-sms-m1",
-    emailStep: "send-email-m1"
-  });
+  const email = await step.run("send-email-m1", () =>
+    sendTemplated(db, {
+      orgId, clientId, channel: "email", templateKey: EMAIL_M1_KEY, eventId, context: CHRIS
+    }));
+  let sms = null;
+  if (phone) {
+    sms = await step.run("send-sms-m1", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "sms", templateKey: SMS_M1_KEY, eventId, context: CHRIS
+      }));
+  }
 
-  return { done: true, sent: true, clientId, sms: pair.sms, email: pair.email, payUrl: pair.payUrl };
+  return { done: true, sent: true, clientId, sms, email };
 }
 
 /**
@@ -206,37 +229,30 @@ export async function handleCheckoutM1Sms({ event, db, step }) {
   const fields = await step.run("read-fields", () => clientFields(db, clientId));
   const eventId = event.id;
 
-  // Full M1 never claimed — send coupon email + SMS (no 15m wait; they already reached checkout).
+  // Full M1 never claimed — send dig email + SMS (no 15m wait; they already reached checkout).
   if (!fields[LOCK_M1]) {
     const claimed = await step.run("claim-m1", () =>
       claimCustomFieldLock(db, clientId, LOCK_M1));
     if (!claimed) return { done: false, reason: "already_sent_m1" };
-    const pair = await sendCouponPair({
-      db, step, orgId, clientId, eventId, phone,
-      smsStep: "send-sms-m1",
-      emailStep: "send-email-m1"
-    });
-    return {
-      done: true, sent: true, clientId,
-      sms: pair.sms, email: pair.email, payUrl: pair.payUrl, lane: "full_m1"
-    };
+    const mail = await step.run("send-email-m1", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "email", templateKey: EMAIL_M1_KEY, eventId, context: CHRIS
+      }));
+    const sms = await step.run("send-sms-m1", () =>
+      sendTemplated(db, {
+        orgId, clientId, channel: "sms", templateKey: SMS_M1_KEY, eventId, context: CHRIS
+      }));
+    return { done: true, sent: true, clientId, sms, email: mail, lane: "full_m1" };
   }
 
   const already = await step.run("already-sms", () => hasGenuineM1Sms(db, clientId));
   if (already) return { done: true, sent: false, reason: "already_sent_sms" };
 
-  const ref = newDiscountRef();
-  const payUrl = discountCheckoutUrl(ref);
-  await step.run("save-coupon-ref-catchup", () =>
-    mergeCustomFields(db, clientId, { [DISCOUNT_REF_KEY]: ref }));
-  const context = { ...CHRIS, pay_url: payUrl };
   const sms = await step.run("send-sms-catchup", () =>
     sendTemplated(db, {
-      orgId, clientId, channel: "sms", templateKey: SMS_COUPON_KEY, eventId, context
+      orgId, clientId, channel: "sms", templateKey: SMS_M1_KEY, eventId, context: CHRIS
     }));
-  await step.run("claim-m2-after-coupon-catchup", () =>
-    claimCustomFieldLock(db, clientId, LOCK_M2));
-  return { done: true, sent: true, clientId, sms, payUrl, lane: "sms_only" };
+  return { done: true, sent: true, clientId, sms, lane: "sms_only" };
 }
 
 /**
@@ -295,7 +311,7 @@ export async function awaitingGenuineM2(db, clientId) {
 export async function handleFirstFiveReply({ event, db, step, clientId, body }) {
   const orgId = event.orgId;
   const eventId = event.id;
-  if (declinesRoadmap(body)) {
+  if (looksHostileOrBrushOff(body) || declinesRoadmap(body)) {
     await step.run("enroll-drip", () => enrollSloDrip(db, clientId));
     return { done: true, sent: false, reason: "first_five_no_agree", clientId };
   }
@@ -345,7 +361,7 @@ export async function handleReply({ event, db, step }) {
   if (!word) return { done: false, reason: "empty_body" };
   if (OPT_OUT_WORDS.has(word)) return { done: false, reason: "opt_out" };
 
-  const clientId = await step.run("resolve-client", () => resolveClient(db, event));
+  const clientId = await step.run("resolve-client", () => resolveReplyClient(db, event));
   if (!clientId) return { done: false, reason: "no_client" };
 
   await step.run("mark-replied", () =>
@@ -358,14 +374,17 @@ export async function handleReply({ event, db, step }) {
     });
   }
 
-  if (declinesRoadmap(payload.body)) {
-    await step.run("enroll-drip-no", () => enrollSloDrip(db, clientId));
-    return { done: true, sent: false, reason: "declined", clientId };
-  }
-
   const waiting = await step.run("check-awaiting-m2", () =>
     awaitingGenuineM2(db, clientId));
   if (!waiting) return { done: false, reason: "not_awaiting_m2" };
+
+  const worthCoupon = await step.run("judge-reply", () => earnsCoupon(payload.body));
+  if (!worthCoupon) {
+    await step.run("claim-m2-brush-off", () =>
+      claimCustomFieldLock(db, clientId, LOCK_M2));
+    await step.run("enroll-drip-brush-off", () => enrollSloDrip(db, clientId));
+    return { done: true, sent: false, reason: "brush_off", clientId };
+  }
 
   const paid = await step.run("check-paid", () =>
     hasPaidDiagnostic(db, {
