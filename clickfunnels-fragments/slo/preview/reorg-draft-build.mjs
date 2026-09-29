@@ -237,7 +237,7 @@ const FIXES = [
   ["<div class=\"cv-title\">Alex's 6-Month Business Readiness Roadmap</div>", `<div class="cv-title">${G("Alex's Credit Optimization Roadmap")}</div>`],
   ['<div class="cv-title">Capital Partner Shortlist</div>', `<div class="cv-title">${G("Bank &amp; Lender Match List")}</div>`],
   ["Your credit pulled from all three bureaus. Where your score sits today and where it can sit once your file is cleaned up. Every card with the exact balance to bring it down to. Every harmful item on there, named.",
-   G("What's hurting your file, item by item, on all three bureaus. Clean file? It shows that too, bureau by bureau.")],
+   G("What's hurting your file, item by item, on all three bureaus, including names and addresses that don't match from one bureau to the next. Clean file? It shows that too.")],
   ["<b>All six rounds</b>, round one dated and ready to mail. Print. Sign. Mail.",
    `<b>All six rounds</b>, round one dated and ready to mail. ${G("Each next round waits 30 days plus mail time.")} Print. Sign. Mail.`],
   ['<div class="tab">08</div>', `<div class="tab">${G("07")}</div>`],
@@ -247,6 +247,37 @@ const FIXES = [
   [" &middot; SSN ending 3391", ""],
   ["Tap any cover for a sample page. Yours prints with your own data.",
    `Tap any cover for a sample page. ${G("All five show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15.")}`],
+  /* Good credit, still short (Chris, 2026-09-29: "what if somebody has an 800
+     credit score"). Every line is a thing the documents or the engine do:
+     · personal data cleanup, mismatched identity data can flag a file
+       (src/deliverables/credit-analysis.mjs section 07)
+     · business age changes the amount: 0.5x / 1x / 2x by age
+       (src/underwrite/business-funding.mjs)
+     · home state AND business state each open local banks (src/lenders/match.mjs)
+     · roadmap business steps: LLC, EIN, DUNS, business checking, net-30
+       vendors that report (src/deliverables/roadmap.mjs)
+     Inquiries are left out on purpose: the documents tell the buyer they have
+     zero impact on funding at Fundhub. "Unlimited funding forever" is left out:
+     nothing in the documents shows it. */
+  ["Some files take six months, some take one, and it tells you which on the first page.",
+   `Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business: LLC, EIN, DUNS number, business checking, and vendor accounts that report.")}`],
+  ["<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>",
+   `<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>\n            <li>${G("Your score is <b>already high</b> and you want the <b>most your file and your business</b> can get")}</li>`],
+  ["<details><summary>Will this hurt my credit score?</summary>",
+   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. A name or address that doesn't match across the three bureaus can flag your file, and the report finds each one. Your business counts too: how old it is changes how much you can get, and the state it's in opens its own local banks. The roadmap lines up both sides in order, personal first, then the business.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
+  ['<div class="fhx-sec" data-tag="4 · What You Get',
+   `<div class="fhx-sec" data-tag="NEW · For people who already have good credit">
+<section class="sect">
+      <span class="kicker">${G("Already have good credit?")}</span>
+      <div class="h2">${G("A High Score Isn't the Same as a File Set Up for Maximum Funding.")}</div>
+      <div class="rows">
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Your personal data")}</div><div class="d">${G("A name or address that doesn't match from one bureau to the next can flag your file. The report finds each one, and your letters clean them up.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business")}</div><div class="d">${G("How long it has been open changes how much you can get. The state it's in opens its own local banks, on top of the ones in your home state. Every business you add is counted.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business credit profile")}</div><div class="d">${G("The roadmap walks you through it step by step: LLC, EIN, DUNS number, business checking, and vendor accounts that report, so your business can get funded in its own name.")}</div></div></div>
+      </div>
+    </section>
+</div>
+<div class="fhx-sec" data-tag="4 · What You Get`],
   // Approvals carousel
   ["real credit card and line of credit approvals.</p>", `real credit card and line of credit approvals ${G("from Fundhub clients")}.</p>`],
   // What happens after you buy
