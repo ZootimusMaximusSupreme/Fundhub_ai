@@ -81,12 +81,7 @@ wygHead = wygHead.replace(/<div class="srow">.*<\/div>\n/g, () => {
   return byPage[ORDER[i]].replace(/<span class="n">\d+<\/span>/, `<span class="n">0${i + 1}</span>`);
 });
 
-/* Approvals deck opens on the biggest wins: reverse the card order. */
-const cStart = DECK.indexOf("<!-- FH-DECK-CARDS:START -->") + "<!-- FH-DECK-CARDS:START -->".length;
-const cEnd = DECK.indexOf("<!-- FH-DECK-CARDS:END -->");
-const cards = DECK.slice(cStart, cEnd).match(/<article[\s\S]*?<\/article>/g);
-DECK = DECK.slice(0, cStart) + "\n" + cards.reverse().join("\n") + "\n" + DECK.slice(cEnd);
-DECK = DECK.replace("smallest to biggest", "biggest first");
+/* Approvals deck keeps build-deck.mjs order: smallest first, biggest last as you scroll (Chris, 2026-09-29). */
 /* Mini course, Advisors, Community text: hidden until they exist. */
 DECK = DECK.replace('<div class="slim slim-course">', '<div class="slim slim-course" hidden>')
   .replace('<div class="slim slim-adv">', '<div class="slim slim-adv" hidden>')
@@ -185,7 +180,7 @@ const body =
   tag(4, "NEW · Your fastest first win, with the Funding Snapshot table", FIRST_WIN) +
   tag(5, "Already have good credit? · shorter, outcome first", GOOD_CREDIT) +
   tag(6, "Why this works · was The Bridge", BRIDGE) +
-  tag(7, "Approvals · opens on the biggest win", `<section class="sect"><span class="kicker">Approvals</span>${DECK}</section>\n${DECK_JS}`) +
+  tag(7, "Approvals · smallest first, biggest last", `<section class="sect"><span class="kicker">Approvals</span>${DECK}</section>\n${DECK_JS}`) +
   tag(8, "What happens after you buy · plus your part and how long it takes", NEXT) +
   tag(9, "Who it's for", QUAL.replace(/<\/section>\s*$/, `${INDS}\n    </section>\n`)) +
   tag(10, "Guarantee", `<section class="sect">${GUARANTEE_CARD}${GET_BTN}</section>`) +
@@ -445,7 +440,8 @@ const FIXES = [
   [/(<div class="prose" style="margin-top:20px">\s*<p>Everything is yours to keep\. One payment, no contract\.<\/p>\s*<\/div>)/, `${CHECKLIST}$1`],
   // Footer (item 21)
   ['<div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>', ""],
-  // Approvals carousel
+  // Approvals carousel: the header adds up the cards seen so far; on the last card it matches the caption
+  ['<span class="deck-total">Total<b id="fh-deck-total">', `<span class="deck-total">${G("Total so far")}<b id="fh-deck-total">`],
   ["real credit card and line of credit approvals.</p>", `real credit card and line of credit approvals ${G("from Fundhub clients")}.</p>`],
   // What happens after you buy
   [/<div class="srow"><span class="n">01<\/span><div><div class="t">You Fill Out the Form[\s\S]*?Run it yourself\. <\/div><\/div><\/div>/,
