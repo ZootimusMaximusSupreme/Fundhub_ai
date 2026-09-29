@@ -213,13 +213,15 @@ const FIXES = [
    `<span class="eyebrow">${G("The Funding Roadmap · $297 · in your portal today")}</span>`],
   ["<h1>Your Credit File Could Be Worth $100K to $1M in Funding, and We'll Get You There.</h1>",
    `<h1>Your Credit File Could Be Worth $100K to $1M in Funding. ${G("See Exactly How Much, and the Steps to Get It.")}</h1>` +
-   `\n      <p class="fhx-proofline">${G("<b>Gene</b> started in the low 600s. The dispute letters moved him to 810, and that opened up about $420,000 in business funding over three years.")}</p>`],
+   `\n      <p class="fhx-proofline">${G("<b>Gene</b> runs three LLCs. With the roadmap, he opened up about $420,000 in business funding over three years.")}</p>`],
   [/<p class="lede">We pull your credit with a soft inquiry\. 10 seconds later[^<]*<\/p>/,
    `<p class="lede">${G("<b>$297.</b> We soft-pull your credit, and about 10 seconds later five documents built from your own file are waiting in your portal.")} Yours to keep.</p>`],
   ["Show Me How Much I Qualify For", G("Get My $297 Funding Roadmap")],
   // Testimonials
   [">From people who bought it<", `>${G("People who used the roadmap")}<`],
   ["<b>Colin Schmidt, ran a funding company.</b>", `<b>Colin Schmidt ran a funding company. ${G("He reviewed the roadmap.")}</b>`],
+  ["<b>Gene, owner of three LLCs.</b> His scores started in the low 600s, the dispute letters moved him to 780 and then 810, and that opened up about $420,000 in business funding over three years.",
+   `<b>Gene, owner of three LLCs.</b> ${G("About $420,000 in business funding over three years.")} His scores started in the low 600s, and the dispute letters moved him to 780 and then 810.`],
   // Credibility
   ['<span class="kicker">The Bridge</span>', `<span class="kicker">${G("Why this works")}</span>`],
   ["We Spent Thousands of Hours Building the System That Reads Your File the Way a Lender's Underwriter Does.",
@@ -237,9 +239,11 @@ const FIXES = [
   ["<div class=\"cv-title\">Alex's 6-Month Business Readiness Roadmap</div>", `<div class="cv-title">${G("Alex's Credit Optimization Roadmap")}</div>`],
   ['<div class="cv-title">Capital Partner Shortlist</div>', `<div class="cv-title">${G("Bank &amp; Lender Match List")}</div>`],
   ["Your credit pulled from all three bureaus. Where your score sits today and where it can sit once your file is cleaned up. Every card with the exact balance to bring it down to. Every harmful item on there, named.",
-   G("What's hurting your file, item by item, on all three bureaus, including names and addresses that don't match from one bureau to the next. Clean file? It shows that too.")],
+   G("What's hurting your file, item by item, on all three bureaus, including every inquiry and any name or address that doesn't match from one bureau to the next. Clean file? It shows that too.")],
   ["<b>All six rounds</b>, round one dated and ready to mail. Print. Sign. Mail.",
-   `<b>All six rounds</b>, round one dated and ready to mail. ${G("Each next round waits 30 days plus mail time.")} Print. Sign. Mail.`],
+   `<b>All six rounds</b>, round one dated and ready to mail. ${G("Each next round waits 30 days plus mail time.")} Print. Sign. Mail. ${G("Clean file? You still get the name, address and inquiry letters.")}`],
+  // Owner-set 2026-09-29: inquiries DO cost fundability. The sample must not say they don't.
+  ["+'<div class=\"sp-sec\"><div class=\"sp-h\">04 / what does not affect your funding</div><div class=\"sp-c\"><b>Inquiries.</b> Seven across the three bureaus. They do not affect funding decisions at Fundhub. Cleanup only.</div></div>'", ""],
   ['<div class="tab">08</div>', `<div class="tab">${G("07")}</div>`],
   ["['tracker','08 Tracker']", "['tracker','07 Tracker']"],
   ["Dispute Letter Pack &middot; 08 Round tracker", "Dispute Letter Pack &middot; 07 Round tracker"],
@@ -256,28 +260,58 @@ const FIXES = [
      · home state AND business state each open local banks (src/lenders/match.mjs)
      · roadmap business steps: LLC, EIN, DUNS, business checking, net-30
        vendors that report (src/deliverables/roadmap.mjs)
-     Inquiries are left out on purpose: the documents tell the buyer they have
-     zero impact on funding at Fundhub. "Unlimited funding forever" is left out:
-     nothing in the documents shows it. */
+     · every buyer, clean file or not, gets one name, one address, and a dispute
+       of every inquiry with no matching open account (owner decision 2026-09-03,
+       src/metro2/diy/personal-info-floor.mjs; letter types in letter-pack-filter.mjs)
+     · business funding is summed across every company by age, up to 20 companies
+       (stackedBusinessFunding, src/underwrite/business-funding.mjs)
+     OWNER-SET 2026-09-29, final:
+     · inquiries cost fundability; any more than zero should come off
+     · unlimited funding over time is true: structure aged companies right, run
+       five to ten of them; it takes time and each one needs revenue
+     · the page must not read as a credit repair package, so proof leads with
+       funding, not with the score climb */
   ["Some files take six months, some take one, and it tells you which on the first page.",
    `Some files take six months, some take one, and it tells you which on the first page. ${G("Personal first, then your business: LLC, EIN, DUNS number, business checking, and vendor accounts that report.")}`],
   ["<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>",
    `<li>Your credit is clean and you still <b>came back short</b>, or it <b>needs work</b> and you want the order to fix it in</li>\n            <li>${G("Your score is <b>already high</b> and you want the <b>most your file and your business</b> can get")}</li>`],
   ["<details><summary>Will this hurt my credit score?</summary>",
-   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. A name or address that doesn't match across the three bureaus can flag your file, and the report finds each one. Your business counts too: how old it is changes how much you can get, and the state it's in opens its own local banks. The roadmap lines up both sides in order, personal first, then the business.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
+   `<details><summary>${G("My score is already 800. Why would I need this?")}</summary><div class="a">${G("A high score isn't the same as a file set up for the most funding. Every inquiry costs you fundability, and so does a second name or address on any bureau. Your letters go after both, even on a clean file. Then the business side: every aged company you own can get funded in its own name, so the roadmap lines up personal first, then each business.")}</div></details>\n        <details><summary>Will this hurt my credit score?</summary>`],
   ['<div class="fhx-sec" data-tag="4 · What You Get',
    `<div class="fhx-sec" data-tag="NEW · For people who already have good credit">
 <section class="sect">
       <span class="kicker">${G("Already have good credit?")}</span>
       <div class="h2">${G("A High Score Isn't the Same as a File Set Up for Maximum Funding.")}</div>
       <div class="rows">
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Your personal data")}</div><div class="d">${G("A name or address that doesn't match from one bureau to the next can flag your file. The report finds each one, and your letters clean them up.")}</div></div></div>
-        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business")}</div><div class="d">${G("How long it has been open changes how much you can get. The state it's in opens its own local banks, on top of the ones in your home state. Every business you add is counted.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Your inquiries")}</div><div class="d">${G("Any inquiry on your file costs you fundability, even at 800. The report lists every one, and your letters dispute each inquiry that has no matching open account.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Your personal data")}</div><div class="d">${G("A second name or address on any bureau can flag your file. Even on a clean file, your letters cut it down to one name and one address.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Your business")}</div><div class="d">${G("How long it has been open changes how much you can get. The state it's in opens its own local banks, on top of the ones in your home state. Every business you add is counted, and each aged one adds to your total.")}</div></div></div>
         <div class="srow"><span class="n"></span><div><div class="t">${G("Your business credit profile")}</div><div class="d">${G("The roadmap walks you through it step by step: LLC, EIN, DUNS number, business checking, and vendor accounts that report, so your business can get funded in its own name.")}</div></div></div>
+        <div class="srow"><span class="n"></span><div><div class="t">${G("Unlimited funding over time")}</div><div class="d">${G("Structure your companies right and every aged one can get funded in its own name. You can run five to ten of them. It takes time, and each one needs revenue, but you can keep getting funded for as long as you keep building.")}</div></div></div>
       </div>
     </section>
 </div>
 <div class="fhx-sec" data-tag="4 · What You Get`],
+  /* Scrolling bar at the bottom (Chris, 2026-09-29: "add that rotating thing"
+     from apply.fundhub.ai/watch, clickfunnels-fragments/01-vsl.html). This page
+     already carries the .fh-b .marq styles; only the markup was missing. Same
+     place as /watch, right above the footer. The copy is the roadmap's own,
+     each line true of the $297 package: soft tri-bureau pull, the five
+     documents in the portal, the name/address/inquiry letters every buyer
+     gets, state-matched lenders, every aged company counted, the 7-day refund,
+     and "we never sell your data" (public/privacy/index.html). The /watch
+     lines about funding rounds and a funding advisor are the done-for-you
+     service, so they stay off this page. */
+  ["<footer>", (() => {
+    const items = [
+      "Tri-bureau soft pull", "Soft inquiry · no score impact", "Five documents built from your file",
+      "In your portal in about 10 seconds", "Name, address and inquiry letters included",
+      "Lenders matched to your state", "Every aged company counted", "7-day refund", "We never sell your data",
+    ];
+    const set = `<div class="marq-set">${items.map((s) => `<span>${s}</span><i></i>`).join("")}</div>`;
+    return `<div class="fhx-sec" data-tag="NEW · Scrolling bar, same as /watch, with roadmap copy">` +
+      `<div class="marq" aria-hidden="true"><div class="marq-track" style="animation-duration:44s">${set}${set}</div></div></div>\n  <footer>`;
+  })()],
   // Approvals carousel
   ["real credit card and line of credit approvals.</p>", `real credit card and line of credit approvals ${G("from Fundhub clients")}.</p>`],
   // What happens after you buy
@@ -296,7 +330,7 @@ const FIXES = [
   [/<div class="cardw">\s*<span class="kicker">The Guarantee<\/span>\s*<p>If you're not happy with what you get, <b>email us within 7 days and we'll refund you\.<\/b><\/p>\s*<\/div>/, ""],
   // FAQ
   [/(How do I know this is legit\?<\/summary><div class="a">)[\s\S]*?(<\/div><\/details>)/,
-   `$1${G("Gene went from the low 600s to 810 with these letters. Colin Schmidt, who ran a funding company, reviewed the roadmap and wouldn't change a thing. You can call us at (561) 304-8368 before you buy. And if you're not happy, email us within 7 days for a full refund.")}$2`],
+   `$1${G("Gene runs three LLCs and opened up about $$420,000 in business funding with the roadmap. Colin Schmidt, who ran a funding company, reviewed the roadmap and wouldn't change a thing. You can call us at (561) 304-8368 before you buy. And if you're not happy, email us within 7 days for a full refund.")}$2`],
   [BROKER_BODY, G("A broker hands you a list of banks. This reads your own file first, fixes what's hurting it, and gives you the order to apply in so the declines don't stack.")],
   ["This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response.",
    G("No. This is do-it-yourself. You mail your own letters, so you hold every receipt and see every reply.")],
@@ -337,6 +371,11 @@ html.fhx-clean .fhx-sec::before{display:none}
 <script>
 (function(){
   var b=document.getElementById('fhx-toggle');if(!b)return;
+  /* The banner wraps to two lines on a phone. Push the page down by its real
+     height so it never covers the logo. */
+  var bar=b.parentNode,root=document.querySelector('.fh-root');
+  function fit(){if(root)root.style.paddingTop=bar.offsetHeight+'px';}
+  fit();window.addEventListener('resize',fit);
   b.addEventListener('click',function(){var on=document.documentElement.classList.toggle('fhx-clean');b.textContent=on?'Show the marks':'Hide the marks';});
 })();
 </script>`;
