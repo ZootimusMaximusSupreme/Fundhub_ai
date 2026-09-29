@@ -24,7 +24,7 @@
    and this list, kept here as the one place a future page's sensitive field
    gets added to a script that already runs. */
 
-var CLARITY_PROJECT_ID = "tscu18st8l74";
+var CLARITY_PROJECT_ID = "tscu15s674";
 
 (function () {
   if (!CLARITY_PROJECT_ID) {
