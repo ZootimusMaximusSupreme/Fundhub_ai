@@ -197,6 +197,119 @@ const out = PREFIX + body + SUFFIX + TOOLKIT;
 writeFileSync(join(here, "01-sales-reorg-draft.html"), wrapFragment(out));
 console.log("built 01-sales-reorg-draft.html");
 
+/* ---------- FIXED: every red-box fix written into the page ----------
+   Chris, 2026-09-29: "FIX IT". Same new order, with the copy fixes applied.
+   Rewritten words are marked green (the banner button hides the marks for a
+   clean read). Facts come from the page and the repo only:
+   · documents live in the client portal, each with a Download button
+     (public/app/client-portal.html paintOwn)
+   · first business included, each extra $15 (checkout widget, this file)
+   · Gene's numbers are his own caption; the approvals deck's source file says
+     only "Client Wins deck", so it is labelled "from Fundhub clients", nothing more */
+const G = (t) => `<span class="fhx-new">${t}</span>`;
+const FIXES = [
+  // Screen one
+  ['<span class="eyebrow">For business owners going after maximum funding</span>',
+   `<span class="eyebrow">${G("The Funding Roadmap · $297 · in your portal today")}</span>`],
+  ["<h1>Your Credit File Could Be Worth $100K to $1M in Funding, and We'll Get You There.</h1>",
+   `<h1>Your Credit File Could Be Worth $100K to $1M in Funding. ${G("See Exactly How Much, and the Steps to Get It.")}</h1>` +
+   `\n      <p class="fhx-proofline">${G("<b>Gene</b> started in the low 600s. The dispute letters moved him to 810, and that opened up about $420,000 in business funding over three years.")}</p>`],
+  [/<p class="lede">We pull your credit with a soft inquiry\. 10 seconds later[^<]*<\/p>/,
+   `<p class="lede">${G("<b>$297.</b> We soft-pull your credit, and about 10 seconds later five documents built from your own file are waiting in your portal.")} Yours to keep.</p>`],
+  ["Show Me How Much I Qualify For", G("Get My $297 Funding Roadmap")],
+  // Testimonials
+  [">From people who bought it<", `>${G("People who used the roadmap")}<`],
+  ["<b>Colin Schmidt, ran a funding company.</b>", `<b>Colin Schmidt ran a funding company. ${G("He reviewed the roadmap.")}</b>`],
+  // Credibility
+  ['<span class="kicker">The Bridge</span>', `<span class="kicker">${G("Why this works")}</span>`],
+  ["We Spent Thousands of Hours Building the System That Reads Your File the Way a Lender's Underwriter Does.",
+   G("It Reads Your File the Way a Bank's Underwriter Does.")],
+  ["<p>UnderwriteIQ reads your credit file line by line", `<p>${G("Our software")} reads your credit file line by line`],
+  ["run it through UnderwriteIQ, and the whole package is in your account in",
+   `run it through ${G("our software")}, and the whole package is in your ${G("portal")} in`],
+  // What You Get
+  ["<div class=\"h2\">Here's What You Get.</div>",
+   `<div class="h2">${G("Five Documents, Built From Your Own Credit File, Waiting in Your Portal Today.")}</div>`],
+  ["<span>outcome: sample</span><span>median: sample</span>", ""],
+  ['<div class="cv-conf">fundhub confidential</div>', ""],
+  ['<div class="cv-title">Capital Readiness Snapshot</div>', `<div class="cv-title">${G("Funding Snapshot")}</div>`],
+  ['<div class="cv-title">Financial Profile Assessment</div>', `<div class="cv-title">${G("Credit Analysis Report")}</div>`],
+  ["<div class=\"cv-title\">Alex's 6-Month Business Readiness Roadmap</div>", `<div class="cv-title">${G("Alex's Credit Optimization Roadmap")}</div>`],
+  ['<div class="cv-title">Capital Partner Shortlist</div>', `<div class="cv-title">${G("Bank &amp; Lender Match List")}</div>`],
+  ["Your credit pulled from all three bureaus. Where your score sits today and where it can sit once your file is cleaned up. Every card with the exact balance to bring it down to. Every harmful item on there, named.",
+   G("What's hurting your file, item by item, on all three bureaus. Clean file? It shows that too, bureau by bureau.")],
+  ["<b>All six rounds</b>, round one dated and ready to mail. Print. Sign. Mail.",
+   `<b>All six rounds</b>, round one dated and ready to mail. ${G("Each next round waits 30 days plus mail time.")} Print. Sign. Mail.`],
+  ['<div class="tab">08</div>', `<div class="tab">${G("07")}</div>`],
+  ["['tracker','08 Tracker']", "['tracker','07 Tracker']"],
+  ["Dispute Letter Pack &middot; 08 Round tracker", "Dispute Letter Pack &middot; 07 Round tracker"],
+  ["Tap any cover for a sample page. Yours prints with your own data.",
+   `Tap any cover for a sample page. ${G("All five show up in your Fundhub client portal the moment the pull finishes. Open them there, and download or print any of them. Your first business is included; each extra business is $15.")}`],
+  // Approvals carousel
+  ["real credit card and line of credit approvals.</p>", `real credit card and line of credit approvals ${G("from Fundhub clients")}.</p>`],
+  // What happens after you buy
+  [/<div class="srow"><span class="n">01<\/span><div><div class="t">You Fill Out the Form[\s\S]*?Run it yourself\. <\/div><\/div><\/div>/,
+   [
+     ["01", "Your Info", "First name, last name, email, phone."],
+     ["02", "Pay $297 by Card", "One payment, no contract."],
+     ["03", "Soft Pull", "Legal name, date of birth, Social Security number, and address. It's a soft inquiry, so your score doesn't move."],
+     ["04", "Your Five Documents", "About ten seconds later they're in your portal. How much you qualify for now, how much once your file is optimized, and every step between. You work it at your own pace."],
+   ].map(([n, t, d]) => `<div class="srow"><span class="n">${n}</span><div><div class="t">${G(t)}</div><div class="d">${G(d)}</div></div></div>`).join("\n        ")],
+  // Who it's for
+  [/<div class="prose" style="margin-top:10px">\s*<p>Every day you wait[^<]*<\/p>\s*<\/div>/, ""],
+  // Guarantee: one place, and it says how
+  ["<p>If you're not happy with what you get, <b>we'll refund you.</b> Just email us within 7 days.</p>",
+   `<p>${G("If you're not happy with what you get, email support@fundhub.ai within 7 days and <b>you get the full $297 back.</b>")}</p>`],
+  [/<div class="cardw">\s*<span class="kicker">The Guarantee<\/span>\s*<p>If you're not happy with what you get, <b>email us within 7 days and we'll refund you\.<\/b><\/p>\s*<\/div>/, ""],
+  // FAQ
+  [/(How do I know this is legit\?<\/summary><div class="a">)[\s\S]*?(<\/div><\/details>)/,
+   `$1${G("Gene went from the low 600s to 810 with these letters. Colin Schmidt, who ran a funding company, reviewed the roadmap and wouldn't change a thing. You can call us at (561) 304-8368 before you buy. And if you're not happy, email us within 7 days for a full refund.")}$2`],
+  [BROKER_BODY, G("A broker hands you a list of banks. This reads your own file first, fixes what's hurting it, and gives you the order to apply in so the declines don't stack.")],
+  ["This package is you mailing your own letters and following the steps, which means you hold every receipt and see every response.",
+   G("No. This is do-it-yourself. You mail your own letters, so you hold every receipt and see every reply.")],
+  ["About ten seconds after the form.", G("About ten seconds after the soft pull finishes.")],
+  // Checkout
+  ["How Much Is Your File Worth? Find Out in Ten Seconds.", G("Get Your Funding Roadmap · $297")],
+  ["where your score sits today and where it can sit once your file is cleaned up</li>", `${G("what's hurting your file, item by item, on all three bureaus")}</li>`],
+  [/(<li><b>Bank &amp; Lender Match List<\/b>[^<]*<\/li>\s*<\/ul>)/,
+   `$1\n        <p class="fhx-sumnote">${G("Your first business is included. Each extra business is $$15, added at the soft-pull step.")}</p>`],
+];
+
+let fixed = PREFIX + body + SUFFIX;
+for (const [from, to] of FIXES) {
+  const hit = typeof from === "string" ? fixed.includes(from) : from.test(fixed);
+  if (!hit) throw new Error(`fix did not match: ${String(from).slice(0, 80)}`);
+  fixed = typeof from === "string" ? fixed.split(from).join(to) : fixed.replace(from, to);
+}
+fixed = fixed.replace(' data-fhx-new><summary>', '><summary>').replace("<details open><summary>How is this different from paying a broker", "<details><summary>How is this different from paying a broker");
+fixed += `
+<style>
+.fhx-banner{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;background:#0B5D1E;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:8px 16px}
+.fhx-banner button{font:600 12px system-ui,sans-serif;background:#fff;color:#0B5D1E;border:0;border-radius:6px;padding:6px 10px;cursor:pointer}
+.fhx-banner button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.fh-root{padding-top:48px}
+.fh-b.fhx-testi{background:transparent}
+.fh-root .deck-runway > .slimrow{grid-template-columns:minmax(0,520px) !important;grid-template-areas:"comm" !important;justify-content:center}
+.fhx-new{background:rgba(22,163,74,.18);box-shadow:0 0 0 2px rgba(22,163,74,.28);border-radius:3px}
+.btn .fhx-new{background:transparent;box-shadow:0 0 0 2px #22C55E}
+.fhx-proofline{max-width:560px;margin:12px auto 0;font-size:15px;line-height:1.5;text-align:center;color:#3F3F46}
+.fhx-sumnote{margin-top:10px;font-size:13px;color:#52525B}
+.fhx-sec{position:relative;outline:2px dashed #2F6FEB;outline-offset:6px;margin:34px 0}
+.fhx-sec::before{content:attr(data-tag);display:block;font:700 11px/1.3 system-ui,sans-serif;color:#fff;background:#2F6FEB;padding:5px 9px;border-radius:4px;margin-bottom:10px;width:max-content;max-width:100%}
+html.fhx-clean .fhx-new{background:none;box-shadow:none}
+html.fhx-clean .fhx-sec{outline:0;margin:0}
+html.fhx-clean .fhx-sec::before{display:none}
+</style>
+<div class="fhx-banner"><span>DRAFT, NOT LIVE · Green = rewritten copy · Blue boxes = new section order</span><button type="button" id="fhx-toggle">Hide the marks</button></div>
+<script>
+(function(){
+  var b=document.getElementById('fhx-toggle');if(!b)return;
+  b.addEventListener('click',function(){var on=document.documentElement.classList.toggle('fhx-clean');b.textContent=on?'Show the marks':'Hide the marks';});
+})();
+</script>`;
+writeFileSync(join(here, "01-sales-reorg-fixed.html"), wrapFragment(fixed));
+console.log("built 01-sales-reorg-fixed.html");
+
 /* ---------- --share: one self-contained page Chris can send as a link ----------
    A shared page can load nothing from fundhub.ai or ClickFunnels, so every
    picture is shrunk and baked in. The videos are too big to bake in (the VSL
@@ -208,7 +321,7 @@ if (process.argv.includes("--share")) {
   const { mkdtempSync } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const tmp = mkdtempSync(join(tmpdir(), "fh-share-"));
-  let share = out;
+  let share = fixed;
   const cut0 = share.indexOf("<!-- ================= SPLIT-LINE");
   const cut1 = share.indexOf("<!-- SLOT-UTM");
   share = share.slice(0, cut0) +
