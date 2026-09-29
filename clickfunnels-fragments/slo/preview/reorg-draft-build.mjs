@@ -506,6 +506,18 @@ ${NEW_CSS}
   console.log("wrote the live fragment ../slo-01-sales.html");
 }
 
+/* Phone carousel for the testimonials (Chris, 2026-09-29: "rotate in a
+   carousel instead" of stacking). Draft and share only, added after --live on
+   purpose: it is not on the live page until Chris says push. To ship it, move
+   this block above the --live block. */
+{
+  const { ROADMAP_CSS, ROADMAP_JS } = await import("./testi-carousel.mjs");
+  const oldTag = 'data-tag="2 · Video testimonials · each tagged with the product behind it"';
+  if (!fixed.includes(oldTag)) throw new Error("testimonials tag not found");
+  fixed = fixed.replace(oldTag, 'data-tag="2 · Video testimonials · NEW on phones: one row that slides sideways as you scroll, same as the /watch approvals"');
+  fixed += `\n<style>${ROADMAP_CSS}\n</style>\n<script>${ROADMAP_JS}\n</script>\n`;
+}
+
 fixed += `
 <style>
 .fhx-banner{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;background:#0B5D1E;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:8px 16px}
@@ -574,7 +586,8 @@ if (process.argv.includes("--share")) {
     share = share.split(u).join("data:image/jpeg;base64," + readFileSync(f).toString("base64"));
   }
 
-  const head = `<title>Roadmap Page Redraft</title>
+  const head = `<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roadmap Page Redraft</title>
 <style>
 body{background:#FCFCFC;color:#111113}
 .fhx-checkout{max-width:720px;margin:24px auto;padding:18px 20px;border:2px dashed #2F6FEB;border-radius:10px;background:#F3F7FF;color:#111113;font:14px/1.5 system-ui,sans-serif;display:grid;gap:6px}
