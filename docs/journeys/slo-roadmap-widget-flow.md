@@ -40,9 +40,9 @@ flowchart TD
     NEW --> B{SLO_DEMO_PAY = 1?}
     OLD --> B
     B -->|yes| C[Order row: payment_links is_demo, real amount, business_count, no Commas call]
-    B -->|no| D[Order row: payment_links sent, business_count + Commas card page URL]
+    B -->|no| D[Order row: payment_links sent, business_count + Commas session; answer carries the embedded block]
     C --> E[Widget step 3: identity + consent]
-    D --> D2[Widget step 2: card on Commas] --> PAIDHOOK[Webhook marks the order paid] --> E
+    D --> D2[Widget step 2: Commas card form drawn INSIDE this page, no navigation] --> PAIDHOOK[checkout:success opens step 3; webhook marks the order paid] --> E
     E -->|POST slo-pull| F{Order found by payment_links link_ref + client_id?}
     F -->|no| X0[404 not_found. Nothing stored]
     F -->|demo order, demo OFF| X[409 order_not_paid. Nothing stored]
@@ -113,12 +113,15 @@ button scrolls to it. No page on the way links to `roadmap/pay.html` any more.
 
 ```mermaid
 flowchart TD
-    A[Step 1 Info: first, last, email, phone. Nothing else] -->|Continue, checked in the page| B[Step 2 Card: $297 base, then Get My Roadmap]
-    B -->|page re-checks step 1| C[POST slo-checkout]
+    A[Step 1 Info: first, last, email, phone. Nothing else] -->|Continue, checked in the page| C[POST slo-checkout on opening step 2]
     C -->|field errors| A
-    C -->|demo:true, no card page exists| S3
-    C -->|demo:false + checkoutUrl| G[Commas card page]
-    G -->|returns to /roadmap?ref=&client_id=| S3[Step 3 Soft pull: legal name, DOB, social, home address, previous address, BUSINESS ADD-ON first included / $15 each extra, consent]
+    C -->|demo:true, no card form exists| B
+    C -->|demo:false + embedded block| G[Commas card form mounted in step 2 — number, expiry, CVC on THIS page]
+    G --> B[Step 2 Card: $297 base, then Get My Roadmap]
+    B -->|Get My Roadmap calls submitForm on the mounted form| PAY{Commas charges the card}
+    PAY -->|form:submission_error, their words on our page| B
+    PAY -->|checkout:success — no navigation, ever| S3[Step 3 Soft pull: legal name, DOB, social, home address, previous address, BUSINESS ADD-ON first included / $15 each extra, consent]
+    OLD[An old link or a reload: /roadmap?ref=&client_id=] --> S3
     S3 -->|Start My Soft Pull: page checks every box first| D[POST slo-pull. No defer_pull, ever]
     D -->|field errors| S3
     D -->|address_unverified: warning under the street box| S3

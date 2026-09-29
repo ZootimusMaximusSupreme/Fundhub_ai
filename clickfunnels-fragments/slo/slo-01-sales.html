@@ -648,6 +648,9 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw-cardmount{margin-top:8px;min-height:190px}
 .cfw-cardmount iframe{width:100%!important;border:0;display:block}
 .cfw-cardwait{padding:56px 0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A8A93}
+/* Nothing may clip the card boxes. The green "secured field" wrapper sets its
+   own padding; make sure neither it nor the step hides the bottom of the form. */
+.cfw-step.s2 .cfw-secure{overflow:visible}
 .cfw-ssn{display:flex;gap:8px;align-items:stretch}
 .cfw-ssn input{flex:1}
 .cfw .mask{-webkit-text-security:disc}
@@ -1767,13 +1770,20 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         /* Our own "Get My Roadmap" button submits the form — one button on the
            step, with our price on it. */
         showSubmitButton:false,
+        /* The SDK does not resize itself and an iframe defaults to 150px, which
+           cut the card boxes off below the fold. Measured 2026-09-29 on live:
+           the rendered form (billing name, email, billing address, then the
+           card) is 603px. 680 leaves room for a validation line. */
+        containerOptions:{width:'100%',height:'680px'},
         theme:{
           theme:'light',
           accent_color:'#111113',
           /* our own Total today line already says the price */
           show_product_info:false,
           show_coupon_row:false,
-          prefill:{email:c.email,name:[c.first_name,c.last_name].filter(Boolean).join(' ')}
+          /* They typed these on step 1. The keys are snake_case — a `name` key
+             is ignored and the boxes come up empty. */
+          prefill:{email:c.email,first_name:c.first_name,last_name:c.last_name}
         }
       };
       card=window.PaymentCheckout.create(cfg);

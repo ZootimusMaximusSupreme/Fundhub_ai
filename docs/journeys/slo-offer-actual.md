@@ -22,8 +22,11 @@ flowchart TD
   ATTR --> E["Mint Commas $297 Assessment"]
   E --> F["payment_links purpose=diagnostic"]
   F --> G["success_url = /roadmap/pull.html?ref + client_id"]
-  E -->|"ok, https checkoutUrl"| CARD["location.assign(checkoutUrl) — Commas card page"]
+  E --> EMB["Mint embedded session on the same Commas session"]
+  EMB -->|"/roadmap widget: card typed on the page"| CARDIN["Commas card form inside step 2 — no navigation"]
+  E -->|"/roadmap/pay.html only: https checkoutUrl"| CARD["location.assign(checkoutUrl) — Commas card page"]
   E -->|"checkout_failed / 503 / network"| PFAIL["Stay on /roadmap/pay.html — 'Nothing was charged'"]
+  CARDIN -->|"checkout:success"| G
   CARD -->|paid| G
   G --> H["public/roadmap/pull.html"]
   H -->|"Build My Pack"| I["POST /api/public/slo-pull"]
@@ -45,6 +48,12 @@ flowchart TD
   carried across; pay.html records its own. The box holds no form fields and collects nothing itself.
 
 - `api/public/slo-checkout.mjs` — mint + write a diagnostic payment link so the existing Commas adapter emits `diagnostic.paid`.
+  **Since 2026-09-29** it also mints an embedded checkout session on that same Commas session
+  (`POST /public-api/checkout-sessions/embedded`) and answers an `embedded` block — `creatorId`, `productId`,
+  `sessionSecret`, `environment`. The /roadmap widget draws Commas' own card form from it on step 2, so the buyer
+  types the card without leaving the page. Commas publishes no endpoint that accepts a card number, so none is
+  ever posted to Fundhub. `checkoutUrl` is still answered and still written to `payment_links` — the webhook is
+  matched to that row, and `public/roadmap/pay.html` is the one door that still navigates to it.
 - `api/public/slo-pull.mjs` — POST only. Matching `ref` + `client_id` required. Server stores `soft-pull-v1` consent text. Then `diagnostic.paid`.
 - `src/slo/buyer.mjs` — client, portal account, `slo_ref` stamp.
 - `src/slo/deliver.mjs` — same UnderwriteIQ funding pack and email the closer deck uses. The four analysis docs are the gold HTML pages (`src/deliverables/`), not the short PDFs.
