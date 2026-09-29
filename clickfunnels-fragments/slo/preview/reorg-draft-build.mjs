@@ -150,7 +150,7 @@ const CHECKLIST = `<div class="fh-work">
       `;
 const NEW_CSS = `
 .fh-root .fh-snapfig{max-width:460px;margin:22px auto 0}
-.fh-root .fh-snapdoc{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:0 14px 34px rgba(17,17,19,.10);transform:rotate(-.8deg)}
+.fh-root .fh-snapdoc{position:relative;overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:10px;padding:16px 18px;box-shadow:0 14px 34px rgba(17,17,19,.10);transform:none}
 .fh-root .fh-snaphead{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2);margin-bottom:10px}
 .fh-root .fh-snapdoc table{width:100%;border-collapse:collapse;font-size:14px}
 .fh-root .fh-snapdoc th,.fh-root .fh-snapdoc td{padding:8px 6px;border-top:1px solid var(--line);text-align:left}
@@ -172,6 +172,8 @@ const NEW_CSS = `
 .fh-root .sp-lock b{font-size:16px}
 .fh-root .sp-lock span{font-size:13.5px;color:var(--gray2)}
 .fh-root .sp-lock .btn{margin-top:6px;max-width:320px;padding:12px 18px;font-size:15px}
+.fh-root .wm{color:rgba(255,255,255,.88)}
+.fh-root .folder .wm{color:rgba(10,10,10,.92)}
 `;
 const tag = (n, label, html) => `\n<div class="fhx-sec" data-tag="${n} · ${label}">\n${html}\n</div><!--/fhx-sec-->\n`;
 const body =
