@@ -1,6 +1,6 @@
 # Capital Blueprint build — 2026-09-29
 
-**Workflow:** **closed** (2026-09-30). All lanes shipped. Live prove Sim Eleven remint + Session D + mailing proof **PASS**.
+**Workflow:** backend/API **PASS**. UI leftovers for Claude. Human-click recreate at close-out **blocked** (Netlify `usage_exceeded` on fundhub.ai).
 
 **Board:** all Composer/Claude lanes write status here.
 
@@ -103,3 +103,30 @@
 **Ship this close-out:** none — remint was live DB + sim scripts/docs only; product UI already on `548c9a47`.
 
 **Dirty leftover (card only, not actioned):** CSM queue "Assigned CSM:" chip is gated to `blueprint-csm-prep` tasks only — accountability/halfway tasks carry `assigned_csm_name` in JSON but do not show the chip.
+
+## Grok independent double-check (2026-09-30)
+
+Remint worker `c3a69492` finished first. This pass did not remint again. Same live file.
+
+**Client id:** `029964c5-4d8e-47ed-88c9-53ac13863fd4` — Sim Eleven-Blueprint · `stanbridgejchris+sim-11@gmail.com` · paid Consulting Services Package **$5,000** (`status=succeeded`, provider `sim-pay-1790742620460`) · no real card · no new Commas products.
+
+| # | Check | Result | Evidence |
+|---|--------|--------|----------|
+| 1 | Client + paid tx + entitlements + dispute waypoints | **PASS** | Buyer `isCapitalBlueprintBuyer` **true**. Ents `credit-optimization-roadmap`, `metro2-letter-pack`. Eight waypoints incl. `blueprint_dispute_*`. CSM `6ec4e592-…` |
+| 2 | GET `blueprint-combined-approval` | **PASS** | **200** `ok:true` combined prequal **$212,000** |
+| 3 | POST `staff-actions` `list_bank_todos` | **PASS** | **200** Chase personal todo `dff3b20f-…` |
+| 4 | POST `paydown-simulator` | **PASS** | **200** `ok:true` `entitled:true` |
+| 5 | GET `csm-queue` `assigned_csm_name` | **PASS** (API) | Eleven row present. Name **DEMO Client Success Manager**. `source_workflow=customer-insights-mid` |
+| 6 | Mailing-proof step close (recreate prior FAIL) | **PASS** (API) | Reopened step → live POST `/api/documents-upload` subtype `dispute_mail_receipt` → waypoint **done** `2026-09-30T04:38:34Z`. Hook: `onDocsReceivedReviewChecklist` on `docs.received` (ship `61440626`) |
+| 7 | Browser MCP clicks | **FAIL / blocked** | MCP could not open a tab. Then whole site **503** `usage_exceeded` |
+| 8 | Playwright CSM chip / bank Done / progress redraw | **NOT RE-PROVED** | Login page timed out once. Retry blocked by the same **503**. Do not keep the remint agent's UI **PASS** as independently proven |
+
+**Grok backend fix (already shipped):** `src/handlers/client-lifecycle.mjs` + `src/handlers/client-lifecycle.test.mjs` — `docs.received` now runs `evaluateWaypoints` so mailing proof closes without a local evaluate call. Journeys: `docs/journeys/client-progress-actual.md`, `docs/journeys/CHANGELOG.md`. Seed: `scripts/sim/seed-fulfillment-client.mjs` blueprint profile.
+
+**Ship this close-out:** none — no new product code after `61440626`. Site was over the Netlify usage cap; `npm run ship` would not help the 503.
+
+**Leftovers for Claude (HTML only — Grok did not touch pages):**
+
+1. CSM queue "Assigned CSM:" chip only paints on `blueprint-csm-prep` rows. Halfway/accountability rows have the name in JSON and no chip.
+2. `progress.html` mailing-proof upload does not redraw the step after a good upload (copy still says it closes once staff have looked at it). Reload after the hook marks **done** is the current path.
+3. Control-panel Capital Blueprint group stays folded. Bank Done / Skipped live in `#bp-body`. Independent click recreate did not finish.

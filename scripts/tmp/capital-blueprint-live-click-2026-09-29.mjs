@@ -2,19 +2,59 @@
 // Live staff clicks for Capital Blueprint Session D + mailing proof.
 // Browser MCP could not hold a tab. This is the human-path substitute.
 import { chromium } from "@playwright/test";
-import { liveStaffLogin, BASE } from "../../e2e/live-auth.mjs";
+import { BASE, staffPassword } from "../../e2e/live-auth.mjs";
 
 const CLIENT_ID = process.env.BLUEPRINT_CLIENT_ID || "029964c5-4d8e-47ed-88c9-53ac13863fd4";
 const PROOF = "docs/workflows/sim-documents/11/proof-of-address-1.png";
 
 const out = { clientId: CLIENT_ID, checks: {} };
 
+let loginBody = null;
+let loginStatus = 0;
+for (let i = 0; i < 4; i += 1) {
+  const login = await fetch(`${BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ email: "chris@fundhub.ai", password: staffPassword() })
+  });
+  loginStatus = login.status;
+  loginBody = await login.json().catch(() => null);
+  if (loginBody?.token) break;
+  await new Promise((r) => setTimeout(r, 800 * (i + 1)));
+}
+if (!loginBody?.token) {
+  throw new Error(`staff login failed: ${loginStatus}`);
+}
+
 const browser = await chromium.launch({ headless: true });
 const page = await browser.newPage();
 try {
-  await liveStaffLogin(page);
+  await page.context().addCookies([{
+    name: "fundhub_session",
+    value: loginBody.token,
+    domain: "fundhub.ai",
+    path: "/",
+    httpOnly: true,
+    secure: true,
+    sameSite: "Lax"
+  }]);
 
-  await page.goto(`${BASE}/app/csm-queue.html`, { waitUntil: "domcontentloaded" });
+  async function open(url) {
+    let last;
+    for (let i = 0; i < 3; i += 1) {
+      try {
+        await page.goto(url, { waitUntil: "commit", timeout: 45_000 });
+        await page.waitForLoadState("domcontentloaded", { timeout: 45_000 }).catch(() => {});
+        return;
+      } catch (err) {
+        last = err;
+        await page.waitForTimeout(800);
+      }
+    }
+    throw last;
+  }
+
+  await open(`${BASE}/app/csm-queue.html`);
   await page.waitForTimeout(2500);
   const csmText = await page.locator("body").innerText();
   out.checks.csmQueue = {
@@ -24,19 +64,20 @@ try {
     snippet: csmText.includes("Assigned CSM") ? "Assigned CSM visible" : "no Assigned CSM chip"
   };
 
-  await page.goto(`${BASE}/app/client-control-panel.html?client_id=${CLIENT_ID}`, {
-    waitUntil: "domcontentloaded"
-  });
-  await page.waitForTimeout(3500);
-  const bp = page.locator("#bp-group");
-  if (await bp.count()) {
-    const summary = bp.locator("summary, .group-title, button").first();
-    if (await summary.count()) await summary.click().catch(() => {});
+  await open(`${BASE}/app/client-control-panel.html?client_id=${CLIENT_ID}`);
+  const toggle = page.locator('#bp-group button[aria-controls="bp-body"]');
+  await toggle.waitFor({ state: "visible", timeout: 20_000 });
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click();
   }
-  const bodyBefore = await page.locator("body").innerText();
-  out.checks.controlPanelOpen = /Capital Blueprint|chase|Done|Skipped/i.test(bodyBefore);
+  await page.locator("#bp-body").waitFor({ state: "visible", timeout: 15_000 });
+  await page.locator("#bp-body .bp-todo-acts").first().waitFor({ state: "visible", timeout: 20_000 }).catch(() => {});
+  const bodyBefore = await page.locator("#bp-body").innerText();
+  out.checks.controlPanelOpen = /Capital Blueprint|Chase|Done|Skipped|Put back/i.test(bodyBefore);
+  out.checks.bpExpanded = (await toggle.getAttribute("aria-expanded")) === "true";
 
-  const doneBtn = page.getByRole("button", { name: /^Done$/ }).first();
+  const todoActs = page.locator("#bp-body .bp-todo-acts").first();
+  const doneBtn = todoActs.getByRole("button", { name: /^Done$/ });
   if (await doneBtn.count()) {
     await doneBtn.click();
     await page.waitForTimeout(1500);
@@ -44,7 +85,15 @@ try {
   } else {
     out.checks.clickedDone = false;
   }
-  const skipBtn = page.getByRole("button", { name: /^Skipped$/ }).first();
+  const putBackAfterDone = page.locator("#bp-body .bp-todo-acts").first().getByRole("button", { name: /Put back on the list/i });
+  if (await putBackAfterDone.count()) {
+    await putBackAfterDone.click();
+    await page.waitForTimeout(1500);
+    out.checks.clickedPutBackAfterDone = true;
+  } else {
+    out.checks.clickedPutBackAfterDone = false;
+  }
+  const skipBtn = page.locator("#bp-body .bp-todo-acts").first().getByRole("button", { name: /^Skipped$/ });
   if (await skipBtn.count()) {
     await skipBtn.click();
     await page.waitForTimeout(1500);
@@ -52,7 +101,7 @@ try {
   } else {
     out.checks.clickedSkipped = false;
   }
-  const putBack = page.getByRole("button", { name: /Put back on the list/i }).first();
+  const putBack = page.locator("#bp-body .bp-todo-acts").first().getByRole("button", { name: /Put back on the list/i });
   if (await putBack.count()) {
     await putBack.click();
     await page.waitForTimeout(1500);
@@ -60,14 +109,14 @@ try {
   } else {
     out.checks.clickedPutBack = false;
   }
-  const afterBank = await page.locator("body").innerText();
+  const afterBank = await page.locator("#bp-body").innerText();
   out.checks.bankWords = {
     done: /\bDone\b/i.test(afterBank),
     skipped: /\bSkipped\b/i.test(afterBank),
     putBack: /Put back on the list/i.test(afterBank)
   };
 
-  await page.goto(`${BASE}/progress.html?client_id=${CLIENT_ID}`, { waitUntil: "domcontentloaded" });
+  await open(`${BASE}/progress.html?client_id=${CLIENT_ID}`);
   await page.waitForTimeout(3000);
   const uploadBtn = page.locator('button[data-proof]').first();
   out.checks.progressHasUpload = await uploadBtn.count() > 0;
