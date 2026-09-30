@@ -33,6 +33,7 @@ import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
 import { requestSoftPull, SoftPullError } from "../finance/soft-pulls.mjs";
 import { FINANCE_OS_TIER } from "../finance/finance-os-entitlement.mjs";
+import { fulfilQueuedSystemPulls } from "../finance/finance-os-pull-fulfil.mjs";
 
 export const SWEEP_CRON = "0 6 * * *"; // 06:00 UTC daily — matches the other daily sweepers' quiet-hours-safe slot
 export const SOURCE_WORKFLOW = "finance-os-pull-sweeper";
@@ -66,8 +67,8 @@ export async function dueClients(conn, now) {
 
 /** sweep — one pass. `db` and the clock are arguments so tests drive it
     without Inngest. Returns a tally rather than throwing. */
-export async function sweep(conn = db, { now = new Date() } = {}) {
-  const tally = { checked: 0, requested: 0, skipped: [], errored: [] };
+export async function sweep(conn = db, { now = new Date(), env = process.env, fulfil = fulfilQueuedSystemPulls } = {}) {
+  const tally = { checked: 0, requested: 0, skipped: [], errored: [], fulfil: null };
   const rows = await dueClients(conn, now);
   tally.checked = rows.length;
 
@@ -96,6 +97,14 @@ export async function sweep(conn = db, { now = new Date() } = {}) {
       } else {
         tally.errored.push({ clientId: row.client_id, error: e?.message || String(e) });
       }
+    }
+  }
+
+  if (typeof fulfil === "function") {
+    try {
+      tally.fulfil = await fulfil(conn, { env });
+    } catch (e) {
+      tally.fulfil = { checked: 0, fulfilled: 0, failed: 0, errored: [{ error: String(e?.message || e) }] };
     }
   }
 

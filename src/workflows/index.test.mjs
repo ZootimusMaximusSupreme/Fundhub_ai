@@ -94,6 +94,8 @@ const EXPECTED_WORKFLOW_IDS = [
   "f-10-client-funding-inbox-provisioner",
   "f-11-bank-email-event-router",
   "finance-os-pull-sweeper",
+  "blueprint-finance-os-alerts",
+  "blueprint-next-funding-sequence-sweeper",
   "hiring-bench-sweeper",
   "hiring-outreach-cadence",
   "inquiry-call-sweeper",
@@ -139,6 +141,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "u-04-promote-crs-primary",
   "u-05-data-health-monitor",
   "waypoint-nudge-sweeper",
+  "blueprint-closer-ready-sweeper",
 ];
 
 /* Every id passed to inngest.createFunction in this directory, read from the

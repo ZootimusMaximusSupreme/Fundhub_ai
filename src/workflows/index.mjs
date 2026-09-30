@@ -18,7 +18,10 @@ import { commasInboxDrain } from './commas-inbox-drain.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
 import { hiringOutreachCadence } from './hiring-outreach-cadence.mjs';
 import { waypointNudgeSweeper } from './waypoint-nudge-sweeper.mjs';
+import { blueprintCloserReadySweeper } from './blueprint-closer-ready-sweeper.mjs';
 import { financeOsPullSweeper } from './finance-os-pull-sweeper.mjs';
+import { blueprintNextFundingSequenceSweeper } from './blueprint-next-funding-sequence-sweeper.mjs';
+import { blueprintFinanceOsAlerts } from './blueprint-finance-os-alerts.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { affiliatePayoutRun } from './affiliate-payout-run.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
@@ -204,7 +207,10 @@ export const functions = [
      never chased, and the last rung is a staff task rather than a fourth
      message. */
   waypointNudgeSweeper,
+  blueprintCloserReadySweeper,
   financeOsPullSweeper,
+  blueprintNextFundingSequenceSweeper,
+  blueprintFinanceOsAlerts,
 
   /* THE END OF A CHECKOUT INVITATION. Registered 2026-09-06, and it is the
      other half of the sweeper above.

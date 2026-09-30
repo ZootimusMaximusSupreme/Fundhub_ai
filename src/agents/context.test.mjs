@@ -31,6 +31,21 @@ function mockDb(extra = {}) {
       if (/FROM call_outcomes/i.test(sql)) {
         return { rows: extra.calls || [] };
       }
+      if (/FROM client_waypoints/i.test(sql)) {
+        return {
+          rows: extra.waypoints || [{
+            id: "wp-1",
+            key: "paydown_capital_one",
+            title: "Pay Capital One down to $300",
+            detail: null,
+            position: 1,
+            owner_kind: "client",
+            state: "in_progress",
+            due_at: "2026-10-01T00:00:00Z",
+            paid_alternative_price_cents: null
+          }]
+        };
+      }
       return { rows: [] };
     }
   };
@@ -63,6 +78,13 @@ test("fetchContext includes interview answers and the recording link", async () 
   assert.match(ctx.as_prompt_block, /Loved the closer/);
   assert.match(ctx.as_prompt_block, /deposit/);
   assert.match(ctx.as_prompt_block, /three thousand is a start/);
+});
+
+test("fetchContext includes open checklist step for the coach", async () => {
+  const ctx = await fetchContext(mockDb(), { orgId: ORG, clientId: CLIENT });
+  assert.ok(ctx.checklist?.open_step);
+  assert.match(ctx.checklist.open_step.title, /Capital One/);
+  assert.match(ctx.as_prompt_block, /Open checklist step/);
 });
 
 test("formatPromptBlock omits empty interview blocks", () => {

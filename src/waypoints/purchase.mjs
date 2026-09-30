@@ -33,6 +33,7 @@
 // no file there is no number, and NULL means unknown and must survive.
 
 import { seedClientWaypoints } from "./seed.mjs";
+import { assignCsmForBlueprintPurchase } from "../blueprint/assign-csm.mjs";
 import { OFFERS } from "../config/offers.mjs";
 /* 'succeeded' is the whole set of paid statuses. Imported rather than retyped —
    src/entitlements/entitlements.mjs owns that fact and writes down why. */
@@ -89,10 +90,14 @@ export async function seedChecklistForPurchase(db, {
   if (!orgId || !clientId) {
     return { ok: false, seeded: [], error: "orgId and clientId are required" };
   }
-  const args = { orgId, clientId };
+  const csmAssign = await assignCsmForBlueprintPurchase(db, { orgId, clientId, productCode })
+    .catch((err) => ({ assigned: false, error: String(err?.message || err) }));
+
+  const args = { orgId, clientId, blueprintDisputeSteps: true };
   if (now !== undefined) args.now = now;
-  return seedClientWaypoints(db, args)
+  const seeded = await seedClientWaypoints(db, args)
     .catch((err) => ({ ok: false, seeded: [], error: String(err?.message || err) }));
+  return { ...seeded, csmAssign };
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════

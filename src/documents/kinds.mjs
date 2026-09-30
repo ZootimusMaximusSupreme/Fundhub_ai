@@ -62,6 +62,7 @@ export const SUBTYPES = Object.freeze({
     "proof_of_income",
     "tax_return",
     "additional_fraud_docs",
+    "dispute_mail_receipt",
     "other"
   ]),
   bureau_response: Object.freeze([
@@ -108,6 +109,7 @@ export const SUBTYPE_TITLES = Object.freeze({
   proof_of_income: "Proof of Income",
   tax_return: "Tax Return",
   additional_fraud_docs: "Additional documentation — fraud / identity theft cases",
+  dispute_mail_receipt: "Dispute Mailing Proof",
   bureau_letter: "Bureau Response Letter",
   ftc_report: "FTC Identity Theft Report",
   other: "Uploaded Document"

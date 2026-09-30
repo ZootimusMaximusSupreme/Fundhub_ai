@@ -43,7 +43,8 @@ import {
   expandDefinitions,
   revolvingAccounts,
   mergeByCreditor,
-  withAccountPrints
+  withAccountPrints,
+  isBlueprintDisputeDefinitionKey
 } from "./definitions.mjs";
 import { upsertWaypoint, completeWaypoint, WaypointError } from "./store.mjs";
 
@@ -123,6 +124,9 @@ async function existingWaypoints(db, { orgId, clientId }) {
  *                                   one; otherwise the freshest stored one is
  *                                   read
  * @param {object}  [args.personal]  name/address, when the caller already has it
+ * @param {boolean} [args.blueprintDisputeSteps=false]
+ *        When true, include Capital Blueprint DIY dispute-round rows (migration
+ *        400). Capital Blueprint purchase sets this; repair-only enroll does not.
  * @returns {Promise<{
  *   ok: true, seeded: string[], skipped: object[], completed: string[],
  *   creditFile: 'crs_result'|'none', accounts: number, definitions: number
@@ -133,12 +137,16 @@ export async function seedClientWaypoints(db, {
   clientId,
   now = new Date(),
   crsResult = undefined,
-  personal = undefined
+  personal = undefined,
+  blueprintDisputeSteps = false
 } = {}) {
   if (!db?.query) throw new WaypointError("db required", { status: 500, code: "db_required" });
   if (!orgId || !clientId) throw new WaypointError("orgId and clientId are required");
 
-  const definitions = await loadWaypointDefinitions(db);
+  let definitions = await loadWaypointDefinitions(db);
+  if (!blueprintDisputeSteps) {
+    definitions = definitions.filter((d) => !isBlueprintDisputeDefinitionKey(d.key));
+  }
 
   /* An empty catalog is a real answer and not an error: somebody has turned
      every task off, or migration 362 has not been applied to this database. It

@@ -49,11 +49,15 @@ describe("dueClients", () => {
 describe("sweep", () => {
   test("an empty due list writes nothing and errors nothing", async () => {
     const db = fakeDb([[]]);
-    const tally = await sweep(db, { now: new Date("2026-09-09") });
+    const tally = await sweep(db, {
+      now: new Date("2026-09-09"),
+      fulfil: async () => ({ checked: 0, fulfilled: 0 })
+    });
     assert.equal(tally.checked, 0);
     assert.equal(tally.requested, 0);
     assert.deepEqual(tally.skipped, []);
     assert.deepEqual(tally.errored, []);
+    assert.ok(tally.fulfil);
   });
 
   test("a due client with valid consent and nothing open gets a system-requested row", async () => {

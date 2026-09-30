@@ -28,6 +28,7 @@ import { on } from "../events/registry.mjs";
 import { resolveClient } from "./client-lifecycle.mjs";
 import { recordOptOut, recordOptIn } from "../lib/opt-out.mjs";
 import { createTask } from "../lib/create-task.mjs";
+import { createBlueprintCoachStopTask } from "../blueprint/coach-exception.mjs";
 import { isInterviewBooking } from "../insights/meet.mjs";
 import { addTags } from "../workflows/tags.mjs";
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
@@ -215,6 +216,14 @@ export async function onMessageInbound(event, db) {
   if (clientId && stopWords) {
     if (stopWords.has(word)) {
       await recordOptOut(db, clientId, event.orgId, channel, "inbound_keyword");
+      if (channel === "sms") {
+        await createBlueprintCoachStopTask(db, {
+          orgId: event.orgId,
+          clientId,
+          providerRef: p.sid || null,
+          channel
+        });
+      }
     } else if (startWords && startWords.has(word)) {
       await recordOptIn(db, clientId, channel);
     }

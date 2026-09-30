@@ -42,6 +42,8 @@ import {
 } from "../commissions/index.mjs";
 import { grantFromTransaction } from "../entitlements/entitlements.mjs";
 import { seedChecklistForPurchase } from "../waypoints/purchase.mjs";
+import { createWelcomeKitTaskForPurchase } from "../blueprint/welcome-kit.mjs";
+import { ensureFinanceOsForBlueprintPurchase } from "../finance/finance-os-entitlement.mjs";
 import { createFundingCloseoutSafe } from "../funding/closeout.mjs";
 import { attachGateToRound } from "../inquiry-ops/gate.mjs";
 import { accrueForPaymentSafe, voidForRefund } from "../partners/revenue.mjs";
@@ -731,6 +733,29 @@ async function grantForPurchase(db, event, { clientId, product } = {}) {
       `[money-chain] checklist not built for client ${clientId} on ${product.code}: ${out.checklist.error}`
     );
   }
+
+  out.financeOs = await ensureFinanceOsForBlueprintPurchase(db, {
+    orgId: event.orgId,
+    clientId,
+    paidAt: event.occurredAt ? new Date(event.occurredAt) : new Date(),
+    productCode: product.code
+  }).catch((err) => ({
+    created: false,
+    subscriptionId: null,
+    reason: String(err?.message || err)
+  }));
+  if (out.financeOs?.created === false && out.financeOs?.reason
+      && !["already_entitled", "not_blueprint_product"].includes(out.financeOs.reason)) {
+    console.warn(
+      `[money-chain] finance-os subscription not opened for client ${clientId} on ${product.code}: ${out.financeOs.reason}`
+    );
+  }
+
+  out.welcomeKit = await createWelcomeKitTaskForPurchase(db, {
+    orgId: event.orgId,
+    clientId,
+    productCode: product.code
+  });
 
   return out;
 }

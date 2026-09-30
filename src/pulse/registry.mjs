@@ -122,6 +122,7 @@ const API_KEYS = [
   "finance/entities",
   "finance/liabilities",
   "finance/model",
+  "finance/paydown-simulator",
   "finance/soft-pull",
   "finance/subscriptions",
   "gifts/message-blaster",
@@ -238,6 +239,7 @@ const API_KEYS = [
   "read/ai-bureau-config",
   "read/bank-inbox",
   "read/banking-surface",
+  "read/blueprint-combined-approval",
   "read/call-outcomes",
   /* The only read behind the client progress page. An outage here is a client
      who paid up to $10,000 seeing no scores, no checklist and no next step. */

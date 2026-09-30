@@ -32,6 +32,13 @@ import { lastFour } from "../metro2/normalize.mjs";
 /** Tokens the catalog copy may use. Anything else is left alone. */
 export const COPY_TOKENS = Object.freeze(["creditor", "target", "state_clause"]);
 
+/** Capital Blueprint dispute-round definitions (migration 400). Repair-only seed skips these. */
+export const BLUEPRINT_DISPUTE_DEFINITION_KEY_PREFIX = "blueprint_dispute_";
+
+export function isBlueprintDisputeDefinitionKey(key) {
+  return String(key || "").startsWith(BLUEPRINT_DISPUTE_DEFINITION_KEY_PREFIX);
+}
+
 /** The utilization target the Credit Optimization Roadmap works to: 10% of the
  *  limit (scripts/black-reports/fundhub_gen.py target_bal(), :270). Named here
  *  rather than typed inline so the two places that need it cannot drift. */

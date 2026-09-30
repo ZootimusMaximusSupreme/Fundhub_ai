@@ -193,7 +193,11 @@ describe("nothing seeds a waypoint — until enrolment does", { skip: !HAVE_DB ?
          FROM waypoint_definitions WHERE active ORDER BY position`
     )).rows;
     assert.deepEqual(rows.map((r) => r.key), [
-      "paydown_revolving_account", "no_new_credit", "personal_loan",
+      "paydown_revolving_account",
+      "blueprint_dispute_mail_letters",
+      "blueprint_dispute_mail_receipt",
+      "blueprint_dispute_bureau_response",
+      "no_new_credit", "personal_loan",
       "form_llc", "get_ein", "business_checking"
     ]);
     // "we dont do DUNS" — Chris, 2026-09-05. Nor net-30 vendors, nor Paydex:

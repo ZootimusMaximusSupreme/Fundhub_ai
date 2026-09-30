@@ -20,8 +20,11 @@
 // moment a price is decided; that is a separate, later billing decision.
 
 import { db } from "../db.mjs";
+import { startSubscription, SubscriptionConflictError } from "../subscriptions/store.mjs";
+import { BLUEPRINT_PRODUCT_CODE } from "../waypoints/purchase.mjs";
 
 export const FINANCE_OS_TIER = "finance-os";
+export const FINANCE_OS_BLUEPRINT_MONTHS = 12;
 
 /**
  * financeOsEntitlement(conn, { orgId, clientId, asOf }) →
@@ -62,6 +65,62 @@ export async function financeOsEntitlement(conn = db, { orgId, clientId, asOf = 
     return { entitled: false, subscriptionId: null, reason: "no active finance-os subscription" };
   }
   return { entitled: true, subscriptionId: row.id, reason: null };
+}
+
+function addUtcMonths(date, months) {
+  const d = new Date(date.getTime());
+  d.setUTCMonth(d.getUTCMonth() + months);
+  return d;
+}
+
+/**
+ * ensureFinanceOsForBlueprintPurchase — 12 months Finance OS from pay date.
+ * Idempotent when an active finance-os row already covers `paidAt`.
+ */
+export async function ensureFinanceOsForBlueprintPurchase(conn = db, {
+  orgId,
+  clientId,
+  paidAt = new Date(),
+  productCode = BLUEPRINT_PRODUCT_CODE
+} = {}) {
+  const code = String(productCode || "").trim().toLowerCase();
+  if (code !== BLUEPRINT_PRODUCT_CODE) {
+    return { created: false, subscriptionId: null, reason: "not_blueprint_product" };
+  }
+  if (!orgId || !clientId) {
+    return { created: false, subscriptionId: null, reason: "orgId and clientId are required" };
+  }
+
+  const existing = await financeOsEntitlement(conn, { orgId, clientId, asOf: paidAt });
+  if (existing.entitled) {
+    return { created: false, subscriptionId: existing.subscriptionId, reason: "already_entitled" };
+  }
+
+  const periodStart = paidAt;
+  const periodEnd = addUtcMonths(paidAt, FINANCE_OS_BLUEPRINT_MONTHS);
+
+  try {
+    const row = await startSubscription(conn, {
+      orgId,
+      clientId,
+      tier: FINANCE_OS_TIER,
+      priceCents: null,
+      periodStart,
+      periodEnd,
+      at: paidAt,
+      notes: "Capital Blueprint purchase — Finance OS included for 12 months"
+    });
+    return { created: true, subscriptionId: row.id, periodStart, periodEnd };
+  } catch (e) {
+    if (e instanceof SubscriptionConflictError) {
+      const again = await financeOsEntitlement(conn, { orgId, clientId, asOf: paidAt });
+      if (again.entitled) {
+        return { created: false, subscriptionId: again.subscriptionId, reason: "already_entitled" };
+      }
+      return { created: false, subscriptionId: null, reason: e.message };
+    }
+    throw e;
+  }
 }
 
 export default financeOsEntitlement;

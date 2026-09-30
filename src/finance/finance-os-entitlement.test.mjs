@@ -1,7 +1,12 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
-import { financeOsEntitlement, FINANCE_OS_TIER } from "./finance-os-entitlement.mjs";
+import {
+  financeOsEntitlement,
+  FINANCE_OS_TIER,
+  ensureFinanceOsForBlueprintPurchase
+} from "./finance-os-entitlement.mjs";
+import { BLUEPRINT_PRODUCT_CODE } from "../waypoints/purchase.mjs";
 
 const ORG = "11111111-1111-1111-1111-111111111111";
 const CLIENT = "22222222-2222-2222-2222-222222222222";
@@ -75,5 +80,30 @@ describe("financeOsEntitlement", () => {
     const db = fakeDb([{ id: SUB }]);
     await financeOsEntitlement(db, { orgId: ORG, clientId: CLIENT });
     assert.doesNotMatch(db.calls[0].text, /price_cents/);
+  });
+});
+
+describe("ensureFinanceOsForBlueprintPurchase", () => {
+  test("skips non-blueprint products", async () => {
+    const db = fakeDb([]);
+    const r = await ensureFinanceOsForBlueprintPurchase(db, {
+      orgId: ORG,
+      clientId: CLIENT,
+      productCode: "diy-letter-pack"
+    });
+    assert.equal(r.created, false);
+    assert.equal(r.reason, "not_blueprint_product");
+  });
+
+  test("skips when already entitled", async () => {
+    const db = fakeDb([{ id: SUB }]);
+    const r = await ensureFinanceOsForBlueprintPurchase(db, {
+      orgId: ORG,
+      clientId: CLIENT,
+      productCode: BLUEPRINT_PRODUCT_CODE
+    });
+    assert.equal(r.created, false);
+    assert.equal(r.reason, "already_entitled");
+    assert.equal(r.subscriptionId, SUB);
   });
 });

@@ -12,6 +12,12 @@
 //                  it OPEN — an account we cannot see is unknown, and unknown
 //                  is not "paid off".
 //
+//   dispute_mail_receipt   A client_upload with subtype dispute_mail_receipt on
+//                          this client's documents row closes the step.
+//
+//   bureau_response_upload Any document with kind bureau_response on this client
+//                          closes the step.
+//
 //   no_new_credit  Evidence flows ONE WAY. A revolving account on the new file
 //                  that we can POSITIVELY SAY was not on the file at enrolment
 //                  is evidence the rule was broken, and the row goes to
@@ -167,6 +173,37 @@ export function classifyAgainstBaseline(params, accounts = []) {
  * to tell us if it is wrong. The old wording — "New credit opened after
  * enrolment: CREDIT ONE BANK N.A. account(s)." — did all three of the opposite.
  */
+/** @typedef {{ kind: string, subtype?: string|null }} ClientDocumentRow */
+
+/** Whether mailing proof is on file. Pure — no database. */
+export function judgeDisputeMailReceipt(documents = []) {
+  const hit = documents.some(
+    (d) => d?.kind === "client_upload" && d?.subtype === "dispute_mail_receipt"
+  );
+  return hit
+    ? { verdict: "complete", reason: "dispute_mail_receipt_uploaded" }
+    : { verdict: "open", reason: "no_dispute_mail_receipt" };
+}
+
+/** Whether a bureau response upload is on file. Pure — no database. */
+export function judgeBureauResponseUpload(documents = []) {
+  const hit = documents.some((d) => d?.kind === "bureau_response");
+  return hit
+    ? { verdict: "complete", reason: "bureau_response_uploaded" }
+    : { verdict: "open", reason: "no_bureau_response" };
+}
+
+const DOCUMENT_VERIFY_KINDS = new Set(["dispute_mail_receipt", "bureau_response_upload"]);
+
+async function loadClientDocumentKinds(db, { orgId, clientId }) {
+  const r = await db.query(
+    `SELECT kind, subtype FROM documents
+      WHERE org_id = $1::uuid AND client_id = $2::uuid`,
+    [orgId, clientId]
+  );
+  return r.rows || [];
+}
+
 export function newAccountReason(newAccounts = []) {
   const names = newAccounts.map((a) => a.creditor).filter(Boolean);
   const one = newAccounts.length === 1;
@@ -217,6 +254,11 @@ export async function evaluateWaypoints(db, {
   };
   if (!open.length) return empty;
 
+  const needsDocuments = open.some((w) => DOCUMENT_VERIFY_KINDS.has(w.verify_kind));
+  const documents = needsDocuments
+    ? await loadClientDocumentKinds(db, { orgId, clientId })
+    : [];
+
   let file = crsResult;
   if (file === undefined) {
     const row = await latestCreditFile(db, { orgId, clientId });
@@ -224,33 +266,22 @@ export async function evaluateWaypoints(db, {
   }
   const usable = file && hasBlackReportSource(file) ? file : null;
 
-  /* NO FILE, NO VERDICTS. A pull that did not come back is not evidence that a
-     card was paid down and it is not evidence that a card was opened. Every row
-     is reported unchanged with the reason, and not one is touched. */
-  if (!usable) {
-    return {
-      ok: true,
-      checked: open.length,
-      completed: [],
-      blocked: [],
-      unblocked: [],
-      unchanged: open.map((w) => ({ key: w.key, reason: "no_credit_file" })),
-      creditFile: "none"
-    };
-  }
-
-  const built = buildBlackReportClient({ crsResult: usable, personal: null });
-  // One entry per card, merged the conservative way: the highest balance any
-  // bureau reports against the lowest limit any bureau reports. So a paydown
-  // closes only when EVERY bureau reporting that card is at or under target.
-  const accounts = withAccountPrints(mergeByCreditor(revolvingAccounts(built.revolving)), usable);
-  const byAccount = new Map(accounts.map((a) => [a.accountKey, a]));
-  /* The same cards indexed by PRINT. This is the index that survives a bureau
-     renaming a creditor, and it is consulted before a card is written off as
-     missing from the file. */
-  const byPrint = new Map();
-  for (const a of accounts) {
-    for (const print of a.prints || []) if (!byPrint.has(print)) byPrint.set(print, a);
+  let accounts = [];
+  let byAccount = new Map();
+  let byPrint = new Map();
+  if (usable) {
+    const built = buildBlackReportClient({ crsResult: usable, personal: null });
+    // One entry per card, merged the conservative way: the highest balance any
+    // bureau reports against the lowest limit any bureau reports. So a paydown
+    // closes only when EVERY bureau reporting that card is at or under target.
+    accounts = withAccountPrints(mergeByCreditor(revolvingAccounts(built.revolving)), usable);
+    byAccount = new Map(accounts.map((a) => [a.accountKey, a]));
+    /* The same cards indexed by PRINT. This is the index that survives a bureau
+       renaming a creditor, and it is consulted before a card is written off as
+       missing from the file. */
+    for (const a of accounts) {
+      for (const print of a.prints || []) if (!byPrint.has(print)) byPrint.set(print, a);
+    }
   }
 
   const completed = [];
@@ -259,6 +290,33 @@ export async function evaluateWaypoints(db, {
   const unchanged = [];
 
   for (const w of open) {
+    if (w.verify_kind === "dispute_mail_receipt") {
+      const judged = judgeDisputeMailReceipt(documents);
+      if (judged.verdict === "complete") {
+        await completeWaypoint(db, { orgId, clientId, key: w.key, at: now });
+        completed.push({ key: w.key, reason: judged.reason });
+      } else {
+        unchanged.push({ key: w.key, reason: judged.reason });
+      }
+      continue;
+    }
+
+    if (w.verify_kind === "bureau_response_upload") {
+      const judged = judgeBureauResponseUpload(documents);
+      if (judged.verdict === "complete") {
+        await completeWaypoint(db, { orgId, clientId, key: w.key, at: now });
+        completed.push({ key: w.key, reason: judged.reason });
+      } else {
+        unchanged.push({ key: w.key, reason: judged.reason });
+      }
+      continue;
+    }
+
+    if (!usable) {
+      unchanged.push({ key: w.key, reason: "no_credit_file" });
+      continue;
+    }
+
     if (w.verify_kind === "paydown") {
       const ck = w.params?.creditor_key;
       /* Name first, because it is right nearly every time and it is what the
@@ -327,6 +385,6 @@ export async function evaluateWaypoints(db, {
     blocked,
     unblocked,
     unchanged,
-    creditFile: "crs_result"
+    creditFile: usable ? "crs_result" : "none"
   };
 }

@@ -195,7 +195,12 @@ describe("paying for the Capital Blueprint creates the checklist", {
 
     // The steps that need no credit file are all there.
     const keys = rows.map((r) => r.key);
-    for (const k of ["no_new_credit", "personal_loan", "form_llc", "get_ein", "business_checking"]) {
+    for (const k of [
+      "blueprint_dispute_mail_letters",
+      "blueprint_dispute_mail_receipt",
+      "blueprint_dispute_bureau_response",
+      "no_new_credit", "personal_loan", "form_llc", "get_ein", "business_checking"
+    ]) {
       assert.ok(keys.includes(k), `expected step ${k}`);
     }
     // And this client, who HAS a file with cards on it, got paydown steps too.

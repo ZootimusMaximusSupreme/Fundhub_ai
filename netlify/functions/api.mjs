@@ -67,6 +67,7 @@ import readCommissions from "../../api/read/commissions.mjs";
 import readInvoices from "../../api/read/invoices.mjs";
 import readDocuments from "../../api/read/documents.mjs";
 import readBankInbox from "../../api/read/bank-inbox.mjs";
+import readBlueprintCombinedApproval from "../../api/read/blueprint-combined-approval.mjs";
 import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
 import readAffiliatePortal from "../../api/read/affiliate-portal.mjs";
@@ -240,6 +241,7 @@ import financeBills from "../../api/finance/bills.mjs";
 import financeCashflow from "../../api/finance/cashflow.mjs";
 import financeAlerts from "../../api/finance/alerts.mjs";
 import financeModel from "../../api/finance/model.mjs";
+import financePaydownSimulator from "../../api/finance/paydown-simulator.mjs";
 import bankingAccounts from "../../api/banking/accounts.mjs";
 import consentCapture from "../../api/consent/capture.mjs";
 import softPullApprove from "../../api/soft-pull-approve.mjs";
@@ -510,6 +512,9 @@ export const ROUTES = {
   // while working the same file. Routed in the same commit as the handler and
   // the screen.
   "read/banking-surface": readBankingSurface,
+
+  // Capital Blueprint — primary + credit partner combined prequal (lane 6).
+  "read/blueprint-combined-approval": readBlueprintCombinedApproval,
 
   // read/underwrite runs the vendored UnderwriteIQ Lite engine over the same
   // tradeline rows read/tradelines and read/finance-os already serve to
@@ -1009,6 +1014,7 @@ export const ROUTES = {
   "finance/cashflow": financeCashflow,
   "finance/alerts": financeAlerts,
   "finance/model": financeModel,
+  "finance/paydown-simulator": financePaydownSimulator,
 
   // Banking manual entry. The first thing in this repository that writes
   // bank_accounts — the table has existed since 080/081 with a read endpoint, a

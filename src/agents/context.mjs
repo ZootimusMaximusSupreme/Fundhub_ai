@@ -7,6 +7,9 @@
 //
 // READ ONLY. Nothing here writes. Missing pieces stay null — never invented.
 
+import { listWaypoints } from "../waypoints/store.mjs";
+import { nextStepOf } from "../progress/read.mjs";
+
 const RECENT_MESSAGE_LIMIT = 20;
 
 const SURVEY_KEYS = [
@@ -28,6 +31,7 @@ const SURVEY_KEYS = [
  *     snapshot: { pipeline_stage, funding_round, fico, prequal_amount, agent_context_field, outcome_tier },
  *     insights: [{ stage, channel, answers, notes, recording_url, meeting_url, occurred_at }],
  *     recent_calls: [{ outcome, notes, recording_url, transcript, logged_at }],
+ *     checklist: { open_step, open_count } | null,
  *     as_prompt_block: string   // ready to inject under the system prompt
  *   }
  */
@@ -234,6 +238,29 @@ export async function fetchContext(db, {
     logged_at: row.logged_at || null
   }));
 
+  const waypoints = await listWaypoints(db, { orgId, clientId });
+  const next = nextStepOf(waypoints);
+  const openStepRow = next
+    ? waypoints.find((w) => w.id === next.waypointId) || null
+    : null;
+  context.checklist = {
+    open_step: openStepRow
+      ? {
+          id: openStepRow.id,
+          key: openStepRow.key,
+          title: openStepRow.title,
+          detail: openStepRow.detail || null,
+          state: openStepRow.state,
+          owner: openStepRow.owner_kind || next.owner || null,
+          due_at: openStepRow.due_at || null,
+          overdue: !!openStepRow.overdue
+        }
+      : null,
+    open_count: waypoints.filter((w) =>
+      w.state === "not_started" || w.state === "in_progress" || w.state === "blocked"
+    ).length
+  };
+
   context.as_prompt_block = formatPromptBlock(context);
   return context;
 }
@@ -314,6 +341,16 @@ export function formatPromptBlock(ctx) {
         lines.push(`    said: ${String(call.transcript).slice(0, 1200)}`);
       }
     }
+  }
+  const step = ctx.checklist?.open_step;
+  if (step) {
+    lines.push("Open checklist step (Capital Blueprint coach — stay on this step only):");
+    lines.push(`  Title: ${step.title}`);
+    if (step.detail) lines.push(`  Detail: ${String(step.detail).slice(0, 800)}`);
+    if (step.due_at) lines.push(`  Due: ${step.due_at}${step.overdue ? " (overdue)" : ""}`);
+    lines.push(`  State: ${step.state}`);
+  } else if (ctx.checklist && ctx.checklist.open_count === 0) {
+    lines.push("Checklist: no open steps (all done or not seeded).");
   }
   return lines.join("\n");
 }
