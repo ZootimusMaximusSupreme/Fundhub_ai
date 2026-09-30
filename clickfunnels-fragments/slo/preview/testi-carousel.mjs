@@ -58,17 +58,28 @@ export const ROADMAP_JS = `
   }
   var phone=window.matchMedia('(max-width:699px)');
   var still=window.matchMedia('(prefers-reduced-motion: reduce)');
-  var travel=0,queued=false,on=false;
+  /* Chris, 2026-09-29: "start it 20% lower". The slide begins 20% of the
+     screen height later in the scroll than on /watch, over the same distance. */
+  var LATER=0.2;
+  /* Each frame the row closes this share of the gap to where the scroll puts
+     it, so a flick of the thumb glides instead of jumping. */
+  var EASE=0.14;
+  var travel=0,queued=false,on=false,x=null,last=0;
   function measure(){travel=Math.max(0,track.offsetWidth-rail.clientWidth);}
-  function frame(){
+  function full(){return document.fullscreenElement||document.webkitFullscreenElement||[].some.call(cards,function(c){var v=c.querySelector('video');return v&&v.webkitDisplayingFullscreen;});}
+  function frame(t){
     queued=false;
     if(!on)return;
     if(rail.scrollLeft)rail.scrollLeft=0;
     var r=rail.getBoundingClientRect(),vh=window.innerHeight||document.documentElement.clientHeight;
-    var x=fhxShift(r.top,r.height,vh,travel);
+    var goal=fhxShift(r.top+vh*LATER,r.height,vh,travel);
+    var dt=last?Math.min(t-last,64):16.7;last=t;
+    if(x===null)x=goal;else x+=(goal-x)*(1-Math.pow(1-EASE,dt/16.7));
+    if(Math.abs(goal-x)<0.3)x=goal;
     track.style.transform='translate3d('+x.toFixed(1)+'px,0,0)';
+    if(x!==goal)queue();else last=0;
     /* A playing video that slides out of the row stops. */
-    [].forEach.call(cards,function(c){var v=c.querySelector('video');if(!v||v.paused)return;var b=c.getBoundingClientRect();if(b.right<0||b.left>rail.clientWidth)v.pause();});
+    if(!full())[].forEach.call(cards,function(c){var v=c.querySelector('video');if(!v||v.paused)return;var b=c.getBoundingClientRect();if(b.right<0||b.left>rail.clientWidth)v.pause();});
   }
   function queue(){if(queued)return;queued=true;window.requestAnimationFrame(frame);}
   function mode(){
@@ -76,9 +87,24 @@ export const ROADMAP_JS = `
     on=p&&!still.matches;
     rail.classList.toggle('fhc-scroll',on);
     rail.classList.toggle('fhc-swipe',p&&!on);
+    x=null;last=0;
     if(on){rail.scrollLeft=0;measure();}else track.style.transform='';
     queue();
   }
+  /* Chris, 2026-09-29: "when you press it goes full screen". On a phone, the
+     Play button or the video opens that video full screen and plays it. */
+  [].forEach.call(cards,function(c){
+    var v=c.querySelector('video'),o=c.querySelector('.tplay');if(!v)return;
+    function big(){
+      if(!phone.matches||full())return;
+      var p=v.play();if(p&&p.catch)p.catch(function(){});
+      if(v.requestFullscreen){var f=v.requestFullscreen();if(f&&f.catch)f.catch(function(){});}
+      else if(v.webkitRequestFullscreen)v.webkitRequestFullscreen();
+      else if(v.webkitEnterFullscreen){try{v.webkitEnterFullscreen();}catch(e){}}
+    }
+    if(o)o.addEventListener('click',big);
+    v.addEventListener('click',big);
+  });
   if(!window.requestAnimationFrame){rail.classList.add('fhc-swipe');return;}
   document.addEventListener('scroll',queue,{capture:true,passive:true});
   window.addEventListener('resize',function(){if(on)measure();queue();},{passive:true});
