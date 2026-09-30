@@ -88,6 +88,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .chip.owed{ color:var(--amber); background:var(--amber-bg); border-color:rgba(107,74,18,.28); }
 .chip.mine{ color:var(--green); background:var(--green-bg); border-color:rgba(44,81,56,.28); }
 .chip.num{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+/* Capital Blueprint rows say so in words and carry a solid border, so the mark survives a one-hue brand. */
+.chip.bp{ color:var(--text); border-color:var(--ink2); font-weight:600; }
 
 .btn{ border:1px solid var(--ink2); background:var(--ink2); color:var(--paper); border-radius:7px;
       padding:10px 16px; font-weight:600; cursor:pointer; min-height:40px; }
@@ -367,6 +369,17 @@ button,input,select,textarea{font:inherit;color:inherit}
     return null;
   }
 
+  /* CAPITAL BLUEPRINT EXCEPTION TASKS. They are ordinary CSM tasks, told apart
+     by the source_workflow the backend stamps on them (src/blueprint/
+     coach-exception.mjs and closer-ready.mjs). Nothing here asks the queue for
+     anything new: the read already carries source_workflow and
+     assignee_staff_id. */
+  var BLUEPRINT_KIND = {
+    "blueprint-coach": "Exception: client stopped coach texts",
+    "blueprint-csm-prep": "Closing prep call before the closer"
+  };
+  function blueprintKind(row) { return BLUEPRINT_KIND[row.source_workflow] || null; }
+
   var state = {
     rows: [],
     shift: null,          // the open shift row, or null
@@ -476,7 +489,16 @@ button,input,select,textarea{font:inherit;color:inherit}
     for (var i = 0; i < row.owned_codes.length; i++) {
       chips += '<span class="chip">Has ' + esc(row.owned_codes[i]) + "</span>";
     }
-    if (mine) chips += '<span class="chip mine">Claimed by you</span>';
+    var bpKind = blueprintKind(row);
+    if (bpKind) chips = '<span class="chip bp" title="' + esc(bpKind) + '">Capital Blueprint</span>' + chips;
+    if (row.source_workflow === "blueprint-csm-prep") {
+      /* The prep task is created for the CSM assigned to the client when there
+         is one (createBlueprintCsmPrepCallTask), so a holder here is that
+         CSM. Nobody holding it means no CSM was assigned yet. */
+      if (mine) chips += '<span class="chip mine" title="This prep call sits with the CSM on this client\'s file.">Assigned CSM: you</span>';
+      else if (taken) chips += '<span class="chip" title="This prep call sits with the CSM on this client\'s file.">Assigned CSM: a teammate</span>';
+      else chips += '<span class="chip" title="No CSM holds this prep call yet.">No CSM assigned yet</span>';
+    } else if (mine) chips += '<span class="chip mine">Claimed by you</span>';
     else if (taken) chips += '<span class="chip">Claimed by a teammate</span>';
 
     var acts = "";
@@ -570,6 +592,12 @@ button,input,select,textarea{font:inherit;color:inherit}
     $("qOverdue").textContent = late
       ? (late === 1 ? "1 call past due" : late + " calls past due")
       : "No calls past due";
+    var bpCount = 0;
+    for (var b = 0; b < state.rows.length; b++) if (blueprintKind(state.rows[b])) bpCount++;
+    if (bpCount) {
+      $("qOverdue").textContent += " · " + bpCount +
+        (bpCount === 1 ? " Capital Blueprint exception" : " Capital Blueprint exceptions");
+    }
 
     var html = "";
     for (var j = 0; j < state.rows.length; j++) html += rowHtml(state.rows[j]);

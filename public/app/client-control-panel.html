@@ -356,6 +356,19 @@
   }
   #ccp-rep-remove{margin-top:8px;}
 
+  /* Capital Blueprint group. Only class names this screen already sizes are
+     used for text (.kv-label, .fact-note, .fact-row, label), so no second
+     font-size rule is needed. Spacing is on the 8px scale. */
+  .bp-sec{border-top:1px solid var(--line);margin-top:16px;padding-top:16px;}
+  .bp-sec:first-child{border-top:0;margin-top:0;padding-top:0;}
+  .bp-row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;}
+  .bp-todos{margin-top:8px;}
+  .bp-sec-end{margin-top:24px;}
+  .bp-todos .fact-row .k{text-transform:capitalize;}
+  .bp-todos .fact-row .v{font-family:'Inter',sans-serif;}
+  .bp-group .action-btn[disabled]{opacity:.5;cursor:not-allowed;}
+  .bp-group .link-btn[hidden],.bp-group [hidden]{display:none;}
+
   .action-error{
     display:flex;gap:8px;background:var(--red-bg);border:1px solid var(--red-line);border-radius:6px;
     padding:8px 10px;margin-bottom:10px;font-size:var(--fs-caption);color:var(--red);
@@ -1348,6 +1361,90 @@
             <div id="ccp-bank-inbox" hidden></div>
           </div>
         </details>
+      </div>
+
+      <!-- CAPITAL BLUEPRINT. One place for the five things a closer does on a
+           Blueprint client's file: add the credit partner, set the next
+           sequence date, offer the bank tracker and list the banks, and read
+           the combined prequal. Every control posts to
+           POST /api/blueprint/staff-actions, which stays the authority: it
+           answers 403 not_blueprint_buyer for a client who did not buy, and
+           this block says so in words. Folded shut by default (UI-STANDARDS
+           section 9): it is used once per client, not every minute. -->
+      <div class="group bp-group" id="bp-group">
+        <button class="group-title card-title tog" type="button" aria-expanded="false" aria-controls="bp-body">
+          <span>Capital Blueprint</span>
+          <span class="chev"><span class="tog-state" data-open="open" data-shut="collapsed">collapsed</span> <span class="cg">⌄</span></span>
+        </button>
+        <div class="group-body" id="bp-body" hidden>
+
+          <div class="bp-sec">
+            <div class="kv-label">Combined prequal</div>
+            <div class="big mono" id="bp-combined">—</div>
+            <p class="fact-note" id="bp-combined-note">Open a client file to see it.</p>
+            <div class="facts-list">
+              <div class="fact-row"><span class="k" id="bp-primary-label">Primary</span><span class="v" id="bp-primary">—</span></div>
+              <div class="fact-row" id="bp-partner-row" hidden><span class="k" id="bp-partner-label">Partner</span><span class="v" id="bp-partner">—</span></div>
+            </div>
+          </div>
+
+          <div class="bp-sec">
+            <div class="cp-sec-title card-title">Credit partner</div>
+            <p class="consent-state" id="bp-partner-now">Checking whether this client has a credit partner…</p>
+            <a class="link-btn" id="bp-partner-open" href="client-control-panel.html" hidden>Open the partner's file <span class="arrow">↗</span></a>
+            <a class="link-btn" id="bp-partner-consent" href="consent-capture.html" hidden>Record the partner's own consent <span class="arrow">↗</span></a>
+            <div id="bp-partner-form" hidden>
+              <div class="bp-row2">
+                <div>
+                  <label class="rep-label" for="bp-first">First name</label>
+                  <input type="text" id="bp-first" class="rep-field" autocomplete="off">
+                </div>
+                <div>
+                  <label class="rep-label" for="bp-last">Last name</label>
+                  <input type="text" id="bp-last" class="rep-field" autocomplete="off">
+                </div>
+              </div>
+              <label class="rep-label" for="bp-email">Email</label>
+              <input type="email" id="bp-email" class="rep-field" autocomplete="off">
+              <label class="rep-label" for="bp-phone">Phone (optional)</label>
+              <input type="tel" id="bp-phone" class="rep-field" autocomplete="off">
+              <button type="button" class="action-btn" id="bp-partner-add"><span id="bp-partner-add-label">Add credit partner</span></button>
+            </div>
+            <p id="bp-partner-status" class="portal-link-sent" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="bp-sec">
+            <div class="cp-sec-title card-title">Next funding sequence</div>
+            <p class="consent-state" id="bp-date-now">No ready date is set yet.</p>
+            <label class="rep-label" for="bp-date">Ready date</label>
+            <input type="date" id="bp-date" class="rep-field">
+            <button type="button" class="action-btn" id="bp-date-save"><span id="bp-date-save-label">Save ready date</span></button>
+            <p id="bp-date-status" class="portal-link-sent" role="status" aria-live="polite"></p>
+          </div>
+
+          <div class="bp-sec">
+            <div class="cp-sec-title card-title">Bank tracker</div>
+            <p class="consent-state" id="bp-offer-now">Not offered to this client yet.</p>
+            <button type="button" class="action-btn" id="bp-offer"><span id="bp-offer-label">Offer bank tracker</span></button>
+            <p id="bp-offer-status" class="portal-link-sent" role="status" aria-live="polite"></p>
+            <div id="bp-todo-form" hidden>
+              <label class="rep-label" for="bp-bank">Bank</label>
+              <input type="text" id="bp-bank" class="rep-field" autocomplete="off">
+              <label class="rep-label" for="bp-kind">Account</label>
+              <select id="bp-kind" class="rep-field">
+                <option value="personal">Personal</option>
+                <option value="business">Business</option>
+              </select>
+              <label class="rep-label" for="bp-notes">Notes (optional)</label>
+              <input type="text" id="bp-notes" class="rep-field" autocomplete="off">
+              <button type="button" class="action-btn" id="bp-todo-add"><span id="bp-todo-add-label">Add bank to the list</span></button>
+              <p id="bp-todo-status" class="portal-link-sent" role="status" aria-live="polite"></p>
+            </div>
+            <div class="bp-todos" id="bp-todos"><p class="fact-note">Loading the bank list…</p></div>
+            <div class="bp-sec-end"><button type="button" class="link-btn" id="bp-unoffer" hidden>Take the offer back</button></div>
+          </div>
+
+        </div>
       </div>
 
       <div class="group">
@@ -2534,6 +2631,8 @@ document.addEventListener("DOMContentLoaded", function () {
   function render(d) {
     var c = (d && d.client) || {};
     var cf = c.custom_fields || {};
+    /* The Capital Blueprint group reads its two saved flags off this record. */
+    try { document.dispatchEvent(new CustomEvent("ccp:client", { detail: c })); } catch (e) {}
     var name = [c.first_name, c.last_name].filter(Boolean).join(" ");
     setText("ccp-name", name);
     setText("ccp-key", c.email || c.id);
@@ -3497,6 +3596,322 @@ document.addEventListener("DOMContentLoaded", function () {
         });
       });
     }
+  })();
+
+  /* ── CAPITAL BLUEPRINT (staff) ─────────────────────────────────────────────
+     Reads GET /api/read/blueprint-combined-approval and posts to
+     POST /api/blueprint/staff-actions. Field names are the handler's own
+     (api/blueprint/staff-actions.mjs): create_credit_partner takes first_name,
+     last_name, email, phone; set_next_sequence_date takes ready_date;
+     offer_bank_tracker takes offered; add_bank_todo takes bank_key,
+     account_kind, notes; list_bank_todos takes nothing more.
+
+     A raw fetch and not FHData.write on purpose: write() flattens every 403
+     into "not signed in, or not allowed", and the one 403 this block must say
+     out loud is not_blueprint_buyer (the client did not buy the Blueprint). */
+  (function wireBlueprint() {
+    var group = $("bp-group");
+    if (!group) return;
+    var el = {
+      combined: $("bp-combined"), combinedNote: $("bp-combined-note"),
+      primary: $("bp-primary"), primaryLabel: $("bp-primary-label"),
+      partnerRow: $("bp-partner-row"), partner: $("bp-partner"), partnerLabel: $("bp-partner-label"),
+      partnerNow: $("bp-partner-now"), partnerOpen: $("bp-partner-open"), partnerConsent: $("bp-partner-consent"),
+      partnerForm: $("bp-partner-form"), first: $("bp-first"), last: $("bp-last"), email: $("bp-email"),
+      phone: $("bp-phone"), partnerAdd: $("bp-partner-add"), partnerAddLabel: $("bp-partner-add-label"),
+      partnerStatus: $("bp-partner-status"),
+      dateNow: $("bp-date-now"), date: $("bp-date"), dateSave: $("bp-date-save"),
+      dateSaveLabel: $("bp-date-save-label"), dateStatus: $("bp-date-status"),
+      offerNow: $("bp-offer-now"), offer: $("bp-offer"), offerLabel: $("bp-offer-label"),
+      unoffer: $("bp-unoffer"), offerStatus: $("bp-offer-status"),
+      todoForm: $("bp-todo-form"), bank: $("bp-bank"), kind: $("bp-kind"), notes: $("bp-notes"),
+      todoAdd: $("bp-todo-add"), todoAddLabel: $("bp-todo-add-label"), todoStatus: $("bp-todo-status"),
+      todos: $("bp-todos")
+    };
+    var offered = false;
+
+    function say(node, message) { if (node) node.textContent = message || ""; }
+    function allButtons(disabled) {
+      [el.partnerAdd, el.dateSave, el.offer, el.unoffer, el.todoAdd].forEach(function (b) {
+        if (b) b.disabled = disabled;
+      });
+    }
+
+    if (!id) {
+      say(el.partnerNow, "Open a client file first.");
+      say(el.combinedNote, "Open a client file first.");
+      say(el.dateNow, "Open a client file first.");
+      say(el.offerNow, "Open a client file first.");
+      say(el.todos, "Open a client file first.");
+      allButtons(true);
+      [el.first, el.last, el.email, el.phone, el.date, el.bank, el.kind, el.notes].forEach(function (i) {
+        if (i) i.disabled = true;
+      });
+      return;
+    }
+
+    /* Same session the rest of the staff screens use: Bearer token when there
+       is one, same-origin cookie otherwise. A demo token is not a credential. */
+    function api(method, path, body) {
+      var headers = { accept: "application/json" };
+      try {
+        var t = localStorage.getItem("fh_token") || "";
+        if (t && t !== "demo" && t !== "demo-token") headers.authorization = "Bearer " + t;
+      } catch (e) {}
+      var init = { method: method, headers: headers, credentials: "same-origin" };
+      if (body !== undefined) {
+        headers["content-type"] = "application/json";
+        init.body = JSON.stringify(body);
+      }
+      return fetch(path, init).then(
+        function (r) {
+          return r.json().then(
+            function (b) { return { status: r.status, body: b }; },
+            function () { return { status: r.status, body: null }; }
+          );
+        },
+        function () { return { status: 0, body: null, transport: true }; }
+      );
+    }
+    function act(action, fields) {
+      var body = { action: action, client_id: id };
+      for (var k in fields) if (Object.prototype.hasOwnProperty.call(fields, k)) body[k] = fields[k];
+      return api("POST", "/api/blueprint/staff-actions", body);
+    }
+    function ok(res) { return res.status === 200 && res.body && res.body.ok === true; }
+
+    /* What went wrong, in the words of the person at the desk. Never a code. */
+    function problem(res) {
+      var err = String((res.body && res.body.error) || "");
+      if (res.transport || res.status === 0) return "Could not reach the server. Check your connection and try again.";
+      if (res.status === 401) return "You are signed out. Sign in and open this page again.";
+      if (err === "not_blueprint_buyer") return "This client has not paid for the Capital Blueprint, so this is not available for them.";
+      if (err === "partner_name_and_email_required") return "Type a first name, a last name and a real email for the partner.";
+      if (err === "invalid_ready_date") return "Pick a date first.";
+      if (err === "bank_tracker_not_offered") return "Offer the bank tracker to this client first. Then you can add banks.";
+      if (err === "bank_key_required") return "Type the bank's name.";
+      if (err === "invalid_account_kind") return "Pick personal or business.";
+      if (err === "primary_not_found" || res.status === 404) return "That client file was not found. Reload the page.";
+      if (res.status === 403) return "Your account is not allowed to do that.";
+      if (res.status === 503) return "The database is not reachable right now. Try again in a moment.";
+      return "That did not work. Try again in a moment.";
+    }
+
+    function day(ymd) {
+      var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd || ""));
+      if (!m) return "";
+      var d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      try { return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" }); }
+      catch (e) { return ymd; }
+    }
+
+    /* ── the two flags saved on the client record ── */
+    function paintDate(ymd) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(ymd || ""))) {
+        el.date.value = ymd;
+        say(el.dateNow, "Ready on " + day(ymd) + ".");
+      } else {
+        say(el.dateNow, "No ready date is set yet.");
+      }
+    }
+    function paintOffered(on) {
+      offered = !!on;
+      say(el.offerNow, offered ? "Offered to this client. Add the banks below." : "Not offered to this client yet.");
+      el.offer.hidden = offered;
+      el.unoffer.hidden = !offered;
+      el.todoForm.hidden = !offered;
+    }
+    paintOffered(false);
+    document.addEventListener("ccp:client", function (ev) {
+      var c = (ev && ev.detail) || {};
+      var cf = c.custom_fields || {};
+      paintDate(cf.blueprint_next_sequence_ready_date);
+      paintOffered(cf.blueprint_bank_tracker_offered === true ||
+        String(cf.blueprint_bank_tracker_offered || "").toLowerCase() === "true");
+    });
+
+    /* ── combined prequal, and who the partner is ── */
+    function paintCombined(b) {
+      var none = "Not worked out yet";
+      var hasPartner = !!b.partnerClientId;
+      say(el.combined, b.combinedPrequalDisplay || "—");
+      say(el.primaryLabel, (b.primary && b.primary.name) ? b.primary.name + " (primary)" : "Primary");
+      say(el.primary, b.primaryPrequalDisplay || none);
+      el.partnerRow.hidden = !hasPartner;
+      if (hasPartner) {
+        say(el.partnerLabel, (b.partner && b.partner.name) ? b.partner.name + " (partner)" : "Partner");
+        say(el.partner, b.partnerPrequalDisplay || none);
+      }
+      if (b.combinedPrequal == null) {
+        say(el.combinedNote, "No prequal number is worked out for this file yet.");
+      } else if (hasPartner && b.partnerPrequal == null) {
+        say(el.combinedNote, "The partner's number is not worked out yet, so this counts the primary file only.");
+      } else if (hasPartner) {
+        say(el.combinedNote, "The primary number plus the partner's number.");
+      } else {
+        say(el.combinedNote, "No credit partner on this file, so this is the primary file alone.");
+      }
+      if (hasPartner) {
+        say(el.partnerNow, (b.partner && b.partner.name ? b.partner.name : "A credit partner") +
+          " is on this file. One partner is included.");
+        el.partnerOpen.href = "client-control-panel.html?id=" + encodeURIComponent(b.partnerClientId);
+        el.partnerConsent.href = "consent-capture.html?client_id=" + encodeURIComponent(b.partnerClientId);
+        el.partnerOpen.hidden = false;
+        el.partnerConsent.hidden = false;
+        el.partnerForm.hidden = true;
+      } else {
+        say(el.partnerNow, "No credit partner yet. One partner is included with the Blueprint.");
+        el.partnerOpen.hidden = true;
+        el.partnerConsent.hidden = true;
+        el.partnerForm.hidden = false;
+      }
+    }
+    function loadCombined() {
+      return api("GET", "/api/read/blueprint-combined-approval?client_id=" + encodeURIComponent(id)).then(function (res) {
+        if (!ok(res)) {
+          say(el.combined, "—");
+          say(el.combinedNote, "The combined number did not load. " + problem(res));
+          say(el.partnerNow, "Could not check for a credit partner.");
+          el.partnerForm.hidden = true;
+          return;
+        }
+        paintCombined(res.body);
+      });
+    }
+
+    /* ── credit partner ── */
+    el.partnerAdd.addEventListener("click", function () {
+      if (el.partnerAdd.disabled) return;
+      el.partnerAdd.disabled = true;
+      say(el.partnerAddLabel, "Adding…");
+      say(el.partnerStatus, "");
+      act("create_credit_partner", {
+        first_name: el.first.value.trim(),
+        last_name: el.last.value.trim(),
+        email: el.email.value.trim(),
+        phone: el.phone.value.trim() || null
+      }).then(function (res) {
+        el.partnerAdd.disabled = false;
+        say(el.partnerAddLabel, "Add credit partner");
+        if (!ok(res)) { say(el.partnerStatus, problem(res)); return; }
+        if (res.body.skipped === "already_linked") {
+          say(el.partnerStatus, "This client already has a credit partner.");
+        } else {
+          say(el.partnerStatus, "Partner added. They must record their own credit check consent before any pull. Their checklist starts after that.");
+        }
+        el.first.value = ""; el.last.value = ""; el.email.value = ""; el.phone.value = "";
+        loadCombined();
+      });
+    });
+
+    /* ── next funding sequence date ── */
+    el.dateSave.addEventListener("click", function () {
+      if (el.dateSave.disabled) return;
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(el.date.value)) {
+        say(el.dateStatus, "Pick a date first.");
+        return;
+      }
+      el.dateSave.disabled = true;
+      say(el.dateSaveLabel, "Saving…");
+      say(el.dateStatus, "");
+      act("set_next_sequence_date", { ready_date: el.date.value }).then(function (res) {
+        el.dateSave.disabled = false;
+        say(el.dateSaveLabel, "Save ready date");
+        if (!ok(res)) { say(el.dateStatus, problem(res)); return; }
+        paintDate(res.body.readyDate);
+        say(el.dateStatus, "Saved. The closer gets a task on that day.");
+      });
+    });
+
+    /* ── bank tracker ── */
+    function setOffer(on) {
+      var btn = on ? el.offer : el.unoffer;
+      btn.disabled = true;
+      if (on) say(el.offerLabel, "Offering…");
+      say(el.offerStatus, "");
+      act("offer_bank_tracker", { offered: on }).then(function (res) {
+        btn.disabled = false;
+        say(el.offerLabel, "Offer bank tracker");
+        if (!ok(res)) { say(el.offerStatus, problem(res)); return; }
+        paintOffered(res.body.offered);
+        say(el.offerStatus, res.body.offered ? "Saved. The bank tracker is offered." : "Saved. The offer is taken back.");
+      });
+    }
+    el.offer.addEventListener("click", function () { if (!el.offer.disabled) setOffer(true); });
+    el.unoffer.addEventListener("click", function () { if (!el.unoffer.disabled) setOffer(false); });
+
+    var STATE_WORD = { open: "Open", done: "Done", skipped: "Skipped" };
+    function paintTodos(rows) {
+      el.todos.textContent = "";
+      if (!rows.length) {
+        var empty = document.createElement("p");
+        empty.className = "fact-note";
+        empty.textContent = "No banks on the list yet. Offer the tracker, then add the first bank.";
+        el.todos.appendChild(empty);
+        return;
+      }
+      var list = document.createElement("div");
+      list.className = "facts-list";
+      rows.forEach(function (t) {
+        var row = document.createElement("div");
+        row.className = "fact-row";
+        var k = document.createElement("span");
+        k.className = "k";
+        k.textContent = (t.bank_key || "Unnamed bank") + " · " + (t.account_kind === "business" ? "Business" : "Personal");
+        var v = document.createElement("span");
+        v.className = "v";
+        v.textContent = STATE_WORD[t.state] || String(t.state || "");
+        row.appendChild(k);
+        row.appendChild(v);
+        list.appendChild(row);
+        if (t.notes) {
+          var n = document.createElement("div");
+          n.className = "fact-note";
+          n.textContent = t.notes;
+          list.appendChild(n);
+        }
+      });
+      el.todos.appendChild(list);
+    }
+    function loadTodos() {
+      return act("list_bank_todos", {}).then(function (res) {
+        if (!ok(res)) {
+          el.todos.textContent = "";
+          var bad = document.createElement("p");
+          bad.className = "fact-note";
+          bad.textContent = "The bank list did not load. " + problem(res);
+          el.todos.appendChild(bad);
+          return;
+        }
+        paintTodos(res.body.todos || []);
+      });
+    }
+    el.todoAdd.addEventListener("click", function () {
+      if (el.todoAdd.disabled) return;
+      if (!el.bank.value.trim()) { say(el.todoStatus, "Type the bank's name."); el.bank.focus(); return; }
+      el.todoAdd.disabled = true;
+      say(el.todoAddLabel, "Adding…");
+      say(el.todoStatus, "");
+      act("add_bank_todo", {
+        bank_key: el.bank.value.trim(),
+        account_kind: el.kind.value,
+        notes: el.notes.value.trim() || null
+      }).then(function (res) {
+        el.todoAdd.disabled = false;
+        say(el.todoAddLabel, "Add bank to the list");
+        if (!ok(res)) {
+          if (res.body && res.body.error === "bank_tracker_not_offered") paintOffered(false);
+          say(el.todoStatus, problem(res));
+          return;
+        }
+        say(el.todoStatus, "Added to the list.");
+        el.bank.value = ""; el.notes.value = "";
+        loadTodos();
+      });
+    });
+
+    loadCombined();
+    loadTodos();
   })();
 
   /* ── THE ROUND'S THREE MOVES ───────────────────────────────────────────────

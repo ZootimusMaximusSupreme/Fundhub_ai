@@ -9,7 +9,7 @@ Read first: `docs/UI-STANDARDS.md`, `docs/finance/capital-blueprint-build-spec-2
 | Chat | Owns | Status |
 |---|---|---|
 | A | client progress/portal: mailing proof upload, optional paydown | done locally (not shipped) |
-| B | closer/CSM: partner, next sequence date, bank tracker, combined prequal | pending |
+| B | closer/CSM: partner, next sequence date, bank tracker, combined prequal | done |
 | C | Finance OS paydown block | done locally (not shipped) |
 
 No dependencies — all three run at once. Each writes its manifest here when done.
@@ -82,3 +82,24 @@ UI-STANDARDS.md. Human click prove.
 - Proved: script syntax check OK; `node --test src/ui/*.test.mjs` 48/48; local browser run (fake replies) at 1280px and 390px: request body right, bad input rejected before sending, result renders, not-subscribed message shows, no sideways scroll, big numbers 32px.
 - Not proved: a live click against fundhub.ai with a real Blueprint buyer (needs ship first). The simulator route is staff-only (`ROLE_SETS.STAFF`), so this is a staff screen, not a client one.
 - Leftovers: none.
+
+## Manifest B
+
+**Files touched (HTML/JS only):**
+- `public/app/client-control-panel.html` — new folded "Capital Blueprint" group in the right rail (CSS, markup, one JS block `wireBlueprint`), plus one line in `render()` that fires a `ccp:client` event so the block can read two saved flags off the client record. (`closer-call.html` only redirects to `closer-dashboard.html`, so the control panel was the screen that owns the client.)
+- `public/app/csm-queue.html` — Blueprint chip, assigned-CSM chip on prep calls, Blueprint exception count in the header line.
+
+**Routes used (real field names, read from `api/blueprint/staff-actions.mjs`):**
+- `POST /api/blueprint/staff-actions` — `create_credit_partner` (`first_name`, `last_name`, `email`, `phone?`; the handler has no single `name` field), `set_next_sequence_date` (`ready_date` YYYY-MM-DD), `offer_bank_tracker` (`offered`), `add_bank_todo` (`bank_key`, `account_kind` personal|business, `notes?`), `list_bank_todos`.
+- `GET /api/read/blueprint-combined-approval?client_id=` — combined, primary and partner prequal (uses the `*Display` strings; null shows "Not worked out yet", never 0).
+- `GET /api/read/csm-queue` (existing, unchanged) — reads `source_workflow` (`blueprint-coach`, `blueprint-csm-prep`) and `assignee_staff_id`.
+
+**Proved:** every inline script in both files parses; `npm run lint` clean; `src/ui/*.test.mjs` 48/48 pass; local Playwright at 1440px and 390px with mocked API: block loads, partner add (and bad-email refusal in plain words), date save, offer/take back, add bank + list, exact request bodies match the handler, no page errors, no sideways scroll at 390px; csm-queue paints the chips and the count from mocked rows.
+
+**Not proved:** nothing was run against the live database or fundhub.ai (no deploy allowed here). The mocks match the handler code, not a live response. Not walked as a real closer on a real Blueprint buyer.
+
+**Leftovers (not fixed):**
+1. `GET /api/read/csm-queue` does not return the client's `assigned_csm_staff_id` (it is not in `QUEUE_SQL`). The queue can only show the task holder (`assignee_staff_id`). For `blueprint-csm-prep` rows that holder is the assigned CSM (the task is created for them), so the chip says "Assigned CSM"; there is no CSM name, only you / a teammate. A real "assigned CSM" on every row needs one backend column added to that read.
+2. No API says whether a client bought the Blueprint. The group shows for every client; a non-buyer gets the plain-words refusal from the server.
+3. `add_bank_todo` has no list of valid bank names; the box is free text (the server lowercases it). Todo state changes (`done`/`skipped`) have no staff-actions route, so the list is read-only for state.
+4. Existing hidden `present.html` links and other pre-existing issues on these screens were not touched.
