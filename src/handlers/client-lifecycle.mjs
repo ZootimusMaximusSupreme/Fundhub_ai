@@ -413,16 +413,33 @@ export async function onSaleClosed(event, db) {
    IDEMPOTENT. A replayed event re-reads the same file and reaches the same
    verdicts: a row already done is not in listVerifiableWaypoints() at all, and
    blocking a row that is already blocked writes the same reason again. */
-async function reviewChecklistAfterPull(db, { orgId, clientId }) {
+async function reviewClientChecklist(db, { orgId, clientId }) {
   if (!orgId || !clientId) return null;
   try {
     return await evaluateWaypoints(db, { orgId, clientId });
   } catch {
     /* Swallowed on purpose. There is no channel from here that a failure should
-       reach: the pull is stored, and a waypoint left open is the safe direction
-       for every check this runs. */
+       reach: the pull or the file is already stored, and a waypoint left open
+       is the safe direction for every check this runs. */
     return null;
   }
+}
+
+async function reviewChecklistAfterPull(db, { orgId, clientId }) {
+  return reviewClientChecklist(db, { orgId, clientId });
+}
+
+/**
+ * docs.received — close document-proof waypoints (mailing receipt, bureau
+ * letter) when the file lands. Same judge as a re-pull; no credit file needed
+ * for those kinds. Measured live 2026-09-30: Sim Eleven upload stored the
+ * receipt and left blueprint_dispute_mail_receipt open until evaluateWaypoints
+ * was called by hand.
+ */
+export async function onDocsReceivedReviewChecklist(event, db) {
+  const orgId = event?.orgId;
+  const clientId = event?.clientId || event?.payload?.client_id || null;
+  return reviewClientChecklist(db, { orgId, clientId });
 }
 
 export async function onAnalysisCompleted(event, db) {
@@ -560,4 +577,5 @@ export function register() {
   on("sale.closed", onSaleClosed);
   on("analysis.completed", onAnalysisCompleted);
   on("decision.rendered", onDecisionRendered);
+  on("docs.received", onDocsReceivedReviewChecklist);
 }

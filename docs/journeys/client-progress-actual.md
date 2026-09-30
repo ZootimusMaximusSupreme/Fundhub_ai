@@ -212,6 +212,26 @@ flowchart TD
     T1 -->|yes| T3[One row per timeline line, newest first]
 ```
 
+## Mailing-proof upload (docs.received → evaluateWaypoints, added 2026-09-30)
+
+Traced from `api/documents-upload.mjs` emit `docs.received` and
+`src/handlers/client-lifecycle.mjs` `onDocsReceivedReviewChecklist`.
+
+A `client_upload` with subtype `dispute_mail_receipt` stores the file, then the
+same request re-reads open waypoints. `evaluateWaypoints` closes
+`blueprint_dispute_mail_receipt` when that document row exists. The progress
+page does not tick the step itself.
+
+```mermaid
+flowchart TD
+    U[Upload mailing proof on progress.html] --> S[POST /api/documents-upload]
+    S --> E[emit docs.received]
+    E --> V[onDocsReceivedReviewChecklist]
+    V --> W[evaluateWaypoints]
+    W -->|receipt on file| D[completeWaypoint mail receipt]
+    W -->|no matching file| O[step stays open]
+```
+
 ## Ticking a step off (POST /api/waypoint-tick, added 2026-09-17)
 
 Traced from `api/waypoint-tick.mjs` and `src/waypoints/self-attest.mjs`.

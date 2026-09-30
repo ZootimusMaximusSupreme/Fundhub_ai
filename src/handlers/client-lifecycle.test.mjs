@@ -9,8 +9,11 @@ import {
   onPaymentFailed,
   onDiagnosticPaid,
   onDecisionRendered,
-  onAnalysisCompleted
+  onAnalysisCompleted,
+  onDocsReceivedReviewChecklist,
+  register
 } from "./client-lifecycle.mjs";
+import { getHandlers } from "../events/registry.mjs";
 
 // In-memory Postgres fake: interprets the exact queries the handlers issue.
 function pgFake({ openShift = null, failOn = null, smsRouting = null, pipelineStages = [], cards = [] } = {}) {
@@ -615,4 +618,41 @@ test("resolveClient: an unconvertible phone number is stored exactly as typed", 
     email: "odd@example.com", phone: "ask reception"
   }));
   assert.equal(db.clients.find((c) => c.id === id).phone, "ask reception");
+});
+
+test("register wires docs.received to review the checklist", () => {
+  register();
+  assert.ok(
+    getHandlers("docs.received").includes(onDocsReceivedReviewChecklist),
+    "docs.received must re-read document-proof waypoints"
+  );
+});
+
+test("docs.received with no client does not query", async () => {
+  const out = await onDocsReceivedReviewChecklist(
+    { orgId: "org-1", payload: {} },
+    { query: async () => { throw new Error("should not query"); } }
+  );
+  assert.equal(out, null);
+});
+
+test("docs.received reviews open waypoints", async () => {
+  const sqls = [];
+  const db = {
+    async query(sql) {
+      sqls.push(sql);
+      if (/FROM client_waypoints/.test(sql)) return { rows: [] };
+      return { rows: [] };
+    }
+  };
+  const out = await onDocsReceivedReviewChecklist(
+    ev("docs.received", { client_id: "550e8400-e29b-41d4-a716-446655440000" }, {
+      orgId: "00000000-0000-4000-8000-000000000001",
+      clientId: "550e8400-e29b-41d4-a716-446655440000"
+    }),
+    db
+  );
+  assert.equal(out.ok, true);
+  assert.equal(out.checked, 0);
+  assert.ok(sqls.some((s) => /client_waypoints/.test(s)));
 });

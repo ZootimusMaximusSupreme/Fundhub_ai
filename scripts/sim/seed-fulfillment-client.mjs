@@ -4,7 +4,7 @@
 //
 //   DATABASE_URL=… PII_ENC_KEY=… FANBASIS_CHECKOUT_API_KEY=… \
 //     node scripts/sim/seed-fulfillment-client.mjs \
-//       --profile funding|repair-full|repair-trial \
+//       --profile funding|repair-full|repair-trial|blueprint \
 //       --email you+walk-01@example.com --first <first> --last <last> \
 //       --phone 5555550147 [--confirm]
 //
@@ -182,6 +182,17 @@ const PROFILES = Object.freeze({
     tierAlreadyRight: (tier) => String(tier) === "REPAIR_ONLY",
     creditProfile: "repair-trial",
     needsDisputeAuth: true
+  },
+  /* Capital Blueprint — Consulting Services Package ($5,000). Seeds soft-pull
+     + dispute auth so the Blueprint dispute waypoint path (mail letters / mailing
+     proof) is authorized the same way a live buyer would be after checkout. */
+  blueprint: {
+    note: "Bought Capital Blueprint. CSM + checklist + dispute mail steps.",
+    offerKey: "UWIQ_DELIVERABLES",
+    outcomeTier: "FULL_FUNDING",
+    tierAlreadyRight: (tier) => isFundingPath(tier),
+    creditProfile: "blueprint",
+    needsDisputeAuth: true
   }
 });
 
@@ -350,6 +361,9 @@ async function main() {
   /* --allow-existing: yes, I know this email already belongs to somebody, and I
      mean to overwrite their name, phone and tier. See the refusal below. */
   const allowExisting = process.argv.includes("--allow-existing");
+  /* --id: remint with a known client uuid (e.g. Sim Eleven historical id). Only
+     used on INSERT — ignored when the email already matches a row. */
+  const forceId = String(arg("id", "")).trim() || null;
   const identityFile = path.resolve(
     arg("identity", process.env.SIM_IDENTITY_FILE || DEFAULT_IDENTITY_FILE)
   );
@@ -357,9 +371,9 @@ async function main() {
   const profile = PROFILES[profileKey];
   if (!profile || !email || !first || !last || !phoneRaw) {
     console.error(
-      "usage: node scripts/sim/seed-fulfillment-client.mjs --profile funding|repair-full|repair-trial \\\n" +
+      "usage: node scripts/sim/seed-fulfillment-client.mjs --profile funding|repair-full|repair-trial|blueprint \\\n" +
       "         --email <email> --first <first name> --last <last name> --phone <phone> \\\n" +
-      "         [--identity <path>] [--allow-existing] [--confirm]\n" +
+      "         [--identity <path>] [--id <uuid>] [--allow-existing] [--confirm]\n" +
       "\n" +
       "  Prints what it would write and changes NOTHING unless --confirm is given."
     );
@@ -398,9 +412,16 @@ async function main() {
      Caught here, where the answer is still "nothing has been written". */
   const checkoutKey = String(process.env[CHECKOUT_API_KEY_ENV] || "");
   if (checkoutKey && looksMasked(checkoutKey)) {
-    console.error(`${CHECKOUT_API_KEY_ENV} came back MASKED (mostly asterisks) — that is Netlify's redaction, not the key.`);
-    console.error("Export the real value by hand, then run again.");
-    process.exit(2);
+    /* A masked key would still pass checkoutConfig().ok (non-empty string) and
+       then fail at mint time after the client row committed. Drop it so the
+       COMMAS_CHECKOUT_BASE_URL fallback can mint a sim-only checkout URL.
+       Real Fanbasis mint still needs an unmasked key exported by hand. */
+    if (!String(process.env.COMMAS_CHECKOUT_BASE_URL || "").trim()) {
+      console.error(`${CHECKOUT_API_KEY_ENV} came back MASKED (mostly asterisks) — that is Netlify's redaction, not the key.`);
+      console.error("Export the real value by hand, or set COMMAS_CHECKOUT_BASE_URL for a sim-only link, then run again.");
+      process.exit(2);
+    }
+    delete process.env[CHECKOUT_API_KEY_ENV];
   }
 
   const phone = toE164(phoneRaw);
@@ -563,7 +584,7 @@ async function main() {
   }
 
   console.log("WOULD WRITE");
-  console.log(`  clients          ${client ? `UPDATE ${client.id}` : "INSERT"} — ${name} <${email}> ${phone}`);
+  console.log(`  clients          ${client ? `UPDATE ${client.id}` : (forceId ? `INSERT id=${forceId}` : "INSERT")} — ${name} <${email}> ${phone}`);
   console.log(`                   outcome_tier ${tierIsAlreadyRight
     ? `left as ${client.outcome_tier} (already on the right side of the line)`
     : `${client?.outcome_tier ? `${client.outcome_tier} -> ` : ""}${profile.outcomeTier}`}`);
@@ -724,6 +745,17 @@ async function main() {
           JSON.stringify({ home_state: identity.address.state, business_state: identity.address.state })
         ]
       );
+    } else if (forceId) {
+      clientId = (await tx.query(
+        `INSERT INTO clients (id, org_id, first_name, last_name, email, phone, outcome_tier,
+                              custom_fields, consent_sms, dnd_sms, dnd_email, dnd_voice)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,true,false,false,false)
+         RETURNING id`,
+        [
+          forceId, orgId, first, last, email, phone, profile.outcomeTier,
+          JSON.stringify({ home_state: identity.address.state, business_state: identity.address.state })
+        ]
+      )).rows[0].id;
     } else {
       clientId = (await tx.query(
         `INSERT INTO clients (org_id, first_name, last_name, email, phone, outcome_tier,
