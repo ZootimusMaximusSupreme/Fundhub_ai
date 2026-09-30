@@ -4,6 +4,16 @@
 
 Read first: `docs/UI-STANDARDS.md`, `docs/finance/capital-blueprint-build-spec-2026-09-29.md`, owner offer list in `docs/finance/capital-blueprint-next-2026-09-29.md`.
 
+## Status
+
+| Chat | Owns | Status |
+|---|---|---|
+| A | client progress/portal: mailing proof upload, optional paydown | claimed (first Claude session, 2026-09-29) |
+| B | closer/CSM: partner, next sequence date, bank tracker, combined prequal | pending |
+| C | Finance OS paydown block | pending |
+
+No dependencies — all three run at once. Each writes its manifest here when done.
+
 ## APIs Claude wires to (no inventing)
 
 | Use | Method | Path |
