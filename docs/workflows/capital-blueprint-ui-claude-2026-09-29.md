@@ -10,7 +10,7 @@ Read first: `docs/UI-STANDARDS.md`, `docs/finance/capital-blueprint-build-spec-2
 |---|---|---|
 | A | client progress/portal: mailing proof upload, optional paydown | done locally (not shipped) |
 | B | closer/CSM: partner, next sequence date, bank tracker, combined prequal | pending |
-| C | Finance OS paydown block | pending |
+| C | Finance OS paydown block | done locally (not shipped) |
 
 No dependencies — all three run at once. Each writes its manifest here when done.
 
@@ -73,3 +73,12 @@ UI-STANDARDS.md. Human click prove.
 - Proved: `node --test src/progress/*.test.mjs` 123/123; `npm run lint` clean; local browser run with faked replies — box shows only on the mailing-proof step, upload sends the right kind and subtype, success line shows.
 - Not proved: live click as a real Blueprint buyer (needs ship first). Step closing after upload rests on `src/waypoints/verify.mjs` (existing).
 - Not done: portal link change and the optional paydown block (Finance OS is Chat C's).
+
+## Manifest C
+
+- Files touched: `public/app/finance-os.html` only (CSS added inline in that file; `finance-os.css` untouched). Commit `3a51c570` (local, not pushed).
+- Route used: `POST /api/finance/paydown-simulator` body `{ client_id, cash_on_hand }`. Fields read from the real handler and `src/blueprint/paydown-simulator.mjs`: `preapprovalBefore`, `preapprovalProjected`, `preapprovalAfterFull`, `cashOnHand`, `cashApplied`, `cashUnallocated`, `totalPaydownNeeded`, `allocations[{account,payDollars,balanceBefore,targetBalance}]`, `hasPull`, `pulledAt`; errors `not_entitled` (403), `no such client` (404), 400 text.
+- What shows: a "Paydown simulator" panel under the hero when a client is open (cash box, one button "Split this cash", before/after pre-approval, card-by-card split, plain "estimate" note). Every state is worded: no credit report, not subscribed to Finance OS, bad number, server down. A "Promo tracking" panel says "not live" (no table stores promo end dates; confirmed in `src/workflows/blueprint-finance-os-alerts.mjs`). No prices, no Plaid promise.
+- Proved: script syntax check OK; `node --test src/ui/*.test.mjs` 48/48; local browser run (fake replies) at 1280px and 390px: request body right, bad input rejected before sending, result renders, not-subscribed message shows, no sideways scroll, big numbers 32px.
+- Not proved: a live click against fundhub.ai with a real Blueprint buyer (needs ship first). The simulator route is staff-only (`ROLE_SETS.STAFF`), so this is a staff screen, not a client one.
+- Leftovers: none.
