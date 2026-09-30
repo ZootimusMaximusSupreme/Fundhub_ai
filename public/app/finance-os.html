@@ -215,6 +215,25 @@ button,input,select,textarea{font:inherit;color:inherit}
 .fos-out .row{display:flex;justify-content:space-between;font-size:var(--fs-body);padding:4px 0;border-bottom:1px solid var(--soft)}
 .fos-out .row b{font-family:var(--mono)}
 
+/* paydown simulator — Blueprint. Reuses .fos-calc for the one-field form and
+   .fos-r rows for the card split; only the before/after pair and the split row
+   are new. Sizes come from the whitelist (.caption / .cmp / .fos-value), so
+   nothing here writes a font-size. */
+.fos-sim-form{grid-template-columns:minmax(0,1fr) auto;align-items:end}
+.fos-sim-form input{min-height:40px}
+.fos-sim-form .btn{min-height:40px}
+.fos-sim{margin-bottom:14px}
+.fos-ba{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:16px 15px 8px}
+.fos-ba > div{min-width:0}
+.fos-ba .fos-value{line-height:1.1;white-space:nowrap}
+.fos-r.alloc{grid-template-columns:minmax(0,1fr) 96px 168px}
+@media (max-width:560px){
+  #fosWrap .fos-r.alloc{grid-template-columns:minmax(0,1fr) 96px}
+  #fosWrap .fos-r.alloc > :last-child{grid-column:1 / -1;text-align:left}
+  #fosWrap .fos-sim-form{grid-template-columns:1fr}
+  #fosWrap .fos-ba{grid-template-columns:1fr}
+}
+
 /* ══ THIS SCREEN'S ONE ESCAPE HATCH — UI-STANDARDS §12.7 ═══════════════════
    There is exactly one rule here with !important and this is it. Do not add a
    second; a second is how a screen ends up with six sizes and no hierarchy.
@@ -1033,6 +1052,204 @@ button,input,select,textarea{font:inherit;color:inherit}
     return panel("Optimize your accounts", "finance-os add-on", body);
   }
 
+  /* ═══ 6b. PAYDOWN SIMULATOR — POST /api/finance/paydown-simulator ═════════
+     Body is { client_id, cash_on_hand } and nothing else. The server splits the
+     cash across the cards the roadmap already names (biggest paydown first) and
+     hands back pre-approval before and after. Every number below is the
+     server's: this page adds no underwriting of its own.
+
+     Two honest limits are written on the screen. The cash is TYPED — nothing
+     here reads a bank. And the "after" figure is the server's straight-line
+     estimate between today's pre-approval and the pre-approval once every card
+     reaches its target; it is not a lender's answer.
+
+     Its own POST helper, not apiGet(): a 403 here is either "this client has no
+     Finance OS subscription" (entitled:false) or a plain auth failure, and the
+     body says which, exactly as apiGetSuggestions() does for its read. */
+  function postSimulator(cash) {
+    var t = "";
+    try { t = localStorage.getItem("fh_token") || ""; } catch (e) { t = ""; }
+    var headers = { accept: "application/json", "content-type": "application/json" };
+    if (t) headers.authorization = "Bearer " + t;
+    var started;
+    try {
+      started = fetch("/api/finance/paydown-simulator", {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify({ client_id: clientId, cash_on_hand: cash })
+      });
+    } catch (e) {
+      return Promise.resolve({ ok: false, source: "offline", data: null, error: (e && e.message) || "fetch unavailable" });
+    }
+    return Promise.resolve(started).then(function (r) {
+      if (r.status === 404) {
+        return r.json().then(function (d) {
+          return (d && d.error === "not_found" && typeof d.path === "string")
+            ? { ok: false, source: "offline", data: null, error: "/api/* not deployed" }
+            : { ok: false, source: "notfound", data: null, error: "no such client" };
+        }).catch(function () { return { ok: false, source: "offline", data: null, error: "/api/* not deployed" }; });
+      }
+      return r.json().then(function (d) {
+        if (r.status === 403 && d && d.entitled === false) {
+          return { ok: false, source: "not_entitled", data: null, error: d.reason || "not entitled" };
+        }
+        if (r.status === 401 || r.status === 403) {
+          return { ok: false, source: "unauthorized", data: null, error: "not signed in, or not allowed" };
+        }
+        if (r.status === 503 || (d && d.db === "down")) {
+          return { ok: false, source: "nodb", data: null, error: (d && d.message) || "The database is not reachable right now." };
+        }
+        if (r.status === 400) {
+          var msg = d && d.error && /\s/.test(d.error) ? d.error : "The paydown could not be worked out from this client's credit report.";
+          return { ok: false, source: "badrequest", data: null, error: msg };
+        }
+        if (!d || d.ok !== true) {
+          return { ok: false, source: "server", data: null, error: "Something went wrong. Try again in a moment." };
+        }
+        return { ok: true, source: "api", data: d, error: null };
+      }).catch(function () { return { ok: false, source: "offline", data: null, error: "response was not JSON" }; });
+    }).catch(function (e) {
+      return { ok: false, source: "offline", data: null, error: (e && e.message) || "network error" };
+    });
+  }
+
+  /* dollars (a JS number from the server) -> "$1,234.50", or null when unknown. */
+  function dollarsText(v) {
+    if (v === null || v === undefined || v === "") return null;
+    var c = toCents(v);
+    return c === null ? null : moneyText(fromCents(c));
+  }
+  function bigNum(v) {
+    var t = dollarsText(v);
+    return '<div class="fos-value' + (t === null ? " is-unknown" : "") + '">' + (t === null ? "—" : esc(t)) + "</div>";
+  }
+
+  /* Only digits with an optional cents part. "$5,000" and "5000.50" pass;
+     "abc", "-5" and "" do not. Returns a number, or null when it is not one. */
+  function parseCash(raw) {
+    var s = String(raw == null ? "" : raw).replace(/[\s$,]/g, "");
+    if (!/^\d+(\.\d{1,2})?$/.test(s)) return null;
+    var n = Number(s);
+    return isFinite(n) ? n : null;
+  }
+
+  function simResultHtml(d) {
+    if (d.hasPull === false) {
+      return '<div class="fh-empty">There is no credit report on file for this client yet, so there is no card to split cash across. ' +
+        "Run this once a credit report is pulled.</div>";
+    }
+    var before = d.preapprovalBefore, proj = d.preapprovalProjected;
+    var bc = toCents(before), pc = toCents(proj);
+    var change = "";
+    if (bc !== null && pc !== null) {
+      var diff = pc - bc;
+      change = '<div class="cmp">' + (diff === 0
+        ? "no change vs today"
+        : (diff > 0 ? "+" : "−") + esc(moneyText(fromCents(Math.abs(diff)))) + " vs today") + "</div>";
+    }
+    var head = '<div class="fos-ba">' +
+      "<div><div class=\"caption\">Pre-approval today</div>" + bigNum(before) + "</div>" +
+      "<div><div class=\"caption\">Estimated after this cash</div>" + bigNum(proj) + change + "</div>" +
+      "</div>";
+
+    var allocs = d.allocations || [];
+    var rows = fhRow("Cash entered", "typed in above, not read from a bank", fhNum(fromCents(toCents(d.cashOnHand)), true, false)) +
+      fhRow("Cash put on cards", allocs.length + " card" + (allocs.length === 1 ? "" : "s"),
+        fhNum(fromCents(toCents(d.cashApplied)), true, false)) +
+      fhRow("Cash left over", d.cashUnallocated > 0
+          ? "no card needs more to reach its target" : "",
+        fhNum(fromCents(toCents(d.cashUnallocated)), true, false)) +
+      fhRow("Paydown for every card to reach its target", "",
+        fhNum(fromCents(toCents(d.totalPaydownNeeded)), true, false)) +
+      fhRow("Pre-approval once every card reaches its target", "",
+        fhNum(fromCents(toCents(d.preapprovalAfterFull)), true, false));
+
+    var split;
+    if (!allocs.length) {
+      split = '<div class="fh-empty">' + (d.totalPaydownNeeded > 0
+        ? "No cash was entered, so no card is paid down."
+        : "No open card is above its target balance, so there is nothing to pay down.") + "</div>";
+    } else {
+      split = '<div class="fos-r alloc"><span class="nm muted">card</span>' +
+        '<span class="num muted">pay</span><span class="num muted">balance now → target</span></div>' +
+        allocs.map(function (a) {
+          var from = dollarsText(a.balanceBefore), to = dollarsText(a.targetBalance);
+          return '<div class="fos-r alloc"><span class="nm">' + esc(a.account || "Unnamed card") + "</span>" +
+            money(fromCents(toCents(a.payDollars))) +
+            '<span class="num">' + esc(from === null ? "—" : from) + " → " + esc(to === null ? "—" : to) + "</span></div>";
+        }).join("");
+    }
+    var foot = '<div class="fos-sug">This is an estimate, not a lender’s answer. ' +
+      "It moves in a straight line from today’s pre-approval toward the figure once every card reaches its target" +
+      (d.pulledAt ? ". Based on the credit report pulled " + esc(day(d.pulledAt)) : "") + ".</div>";
+    return head + rows + split + foot;
+  }
+
+  function simulatorPanel() {
+    var form = '<form class="fos-calc fos-sim-form" id="fosSimForm" novalidate>' +
+      '<div class="fld"><label for="fosSimCash">Cash on hand ($)</label>' +
+      '<input id="fosSimCash" type="text" inputmode="decimal" autocomplete="off" placeholder="5000"></div>' +
+      '<div class="fld"><button class="btn" id="fosSimGo" type="submit">Split this cash</button></div>' +
+      "</form>";
+    return panel("Paydown simulator", "Blueprint · Finance OS",
+      form + '<div class="fh-msg" id="fosSimMsg" role="status" hidden></div>' +
+      '<div id="fosSimOut"><div class="fh-empty">Type how much cash this client can put toward their cards and choose “Split this cash”. ' +
+      "The split and the before and after pre-approval appear here.</div></div>");
+  }
+
+  /* Promo tracking — labelled NOT LIVE. Measured 2026-09-29: no table stores a
+     0% promo end date for a client's cards. client_cards is the card the client
+     PAYS US with (last four digits and expiry), not a credit card they hold, and
+     it has no promo column. So there is nothing to list or count down, and this
+     panel says that in words instead of showing sample dates. */
+  function promoPanel() {
+    return panel("Promo tracking", "not live",
+      '<div class="fh-empty"><p><b>Not live.</b> No promo end dates are stored for this client’s cards, so there is nothing to list and no countdown to show.</p>' +
+      "<p>This panel shows nothing made up. It will fill in once promo end dates are recorded.</p></div>");
+  }
+
+  function wireSimulator() {
+    var form = $("fosSimForm");
+    if (!form) return;
+    var input = $("fosSimCash"), go = $("fosSimGo"), msg = $("fosSimMsg"), out = $("fosSimOut");
+    function say(text, bad) {
+      msg.hidden = !text;
+      msg.textContent = text || "";
+      msg.className = "fh-msg" + (bad ? " bad" : "");
+    }
+    form.addEventListener("submit", function (ev) {
+      ev.preventDefault();
+      var cash = parseCash(input.value);
+      if (cash === null) {
+        say("Type the cash as a plain number, like 5000 or 5,000.50.", true);
+        input.focus();
+        return;
+      }
+      say("", false);
+      go.disabled = true;
+      go.textContent = "Working…";
+      postSimulator(cash).then(function (res) {
+        go.disabled = false;
+        go.textContent = "Split this cash";
+        if (res.ok) {
+          say("", false);
+          out.innerHTML = simResultHtml(res.data);
+          return;
+        }
+        out.innerHTML = "";
+        if (res.source === "not_entitled") {
+          say("This client does not have an active Finance OS subscription, so the simulator is not available for them.", true);
+        } else if (res.source === "badrequest") {
+          say(res.error, true);
+        } else if (res.source === "notfound") {
+          say("That client could not be found in this company.", true);
+        } else {
+          say(whyWords(res, "the paydown split"), true);
+        }
+      });
+    });
+  }
+
   /* ═══ 7. PAINT ════════════════════════════════════════════════════════════ */
   function paint(html) {
     var wrap = $("fosWrap");
@@ -1108,6 +1325,7 @@ button,input,select,textarea{font:inherit;color:inherit}
       paint(
         heroFor(name, gridRes.ok ? gridRes.data : null, gridRes) +
         notesFor(bankRes) +
+        '<div class="fos-sim">' + simulatorPanel() + "</div>" +
         '<div class="grid2"><div class="col">' +
         creditPanel(gridRes) +
         moneyInPanel(detailRes) +
@@ -1116,8 +1334,10 @@ button,input,select,textarea{font:inherit;color:inherit}
         '</div><div class="col">' +
         suggestionsPanel(suggRes) +
         billsPanel(billRes) +
+        promoPanel() +
         "</div></div>"
       );
+      wireSimulator();
     });
   }
 
