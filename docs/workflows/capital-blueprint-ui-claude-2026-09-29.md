@@ -100,8 +100,28 @@ UI-STANDARDS.md. Human click prove.
 
 **Not proved:** nothing was run against the live database or fundhub.ai (no deploy allowed here). The mocks match the handler code, not a live response. Not walked as a real closer on a real Blueprint buyer.
 
-**Leftovers (not fixed):**
-1. `GET /api/read/csm-queue` does not return the client's `assigned_csm_staff_id` (it is not in `QUEUE_SQL`). The queue can only show the task holder (`assignee_staff_id`). For `blueprint-csm-prep` rows that holder is the assigned CSM (the task is created for them), so the chip says "Assigned CSM"; there is no CSM name, only you / a teammate. A real "assigned CSM" on every row needs one backend column added to that read.
-2. No API says whether a client bought the Blueprint. The group shows for every client; a non-buyer gets the plain-words refusal from the server.
-3. `add_bank_todo` has no list of valid bank names; the box is free text (the server lowercases it). Todo state changes (`done`/`skipped`) have no staff-actions route, so the list is read-only for state.
-4. Existing hidden `present.html` links and other pre-existing issues on these screens were not touched.
+**Leftovers (Composer closed 2026-09-30 — Claude still owes UI):**
+1. ~~CSM queue read missing assigned CSM~~ — **shipped:** `api/read/csm-queue.mjs` returns `assigned_csm_staff_id` + `assigned_csm_name`. **Claude:** show `assigned_csm_name` on `csm-queue.html` (grep shows no use yet).
+2. Blueprint buyer gate on live txs — **shipped `dcd50c49`:** `isCapitalBlueprintBuyer` uses `resolve_product_id(product_name)` (was broken `product_id` column).
+3. ~~Bank todo done/skipped~~ — **shipped:** `staff-actions` action `update_bank_todo_state` (`todo_id`, `state`). **Claude:** wire Done/Skipped on `client-control-panel.html` bank list (grep shows no use yet).
+4. Still open: no read hides Capital Blueprint panel for non-buyers (group shows for all; server returns `not_blueprint_buyer`). Optional v2.
+5. Still open: portal deep-link to Finance OS paydown for entitled buyers (staff `finance-os.html` has simulator; portal optional per spec).
+6. Live prove blocked until Sim #11 (`029964c5-…`) or another paid Blueprint client exists on production again — not a Claude task.
+
+## Copy-paste — Claude session D (small v2, one chat)
+
+```
+Capital Blueprint UI v2 only. Backend is live (dcd50c49). Do not touch roadmap or backend.
+
+1. public/app/csm-queue.html — render assigned_csm_name from GET /api/read/csm-queue when present (field already on each row).
+
+2. public/app/client-control-panel.html — on bank todos from list_bank_todos, add Done and Skipped buttons calling POST /api/blueprint/staff-actions action update_bank_todo_state with todo_id and state done|skipped. Refresh list after.
+
+UI-STANDARDS.md. Live click on fundhub.ai after ship. No invented copy or prices.
+```
+
+## Manifest D (2026-09-29)
+
+- Files: `public/app/csm-queue.html` (Blueprint prep rows show `Assigned CSM: <name>` from `assigned_csm_name`; falls back to the old holder wording when the name is null), `public/app/client-control-panel.html` (each bank to-do gets Done / Skipped, or "Put back on the list" once closed; posts `update_bank_todo_state` with `todo_id` and `state`, then re-reads the list).
+- Proved: lint clean, `src/ui` tests pass, local browser run with faked replies — name chip and fallback chip show; Skipped sends the exact body and the row flips to Skipped.
+- Not proved: live click on fundhub.ai; mailing-proof re-prove needs a real Blueprint buyer on live.

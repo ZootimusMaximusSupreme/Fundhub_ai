@@ -366,6 +366,8 @@
   .bp-sec-end{margin-top:24px;}
   .bp-todos .fact-row .k{text-transform:capitalize;}
   .bp-todos .fact-row .v{font-family:'Inter',sans-serif;}
+  .bp-todo-acts{display:flex;gap:8px;margin:4px 0 8px;}
+  .bp-todo-acts .link-btn{flex:1 1 0;justify-content:center;}
   .bp-group .action-btn[disabled]{opacity:.5;cursor:not-allowed;}
   .bp-group .link-btn[hidden],.bp-group [hidden]{display:none;}
 
@@ -3864,6 +3866,36 @@ document.addEventListener("DOMContentLoaded", function () {
         row.appendChild(k);
         row.appendChild(v);
         list.appendChild(row);
+        /* Done / Skipped. The open row offers both; a closed one offers a way
+           back to open. The server (update_bank_todo_state) takes open, done
+           or skipped, and the list is re-read after so the screen shows what
+           the database holds. */
+        var acts = document.createElement("div");
+        acts.className = "bp-todo-acts";
+        var opts = t.state === "open" || !t.state
+          ? [["done", "Done"], ["skipped", "Skipped"]]
+          : [["open", "Put back on the list"]];
+        opts.forEach(function (o) {
+          var b = document.createElement("button");
+          b.type = "button";
+          b.className = "link-btn";
+          b.textContent = o[1];
+          b.addEventListener("click", function () {
+            if (b.disabled) return;
+            [].slice.call(acts.querySelectorAll("button")).forEach(function (x) { x.disabled = true; });
+            act("update_bank_todo_state", { todo_id: t.id, state: o[0] }).then(function (res) {
+              if (!ok(res)) {
+                [].slice.call(acts.querySelectorAll("button")).forEach(function (x) { x.disabled = false; });
+                say(el.todoStatus, problem(res));
+                return;
+              }
+              say(el.todoStatus, "");
+              loadTodos();
+            });
+          });
+          acts.appendChild(b);
+        });
+        list.appendChild(acts);
         if (t.notes) {
           var n = document.createElement("div");
           n.className = "fact-note";

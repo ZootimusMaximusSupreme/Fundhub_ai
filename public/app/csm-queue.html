@@ -495,7 +495,12 @@ button,input,select,textarea{font:inherit;color:inherit}
       /* The prep task is created for the CSM assigned to the client when there
          is one (createBlueprintCsmPrepCallTask), so a holder here is that
          CSM. Nobody holding it means no CSM was assigned yet. */
-      if (mine) chips += '<span class="chip mine" title="This prep call sits with the CSM on this client\'s file.">Assigned CSM: you</span>';
+      /* assigned_csm_name is the CSM on the client's file (api/read/csm-queue),
+         which is not always the holder of the task. Use the name when there is
+         one; fall back to the holder wording when the read has none. */
+      var csmName = row.assigned_csm_name ? String(row.assigned_csm_name) : "";
+      if (csmName) chips += '<span class="chip' + (mine ? " mine" : "") + '" title="The CSM assigned to this client\'s file.">Assigned CSM: ' + esc(csmName) + "</span>";
+      else if (mine) chips += '<span class="chip mine" title="This prep call sits with the CSM on this client\'s file.">Assigned CSM: you</span>';
       else if (taken) chips += '<span class="chip" title="This prep call sits with the CSM on this client\'s file.">Assigned CSM: a teammate</span>';
       else chips += '<span class="chip" title="No CSM holds this prep call yet.">No CSM assigned yet</span>';
     } else if (mine) chips += '<span class="chip mine">Claimed by you</span>';
