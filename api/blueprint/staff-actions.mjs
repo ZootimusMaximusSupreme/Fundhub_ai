@@ -17,7 +17,8 @@ import { setNextFundingSequenceReadyDate } from "../../src/blueprint/next-fundin
 import {
   setBankRelationshipOffered,
   addBankRelationshipTodo,
-  listBankRelationshipTodos
+  listBankRelationshipTodos,
+  updateBankRelationshipTodoState
 } from "../../src/blueprint/bank-relationship.mjs";
 
 const ROLES = ROLE_SETS.STAFF;
@@ -111,6 +112,22 @@ export default async function handler(req, res, deps = {}) {
     if (action === "list_bank_todos") {
       const todos = await listBankRelationshipTodos(database, { orgId, clientId });
       return res.status(200).json({ ok: true, todos });
+    }
+
+    if (action === "update_bank_todo_state") {
+      if (!isUuid(body.todo_id ?? body.todoId)) {
+        return res.status(400).json({ ok: false, error: "todo_id must be a uuid" });
+      }
+      const out = await updateBankRelationshipTodoState(database, {
+        orgId,
+        todoId: String(body.todo_id ?? body.todoId).trim(),
+        state: body.state
+      });
+      if (!out.ok) {
+        const status = out.error === "not_found" ? 404 : 400;
+        return res.status(status).json({ ok: false, ...out });
+      }
+      return res.status(200).json({ ok: true, ...out });
     }
 
     return res.status(400).json({ ok: false, error: "unknown_action" });

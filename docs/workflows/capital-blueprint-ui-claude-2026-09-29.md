@@ -22,7 +22,9 @@ No dependencies — all three run at once. Each writes its manifest here when do
 | Paydown simulator | POST | `/api/finance/paydown-simulator` body `{ client_id, cash_on_hand }` (Finance OS entitlement) |
 | Staff: partner, next sequence, bank tracker | POST | `/api/blueprint/staff-actions` body `{ action, client_id, ... }` |
 
-**staff-actions `action` values:** `create_credit_partner`, `set_next_sequence_date`, `offer_bank_tracker`, `add_bank_todo`, `list_bank_todos`.
+**staff-actions `action` values:** `create_credit_partner`, `set_next_sequence_date`, `offer_bank_tracker`, `add_bank_todo`, `list_bank_todos`, `update_bank_todo_state` (body: `todo_id`, `state` = `open`|`done`|`skipped`).
+
+**CSM queue read** includes `assigned_csm_staff_id` and `assigned_csm_name` per client row.
 
 ## Copy-paste — Claude session A (client)
 

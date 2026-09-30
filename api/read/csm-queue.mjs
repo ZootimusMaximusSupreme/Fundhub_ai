@@ -60,6 +60,8 @@ const QUEUE_SQL = `
             proves it. Null means nobody has taken it — it stays on the role
             queue for whoever gets there first. */
          t.assignee_staff_id,
+         c.assigned_csm_staff_id,
+         NULLIF(btrim(s.name), '') AS assigned_csm_name,
          t.client_id,
          /* There is no clients.name — first_name / last_name, either of which
             can be null. NULLIF on the trimmed join keeps an empty string from
@@ -79,6 +81,7 @@ const QUEUE_SQL = `
          COALESCE(w.codes, ARRAY[]::text[]) AS owned_codes
     FROM tasks t
     JOIN clients c ON c.id = t.client_id AND c.org_id = t.org_id
+    LEFT JOIN staff s ON s.id = c.assigned_csm_staff_id AND s.org_id = c.org_id
     LEFT JOIN owed o ON o.client_id = t.client_id
     LEFT JOIN owns w ON w.client_id = t.client_id
    WHERE t.org_id = $1
@@ -111,6 +114,8 @@ export function presentRow(r) {
     client_name: r.client_name || null,
     client_code: r.client_code || null,
     assignee_staff_id: r.assignee_staff_id || null,
+    assigned_csm_staff_id: r.assigned_csm_staff_id || null,
+    assigned_csm_name: r.assigned_csm_name || null,
     /* Both shapes on purpose: cents for anything that does arithmetic,
        the formatted string for the screen. fromCents returns a string. */
     balance_due_cents: cents,

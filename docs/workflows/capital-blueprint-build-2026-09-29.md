@@ -18,6 +18,8 @@
 | 6 | agent | done | `402_credit_partner_link.sql`, `src/blueprint/credit-partner.mjs`, `api/read/blueprint-combined-approval.mjs` |
 | 7 | agent | done | `403_next_funding_sequence.sql`, `src/blueprint/next-funding-sequence.mjs`, `src/blueprint/bank-relationship.mjs`, `blueprint-next-funding-sequence-sweeper` |
 | 8 | agent | done | `src/blueprint/welcome-kit.mjs`, money-chain hook |
+| 9–10 | Claude | done (`4be6a1e7`) | progress upload, control panel Blueprint group, CSM queue chips, Finance OS paydown |
+| follow-up | Composer | done | CSM queue assigned name read; `update_bank_todo_state`; `docs/finance/capital-blueprint-decisions-open.md` |
 
 ## Migration numbers (reserved)
 
