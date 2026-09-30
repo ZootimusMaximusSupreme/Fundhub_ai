@@ -478,6 +478,18 @@ for (const [from, to] of FIXES) {
   fixed = typeof from === "string" ? fixed.split(from).join(to) : fixed.replace(from, to);
 }
 fixed = fixed.replace(' data-fhx-new><summary>', '><summary>').replace("<details open><summary>How is this different from paying a broker", "<details><summary>How is this different from paying a broker");
+
+/* Phone carousel for the testimonials (Chris, 2026-09-29: "rotate in a
+   carousel instead" of stacking). WENT LIVE 2026-09-29 (Chris: "push live"),
+   so it sits above --live and ships with the live page. */
+{
+  const { ROADMAP_CSS, ROADMAP_JS } = await import("./testi-carousel.mjs");
+  const oldTag = 'data-tag="2 · Video testimonials · each tagged with the product behind it"';
+  if (!fixed.includes(oldTag)) throw new Error("testimonials tag not found");
+  fixed = fixed.replace(oldTag, 'data-tag="2 · Video testimonials · NEW on phones: one row that slides sideways as you scroll, same as the /watch approvals"');
+  fixed += `\n<style>${ROADMAP_CSS}\n</style>\n<script>${ROADMAP_JS}\n</script>\n`;
+}
+
 /* ---------- --live: the same page with every draft mark stripped ----------
    Blue boxes, green marks and the banner are for review only. Everything else
    is the page as it goes live: real videos, the real checkout, tracking. */
@@ -504,18 +516,6 @@ ${NEW_CSS}
   if (!existsSync(FROZEN)) writeFileSync(FROZEN, s);
   writeFileSync(LIVE_FILE, live);
   console.log("wrote the live fragment ../slo-01-sales.html");
-}
-
-/* Phone carousel for the testimonials (Chris, 2026-09-29: "rotate in a
-   carousel instead" of stacking). Draft and share only, added after --live on
-   purpose: it is not on the live page until Chris says push. To ship it, move
-   this block above the --live block. */
-{
-  const { ROADMAP_CSS, ROADMAP_JS } = await import("./testi-carousel.mjs");
-  const oldTag = 'data-tag="2 · Video testimonials · each tagged with the product behind it"';
-  if (!fixed.includes(oldTag)) throw new Error("testimonials tag not found");
-  fixed = fixed.replace(oldTag, 'data-tag="2 · Video testimonials · NEW on phones: one row that slides sideways as you scroll, same as the /watch approvals"');
-  fixed += `\n<style>${ROADMAP_CSS}\n</style>\n<script>${ROADMAP_JS}\n</script>\n`;
 }
 
 fixed += `
