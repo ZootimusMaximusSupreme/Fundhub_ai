@@ -59,9 +59,10 @@ export const ROADMAP_JS = `
   }
   var phone=window.matchMedia('(max-width:699px)');
   var still=window.matchMedia('(prefers-reduced-motion: reduce)');
-  /* Chris, 2026-09-29: "start it 20% lower", then "20% lower" again. The
-     slide begins 40% of the screen height later in the scroll than on /watch. */
-  var LATER=0.4;
+  /* Chris, 2026-09-29: "start it 20% lower", then "20% lower" again, then
+     "10% lower". The slide begins 50% of the screen height later in the
+     scroll than on /watch. */
+  var LATER=0.5;
   /* Chris, 2026-09-29: "20% faster". The slide finishes in 80% of the scroll. */
   var FASTER=0.8;
   /* Each frame the row closes this share of the gap to where the scroll puts
