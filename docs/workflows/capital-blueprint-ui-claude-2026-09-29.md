@@ -8,7 +8,7 @@ Read first: `docs/UI-STANDARDS.md`, `docs/finance/capital-blueprint-build-spec-2
 
 | Chat | Owns | Status |
 |---|---|---|
-| A | client progress/portal: mailing proof upload, optional paydown | claimed (first Claude session, 2026-09-29) |
+| A | client progress/portal: mailing proof upload, optional paydown | done locally (not shipped) |
 | B | closer/CSM: partner, next sequence date, bank tracker, combined prequal | pending |
 | C | Finance OS paydown block | pending |
 
@@ -66,3 +66,10 @@ UI-STANDARDS.md. Human click prove.
 - New Commas products
 - Contract copy
 - Changing offer prices on Present without Chris
+
+## Manifest A (2026-09-29)
+
+- Files: `src/progress/read.mjs` (waypoint now carries `verifyKind`), `public/progress.html` (upload box on an open `dispute_mail_receipt` step; posts `/api/documents-upload` with kind `client_upload`, subtype `dispute_mail_receipt`).
+- Proved: `node --test src/progress/*.test.mjs` 123/123; `npm run lint` clean; local browser run with faked replies — box shows only on the mailing-proof step, upload sends the right kind and subtype, success line shows.
+- Not proved: live click as a real Blueprint buyer (needs ship first). Step closing after upload rests on `src/waypoints/verify.mjs` (existing).
+- Not done: portal link change and the optional paydown block (Finance OS is Chat C's).

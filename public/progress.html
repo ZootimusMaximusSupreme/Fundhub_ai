@@ -137,6 +137,10 @@ h2.sec{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transfor
 .wp.done .ti{color:var(--gray);text-decoration:line-through}
 .wp .mt{font-size:12px;color:var(--gray);margin-top:3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 .wp .alt{margin-top:9px}
+.wp .proof{margin-top:10px}
+.wp .proof .pbtn{font:inherit;font-size:14px;font-weight:600;min-height:44px;padding:0 16px;border:1px solid var(--ink);border-radius:8px;background:var(--ink);color:#fff;cursor:pointer}
+.wp .proof .pbtn[disabled]{opacity:.55;cursor:progress}
+.wp .proof .pmsg{font-size:12px;color:var(--gray);margin-top:6px}
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 15px;border-radius:7px;border:1px solid var(--ink);
      background:var(--ink);color:#fff;font-size:13px;font-weight:500;cursor:pointer}
 .btn:hover{opacity:.88}
@@ -963,10 +967,19 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       note = '<div class="how">A rule to keep while we work on your file. Nothing to tick.</div>';
     }
 
+    /* Proof-to-clear (Capital Blueprint): an open step the server closes when a
+       client_upload of subtype dispute_mail_receipt exists. Same upload call as
+       the portal's doors (api/documents-upload.mjs). */
+    var proof = (!done && String(wp.verifyKind || "") === "dispute_mail_receipt")
+      ? '<div class="proof"><button type="button" class="pbtn" data-proof="' + esc(wp.id) + '">Upload your mailing proof</button>'
+        + '<input type="file" data-proof-file="' + esc(wp.id) + '" hidden accept=".pdf,.png,.jpg,.jpeg,.heic">'
+        + '<div class="pmsg" data-proof-msg="' + esc(wp.id) + '" role="status">Photo or PDF of your post office receipt or the stamped envelopes.</div></div>'
+      : '';
+
     return '<div class="wp' + (done ? " done" : "") + '" data-wp="' + esc(wp.id) + '">'
          + tick
          + '<div class="bd"><div class="ti">' + title + '</div>'
-         + '<div class="mt">' + meta.join("") + '</div>' + note + alt + '</div></div>';
+         + '<div class="mt">' + meta.join("") + '</div>' + note + proof + alt + '</div></div>';
   }
 
   /* The same choice src/progress/read.mjs nextStepOf() makes on the server:
@@ -1026,6 +1039,42 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
     });
   }
 
+  /* Sends the mailing-proof file. The server (api/documents-upload.mjs) pins a
+     client to their own file; staff must name it, so client_id rides along from
+     the URL the same way the read does. The step closes on the server, not here:
+     we never tick it ourselves — the box only says the file was received. */
+  function uploadProof(wpId, input) {
+    var btn = document.querySelector('button[data-proof="' + wpId + '"]');
+    var msg = document.querySelector('[data-proof-msg="' + wpId + '"]');
+    var file = input.files[0];
+    input.value = "";
+    if (btn) btn.disabled = true;
+    if (msg) msg.textContent = "Sending…";
+    var form = new FormData();
+    var id = clientIdFromUrl();
+    if (id) form.append("client_id", id);
+    form.append("kind", "client_upload");
+    form.append("subtype", "dispute_mail_receipt");
+    form.append("file", file, file.name);
+    var headers = { accept: "application/json" };
+    var t = token();
+    if (t) headers.authorization = "Bearer " + t;
+    fetch("/api/documents-upload", { method: "POST", headers: headers, body: form, credentials: "same-origin" })
+      .then(function (r) {
+        if (btn) btn.disabled = false;
+        if (r.ok) {
+          if (msg) msg.textContent = "Got it. Thank you. This step closes once we have looked at it.";
+          if (btn) btn.textContent = "Send another file";
+        } else if (msg) {
+          msg.textContent = "That did not send. Try again, or tell us in the chat on your portal.";
+        }
+      })
+      .catch(function () {
+        if (btn) btn.disabled = false;
+        if (msg) msg.textContent = "That did not send. Check your connection and try again.";
+      });
+  }
+
   function paintWaypoints(waypoints) {
     var el = $("cWaypoints");
     if (!waypoints.length) {
@@ -1044,7 +1093,17 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
       return (Number(a.order) || 0) - (Number(b.order) || 0);
     });
     el.innerHTML = sorted.map(waypointCard).join("");
+    el.addEventListener("change", function (ev) {
+      var fi = ev.target && ev.target.getAttribute ? ev.target.getAttribute("data-proof-file") : null;
+      if (fi && ev.target.files && ev.target.files.length) uploadProof(fi, ev.target);
+    });
     el.addEventListener("click", function (ev) {
+      var pb = ev.target.closest ? ev.target.closest("button[data-proof]") : null;
+      if (pb) {
+        var inp = el.querySelector('input[data-proof-file="' + pb.getAttribute("data-proof") + '"]');
+        if (inp) inp.click();
+        return;
+      }
       var tb = ev.target.closest ? ev.target.closest("button[data-tick]") : null;
       if (tb) return tickWaypoint(tb, waypoints);
       var btn = ev.target.closest ? ev.target.closest("button[data-alt]") : null;

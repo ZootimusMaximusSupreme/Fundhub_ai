@@ -424,6 +424,9 @@ function waypointView(row) {
        ours. The same rule api/waypoint-tick.mjs enforces — see
        src/waypoints/self-attest.mjs. */
     closedBy: closedBy(row),
+    /* Which machine check closes this step (waypoint_definitions.verify_kind).
+       The page uses it to draw an upload box on a proof-to-clear step. */
+    verifyKind: row.verify_kind ?? null,
     paidAlternative: price == null ? null : {
       // Translated for the same reason paidServices[].serviceKey is — see
       // publicServiceKey(). A screen posts this value to api/paid-services.mjs,
