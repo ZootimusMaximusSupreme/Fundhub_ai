@@ -29,6 +29,10 @@ export const ROADMAP_CSS = `
 .fh-b .proofgrid .fhc-scroll .fhc-track{will-change:transform}
 .fh-b .proofgrid .fhc-track>.tcard{flex:0 0 ${W}px;width:${W}px;max-width:none}
 .fh-b .proofgrid .fhc-track>.tcard .vslot{width:100%;max-width:none}
+/* The page holds Colin, Gene, Sarah. Chris wants Sarah, Gene, Colin on a phone. */
+.fh-b .proofgrid .fhc-track>.tcard:nth-child(1){order:3}
+.fh-b .proofgrid .fhc-track>.tcard:nth-child(3){order:1}
+.fh-b .proofgrid .fhc-track>.tcard:nth-child(2){order:2}
 .fh-b .proofgrid .fhc-swipe{overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x proximity;scroll-padding:0 24px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .fh-b .proofgrid .fhc-swipe::-webkit-scrollbar{display:none}
 .fh-b .proofgrid .fhc-swipe .fhc-track{transform:none!important}
