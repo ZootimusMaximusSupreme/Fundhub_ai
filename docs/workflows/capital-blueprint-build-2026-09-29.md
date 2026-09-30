@@ -1,6 +1,6 @@
 # Capital Blueprint build — 2026-09-29
 
-**Workflow:** backend/API **PASS**. UI leftovers for Claude. Human-click recreate at close-out **blocked** (Netlify `usage_exceeded` on fundhub.ai).
+**Workflow:** backend/API **PASS**. UI re-prove after Netlify credits **PASS** (2026-09-30). Claude HTML leftovers remain (cards only).
 
 **Board:** all Composer/Claude lanes write status here.
 
@@ -129,4 +129,29 @@ Remint worker `c3a69492` finished first. This pass did not remint again. Same li
 
 1. CSM queue "Assigned CSM:" chip only paints on `blueprint-csm-prep` rows. Halfway/accountability rows have the name in JSON and no chip.
 2. `progress.html` mailing-proof upload does not redraw the step after a good upload (copy still says it closes once staff have looked at it). Reload after the hook marks **done** is the current path.
-3. Control-panel Capital Blueprint group stays folded. Bank Done / Skipped live in `#bp-body`. Independent click recreate did not finish.
+3. Control-panel Capital Blueprint group stays folded by default. Bank Done / Skipped / Put back live in `#bp-body` after expand — **click recreate PASS** in UI re-prove below (no longer blocked).
+
+## UI re-prove after Netlify credits (2026-09-30)
+
+**Trigger:** Chris — proceed, credits loaded. Prior Grok pass blocked by site **503** `usage_exceeded`.
+
+**Health:** `GET https://fundhub.ai/api/health` → **200** `ok:true` `pending:0` `db:up` (checked ~05:35–05:38Z).
+
+**Client:** `029964c5-4d8e-47ed-88c9-53ac13863fd4` — Sim Eleven-Blueprint · `stanbridgejchris+sim-11@gmail.com`.
+
+**Auth:** staff `chris@fundhub.ai` via `STAFF_E2E_PASSWORD` / `scripts/tmp/capital-blueprint-live-click-2026-09-29.mjs` + extra Playwright human-path for mailing proof.
+
+**Browser MCP:** still **FAIL / blocked** — `browser_navigate` returns "No browser tab available" (newTab / active / side). Playwright is the human-click substitute (same script note).
+
+| # | Check | Result | Evidence |
+|---|--------|--------|----------|
+| 1 | Live health | **PASS** | HTTP 200, `pending:0` |
+| 2 | CSM queue — Sim Eleven row | **PASS** | Row visible; title Accountability halfway check-in; `source_workflow=customer-insights-mid` |
+| 3 | CSM queue — "Assigned CSM:" chip | **PASS (documented)** | Chip **not** drawn on this row type (expected). API `assigned_csm_name` = **DEMO Client Success Manager**. Chip only when `source_workflow === blueprint-csm-prep` → Claude leftover #1 |
+| 4 | Control panel Capital Blueprint bank todos | **PASS** | Expanded `#bp-group`; Done → Put back → Skipped → Put back all clicked on Chase personal todo `dff3b20f-…` |
+| 5 | Progress mailing-proof upload when step open | **PASS** | Reopened `blueprint_dispute_mail_receipt`; upload button visible; POST upload succeeded; waypoint **done** `2026-09-30T05:38:02Z` after reload |
+| 6 | Progress UI redraw without reload | **FAIL (UI leftover)** | After good upload, copy stays "Got it… closes once we have looked at it" / button "Send another file". Reload clears upload control and shows step **Done**. Confirms Claude leftover #2 |
+
+**Ship this re-prove:** none — no product code changed. Live already on prior ships (`61440626` mailing-proof hook; UI `548c9a47`).
+
+**Commit:** docs board update only (this section).
