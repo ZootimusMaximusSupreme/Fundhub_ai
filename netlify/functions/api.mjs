@@ -68,6 +68,7 @@ import readInvoices from "../../api/read/invoices.mjs";
 import readDocuments from "../../api/read/documents.mjs";
 import readBankInbox from "../../api/read/bank-inbox.mjs";
 import readBlueprintCombinedApproval from "../../api/read/blueprint-combined-approval.mjs";
+import blueprintStaffActions from "../../api/blueprint/staff-actions.mjs";
 import readFundingRounds from "../../api/read/funding-rounds.mjs";
 import readAffiliates from "../../api/read/affiliates.mjs";
 import readAffiliatePortal from "../../api/read/affiliate-portal.mjs";
@@ -515,6 +516,7 @@ export const ROUTES = {
 
   // Capital Blueprint — primary + credit partner combined prequal (lane 6).
   "read/blueprint-combined-approval": readBlueprintCombinedApproval,
+  "blueprint/staff-actions": blueprintStaffActions,
 
   // read/underwrite runs the vendored UnderwriteIQ Lite engine over the same
   // tradeline rows read/tradelines and read/finance-os already serve to

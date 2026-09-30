@@ -240,6 +240,7 @@ const API_KEYS = [
   "read/bank-inbox",
   "read/banking-surface",
   "read/blueprint-combined-approval",
+  "blueprint/staff-actions",
   "read/call-outcomes",
   /* The only read behind the client progress page. An outage here is a client
      who paid up to $10,000 seeing no scores, no checklist and no next step. */
