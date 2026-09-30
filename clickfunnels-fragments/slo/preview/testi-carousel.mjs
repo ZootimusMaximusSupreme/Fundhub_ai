@@ -47,20 +47,23 @@ export const ROADMAP_JS = `
   var track=document.createElement('div');track.className='fhc-track';
   rail.appendChild(track);g.insertBefore(rail,cards[0]);
   [].forEach.call(cards,function(c){track.appendChild(c);});
-  /* fhxShift, word for word from public/funnel/watch-proof.js. */
+  /* fhxShift from public/funnel/watch-proof.js, except the slide finishes
+     in FASTER of the /watch scroll distance. The start point is the same. */
   function fhxShift(top, height, vh, travel) {
     if (!(vh > 0) || !(travel > 0)) return 0;
     var span = Math.max(vh * 0.8 - height, vh * 0.4);
-    var p = (vh * 0.1 + span - top) / span;
+    var p = (vh * 0.1 + span - top) / (span * FASTER);
     if (p <= 0) return 0;
     if (p > 1) p = 1;
     return -p * travel;
   }
   var phone=window.matchMedia('(max-width:699px)');
   var still=window.matchMedia('(prefers-reduced-motion: reduce)');
-  /* Chris, 2026-09-29: "start it 20% lower". The slide begins 20% of the
-     screen height later in the scroll than on /watch, over the same distance. */
-  var LATER=0.2;
+  /* Chris, 2026-09-29: "start it 20% lower", then "20% lower" again. The
+     slide begins 40% of the screen height later in the scroll than on /watch. */
+  var LATER=0.4;
+  /* Chris, 2026-09-29: "20% faster". The slide finishes in 80% of the scroll. */
+  var FASTER=0.8;
   /* Each frame the row closes this share of the gap to where the scroll puts
      it, so a flick of the thumb glides instead of jumping. */
   var EASE=0.14;
