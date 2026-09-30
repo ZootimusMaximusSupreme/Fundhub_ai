@@ -11,6 +11,7 @@ Read first: `docs/UI-STANDARDS.md`, `docs/finance/capital-blueprint-build-spec-2
 | A | client progress/portal: mailing proof upload, optional paydown | done locally (not shipped) |
 | B | closer/CSM: partner, next sequence date, bank tracker, combined prequal | done |
 | C | Finance OS paydown block | done locally (not shipped) |
+| D | csm-queue `assigned_csm_name`; control panel bank todo Done / Skipped / Put back | **done / shipped `548c9a47`** |
 
 No dependencies — all three run at once. Each writes its manifest here when done.
 
@@ -100,10 +101,10 @@ UI-STANDARDS.md. Human click prove.
 
 **Not proved:** nothing was run against the live database or fundhub.ai (no deploy allowed here). The mocks match the handler code, not a live response. Not walked as a real closer on a real Blueprint buyer.
 
-**Leftovers (Composer closed 2026-09-30 — Claude still owes UI):**
-1. ~~CSM queue read missing assigned CSM~~ — **shipped:** `api/read/csm-queue.mjs` returns `assigned_csm_staff_id` + `assigned_csm_name`. **Claude:** show `assigned_csm_name` on `csm-queue.html` (grep shows no use yet).
+**Leftovers (Composer closed 2026-09-30):**
+1. ~~CSM queue read missing assigned CSM~~ — **closed Session D `548c9a47`:** API + `csm-queue.html` show `assigned_csm_name`.
 2. Blueprint buyer gate on live txs — **shipped `dcd50c49`:** `isCapitalBlueprintBuyer` uses `resolve_product_id(product_name)` (was broken `product_id` column).
-3. ~~Bank todo done/skipped~~ — **shipped:** `staff-actions` action `update_bank_todo_state` (`todo_id`, `state`). **Claude:** wire Done/Skipped on `client-control-panel.html` bank list (grep shows no use yet).
+3. ~~Bank todo done/skipped~~ — **closed Session D `548c9a47`:** `update_bank_todo_state` wired on control panel (Done / Skipped / Put back).
 4. Still open: no read hides Capital Blueprint panel for non-buyers (group shows for all; server returns `not_blueprint_buyer`). Optional v2.
 5. Still open: portal deep-link to Finance OS paydown for entitled buyers (staff `finance-os.html` has simulator; portal optional per spec).
 6. Live prove blocked until Sim #11 (`029964c5-…`) or another paid Blueprint client exists on production again — not a Claude task.
@@ -122,6 +123,7 @@ UI-STANDARDS.md. Live click on fundhub.ai after ship. No invented copy or prices
 
 ## Manifest D (2026-09-29)
 
+- **Ship:** `548c9a47` (live via ship `26c3ab7d`).
 - Files: `public/app/csm-queue.html` (Blueprint prep rows show `Assigned CSM: <name>` from `assigned_csm_name`; falls back to the old holder wording when the name is null), `public/app/client-control-panel.html` (each bank to-do gets Done / Skipped, or "Put back on the list" once closed; posts `update_bank_todo_state` with `todo_id` and `state`, then re-reads the list).
 - Proved: lint clean, `src/ui` tests pass, local browser run with faked replies — name chip and fallback chip show; Skipped sends the exact body and the row flips to Skipped.
-- Not proved: live click on fundhub.ai; mailing-proof re-prove needs a real Blueprint buyer on live.
+- Not proved: live click on fundhub.ai; mailing-proof upload re-prove **BLOCKED** until a live Blueprint buyer exists (Sim #11 remint not done).

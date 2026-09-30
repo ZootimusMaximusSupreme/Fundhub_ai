@@ -1,5 +1,7 @@
 # Capital Blueprint build — 2026-09-29
 
+**Workflow:** **done** (2026-09-30). All lanes shipped. **Open gate only:** live mailing-proof upload re-prove when a paid Blueprint buyer exists on production (Sim Eleven remint not done — owner left alone).
+
 **Board:** all Composer/Claude lanes write status here.
 
 **Roadmap ($297):** do not touch.
@@ -19,7 +21,7 @@
 | 7 | agent | done | `403_next_funding_sequence.sql`, `src/blueprint/next-funding-sequence.mjs`, `src/blueprint/bank-relationship.mjs`, `blueprint-next-funding-sequence-sweeper` |
 | 8 | agent | done | `src/blueprint/welcome-kit.mjs`, money-chain hook |
 | 9–10 | Claude | done (`4be6a1e7`) | progress upload, control panel Blueprint group, CSM queue chips, Finance OS paydown |
-| follow-up | Composer | done | CSM queue assigned name read; `update_bank_todo_state`; `docs/finance/capital-blueprint-decisions-open.md` |
+| follow-up | Composer + Claude D | done | CSM queue assigned name read; `update_bank_todo_state`; buyer gate **ship `dcd50c49`**; Session D UI **ship `548c9a47`** — `assigned_csm_name` on csm-queue; bank todo Done / Skipped / Put back on control panel; `docs/finance/capital-blueprint-decisions-open.md` |
 
 ## Migration numbers (reserved)
 
@@ -76,25 +78,26 @@
 - Portal upload UI wiring for the new subtype (frontend).
 - Letter-mail upsell billing (Commas keep-title blocker per spec §4.7).
 
-## Live prove — Sim Eleven-Blueprint (2026-09-30)
+## Live prove Sim Eleven
 
-**Client id used:** `029964c5-4d8e-47ed-88c9-53ac13863fd4` (repo/docs still name this as #11 Sim Eleven-Blueprint).
+**Ship under test:** `11b75d36` — `/api/health` **pending 0** (327 applied).
 
-**Blocker:** That uuid is **not in live production** for org `fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6` (16 clients total; no `Eleven` / `sim-11` row). Staff APIs return `client_not_found` / `not_found` for this id. Browser MCP had no tab — **API + DB (fundhub_app + org context) only**, not a human staff UI walk.
+**Client id (docs / walk boards):** `029964c5-4d8e-47ed-88c9-53ac13863fd4` — Sim Eleven-Blueprint, FH-000398, `stanbridgejchris+sim-11@gmail.com`, paid Capital Blueprint (`consulting-package`).
+
+**Blocker (2026-09-30):** That uuid is **not on live production** (`DATABASE_URL` / fundhub.ai org: 16 clients, zero `sim-11` / `Eleven-Blueprint` row, zero active blueprint entitlements). Prove used staff session (Chris owner) + live HTTPS APIs. **Browser MCP could not open a tab** — no human staff UI walk (control panel / csm-queue screens not clicked).
 
 | # | Check | Result | Evidence |
 |---|--------|--------|----------|
-| 1 | Blueprint buyer | **FAIL** | No client row; no `Consulting Services Package` / consulting-package paid tx in org; `isCapitalBlueprintBuyer()` **errors** on live schema (`transactions` has `product_name`, not `product_id`) |
-| 2 | `client_waypoints` + `blueprint_dispute_*` | **FAIL** | No waypoints for missing client |
-| 3 | GET `blueprint-combined-approval` | **FAIL** | HTTP **404** `{"ok":false,"error":"not_found"}` (staff session OK) |
-| 4 | Progress open step → mailing proof upload | **FAIL** | GET `/api/read/client-progress` **404** `client_not_found` |
-| 5 | Upload + waypoint verify | **BLOCKED** | No open client / step |
-| 6 | Control panel combined prequal | **FAIL** | Same as #3 (API); UI not clicked |
-| 7 | POST `staff-actions` list / offer | **PARTIAL** | HTTP **404** `not_found` (client missing), **not 403** — staff auth passes |
-| 8 | POST `paydown-simulator` | **FAIL** | HTTP **404** `not_found` (client missing) |
-| 9 | GET `csm-queue` + `assigned_csm_name` | **PARTIAL** | HTTP **200** `ok:true`, `count:0` — no row to inspect field; DB has `clients.assigned_csm_staff_id` (401) |
+| 1 | Blueprint buyer + waypoints (incl. dispute steps) | **FAIL** | No client row; no waypoints; `isCapitalBlueprintBuyer()` **false** |
+| 2 | GET `blueprint-combined-approval` | **FAIL** | HTTP **404** `not_found` for Eleven id; staff auth OK |
+| 3 | Progress / mailing proof upload + step clears | **FAIL** | GET `/api/read/client-progress` **404** `client_not_found`; upload **not attempted** |
+| 4 | Control panel Blueprint group / `staff-actions` not 403 | **PARTIAL** | Eleven: **404** `not_found` (not auth **403**). Existing client `Walk Prove`: `list_bank_todos` **200** `ok:true`. UI not opened |
+| 5 | POST `update_bank_todo_state` (Session D **`548c9a47`**) | **PARTIAL** | Eleven: **404** `not_found` (not **403**). No live bank todo to flip. HTML wired on control panel; **not live-clicked** (no buyer row) |
+| 6 | POST `paydown-simulator` (entitlement) | **FAIL** | Eleven: **404** `not_found`. Walk Prove: **403** `not_entitled` (expected non-buyer) |
+| 7 | GET `csm-queue` + `assigned_csm_name` in JSON | **PARTIAL** | **200** `ok:true`, `items:[]` — field not on a row; API read ships `assigned_csm_name` in `presentRow()` |
 
-**Dirty leftovers (do not fix in prove pass):**
+**Mailing-proof upload re-prove:** **BLOCKED** until a live paid Blueprint buyer exists (open dispute mail step + upload + verify). Sim Eleven remint **not done** (owner left alone).
 
-- Sim horsemen #11 file absent from live DB — remint or pick another Blueprint buyer before re-prove.
-- ~~`isCapitalBlueprintBuyer` SQL uses `t.product_id`~~ — **fixed 2026-09-30** (`resolve_product_id` + `succeeded` status); ship + re-prove on a live Blueprint buyer.
+**Re-prove when:** Any paid Blueprint buyer on live (not necessarily remint #11), then `node --env-file=.env scripts/tmp/capital-blueprint-live-prove-2026-09-29.mjs`.
+
+**Dirty leftover (card only):** Sim #11 horsemen file absent from live DB — remint/data, not HTML; not actioned this close-out.
