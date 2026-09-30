@@ -12,11 +12,9 @@ import { BLUEPRINT_PRODUCT_CODE } from "../waypoints/purchase.mjs";
 export const SWEEP_CRON = "0 * * * *";
 export const SOURCE_WORKFLOW = "blueprint-closer-ready-sweeper";
 
-const PAID = [...PAID_TRANSACTION_STATUS];
-
 export async function sweep(conn = db, { orgId = null, now = new Date() } = {}) {
   void now;
-  const params = [BLUEPRINT_PRODUCT_CODE, PAID];
+  const params = [BLUEPRINT_PRODUCT_CODE, PAID_TRANSACTION_STATUS];
   let orgFilter = "";
   if (orgId) {
     orgFilter = " AND c.org_id = $3::uuid";
@@ -26,9 +24,9 @@ export async function sweep(conn = db, { orgId = null, now = new Date() } = {}) 
     `SELECT DISTINCT c.org_id, c.id AS client_id
        FROM clients c
        JOIN transactions t ON t.client_id = c.id AND t.org_id = c.org_id
-       JOIN products p ON p.id = t.product_id AND p.org_id = t.org_id
+       JOIN products p ON p.id = resolve_product_id(t.org_id, t.product_name)
       WHERE lower(p.code) = lower($1)
-        AND t.status = ANY($2::text[])
+        AND lower(btrim(COALESCE(t.status, ''))) = $2
         ${orgFilter}`,
     params
   );

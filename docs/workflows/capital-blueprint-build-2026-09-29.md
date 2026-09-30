@@ -75,3 +75,26 @@
 - Agent `fetchContext` waypoints (lane 1).
 - Portal upload UI wiring for the new subtype (frontend).
 - Letter-mail upsell billing (Commas keep-title blocker per spec §4.7).
+
+## Live prove — Sim Eleven-Blueprint (2026-09-30)
+
+**Client id used:** `029964c5-4d8e-47ed-88c9-53ac13863fd4` (repo/docs still name this as #11 Sim Eleven-Blueprint).
+
+**Blocker:** That uuid is **not in live production** for org `fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6` (16 clients total; no `Eleven` / `sim-11` row). Staff APIs return `client_not_found` / `not_found` for this id. Browser MCP had no tab — **API + DB (fundhub_app + org context) only**, not a human staff UI walk.
+
+| # | Check | Result | Evidence |
+|---|--------|--------|----------|
+| 1 | Blueprint buyer | **FAIL** | No client row; no `Consulting Services Package` / consulting-package paid tx in org; `isCapitalBlueprintBuyer()` **errors** on live schema (`transactions` has `product_name`, not `product_id`) |
+| 2 | `client_waypoints` + `blueprint_dispute_*` | **FAIL** | No waypoints for missing client |
+| 3 | GET `blueprint-combined-approval` | **FAIL** | HTTP **404** `{"ok":false,"error":"not_found"}` (staff session OK) |
+| 4 | Progress open step → mailing proof upload | **FAIL** | GET `/api/read/client-progress` **404** `client_not_found` |
+| 5 | Upload + waypoint verify | **BLOCKED** | No open client / step |
+| 6 | Control panel combined prequal | **FAIL** | Same as #3 (API); UI not clicked |
+| 7 | POST `staff-actions` list / offer | **PARTIAL** | HTTP **404** `not_found` (client missing), **not 403** — staff auth passes |
+| 8 | POST `paydown-simulator` | **FAIL** | HTTP **404** `not_found` (client missing) |
+| 9 | GET `csm-queue` + `assigned_csm_name` | **PARTIAL** | HTTP **200** `ok:true`, `count:0` — no row to inspect field; DB has `clients.assigned_csm_staff_id` (401) |
+
+**Dirty leftovers (do not fix in prove pass):**
+
+- Sim horsemen #11 file absent from live DB — remint or pick another Blueprint buyer before re-prove.
+- ~~`isCapitalBlueprintBuyer` SQL uses `t.product_id`~~ — **fixed 2026-09-30** (`resolve_product_id` + `succeeded` status); ship + re-prove on a live Blueprint buyer.

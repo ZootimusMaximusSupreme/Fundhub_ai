@@ -7,20 +7,18 @@ import { createTask } from "../lib/create-task.mjs";
 import { PAID_TRANSACTION_STATUS } from "../entitlements/entitlements.mjs";
 import { BLUEPRINT_PRODUCT_CODE } from "../waypoints/purchase.mjs";
 
-const PAID = [...PAID_TRANSACTION_STATUS];
-
 /** True when this client has a paid Capital Blueprint (consulting-package). */
 export async function isCapitalBlueprintBuyer(db, { orgId, clientId }) {
   if (!orgId || !clientId) return false;
   const r = await db.query(
     `SELECT 1
        FROM transactions t
-       JOIN products p ON p.id = t.product_id AND p.org_id = t.org_id
+       JOIN products p ON p.id = resolve_product_id(t.org_id, t.product_name)
       WHERE t.org_id = $1::uuid AND t.client_id = $2::uuid
         AND lower(p.code) = lower($3)
-        AND t.status = ANY($4::text[])
+        AND lower(btrim(COALESCE(t.status, ''))) = $4
       LIMIT 1`,
-    [orgId, clientId, BLUEPRINT_PRODUCT_CODE, PAID]
+    [orgId, clientId, BLUEPRINT_PRODUCT_CODE, PAID_TRANSACTION_STATUS]
   );
   return !!r.rows[0];
 }
