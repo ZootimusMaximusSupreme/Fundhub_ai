@@ -215,6 +215,10 @@ Video ad drop-off uses Meta's own definitions. Most plays never reach 25% → fi
 
 When Chris asks to change a page, he sees a marked draft before anything goes live: red boxes on bad lines with a fix under each, then the fixes in green on the same shared link, pushed live only when he says, with every mark stripped. Same law: `.cursor/rules/page-edits-marked-draft.mdc` and `.claude/rules/page-edits-marked-draft.md`.
 
+### Clarity Data Export (owner-set 2026-09-29)
+
+Clarity Data Export: one pull per time Chris asks. Go through `src/adapters/clarity-export.mjs` only. Do not curl or fetch `https://www.clarity.ms/export-data` yourself. Do not retry. If that one pull fails, say the error and stop. Also never exceed Microsoft's 10 requests per project per day; the helper blocks call 11 before any HTTP request. Same law: `.cursor/rules/clarity-export-rate-limit.mdc` and `.claude/rules/clarity-export-rate-limit.md`.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
