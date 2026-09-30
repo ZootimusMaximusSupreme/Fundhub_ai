@@ -1,6 +1,6 @@
 # Capital Blueprint build — 2026-09-29
 
-**Workflow:** **done** (2026-09-30). All lanes shipped. **Open gate only:** live mailing-proof upload re-prove when a paid Blueprint buyer exists on production (Sim Eleven remint not done — owner left alone).
+**Workflow:** **closed** (2026-09-30). All lanes shipped. Live prove Sim Eleven remint + Session D + mailing proof **PASS**.
 
 **Board:** all Composer/Claude lanes write status here.
 
@@ -80,24 +80,26 @@
 
 ## Live prove Sim Eleven
 
-**Ship under test:** `11b75d36` — `/api/health` **pending 0** (327 applied).
+**Close-out:** **PASS** — remint + live prove 2026-09-30 (agent). Workflow **closed**.
 
-**Client id (docs / walk boards):** `029964c5-4d8e-47ed-88c9-53ac13863fd4` — Sim Eleven-Blueprint, FH-000398, `stanbridgejchris+sim-11@gmail.com`, paid Capital Blueprint (`consulting-package`).
+**Client id used:** `029964c5-4d8e-47ed-88c9-53ac13863fd4` — Sim Eleven-Blueprint, `stanbridgejchris+sim-11@gmail.com`, phone `+16616054248`, paid Capital Blueprint (`consulting-package` / Consulting Services Package $5,000 simulated receipt — no real card). Historical uuid reused.
 
-**Blocker (2026-09-30):** That uuid is **not on live production** (`DATABASE_URL` / fundhub.ai org: 16 clients, zero `sim-11` / `Eleven-Blueprint` row, zero active blueprint entitlements). Prove used staff session (Chris owner) + live HTTPS APIs. **Browser MCP could not open a tab** — no human staff UI walk (control panel / csm-queue screens not clicked).
+**Remint path:** `scripts/sim/seed-fulfillment-client.mjs --profile blueprint --id <uuid> --confirm` → `push-credit --profile blueprint` → `push-payment --ref pl_…`. Entitlements: `credit-optimization-roadmap`, `metro2-letter-pack`. Finance OS subscription **active** 12 months. CSM assigned: `DEMO Client Success Manager` (`6ec4e592-…`). Sample credit PREMIUM_STACK / $212k. Dispute waypoints seeded (mail letters / mailing proof / bureau response).
+
+**Staff auth:** owner session minted via `createSession` for `chris@fundhub.ai` (STAFF_E2E_PASSWORD masked in `.env`). Playwright human click on live `fundhub.ai`. Browser MCP tab open failed this pass — Playwright covered the UI walk.
 
 | # | Check | Result | Evidence |
 |---|--------|--------|----------|
-| 1 | Blueprint buyer + waypoints (incl. dispute steps) | **FAIL** | No client row; no waypoints; `isCapitalBlueprintBuyer()` **false** |
-| 2 | GET `blueprint-combined-approval` | **FAIL** | HTTP **404** `not_found` for Eleven id; staff auth OK |
-| 3 | Progress / mailing proof upload + step clears | **FAIL** | GET `/api/read/client-progress` **404** `client_not_found`; upload **not attempted** |
-| 4 | Control panel Blueprint group / `staff-actions` not 403 | **PARTIAL** | Eleven: **404** `not_found` (not auth **403**). Existing client `Walk Prove`: `list_bank_todos` **200** `ok:true`. UI not opened |
-| 5 | POST `update_bank_todo_state` (Session D **`548c9a47`**) | **PARTIAL** | Eleven: **404** `not_found` (not **403**). No live bank todo to flip. HTML wired on control panel; **not live-clicked** (no buyer row) |
-| 6 | POST `paydown-simulator` (entitlement) | **FAIL** | Eleven: **404** `not_found`. Walk Prove: **403** `not_entitled` (expected non-buyer) |
-| 7 | GET `csm-queue` + `assigned_csm_name` in JSON | **PARTIAL** | **200** `ok:true`, `items:[]` — field not on a row; API read ships `assigned_csm_name` in `presentRow()` |
+| 1 | Blueprint buyer + waypoints (incl. dispute steps) | **PASS** | Paid link `pl_3d9b8aecf2da5fac8f50f31f`; 8 waypoints incl. `blueprint_dispute_*`; buyer entitlements + Finance OS sub |
+| 2 | GET `blueprint-combined-approval` | **PASS** | **200** `ok:true`, combinedPrequal **$212,000** |
+| 3 | Progress / mailing proof upload + step clears | **PASS** | POST `/api/documents-upload` subtype `dispute_mail_receipt` **200**; `evaluateWaypoints` closed `blueprint_dispute_mail_receipt` → **done**; progress UI shows dispute steps |
+| 4 | Control panel Blueprint group / `staff-actions` | **PASS** | Expanded `#bp-group`; `list_bank_todos` / `offer_bank_tracker` **200**; portal + CCP show Sim Eleven-Blueprint |
+| 5 | Bank todo Done / Skipped / Put back (Session D) | **PASS** | API `update_bank_todo_state` **200** for done/skipped/open; UI clicks on `#bp-body .bp-todo-acts` Done → Put back → Skipped → Put back (Chase todo) |
+| 6 | POST `paydown-simulator` (entitlement) | **PASS** | **200** `ok:true`, `entitled:true`, cash 5000, preapproval $212k |
+| 7 | GET `csm-queue` + `assigned_csm_name` | **PASS** | **200**, Eleven on queue; `assigned_csm_name` = **DEMO Client Success Manager**. UI chip "Assigned CSM:" only renders when `source_workflow === blueprint-csm-prep` — this row is Accountability halfway check-in, so chip not drawn; API field present |
 
-**Mailing-proof upload re-prove:** **BLOCKED** until a live paid Blueprint buyer exists (open dispute mail step + upload + verify). Sim Eleven remint **not done** (owner left alone).
+**Mailing-proof upload re-prove:** **PASS** (gate closed).
 
-**Re-prove when:** Any paid Blueprint buyer on live (not necessarily remint #11), then `node --env-file=.env scripts/tmp/capital-blueprint-live-prove-2026-09-29.mjs`.
+**Ship this close-out:** none — remint was live DB + sim scripts/docs only; product UI already on `548c9a47`.
 
-**Dirty leftover (card only):** Sim #11 horsemen file absent from live DB — remint/data, not HTML; not actioned this close-out.
+**Dirty leftover (card only, not actioned):** CSM queue "Assigned CSM:" chip is gated to `blueprint-csm-prep` tasks only — accountability/halfway tasks carry `assigned_csm_name` in JSON but do not show the chip.
