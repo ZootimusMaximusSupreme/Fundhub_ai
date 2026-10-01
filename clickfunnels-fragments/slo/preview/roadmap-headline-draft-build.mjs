@@ -6,7 +6,8 @@
  *
  * Chris, 2026-10-01: "Headline / Subheadline / VSL / How it Works /
  * Testimonials / FAQ" then "only shit should be on the funnel plus checkout".
- * How it Works is the "What Happens Next" section. Every other section is cut,
+ * How it Works is a NEW section (Chris: "how it works isnt what happens next");
+ * What Happens Next is cut with every other unnamed section,
  * and so are the Gene line and the $297 line under the headline. Checkout stays last.
  *
  * Reads the live fragment (../slo-01-sales.html) WITHOUT changing it. The old
@@ -61,12 +62,36 @@ const NOW = ["hero", "testi", "wyg", "firstwin", "goodcredit", "bridge", "approv
    (.claude/rules/proof-cards-from-source.md). */
 const NEW = [
   ["hero", "1 · Headline, subheadline, VSL"],
-  ["how", "2 · How it Works (the What Happens Next section) · MOVED UP from 8th"],
+  ["howNew", "2 · How it Works · NEW"],
   ["testi", "3 · Testimonials · was 2nd"],
   ["faq", "4 · FAQ"],
 ];
-const CUT = ["wyg", "firstwin", "goodcredit", "bridge", "approvals", "qual", "guar"];
-const CUT_NAMES = "What You Get · Your fastest first win · Already have good credit? · Why this works · Approvals · Who this is for · The guarantee";
+const CUT = ["wyg", "firstwin", "goodcredit", "bridge", "approvals", "how", "qual", "guar"];
+const CUT_NAMES = "What You Get · Your fastest first win · Already have good credit? · Why this works · Approvals · What Happens Next · Who this is for · The guarantee";
+
+/* How it Works, NEW. Chris, 2026-10-01: "how it works isnt what happens next".
+   How the roadmap gets you funded, then funded again. Every fact is from the
+   What You Get rows on the live page (documents 01-05 and the bonus map). */
+const HOW_STEPS = [
+  ["See how much you can get", "We check your credit with a soft pull. Your score stays the same. About 10 seconds later, your roadmap is in your portal. It shows how much you can get today, and how much once your file is fixed."],
+  ["Fix what holds you back", "Your roadmap shows every item that costs you money, and what to do first. Pay down the cards it names. Mail the letters we write for you. Each round waits 30 days at most."],
+  ["Apply in the right order", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order, so you stack approvals, not declines."],
+  ["Do it again", "Open one to two new companies a quarter, set up the right way. As they age, they get ready for funding too. That is how you keep getting funded."],
+];
+function howSection(g) {
+  const rows = HOW_STEPS.map(([t, d], i) =>
+    `        <div class="srow"><span class="n">0${i + 1}</span><div><div class="t">${g(t)}</div><div class="d">${g(d)}</div></div></div>`).join("\n");
+  return `<!-- HOW IT WORKS (2026-10-01) -->
+    <section class="sect">
+      <span class="kicker">${g("How It Works")}</span>
+      <div class="h2">${g("Get Funded. Then Do It Again.")}</div>
+      <div class="rows">
+${rows}
+      </div>
+      <a class="btn" href="#fh-order">Get My $297 Funding Roadmap</a>
+    </section>
+`;
+}
 const HERO_CUT = [
   '<p class="fh-proofline"><b>Gene</b> runs three LLCs. With the roadmap, he opened up about $420,000 in business funding over three years.</p>',
   '<p class="lede"><b>$297.</b> We soft-pull your credit, and about 10 seconds later five documents built from your own file are waiting in your portal. Yours to keep.</p>',
@@ -82,7 +107,8 @@ function reorder(page, mark) {
     if (!block.hero.includes(line)) throw new Error(`hero line not found: ${line.slice(0, 60)}`);
     block.hero = block.hero.replace(line, mark ? `<p class="fhx-old fhx-cutline">${line.replace(/<\/?p[^>]*>/g, "")}</p>` : "");
   }
-  if (NEW.length + CUT.length !== NOW.length - 1) throw new Error("a block is neither kept nor cut");
+  block.howNew = howSection(mark ? (t) => `<span class="fhx-new">${t}</span>` : (t) => t);
+  if (NEW.length - 1 + CUT.length !== NOW.length - 1) throw new Error("a block is neither kept nor cut");
   let body = NEW.map(([k, tag]) => (mark ? `<div class="fhx-sec" data-tag="${tag}">\n${block[k]}</div><!--/fhx-sec-->\n` : block[k])).join("");
   if (mark) body += `<div class="fhx-cutbox"><b>CUT from the page</b><span>${CUT_NAMES}</span></div>\n`;
   return head + body + tail;
