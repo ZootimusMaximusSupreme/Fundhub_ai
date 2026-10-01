@@ -108,7 +108,7 @@ const HOW_STEPS = [
   // Owner-set 2026-10-01: this line stays ahead of the product (liens, NAICS,
   // name and address are not checked in code yet); the product gets fixed to match.
   ["Build the trust in the business", "Lenders fund businesses that look solid.", "I check your Experian Business report for liens, bad marks, high card balances, your score, your name, your address and your NAICS code. You get the exact fix for each error I find, website included, so lenders trust you and send money to your bank account."],
-  ["Set up the businesses", "Never need anyone to fund you again.", "Your roadmap shows you how to open and structure a business correctly, with all the right data points in place, so lenders eagerly approve your funding instead of asking for income verification or documents you may not have. Once you have this roadmap, you can repeat this process like a conveyor belt, funding company after company."],
+  ["Set up the businesses", "Never need anyone to fund you again.", "Your roadmap shows you how to open and set up a business the right way, with all the right data points in place. So lenders approve you instead of asking for income verification or other documents you may not have. You can repeat this process, funding company after company after company."],
   ["Apply in the right order", "Get approved, not declined.", "Your list shows the banks that approve files like yours. Apply in that order for every business you set up to stack approvals and maximize your fundability across multiple businesses indefinitely."],
 ];
 function howSection(g) {
