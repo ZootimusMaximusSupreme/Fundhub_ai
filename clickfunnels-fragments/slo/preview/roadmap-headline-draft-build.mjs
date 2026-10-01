@@ -97,10 +97,13 @@ const HOW_H2 = "Get Every Dollar Your File Can Get. Then Do It Again, On Your Ow
    Experian Business, NAICS, one to two companies a quarter, stacking approvals).
    "Run each one through steps 1 to 3" cut: Chris, "it sounds really goofy". */
 const HOW_STEPS = [
-  // The 6: src/underwrite/vendor/suggestions.cjs (paydown, $5,000+ primary card,
-  // thin-file depth, LLC seasoning, sequencing/lender selection) and
-  // src/deliverables/credit-analysis.mjs section 07 (personal data cleanup).
-  ["See what you qualify for today", "Know what you can get before a bank ever sees your file.", "I pull your credit with a soft pull, so your score stays the same. Your roadmap shows up in your portal. It shows what you qualify for right now. Even with perfect credit, your roadmap tunes 6 more things to get you more funding: your card balances, a strong main card, how full your file is, your personal info, your LLC's age, and the order you apply in."],
+  // The 13 (beyond removing negatives and inquiries). Personal 6, in code:
+  // src/underwrite/vendor/suggestions.cjs (card paydown, $5,000+ primary card,
+  // thin-file depth, LLC seasoning, lender order) and credit-analysis.mjs
+  // section 07 (personal info). Business 7, owner-set 2026-10-01 ahead of the
+  // product: NAICS, liens, business card balances, business name, business
+  // address, business score, website.
+  ["See what you qualify for today", "Know what you can get before a bank ever sees your file.", "I pull your credit with a soft pull, so your score stays the same. Your roadmap shows up in your portal. It shows what you qualify for right now. Even with perfect credit, your roadmap tunes 13 more things, personal and business, to get you more funding."],
   ["Find the gap and optimize your personal credit", "Stop losing money to items nobody told you about.", `The gap is the money you are leaving on the table. On a lot of files, it is <span class="fh-gap">$100,000 to $300,000</span>. Your roadmap shows every item costing you money on all three bureaus: inquiries, names and addresses that don't match, and your business info. Pay down the cards it names. Mail the letters I write for you. Each round waits 30 days at most.`],
   // Owner-set 2026-10-01: this line stays ahead of the product (liens, NAICS,
   // name and address are not checked in code yet); the product gets fixed to match.
