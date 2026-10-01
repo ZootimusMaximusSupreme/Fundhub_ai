@@ -421,6 +421,66 @@ function isFormSubmissionType(type) {
   return String(type || "").includes("form_submission");
 }
 
+/** Custom /apply survey (browser) — flat handoff payload, not a CF-signed webhook. */
+export function isApplySurveyIngestBody(body) {
+  if (!body || typeof body !== "object") return false;
+  return body.source === "apply-survey" || body.funnel === "apply-survey";
+}
+
+function verifyApplySurveyIngestHeader(headers, secret) {
+  if (!secret) return false;
+  const provided = String(headerValue(headers, "x-fundhub-apply-survey-ingest") || "").trim();
+  if (!provided) return false;
+  try {
+    const a = Buffer.from(provided);
+    const b = Buffer.from(String(secret));
+    if (a.length !== b.length) return false;
+    return crypto.timingSafeEqual(a, b);
+  } catch {
+    return false;
+  }
+}
+
+/** Map handoff §3 shape → CF 2.0 contact row the normalizer already reads. */
+export function wrapApplySurveyIngestBody(body) {
+  if (!isApplySurveyIngestBody(body)) return body;
+  const email = String(body.email || "").trim().toLowerCase();
+  const name = String(body.name || "").trim();
+  const parts = name.split(/\s+/).filter(Boolean);
+  const first_name = parts[0] || "";
+  const last_name = parts.slice(1).join(" ");
+  const answers = body.answers && typeof body.answers === "object" ? body.answers : {};
+  const attr = body.attribution && typeof body.attribution === "object" ? body.attribution : {};
+  const custom_attributes = { ...answers };
+  for (const k of [
+    "utm_source",
+    "utm_medium",
+    "utm_campaign",
+    "utm_content",
+    "utm_term",
+    "landing_path",
+    "referrer_domain"
+  ]) {
+    if (attr[k] != null && attr[k] !== "") custom_attributes[k] = attr[k];
+  }
+  if (body.a1) custom_attributes.a1 = body.a1;
+  if (body.a2) custom_attributes.a2 = body.a2;
+  const step = String(body.step_key || body.step || "step").slice(0, 80);
+  const id = body.id || `apply-survey:${email || "unknown"}:${step}`;
+  return {
+    event_type: "contact.updated",
+    id,
+    funnel_name: "apply-survey",
+    data: {
+      email_address: email,
+      first_name,
+      last_name,
+      phone_number: String(body.phone || "").trim(),
+      custom_attributes
+    }
+  };
+}
+
 /* --- 2b. Ingest-time client attachment and repeat-post suppression ----------
  *
  * WHY THIS EXISTS. Measured 2026-09-03: every one of the 82 `survey.submitted`,
@@ -587,24 +647,33 @@ export async function handleClickFunnelsWebhook({
   rawBody,
   signatureHeader,
   secret,
-  headers
+  headers,
+  env = process.env
 }) {
-  const sig =
-    signatureHeader ||
-    headerValue(headers, "x-webhook-clickfunnels-signature") ||
-    headerValue(headers, "x-clickfunnels-signature");
-  const timestamp =
-    headerValue(headers, "x-webhook-clickfunnels-timestamp") ||
-    headerValue(headers, "x-clickfunnels-timestamp");
-  if (!verifyClickFunnelsSignature(rawBody, sig, secret, timestamp)) {
-    return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
-  }
-
   let body;
   try {
     body = rawBody ? JSON.parse(rawBody) : {};
   } catch {
     return { ok: false, status: 400, reason: "invalid_json", emitted: [] };
+  }
+
+  const ingestSecret = env.CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET;
+  const applyIngest =
+    isApplySurveyIngestBody(body) && verifyApplySurveyIngestHeader(headers, ingestSecret);
+
+  if (!applyIngest) {
+    const sig =
+      signatureHeader ||
+      headerValue(headers, "x-webhook-clickfunnels-signature") ||
+      headerValue(headers, "x-clickfunnels-signature");
+    const timestamp =
+      headerValue(headers, "x-webhook-clickfunnels-timestamp") ||
+      headerValue(headers, "x-clickfunnels-timestamp");
+    if (!verifyClickFunnelsSignature(rawBody, sig, secret, timestamp)) {
+      return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
+    }
+  } else {
+    body = wrapApplySurveyIngestBody(body);
   }
 
   // CF_CAPTURE_MODE — raw payload capture for adapter correction (CF Classic vs

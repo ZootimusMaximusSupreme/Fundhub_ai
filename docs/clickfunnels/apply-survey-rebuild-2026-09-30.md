@@ -37,7 +37,9 @@ All other option labels: verbatim from the extract §2. Send labels, never CF op
 ## 3. Wiring (Cursor)
 
 - Keep the native CF survey live until cutover (spec §7). This replaces it after Friday's launch.
-- Per-screen submit like CF today: `SEND_STEP` posts on every advance → `/api/webhooks/clickfunnels`. `entry.captured` after contact; `survey.submitted` once any cf_svy_* answer exists. Payload shape: `{ email, name, phone, funnel: 'apply-survey', answers, a1, a2, attribution{ utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_path, referrer_domain } }`.
+- Per-screen submit like CF today: `SEND_STEP` posts on every advance → `https://fundhub.ai/api/webhooks/clickfunnels` (or `/api/webhooks/clickfunnels` on other hosts). `entry.captured` after contact; `survey.submitted` once any cf_svy_* answer exists. Payload shape: `{ source, funnel: 'apply-survey', step_key, email, name, phone, answers, a1, a2, attribution{ utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_path, referrer_domain } }` (labels, never CF option ids).
+- Browser auth: header `X-Fundhub-Apply-Survey-Ingest` must match Netlify `CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET` (set on the page at cutover as `window.FH_APPLY_SURVEY_INGEST`). CF HMAC is unchanged for real CF webhooks.
+- Preview guards (`apply-survey.html`): **no network POST** on `file://` unless `window.FH_APPLY_SURVEY_WEBHOOK_FORCE = true` (still needs ingest token). `STEP_LOG` + `window.FH_SURVEY_PAYLOAD` always capture payloads locally.
 - Hidden fields keep their names so fh-attribution.js stamps them.
 - Also keep sharing the data with ClickFunnels.
 - Turn "Other" off on the CF Planned Use question too, so both versions collect the same answers.

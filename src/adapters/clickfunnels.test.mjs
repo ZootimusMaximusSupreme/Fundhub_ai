@@ -5,7 +5,9 @@ import {
   verifyClickFunnelsSignature,
   normalizeClickFunnelsEvent,
   mapToCanonical,
-  handleClickFunnelsWebhook
+  handleClickFunnelsWebhook,
+  wrapApplySurveyIngestBody,
+  isApplySurveyIngestBody
 } from "./clickfunnels.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
@@ -28,6 +30,7 @@ function fakeDb({ dedup = false, store = [] } = {}) {
 }
 
 const SECRET = "whsec_cf_test";
+const APPLY_INGEST = "apply_survey_ingest_test";
 /** Legacy: HMAC(raw body) — still accepted when timestamp omitted. */
 const sign = (raw) => crypto.createHmac("sha256", SECRET).update(raw).digest("hex");
 /** CF 2.0 official: HMAC(`${timestamp}.${raw}`). */
@@ -417,6 +420,85 @@ test("normalizeClickFunnelsEvent: appointment reads data.primary_contact + slot 
 });
 
 // --- full adapter ------------------------------------------------------------
+test("wrapApplySurveyIngestBody: flat handoff payload → CF contact.custom_attributes", () => {
+  assert.equal(isApplySurveyIngestBody({ funnel: "apply-survey" }), true);
+  const wrapped = wrapApplySurveyIngestBody({
+    funnel: "apply-survey",
+    step_key: "cf_svy_funding_target_amount",
+    email: "Lead@Example.com",
+    name: "Jane Doe",
+    phone: "555-123-4567",
+    answers: { cf_svy_funding_target_amount: "$200k - $400k" },
+    a1: "AFF-1",
+    attribution: { utm_source: "meta", landing_path: "/apply" }
+  });
+  assert.equal(wrapped.data.email_address, "lead@example.com");
+  assert.equal(wrapped.data.custom_attributes.cf_svy_funding_target_amount, "$200k - $400k");
+  assert.equal(wrapped.data.custom_attributes.utm_source, "meta");
+  assert.equal(wrapped.data.custom_attributes.a1, "AFF-1");
+});
+
+test("handleClickFunnelsWebhook: apply-survey browser ingest uses ingest secret, not CF HMAC", async () => {
+  _resetOrgCache();
+  clearHandlers();
+  const raw = JSON.stringify({
+    source: "apply-survey",
+    funnel: "apply-survey",
+    step_key: "contact",
+    email: "browser@example.com",
+    name: "Browser Lead",
+    phone: "5550001111",
+    answers: {},
+    a1: null,
+    a2: null,
+    attribution: {}
+  });
+  const bad = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    signatureHeader: "",
+    secret: SECRET,
+    headers: {},
+    env: { CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET: APPLY_INGEST }
+  });
+  assert.equal(bad.status, 401);
+
+  const res = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    signatureHeader: "",
+    secret: SECRET,
+    headers: { "x-fundhub-apply-survey-ingest": APPLY_INGEST },
+    env: { CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET: APPLY_INGEST }
+  });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured"]);
+});
+
+test("handleClickFunnelsWebhook: apply-survey step with cf_svy_* emits survey.submitted", async () => {
+  _resetOrgCache();
+  clearHandlers();
+  const raw = JSON.stringify({
+    funnel: "apply-survey",
+    step_key: "cf_svy_planned_use",
+    email: "browser2@example.com",
+    name: "Quiz Taker",
+    phone: "5557778888",
+    answers: { cf_svy_planned_use: "Growth (marketing, inventory, hiring)" },
+    attribution: { utm_campaign: "slo" }
+  });
+  const res = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    signatureHeader: sign(raw),
+    secret: SECRET,
+    headers: { "x-fundhub-apply-survey-ingest": APPLY_INGEST },
+    env: { CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET: APPLY_INGEST }
+  });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured", "survey.submitted"]);
+});
+
 test("handleClickFunnelsWebhook: bad signature => 401, no emit", async () => {
   _resetOrgCache(); clearHandlers();
   const raw = JSON.stringify({ event: "form_submission", data: { contact: { email: "x@y.com" } } });

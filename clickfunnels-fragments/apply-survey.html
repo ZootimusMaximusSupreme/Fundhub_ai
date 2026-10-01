@@ -341,14 +341,76 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
   function val(id) { return document.getElementById(id).value.trim(); }
 
   /* Per-screen submit, same as the CF survey: every advance sends what's answered so far.
-     Live: Cursor points SEND_STEP at /api/webhooks/clickfunnels (entry.captured after contact,
-     survey.submitted once cf_svy_* answers exist). Preview: kept in STEP_LOG only. */
+     POST → https://fundhub.ai/api/webhooks/clickfunnels (entry.captured after contact;
+     survey.submitted once any cf_svy_* answer exists). Payload: handoff §3 flat shape.
+     Guards: no POST on file://; no POST without CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET on
+     the page (window.FH_APPLY_SURVEY_INGEST, set at cutover). Local http with
+     window.FH_APPLY_SURVEY_WEBHOOK_FORCE = true still needs the ingest header value.
+     STEP_LOG always records the would-send payload for preview / devtools. */
   var STEP_LOG = [];
-  function SEND_STEP(stepKey) {
+  var WEBHOOK_URL = (function () {
+    if (window.FH_APPLY_SURVEY_WEBHOOK_URL) return window.FH_APPLY_SURVEY_WEBHOOK_URL;
+    if (location.protocol === 'file:') return null;
+    if (location.hostname === 'apply.fundhub.ai' || location.hostname === 'fundhub.ai') {
+      return 'https://fundhub.ai/api/webhooks/clickfunnels';
+    }
+    return '/api/webhooks/clickfunnels';
+  })();
+  function stampAttributionHidden() {
+    try {
+      var att = JSON.parse(sessionStorage.getItem('fh_attribution') || '{}') || {};
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'landing_path', 'referrer_domain', 'a1', 'a2'].forEach(function (k) {
+        var el = form.querySelector('input[name="' + k + '"]');
+        if (el && att[k] && !el.value) el.value = att[k];
+      });
+    } catch (e) {}
+  }
+  function stepPayload(stepKey) {
+    stampAttributionHidden();
     var answers = {};
     path().forEach(function (q) { if (q.key !== 'contact' && A[q.key] != null) answers[q.key] = A[q.key]; });
-    STEP_LOG.push({ step: stepKey, event: Object.keys(answers).length ? 'survey.submitted' : 'entry.captured',
-      email: A.contact && A.contact.email, answers: answers });
+    var hidden = {};
+    form.querySelectorAll('input[type=hidden]').forEach(function (i) { hidden[i.name] = i.value; });
+    var c = A.contact || {};
+    return {
+      source: 'apply-survey',
+      funnel: 'apply-survey',
+      step_key: stepKey,
+      email: c.email,
+      name: ((c.first_name || '') + ' ' + (c.last_name || '')).trim(),
+      phone: c.phone,
+      answers: answers,
+      a1: hidden.a1 || null,
+      a2: hidden.a2 || null,
+      attribution: {
+        utm_source: hidden.utm_source || null,
+        utm_medium: hidden.utm_medium || null,
+        utm_campaign: hidden.utm_campaign || null,
+        utm_content: hidden.utm_content || null,
+        utm_term: hidden.utm_term || null,
+        landing_path: hidden.landing_path || null,
+        referrer_domain: hidden.referrer_domain || null
+      }
+    };
+  }
+  function webhookEnabled() {
+    if (location.protocol === 'file:') return !!window.FH_APPLY_SURVEY_WEBHOOK_FORCE;
+    if (window.FH_APPLY_SURVEY_WEBHOOK_FORCE) return true;
+    return !!window.FH_APPLY_SURVEY_INGEST;
+  }
+  function SEND_STEP(stepKey) {
+    var payload = stepPayload(stepKey);
+    var hasSurvey = Object.keys(payload.answers).length > 0;
+    STEP_LOG.push({
+      step: stepKey,
+      event: hasSurvey ? 'survey.submitted' : 'entry.captured',
+      email: payload.email,
+      answers: payload.answers
+    });
+    if (!WEBHOOK_URL || !webhookEnabled() || !payload.email) return;
+    var headers = { 'Content-Type': 'application/json' };
+    if (window.FH_APPLY_SURVEY_INGEST) headers['X-Fundhub-Apply-Survey-Ingest'] = window.FH_APPLY_SURVEY_INGEST;
+    fetch(WEBHOOK_URL, { method: 'POST', headers: headers, body: JSON.stringify(payload), keepalive: true }).catch(function () {});
   }
   function advance() {
     var list = path();
