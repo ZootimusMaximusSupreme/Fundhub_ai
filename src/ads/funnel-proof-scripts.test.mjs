@@ -21,6 +21,8 @@ import { fileURLToPath } from "node:url";
 import {
   PUSH_MANIFEST,
   WATCH_PROOF_SRC,
+  FUNDING_PATHS_SRC,
+  footerScriptTag,
   THANKYOU_SORT_SRC,
   VSL_WATCH_BEACON_SRC,
   FH_ATTRIBUTION_SRC,
@@ -76,10 +78,10 @@ describe("every approval is a real deck crop with the amount read off it", () =>
   const byId = new Map(DECK.cards.map((c) => [c.id, c]));
   const money = (n) => `$${n.toLocaleString("en-US")}`;
 
-  // Owner, 2026-09-22: "put 10 more approvals here" — /watch went from 6 to every
-  // card in the deck (16), in the deck's order. /roadmap shows the same 16.
+  // Owner, 2026-09-22: /watch shows 16 curated approvals (not the full deck row).
+  const watchWinIds = arrayLiteral(WATCH, "WINS").map((w) => w.id);
   for (const [name, src, ids] of [
-    ["/watch", WATCH, DECK.cards.map((c) => c.id)],
+    ["/watch", WATCH, watchWinIds],
     ["/thank-you", THANKS, ["t-74k-chase-ink", "t-50k-keybank", "t-25k-highland"]],
   ]) {
     test(`${name} shows exactly the planned approvals, amounts and images from deck.json`, () => {
@@ -97,9 +99,8 @@ describe("every approval is a real deck crop with the amount read off it", () =>
     });
   }
 
-  test("/watch has all 16 deck cards, each with the deck's image size", () => {
+  test("/watch has 16 curated approvals, each with the deck's image size", () => {
     const wins = arrayLiteral(WATCH, "WINS");
-    assert.equal(DECK.cards.length, 16);
     assert.equal(wins.length, 16);
     for (const w of wins) {
       const card = byId.get(w.id);
@@ -435,10 +436,12 @@ describe("screenshots open full size (the cards are small, and on /watch they mo
 });
 
 describe("the fragments and the push manifest load the scripts once", () => {
-  test("01-vsl.html loads watch-proof.js after the attribution script and the beacon", () => {
+  test("01-vsl.html loads watch-proof.js and funding-paths.js (defer) after attribution and beacon", () => {
     const html = read("clickfunnels-fragments/01-vsl.html");
     const at = (s) => html.indexOf(s);
     assert.ok(at(WATCH_PROOF_SRC) > at(VSL_WATCH_BEACON_SRC) && at(VSL_WATCH_BEACON_SRC) > at(FH_ATTRIBUTION_SRC));
+    assert.ok(at(FUNDING_PATHS_SRC) > at(WATCH_PROOF_SRC), "funding-paths after watch-proof");
+    assert.ok(html.includes(footerScriptTag(FUNDING_PATHS_SRC, { defer: true })), "funding-paths uses defer");
   });
 
   test("05-thank-you.html loads thankyou-sort.js and no longer carries its own booking check", () => {
@@ -455,7 +458,7 @@ describe("the fragments and the push manifest load the scripts once", () => {
     assert.deepEqual(
       withExtras.map((r) => [r.key, r.pageId, r.extraFooterScripts]),
       [
-        ["apply-watch", "25061160", [WATCH_PROOF_SRC]],
+        ["apply-watch", "25061160", [WATCH_PROOF_SRC, FUNDING_PATHS_SRC]],
         ["apply-thank-you", "25063539", [THANKYOU_SORT_SRC]],
       ],
     );
@@ -495,19 +498,21 @@ describe("the fragments and the push manifest load the scripts once", () => {
   test("nextFooterCode: one copy of each owned script, other tags untouched, nothing added twice", () => {
     const t = (src) => `<script src="${src}"></script>`;
     const watchLive = [t(FH_ATTRIBUTION_SRC), t(VSL_WATCH_BEACON_SRC), t(VSL_WATCH_BEACON_SRC), t(VSL_WATCH_BEACON_SRC)].join("\n");
-    const opts = { includeVslBeacon: true, extraSrcs: [WATCH_PROOF_SRC], existing: "" };
+    const watchExtras = [WATCH_PROOF_SRC, FUNDING_PATHS_SRC];
+    const opts = { includeVslBeacon: true, extraSrcs: watchExtras, existing: "" };
+    const tDefer = (src) => footerScriptTag(src, { defer: true });
 
     // before the push: adds watch-proof.js once, keeps the three old beacons as they are
     const first = nextFooterCode(watchLive, opts);
-    assert.equal(first.next, `${watchLive}\n${t(WATCH_PROOF_SRC)}`);
-    assert.deepEqual(first.added, [WATCH_PROOF_SRC]);
+    assert.equal(first.next, `${watchLive}\n${t(WATCH_PROOF_SRC)}\n${tDefer(FUNDING_PATHS_SRC)}`);
+    assert.deepEqual(first.added, watchExtras);
     assert.equal(first.changed, true);
 
     // after "append" doubled it: collapses to one copy, adds nothing
-    const doubled = `${watchLive}\n${t(WATCH_PROOF_SRC)}\n${t(WATCH_PROOF_SRC)}`;
+    const doubled = `${watchLive}\n${t(WATCH_PROOF_SRC)}\n${t(WATCH_PROOF_SRC)}\n${tDefer(FUNDING_PATHS_SRC)}\n${tDefer(FUNDING_PATHS_SRC)}`;
     const fixed = nextFooterCode(doubled, opts);
     assert.equal(fixed.next, first.next);
-    assert.deepEqual(fixed.collapsed, [WATCH_PROOF_SRC]);
+    assert.deepEqual(fixed.collapsed.sort(), [WATCH_PROOF_SRC, FUNDING_PATHS_SRC].sort());
     assert.deepEqual(fixed.added, []);
 
     // already right: no change, so no write
@@ -525,6 +530,7 @@ describe("the fragments and the push manifest load the scripts once", () => {
 
   test("dedupeFooterScripts keeps one copy of the row's own scripts and leaves every other tag alone", () => {
     const tag = (src) => `<script src="${src}"></script>`;
+    const tDefer = (src) => footerScriptTag(src, { defer: true });
     const live = [FH_ATTRIBUTION_SRC, VSL_WATCH_BEACON_SRC, VSL_WATCH_BEACON_SRC, VSL_WATCH_BEACON_SRC, WATCH_PROOF_SRC, WATCH_PROOF_SRC].map(tag).join("\n");
     assert.equal(
       dedupeFooterScripts(live, [WATCH_PROOF_SRC]),
@@ -534,9 +540,15 @@ describe("the fragments and the push manifest load the scripts once", () => {
     assert.equal(dedupeFooterScripts(ty, [THANKYOU_SORT_SRC]), [FH_ATTRIBUTION_SRC, FH_ATTRIBUTION_SRC, THANKYOU_SORT_SRC].map(tag).join("\n"));
     assert.equal(dedupeFooterScripts(ty, []), ty);
     assert.equal(dedupeFooterScripts("", [WATCH_PROOF_SRC]), "");
+    const deferDup = `${tDefer(FUNDING_PATHS_SRC)}\n${tag(WATCH_PROOF_SRC)}\n${tDefer(FUNDING_PATHS_SRC)}`;
+    assert.equal(
+      dedupeFooterScripts(deferDup, [FUNDING_PATHS_SRC]),
+      `${tDefer(FUNDING_PATHS_SRC)}\n${tag(WATCH_PROOF_SRC)}`,
+    );
   });
 
   test("trackingFooterScripts skips any src already on the page and never repeats one", () => {
+    const t = (src) => `<script src="${src}"></script>`;
     const livePage = `<script src="${FH_ATTRIBUTION_SRC}"></script>` +
       `<script src="${VSL_WATCH_BEACON_SRC}"></script>`.repeat(3);
     assert.equal(
@@ -550,6 +562,24 @@ describe("the fragments and the push manifest load the scripts once", () => {
     assert.equal(
       trackingFooterScripts({ includeVslBeacon: false, skipAttribution: true, extraSrcs: [THANKYOU_SORT_SRC, THANKYOU_SORT_SRC] }),
       `<script src="${THANKYOU_SORT_SRC}"></script>`,
+    );
+    assert.equal(
+      trackingFooterScripts({
+        includeVslBeacon: true,
+        skipAttribution: true,
+        extraSrcs: [WATCH_PROOF_SRC, FUNDING_PATHS_SRC],
+        existing: livePage,
+      }),
+      `${t(WATCH_PROOF_SRC)}\n${footerScriptTag(FUNDING_PATHS_SRC, { defer: true })}`,
+    );
+    assert.equal(
+      trackingFooterScripts({
+        includeVslBeacon: true,
+        skipAttribution: true,
+        extraSrcs: [FUNDING_PATHS_SRC],
+        existing: livePage + footerScriptTag(FUNDING_PATHS_SRC, { defer: true }),
+      }),
+      "",
     );
   });
 });

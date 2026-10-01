@@ -44,8 +44,23 @@ export const FH_ATTRIBUTION_SRC = "https://fundhub.ai/funnel/fh-attribution.js";
 export const VSL_WATCH_BEACON_SRC = "https://fundhub.ai/funnel/vsl-watch-beacon.js";
 /** Sorting Hat proof block under the first Get Started on /watch (public/funnel/watch-proof.js). */
 export const WATCH_PROOF_SRC = "https://fundhub.ai/funnel/watch-proof.js";
+/** Funding paths demo under watch-proof on /watch (public/funnel/funding-paths.js). */
+export const FUNDING_PATHS_SRC = "https://fundhub.ai/funnel/funding-paths.js";
+/** Footer script tags that must carry `defer` (matches fragment inline tags). */
+export const DEFER_FOOTER_SRCS = new Set([FUNDING_PATHS_SRC]);
 /** /thank-you booking check + "What the call decides" + real approvals and texts (public/funnel/thankyou-sort.js). */
 export const THANKYOU_SORT_SRC = "https://fundhub.ai/funnel/thankyou-sort.js";
+
+export function footerScriptTag(src, { defer = false } = {}) {
+  return `<script src="${src}"${defer ? " defer" : ""}></script>`;
+}
+
+function footerTagFormsForSrc(src) {
+  const defer = DEFER_FOOTER_SRCS.has(src);
+  return defer
+    ? [footerScriptTag(src, { defer: true }), footerScriptTag(src, { defer: false })]
+    : [footerScriptTag(src, { defer: false }), footerScriptTag(src, { defer: true })];
+}
 
 /**
  * Footer script tags to append. Any src already in `existing` (the page's live
@@ -69,7 +84,7 @@ export function trackingFooterScripts({
       seen.add(src);
       return true;
     })
-    .map((src) => `<script src="${src}"></script>`)
+    .map((src) => footerScriptTag(src, { defer: DEFER_FOOTER_SRCS.has(src) }))
     .join("\n");
 }
 
@@ -80,13 +95,23 @@ export function trackingFooterScripts({
 export function dedupeFooterScripts(code, srcs = []) {
   let out = String(code ?? "");
   for (const src of srcs) {
-    const tag = `<script src="${src}"></script>`;
-    const first = out.indexOf(tag);
+    const forms = footerTagFormsForSrc(src);
+    let first = -1;
+    let anchorLen = 0;
+    for (const tag of forms) {
+      const i = out.indexOf(tag);
+      if (i !== -1 && (first === -1 || i < first)) {
+        first = i;
+        anchorLen = tag.length;
+      }
+    }
     if (first === -1) continue;
-    let i;
-    while ((i = out.indexOf(tag, first + tag.length)) !== -1) {
-      const start = out[i - 1] === "\n" ? i - 1 : i;
-      out = out.slice(0, start) + out.slice(i + tag.length);
+    for (const tag of forms) {
+      let i;
+      while ((i = out.indexOf(tag, first + anchorLen)) !== -1) {
+        const start = out[i - 1] === "\n" ? i - 1 : i;
+        out = out.slice(0, start) + out.slice(i + tag.length);
+      }
     }
   }
   return out;
@@ -98,16 +123,26 @@ export function dedupeFooterScripts(code, srcs = []) {
  * @returns {{ next: string, changed: boolean, added: string[], collapsed: string[] }}
  */
 export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], existing = "" } = {}) {
-  const tag = (src) => `<script src="${src}"></script>`;
   let code = String(live ?? "");
   const collapsed = [];
   for (const src of [...new Set(extraSrcs)]) {
-    const t = tag(src);
-    const first = code.indexOf(t);
+    const forms = footerTagFormsForSrc(src);
+    let first = -1;
+    let anchorLen = 0;
+    for (const t of forms) {
+      const i = code.indexOf(t);
+      if (i !== -1 && (first === -1 || i < first)) {
+        first = i;
+        anchorLen = t.length;
+      }
+    }
     if (first === -1) continue;
-    const head = code.slice(0, first + t.length);
-    const tail = code.slice(first + t.length);
-    const kept = tail.split(`\n${t}`).join("").split(t).join("");
+    const head = code.slice(0, first + anchorLen);
+    let tail = code.slice(first + anchorLen);
+    let kept = tail;
+    for (const t of forms) {
+      kept = kept.split(`\n${t}`).join("").split(t).join("");
+    }
     if (kept !== tail) collapsed.push(src);
     code = head + kept;
   }
@@ -247,7 +282,7 @@ export const PUSH_MANIFEST = [
     pageId: "25061160",
     fragment: "clickfunnels-fragments/01-vsl.html",
     vslBeacon: true,
-    extraFooterScripts: [WATCH_PROOF_SRC],
+    extraFooterScripts: [WATCH_PROOF_SRC, FUNDING_PATHS_SRC],
     strategy: "custom_html_or_head_append",
     note: "Builder page — the body cannot be replaced by API; new sections ride in on footer scripts",
   },
