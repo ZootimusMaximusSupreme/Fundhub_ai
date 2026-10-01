@@ -89,13 +89,19 @@ const HOW_H2 = "Get Every Dollar Your File Can Get. Then Do It Again, On Your Ow
    card balances, score, name, address, plus a website for credibility; 4 apply
    in the right order; 5 prime more business entities, the conveyor belt.
    "Typically" is written "on a lot of files" (locked-ads house rule). */
+/* Chris, 2026-10-01, final order and step names: 1 See what you qualify for
+   today; 2 Find the gap and optimize your personal credit; 3 Build the trust in
+   the business; 4 Set up the businesses (more than one, so you apply for all of
+   them); 5 Apply in the right order. "Put all the data back": every fact from
+   the earlier versions of this section is kept (cards, letters, 30-day rounds,
+   Experian Business, NAICS, one to two companies a quarter, stacking approvals,
+   the repeatable loop). */
 const HOW_STEPS = [
   ["See what you qualify for today", "Know what you can get before a bank ever sees your file.", "I pull your credit with a soft pull, so your score stays the same. Your roadmap shows up in your portal. It shows what you most likely qualify for right now. Even with perfect credit, there is a lot you can do to get more business and personal funding."],
-  ["Find the gap", "Stop losing money to items nobody told you about.", `The gap is the money you are leaving on the table. On a lot of files, it is <span class="fh-gap">$100,000 to $300,000</span>. Your roadmap shows every item costing you money on all three bureaus: inquiries, names and addresses that don't match, and your business info.`],
-  ["Make your business one lenders trust", "Lenders fund businesses that look solid.", "I check your business for liens, bad marks, high card balances, your score, your name and your address. You get the fix for each one. Make sure your business has a website too. It helps lenders trust you."],
-  ["Apply in the right order", "Get approved, not declined.", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order to get the most approvals."],
-  // Chris, 2026-10-01: "It's a repeatable process."
-  ["Repeat it with every company", "Never need anyone to fund you again.", "Set up each new company the same way. Then run it through steps 1 to 4. Add as many as you want. Like a conveyor belt, each one comes out ready for funding."],
+  ["Find the gap and optimize your personal credit", "Stop losing money to items nobody told you about.", `The gap is the money you are leaving on the table. On a lot of files, it is <span class="fh-gap">$100,000 to $300,000</span>. Your roadmap shows every item costing you money on all three bureaus: inquiries, names and addresses that don't match, and your business info. Pay down the cards it names. Mail the letters I write for you. Each round waits 30 days at most.`],
+  ["Build the trust in the business", "Lenders fund businesses that look solid.", "I check your Experian Business report for liens, bad marks, high card balances, your score, your name, your address and your NAICS code. You get the fix for each one. Make sure your business has a website too. It helps lenders trust you."],
+  ["Set up the businesses", "Never need anyone to fund you again.", "Set up more than one business, so when you apply, you apply for all of them. Open one to two new companies a quarter, set up the right way: a clean name, the right NAICS code, and reporting from day one. Run each one through steps 1 to 3. As they age, they get ready for funding too. Like a conveyor belt, each one comes out ready."],
+  ["Apply in the right order", "Get approved, not declined.", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order for every business you set up, so you stack approvals, not declines."],
 ];
 function howSection(g) {
   const rows = HOW_STEPS.map(([t, lead, d], i) =>
