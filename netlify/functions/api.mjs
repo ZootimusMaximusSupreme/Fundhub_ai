@@ -1271,7 +1271,9 @@ export default async function handler(request, context) {
   for (const [k, v] of request.headers.entries()) headers[k.toLowerCase()] = v;
 
   const ctype = headers["content-type"] || "";
-  const noBody = ["GET", "HEAD"].includes(request.method);
+  // OPTIONS has no body. Waiting on request.text() for it never finishes, so the
+  // apply-survey preflight sat until Netlify returned 504.
+  const noBody = ["GET", "HEAD", "OPTIONS"].includes(request.method);
 
   /* multipart/form-data (file uploads) must NOT go through request.text():
      TextDecoder assumes UTF-8, so any byte sequence that is not valid UTF-8 —
