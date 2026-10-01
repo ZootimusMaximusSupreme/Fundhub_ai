@@ -41,7 +41,17 @@ All other option labels: verbatim from the extract §2. Send labels, never CF op
 - Browser auth: header `X-Fundhub-Apply-Survey-Ingest` must match Netlify `CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET` (set on the page at cutover as `window.FH_APPLY_SURVEY_INGEST`). CF HMAC is unchanged for real CF webhooks.
 - Preview guards (`apply-survey.html`): **no network POST** on `file://` unless `window.FH_APPLY_SURVEY_WEBHOOK_FORCE = true` (still needs ingest token). `STEP_LOG` + `window.FH_SURVEY_PAYLOAD` always capture payloads locally.
 - Hidden fields keep their names so fh-attribution.js stamps them.
-- Also keep sharing the data with ClickFunnels.
+- Dual feed: the browser still posts every step only to Fundhub. After that write, the server copies the same step onto the ClickFunnels contact (`POST /workspaces/{id}/contacts/upsert`, match on email) using `CLICKFUNNELS_API_KEY`. The page never holds that key.
+
+```text
+SEND_STEP
+  → POST /api/webhooks/clickfunnels (ingest secret, unchanged)
+       → Fundhub: entry.captured, and survey.submitted once any cf_svy_* answer is present
+       → ClickFunnels contact: email, first name, last name, phone,
+         custom_attributes cf_svy_* labels, plus utm_* / landing_path / referrer_domain / a1 / a2
+```
+
+ClickFunnels custom attributes are text, so a multi-select is a JSON list of those same labels. A contact update ClickFunnels sends back is read as that list again, so Fundhub still stores an array. There is no Cortana reader in this repo. The name Cortana here is the Commas checkout key. What loses the answers if we only hit Fundhub is the ClickFunnels contact, which is what a ClickFunnels workflow reads. The native survey used to fill those attributes on each screen. This upsert is that fill.
 - Turn "Other" off on the CF Planned Use question too, so both versions collect the same answers.
 - Split test old /apply vs new: judge on booked calls per click.
 

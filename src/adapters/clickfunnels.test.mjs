@@ -7,7 +7,8 @@ import {
   mapToCanonical,
   handleClickFunnelsWebhook,
   wrapApplySurveyIngestBody,
-  isApplySurveyIngestBody
+  isApplySurveyIngestBody,
+  applySurveyCfContact
 } from "./clickfunnels.mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { on, clearHandlers } from "../events/registry.mjs";
@@ -438,6 +439,71 @@ test("wrapApplySurveyIngestBody: flat handoff payload → CF contact.custom_attr
   assert.equal(wrapped.data.custom_attributes.a1, "AFF-1");
 });
 
+test("applySurveyCfContact: name, phone, cf_svy labels; multi-select is a JSON list", () => {
+  const contact = applySurveyCfContact({
+    source: "apply-survey",
+    funnel: "apply-survey",
+    email: "Lead@Example.com",
+    name: "Jane Doe",
+    phone: "(480) 555-1234",
+    answers: {
+      cf_svy_funding_target_amount: "$200k - $400k",
+      cf_svy_money_change_now: [
+        "Peace of mind (stop stressing about cash)",
+        "Grow faster (more customers / more reach)"
+      ],
+      ssn: "123-45-6789"
+    },
+    a1: "AFF-1",
+    attribution: { utm_source: "meta", landing_path: "/apply" }
+  });
+  assert.equal(contact.email_address, "lead@example.com");
+  assert.equal(contact.first_name, "Jane");
+  assert.equal(contact.last_name, "Doe");
+  assert.equal(contact.phone_number, "(480) 555-1234");
+  assert.equal(contact.custom_attributes.cf_svy_funding_target_amount, "$200k - $400k");
+  assert.equal(
+    contact.custom_attributes.cf_svy_money_change_now,
+    JSON.stringify([
+      "Peace of mind (stop stressing about cash)",
+      "Grow faster (more customers / more reach)"
+    ])
+  );
+  assert.equal(contact.custom_attributes.utm_source, "meta");
+  assert.equal(contact.custom_attributes.landing_path, "/apply");
+  assert.equal(contact.custom_attributes.a1, "AFF-1");
+  assert.equal(contact.custom_attributes.ssn, undefined);
+  assert.equal(JSON.stringify(contact).includes("123-45-6789"), false);
+  for (const v of Object.values(contact.custom_attributes)) {
+    assert.equal(typeof v, "string");
+  }
+  assert.equal(applySurveyCfContact({ funnel: "other" }), null);
+  assert.equal(applySurveyCfContact({ funnel: "apply-survey" }), null);
+});
+
+test("normalizeClickFunnelsEvent: JSON list on a cf_svy key comes back as labels", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.updated",
+    data: {
+      email_address: "lead@example.com",
+      custom_attributes: {
+        cf_svy_money_change_now: JSON.stringify([
+          "Peace of mind (stop stressing about cash)"
+        ]),
+        cf_svy_money_change_now_labels:
+          '["Grow faster (more customers / more reach)"]'
+      }
+    }
+  });
+  assert.deepEqual(evt.answers.cf_svy_money_change_now, [
+    "Peace of mind (stop stressing about cash)"
+  ]);
+  assert.equal(
+    evt.answers.cf_svy_money_change_now_labels,
+    '["Grow faster (more customers / more reach)"]'
+  );
+});
+
 test("handleClickFunnelsWebhook: apply-survey browser ingest uses ingest secret, not CF HMAC", async () => {
   _resetOrgCache();
   clearHandlers();
@@ -497,6 +563,129 @@ test("handleClickFunnelsWebhook: apply-survey step with cf_svy_* emits survey.su
   });
   assert.equal(res.ok, true);
   assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured", "survey.submitted"]);
+});
+
+test("handleClickFunnelsWebhook: apply-survey upserts the ClickFunnels contact and still emits", async () => {
+  const raw = JSON.stringify({
+    source: "apply-survey",
+    funnel: "apply-survey",
+    step_key: "cf_svy_funding_target_amount",
+    email: "browser@example.com",
+    name: "Browser Lead",
+    phone: "(480) 555-1234",
+    answers: { cf_svy_funding_target_amount: "$200k - $400k" },
+    a1: "AFF-1",
+    attribution: { utm_source: "meta" }
+  });
+  const cfEnv = {
+    CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET: APPLY_INGEST,
+    CLICKFUNNELS_API_KEY: "test-key",
+    CLICKFUNNELS_SUBDOMAIN: "myworkspace",
+    CLICKFUNNELS_WORKSPACE_ID: "42"
+  };
+  const headers = { "x-fundhub-apply-survey-ingest": APPLY_INGEST };
+
+  _resetOrgCache();
+  clearHandlers();
+  const calls = [];
+  const res = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    signatureHeader: "",
+    secret: SECRET,
+    headers,
+    env: cfEnv,
+    fetchImpl: async (url, init) => {
+      calls.push({ url, init });
+      return {
+        ok: true,
+        status: 200,
+        text: async () => JSON.stringify({ id: 77, email_address: "browser@example.com" }),
+        headers: { get: () => null }
+      };
+    }
+  });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured", "survey.submitted"]);
+  assert.equal(res.clickfunnelsContact.id, 77);
+  assert.equal(calls.length, 1);
+  assert.match(calls[0].url, /\/workspaces\/42\/contacts\/upsert$/);
+  const sent = JSON.parse(calls[0].init.body);
+  assert.equal(sent.contact.email_address, "browser@example.com");
+  assert.equal(sent.contact.first_name, "Browser");
+  assert.equal(sent.contact.last_name, "Lead");
+  assert.equal(sent.contact.phone_number, "(480) 555-1234");
+  assert.equal(sent.contact.custom_attributes.cf_svy_funding_target_amount, "$200k - $400k");
+  assert.equal(sent.contact.custom_attributes.a1, "AFF-1");
+  assert.equal(sent.contact.custom_attributes.utm_source, "meta");
+  assert.equal(calls[0].init.headers.authorization, "Bearer test-key");
+
+  _resetOrgCache();
+  clearHandlers();
+  const skipped = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    signatureHeader: "",
+    secret: SECRET,
+    headers,
+    env: { CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET: APPLY_INGEST },
+    fetchImpl: async () => {
+      throw new Error("should not call ClickFunnels");
+    }
+  });
+  assert.equal(skipped.status, 200);
+  assert.equal(skipped.clickfunnelsContact.skipped, true);
+  assert.deepEqual(skipped.emitted.map((e) => e.name), ["entry.captured", "survey.submitted"]);
+
+  _resetOrgCache();
+  clearHandlers();
+  const refused = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: raw,
+    signatureHeader: "",
+    secret: SECRET,
+    headers,
+    env: cfEnv,
+    fetchImpl: async () => ({
+      ok: false,
+      status: 422,
+      text: async () => JSON.stringify({ error: "nope" }),
+      headers: { get: () => null }
+    })
+  });
+  assert.equal(refused.status, 200);
+  assert.equal(refused.clickfunnelsContact.ok, false);
+  assert.equal(refused.clickfunnelsContact.error, "clickfunnels_refused");
+  assert.deepEqual(refused.emitted.map((e) => e.name), ["entry.captured", "survey.submitted"]);
+
+  _resetOrgCache();
+  clearHandlers();
+  let echoCalls = 0;
+  const nativeRaw = JSON.stringify({
+    id: "cf_echo_1",
+    event_type: "contact.updated",
+    data: {
+      email_address: "browser@example.com",
+      first_name: "Browser",
+      last_name: "Lead",
+      custom_attributes: { cf_svy_funding_target_amount: "$200k - $400k" }
+    }
+  });
+  const echo = await handleClickFunnelsWebhook({
+    db: fakeDb(),
+    rawBody: nativeRaw,
+    signatureHeader: sign(nativeRaw),
+    secret: SECRET,
+    headers: {},
+    env: cfEnv,
+    fetchImpl: async () => {
+      echoCalls += 1;
+      return { ok: true, status: 200, text: async () => "{}", headers: { get: () => null } };
+    }
+  });
+  assert.equal(echo.ok, true);
+  assert.equal(echoCalls, 0);
+  assert.equal(echo.clickfunnelsContact, null);
 });
 
 test("handleClickFunnelsWebhook: bad signature => 401, no emit", async () => {

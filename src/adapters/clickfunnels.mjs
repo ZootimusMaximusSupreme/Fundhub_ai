@@ -18,6 +18,7 @@ import crypto from "node:crypto";
 import { emit, defaultOrgId } from "../events/bus.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { handleSloPaidWebhook } from "../slo/purchase.mjs";
+import { upsertContact } from "../analytics/clickfunnels.mjs";
 
 // --- 1. Signature verification (fail-closed) --------------------------------
 // ClickFunnels 2.0 (official): HMAC-SHA256(secret, `${timestamp}.${rawBody}`)
@@ -108,6 +109,26 @@ function cfLabelsFor(obj, key) {
   return String(many);
 }
 
+/* ClickFunnels custom attributes are text. The apply-survey upsert stores a
+   multi-select as a JSON list of labels on the key itself. Turn that list
+   back into an array here. Leave `_label` / `_labels` alone — native CF
+   already sends those as a JSON string, and the deck reads that string. */
+function reviveJsonList(key, v) {
+  const name = String(key);
+  if (name.endsWith("_label") || name.endsWith("_labels")) return v;
+  if (typeof v !== "string") return v;
+  const s = v.trim();
+  if (!s.startsWith("[")) return v;
+  try {
+    const parsed = JSON.parse(s);
+    if (!Array.isArray(parsed)) return v;
+    const words = parsed.filter((x) => x != null && String(x).trim() !== "").map((x) => String(x));
+    return words.length ? words : v;
+  } catch {
+    return v;
+  }
+}
+
 /** Pull only FundHub survey keys from a CF attributes/fields object. */
 function pickSurveyAnswers(obj) {
   if (!obj || typeof obj !== "object" || Array.isArray(obj)) return null;
@@ -115,7 +136,7 @@ function pickSurveyAnswers(obj) {
   for (const [k, v] of Object.entries(obj)) {
     if (!String(k).startsWith("cf_svy_")) continue;
     if (v == null || v === "") continue;
-    out[k] = v;
+    out[k] = reviveJsonList(k, v);
   }
   for (const k of Object.keys(out)) {
     if (k.endsWith("_label") || k.endsWith("_labels")) continue;
@@ -481,6 +502,68 @@ export function wrapApplySurveyIngestBody(body) {
   };
 }
 
+/* Keys the apply survey is allowed to write onto the ClickFunnels contact.
+   Same set the native form stamps: survey answers plus the hidden ad fields. */
+const APPLY_SURVEY_CF_ATTR = /^(cf_svy_[a-z0-9_]+|utm_[a-z0-9_]+|a1|a2|landing_path|referrer_domain)$/;
+
+function applySurveyAttrString(v) {
+  if (Array.isArray(v)) {
+    const parts = v.map((x) => (x == null ? "" : String(x).trim())).filter(Boolean);
+    return parts.length ? JSON.stringify(parts) : null;
+  }
+  if (v == null || typeof v === "object") return null;
+  const s = String(v).trim();
+  return s || null;
+}
+
+/**
+ * Contact body for POST /workspaces/{id}/contacts/upsert.
+ * ClickFunnels matches on email. Custom attributes are text, so a multi-select
+ * is a JSON list of the same labels the Fundhub webhook already stores as an array.
+ * Returns null when this is not an apply-survey handoff, or there is no email.
+ */
+export function applySurveyCfContact(body) {
+  if (!isApplySurveyIngestBody(body)) return null;
+  const d = wrapApplySurveyIngestBody(body).data || {};
+  const email = String(d.email_address || "").trim();
+  if (!email) return null;
+  const contact = { email_address: email };
+  if (d.first_name) contact.first_name = d.first_name;
+  if (d.last_name) contact.last_name = d.last_name;
+  if (d.phone_number) contact.phone_number = d.phone_number;
+  const custom = {};
+  for (const [k, v] of Object.entries(d.custom_attributes || {})) {
+    if (!APPLY_SURVEY_CF_ATTR.test(k)) continue;
+    const s = applySurveyAttrString(v);
+    if (s) custom[k] = s;
+  }
+  if (Object.keys(custom).length) contact.custom_attributes = custom;
+  return contact;
+}
+
+/**
+ * Copy one apply-survey step onto the ClickFunnels contact.
+ * No API key or no email → skip. A ClickFunnels error is swallowed so the
+ * Fundhub webhook still returns 200. The browser post is unchanged.
+ */
+export async function syncApplySurveyClickfunnelsContact(body, { env = process.env, fetchImpl } = {}) {
+  const contact = applySurveyCfContact(body);
+  const apiKey = String(env?.CLICKFUNNELS_API_KEY || "").trim();
+  const subdomain = String(env?.CLICKFUNNELS_SUBDOMAIN || "").trim();
+  if (!contact || !apiKey || !subdomain) return { ok: false, skipped: true };
+  const ctx = {};
+  if (typeof fetchImpl === "function") ctx.fetch = fetchImpl;
+  const workspaceId = String(env?.CLICKFUNNELS_WORKSPACE_ID || "").trim();
+  if (workspaceId) ctx.workspaceId = workspaceId;
+  try {
+    const res = await upsertContact({ api_key: apiKey, subdomain }, contact, ctx);
+    return { ok: true, id: res?.id ?? null };
+  } catch (err) {
+    console.error("apply-survey: clickfunnels contact —", err?.message || err);
+    return { ok: false, error: "clickfunnels_refused" };
+  }
+}
+
 /* --- 2b. Ingest-time client attachment and repeat-post suppression ----------
  *
  * WHY THIS EXISTS. Measured 2026-09-03: every one of the 82 `survey.submitted`,
@@ -648,7 +731,8 @@ export async function handleClickFunnelsWebhook({
   signatureHeader,
   secret,
   headers,
-  env = process.env
+  env = process.env,
+  fetchImpl
 }) {
   let body;
   try {
@@ -660,6 +744,7 @@ export async function handleClickFunnelsWebhook({
   const ingestSecret = env.CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET;
   const applyIngest =
     isApplySurveyIngestBody(body) && verifyApplySurveyIngestHeader(headers, ingestSecret);
+  let applySurveyFlat = null;
 
   if (!applyIngest) {
     const sig =
@@ -673,6 +758,7 @@ export async function handleClickFunnelsWebhook({
       return { ok: false, status: 401, reason: "bad_signature", emitted: [] };
     }
   } else {
+    applySurveyFlat = body;
     body = wrapApplySurveyIngestBody(body);
   }
 
@@ -804,5 +890,9 @@ export async function handleClickFunnelsWebhook({
       startedRun: !repeat && !res.deduped
     });
   }
-  return { ok: true, status: 200, emitted, purchase };
+  let clickfunnelsContact = null;
+  if (applySurveyFlat) {
+    clickfunnelsContact = await syncApplySurveyClickfunnelsContact(applySurveyFlat, { env, fetchImpl });
+  }
+  return { ok: true, status: 200, emitted, purchase, clickfunnelsContact };
 }
