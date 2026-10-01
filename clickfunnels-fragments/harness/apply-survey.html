@@ -341,14 +341,76 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
   function val(id) { return document.getElementById(id).value.trim(); }
 
   /* Per-screen submit, same as the CF survey: every advance sends what's answered so far.
-     Live: Cursor points SEND_STEP at /api/webhooks/clickfunnels (entry.captured after contact,
-     survey.submitted once cf_svy_* answers exist). Preview: kept in STEP_LOG only. */
+     POST → https://fundhub.ai/api/webhooks/clickfunnels (entry.captured after contact;
+     survey.submitted once any cf_svy_* answer exists). Payload: handoff §3 flat shape.
+     Guards: no POST on file://; no POST without CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET on
+     the page (window.FH_APPLY_SURVEY_INGEST, set at cutover). Local http with
+     window.FH_APPLY_SURVEY_WEBHOOK_FORCE = true still needs the ingest header value.
+     STEP_LOG always records the would-send payload for preview / devtools. */
   var STEP_LOG = [];
-  function SEND_STEP(stepKey) {
+  var WEBHOOK_URL = (function () {
+    if (window.FH_APPLY_SURVEY_WEBHOOK_URL) return window.FH_APPLY_SURVEY_WEBHOOK_URL;
+    if (location.protocol === 'file:') return null;
+    if (location.hostname === 'apply.fundhub.ai' || location.hostname === 'fundhub.ai') {
+      return 'https://fundhub.ai/api/webhooks/clickfunnels';
+    }
+    return '/api/webhooks/clickfunnels';
+  })();
+  function stampAttributionHidden() {
+    try {
+      var att = JSON.parse(sessionStorage.getItem('fh_attribution') || '{}') || {};
+      ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'landing_path', 'referrer_domain', 'a1', 'a2'].forEach(function (k) {
+        var el = form.querySelector('input[name="' + k + '"]');
+        if (el && att[k] && !el.value) el.value = att[k];
+      });
+    } catch (e) {}
+  }
+  function stepPayload(stepKey) {
+    stampAttributionHidden();
     var answers = {};
     path().forEach(function (q) { if (q.key !== 'contact' && A[q.key] != null) answers[q.key] = A[q.key]; });
-    STEP_LOG.push({ step: stepKey, event: Object.keys(answers).length ? 'survey.submitted' : 'entry.captured',
-      email: A.contact && A.contact.email, answers: answers });
+    var hidden = {};
+    form.querySelectorAll('input[type=hidden]').forEach(function (i) { hidden[i.name] = i.value; });
+    var c = A.contact || {};
+    return {
+      source: 'apply-survey',
+      funnel: 'apply-survey',
+      step_key: stepKey,
+      email: c.email,
+      name: ((c.first_name || '') + ' ' + (c.last_name || '')).trim(),
+      phone: c.phone,
+      answers: answers,
+      a1: hidden.a1 || null,
+      a2: hidden.a2 || null,
+      attribution: {
+        utm_source: hidden.utm_source || null,
+        utm_medium: hidden.utm_medium || null,
+        utm_campaign: hidden.utm_campaign || null,
+        utm_content: hidden.utm_content || null,
+        utm_term: hidden.utm_term || null,
+        landing_path: hidden.landing_path || null,
+        referrer_domain: hidden.referrer_domain || null
+      }
+    };
+  }
+  function webhookEnabled() {
+    if (location.protocol === 'file:') return !!window.FH_APPLY_SURVEY_WEBHOOK_FORCE;
+    if (window.FH_APPLY_SURVEY_WEBHOOK_FORCE) return true;
+    return !!window.FH_APPLY_SURVEY_INGEST;
+  }
+  function SEND_STEP(stepKey) {
+    var payload = stepPayload(stepKey);
+    var hasSurvey = Object.keys(payload.answers).length > 0;
+    STEP_LOG.push({
+      step: stepKey,
+      event: hasSurvey ? 'survey.submitted' : 'entry.captured',
+      email: payload.email,
+      answers: payload.answers
+    });
+    if (!WEBHOOK_URL || !webhookEnabled() || !payload.email) return;
+    var headers = { 'Content-Type': 'application/json' };
+    if (window.FH_APPLY_SURVEY_INGEST) headers['X-Fundhub-Apply-Survey-Ingest'] = window.FH_APPLY_SURVEY_INGEST;
+    fetch(WEBHOOK_URL, { method: 'POST', headers: headers, body: JSON.stringify(payload), keepalive: true }).catch(function () {});
   }
   function advance() {
     var list = path();
@@ -441,13 +503,26 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
       pick.day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) + ' at ' + esc(pick.time) +
       '. Check your email for the confirmation and calendar invite.</p></div>';
   });
-  /* Approvals strip: sits still, and each time they move to the next question the next,
-     higher batch slides in. PREVIEW AMOUNTS ARE PLACEHOLDERS: Cursor swaps in the 16 real approvals from /watch. */
-  var WINS = [20000, 26000, 33000, 41000, 50000, 62000, 75000, 90000, 110000, 135000, 165000, 200000, 250000, 300000, 400000, 500000]
-    .sort(function (a, b) { return a - b; });
-  var winMin = WINS[0], winMax = WINS[WINS.length - 1];
-  /* Swap in real approvals as { amount: 50000, img: 'https://…/approval-1.jpg' }; img is optional. */
-  var WIN_IMGS = {};
+  /* Approvals strip: sits still; each Next slides in the next higher batch (same 16 as /watch, deck.json). */
+  var WINS = [
+    { amount: 20000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715364/file/b828126991a18a561b9b0489ffef31dc.jpg", alt: "Truist Business credit card approval showing $20,000" },
+    { amount: 23000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715363/file/f45edd9e680d174dd614f8a09b6079e4.jpg", alt: "Chase Freedom Unlimited approval showing a $23,000 credit line" },
+    { amount: 24000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715362/file/7fc29e8b494832b6b5c14a2f82d1610e.jpg", alt: "Navy Federal Credit Union Platinum Visa credit card approval showing $24,000" },
+    { amount: 25000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715360/file/f2ab5e090077acb25ec2a06820c9aa7e.jpg", alt: "Navy Federal Credit Union cashRewards Visa credit card approval showing $25,000" },
+    { amount: 25000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715361/file/d619505428aae233495eb08f9ca78220.jpg", alt: "Highland Bank Visa Business Card approval showing $25,000" },
+    { amount: 30000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715359/file/c7c14fe81e2ebce892266ef580078d8b.jpg", alt: "Navy Federal Platinum credit card approval showing $30,000" },
+    { amount: 41000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715357/file/7eca23557c059231d5a4ec46f9a4af53.jpg", alt: "Chase Ink Business Unlimited card approval showing $41,000" },
+    { amount: 50000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715353/file/89de6b8fb2e72f1708bf9d0e232e0264.jpg", alt: "Commercial line of credit approval showing $50,000" },
+    { amount: 50000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715354/file/6484dec63f442004a983f44f01eb1a5d.jpg", alt: "KeyBank business credit card approval showing a $50,000 credit limit" },
+    { amount: 50000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715355/file/68b915259e7c0a5f060eb2a43841fcd1.jpg", alt: "Chase Ink Business card approval showing $50,000" },
+    { amount: 54500, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715352/file/37f8476a42f24b8a951b3bbab7356c86.jpg", alt: "Chase Ink Business Unlimited card approval showing $54,500" },
+    { amount: 70000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715351/file/87ce21a9d56365a948583e5c47d1bced.jpg", alt: "Business Revolving Line of Credit approval showing $70,000" },
+    { amount: 74000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715350/file/685c4e87c43f57142cfe2bd70318efeb.jpg", alt: "Chase Ink Business Cash card approval showing $74,000" },
+    { amount: 400000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715348/file/87977dcab48ab92052338711db574153.jpg", alt: "Commercial line of credit approval showing $400,000" },
+    { amount: 469800, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715347/file/62e762095e88a7911fdf48dcef0e15a6.jpg", alt: "Commercial Line of Credit approval showing $469,800" },
+    { amount: 500000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715346/file/2ebcf1ec2959eafec36ed810cdcef6f5.jpg", alt: "Commercial Line of Credit approval showing $500,000" }
+  ];
+  var winMin = WINS[0].amount, winMax = WINS[WINS.length - 1].amount;
   function perRow() { return window.innerWidth < 520 ? 2 : 3; }
   function showWins(step, total) {
     var PER = perRow(), maxStart = WINS.length - PER;
@@ -457,9 +532,10 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     if (box.getAttribute('data-start') === key) return;
     box.setAttribute('data-start', key);
     box.style.setProperty('--per', PER);
-    box.innerHTML = WINS.slice(start, start + PER).map(function (a, i) {
+    box.innerHTML = WINS.slice(start, start + PER).map(function (w, i) {
+      var a = w.amount;
       var size = 16 + Math.round((a - winMin) / (winMax - winMin) * 10);
-      var img = WIN_IMGS[a] ? '<img src="' + WIN_IMGS[a] + '" alt="Bank approval for $' + a.toLocaleString('en-US') + '">' : 'Approval screenshot';
+      var img = w.img ? '<img src="' + esc(w.img) + '" alt="' + esc(w.alt || ('Bank approval for $' + a.toLocaleString('en-US'))) + '">' : 'Approval screenshot';
       return '<div class="win" style="animation-delay:' + (i * 70) + 'ms"><div class="shot">' + img + '</div><div class="cap"><b>Approved</b><span style="--fs:' + size + 'px">$' + a.toLocaleString('en-US') + '</span></div></div>';
     }).join('');
   }
