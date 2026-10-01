@@ -33,7 +33,7 @@ const NEW_H1 = "I'll Show You How to Get Funding Forever!";
 const NEW_SUB = "You'll never need anyone to fund you again.";
 if (!s.includes(OLD_H1)) throw new Error("live headline not found; the page changed since this script was written");
 
-const SUB_CSS = `.fh-root .fh-gap{color:#DC2626;font-weight:700}
+const SUB_CSS = `.fh-root .fh-gap{background:#FECACA;color:#B91C1C;font-weight:700;padding:0 .2em;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
 .fh-root .hero .fh-subhead{margin:14px auto 0;font-size:clamp(18px,2.4vw,22px);font-weight:600;line-height:1.3;color:var(--ink,#111113);max-width:36ch}`;
 
 /* ---------- the new order ---------- */
@@ -83,14 +83,15 @@ const CUT_NAMES = "What You Get · Your fastest first win · Already have good c
 const HOW_H2 = "Get Every Dollar Your File Can Get. Then Do It Again, On Your Own.";
 /* Chris's own five steps, pasted 2026-10-01 ("Credit and Business Funding
    Optimization Process"): 1 credit check + what you pre-qualify for now, even on
-   perfect credit; 2 the gap, $100,000 to $300,000, "the gap" in red, every item
+   perfect credit; 2 the gap, $100,000 to $300,000, the dollar amounts in red
+   highlighter (Chris: "The dollar amounts in red (like red highlighter)", not "the gap"), every item
    costing money on all three bureaus; 3 business: liens, derogatory marks, high
    card balances, score, name, address, plus a website for credibility; 4 apply
    in the right order; 5 prime more business entities, the conveyor belt.
    "Typically" is written "on a lot of files" (locked-ads house rule). */
 const HOW_STEPS = [
   ["See what you qualify for today", "Know what you can get before a bank ever sees your file.", "I pull your credit with a soft pull, so your score stays the same. Your roadmap shows up in your portal. It shows what you most likely qualify for right now. Even with perfect credit, there is a lot you can do to get more business and personal funding."],
-  ["Find the gap", "Stop losing money to items nobody told you about.", `<span class="fh-gap">The gap</span> is the money you are leaving on the table. On a lot of files, it is $100,000 to $300,000. Your roadmap shows every item costing you money on all three bureaus: inquiries, names and addresses that don't match, and your business info.`],
+  ["Find the gap", "Stop losing money to items nobody told you about.", `The gap is the money you are leaving on the table. On a lot of files, it is <span class="fh-gap">$100,000 to $300,000</span>. Your roadmap shows every item costing you money on all three bureaus: inquiries, names and addresses that don't match, and your business info.`],
   ["Make your business one lenders trust", "Lenders fund businesses that look solid.", "I check your business for liens, bad marks, high card balances, your score, your name and your address. You get the fix for each one. Make sure your business has a website too. It helps lenders trust you."],
   ["Apply in the right order", "Get approved, not declined.", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order to get the most approvals."],
   ["Set up more companies", "Never need anyone to fund you again.", "Set up each of your companies the same way. Then run each one through these same steps. Add as many as you want. Like a conveyor belt, each one comes out ready for funding."],
