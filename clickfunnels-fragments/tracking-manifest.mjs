@@ -46,8 +46,12 @@ export const VSL_WATCH_BEACON_SRC = "https://fundhub.ai/funnel/vsl-watch-beacon.
 export const WATCH_PROOF_SRC = "https://fundhub.ai/funnel/watch-proof.js";
 /** Funding paths demo under watch-proof on /watch (public/funnel/funding-paths.js). */
 export const FUNDING_PATHS_SRC = "https://fundhub.ai/funnel/funding-paths.js";
+/** Step opens and button presses to the Fundhub DB (public/funnel/fh-events.js). Every step of /watch and /roadmap. */
+export const FH_EVENTS_SRC = "https://fundhub.ai/funnel/fh-events.js";
+/** Microsoft Clarity loader (public/js/clarity.js). Same file the custom HTML pages load in <head>. */
+export const CLARITY_SRC = "https://fundhub.ai/js/clarity.js";
 /** Footer script tags that must carry `defer` (matches fragment inline tags). */
-export const DEFER_FOOTER_SRCS = new Set([FUNDING_PATHS_SRC]);
+export const DEFER_FOOTER_SRCS = new Set([FUNDING_PATHS_SRC, CLARITY_SRC]);
 /** /thank-you booking check + "What the call decides" + real approvals and texts (public/funnel/thankyou-sort.js). */
 export const THANKYOU_SORT_SRC = "https://fundhub.ai/funnel/thankyou-sort.js";
 
@@ -183,7 +187,27 @@ export function clarityHeadHtml(env = process.env) {
   const projectId = String(env.CLARITY_PROJECT_ID ?? "").trim();
   if (!projectId) return "";
   return `<!-- Microsoft Clarity (Fundhub) -->
-<script src="https://fundhub.ai/js/clarity.js" defer></script>`;
+<script src="${CLARITY_SRC}" defer></script>`;
+}
+
+/** GA4 measurement id, or "" when unset. Never invent one. */
+export function ga4MeasurementId(env = process.env) {
+  const id = String(env.GA_MEASUREMENT_ID || env.GA4_MEASUREMENT_ID || "").trim();
+  return /^G-[A-Z0-9]+$/.test(id) ? id : "";
+}
+
+/** GA4 base tag. Empty when no measurement id is set, same rule as Clarity. */
+export function ga4HeadHtml(env = process.env) {
+  const id = ga4MeasurementId(env);
+  if (!id) return "";
+  return `<!-- GA4 (Fundhub) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"></script>
+<script>
+window.dataLayer=window.dataLayer||[];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', '${id}');
+</script>`;
 }
 
 /**
@@ -206,6 +230,7 @@ export function wrapCustomHtmlDocument({
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
     metaPixelHeadHtml(pixelId),
     clarityHeadHtml(env),
+    ga4HeadHtml(env),
   ];
   if (pageToken) {
     headBits.push(
@@ -222,6 +247,9 @@ export function wrapCustomHtmlDocument({
   }
   if (includeVslBeacon && !body.includes("vsl-watch-beacon.js")) {
     body += `\n<script src="${VSL_WATCH_BEACON_SRC}"></script>`;
+  }
+  if (!body.includes("fh-events.js")) {
+    body += `\n<script src="${FH_EVENTS_SRC}"></script>`;
   }
 
   return `<!doctype html>
@@ -282,7 +310,7 @@ export const PUSH_MANIFEST = [
     pageId: "25061160",
     fragment: "clickfunnels-fragments/01-vsl.html",
     vslBeacon: true,
-    extraFooterScripts: [WATCH_PROOF_SRC, FUNDING_PATHS_SRC],
+    extraFooterScripts: [WATCH_PROOF_SRC, FUNDING_PATHS_SRC, FH_EVENTS_SRC, CLARITY_SRC],
     strategy: "custom_html_or_head_append",
     note: "Builder page — the body cannot be replaced by API; new sections ride in on footer scripts",
   },
@@ -307,6 +335,7 @@ export const PUSH_MANIFEST = [
       "clickfunnels-fragments/04b-book-bottom.html",
     ],
     vslBeacon: false,
+    extraFooterScripts: [FH_EVENTS_SRC, CLARITY_SRC],
     strategy: "head_footer_append_only",
     note: "Native calendar — never POST custom_html full page replace",
   },
@@ -341,7 +370,7 @@ export const PUSH_MANIFEST = [
     pageId: "25063539",
     fragment: "clickfunnels-fragments/05-thank-you.html",
     vslBeacon: false,
-    extraFooterScripts: [THANKYOU_SORT_SRC],
+    extraFooterScripts: [THANKYOU_SORT_SRC, FH_EVENTS_SRC, CLARITY_SRC],
     strategy: "custom_html_or_head_append",
     note: "Builder page — the body cannot be replaced by API; new sections ride in on footer scripts",
   },
@@ -351,7 +380,7 @@ export const PUSH_MANIFEST = [
     path: "/fundhub-297-roadmap-sales--c8e0a",
     pageId: "25426320",
     fragment: "clickfunnels-fragments/slo/slo-01-sales.html",
-    vslBeacon: false,
+    vslBeacon: true,
     strategy: "custom_html_put",
     note: "Live alias /roadmap — replace custom_html with the full sales page fragment",
   },
@@ -361,7 +390,7 @@ export const PUSH_MANIFEST = [
     path: "/fundhub-297-roadmap-book--c8fbd",
     pageId: "25426722",
     fragment: "clickfunnels-fragments/slo/slo-02-booking.html",
-    vslBeacon: false,
+    vslBeacon: true,
     strategy: "custom_html_put",
     note: "Post-$297 book step — embeds live /funding-book-call calendar (no CALCOM_* in env)",
   },

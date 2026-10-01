@@ -27,6 +27,16 @@ const SESSION = /^[A-Za-z0-9_-]{8,80}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MAX_SECONDS = 24 * 60 * 60;
 
+// kind "page" and "click": one step open, one button press, on the /watch path
+// or the /roadmap path (public/funnel/fh-events.js). Pages are an allow-list so
+// a stranger cannot invent step names; a target is a short lowercase label.
+const FUNNEL_PAGES = new Set([
+  "/watch", "/apply", "/funding-book-call", "/thank-you",
+  "/roadmap", "/roadmap-book", "/roadmap-thank-you"
+]);
+const TARGET = /^[a-z0-9][a-z0-9_:.-]{0,63}$/;
+const MAX_CLICKS_PER_SESSION = 60;
+
 function readBody(req) {
   if (req?.body && typeof req.body === "object" && !Buffer.isBuffer(req.body)) return req.body;
   const raw = typeof req?.body === "string" ? req.body : (typeof req?.rawBody === "string" ? req.rawBody : "");
@@ -54,12 +64,12 @@ function truthyFlag(v) {
 export async function recordInterest(body, deps = {}) {
   if (!body || typeof body !== "object") return { ok: false, error: "invalid_json" };
   const kind = clip(body.kind, 20);
-  if (kind !== "visit" && kind !== "contact" && kind !== "engage") {
+  if (kind !== "visit" && kind !== "contact" && kind !== "engage" && kind !== "page" && kind !== "click") {
     return { ok: false, error: "kind_invalid" };
   }
 
   const sessionId = clip(body.session_id, 80);
-  if ((kind === "visit" || kind === "engage") && !SESSION.test(sessionId)) {
+  if (kind !== "contact" && !SESSION.test(sessionId)) {
     return { ok: false, error: "session_invalid" };
   }
 
@@ -78,6 +88,49 @@ export async function recordInterest(body, deps = {}) {
     landing_path: clip(body.landing_path, 200) || null,
     attribution: pickAttribution(body)
   };
+
+  if (kind === "page" || kind === "click") {
+    const page = clip(body.page, 60).toLowerCase().replace(/\/+$/, "");
+    if (!FUNNEL_PAGES.has(page)) return { ok: false, error: "page_invalid" };
+    const target = String(body.target ?? "").trim().toLowerCase();
+    if (kind === "click" && !TARGET.test(target)) return { ok: false, error: "target_invalid" };
+
+    payload.session_id = sessionId;
+    payload.page = page;
+    if (kind === "click") payload.target = target;
+
+    const db = deps.db || defaultDb;
+    const orgId = deps.orgId || (await (deps.defaultOrgId || defaultOrgId)(db));
+
+    if (kind === "click") {
+      // One session cannot fill the table with made-up labels.
+      const used = await db.query(
+        `SELECT count(*)::int AS n FROM events
+         WHERE org_id = $1 AND name = 'funnel.click'
+           AND created_at > now() - interval '1 day'
+           AND idempotency_key LIKE $2`,
+        [orgId, `funnel-click:${sessionId.replace(/[\\%_]/g, "\\$&")}:%`]
+      );
+      if ((used.rows[0]?.n ?? 0) >= MAX_CLICKS_PER_SESSION) {
+        return { ok: true, actor: who.actor, saved: false };
+      }
+    }
+
+    const sent = await (deps.emit || emit)(
+      db,
+      kind === "click" ? "funnel.click" : "funnel.page",
+      payload,
+      {
+        orgId,
+        allowNonCanonical: true,
+        skipInngest: true,
+        idempotencyKey: kind === "click"
+          ? `funnel-click:${sessionId}:${page}:${target}`
+          : `funnel-page:${sessionId}:${page}`
+      }
+    );
+    return { ok: true, actor: who.actor, saved: sent?.deduped !== true };
+  }
 
   if (kind === "engage") {
     const seconds = Math.max(

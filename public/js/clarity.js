@@ -31,6 +31,9 @@ var CLARITY_PROJECT_ID = "tscu15s674";
     // No project ID set — do nothing. No network call, no globals, no console noise.
     return;
   }
+  // The /funding-book-call calendar is also shown inside the /roadmap-book frame.
+  // The frame's parent page already records it, so the inner copy stays quiet.
+  try { if (window.self !== window.top) return; } catch (e) { return; }
 
   // Official Microsoft Clarity bootstrap loader (clarity.microsoft.com > Setup > Manual install).
   (function (c, l, a, r, i, t, y) {

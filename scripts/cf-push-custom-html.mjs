@@ -27,6 +27,9 @@ import {
   upsertMarkedBlock,
   nextFooterCode,
   FH_ATTRIBUTION_SRC,
+  FH_EVENTS_SRC,
+  CLARITY_SRC,
+  ga4HeadHtml,
 } from "../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -164,10 +167,14 @@ function readFragment(relPath) {
   return readFileSync(abs, "utf8");
 }
 
-function trackingHeadScripts({ skipMeta, skipDirectRoas, env = process.env }) {
+function trackingHeadScripts({ skipMeta, skipDirectRoas, skipGa4, env = process.env }) {
   const parts = [];
   if (!skipMeta) parts.push(metaPixelHeadHtml(metaPixelId(env).id));
   if (!skipDirectRoas) parts.push(directRoasHeadHtml(env));
+  if (!skipGa4) {
+    const ga = ga4HeadHtml(env);
+    if (ga) parts.push(ga);
+  }
   return parts.join("\n");
 }
 
@@ -477,6 +484,10 @@ function injectApplySurveyRuntime(html, { secret, pixelId, pageToken }) {
   if (secret && !out.includes("window.FH_APPLY_SURVEY_INGEST=")) {
     head.push(`<script>window.FH_APPLY_SURVEY_INGEST=${JSON.stringify(secret)};</script>`);
   }
+  if (!out.includes("googletagmanager.com/gtag/js")) {
+    const ga = ga4HeadHtml(process.env);
+    if (ga) head.push(ga);
+  }
   if (head.length) {
     const block = head.join("\n");
     if (out.includes("</head>")) out = out.replace("</head>", `${block}\n</head>`);
@@ -486,6 +497,17 @@ function injectApplySurveyRuntime(html, { secret, pixelId, pageToken }) {
     const tag = `<script src="${FH_ATTRIBUTION_SRC}"></script>`;
     if (out.includes("</body>")) out = out.replace("</body>", `${tag}\n</body>`);
     else out = `${out}\n${tag}`;
+  }
+  // Step opens + button presses, and Clarity, on the /watch path's survey step.
+  const more = [];
+  if (!out.includes("fh-events.js")) more.push(`<script src="${FH_EVENTS_SRC}"></script>`);
+  if (!out.includes("js/clarity.js") && String(process.env.CLARITY_PROJECT_ID ?? "").trim()) {
+    more.push(`<script src="${CLARITY_SRC}" defer></script>`);
+  }
+  if (more.length) {
+    const tags = more.join("\n");
+    if (out.includes("</body>")) out = out.replace("</body>", `${tags}\n</body>`);
+    else out = `${out}\n${tags}`;
   }
   return out;
 }
@@ -670,6 +692,7 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       const head = trackingHeadScripts({
         skipMeta: existing.includes("fbq('init'"),
         skipDirectRoas: existing.includes("directroas.com"),
+        skipGa4: existing.includes("googletagmanager.com/gtag/js"),
         env: process.env,
       });
       const foot = trackingFooterScripts({
@@ -692,6 +715,24 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       continue;
     }
 
+    // Native calendar step with footer scripts to add: send the whole footer in replace
+    // mode (append stored a tag twice on 2026-09-22). Body and calendar are never touched.
+    if (row.strategy === "head_footer_append_only" && row.extraFooterScripts?.length) {
+      const r = await pushBuilderFooter(creds, page.id, row, ctx, dryRun, snapDir);
+      if (!r.ok) process.exitCode = 1;
+      results.push({
+        key: row.key,
+        page_id: page.id,
+        path: row.path,
+        liveUrl: row.liveUrl,
+        calendar_safe: true,
+        pixel_env: pixel.envName,
+        ...r,
+        mode: "builder_page_tracking_inject_only",
+      });
+      continue;
+    }
+
     if (DO_NOT_FULL_REPLACE_PATHS.has(row.path) || row.strategy === "head_footer_append_only") {
       const livePage = await getPage(creds, page.id, ctx);
       const liveHead = String(livePage.head_code ?? "");
@@ -702,6 +743,7 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       const head = trackingHeadScripts({
         skipMeta: liveHasMeta,
         skipDirectRoas: liveHead.includes("directroas.com") || liveFoot.includes("directroas.com"),
+        skipGa4: liveHead.includes("googletagmanager.com/gtag/js") || liveFoot.includes("googletagmanager.com/gtag/js"),
         env: process.env,
       });
       const foot = trackingFooterScripts({

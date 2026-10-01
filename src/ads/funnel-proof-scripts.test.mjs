@@ -26,6 +26,8 @@ import {
   THANKYOU_SORT_SRC,
   VSL_WATCH_BEACON_SRC,
   FH_ATTRIBUTION_SRC,
+  FH_EVENTS_SRC,
+  CLARITY_SRC,
   trackingFooterScripts,
   isClickFunnelsPageHtml,
   dedupeFooterScripts,
@@ -453,13 +455,14 @@ describe("the fragments and the push manifest load the scripts once", () => {
     assert.equal(html.includes("You leave knowing your road"), false, "the step 03 title must not repeat its own text");
   });
 
-  test("only /watch and /thank-you get the new footer scripts", () => {
+  test("only the /watch path's builder steps get footer scripts, and only these", () => {
     const withExtras = PUSH_MANIFEST.filter((r) => r.extraFooterScripts?.length);
     assert.deepEqual(
       withExtras.map((r) => [r.key, r.pageId, r.extraFooterScripts]),
       [
-        ["apply-watch", "25061160", [WATCH_PROOF_SRC, FUNDING_PATHS_SRC]],
-        ["apply-thank-you", "25063539", [THANKYOU_SORT_SRC]],
+        ["apply-watch", "25061160", [WATCH_PROOF_SRC, FUNDING_PATHS_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
+        ["apply-book", "25062844", [FH_EVENTS_SRC, CLARITY_SRC]],
+        ["apply-thank-you", "25063539", [THANKYOU_SORT_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
       ],
     );
   });
