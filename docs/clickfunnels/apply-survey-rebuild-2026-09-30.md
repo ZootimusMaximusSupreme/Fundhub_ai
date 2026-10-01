@@ -30,13 +30,25 @@ All other option labels: verbatim from the extract §2. Send labels, never CF op
 - Contact polish: names auto-capitalized ("Mary Ann", "O'Neil-Smith"); email lowercased, format-checked, typo suggestion for common domains ("Did you mean …@gmail.com?"); phone formatted (480) 555-1234, leading 1 dropped, valid 10-digit US only.
 - Security: "Secure application" lock on the contact screen; under phone: "Only used to confirm your call and send reminders."; row beside Next: Encrypted connection · Never sold or shared · No credit pull to apply.
 - Score reassurance: hint "Every score has a path…"; picking 500-579, 580-649 or Not sure shows a one-line reassurance ~1.6s before advancing.
-- Approvals strip under the card: still between steps, each Next slides in the next higher batch (2 per row on phones, 3 on desktop), lowest → highest by the last screen. Each card = approval photo (sized to the image, max 240px tall) + amount. Placeholders now; feed the same 16 real approvals used on /watch (watch-proof.js WINS) as `{ amount, img }`.
+- Approvals strip under the card: still between steps, each Next slides in the next higher batch (2 per row on phones, 3 on desktop), lowest → highest by the last screen. Each card = approval photo (sized to the image, max 240px tall) + amount. **16 real approvals** from `/watch` (`watch-proof.js` / `deck.json`) as `{ amount, img, alt }` in `clickfunnels-fragments/apply-survey.html`.
 - End: ~1.4s review loader (4 checks) → clean result screen (checkmark, "You're qualified. Pick a time below.", recap of target / score / funding type) → booking calendar card on the same page, auto-scrolls to it. Calendar card shows: Free call · Soft pull only, zero score impact · Reschedule anytime. Live calendar embed goes in that card.
 - "Takes about 10 seconds" line kept per owner (note: real completion is ~40–60s).
 
 ## 3. Wiring (Cursor)
 
-- Keep the native CF survey live until cutover (spec §7). This replaces it after Friday's launch.
+### Post-cutover (2026-09-30)
+
+- **Live URL:** `https://apply.fundhub.ai/apply/` — custom HTML survey (`data-fh-apply-survey="1"`), not the native ClickFunnels survey step.
+- **Ship:** `0010dd56` (CF Custom HTML push + Netlify). Backend dual-write shipped **`8807da10`** (`syncApplySurveyClickfunnelsContact` on the webhook path).
+- **Browser → Fundhub:** each advance still `SEND_STEP` → `POST https://fundhub.ai/api/webhooks/clickfunnels` with header **`X-Fundhub-Apply-Survey-Ingest`** (Netlify **`CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET`**, injected at push as `window.FH_APPLY_SURVEY_INGEST`). CF HMAC unchanged for real CF webhooks.
+- **Fundhub → ClickFunnels:** after the Fundhub write, server **upserts** the same step on the CF contact (`POST …/contacts/upsert`, match on email) so **`cf_svy_*`** and attribution attrs stay filled for CF workflows.
+- **Meta (browser Lead + Schedule):** `docs/ads/apply-survey-meta-tracking-2026-09-30.md` — Lead once after available capital; Schedule when live calendar writes `fh_booking_v1`.
+- **Calendar:** same-page embed of `https://apply.fundhub.ai/funding-book-call` (native scheduler in iframe; height + booking via `postMessage` / `localStorage`).
+
+### Pre-cutover note (historical)
+
+Native CF survey on `/apply` was kept until cutover (extract §7). It is **not** customer-facing on `/apply` after 2026-09-30.
+
 - Per-screen submit like CF today: `SEND_STEP` posts on every advance → `https://fundhub.ai/api/webhooks/clickfunnels` (or `/api/webhooks/clickfunnels` on other hosts). `entry.captured` after contact; `survey.submitted` once any cf_svy_* answer exists. Payload shape: `{ source, funnel: 'apply-survey', step_key, email, name, phone, answers, a1, a2, attribution{ utm_source, utm_medium, utm_campaign, utm_content, utm_term, landing_path, referrer_domain } }` (labels, never CF option ids).
 - Browser auth: header `X-Fundhub-Apply-Survey-Ingest` must match Netlify `CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET` (set on the page at cutover as `window.FH_APPLY_SURVEY_INGEST`). CF HMAC is unchanged for real CF webhooks.
 - Preview guards (`apply-survey.html`): **no network POST** on `file://` unless `window.FH_APPLY_SURVEY_WEBHOOK_FORCE = true` (still needs ingest token). `STEP_LOG` + `window.FH_SURVEY_PAYLOAD` always capture payloads locally.
