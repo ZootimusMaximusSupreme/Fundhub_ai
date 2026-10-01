@@ -488,6 +488,10 @@ async function dispatchWebhook({ db, provider, rawBody, headers = {}, url, env =
     /* undefined for every provider without a simEnv, which keeps their adapters
        on the single-key path they already have. */
     simSecret: cfg.simEnv ? env[cfg.simEnv] : undefined,
-    headers
+    headers,
+    /* Apply-survey browser posts are not CF-signed. The adapter reads
+       CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET from this same env object.
+       Other providers keep only secret / simSecret. */
+    ...(provider === "clickfunnels" ? { env } : {})
   }));
 }

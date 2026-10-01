@@ -144,3 +144,21 @@ From extract §4 and §8:
 ---
 
 **One-line summary:** Lead once when `cf_svy_available_capital` lands (CAPI on `survey.submitted`), Schedule on `booking.created`, ShowedCall on attended call outcomes, Purchase on money canonical events, BackendRevenue on fund — **CRM does not fire Meta on deposit today**; browser pixel is PageView + a few optional fbq customs only.
+
+---
+
+## 8. Browser event test checklist (`apply-survey.html`)
+
+Grep of `clickfunnels-fragments/apply-survey.html` on 2026-09-30: **no `fbq(` call**. Lead, Schedule, ShowedCall, Purchase, and BackendRevenue are not stubbed in that file. Do not cut `/apply` over until the rows below are true.
+
+| Check | Pass when | 2026-09-30 |
+|-------|-----------|------------|
+| Lead | Fires once, on the result screen, only after `cf_svy_available_capital` is answered. Same `event_id` as the later CAPI Lead. | Missing |
+| Schedule | Not on this page. Fires when the call is booked (calendar confirm), browser + CAPI, same `event_id`. | Missing (correct to be absent until the book step) |
+| ShowedCall | Not in this HTML. CRM → CAPI only. | Absent, as planned |
+| Purchase | Not in this HTML. CRM → CAPI only. | Absent, as planned |
+| BackendRevenue | Not in this HTML. CRM → CAPI only. | Absent, as planned |
+| PageView | Optional. Do not add a second pixel if the funnel head already sends one. | Not in this file |
+| Unit lock | `src/http/apply-survey-webhook.test.mjs` fails if `fbq(` shows up before this checklist is updated. | In place |
+
+Repo gate for the payload (not Meta): `node --test src/http/apply-survey-webhook.test.mjs`. Browser walk: `npm test -- tests/apply-survey.spec.mjs` inside `clickfunnels-fragments`.
