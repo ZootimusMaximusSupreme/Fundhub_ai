@@ -15,7 +15,7 @@ Parallel lanes for `/apply` native survey rebuild. Shared extract: `docs/clickfu
 | Extract / ground truth | — | **done** | `docs/clickfunnels/apply-survey-extract-2026-09-30.md` |
 | **Meta-plan** | agent | **done** | `docs/ads/apply-survey-meta-tracking-2026-09-30.md` |
 | **WINS** | agent | **done** | `clickfunnels-fragments/apply-survey.html` — 16 real `{ amount, img, alt }` from watch-proof / deck.json; strip batch on step advance; no live /apply push; harness synced (`npm run harness` → `harness/apply-survey.html`) |
-| UI / fragments | pending | pending | Marked draft per `page-edits-marked-draft.mdc` before push |
+| UI / fragments | agent | **done** | Live apply fragment + CF push at cutover (`0010dd56` → `https://apply.fundhub.ai/apply/`). |
 | **Webhook** | agent | **done** | `SEND_STEP` POST in `apply-survey.html`; browser ingest via `CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET` + `clickfunnels.mjs`; route forwards that secret (`src/http/router.mjs`); tests in `clickfunnels.test.mjs` and `src/http/apply-survey-webhook.test.mjs` |
 | **E2E** | agent | **done** | Scorecard below. Custom `/apply` live (2026-09-30 cutover). Dual-write proved on live. |
 | **Cutover** | agent | **done** | Shipped `0010dd56`. Live `https://apply.fundhub.ai/apply/` — custom survey (`data-fh-apply-survey="1"`). Calendar embed `/funding-book-call`; browser Lead + Schedule in page. `/apply-page` → `/apply`. **CF-Other-off:** N/A — native CF survey is not customer-facing on `/apply`. |
