@@ -347,7 +347,7 @@ describe("no links off the page", () => {
   test("the only links the scripts add go to the next funnel step", () => {
     const hrefs = (src) => [...new Set([...src.matchAll(/href="([^"]*)"/g)].map((m) => m[1]))];
     assert.deepEqual(hrefs(WATCH), ["/apply"]);
-    assert.deepEqual(hrefs(THANKS), ["/funding-book-call"]);
+    assert.deepEqual(hrefs(THANKS), []);
     assert.equal(/make sure you show up/i.test(THANKS), false);
   });
 });
@@ -423,11 +423,15 @@ describe("fhIsBooked — the thank-you page claims a booking only when one exist
   });
 });
 
-describe("/thank-you copy for visitors with no booking", () => {
-  test("one message, and it matches the button under it", () => {
-    assert.ok(THANKS.includes('"One step left: pick a time for your call."'));
-    assert.ok(THANKS.includes(">Pick your call time</a>"));
-    assert.equal(/we'll be in touch with your next step/.test(THANKS), false, "no 'we will be in touch' above a book-now button");
+describe("/thank-you: everyone sees the booked page and confirm-your-call (owner, 2026-10-01)", () => {
+  test("no pick-a-time button, the confirm block shows, a video spot sits under the headline", () => {
+    assert.equal(THANKS.includes("Pick your call time"), false);
+    assert.equal(THANKS.includes("One step left"), false);
+    assert.ok(THANKS.includes('setText(hero.querySelector("h1.sec"), "Your Call Is Booked.");'));
+    assert.ok(THANKS.includes("show(cal, true);"));
+    assert.ok(THANKS.includes('setText(cal.querySelector(".kicker"), "Confirm your call");'));
+    assert.ok(THANKS.includes("after(hero, buildVideo());"));
+    assert.equal(/we'll be in touch with your next step/.test(THANKS), false);
     assert.equal(THANKS.includes('textContent = "You leave knowing'), false);
   });
 });

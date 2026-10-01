@@ -6,13 +6,9 @@
  * body cannot be replaced by API, so this script changes the page itself.
  *
  * What it does:
- *   1. The booking check (T14-01, moved here from the fragment). "Your Call Is
- *      Booked." shows only when fh_booking_v1 describes a real, fresh, upcoming
- *      booking and the visitor came straight from /funding-book-call. Everyone
- *      else, including homepage-survey DOWNSELL and MANUAL_REVIEW leads, sees
- *      "We've Got Your Application.", "One step left: pick a time for your call."
- *      and a "Pick your call time" button to /funding-book-call. The call steps,
- *      the prep list and the calendar buttons show only to people who booked.
+ *   1. Owner, 2026-10-01: everyone sees "Your Call Is Booked.", a video spot under
+ *      the headline, and the confirm-your-call buttons. fhIsBooked now only decides
+ *      whether the .ics button shows (it needs a stored booking time).
  *   2. "What the call decides" after the hero: one call, three roads.
  *   3. Step 03 reads "You get one of three roads".
  *   4. "Real approvals, real screenshots" before the FAQ: three approvals. No
@@ -340,9 +336,16 @@
   /* ── end template CSS ── */
 
   var PAGE_CSS = [
-    "#fh-ty-book{margin:26px auto 0;text-align:center}",
-    "#fh-ty-book .fhy-btn{display:block;width:100%;max-width:420px;margin:0 auto;background:#188bf6;color:#fff;font-family:'Inter',system-ui,-apple-system,sans-serif;font-size:17px;font-weight:600;line-height:1.3;padding:18px 26px;border-radius:9px;box-shadow:0 5px 18px rgba(24,139,246,.28);text-align:center;text-decoration:none}",
-    "#fh-ty-book .fhy-btn:hover{background:#0b78dd}",
+    "#fh-ty-video{max-width:860px;margin:28px auto 0;text-align:center}",
+    "#fh-ty-video .kicker{display:block;margin-bottom:12px}",
+    "#fh-ty-video .fhv-media{position:relative;aspect-ratio:16/9;border-radius:12px;overflow:hidden;background:#0A0A0A;box-shadow:0 18px 40px -18px rgba(10,10,10,.45)}",
+    "#fh-ty-video video{width:100%;height:100%;object-fit:cover;display:block}",
+    "#fh-ty-video .fhv-slot{position:absolute;inset:0;display:grid;place-items:center;background:#111113}",
+    "#fh-ty-video .fhv-slot span{font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.14em;color:#9C9CA5}",
+    "#fh-ty-video .fhv-unmute{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,10,10,.28);transition:opacity .2s;z-index:2}",
+    "#fh-ty-video .fhv-unmute.hidden{opacity:0;pointer-events:none}",
+    "#fh-ty-video .fhv-pill{display:flex;align-items:center;gap:10px;background:#188bf6;color:#fff;font-family:'JetBrains Mono',ui-monospace,Menlo,monospace;font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;padding:14px 22px;border-radius:999px;box-shadow:0 10px 30px rgba(10,10,10,.35)}",
+    "#fh-ty-video .fhv-pill svg{width:16px;height:16px;flex:0 0 auto}",
     "#fh-ty-decides{max-width:660px;margin:36px auto 0;text-align:center}",
     "#fh-ty-decides p{max-width:52ch;margin:12px auto 0;font-size:16.5px;line-height:1.62;color:#52525B}",
     "#fh-ty-proof{max-width:660px;margin:36px auto 0;text-align:center}",
@@ -432,6 +435,23 @@
   }
   function after(node, add) { node.parentNode.insertBefore(add, node.nextSibling); }
   function setText(node, text) { if (node) node.textContent = text; }
+  var VIDEO_SRC = "";
+  function buildVideo() {
+    var inner = VIDEO_SRC
+      ? '<video id="fh-ty-vid" autoplay muted playsinline preload="auto" src="' + VIDEO_SRC + '"></video>' +
+        '<div class="fhv-unmute" id="fh-ty-unmute"><span class="fhv-pill">' +
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" fill="currentColor" stroke="none"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>' +
+        "Tap for sound</span></div>"
+      : '<div class="fhv-slot"><span>[ VIDEO ]</span></div>';
+    var wrap = el('<section id="fh-ty-video"><span class="kicker">Watch this before your call</span><div class="fhv-media">' + inner + "</div></section>");
+    var v = wrap.querySelector("video"), o = wrap.querySelector(".fhv-unmute");
+    if (v && o) {
+      var unmute = function () { v.muted = false; v.currentTime = 0; v.play(); o.classList.add("hidden"); };
+      o.addEventListener("click", unmute);
+      v.addEventListener("click", function () { if (!o.classList.contains("hidden")) unmute(); });
+    }
+    return wrap;
+  }
   function show(node, on) { if (node) node.style.display = on ? "" : "none"; }
 
   function run() {
@@ -448,31 +468,25 @@
     var faq = root.querySelector("section.faq");
     var booked = fhIsBooked(readBooking(), Date.now(), document.referrer);
 
-    /* 1. Booking check (T14-01). */
-    if (booked) {
-      setText(hero.querySelector(".eyebrow"), "Confirmed · Funding Path");
-      setText(hero.querySelector("h1.sec"), "Your Call Is Booked.");
-      setText(hero.querySelector(".lede"), "We'll see you then. Here's what to expect.");
-      setText(prose && prose.querySelector("p:not(.lead)"), "Check your email for the confirmation and calendar invite.");
-      show(expect, true);
-      show(prep, true);
-      show(cal, true);
-      show(document.getElementById("fh-cal-ics"), true);
-    } else {
-      setText(hero.querySelector(".eyebrow"), "Received · Funding Path");
-      setText(hero.querySelector("h1.sec"), "We've Got Your Application.");
-      setText(hero.querySelector(".lede"), "Here's what happens next.");
-      setText(prose && prose.querySelector("p:not(.lead)"), "One step left: pick a time for your call.");
-      show(expect, false);
-      show(prep, false);
-      show(cal, false);
-    }
+    /* 1. Everyone sees the booked page and the confirm-your-call buttons (owner, 2026-10-01:
+          "shouldn't show pick your call time ... a confirm your call button like we had before").
+          The .ics button needs a real booking time, so it shows only when one is stored. */
+    setText(hero.querySelector(".eyebrow"), "Confirmed · Funding Path");
+    setText(hero.querySelector("h1.sec"), "Your Call Is Booked.");
+    setText(hero.querySelector(".lede"), "We'll see you then. Here's what to expect.");
+    setText(prose && prose.querySelector("p:not(.lead)"), "Check your email for the confirmation and calendar invite.");
+    show(expect, true);
+    show(prep, true);
+    show(cal, true);
+    show(document.getElementById("fh-cal-ics"), booked);
+    if (cal) setText(cal.querySelector(".kicker"), "Confirm your call");
+
+    /* Video, styled like the /watch VSL, right under the headline. VIDEO_SRC is empty until
+       the video is filmed; the box shows a placeholder until then. */
+    after(hero, buildVideo());
+
     var anchor = prose || hero;
-    if (!booked) {
-      var book = el('<div id="fh-ty-book"><a class="fhy-btn" href="/funding-book-call">Pick your call time</a></div>');
-      after(anchor, book);
-      anchor = book;
-    }
+    if (cal && prose) { after(prose, cal); anchor = cal; }
 
     /* 2. What the call decides. */
     var decides = el(
