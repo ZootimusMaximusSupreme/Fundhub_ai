@@ -94,7 +94,8 @@ const HOW_STEPS = [
   ["Find the gap", "Stop losing money to items nobody told you about.", `The gap is the money you are leaving on the table. On a lot of files, it is <span class="fh-gap">$100,000 to $300,000</span>. Your roadmap shows every item costing you money on all three bureaus: inquiries, names and addresses that don't match, and your business info.`],
   ["Make your business one lenders trust", "Lenders fund businesses that look solid.", "I check your business for liens, bad marks, high card balances, your score, your name and your address. You get the fix for each one. Make sure your business has a website too. It helps lenders trust you."],
   ["Apply in the right order", "Get approved, not declined.", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order to get the most approvals."],
-  ["Set up more companies", "Never need anyone to fund you again.", "Set up each of your companies the same way. Then run each one through these same steps. Add as many as you want. Like a conveyor belt, each one comes out ready for funding."],
+  // Chris, 2026-10-01: "It's a repeatable process."
+  ["Repeat it with every company", "Never need anyone to fund you again.", "Set up each new company the same way. Then run it through steps 1 to 4. Add as many as you want. Like a conveyor belt, each one comes out ready for funding."],
 ];
 function howSection(g) {
   const rows = HOW_STEPS.map(([t, lead, d], i) =>
