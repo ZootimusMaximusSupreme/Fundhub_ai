@@ -418,6 +418,7 @@ async function pushBuilderFooter(creds, pageId, row, ctx, dryRun, snapDir) {
   const plan = nextFooterCode(liveFoot, {
     includeVslBeacon: !!row.vslBeacon,
     extraSrcs: row.extraFooterScripts ?? [],
+    dropSrcs: row.dropFooterScripts ?? [],
     existing: liveHtml,
   });
   // No funnel head read means we do not know if the pixel already loads once.

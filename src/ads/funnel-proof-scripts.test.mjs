@@ -32,6 +32,7 @@ import {
   isClickFunnelsPageHtml,
   dedupeFooterScripts,
   nextFooterCode,
+  DEFER_FOOTER_SRCS,
   nextHeadCode,
   hasScriptSrc,
   metaPixelHeadHtml,
@@ -146,16 +147,18 @@ describe("no client texts in the watch funnel (owner, 2026-09-22)", () => {
   });
 });
 
-describe("/watch is one organized column: approvals, video testimonials, three roads", () => {
+describe("/watch is one organized column: video testimonials, three roads", () => {
   const build = WATCH.slice(WATCH.indexOf("function build()"), WATCH.indexOf("function run()"));
 
-  test("the three blocks come in order under the first Get Started, each with the same heading", () => {
+  test("the two blocks come in order under the first Get Started, with no approvals row", () => {
+    // Approvals row removed from /watch (owner, 2026-10-01).
     const at = (s) => build.indexOf(s);
-    const wins = at('<h2 class="fhx-h">Real approvals. Real screenshots.</h2>');
+    assert.equal(at("Real approvals. Real screenshots."), -1, "no approvals row on /watch");
+    assert.equal(at("fhx-rail"), -1);
     const vids = at('<h2 class="fhx-h">From our clients</h2>');
     const roads = at('<h2 class="fhx-h">One call. Three roads. Nobody gets turned away.</h2>');
-    assert.ok(wins > -1 && vids > wins && roads > vids, "approvals, then videos, then roads");
-    assert.equal((build.match(/<h2 class="fhx-h">/g) || []).length, 3);
+    assert.ok(vids > -1 && roads > vids, "videos, then roads");
+    assert.equal((build.match(/<h2 class="fhx-h">/g) || []).length, 2);
     assert.ok(at('<a class="btn" href="/apply"') > roads, "the second Get Started closes the section");
     assert.ok(WATCH.includes(String.raw`var anchor = root.querySelector(".cta-note") || root.querySelector('a.btn[href="/apply"]');`));
   });
@@ -442,12 +445,16 @@ describe("screenshots open full size (the cards are small, and on /watch they mo
 });
 
 describe("the fragments and the push manifest load the scripts once", () => {
-  test("01-vsl.html loads watch-proof.js and funding-paths.js (defer) after attribution and beacon", () => {
+  test("01-vsl.html loads watch-proof.js after attribution and beacon, and no funding-paths.js", () => {
     const html = read("clickfunnels-fragments/01-vsl.html");
     const at = (s) => html.indexOf(s);
     assert.ok(at(WATCH_PROOF_SRC) > at(VSL_WATCH_BEACON_SRC) && at(VSL_WATCH_BEACON_SRC) > at(FH_ATTRIBUTION_SRC));
-    assert.ok(at(FUNDING_PATHS_SRC) > at(WATCH_PROOF_SRC), "funding-paths after watch-proof");
-    assert.ok(html.includes(footerScriptTag(FUNDING_PATHS_SRC, { defer: true })), "funding-paths uses defer");
+    assert.equal(hasScriptSrc(html, FUNDING_PATHS_SRC), false, "graphics moved to /thank-you");
+  });
+
+  test("05-thank-you.html loads funding-paths.js (defer) after thankyou-sort.js", () => {
+    const html = read("clickfunnels-fragments/05-thank-you.html");
+    assert.ok(html.indexOf(footerScriptTag(FUNDING_PATHS_SRC, { defer: true })) > html.indexOf(THANKYOU_SORT_SRC));
   });
 
   test("05-thank-you.html loads thankyou-sort.js and no longer carries its own booking check", () => {
@@ -464,11 +471,20 @@ describe("the fragments and the push manifest load the scripts once", () => {
     assert.deepEqual(
       withExtras.map((r) => [r.key, r.pageId, r.extraFooterScripts]),
       [
-        ["apply-watch", "25061160", [WATCH_PROOF_SRC, FUNDING_PATHS_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
+        ["apply-watch", "25061160", [WATCH_PROOF_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
         ["apply-book", "25062844", [FH_EVENTS_SRC, CLARITY_SRC]],
-        ["apply-thank-you", "25063539", [THANKYOU_SORT_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
+        ["apply-thank-you", "25063539", [THANKYOU_SORT_SRC, FUNDING_PATHS_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
       ],
     );
+    assert.deepEqual(PUSH_MANIFEST.find((r) => r.key === "apply-watch").dropFooterScripts, [FUNDING_PATHS_SRC]);
+  });
+
+  test("nextFooterCode drops a script the step no longer loads", () => {
+    const t = (src) => footerScriptTag(src, { defer: DEFER_FOOTER_SRCS.has(src) });
+    const live = [t(FH_ATTRIBUTION_SRC), t(WATCH_PROOF_SRC), t(FUNDING_PATHS_SRC)].join("\n");
+    const r = nextFooterCode(live, { extraSrcs: [WATCH_PROOF_SRC], dropSrcs: [FUNDING_PATHS_SRC] });
+    assert.equal(hasScriptSrc(r.next, FUNDING_PATHS_SRC), false);
+    assert.ok(hasScriptSrc(r.next, WATCH_PROOF_SRC));
   });
 
   test("only a rendered ClickFunnels page counts as a read of the live page", () => {

@@ -178,9 +178,15 @@ export function nextHeadCode(live, { funnelHead = "" } = {}) {
  * and each extra src collapse to one. A step with no film loses the beacon.
  * @returns {{ next: string, changed: boolean, added: string[], collapsed: string[] }}
  */
-export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], existing = "" } = {}) {
+export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], dropSrcs = [], existing = "" } = {}) {
   let code = String(live ?? "");
   const collapsed = [];
+  // Scripts this step no longer loads come out of the footer.
+  for (const src of dropSrcs) {
+    const stripped = stripSrcTags(code, src);
+    if (stripped !== code) collapsed.push(src);
+    code = stripped;
+  }
   // A step with no film must not keep a video beacon another push left behind.
   if (!includeVslBeacon) {
     const stripped = stripSrcTags(code, VSL_WATCH_BEACON_SRC);
@@ -371,7 +377,9 @@ export const PUSH_MANIFEST = [
     pageId: "25061160",
     fragment: "clickfunnels-fragments/01-vsl.html",
     vslBeacon: true,
-    extraFooterScripts: [WATCH_PROOF_SRC, FUNDING_PATHS_SRC, FH_EVENTS_SRC, CLARITY_SRC],
+    extraFooterScripts: [WATCH_PROOF_SRC, FH_EVENTS_SRC, CLARITY_SRC],
+    // Graphics moved to /thank-you (owner, 2026-10-01).
+    dropFooterScripts: [FUNDING_PATHS_SRC],
     strategy: "custom_html_or_head_append",
     note: "Builder page — the body cannot be replaced by API; new sections ride in on footer scripts",
   },
@@ -436,7 +444,7 @@ export const PUSH_MANIFEST = [
     pageId: "25063539",
     fragment: "clickfunnels-fragments/05-thank-you.html",
     vslBeacon: false,
-    extraFooterScripts: [THANKYOU_SORT_SRC, FH_EVENTS_SRC, CLARITY_SRC],
+    extraFooterScripts: [THANKYOU_SORT_SRC, FUNDING_PATHS_SRC, FH_EVENTS_SRC, CLARITY_SRC],
     strategy: "custom_html_or_head_append",
     note: "Builder page — the body cannot be replaced by API; new sections ride in on footer scripts",
   },

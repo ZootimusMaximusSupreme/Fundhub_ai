@@ -579,12 +579,8 @@
   function build() {
     var sec = document.createElement("section");
     sec.id = SECTION_ID;
-    sec.setAttribute("aria-label", "Client approvals and video testimonials");
+    sec.setAttribute("aria-label", "Client video testimonials");
     sec.innerHTML =
-      '<div class="fhx-sec fhx-wins">' +
-        '<h2 class="fhx-h">Real approvals. Real screenshots.</h2>' +
-        '<div class="fhx-rail"><div class="fhx-track">' + WINS.map(winCard).join("") + "</div></div>" +
-      "</div>" +
       '<div class="fhx-sec fhx-vids">' +
         '<h2 class="fhx-h">From our clients</h2>' +
         '<div class="fhx-vgrid">' + VIDEOS.map(function (v) { return '<div class="fhx-vslot"><span>' + esc(v) + "</span></div>"; }).join("") + "</div>" +
