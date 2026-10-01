@@ -46,7 +46,7 @@
     if (document.getElementById('fhp-root')) return;
     var font = document.createElement('link');
     font.rel = 'stylesheet';
-    font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap';
+    font.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=optional';
     document.head.appendChild(font);
     var st = document.createElement('style');
     st.id = 'fhp-css';
@@ -373,6 +373,24 @@
   ];
   cards.forEach(function (c) { c.fin(); });
   flowFinal();
+
+  /* Widget expansion must not change scrollY (scroll anchoring / late layout). */
+  (function installScrollYLock() {
+    if (!window.ResizeObserver) return;
+    var root = document.getElementById('fhp-root');
+    if (!root) return;
+    var savedY = window.scrollY;
+    var raf = 0;
+    window.addEventListener('scroll', function () { savedY = window.scrollY; }, { passive: true });
+    new ResizeObserver(function () {
+      var hold = savedY;
+      if (raf) cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(function () {
+        raf = 0;
+        if (window.scrollY !== hold) window.scrollTo(0, hold);
+      });
+    }).observe(root);
+  })();
 
   var STOP_MS = 450;
   function cancelStop(c) {
