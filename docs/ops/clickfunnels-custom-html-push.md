@@ -57,7 +57,7 @@ $297 slo fragments (`clickfunnels-fragments/slo/slo-01-sales.html`, etc.) target
 
 How it was done (API only): one `POST /workspaces/{id}/funnels` (domain `apply.fundhub.ai`, live mode on); the three roadmap pages copied as new custom HTML pages in it (`POST .../pages/custom_html`, CF token swapped in); each old page's step path moved to `-retired` and the new page moved onto the live path (`PUT /pages/{id}` `current_path`, about one second per page); the old pages were then replaced with a redirect to the live path. Before-split HTML of the three old pages: `docs/workflows/cf-push-snapshots/page-<id>-before-funnel-split.html`.
 
-Still sitting in Fundhub Funnel, waiting on a yes to delete (the API can only remove a step by deleting its page): the three redirect stubs (25426320 `/roadmap-retired`, 25426722 `/roadmap-book-retired`, 25428615 `/roadmap-thank-you-retired`) and the dormant native checkout step `/order` (25426768, "Complete Funding Diagnostic"; the sales widget pays through Commas, nothing links to it).
+The three redirect stubs (25426320 `/roadmap-retired`, 25426722 `/roadmap-book-retired`, 25428615 `/roadmap-thank-you-retired`) are already gone (API 404, public 404). `/order` (25426768, step path `/order`, product "Complete Funding Diagnostic") stays: it is still a live checkout step. Fundhub Funnel 2 (`984159`) is empty, not on the domain, and the funnel update has no archive field, so it stays.
 
 Do not full-replace any builder page. Do not point an ad at a `-retired` path.
 

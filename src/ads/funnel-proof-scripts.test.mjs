@@ -32,6 +32,10 @@ import {
   isClickFunnelsPageHtml,
   dedupeFooterScripts,
   nextFooterCode,
+  nextHeadCode,
+  hasScriptSrc,
+  metaPixelHeadHtml,
+  directRoasHeadHtml,
 } from "../../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
@@ -493,9 +497,11 @@ describe("the fragments and the push manifest load the scripts once", () => {
     // ClickFunnels "append" stored watch-proof.js and thankyou-sort.js twice (2026-09-22).
     const push = read("scripts/cf-push-custom-html.mjs");
     const fn = push.slice(push.indexOf("async function pushBuilderFooter("), push.indexOf("async function putCustomHtml("));
-    assert.match(fn, /footer_code: plan\.next, footer_code_mode: "replace"/);
+    assert.match(fn, /page\.footer_code = plan\.next/);
+    assert.match(fn, /page\.footer_code_mode = "replace"/);
+    assert.match(fn, /page\.head_code_mode = "replace"/);
     assert.equal(fn.includes('"append"'), false);
-    assert.match(fn, /const verified = after\.trim\(\) === plan\.next\.trim\(\);/);
+    assert.match(fn, /after\.trim\(\) === plan\.next\.trim\(\)/);
   });
 
   test("nextFooterCode: one copy of each owned script, other tags untouched, nothing added twice", () => {
@@ -505,30 +511,66 @@ describe("the fragments and the push manifest load the scripts once", () => {
     const opts = { includeVslBeacon: true, extraSrcs: watchExtras, existing: "" };
     const tDefer = (src) => footerScriptTag(src, { defer: true });
 
-    // before the push: adds watch-proof.js once, keeps the three old beacons as they are
+    // three old beacons collapse to one, then watch-proof.js is added once
+    const oneBeacon = [t(FH_ATTRIBUTION_SRC), t(VSL_WATCH_BEACON_SRC), t(WATCH_PROOF_SRC), tDefer(FUNDING_PATHS_SRC)].join("\n");
     const first = nextFooterCode(watchLive, opts);
-    assert.equal(first.next, `${watchLive}\n${t(WATCH_PROOF_SRC)}\n${tDefer(FUNDING_PATHS_SRC)}`);
+    assert.equal(first.next, oneBeacon);
     assert.deepEqual(first.added, watchExtras);
+    assert.deepEqual(first.collapsed, [VSL_WATCH_BEACON_SRC]);
     assert.equal(first.changed, true);
 
     // after "append" doubled it: collapses to one copy, adds nothing
     const doubled = `${watchLive}\n${t(WATCH_PROOF_SRC)}\n${t(WATCH_PROOF_SRC)}\n${tDefer(FUNDING_PATHS_SRC)}\n${tDefer(FUNDING_PATHS_SRC)}`;
     const fixed = nextFooterCode(doubled, opts);
     assert.equal(fixed.next, first.next);
-    assert.deepEqual(fixed.collapsed.sort(), [WATCH_PROOF_SRC, FUNDING_PATHS_SRC].sort());
+    assert.deepEqual(fixed.collapsed.sort(), [VSL_WATCH_BEACON_SRC, WATCH_PROOF_SRC, FUNDING_PATHS_SRC].sort());
     assert.deepEqual(fixed.added, []);
 
     // already right: no change, so no write
     assert.equal(nextFooterCode(first.next, opts).changed, false);
 
-    // thank-you: the two old attribution tags stay; thankyou-sort.js is added once
+    // thank-you: two attribution tags collapse to one; thankyou-sort.js is added once
     const tyLive = `${t(FH_ATTRIBUTION_SRC)}\n${t(FH_ATTRIBUTION_SRC)}`;
     const ty = nextFooterCode(tyLive, { includeVslBeacon: false, extraSrcs: [THANKYOU_SORT_SRC] });
-    assert.equal(ty.next, `${tyLive}\n${t(THANKYOU_SORT_SRC)}`);
+    assert.equal(ty.next, `${t(FH_ATTRIBUTION_SRC)}\n${t(THANKYOU_SORT_SRC)}`);
+    assert.deepEqual(ty.collapsed, [FH_ATTRIBUTION_SRC]);
+
+    // a step with no film drops a beacon another push left behind
+    const stray = nextFooterCode(`${t(FH_ATTRIBUTION_SRC)}\n${t(VSL_WATCH_BEACON_SRC)}`, { includeVslBeacon: false, extraSrcs: [] });
+    assert.equal(stray.next, t(FH_ATTRIBUTION_SRC));
+    assert.deepEqual(stray.collapsed, [VSL_WATCH_BEACON_SRC]);
 
     // empty footer on a page whose public HTML already loads attribution
     const blank = nextFooterCode("", { includeVslBeacon: false, extraSrcs: [THANKYOU_SORT_SRC], existing: `<body>${t(FH_ATTRIBUTION_SRC)}</body>` });
     assert.equal(blank.next, t(THANKYOU_SORT_SRC));
+
+    // a comment that names the file is not the script
+    assert.equal(hasScriptSrc("<!-- so fh-attribution.js stamps them -->", FH_ATTRIBUTION_SRC), false);
+    assert.equal(hasScriptSrc(t(FH_ATTRIBUTION_SRC), FH_ATTRIBUTION_SRC), true);
+    const commentOnly = nextFooterCode("", {
+      includeVslBeacon: false,
+      extraSrcs: [],
+      existing: "<!-- so fh-attribution.js stamps them -->",
+    });
+    assert.equal(commentOnly.next, t(FH_ATTRIBUTION_SRC));
+  });
+
+  test("nextHeadCode keeps one pixel, and drops page pixels when the funnel head already has one", () => {
+    const pixel = metaPixelHeadHtml("2403674420141513");
+    const roas = directRoasHeadHtml();
+    const framed = "<!-- fh-framed:start v1 -->\n<style>html.fh-framed{margin:0}</style>\n<!-- fh-framed:end -->";
+    const head = `${pixel}\n${roas}\n${framed}\n${pixel}\n${roas}`;
+    const kept = nextHeadCode(head, { funnelHead: "" });
+    assert.equal(kept.changed, true);
+    assert.equal(kept.next, `${pixel}\n${roas}\n${framed}`);
+    assert.equal((kept.next.match(/fbq\('init'/g) || []).length, 1);
+    assert.ok(kept.next.includes("fh-framed:start"));
+    assert.ok(kept.next.includes("fh-framed:end"));
+    const dropped = nextHeadCode(head, { funnelHead: `${pixel}\n${roas}` });
+    assert.equal(dropped.next, framed);
+    assert.equal((dropped.next.match(/fbq\('init'/g) || []).length, 0);
+    assert.equal(dropped.next.includes("directroas.com"), false);
+    assert.equal(nextHeadCode(framed, { funnelHead: pixel }).changed, false);
   });
 
   test("dedupeFooterScripts keeps one copy of the row's own scripts and leaves every other tag alone", () => {

@@ -26,6 +26,9 @@ import {
   isClickFunnelsPageHtml,
   upsertMarkedBlock,
   nextFooterCode,
+  nextHeadCode,
+  hasScriptSrc,
+  footerScriptTag,
   FH_ATTRIBUTION_SRC,
   FH_EVENTS_SRC,
   CLARITY_SRC,
@@ -311,6 +314,16 @@ async function appendHeadFooter(creds, pageId, headSnippet, footerSnippet, ctx, 
 }
 
 /** GET one page with head_code / footer_code expanded (they are left out otherwise). */
+async function getFunnelHead(creds, funnelId, ctx) {
+  const url = new URL(`${baseUrl(creds.subdomain)}/funnels/${funnelId}`);
+  url.searchParams.append("expand[]", "head_code");
+  const { body } = await cfApi({ url: url.toString(), apiKey: creds.api_key, ctx });
+  if (!body || !Object.prototype.hasOwnProperty.call(body, "head_code")) {
+    throw new Error(`funnel ${funnelId}: head_code not returned with expand — refusing to strip a pixel blind`);
+  }
+  return String(body.head_code ?? "");
+}
+
 async function getPageCode(creds, pageId, slot, ctx) {
   const url = new URL(`${baseUrl(creds.subdomain)}/pages/${pageId}`);
   url.searchParams.append("expand[]", slot);
@@ -375,32 +388,85 @@ async function pushBuilderFooter(creds, pageId, row, ctx, dryRun, snapDir) {
       live_html_read: Boolean(liveHtml),
     };
   }
+  let liveHead = "";
+  try {
+    liveHead = await getPageCode(creds, pageId, "head_code", ctx);
+  } catch {
+    return {
+      ok: false,
+      skipped: true,
+      reason: "live_page_unreadable",
+      detail: "head_code not returned by the API",
+      live_html_read: true,
+    };
+  }
+  let funnelHead = "";
+  let funnelHeadRead = false;
+  if (row.funnelId) {
+    try {
+      funnelHead = await getFunnelHead(creds, row.funnelId, ctx);
+      funnelHeadRead = true;
+    } catch {
+      funnelHeadRead = false;
+    }
+  }
   mkdirSync(snapDir, { recursive: true });
   const snapshot = join(snapDir, `page-${pageId}-footer_code.html`);
   writeFileSync(snapshot, liveFoot, "utf8");
+  const headSnapshot = join(snapDir, `page-${pageId}-head_code.html`);
+  writeFileSync(headSnapshot, liveHead, "utf8");
   const plan = nextFooterCode(liveFoot, {
     includeVslBeacon: !!row.vslBeacon,
     extraSrcs: row.extraFooterScripts ?? [],
     existing: liveHtml,
   });
+  // No funnel head read means we do not know if the pixel already loads once.
+  // Leave the page head alone rather than strip the only copy.
+  const headPlan = funnelHeadRead ? nextHeadCode(liveHead, { funnelHead }) : { next: liveHead, changed: false };
   const base = {
     live_html_read: true,
     snapshot: snapshot.slice(ROOT.length + 1),
+    head_snapshot: headSnapshot.slice(ROOT.length + 1),
     would_append_footer_srcs: plan.added,
     collapsed_duplicate_srcs: plan.collapsed,
+    head_changed: headPlan.changed,
+    funnel_head_read: funnelHeadRead,
   };
-  if (!plan.changed) return { ok: true, pageId, ...base, skipped: true, reason: "footer_already_right" };
+  if (!plan.changed && !headPlan.changed) {
+    return { ok: true, pageId, ...base, skipped: true, reason: "footer_already_right" };
+  }
   if (dryRun) return { ok: true, dryRun: true, pageId, ...base };
+  const page = {};
+  if (plan.changed) {
+    page.footer_code = plan.next;
+    page.footer_code_mode = "replace";
+  }
+  if (headPlan.changed) {
+    page.head_code = headPlan.next;
+    page.head_code_mode = "replace";
+  }
   await cfApi({
     url: `${baseUrl(creds.subdomain)}/pages/${pageId}`,
     apiKey: creds.api_key,
     ctx,
     method: "PUT",
-    body: JSON.stringify({ page: { footer_code: plan.next, footer_code_mode: "replace" } }),
+    body: JSON.stringify({ page }),
   });
-  const after = await getPageCode(creds, pageId, "footer_code", ctx);
-  const verified = after.trim() === plan.next.trim();
-  return { ok: verified, pageId, ...base, verified, code_length_before: liveFoot.length, code_length_after: after.length };
+  const after = plan.changed ? await getPageCode(creds, pageId, "footer_code", ctx) : liveFoot;
+  const afterHead = headPlan.changed ? await getPageCode(creds, pageId, "head_code", ctx) : liveHead;
+  const verified =
+    (!plan.changed || after.trim() === plan.next.trim()) &&
+    (!headPlan.changed || afterHead.trim() === headPlan.next.trim());
+  return {
+    ok: verified,
+    pageId,
+    ...base,
+    verified,
+    code_length_before: liveFoot.length,
+    code_length_after: after.length,
+    head_length_before: liveHead.length,
+    head_length_after: afterHead.length,
+  };
 }
 
 async function putCustomHtml(creds, pageId, html, ctx, dryRun) {
@@ -493,16 +559,16 @@ function injectApplySurveyRuntime(html, { secret, pixelId, pageToken }) {
     if (out.includes("</head>")) out = out.replace("</head>", `${block}\n</head>`);
     else out = `${block}\n${out}`;
   }
-  if (!out.includes("fh-attribution.js")) {
+  if (!hasScriptSrc(out, FH_ATTRIBUTION_SRC)) {
     const tag = `<script src="${FH_ATTRIBUTION_SRC}"></script>`;
     if (out.includes("</body>")) out = out.replace("</body>", `${tag}\n</body>`);
     else out = `${out}\n${tag}`;
   }
   // Step opens + button presses, and Clarity, on the /watch path's survey step.
   const more = [];
-  if (!out.includes("fh-events.js")) more.push(`<script src="${FH_EVENTS_SRC}"></script>`);
-  if (!out.includes("js/clarity.js") && String(process.env.CLARITY_PROJECT_ID ?? "").trim()) {
-    more.push(`<script src="${CLARITY_SRC}" defer></script>`);
+  if (!hasScriptSrc(out, FH_EVENTS_SRC)) more.push(`<script src="${FH_EVENTS_SRC}"></script>`);
+  if (!hasScriptSrc(out, CLARITY_SRC) && String(process.env.CLARITY_PROJECT_ID ?? "").trim()) {
+    more.push(footerScriptTag(CLARITY_SRC, { defer: true }));
   }
   if (more.length) {
     const tags = more.join("\n");
@@ -523,6 +589,19 @@ async function pageOnApplyStep(creds, workspaceId, ctx) {
   return null;
 }
 
+function ensureScriptTags(html, srcs) {
+  let out = String(html ?? "");
+  const added = [];
+  for (const src of srcs) {
+    if (hasScriptSrc(out, src)) continue;
+    const tag = footerScriptTag(src, { defer: src === CLARITY_SRC });
+    if (out.includes("</body>")) out = out.replace("</body>", `${tag}\n</body>`);
+    else out = `${out}\n${tag}`;
+    added.push(src);
+  }
+  return { html: out, added };
+}
+
 async function pushApplySurveyReplace(creds, workspaceId, row, ctx, dryRun) {
   const secret = String(process.env.CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET ?? "").trim();
   if (!secret) {
@@ -540,6 +619,32 @@ async function pushApplySurveyReplace(creds, workspaceId, row, ctx, dryRun) {
     injectApplySurveyRuntime(baseHtml, { secret, pixelId: pixel.id, pageToken: token });
 
   if (current && existing.includes(marker)) {
+    const want = [FH_ATTRIBUTION_SRC, FH_EVENTS_SRC];
+    if (String(process.env.CLARITY_PROJECT_ID ?? "").trim()) want.push(CLARITY_SRC);
+    const patched = ensureScriptTags(existing, want);
+    // A comment that names the file used to count as "already there", so /apply
+    // shipped with no attribution script. Add the missing tag only. Do not
+    // rebuild the survey (that would rewrite the page).
+    if (patched.added.length) {
+      if (dryRun) {
+        return {
+          ok: true,
+          dryRun: true,
+          mode: "custom_html_script_ensure",
+          pageId: current.id,
+          added: patched.added,
+        };
+      }
+      const snapDir = join(ROOT, "docs/workflows/cf-push-snapshots");
+      await snapshotCustomHtml(creds, current.id, ctx, snapDir);
+      await putCustomHtml(creds, current.id, patched.html, ctx, false);
+      return {
+        ok: true,
+        mode: "custom_html_script_ensure",
+        pageId: current.id,
+        added: patched.added,
+      };
+    }
     const token = current.sdk && current.sdk.token;
     const html = build(token);
     if (dryRun) {

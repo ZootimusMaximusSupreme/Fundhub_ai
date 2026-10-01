@@ -59,6 +59,14 @@ export function footerScriptTag(src, { defer = false } = {}) {
   return `<script src="${src}"${defer ? " defer" : ""}></script>`;
 }
 
+/** True only for a real script tag. A comment that names the file does not count. */
+export function hasScriptSrc(html, src) {
+  const hay = String(html ?? "");
+  const needle = String(src ?? "");
+  if (!needle) return false;
+  return hay.includes(`src="${needle}"`) || hay.includes(`src='${needle}'`);
+}
+
 function footerTagFormsForSrc(src) {
   const defer = DEFER_FOOTER_SRCS.has(src);
   return defer
@@ -69,7 +77,7 @@ function footerTagFormsForSrc(src) {
 /**
  * Footer script tags to append. Any src already in `existing` (the page's live
  * head + footer code) is skipped, so a push never loads the same script twice.
- * Append-only: tags already duplicated on a page stay as they are.
+ * nextFooterCode collapses extra copies of these tags down to one.
  */
 export function trackingFooterScripts({
   includeVslBeacon,
@@ -121,15 +129,67 @@ export function dedupeFooterScripts(code, srcs = []) {
   return out;
 }
 
+function stripSrcTags(code, src) {
+  let out = String(code ?? "");
+  for (const tag of footerTagFormsForSrc(src)) {
+    out = out.split(`\n${tag}`).join("").split(tag).join("");
+  }
+  return out;
+}
+
+/** One Meta pixel block, or none when the funnel head already has the pixel. */
+const META_PIXEL_BLOCK =
+  /[ \t]*<!-- Meta Pixel \([^)\n]*\) -->[ \t]*\r?\n<script>[\s\S]*?<\/script>[ \t]*(?:\r?\n<noscript>[\s\S]*?<\/noscript>)?[ \t]*\r?\n?/g;
+
+/** One Direct ROAS tag, or none when the funnel head already loads it. */
+const DIRECT_ROAS_BLOCK =
+  /[ \t]*<!-- Direct ROAS \([^)\n]*\) -->[ \t]*\r?\n<script async src="https:\/\/app\.directroas\.com\/[^"]+"><\/script>[ \t]*\r?\n?/g;
+
+function applyBlockPolicy(code, pattern, dropAll) {
+  const flags = pattern.flags.includes("g") ? pattern.flags : `${pattern.flags}g`;
+  const rx = new RegExp(pattern.source, flags);
+  let seen = 0;
+  return String(code ?? "").replace(rx, (match) => {
+    seen += 1;
+    if (dropAll || seen > 1) return "";
+    return match;
+  });
+}
+
+/**
+ * Page head_code after a tracking cleanup.
+ * Drop every page pixel / Direct ROAS block when `funnelHead` already has that
+ * tag (the funnel head is on every builder step). Otherwise keep the first
+ * copy and drop the rest. Marked blocks (fh-framed, fh-book-fit) stay.
+ * @returns {{ next: string, changed: boolean }}
+ */
+export function nextHeadCode(live, { funnelHead = "" } = {}) {
+  const funnel = String(funnelHead ?? "");
+  const original = String(live ?? "");
+  let next = applyBlockPolicy(original, META_PIXEL_BLOCK, funnel.includes("fbq('init'"));
+  next = applyBlockPolicy(next, DIRECT_ROAS_BLOCK, funnel.includes("directroas.com"));
+  if (next !== original) next = next.replace(/^\n+/, "").replace(/\n+$/, "");
+  return { next, changed: next !== original };
+}
+
 /**
  * The footer code a builder-page push leaves behind, sent whole with
- * footer_code_mode "replace".
+ * footer_code_mode "replace". Extra copies of attribution, the video beacon,
+ * and each extra src collapse to one. A step with no film loses the beacon.
  * @returns {{ next: string, changed: boolean, added: string[], collapsed: string[] }}
  */
 export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], existing = "" } = {}) {
   let code = String(live ?? "");
   const collapsed = [];
-  for (const src of [...new Set(extraSrcs)]) {
+  // A step with no film must not keep a video beacon another push left behind.
+  if (!includeVslBeacon) {
+    const stripped = stripSrcTags(code, VSL_WATCH_BEACON_SRC);
+    if (stripped !== code) collapsed.push(VSL_WATCH_BEACON_SRC);
+    code = stripped;
+  }
+  const collapseSrcs = [FH_ATTRIBUTION_SRC, ...extraSrcs];
+  if (includeVslBeacon) collapseSrcs.push(VSL_WATCH_BEACON_SRC);
+  for (const src of [...new Set(collapseSrcs)]) {
     const forms = footerTagFormsForSrc(src);
     let first = -1;
     let anchorLen = 0;
@@ -153,7 +213,7 @@ export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [],
   const seen = `${code}\n${existing}`;
   const add = trackingFooterScripts({
     includeVslBeacon,
-    skipAttribution: seen.includes("fh-attribution.js"),
+    skipAttribution: hasScriptSrc(seen, FH_ATTRIBUTION_SRC),
     extraSrcs,
     existing: seen,
   });
@@ -242,13 +302,13 @@ export function wrapCustomHtmlDocument({
   );
 
   let body = bodyHtml;
-  if (!body.includes("fh-attribution.js")) {
+  if (!hasScriptSrc(body, FH_ATTRIBUTION_SRC)) {
     body += `\n<script src="${FH_ATTRIBUTION_SRC}"></script>`;
   }
-  if (includeVslBeacon && !body.includes("vsl-watch-beacon.js")) {
+  if (includeVslBeacon && !hasScriptSrc(body, VSL_WATCH_BEACON_SRC)) {
     body += `\n<script src="${VSL_WATCH_BEACON_SRC}"></script>`;
   }
-  if (!body.includes("fh-events.js")) {
+  if (!hasScriptSrc(body, FH_EVENTS_SRC)) {
     body += `\n<script src="${FH_EVENTS_SRC}"></script>`;
   }
 
