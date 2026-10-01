@@ -5,10 +5,9 @@
  * "You need anyone" is read as "You'll never need anyone".
  *
  * Chris, 2026-10-01: "Headline / Subheadline / VSL / How it Works /
- * Testimonials / FAQ. Can you build in an order like this" — for /roadmap.
- * How it Works is the "What Happens Next" section. The approvals deck rides
- * with the video testimonials. Sections he did not name are kept, unchanged,
- * between Testimonials and FAQ, each tagged so he can cut them. Checkout stays last.
+ * Testimonials / FAQ" then "only shit should be on the funnel plus checkout".
+ * How it Works is the "What Happens Next" section. Every other section is cut,
+ * and so are the Gene line and the $297 line under the headline. Checkout stays last.
  *
  * Reads the live fragment (../slo-01-sales.html) WITHOUT changing it. The old
  * headline stays on the draft in red, crossed out; the new headline and the new
@@ -56,19 +55,21 @@ const M = {
   checkout: "<!-- SECTION 9: CHECKOUT (embedded) -->",
 };
 const NOW = ["hero", "testi", "wyg", "firstwin", "goodcredit", "bridge", "approvals", "how", "qual", "guar", "faq", "checkout"];
-const KEPT = "Not in your list · kept here, words unchanged · say cut to drop it";
+/* Chris, 2026-10-01: "Headline / Subheadline / VSL / How it Works / Testimonials /
+   FAQ, only shit should be on the funnel plus checkout". Everything else is cut.
+   The approvals deck is cut too: an approval is not a testimonial
+   (.claude/rules/proof-cards-from-source.md). */
 const NEW = [
   ["hero", "1 · Headline, subheadline, VSL"],
   ["how", "2 · How it Works (the What Happens Next section) · MOVED UP from 8th"],
   ["testi", "3 · Testimonials · was 2nd"],
-  ["approvals", "3 · Testimonials, continued: the approvals · MOVED UP from 7th"],
-  ["wyg", `What You Get · ${KEPT}`],
-  ["firstwin", `Your fastest first win · ${KEPT}`],
-  ["goodcredit", `Already have good credit? · ${KEPT}`],
-  ["bridge", `Why this works · ${KEPT}`],
-  ["qual", `Who this is for · ${KEPT}`],
-  ["guar", `The guarantee · ${KEPT}`],
   ["faq", "4 · FAQ"],
+];
+const CUT = ["wyg", "firstwin", "goodcredit", "bridge", "approvals", "qual", "guar"];
+const CUT_NAMES = "What You Get · Your fastest first win · Already have good credit? · Why this works · Approvals · Who this is for · The guarantee";
+const HERO_CUT = [
+  '<p class="fh-proofline"><b>Gene</b> runs three LLCs. With the roadmap, he opened up about $420,000 in business funding over three years.</p>',
+  '<p class="lede"><b>$297.</b> We soft-pull your credit, and about 10 seconds later five documents built from your own file are waiting in your portal. Yours to keep.</p>',
 ];
 function reorder(page, mark) {
   const idx = NOW.map((k) => at(page, M[k]));
@@ -77,8 +78,13 @@ function reorder(page, mark) {
   NOW.forEach((k, i) => { if (k !== "checkout") block[k] = page.slice(idx[i], idx[i + 1]); });
   const head = page.slice(0, idx[0]);
   const tail = page.slice(idx[NOW.length - 1]);
-  const body = NEW.map(([k, tag]) => (mark ? `<div class="fhx-sec" data-tag="${tag}">\n${block[k]}</div><!--/fhx-sec-->\n` : block[k])).join("");
-  if (NEW.length !== NOW.length - 1) throw new Error("a block was dropped");
+  for (const line of HERO_CUT) {
+    if (!block.hero.includes(line)) throw new Error(`hero line not found: ${line.slice(0, 60)}`);
+    block.hero = block.hero.replace(line, mark ? `<p class="fhx-old fhx-cutline">${line.replace(/<\/?p[^>]*>/g, "")}</p>` : "");
+  }
+  if (NEW.length + CUT.length !== NOW.length - 1) throw new Error("a block is neither kept nor cut");
+  let body = NEW.map(([k, tag]) => (mark ? `<div class="fhx-sec" data-tag="${tag}">\n${block[k]}</div><!--/fhx-sec-->\n` : block[k])).join("");
+  if (mark) body += `<div class="fhx-cutbox"><b>CUT from the page</b><span>${CUT_NAMES}</span></div>\n`;
   return head + body + tail;
 }
 
@@ -110,9 +116,12 @@ html.fhx-clean .fhx-old{display:none}
 .fhx-sec{position:relative;outline:2px dashed #2F6FEB;outline-offset:6px;margin:34px 0}
 .fhx-sec::before{content:attr(data-tag);display:block;font:700 11px/1.3 system-ui,sans-serif;color:#fff;background:#2F6FEB;padding:5px 9px;border-radius:4px;margin-bottom:10px;width:max-content;max-width:100%}
 html.fhx-clean .fhx-sec{outline:0;margin:0}
+.fhx-cutline::before{content:"CUT"}
+.fhx-cutbox{max-width:660px;margin:34px auto 0;padding:14px 18px;border:2px solid #DC2626;border-radius:8px;background:#FEF2F2;color:#B42318;font:14px/1.5 system-ui,sans-serif;display:grid;gap:4px}
+html.fhx-clean .fhx-cutbox{display:none}
 html.fhx-clean .fhx-sec::before{display:none}
 </style>
-<div class="fhx-banner"><span>DRAFT, NOT LIVE · Red = old headline · Green = new headline · Blue boxes = new order</span><button type="button" id="fhx-toggle">Hide the marks</button></div>
+<div class="fhx-banner"><span>DRAFT, NOT LIVE · Red = old headline · Green = new headline · Blue boxes = new order · Red = cut</span><button type="button" id="fhx-toggle">Hide the marks</button></div>
 <script>
 (function(){
   var b=document.getElementById('fhx-toggle');if(!b)return;
