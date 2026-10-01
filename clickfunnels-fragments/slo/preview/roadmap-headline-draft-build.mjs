@@ -140,24 +140,26 @@ const COPY = [
    "<b>Sarah is on my sales team.</b> Her credit was in bad shape. She ran the roadmap, saw exactly what to fix, and is set to be approved for about $80,000."],
 ];
 const FAQ = [
+  // Chris, 2026-10-01: "fix this" on the FAQ. Same voice as How It Works:
+  // certain, grade 5, the 13 hidden data points, never needing anyone again.
   ["My score is already 800. Why would I need this?", "My score is already 800. Why do I need this?",
-   "Because a high score is not the same as a file set up for the most funding. Most high-score files have gaps you can't see. Those gaps decide how much you get. The roadmap finds yours and shows you how to close them. Then it sets you up for unlimited funding: a new company ready to fund every quarter."],
+   "A high score is not the same as a file set up for max funding. Even an 800 file has hidden data points that cap how much you get. Your roadmap finds all 13 and gives you the fix for each one. Then you repeat it with every company you open. That is unlimited funding over time."],
   ["Will this hurt my credit score?", "Will this hurt my credit score?",
-   "No. I pull your credit with a soft pull. It doesn't show up on your report, and your score doesn't move."],
+   "No. I pull your credit with a soft pull. It won't hurt your score."],
   ["How do I know this is legit?", "How do I know this is real?",
    "Gene owns three LLCs. He got about $420,000 in business funding with the roadmap. Colin Schmidt ran a funding company. He went through the roadmap and would not change a thing. You can call us at (561) 304-8368 before you buy. Not happy? Email us within 7 days for a full refund."],
   ["How is this different from a funding course?", "How is this different from a funding course?",
-   "A course charges $5,000 to $10,000 to teach you, and you dig out the answers yourself. This is done for your file. Every letter is written. Every step is in order. All of it is built from your own credit."],
+   "A course charges $5,000 to $10,000 to teach you, and you still have to find the answers yourself. Your roadmap is built from your own file. Every letter is written. Every step is in order."],
   ["How is this different from paying a broker?", "How is this different from paying a broker?",
-   "A broker hands you a list of banks. I read your file first, show you what is hurting it, and give you the order to apply in, so the declines don't stack up. After that, you don't need the broker."],
+   "A broker hands you a list of banks. Your roadmap reads your file first, gives you the exact fixes, and lists the banks that approve files like yours, in order. After that, you never need a broker again."],
   ["What if my file needs a lot of work?", "What if my file needs a lot of work?",
-   "Then the roadmap tells you, and tells you how long. Some files need six months of letters. Some just need two cards paid down. You'll know which one is yours the day you open it."],
+   "Your roadmap tells you exactly what to fix and how long it takes. Some files need six months of letters. Some just need two cards paid down. You'll know the day you open it."],
   ["Can you do the work for me?", "Can you do the work for me?",
    "No. You do it yourself, so you stay in control. You mail your own letters, so you keep every receipt and see every reply. If you want help later, every document has a button to book a call with my team."],
   ["Can't I just apply on my own?", "Can't I just apply on my own?",
-   "You can. But most people apply in the wrong order, on a file nobody read. Each decline makes the next one harder. The roadmap tells you what to fix first and which banks to go to."],
+   "You can. But if you apply in the wrong order, on a file nobody read, each decline makes the next one harder. Your roadmap shows you what to fix first and which banks to go to."],
   ["How fast do I get it?", "How fast do I get it?",
-   "About 10 seconds after the soft pull."],
+   "About 10 seconds after the soft pull. It shows up in your portal."],
 ];
 function applyCopy(page, g) {
   for (const [from, to] of COPY) {
