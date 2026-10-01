@@ -389,13 +389,23 @@
     }
     var savedY = readY();
     var raf = 0;
-    window.addEventListener('scroll', function () { savedY = readY(); }, { passive: true });
+    function armLock() { savedY = readY(); }
+    window.addEventListener('scroll', armLock, { passive: true });
+    document.addEventListener('scroll', armLock, { passive: true, capture: true });
+    ['wheel', 'touchmove', 'keydown'].forEach(function (ev) {
+      window.addEventListener(ev, armLock, { passive: true });
+    });
     new ResizeObserver(function () {
       var hold = savedY;
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(function () {
         raf = 0;
-        if (readY() !== hold) writeY(hold);
+        var now = readY();
+        if (now === hold) return;
+        var delta = now - hold;
+        /* Small jumps = scroll anchoring from widget growth; big jumps = user scrolled — re-arm. */
+        if (Math.abs(delta) <= 120) writeY(hold);
+        else savedY = now;
       });
     }).observe(root);
   })();
