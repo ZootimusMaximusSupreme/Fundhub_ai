@@ -4,8 +4,7 @@
 body{background:#FCFCFC;color:#111113}
 .fhx-checkout{max-width:720px;margin:24px auto;padding:18px 20px;border:2px dashed #2F6FEB;border-radius:10px;background:#F3F7FF;color:#111113;font:14px/1.5 system-ui,sans-serif;display:grid;gap:6px}
 .fhx-checkout-note{max-width:660px;margin:0 auto 10px;font:600 13px/1.5 system-ui,sans-serif;color:#52525B;text-align:center}
-.cfw-step{display:block!important}
-.cfw-step + .cfw-step{margin-top:22px;padding-top:16px;border-top:1px dashed #E4E4E7}
+
 .fhx-banner{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
 </style>
 <!-- ============================================================
@@ -835,9 +834,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <div class="h2">Get Funded. Then Do It Again.</div>
       <div class="rows">
         <div class="srow"><span class="n">01</span><div><div class="t">See how much you can get</div><div class="d">We check your credit with a soft pull. Your score stays the same. About 10 seconds later, your roadmap is in your portal. It shows how much you can get today, and how much once your file is fixed.</div></div></div>
-        <div class="srow"><span class="n">02</span><div><div class="t">Fix what holds you back</div><div class="d">Your roadmap shows every item that costs you money, and what to do first. Pay down the cards it names. Mail the letters we write for you. Each round waits 30 days at most.</div></div></div>
-        <div class="srow"><span class="n">03</span><div><div class="t">Apply in the right order</div><div class="d">Your list shows the banks most likely to say yes to a file like yours. Apply in that order, so you stack approvals, not declines.</div></div></div>
-        <div class="srow"><span class="n">04</span><div><div class="t">Do it again</div><div class="d">Open one to two new companies a quarter, set up the right way. As they age, they get ready for funding too. That is how you keep getting funded.</div></div></div>
+        <div class="srow"><span class="n">02</span><div><div class="t">Fix your personal credit</div><div class="d">Your roadmap shows every item that costs you money on all three bureaus. That includes inquiries, and any name or address that does not match. Pay down the cards it names. Mail the dispute letters we write for you. Each round waits 30 days at most.</div></div></div>
+        <div class="srow"><span class="n">03</span><div><div class="t">Fix your business file</div><div class="d">We check your Experian Business report. We flag your business scores, bad marks, high card balances, your NAICS code and your business name. You get the exact fixes, so a lender sees a business they can trust.</div></div></div>
+        <div class="srow"><span class="n">04</span><div><div class="t">Apply in the right order</div><div class="d">Your list shows the banks most likely to say yes to a file like yours. Apply in that order, so you stack approvals, not declines.</div></div></div>
+        <div class="srow"><span class="n">05</span><div><div class="t">Add aged companies if you need them</div><div class="d">Want more funding? Open one to two new companies a quarter, set up the right way: a clean name, the right NAICS code, and reporting from day one. As they age, they get ready for funding too. That is how you keep getting funded.</div></div></div>
       </div>
       <a class="btn" href="#fh-order">Get My $297 Funding Roadmap</a>
     </section>
@@ -964,7 +964,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 </div>
 </div>
 
-<div class="fhx-checkout-note">Preview of the checkout. The fields are turned off here. They work on the live page.</div>
 <!-- ================= SPLIT-LINE ==================
      ABOVE: the sales page. BELOW: the checkout widget, then the page bottom.
      This whole file is still ONE Custom JS/HTML element.
@@ -1002,17 +1001,17 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   <div class="cfw" id="fhw">
     
     <div class="cfw-formerr" data-formerr role="alert" hidden></div>
-    <div class="cfw-steps" data-tabs><button disabled type="button" class="on" data-tab="1">1 &middot; Info</button><button disabled type="button" data-tab="2">2 &middot; Card</button><button disabled type="button" data-tab="3">3 &middot; Soft pull</button></div>
+    <div class="cfw-steps" data-tabs><button type="button" class="on" data-tab="1">1 &middot; Info</button><button type="button" data-tab="2">2 &middot; Card</button><button type="button" data-tab="3">3 &middot; Soft pull</button></div>
 
     <form onsubmit="return false" class="cfw-step s1 on" novalidate autocomplete="on">
       <div class="row2">
-        <label>First name<input disabled type="text" name="c_first" data-f="c_first" autocomplete="given-name" maxlength="80"></label>
-        <label>Last name<input disabled type="text" name="c_last" data-f="c_last" autocomplete="family-name" maxlength="80"></label>
+        <label>First name<input type="text" name="c_first" data-f="c_first" autocomplete="given-name" maxlength="80"></label>
+        <label>Last name<input type="text" name="c_last" data-f="c_last" autocomplete="family-name" maxlength="80"></label>
       </div>
-      <label>Email<input disabled type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
-      <label>Phone<input disabled type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
+      <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
+      <label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
 
-      <button disabled type="submit" class="cfw-btn">Continue</button>
+      <button type="submit" class="cfw-btn">Continue</button>
       <div class="cfw-note">Step 1 of 3. Your card is next, then the short soft pull form.</div>
     </form>
 
@@ -1030,7 +1029,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <div class="cfw-total"><span>Total today</span><b data-total>$297</b></div>
       <div class="cfw-totline" data-totline hidden></div>
       <div class="cfw-demo" data-demo hidden></div>
-      <button disabled type="submit" class="cfw-btn" data-pay>Get My Roadmap</button>
+      <button type="submit" class="cfw-btn" data-pay>Get My Roadmap</button>
       <div class="cfw-note"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Secure checkout &middot; soft pull only &middot; not happy, email us within 7 days and we'll refund you</div>
       <div class="cfw-note" data-livenote hidden>Fill in every card box above, then tap Get My Roadmap.</div>
       <a class="cfw-back" href="#" data-back>Back to step 1</a>
@@ -1040,40 +1039,40 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <div class="cfw-box">
         <span class="cfw-kick">Your legal name, as on your Social Security card</span>
         <div class="row2">
-          <label>Legal first name<input disabled type="text" name="first_name" data-f="first_name" autocomplete="given-name" maxlength="20"></label>
-          <label>Middle name<input disabled type="text" name="middle_name" data-f="middle_name" autocomplete="additional-name" maxlength="15" placeholder="Optional"></label>
+          <label>Legal first name<input type="text" name="first_name" data-f="first_name" autocomplete="given-name" maxlength="20"></label>
+          <label>Middle name<input type="text" name="middle_name" data-f="middle_name" autocomplete="additional-name" maxlength="15" placeholder="Optional"></label>
         </div>
         <div class="row-sfx">
-          <label>Legal last name<input disabled type="text" name="last_name" data-f="last_name" autocomplete="family-name" maxlength="32"></label>
-          <label>Suffix<select disabled name="suffix" data-f="suffix"><option value="">None</option><option value="JR">Jr</option><option value="SR">Sr</option><option value="II">II</option><option value="III">III</option><option value="IV">IV</option></select></label>
+          <label>Legal last name<input type="text" name="last_name" data-f="last_name" autocomplete="family-name" maxlength="32"></label>
+          <label>Suffix<select name="suffix" data-f="suffix"><option value="">None</option><option value="JR">Jr</option><option value="SR">Sr</option><option value="II">II</option><option value="III">III</option><option value="IV">IV</option></select></label>
         </div>
-        <label>Date of birth<input disabled type="text" name="dob" data-f="dob" autocomplete="bday" inputmode="numeric" placeholder="MM/DD/YYYY" maxlength="10"></label>
+        <label>Date of birth<input type="text" name="dob" data-f="dob" autocomplete="bday" inputmode="numeric" placeholder="MM/DD/YYYY" maxlength="10"></label>
       </div>
 
       <div class="cfw-secure">
         <label>Social Security number<span class="why">used for the soft pull only &middot; doesn't move your score</span>
-          <span class="cfw-ssn"><input disabled type="text" name="ssn" class="mask" data-f="ssn" autocomplete="off" inputmode="numeric" maxlength="11" placeholder="&bull;&bull;&bull;-&bull;&bull;-&bull;&bull;&bull;&bull;" spellcheck="false"><button disabled type="button" class="cfw-show" data-show aria-pressed="false">Show</button></span>
+          <span class="cfw-ssn"><input type="text" name="ssn" class="mask" data-f="ssn" autocomplete="off" inputmode="numeric" maxlength="11" placeholder="&bull;&bull;&bull;-&bull;&bull;-&bull;&bull;&bull;&bull;" spellcheck="false"><button type="button" class="cfw-show" data-show aria-pressed="false">Show</button></span>
         </label>
       </div>
 
       <div class="cfw-box">
         <span class="cfw-kick">Home address</span>
-        <label>Street address<input disabled type="text" name="address" data-f="address" autocomplete="address-line1" maxlength="48" placeholder="123 Main St"></label>
-        <label>Apt / unit <span class="opt">optional</span><input disabled type="text" name="apt" data-f="apt" autocomplete="address-line2" maxlength="14"></label>
-        <label>City<input disabled type="text" name="city" data-f="city" autocomplete="address-level2" maxlength="28"></label>
+        <label>Street address<input type="text" name="address" data-f="address" autocomplete="address-line1" maxlength="48" placeholder="123 Main St"></label>
+        <label>Apt / unit <span class="opt">optional</span><input type="text" name="apt" data-f="apt" autocomplete="address-line2" maxlength="14"></label>
+        <label>City<input type="text" name="city" data-f="city" autocomplete="address-level2" maxlength="28"></label>
         <div class="row2">
-          <label>State<select disabled name="state" data-f="state" autocomplete="address-level1" data-states></select></label>
-          <label>ZIP<input disabled type="text" name="zip" data-f="zip" autocomplete="postal-code" inputmode="numeric" maxlength="10"></label>
+          <label>State<select name="state" data-f="state" autocomplete="address-level1" data-states></select></label>
+          <label>ZIP<input type="text" name="zip" data-f="zip" autocomplete="postal-code" inputmode="numeric" maxlength="10"></label>
         </div>
-        <label class="check"><input disabled type="checkbox" name="moved_recently" data-moved><span>Moved in the last 2 years?</span></label>
+        <label class="check"><input type="checkbox" name="moved_recently" data-moved><span>Moved in the last 2 years?</span></label>
         <div class="cfw-prev" data-prev hidden>
           <span class="cfw-kick">Previous address</span>
-          <label>Street address<input disabled type="text" name="prev_address" data-f="prev_address" autocomplete="off" maxlength="48"></label>
-          <label>Apt / unit <span class="opt">optional</span><input disabled type="text" name="prev_apt" data-f="prev_apt" autocomplete="off" maxlength="14"></label>
-          <label>City<input disabled type="text" name="prev_city" data-f="prev_city" autocomplete="off" maxlength="28"></label>
+          <label>Street address<input type="text" name="prev_address" data-f="prev_address" autocomplete="off" maxlength="48"></label>
+          <label>Apt / unit <span class="opt">optional</span><input type="text" name="prev_apt" data-f="prev_apt" autocomplete="off" maxlength="14"></label>
+          <label>City<input type="text" name="prev_city" data-f="prev_city" autocomplete="off" maxlength="28"></label>
           <div class="row2">
-            <label>State<select disabled name="prev_state" data-f="prev_state" autocomplete="off" data-states></select></label>
-            <label>ZIP<input disabled type="text" name="prev_zip" data-f="prev_zip" autocomplete="off" inputmode="numeric" maxlength="10"></label>
+            <label>State<select name="prev_state" data-f="prev_state" autocomplete="off" data-states></select></label>
+            <label>ZIP<input type="text" name="prev_zip" data-f="prev_zip" autocomplete="off" inputmode="numeric" maxlength="10"></label>
           </div>
         </div>
       </div>
@@ -1082,13 +1081,13 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <span class="cfw-kick">Your businesses</span>
         <p class="cfw-addline">We pull business credit too. Your first business is included. Each extra one is $15.</p>
       <div data-bizlist></div>
-      <button disabled type="button" class="cfw-add" data-add>+ Add a business ($15)</button>
+      <button type="button" class="cfw-add" data-add>+ Add a business ($15)</button>
         <div class="cfw-totline" data-bizline hidden></div>
       </div>
 
       <div class="cfw-note"><b>Check every answer before you continue.</b> Your legal name, date of birth, Social Security number and address &mdash; including the state &mdash; have to match your credit file exactly. One wrong character and the bureaus return nothing.</div>
-      <label class="check consent"><input disabled type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub Credit Solutions LLC to run a soft pull of my credit report. A soft pull does not affect my credit score. I also agree Fundhub may call and text me at the number I gave, including automated texts, about my file. Message and data rates may apply. Reply STOP to stop. Agreeing to texts is not a condition of buying anything.</span></label>
-      <button disabled type="submit" class="cfw-btn" data-pull>Start My Soft Pull</button>
+      <label class="check consent"><input type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub Credit Solutions LLC to run a soft pull of my credit report. A soft pull does not affect my credit score. I also agree Fundhub may call and text me at the number I gave, including automated texts, about my file. Message and data rates may apply. Reply STOP to stop. Agreeing to texts is not a condition of buying anything.</span></label>
+      <button type="submit" class="cfw-btn" data-pull>Start My Soft Pull</button>
       <div class="cfw-note"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Soft pull only &middot; it does not move your score &middot; your file is read in seconds</div>
     </form>
     </form>
@@ -1125,14 +1124,14 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <h3>We couldn't read your credit file.</h3>
       <p>Your payment went through and your order is saved. The bureaus came back with nothing, which usually means one detail didn't match your file. Check your details and try again.</p>
       <p data-frozen hidden>Your credit file is frozen, and a frozen file can't be read. Lift the freeze with that bureau, then try again.</p>
-      <button disabled type="button" class="cfw-btn" data-retry>Check my details</button>
+      <button type="button" class="cfw-btn" data-retry>Check my details</button>
       <p class="cfw-small">Still stuck? Email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a> or <a data-talk href="https://apply.fundhub.ai/roadmap-book">book a call with us</a>.</p>
     </div>
 
     <div class="cfw-state" data-state="slow" hidden role="status">
       <h3>This is taking longer than usual.</h3>
       <p>Your payment went through and your order is saved. The bureaus are still answering. Press the button to check again.</p>
-      <button disabled type="button" class="cfw-btn" data-recheck>Check again</button>
+      <button type="button" class="cfw-btn" data-recheck>Check again</button>
       <p class="cfw-small">Still stuck? Email <a href="mailto:support@fundhub.ai">support@fundhub.ai</a>.</p>
     </div>
   </div>

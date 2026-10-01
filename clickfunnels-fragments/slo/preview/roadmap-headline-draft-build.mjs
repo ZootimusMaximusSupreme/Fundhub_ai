@@ -71,12 +71,15 @@ const CUT_NAMES = "What You Get · Your fastest first win · Already have good c
 
 /* How it Works, NEW. Chris, 2026-10-01: "how it works isnt what happens next".
    How the roadmap gets you funded, then funded again. Every fact is from the
-   What You Get rows on the live page (documents 01-05 and the bonus map). */
+   What You Get rows on the live page (documents 01-05 and the bonus map).
+   Chris, 2026-10-01: "its not just paying cards down its, optimzing you
+   business file, and aged corporations if needed" — steps 3 and 5. */
 const HOW_STEPS = [
   ["See how much you can get", "We check your credit with a soft pull. Your score stays the same. About 10 seconds later, your roadmap is in your portal. It shows how much you can get today, and how much once your file is fixed."],
-  ["Fix what holds you back", "Your roadmap shows every item that costs you money, and what to do first. Pay down the cards it names. Mail the letters we write for you. Each round waits 30 days at most."],
+  ["Fix your personal credit", "Your roadmap shows every item that costs you money on all three bureaus. That includes inquiries, and any name or address that does not match. Pay down the cards it names. Mail the dispute letters we write for you. Each round waits 30 days at most."],
+  ["Fix your business file", "We check your Experian Business report. We flag your business scores, bad marks, high card balances, your NAICS code and your business name. You get the exact fixes, so a lender sees a business they can trust."],
   ["Apply in the right order", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order, so you stack approvals, not declines."],
-  ["Do it again", "Open one to two new companies a quarter, set up the right way. As they age, they get ready for funding too. That is how you keep getting funded."],
+  ["Add aged companies if you need them", "Want more funding? Open one to two new companies a quarter, set up the right way: a clean name, the right NAICS code, and reporting from day one. As they age, they get ready for funding too. That is how you keep getting funded."],
 ];
 function howSection(g) {
   const rows = HOW_STEPS.map(([t, d], i) =>
@@ -170,19 +173,18 @@ if (process.argv.includes("--share")) {
   const tmp = mkdtempSync(join(tmpdir(), "fh-share-"));
   /* Chris, 2026-10-01: "fix the artifact, and then put the checkout back".
      The shared copy is the clean page (no marks) with the real checkout form
-     showing. Its scripts are stripped and every field is turned off, so the
-     shared copy shows the form but cannot take a card or personal details. */
+     showing. Its scripts are stripped and every form refuses to submit, so the
+     shared copy looks like the live checkout but cannot send anything.
+     Chris: "put it how it was originally": step one only, as on the live page. */
   let share = live;
   const cut0 = share.indexOf("<!-- ================= SPLIT-LINE");
   const cut1 = share.indexOf("<!-- SLOT-UTM");
   if (cut0 < 0 || cut1 < 0) throw new Error("checkout markers not found");
   let checkout = share.slice(cut0, cut1)
     .replace(/<script[\s\S]*?<\/script>/g, "")
-    .replace(/<(input|select|textarea|button)\b/g, "<$1 disabled")
     .replace(/<form\b/g, '<form onsubmit="return false"');
   if (/<script/.test(checkout)) throw new Error("a script is left in the shared checkout");
   share = share.slice(0, cut0) +
-    `<div class="fhx-checkout-note">Preview of the checkout. The fields are turned off here. They work on the live page.</div>\n` +
     checkout + share.slice(cut1);
   share = share.replace(/<script src="https:\/\/fundhub\.ai\/funnel\/fh-attribution\.js"><\/script>/, "");
   share = share.replace(/(<video[^>]*?)\s+src="https:\/\/fundhub\.ai\/funnel\/[^"]+\.mp4"/g, "$1");
@@ -205,8 +207,7 @@ if (process.argv.includes("--share")) {
 body{background:#FCFCFC;color:#111113}
 .fhx-checkout{max-width:720px;margin:24px auto;padding:18px 20px;border:2px dashed #2F6FEB;border-radius:10px;background:#F3F7FF;color:#111113;font:14px/1.5 system-ui,sans-serif;display:grid;gap:6px}
 .fhx-checkout-note{max-width:660px;margin:0 auto 10px;font:600 13px/1.5 system-ui,sans-serif;color:#52525B;text-align:center}
-.cfw-step{display:block!important}
-.cfw-step + .cfw-step{margin-top:22px;padding-top:16px;border-top:1px dashed #E4E4E7}
+
 .fhx-banner{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
 </style>
 `;
