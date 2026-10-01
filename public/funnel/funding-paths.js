@@ -374,7 +374,12 @@
   cards.forEach(function (c) { c.fin(); });
   flowFinal();
 
+  var STOP_MS = 450;
+  function cancelStop(c) {
+    if (c.stopTimer) { clearTimeout(c.stopTimer); c.stopTimer = null; }
+  }
   function startCard(c) {
+    cancelStop(c);
     if (c.tok) return;
     var tok = { dead: false };
     c.tok = tok;
@@ -383,10 +388,15 @@
     })();
   }
   function stopCard(c) {
+    cancelStop(c);
     if (!c.tok) return;
     c.tok.dead = true;
     c.tok = null;
     c.fin();
+  }
+  function scheduleStop(c) {
+    cancelStop(c);
+    c.stopTimer = setTimeout(function () { stopCard(c); }, STOP_MS);
   }
   var aiCard = cards[3];
   var aiHold = false;
@@ -404,13 +414,25 @@
 
   cards.forEach(function (c) {
     c.tok = null;
-    var target = c === aiCard ? $('fhp-ai').closest('.fhp') : c.el;
+    c.ioLive = false;
+    var isAi = c === aiCard;
+    var target = isAi ? $('fhp-ai') : c.el;
+    var startAt = isAi ? 0.22 : 0.35;
+    var stopAt = isAi ? 0.1 : 0.12;
     new IntersectionObserver(function (entries) {
       entries.forEach(function (e) {
-        if (e.isIntersecting) startCard(c);
-        else stopCard(c);
+        var r = e.intersectionRatio;
+        if (e.isIntersecting && r >= startAt) {
+          c.ioLive = true;
+          startCard(c);
+        } else if (!e.isIntersecting || r <= stopAt) {
+          if (c.ioLive || c.tok) {
+            c.ioLive = false;
+            scheduleStop(c);
+          }
+        }
       });
-    }, { threshold: c === aiCard ? 0 : 0.35 }).observe(target);
+    }, { threshold: isAi ? [0, 0.1, 0.22, 0.4] : [0, 0.12, 0.35, 0.5], rootMargin: isAi ? '0px' : '0px 0px -8% 0px' }).observe(target);
   });
 
   var flowSeen = false;
