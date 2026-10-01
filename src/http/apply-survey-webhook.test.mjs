@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { handleWebhook } from "./router.mjs";
+import webhookHandler from "../../api/webhooks/[provider].mjs";
 import { _resetOrgCache } from "../events/bus.mjs";
 import { clearHandlers } from "../events/registry.mjs";
 import { _resetRegistered } from "../register-all.mjs";
@@ -134,6 +135,9 @@ test("apply-survey.html SEND_STEP posts the handoff shape to /api/webhooks/click
   }
   assert.match(HTML, /\/api\/webhooks\/clickfunnels/);
   assert.match(HTML, /X-Fundhub-Apply-Survey-Ingest/);
+  assert.match(HTML, /fetch\(WEBHOOK_URL/);
+  assert.equal(HTML.includes("CLICKFUNNELS_API_KEY"), false, "ClickFunnels key stays on the server");
+  assert.equal(HTML.includes("contacts/upsert"), false, "the page does not call ClickFunnels itself");
   assert.equal(HTML.includes("window.FH_APPLY_SURVEY_INGEST="), false, "ingest secret is injected at push, not stored in the fragment");
   assert.match(HTML, /data-src="https:\/\/apply\.fundhub\.ai\/funding-book-call"/);
   assert.equal(HTML.includes("Preview calendar"), false);
@@ -195,4 +199,38 @@ test("POST /api/webhooks/clickfunnels: apply-survey without the ingest secret is
   const wrong = await post(SURVEY, { header: "nope", envSecret: INGEST });
   assert.equal(wrong.out.status, 401);
   assert.equal(wrong.db.store.length, 0);
+});
+
+function fakeRes() {
+  const headers = {};
+  return {
+    headers,
+    statusCode: 200,
+    setHeader(k, v) { headers[k] = v; return this; },
+    status(c) { this.statusCode = c; return this; },
+    end() { this.ended = true; },
+    json(body) { this.body = body; }
+  };
+}
+
+test("apply survey browser preflight is allowed only from apply.fundhub.ai", async () => {
+  const ok = fakeRes();
+  await webhookHandler({
+    method: "OPTIONS",
+    query: { provider: "clickfunnels" },
+    headers: { origin: "https://apply.fundhub.ai" }
+  }, ok);
+  assert.equal(ok.statusCode, 204);
+  assert.equal(ok.ended, true);
+  assert.equal(ok.headers["Access-Control-Allow-Origin"], "https://apply.fundhub.ai");
+  assert.match(ok.headers["Access-Control-Allow-Headers"], /X-Fundhub-Apply-Survey-Ingest/);
+
+  const other = fakeRes();
+  await webhookHandler({
+    method: "OPTIONS",
+    query: { provider: "clickfunnels" },
+    headers: { origin: "https://example.com" }
+  }, other);
+  assert.equal(other.statusCode, 405);
+  assert.equal(other.headers["Access-Control-Allow-Origin"], undefined);
 });

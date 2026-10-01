@@ -36,7 +36,27 @@ async function readRawBody(req) {
   throw new Error("no raw body available — signature cannot be verified over re-serialised JSON");
 }
 
+const APPLY_SURVEY_ORIGIN = "https://apply.fundhub.ai";
+
+/* The apply survey runs on apply.fundhub.ai and posts here with a custom
+   header. That is a cross-origin call, so the browser sends a preflight.
+   Only that origin, only the ClickFunnels webhook. */
+function allowApplySurveyBrowser(req, res) {
+  const origin = req.headers?.origin;
+  if (req.query?.provider !== "clickfunnels" || origin !== APPLY_SURVEY_ORIGIN) return false;
+  res.setHeader("Access-Control-Allow-Origin", APPLY_SURVEY_ORIGIN);
+  res.setHeader("Vary", "Origin");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, X-Fundhub-Apply-Survey-Ingest");
+  return true;
+}
+
 export default async function handler(req, res) {
+  const applySurveyBrowser = allowApplySurveyBrowser(req, res);
+  if (req.method === "OPTIONS" && applySurveyBrowser) {
+    res.status(204).end();
+    return;
+  }
   if (req.method !== "POST") {
     res.status(405).json({ ok: false, error: "Method not allowed" });
     return;
