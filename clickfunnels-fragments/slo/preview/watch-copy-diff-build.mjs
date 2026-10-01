@@ -18,7 +18,7 @@ const SECTIONS = [
     where: "ClickFunnels builder page",
     rows: [
       ["Small line above", "For Business Owners Who Need Real, High Volume Funding", "For business owners who need real money to grow"],
-      ["Headline", "Get $50,000 to $1,000,000 in Funding in 14 Days or Less", "Get $50,000 to $1,000,000 for your business in 14 days or less"],
+      ["Headline", "Get $50,000 to $1,000,000 in Funding in 14 Days or Less", "I'll show you how to get funding forever!"],
     ],
   },
   {
@@ -26,7 +26,7 @@ const SECTIONS = [
     title: "Subheadline",
     where: "ClickFunnels builder page",
     rows: [
-      ["Line under headline", "Find out exactly what your business qualifies for in one call", "Find out how much your business can get. It takes one call."],
+      ["Line under headline", "Find out exactly what your business qualifies for in one call", "You'll never need anyone to fund you again."],
     ],
   },
   {
