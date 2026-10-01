@@ -54,7 +54,7 @@ function allowApplySurveyBrowser(req, res) {
 export default async function handler(req, res) {
   const applySurveyBrowser = allowApplySurveyBrowser(req, res);
   if (req.method === "OPTIONS" && applySurveyBrowser) {
-    res.status(204).end();
+    res.status(200).json({ ok: true });
     return;
   }
   if (req.method !== "POST") {

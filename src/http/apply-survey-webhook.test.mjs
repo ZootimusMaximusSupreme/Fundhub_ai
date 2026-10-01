@@ -220,8 +220,8 @@ test("apply survey browser preflight is allowed only from apply.fundhub.ai", asy
     query: { provider: "clickfunnels" },
     headers: { origin: "https://apply.fundhub.ai" }
   }, ok);
-  assert.equal(ok.statusCode, 204);
-  assert.equal(ok.ended, true);
+  assert.equal(ok.statusCode, 200);
+  assert.equal(ok.body.ok, true);
   assert.equal(ok.headers["Access-Control-Allow-Origin"], "https://apply.fundhub.ai");
   assert.match(ok.headers["Access-Control-Allow-Headers"], /X-Fundhub-Apply-Survey-Ingest/);
 
