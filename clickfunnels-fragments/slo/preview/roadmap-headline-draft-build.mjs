@@ -4,6 +4,12 @@
  * to fund you ever again (headline / subheadline)" — for /roadmap.
  * "You need anyone" is read as "You'll never need anyone".
  *
+ * Chris, 2026-10-01: "Headline / Subheadline / VSL / How it Works /
+ * Testimonials / FAQ. Can you build in an order like this" — for /roadmap.
+ * How it Works is the "What Happens Next" section. The approvals deck rides
+ * with the video testimonials. Sections he did not name are kept, unchanged,
+ * between Testimonials and FAQ, each tagged so he can cut them. Checkout stays last.
+ *
  * Reads the live fragment (../slo-01-sales.html) WITHOUT changing it. The old
  * headline stays on the draft in red, crossed out; the new headline and the new
  * subheadline are green. The banner button hides the marks for a clean read.
@@ -29,8 +35,55 @@ if (!s.includes(OLD_H1)) throw new Error("live headline not found; the page chan
 
 const SUB_CSS = `.fh-root .hero .fh-subhead{margin:14px auto 0;font-size:clamp(18px,2.4vw,22px);font-weight:600;line-height:1.3;color:var(--ink,#111113);max-width:36ch}`;
 
+/* ---------- the new order ---------- */
+function at(page, marker) {
+  const i = page.indexOf(marker);
+  if (i < 0) throw new Error(`marker not found: ${marker.slice(0, 60)}`);
+  return i;
+}
+const M = {
+  hero: "<!-- SECTION 1: ABOVE THE FOLD -->",
+  testi: '<div class="fh-b fh-testi-top">',
+  wyg: "<!-- SECTION 4: WHAT YOU GET -->",
+  firstwin: '<section class="sect">\n      <span class="kicker">Your fastest first win</span>',
+  goodcredit: '<section class="sect">\n      <span class="kicker">Already have good credit?</span>',
+  bridge: "<!-- SECTION 3: THE BRIDGE -->",
+  approvals: '<section class="sect"><span class="kicker">Approvals</span>',
+  how: "<!-- SECTION 7: WHAT HAPPENS NEXT -->",
+  qual: "<!-- SECTION 6: QUALIFICATION -->",
+  guar: '<section class="sect"><div class="cardw">\n        <span class="kicker">The Guarantee</span>',
+  faq: "<!-- SECTION 8: FAQ -->",
+  checkout: "<!-- SECTION 9: CHECKOUT (embedded) -->",
+};
+const NOW = ["hero", "testi", "wyg", "firstwin", "goodcredit", "bridge", "approvals", "how", "qual", "guar", "faq", "checkout"];
+const KEPT = "Not in your list · kept here, words unchanged · say cut to drop it";
+const NEW = [
+  ["hero", "1 · Headline, subheadline, VSL"],
+  ["how", "2 · How it Works (the What Happens Next section) · MOVED UP from 8th"],
+  ["testi", "3 · Testimonials · was 2nd"],
+  ["approvals", "3 · Testimonials, continued: the approvals · MOVED UP from 7th"],
+  ["wyg", `What You Get · ${KEPT}`],
+  ["firstwin", `Your fastest first win · ${KEPT}`],
+  ["goodcredit", `Already have good credit? · ${KEPT}`],
+  ["bridge", `Why this works · ${KEPT}`],
+  ["qual", `Who this is for · ${KEPT}`],
+  ["guar", `The guarantee · ${KEPT}`],
+  ["faq", "4 · FAQ"],
+];
+function reorder(page, mark) {
+  const idx = NOW.map((k) => at(page, M[k]));
+  for (let i = 1; i < idx.length; i++) if (idx[i] <= idx[i - 1]) throw new Error(`blocks out of order at ${NOW[i]}`);
+  const block = {};
+  NOW.forEach((k, i) => { if (k !== "checkout") block[k] = page.slice(idx[i], idx[i + 1]); });
+  const head = page.slice(0, idx[0]);
+  const tail = page.slice(idx[NOW.length - 1]);
+  const body = NEW.map(([k, tag]) => (mark ? `<div class="fhx-sec" data-tag="${tag}">\n${block[k]}</div><!--/fhx-sec-->\n` : block[k])).join("");
+  if (NEW.length !== NOW.length - 1) throw new Error("a block was dropped");
+  return head + body + tail;
+}
+
 if (process.argv.includes("--live")) {
-  let live = s.replace(OLD_H1, `<h1>${NEW_H1}</h1>\n      <p class="fh-subhead">${NEW_SUB}</p>`);
+  let live = reorder(s.replace(OLD_H1, `<h1>${NEW_H1}</h1>\n      <p class="fh-subhead">${NEW_SUB}</p>`), false);
   live += `\n<style>\n/* New headline, 2026-10-01 — built by clickfunnels-fragments/slo/preview/roadmap-headline-draft-build.mjs */\n${SUB_CSS}\n</style>\n`;
   writeFileSync(LIVE_FILE, live);
   console.log("wrote the live fragment ../slo-01-sales.html");
@@ -38,9 +91,9 @@ if (process.argv.includes("--live")) {
 }
 
 const G = (t) => `<span class="fhx-new">${t}</span>`;
-let draft = s.replace(OLD_H1,
+let draft = reorder(s.replace(OLD_H1,
   `<p class="fhx-old">${OLD_H1.replace(/<\/?h1>/g, "")}</p>\n` +
-  `      <h1>${G(NEW_H1)}</h1>\n      <p class="fh-subhead">${G(NEW_SUB)}</p>`);
+  `      <h1>${G(NEW_H1)}</h1>\n      <p class="fh-subhead">${G(NEW_SUB)}</p>`), true);
 
 draft += `
 <style>
@@ -54,8 +107,12 @@ ${SUB_CSS}
 .fhx-old::before{content:"OLD HEADLINE";display:block;text-decoration:none;font:700 10px/1.4 system-ui,sans-serif;letter-spacing:.12em;color:#DC2626;margin-bottom:4px}
 html.fhx-clean .fhx-new{background:none;box-shadow:none}
 html.fhx-clean .fhx-old{display:none}
+.fhx-sec{position:relative;outline:2px dashed #2F6FEB;outline-offset:6px;margin:34px 0}
+.fhx-sec::before{content:attr(data-tag);display:block;font:700 11px/1.3 system-ui,sans-serif;color:#fff;background:#2F6FEB;padding:5px 9px;border-radius:4px;margin-bottom:10px;width:max-content;max-width:100%}
+html.fhx-clean .fhx-sec{outline:0;margin:0}
+html.fhx-clean .fhx-sec::before{display:none}
 </style>
-<div class="fhx-banner"><span>DRAFT, NOT LIVE · Red = old headline · Green = new headline and subheadline</span><button type="button" id="fhx-toggle">Hide the marks</button></div>
+<div class="fhx-banner"><span>DRAFT, NOT LIVE · Red = old headline · Green = new headline · Blue boxes = new order</span><button type="button" id="fhx-toggle">Hide the marks</button></div>
 <script>
 (function(){
   var b=document.getElementById('fhx-toggle');if(!b)return;
