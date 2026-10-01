@@ -33,7 +33,7 @@ const NEW_H1 = "I'll Show You How to Get Funding Forever!";
 const NEW_SUB = "You'll never need anyone to fund you again.";
 if (!s.includes(OLD_H1)) throw new Error("live headline not found; the page changed since this script was written");
 
-const SUB_CSS = `.fh-root .fh-gap{background:#FECACA;color:#B91C1C;font-weight:700;padding:0 .2em;border-radius:3px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+const SUB_CSS = `.fh-root .fh-gap{color:#DC2626;font-weight:700}
 .fh-root .hero .fh-subhead{margin:14px auto 0;font-size:clamp(18px,2.4vw,22px);font-weight:600;line-height:1.3;color:var(--ink,#111113);max-width:36ch}`;
 
 /* ---------- the new order ---------- */
