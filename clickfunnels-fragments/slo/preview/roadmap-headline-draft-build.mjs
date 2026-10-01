@@ -16,7 +16,7 @@
  *
  * Run:  node clickfunnels-fragments/slo/preview/roadmap-headline-draft-build.mjs [--share] [--live]
  * Out:  01-sales-headline-draft.html  the draft in the CF harness
- *       --share  01-sales-headline-share.html, self-contained, for the shared link
+ *       --share  01-sales-headline-share.html, clean, self-contained, for the shared link
  *       --live   ../slo-01-sales.html, clean, ready for the ClickFunnels push
  */
 import { readFileSync, writeFileSync } from "node:fs";
@@ -114,9 +114,9 @@ function reorder(page, mark) {
   return head + body + tail;
 }
 
+let live = reorder(s.replace(OLD_H1, `<h1>${NEW_H1}</h1>\n      <p class="fh-subhead">${NEW_SUB}</p>`), false);
+live += `\n<style>\n/* New headline, 2026-10-01 — built by clickfunnels-fragments/slo/preview/roadmap-headline-draft-build.mjs */\n${SUB_CSS}\n</style>\n`;
 if (process.argv.includes("--live")) {
-  let live = reorder(s.replace(OLD_H1, `<h1>${NEW_H1}</h1>\n      <p class="fh-subhead">${NEW_SUB}</p>`), false);
-  live += `\n<style>\n/* New headline, 2026-10-01 — built by clickfunnels-fragments/slo/preview/roadmap-headline-draft-build.mjs */\n${SUB_CSS}\n</style>\n`;
   writeFileSync(LIVE_FILE, live);
   console.log("wrote the live fragment ../slo-01-sales.html");
   process.exit(0);
@@ -168,15 +168,22 @@ if (process.argv.includes("--share")) {
   const { mkdtempSync } = await import("node:fs");
   const { tmpdir } = await import("node:os");
   const tmp = mkdtempSync(join(tmpdir(), "fh-share-"));
-  let share = draft;
+  /* Chris, 2026-10-01: "fix the artifact, and then put the checkout back".
+     The shared copy is the clean page (no marks) with the real checkout form
+     showing. Its scripts are stripped and every field is turned off, so the
+     shared copy shows the form but cannot take a card or personal details. */
+  let share = live;
   const cut0 = share.indexOf("<!-- ================= SPLIT-LINE");
   const cut1 = share.indexOf("<!-- SLOT-UTM");
   if (cut0 < 0 || cut1 < 0) throw new Error("checkout markers not found");
+  let checkout = share.slice(cut0, cut1)
+    .replace(/<script[\s\S]*?<\/script>/g, "")
+    .replace(/<(input|select|textarea|button)\b/g, "<$1 disabled")
+    .replace(/<form\b/g, '<form onsubmit="return false"');
+  if (/<script/.test(checkout)) throw new Error("a script is left in the shared checkout");
   share = share.slice(0, cut0) +
-    `<div class="fhx-checkout"><b>Checkout form sits here on the live page</b>` +
-    `<span>Step 1 · Info (first, last, email, phone) &nbsp;→&nbsp; Step 2 · Card ($297) &nbsp;→&nbsp; Step 3 · Soft pull</span>` +
-    `<i>Left out of this shared copy so nothing here can take a card or personal details.</i></div>\n` +
-    share.slice(cut1);
+    `<div class="fhx-checkout-note">Preview of the checkout. The fields are turned off here. They work on the live page.</div>\n` +
+    checkout + share.slice(cut1);
   share = share.replace(/<script src="https:\/\/fundhub\.ai\/funnel\/fh-attribution\.js"><\/script>/, "");
   share = share.replace(/(<video[^>]*?)\s+src="https:\/\/fundhub\.ai\/funnel\/[^"]+\.mp4"/g, "$1");
   share = share.replace("Tap for sound", "Video plays on the live page");
@@ -197,7 +204,9 @@ if (process.argv.includes("--share")) {
 <style>
 body{background:#FCFCFC;color:#111113}
 .fhx-checkout{max-width:720px;margin:24px auto;padding:18px 20px;border:2px dashed #2F6FEB;border-radius:10px;background:#F3F7FF;color:#111113;font:14px/1.5 system-ui,sans-serif;display:grid;gap:6px}
-.fhx-checkout i{color:#555}
+.fhx-checkout-note{max-width:660px;margin:0 auto 10px;font:600 13px/1.5 system-ui,sans-serif;color:#52525B;text-align:center}
+.cfw-step{display:block!important}
+.cfw-step + .cfw-step{margin-top:22px;padding-top:16px;border-top:1px dashed #E4E4E7}
 .fhx-banner{padding-top:calc(10px + env(safe-area-inset-top, 0px))}
 </style>
 `;
