@@ -74,20 +74,26 @@ const CUT_NAMES = "What You Get · Your fastest first win · Already have good c
    What You Get rows on the live page (documents 01-05 and the bonus map).
    Chris, 2026-10-01: "its not just paying cards down its, optimzing you
    business file, and aged corporations if needed" — steps 3 and 5. */
+/* Copy pass, Chris 2026-10-01, after The Architecture of Persuasion (Masterson):
+   every block is tied to one golden thread, the two feelings Chris named:
+   "independence and also no longer leaving money on the table". Grade 5 or
+   lower. Voice is I / you, as in the locked $297 ads (FundHub-LOCKED-ADS.md
+   house rules). Each step opens on the outcome in bold, then the facts. */
+const HOW_H2 = "Get Every Dollar Your File Can Get. Then Do It Again, On Your Own.";
 const HOW_STEPS = [
-  ["See how much you can get", "We check your credit with a soft pull. Your score stays the same. About 10 seconds later, your roadmap is in your portal. It shows how much you can get today, and how much once your file is fixed."],
-  ["Fix your personal credit", "Your roadmap shows every item that costs you money on all three bureaus. That includes inquiries, and any name or address that does not match. Pay down the cards it names. Mail the dispute letters we write for you. Each round waits 30 days at most."],
-  ["Fix your business file", "We check your Experian Business report. We flag your business scores, bad marks, high card balances, your NAICS code and your business name. You get the exact fixes, so a lender sees a business they can trust."],
-  ["Apply in the right order", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order, so you stack approvals, not declines."],
-  ["Add aged companies if you need them", "Want more funding? Open one to two new companies a quarter, set up the right way: a clean name, the right NAICS code, and reporting from day one. As they age, they get ready for funding too. That is how you keep getting funded."],
+  ["See what you are missing out on", "Know what you can get before a bank ever sees your file.", "I pull your credit with a soft pull, so your score stays the same. About 10 seconds later, your roadmap is in your portal. It shows how much you can get today, and how much once your file is fixed. On a lot of files, that gap is a couple hundred thousand dollars."],
+  ["Fix your personal credit", "Stop losing money to items nobody told you about.", "Your roadmap shows every item that costs you money on all three bureaus. That includes inquiries, and any name or address that does not match. Pay down the cards it names. Mail the letters I write for you. Each round waits 30 days at most."],
+  ["Fix your business file", "Make your business one a lender trusts.", "I check your Experian Business report. I flag your business scores, bad marks, high card balances, your NAICS code and your business name. You get the exact fix for each one."],
+  ["Apply in the right order", "Get approved, not declined.", "Your list shows the banks most likely to say yes to a file like yours. Apply in that order, so you stack approvals, not declines."],
+  ["Add aged companies if you need them", "Never need anyone to fund you again.", "Open one to two new companies a quarter, set up the right way: a clean name, the right NAICS code, and reporting from day one. As they age, they get ready for funding too. You keep getting funded, on your own."],
 ];
 function howSection(g) {
-  const rows = HOW_STEPS.map(([t, d], i) =>
-    `        <div class="srow"><span class="n">0${i + 1}</span><div><div class="t">${g(t)}</div><div class="d">${g(d)}</div></div></div>`).join("\n");
+  const rows = HOW_STEPS.map(([t, lead, d], i) =>
+    `        <div class="srow"><span class="n">0${i + 1}</span><div><div class="t">${g(t)}</div><div class="d">${g(`<b>${lead}</b> ${d}`)}</div></div></div>`).join("\n");
   return `<!-- HOW IT WORKS (2026-10-01) -->
     <section class="sect">
       <span class="kicker">${g("How It Works")}</span>
-      <div class="h2">${g("Get Funded. Then Do It Again.")}</div>
+      <div class="h2">${g(HOW_H2)}</div>
       <div class="rows">
 ${rows}
       </div>
@@ -95,11 +101,58 @@ ${rows}
     </section>
 `;
 }
+
+/* Testimonial captions and FAQ, same copy pass. Facts unchanged: captions keep
+   only what content/testimonials/testimonials.json says; FAQ answers keep only
+   what the live FAQ says. AT PUSH: the captions are generated from
+   testimonials.json by scripts/testimonials/build-slots.mjs, so put the new
+   captions there too, or the next slot rebuild undoes them. */
+const COPY = [
+  ["<b>Colin Schmidt ran a funding company and reviewed the roadmap.</b> He says he doesn't endorse people in this industry, but he went through the roadmap and would not change a thing in it.",
+   "<b>Colin Schmidt ran a funding company.</b> He says he does not praise people in this business. He went through the roadmap and would not change one thing."],
+  ["<b>Gene, owner of three LLCs.</b> About $420,000 in business funding over three years. His scores started in the low 600s, and the dispute letters moved him to 780 and then 810.",
+   "<b>Gene owns three LLCs.</b> He got about $420,000 in business funding over three years. His scores went from the low 600s to 810."],
+  ["<b>Sarah, on Chris's sales team.</b> Her credit was in bad shape, so she ran the roadmap, pinpointed exactly what to fix, and is set to be approved for around $80,000.",
+   "<b>Sarah is on my sales team.</b> Her credit was in bad shape. She ran the roadmap, saw exactly what to fix, and is set to be approved for about $80,000."],
+];
+const FAQ = [
+  ["My score is already 800. Why would I need this?", "My score is already 800. Why do I need this?",
+   "Because a high score is not the same as a file set up for the most funding. Most high-score files have gaps you can't see. Those gaps decide how much you get. The roadmap finds yours and shows you how to close them. Then it sets you up for unlimited funding: a new company ready to fund every quarter."],
+  ["Will this hurt my credit score?", "Will this hurt my credit score?",
+   "No. I pull your credit with a soft pull. It doesn't show up on your report, and your score doesn't move."],
+  ["How do I know this is legit?", "How do I know this is real?",
+   "Gene owns three LLCs. He got about $420,000 in business funding with the roadmap. Colin Schmidt ran a funding company. He went through the roadmap and would not change a thing. You can call us at (561) 304-8368 before you buy. Not happy? Email us within 7 days for a full refund."],
+  ["How is this different from a funding course?", "How is this different from a funding course?",
+   "A course charges $5,000 to $10,000 to teach you, and you dig out the answers yourself. This is done for your file. Every letter is written. Every step is in order. All of it is built from your own credit."],
+  ["How is this different from paying a broker?", "How is this different from paying a broker?",
+   "A broker hands you a list of banks. I read your file first, show you what is hurting it, and give you the order to apply in, so the declines don't stack up. After that, you don't need the broker."],
+  ["What if my file needs a lot of work?", "What if my file needs a lot of work?",
+   "Then the roadmap tells you, and tells you how long. Some files need six months of letters. Some just need two cards paid down. You'll know which one is yours the day you open it."],
+  ["Can you do the work for me?", "Can you do the work for me?",
+   "No. You do it yourself, so you stay in control. You mail your own letters, so you keep every receipt and see every reply. If you want help later, every document has a button to book a call with my team."],
+  ["Can't I just apply on my own?", "Can't I just apply on my own?",
+   "You can. But most people apply in the wrong order, on a file nobody read. Each decline makes the next one harder. The roadmap tells you what to fix first and which banks to go to."],
+  ["How fast do I get it?", "How fast do I get it?",
+   "About 10 seconds after the soft pull."],
+];
+function applyCopy(page, g) {
+  for (const [from, to] of COPY) {
+    if (!page.includes(from)) throw new Error(`caption not found: ${from.slice(0, 60)}`);
+    page = page.replace(from, g(to));
+  }
+  for (const [q, nq, a] of FAQ) {
+    const re = new RegExp(`<details><summary>${q.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}</summary><div class="a">[\\s\\S]*?</div></details>`);
+    if (!re.test(page)) throw new Error(`faq not found: ${q}`);
+    page = page.replace(re, () => `<details><summary>${nq === q ? nq : g(nq)}</summary><div class="a">${g(a)}</div></details>`);
+  }
+  return page;
+}
+
 const HERO_CUT = [
   '<p class="fh-proofline"><b>Gene</b> runs three LLCs. With the roadmap, he opened up about $420,000 in business funding over three years.</p>',
   '<p class="lede"><b>$297.</b> We soft-pull your credit, and about 10 seconds later five documents built from your own file are waiting in your portal. Yours to keep.</p>',
 ];
-function reorder(page, mark) {
+function reorder(page, mark, g) {
   const idx = NOW.map((k) => at(page, M[k]));
   for (let i = 1; i < idx.length; i++) if (idx[i] <= idx[i - 1]) throw new Error(`blocks out of order at ${NOW[i]}`);
   const block = {};
@@ -110,14 +163,17 @@ function reorder(page, mark) {
     if (!block.hero.includes(line)) throw new Error(`hero line not found: ${line.slice(0, 60)}`);
     block.hero = block.hero.replace(line, mark ? `<p class="fhx-old fhx-cutline">${line.replace(/<\/?p[^>]*>/g, "")}</p>` : "");
   }
-  block.howNew = howSection(mark ? (t) => `<span class="fhx-new">${t}</span>` : (t) => t);
+  block.howNew = howSection(g);
   if (NEW.length - 1 + CUT.length !== NOW.length - 1) throw new Error("a block is neither kept nor cut");
   let body = NEW.map(([k, tag]) => (mark ? `<div class="fhx-sec" data-tag="${tag}">\n${block[k]}</div><!--/fhx-sec-->\n` : block[k])).join("");
   if (mark) body += `<div class="fhx-cutbox"><b>CUT from the page</b><span>${CUT_NAMES}</span></div>\n`;
   return head + body + tail;
 }
 
-let live = reorder(s.replace(OLD_H1, `<h1>${NEW_H1}</h1>\n      <p class="fh-subhead">${NEW_SUB}</p>`), false);
+const G = (t) => `<span class="fhx-new">${t}</span>`;
+const PLAIN = (t) => t;
+const CLEAN_HEAD = `<h1>${NEW_H1}</h1>\n      <p class="fh-subhead">${NEW_SUB}</p>`;
+let live = reorder(applyCopy(s.replace(OLD_H1, CLEAN_HEAD), PLAIN), false, PLAIN);
 live += `\n<style>\n/* New headline, 2026-10-01 — built by clickfunnels-fragments/slo/preview/roadmap-headline-draft-build.mjs */\n${SUB_CSS}\n</style>\n`;
 if (process.argv.includes("--live")) {
   writeFileSync(LIVE_FILE, live);
@@ -125,10 +181,9 @@ if (process.argv.includes("--live")) {
   process.exit(0);
 }
 
-const G = (t) => `<span class="fhx-new">${t}</span>`;
-let draft = reorder(s.replace(OLD_H1,
+let draft = reorder(applyCopy(s.replace(OLD_H1,
   `<p class="fhx-old">${OLD_H1.replace(/<\/?h1>/g, "")}</p>\n` +
-  `      <h1>${G(NEW_H1)}</h1>\n      <p class="fh-subhead">${G(NEW_SUB)}</p>`), true);
+  `      <h1>${G(NEW_H1)}</h1>\n      <p class="fh-subhead">${G(NEW_SUB)}</p>`), G), true, G);
 
 draft += `
 <style>
@@ -176,7 +231,25 @@ if (process.argv.includes("--share")) {
      showing. Its scripts are stripped and every form refuses to submit, so the
      shared copy looks like the live checkout but cannot send anything.
      Chris: "put it how it was originally": step one only, as on the live page. */
-  let share = live;
+  /* Copy pass round: the page reads clean, only the rewritten words are green,
+     and the button at the top hides them. */
+  let share = reorder(applyCopy(s.replace(OLD_H1, CLEAN_HEAD), G), false, G);
+  share += `\n<style>\n${SUB_CSS}\n.fhx-banner{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;background:#0B5D1E;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:8px 16px}
+.fhx-banner button{font:600 12px system-ui,sans-serif;background:#fff;color:#0B5D1E;border:0;border-radius:6px;padding:6px 10px;cursor:pointer}
+.fh-root{padding-top:48px}
+.fhx-new{background:rgba(22,163,74,.18);box-shadow:0 0 0 2px rgba(22,163,74,.28);border-radius:3px}
+html.fhx-clean .fhx-new{background:none;box-shadow:none}
+</style>
+<div class="fhx-banner"><span>DRAFT, NOT LIVE · Green = new copy</span><button type="button" id="fhx-toggle">Hide the green</button></div>
+<script>
+(function(){
+  var b=document.getElementById('fhx-toggle');if(!b)return;
+  var bar=b.parentNode,root=document.querySelector('.fh-root');
+  function fit(){if(root)root.style.paddingTop=bar.offsetHeight+'px';}
+  fit();window.addEventListener('resize',fit);
+  b.addEventListener('click',function(){var on=document.documentElement.classList.toggle('fhx-clean');b.textContent=on?'Show the green':'Hide the green';});
+})();
+</script>\n`;
   const cut0 = share.indexOf("<!-- ================= SPLIT-LINE");
   const cut1 = share.indexOf("<!-- SLOT-UTM");
   if (cut0 < 0 || cut1 < 0) throw new Error("checkout markers not found");
