@@ -389,7 +389,7 @@ export const PUSH_MANIFEST = [
     fragment: "clickfunnels-fragments/slo/slo-01-sales.html",
     vslBeacon: true,
     strategy: "custom_html_put",
-    note: "Live step path /roadmap, in its own funnel (Fundhub $297 Roadmap, 984178) since 2026-10-01. Replace custom_html with the full sales page fragment. Old page 25426320 is a redirect stub in Fundhub Funnel.",
+    note: "Live step path /roadmap, in its own funnel (Fundhub $297 Roadmap, 984178) since 2026-10-01. Replace custom_html with the full sales page fragment.",
   },
   {
     key: "slo-297-booking",
@@ -411,6 +411,6 @@ export const PUSH_MANIFEST = [
     fragment: "clickfunnels-fragments/slo/slo-03-thank-you.html",
     vslBeacon: false,
     strategy: "custom_html_put",
-    note: "Step path /roadmap-thank-you. Booking page sends booked buyers here. Moved to the roadmap funnel 2026-10-01 (old page 25428615 is a redirect stub).",
+    note: "Step path /roadmap-thank-you. Booking page sends booked buyers here. In the roadmap funnel (984178) since 2026-10-01.",
   },
 ];
