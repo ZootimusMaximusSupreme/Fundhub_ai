@@ -305,6 +305,7 @@ export const DO_NOT_FULL_REPLACE_PATHS = new Set([
 export const PUSH_MANIFEST = [
   {
     key: "apply-watch",
+    funnelId: "968281",
     liveUrl: "https://apply.fundhub.ai/watch",
     path: "/vsl-page",
     pageId: "25061160",
@@ -316,6 +317,7 @@ export const PUSH_MANIFEST = [
   },
   {
     key: "apply-survey",
+    funnelId: "968281",
     liveUrl: "https://apply.fundhub.ai/apply",
     path: "/apply",
     pageId: "25068989",
@@ -327,6 +329,7 @@ export const PUSH_MANIFEST = [
   },
   {
     key: "apply-book",
+    funnelId: "968281",
     liveUrl: "https://apply.fundhub.ai/funding-book-call",
     path: "/funding-book-call-page",
     pageId: "25062844",
@@ -341,6 +344,7 @@ export const PUSH_MANIFEST = [
   },
   {
     key: "apply-book-framed",
+    funnelId: "968281",
     liveUrl: "https://apply.fundhub.ai/funding-book-call",
     path: "/funding-book-call-page",
     pageId: "25062844",
@@ -353,6 +357,7 @@ export const PUSH_MANIFEST = [
   },
   {
     key: "apply-book-fit",
+    funnelId: "968281",
     liveUrl: "https://apply.fundhub.ai/funding-book-call",
     path: "/funding-book-call-page",
     pageId: "25062844",
@@ -365,6 +370,7 @@ export const PUSH_MANIFEST = [
   },
   {
     key: "apply-thank-you",
+    funnelId: "968281",
     liveUrl: "https://apply.fundhub.ai/thank-you",
     path: "/thank-you-page",
     pageId: "25063539",
@@ -377,18 +383,20 @@ export const PUSH_MANIFEST = [
   {
     key: "slo-297-sales",
     liveUrl: "https://apply.fundhub.ai/roadmap",
-    path: "/fundhub-297-roadmap-sales--c8e0a",
-    pageId: "25426320",
+    funnelId: "984178",
+    path: "/fundhub-297-roadmap-sales",
+    pageId: "25516164",
     fragment: "clickfunnels-fragments/slo/slo-01-sales.html",
     vslBeacon: true,
     strategy: "custom_html_put",
-    note: "Live alias /roadmap — replace custom_html with the full sales page fragment",
+    note: "Live step path /roadmap, in its own funnel (Fundhub $297 Roadmap, 984178) since 2026-10-01. Replace custom_html with the full sales page fragment. Old page 25426320 is a redirect stub in Fundhub Funnel.",
   },
   {
     key: "slo-297-booking",
-    liveUrl: "https://apply.fundhub.ai/fundhub-297-roadmap-book--c8e0b",
-    path: "/fundhub-297-roadmap-book--c8fbd",
-    pageId: "25426722",
+    liveUrl: "https://apply.fundhub.ai/roadmap-book",
+    funnelId: "984178",
+    path: "/fundhub-297-roadmap-book--5df25",
+    pageId: "25516165",
     fragment: "clickfunnels-fragments/slo/slo-02-booking.html",
     vslBeacon: true,
     strategy: "custom_html_put",
@@ -397,11 +405,12 @@ export const PUSH_MANIFEST = [
   {
     key: "slo-297-thank-you",
     liveUrl: "https://apply.fundhub.ai/roadmap-thank-you",
-    path: "/fundhub-297-roadmap-thank-you--d488d",
-    pageId: "25428615",
+    funnelId: "984178",
+    path: "/fundhub-297-roadmap-thank-you--adc9d",
+    pageId: "25516166",
     fragment: "clickfunnels-fragments/slo/slo-03-thank-you.html",
     vslBeacon: false,
     strategy: "custom_html_put",
-    note: "Created 2026-09-22 by API right after the book step (step 3123089, /roadmap-thank-you). Booking page sends booked buyers here.",
+    note: "Step path /roadmap-thank-you. Booking page sends booked buyers here. Moved to the roadmap funnel 2026-10-01 (old page 25428615 is a redirect stub).",
   },
 ];

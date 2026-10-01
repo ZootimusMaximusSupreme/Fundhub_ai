@@ -326,6 +326,22 @@ describe("every step of /watch and /roadmap carries the tracking", () => {
     assert.equal(nextFooterCode(next, { extraSrcs: [FH_EVENTS_SRC, CLARITY_SRC] }).changed, false, "second push adds nothing");
   });
 
+  test("/watch and /roadmap are in different funnels, and the map says which", () => {
+    const watchIds = new Set(PUSH_MANIFEST.filter((r) => r.liveUrl.includes("/watch") || r.key.startsWith("apply-")).map((r) => r.funnelId));
+    const roadmapIds = new Set(PUSH_MANIFEST.filter((r) => r.key.startsWith("slo-297-")).map((r) => r.funnelId));
+    assert.deepEqual([...watchIds], ["968281"], "the watch path is the Fundhub Funnel");
+    assert.deepEqual([...roadmapIds], ["984178"], "the $297 roadmap is Fundhub $297 Roadmap");
+    assert.equal(PUSH_MANIFEST.every((r) => r.funnelId), true, "every row names its funnel");
+  });
+
+  test("the native calendar step takes its footer scripts through the whole-footer replace push", () => {
+    const script = fs.readFileSync(path.join(ROOT, "scripts/cf-push-custom-html.mjs"), "utf8");
+    const at = script.indexOf('row.strategy === "head_footer_append_only" && row.extraFooterScripts?.length');
+    assert.ok(at > -1, "branch exists");
+    assert.ok(at < script.indexOf("DO_NOT_FULL_REPLACE_PATHS.has(row.path) ||"), "and sits before the append branch");
+    assert.match(script.slice(at, at + 400), /pushBuilderFooter/);
+  });
+
   test("Clarity stays quiet inside the booking frame", () => {
     const clarity = fs.readFileSync(path.join(ROOT, "public/js/clarity.js"), "utf8");
     assert.match(clarity, /window\.self !== window\.top/);
