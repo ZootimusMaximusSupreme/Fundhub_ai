@@ -18,7 +18,7 @@ Parallel lanes for `/apply` native survey rebuild. Shared extract: `docs/clickfu
 | UI / fragments | pending | pending | Marked draft per `page-edits-marked-draft.mdc` before push |
 | **Webhook** | agent | **done** | `SEND_STEP` POST in `apply-survey.html`; browser ingest via `CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET` + `clickfunnels.mjs`; route forwards that secret (`src/http/router.mjs`); tests in `clickfunnels.test.mjs` and `src/http/apply-survey-webhook.test.mjs` |
 | **E2E** | agent | **done** | Scorecard below. Custom `/apply` live (2026-09-30 cutover). Dual-write proved on live. |
-| **Cutover** | agent | **done** | Live `/apply/` is the custom survey. Calendar is the live `/funding-book-call` embed. Browser Lead and Schedule are in the page. Old `/apply-page` redirects to `/apply`. |
+| **Cutover** | agent | **done** | Shipped `0010dd56`. Live `https://apply.fundhub.ai/apply/` — custom survey (`data-fh-apply-survey="1"`). Calendar embed `/funding-book-call`; browser Lead + Schedule in page. `/apply-page` → `/apply`. **CF-Other-off:** N/A — native CF survey is not customer-facing on `/apply`. |
 
 ---
 
