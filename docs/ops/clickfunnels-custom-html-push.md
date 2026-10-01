@@ -41,6 +41,42 @@ node scripts/cf-push-custom-html.mjs push --only=apply-book
 
 $297 slo fragments (`clickfunnels-fragments/slo/slo-01-sales.html`, etc.) target the **297 funnel**, not the apply calendar step.
 
+## Two funnels on apply.fundhub.ai (split 2026-10-01)
+
+`/watch` used to sit in the same ClickFunnels funnel as `/roadmap`. They are now two funnels on the one domain. Each manifest row names its funnel in `funnelId`.
+
+| URL | Funnel | Page id | Type |
+|-----|--------|---------|------|
+| `/watch` | **Fundhub Funnel** `968281` | 25061160 | builder, tracking by footer scripts |
+| `/apply` | Fundhub Funnel `968281` | 25515671 | custom HTML (apply survey) |
+| `/funding-book-call` | Fundhub Funnel `968281` | 25062844 | builder, native calendar |
+| `/thank-you` | Fundhub Funnel `968281` | 25063539 | builder |
+| `/roadmap` | **Fundhub $297 Roadmap** `984178` | 25516164 | custom HTML |
+| `/roadmap-book` | Fundhub $297 Roadmap `984178` | 25516165 | custom HTML |
+| `/roadmap-thank-you` | Fundhub $297 Roadmap `984178` | 25516166 | custom HTML |
+
+How it was done (API only): one `POST /workspaces/{id}/funnels` (domain `apply.fundhub.ai`, live mode on); the three roadmap pages copied as new custom HTML pages in it (`POST .../pages/custom_html`, CF token swapped in); each old page's step path moved to `-retired` and the new page moved onto the live path (`PUT /pages/{id}` `current_path`, about one second per page); the old pages were then replaced with a redirect to the live path. Before-split HTML of the three old pages: `docs/workflows/cf-push-snapshots/page-<id>-before-funnel-split.html`.
+
+Still sitting in Fundhub Funnel, waiting on a yes to delete (the API can only remove a step by deleting its page): the three redirect stubs (25426320 `/roadmap-retired`, 25426722 `/roadmap-book-retired`, 25428615 `/roadmap-thank-you-retired`) and the dormant native checkout step `/order` (25426768, "Complete Funding Diagnostic"; the sales widget pays through Commas, nothing links to it).
+
+Do not full-replace any builder page. Do not point an ad at a `-retired` path.
+
+## What gets tracked, and where it lands
+
+Video watch depth goes to `POST /api/public/vsl-watch` (`public/funnel/vsl-watch-beacon.js`, table `vsl_watch_sessions`). Step opens and button presses go to `POST /api/public/slo-interest` (`public/funnel/fh-events.js`) as events rows `funnel.page` (one per session per step) and `funnel.click` (first press of each button per session, 60 per session at most). Both doors are already routed and in the pulse registry. Clarity is `public/js/clarity.js` (project id in the file), and each press is also sent to Clarity as a custom event. There is no GA4 on either funnel.
+
+| Step | attribution | events script | Clarity | video beacon |
+|------|-------------|---------------|---------|--------------|
+| `/watch` | yes | yes | yes (footer) | yes |
+| `/apply` | yes | yes | yes (added at push) | no film |
+| `/funding-book-call` | yes | yes | yes (footer) | no film |
+| `/thank-you` | yes | yes | yes (footer) | no film |
+| `/roadmap` | yes | yes | yes (head) | yes (VSL + 3 testimonials) |
+| `/roadmap-book` | yes | yes | yes (head) | yes (VSL 2) |
+| `/roadmap-thank-you` | yes | yes | yes (head) | no film |
+
+The calendar page also loads inside the `/roadmap-book` frame; `fh-events.js` and `clarity.js` stay quiet when framed so the step is not counted twice.
+
 ## Tracking (must be on pushed pages)
 
 - `https://fundhub.ai/funnel/fh-attribution.js` — UTM catcher (Creative Factory)
