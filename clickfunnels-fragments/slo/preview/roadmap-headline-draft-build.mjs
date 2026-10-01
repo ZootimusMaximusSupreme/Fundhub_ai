@@ -103,7 +103,7 @@ const HOW_STEPS = [
   // section 07 (personal info). Business 7, owner-set 2026-10-01 ahead of the
   // product: NAICS, liens, business card balances, business name, business
   // address, business score, website.
-  ["See what you qualify for today", "Know what you can get before a bank ever sees your file.", `I pull your credit with a soft pull, so your score stays the same. Your roadmap shows up in your portal. It shows what you qualify for right now. Even with perfect credit, your roadmap reveals the 13 hidden data points that transform a decent file into one that can secure an additional <span class="fh-gap">$100,000+</span> in low-interest funding.`],
+  ["See what you qualify for today", "Know what you can get before a bank ever sees your file.", `I pull your credit with a soft pull. Your roadmap shows up in your portal. It shows what you qualify for right now. Even with perfect credit, your roadmap reveals the 13 hidden data points that transform a decent file into one that can secure an additional <span class="fh-gap">$100,000+</span> in low-interest funding.`],
   ["Find the gap and optimize your personal credit", "Stop losing money to items nobody told you about.", `The gap is the money you are leaving on the table. On a lot of files, it is <span class="fh-gap">$100,000 to $300,000</span>. Your roadmap shows every item costing you money on all three bureaus: inquiries, names and addresses that don't match, and your business info. Pay down the cards it names. Mail the letters I write for you. Each round waits 30 days at most.`],
   // Owner-set 2026-10-01: this line stays ahead of the product (liens, NAICS,
   // name and address are not checked in code yet); the product gets fixed to match.
