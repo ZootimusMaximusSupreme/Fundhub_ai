@@ -374,20 +374,28 @@
   cards.forEach(function (c) { c.fin(); });
   flowFinal();
 
-  /* Widget expansion must not change scrollY (scroll anchoring / late layout). */
+  /* Widget expansion must not move the page (scroll anchoring / late layout). */
   (function installScrollYLock() {
     if (!window.ResizeObserver) return;
     var root = document.getElementById('fhp-root');
     if (!root) return;
-    var savedY = window.scrollY;
+    function readY() {
+      return window.scrollY || document.documentElement.scrollTop || document.body.scrollTop || 0;
+    }
+    function writeY(y) {
+      window.scrollTo(0, y);
+      document.documentElement.scrollTop = y;
+      document.body.scrollTop = y;
+    }
+    var savedY = readY();
     var raf = 0;
-    window.addEventListener('scroll', function () { savedY = window.scrollY; }, { passive: true });
+    window.addEventListener('scroll', function () { savedY = readY(); }, { passive: true });
     new ResizeObserver(function () {
       var hold = savedY;
       if (raf) cancelAnimationFrame(raf);
       raf = requestAnimationFrame(function () {
         raf = 0;
-        if (window.scrollY !== hold) window.scrollTo(0, hold);
+        if (readY() !== hold) writeY(hold);
       });
     }).observe(root);
   })();
