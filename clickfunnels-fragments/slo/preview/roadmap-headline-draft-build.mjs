@@ -14,6 +14,12 @@
  * headline stays on the draft in red, crossed out; the new headline and the new
  * subheadline are green. The banner button hides the marks for a clean read.
  *
+ * WENT LIVE 2026-10-01 14:45 Arizona (Chris: "push live to clickfunnels").
+ * --live wrote the clean page over ../slo-01-sales.html; the page it was built
+ * from is ../slo-01-sales.before-2026-10-01-copy.html. This script reads the
+ * live file, so it now stops at "live headline not found": point s at the
+ * before- copy to rebuild the drafts.
+ *
  * Run:  node clickfunnels-fragments/slo/preview/roadmap-headline-draft-build.mjs [--share] [--live]
  * Out:  01-sales-headline-draft.html  the draft in the CF harness
  *       --share  01-sales-headline-share.html, clean, self-contained, for the shared link
