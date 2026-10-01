@@ -12,6 +12,7 @@ Parallel lanes for `/apply` native survey rebuild. Shared extract: `docs/clickfu
 |------|-------|--------|-------------|
 | Extract / ground truth | — | **done** | `docs/clickfunnels/apply-survey-extract-2026-09-30.md` |
 | **Meta-plan** | agent | **done** | `docs/ads/apply-survey-meta-tracking-2026-09-30.md` |
+| **WINS** | agent | **done** | `clickfunnels-fragments/apply-survey.html` — 16 real `{ amount, img, alt }` from watch-proof / deck.json; strip batch on step advance; no live /apply push |
 | UI / fragments | pending | pending | Marked draft per `page-edits-marked-draft.mdc` before push |
 | Webhook / adapter | pending | pending | Only if CF keys or branch labels change |
 | Harness / e2e | pending | pending | `clickfunnels-fragments/harness/apply.html` parity |

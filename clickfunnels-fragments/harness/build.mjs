@@ -27,6 +27,9 @@ writeFileSync(
 
 writeFileSync(join(out, "thank-you.html"), wrapFragment(frag("05-thank-you.html")));
 
+/* Custom apply survey — full page at ../apply-survey.html (copy for static harness server) */
+writeFileSync(join(out, "apply-survey.html"), frag("apply-survey.html"));
+
 /* Grid A/B: same book page, swap only body::before positioning strategy */
 const bookTop = frag("04a-book-top.html");
 const bookBottom = frag("04b-book-bottom.html");
@@ -63,7 +66,8 @@ p{color:#52525B}
 <h1>Fundhub ClickFunnels harness</h1>
 <p>Local sandwich pages with real-DOM widget shells (V2).</p>
 <a href="./watch.html">/watch — VSL</a>
-<a href="./apply.html">/apply — survey sandwich</a>
+<a href="./apply.html">/apply — survey sandwich (CF widget mock)</a>
+<a href="./apply-survey.html">/apply-survey — custom survey rebuild</a>
 <a href="./book.html">/funding-book-call — calendar sandwich</a>
 <a href="./thank-you.html">/thank-you</a>
 <hr style="margin:28px 0;border:none;border-top:1px solid #E4E4E7"/>
