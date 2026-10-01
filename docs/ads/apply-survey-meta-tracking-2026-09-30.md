@@ -149,16 +149,16 @@ From extract §4 and §8:
 
 ## 8. Browser event test checklist (`apply-survey.html`)
 
-Grep of `clickfunnels-fragments/apply-survey.html` on 2026-09-30: **no `fbq(` call**. Lead, Schedule, ShowedCall, Purchase, and BackendRevenue are not stubbed in that file. Do not cut `/apply` over until the rows below are true.
+`clickfunnels-fragments/apply-survey.html` calls `fbq('track'` once, through `fhTrack`. Lead and Schedule are the only browser events. ShowedCall, Purchase, and BackendRevenue stay off this page. CAPI is still not in the repo, so the browser `eventID` is ready for a later server send with the same id.
 
 | Check | Pass when | 2026-09-30 |
 |-------|-----------|------------|
-| Lead | Fires once, on the result screen, only after `cf_svy_available_capital` is answered. Same `event_id` as the later CAPI Lead. | Missing |
-| Schedule | Not on this page. Fires when the call is booked (calendar confirm), browser + CAPI, same `event_id`. | Missing (correct to be absent until the book step) |
+| Lead | Fires once, on the result screen, only after `cf_svy_available_capital` is answered. Same `event_id` as the later CAPI Lead. | In the fragment: `fhTrack('Lead', 'lead:' + email)` after the result screen, gated on `cf_svy_available_capital` |
+| Schedule | Fires when the call is booked (calendar confirm), browser + CAPI, same `event_id`. | Browser slice: `fhTrack('Schedule', …)` when `fh_booking_v1` is written by the live `/funding-book-call` embed. CAPI still not built |
 | ShowedCall | Not in this HTML. CRM → CAPI only. | Absent, as planned |
 | Purchase | Not in this HTML. CRM → CAPI only. | Absent, as planned |
 | BackendRevenue | Not in this HTML. CRM → CAPI only. | Absent, as planned |
 | PageView | Optional. Do not add a second pixel if the funnel head already sends one. | Not in this file |
-| Unit lock | `src/http/apply-survey-webhook.test.mjs` fails if `fbq(` shows up before this checklist is updated. | In place |
+| Unit lock | `src/http/apply-survey-webhook.test.mjs` fails if Lead is not gated on `cf_svy_available_capital`, if Schedule is missing, or if the ingest secret is hardcoded. | In place |
 
 Repo gate for the payload (not Meta): `node --test src/http/apply-survey-webhook.test.mjs`. Browser walk: `npm test -- tests/apply-survey.spec.mjs` inside `clickfunnels-fragments`.

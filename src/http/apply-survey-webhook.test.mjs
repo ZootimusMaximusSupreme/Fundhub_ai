@@ -134,7 +134,13 @@ test("apply-survey.html SEND_STEP posts the handoff shape to /api/webhooks/click
   }
   assert.match(HTML, /\/api\/webhooks\/clickfunnels/);
   assert.match(HTML, /X-Fundhub-Apply-Survey-Ingest/);
-  assert.equal(HTML.includes("fbq("), false, "browser Meta events are not in this HTML yet");
+  assert.equal(HTML.includes("window.FH_APPLY_SURVEY_INGEST="), false, "ingest secret is injected at push, not stored in the fragment");
+  assert.match(HTML, /data-src="https:\/\/apply\.fundhub\.ai\/funding-book-call"/);
+  assert.equal(HTML.includes("Preview calendar"), false);
+  assert.equal((HTML.match(/fbq\('track'/g) || []).length, 1, "one browser track helper");
+  assert.match(HTML, /fhTrack\('Lead'/);
+  assert.match(HTML, /name === 'Lead' && !A\.cf_svy_available_capital/);
+  assert.match(HTML, /fhTrack\('Schedule'/);
 });
 
 test("apply-survey approval strip is the same 16 watch-proof cards", () => {

@@ -26,6 +26,7 @@ import {
   isClickFunnelsPageHtml,
   upsertMarkedBlock,
   nextFooterCode,
+  FH_ATTRIBUTION_SRC,
 } from "../clickfunnels-fragments/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -456,6 +457,151 @@ async function cmdList(creds) {
   );
 }
 
+function redactSecret(text, secret) {
+  const raw = String(text ?? "");
+  if (!secret) return raw.slice(0, 300);
+  return raw.split(secret).join("[redacted]").slice(0, 300);
+}
+
+/** Push-time only. The fragment in git never contains the ingest secret. */
+function injectApplySurveyRuntime(html, { secret, pixelId, pageToken }) {
+  let out = html;
+  const head = [];
+  if (pageToken && !out.includes("cf-page-token")) {
+    head.push(
+      `<meta name="cf-page-token" content="${String(pageToken).replace(/"/g, "&quot;")}">`,
+    );
+    head.push('<script src="https://sdk.myclickfunnels.com/sdk.js" defer></script>');
+  }
+  if (pixelId && !out.includes("fbq('init'")) head.push(metaPixelHeadHtml(pixelId));
+  if (secret && !out.includes("window.FH_APPLY_SURVEY_INGEST=")) {
+    head.push(`<script>window.FH_APPLY_SURVEY_INGEST=${JSON.stringify(secret)};</script>`);
+  }
+  if (head.length) {
+    const block = head.join("\n");
+    if (out.includes("</head>")) out = out.replace("</head>", `${block}\n</head>`);
+    else out = `${block}\n${out}`;
+  }
+  if (!out.includes("fh-attribution.js")) {
+    const tag = `<script src="${FH_ATTRIBUTION_SRC}"></script>`;
+    if (out.includes("</body>")) out = out.replace("</body>", `${tag}\n</body>`);
+    else out = `${out}\n${tag}`;
+  }
+  return out;
+}
+
+async function pageOnApplyStep(creds, workspaceId, ctx) {
+  const pages = await listPages(creds, workspaceId, ctx);
+  const mine = pages.filter((p) => p.funnel_name === "Fundhub Funnel");
+  for (const p of mine) {
+    const body = await getPage(creds, p.id, ctx);
+    const step = body && body.show_page_step;
+    if (step && step.current_path === "/apply") return body;
+  }
+  return null;
+}
+
+async function pushApplySurveyReplace(creds, workspaceId, row, ctx, dryRun) {
+  const secret = String(process.env.CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET ?? "").trim();
+  if (!secret) {
+    return { ok: false, error: "CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET missing" };
+  }
+  const pixel = metaPixelId(process.env);
+  const baseHtml = readFragment(row.fragment);
+  const marker = 'data-fh-apply-survey="1"';
+  const current = await pageOnApplyStep(creds, workspaceId, ctx);
+  let existing = "";
+  if (current && (await isCustomHtmlPage(creds, current.id, ctx))) {
+    existing = await getCustomHtml(creds, current.id, ctx);
+  }
+  const build = (token) =>
+    injectApplySurveyRuntime(baseHtml, { secret, pixelId: pixel.id, pageToken: token });
+
+  if (current && existing.includes(marker)) {
+    const token = current.sdk && current.sdk.token;
+    const html = build(token);
+    if (dryRun) {
+      return {
+        ok: true,
+        dryRun: true,
+        mode: "custom_html_put",
+        pageId: current.id,
+        bytes: html.length,
+        has_ingest: html.includes("window.FH_APPLY_SURVEY_INGEST="),
+        has_attribution: html.includes("fh-attribution.js"),
+        has_pixel: html.includes("fbq('init'"),
+      };
+    }
+    await putCustomHtml(creds, current.id, html, ctx, false);
+    return {
+      ok: true,
+      mode: "custom_html_put",
+      pageId: current.id,
+      bytes: html.length,
+      has_ingest: true,
+      has_attribution: html.includes("fh-attribution.js"),
+    };
+  }
+
+  const stepId = row.showPageStepId || (current && current.show_page_step && current.show_page_step.public_id);
+  if (!stepId) return { ok: false, error: "apply_show_page_step_missing" };
+  const first = build(null);
+  if (dryRun) {
+    return {
+      ok: true,
+      dryRun: true,
+      mode: "custom_html_create",
+      showPageStepId: stepId,
+      bytes: first.length,
+      has_ingest: first.includes("window.FH_APPLY_SURVEY_INGEST="),
+      has_attribution: first.includes("fh-attribution.js"),
+      current_page_id: current ? current.id : null,
+    };
+  }
+  let created;
+  try {
+    created = await createCustomHtmlPage(
+      creds,
+      workspaceId,
+      {
+        name: "Apply",
+        description: "Custom apply survey",
+        custom_html: first,
+        current_path: "/apply",
+        funnel: { show_page_step_id: stepId },
+      },
+      ctx,
+      false,
+    );
+  } catch (err) {
+    return { ok: false, error: redactSecret(err.message, secret), status: err.status ?? null };
+  }
+  const body = created.body && created.body.page ? created.body.page : created.body;
+  const newId = body && (body.id || body.public_id);
+  const token = body && body.sdk && body.sdk.token;
+  if (newId && token) {
+    try {
+      await putCustomHtml(creds, newId, build(token), ctx, false);
+    } catch (err) {
+      return {
+        ok: false,
+        error: redactSecret(err.message, secret),
+        pageId: newId,
+        mode: "custom_html_create",
+        token_put_failed: true,
+      };
+    }
+  }
+  return {
+    ok: true,
+    mode: "custom_html_create",
+    pageId: newId || null,
+    showPageStepId: stepId,
+    sdk_token: Boolean(token),
+    bytes: first.length,
+  };
+}
+
 async function cmdPush(creds, { dryRun = false, only = null } = {}) {
   const ctx = {};
   const workspaceId = await resolveWorkspaceId(creds, ctx);
@@ -471,6 +617,28 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
 
   for (const row of PUSH_MANIFEST) {
     if (only && row.key !== only) continue;
+    if (row.strategy === "apply_survey_replace") {
+      try {
+        const r = await pushApplySurveyReplace(creds, workspaceId, row, ctx, dryRun);
+        if (!r.ok) process.exitCode = 1;
+        results.push({
+          key: row.key,
+          liveUrl: row.liveUrl,
+          mode: "apply_survey_replace",
+          ...r,
+        });
+      } catch (err) {
+        process.exitCode = 1;
+        const secret = String(process.env.CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET ?? "").trim();
+        results.push({
+          key: row.key,
+          liveUrl: row.liveUrl,
+          ok: false,
+          error: redactSecret(err.message, secret),
+        });
+      }
+      continue;
+    }
     if (!row.path && !row.pageId) {
       results.push({ key: row.key, skipped: true, reason: "no_path_map_yet" });
       continue;

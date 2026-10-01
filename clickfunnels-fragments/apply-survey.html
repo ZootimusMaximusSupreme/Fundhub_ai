@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-fh-apply-survey="1">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -68,17 +68,8 @@ input:focus{border-color:rgb(var(--blue))}
 .cal[hidden]{display:none}
 .cal h2{margin:0;font-size:22px;font-weight:700;letter-spacing:-.03em}
 .cal .sub{margin:6px 0 0;font-size:14px;color:var(--gray)}
-.days{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;margin-top:18px}
-.day{border:1.5px solid var(--line);border-radius:12px;background:#fff;padding:10px 4px;text-align:center;cursor:pointer;font-family:var(--sans)}
-.day b{display:block;font-family:var(--mono);font-size:10.5px;font-weight:500;letter-spacing:.1em;text-transform:uppercase;color:var(--gray)}
-.day span{display:block;margin-top:4px;font-size:18px;font-weight:700;color:var(--ink)}
-.day[aria-pressed="true"]{border-color:rgb(var(--blue));background:rgba(var(--blue),.06)}
-.times{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-top:14px}
-.time{border:1.5px solid var(--line);border-radius:10px;background:#fff;padding:12px 6px;font:600 14px var(--sans);color:var(--ink);cursor:pointer}
-.time[aria-pressed="true"]{border-color:rgb(var(--blue));background:rgb(var(--blue));color:#fff}
-.tz{margin-top:12px;font-family:var(--mono);font-size:11px;color:var(--gray)}
-.cal .actions{justify-content:stretch}.cal .actions .btn{width:100%}
-.embed-note{margin-top:14px;padding:10px 12px;border:1px dashed var(--line);border-radius:10px;font-family:var(--mono);font-size:11px;color:var(--gray)}
+.fh-book-embed{margin-top:18px;border-radius:12px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.fh-book-embed iframe{display:block;width:100%;height:920px;min-height:600px;border:0;background:#fff}
 .why{margin-top:28px}
 .why h3{margin:0;text-align:center;font-size:20px;font-weight:700;letter-spacing:-.03em}
 .why-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:16px}
@@ -160,12 +151,9 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     <h2 id="cal-h">Pick a time for your call</h2>
     <p class="sub">Your funding advisor meets you on Google Meet. Calls take about 30 minutes.</p>
     <div class="trustrow"><span><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Free call</span><span><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Soft pull only, zero score impact</span><span><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Reschedule anytime</span></div>
-    <div class="days" id="days"></div>
-    <div class="times" id="times"></div>
-    <div class="tz" id="tz"></div>
-    <div class="err" id="calerr"></div>
-    <div class="actions"><button type="button" class="btn" id="confirm" disabled>Confirm my call</button></div>
-    <div class="embed-note">Preview calendar. Live, the booking calendar embed goes in this card.</div>
+    <div class="fh-book-embed">
+      <iframe id="fh-book-frame" title="Book your Fundhub funding call" data-src="https://apply.fundhub.ai/funding-book-call" style="display:block;width:100%;height:920px;min-height:600px;border:0;background:#fff"></iframe>
+    </div>
   </section>
 
 </div>
@@ -460,49 +448,66 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
       document.getElementById('cal').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
     setTimeout(function () { document.getElementById('cal').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 1600);
+    var leadEmail = (A.contact && A.contact.email) ? String(A.contact.email).toLowerCase() : 'apply';
+    fhTrack('Lead', 'lead:' + leadEmail);
   }
-  /* Preview calendar: next five weekdays, sample slots. Live, the booking embed replaces it. */
-  var pick = { day: null, time: null };
+  /* Same live calendar as /funding-book-call (native AppointmentScheduler in a frame).
+     That page posts fh-book-height. A real Book or Confirm writes fh_booking_v1. */
+  var META_ONCE = {};
+  function fhTrack(name, eventId) {
+    if (META_ONCE[name]) return;
+    if (name === 'Lead' && !A.cf_svy_available_capital) return;
+    META_ONCE[name] = true;
+    try {
+      if (typeof window.fbq !== 'function') return;
+      window.fbq('track', name, {}, { eventID: eventId });
+    } catch (e) {}
+  }
   function showCal() {
-    var cal = document.getElementById('cal'); cal.hidden = false;
-    var days = [], d = new Date(); d.setHours(0, 0, 0, 0);
-    while (days.length < 5) { d.setDate(d.getDate() + 1); if (d.getDay() % 6) days.push(new Date(d)); }
-    var dn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    var box = document.getElementById('days');
-    box.innerHTML = days.map(function (x, i) {
-      return '<button type="button" class="day" aria-pressed="false" data-i="' + i + '"><b>' + dn[x.getDay()] + '</b><span>' + x.getDate() + '</span></button>';
-    }).join('');
-    box.querySelectorAll('.day').forEach(function (b) {
-      b.addEventListener('click', function () {
-        box.querySelectorAll('.day').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
-        b.setAttribute('aria-pressed', 'true');
-        pick.day = days[+b.dataset.i]; pick.time = null; times(+b.dataset.i);
-      });
+    var cal = document.getElementById('cal');
+    cal.hidden = false;
+    var f = document.getElementById('fh-book-frame');
+    if (!f) return;
+    if (!f.getAttribute('src')) {
+      var src = f.getAttribute('data-src');
+      if (src && (location.hostname === 'apply.fundhub.ai' || window.FH_APPLY_SURVEY_BOOK_EMBED)) f.src = src;
+    }
+    if (f.getAttribute('data-fh-bound')) return;
+    f.setAttribute('data-fh-bound', '1');
+    var ORIGIN = 'https://apply.fundhub.ai';
+    window.addEventListener('message', function (e) {
+      if (e.origin !== ORIGIN || e.source !== f.contentWindow) return;
+      var d = e.data;
+      if (!d || d.type !== 'fh-book-height') return;
+      var h = Math.ceil(Number(d.h));
+      if (h >= 400) f.style.height = h + 'px';
     });
-    box.querySelector('.day').click();
-    try { document.getElementById('tz').textContent = 'Times shown in ' + Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/_/g, ' '); } catch (e) {}
-  }
-  function times(seed) {
-    var all = ['9:00 AM', '9:30 AM', '10:30 AM', '11:00 AM', '1:00 PM', '2:30 PM', '3:00 PM', '4:30 PM'];
-    var list = all.filter(function (t, i) { return (i + seed) % 3 !== 0; });
-    var box = document.getElementById('times');
-    box.innerHTML = list.map(function (t) { return '<button type="button" class="time" aria-pressed="false">' + t + '</button>'; }).join('');
-    document.getElementById('confirm').disabled = true;
-    box.querySelectorAll('.time').forEach(function (b) {
-      b.addEventListener('click', function () {
-        box.querySelectorAll('.time').forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
-        b.setAttribute('aria-pressed', 'true'); pick.time = b.textContent;
-        document.getElementById('confirm').disabled = false;
-      });
+    var KEY = 'fh_booking_v1', LOADED = Date.now();
+    function booked(raw) {
+      try {
+        var d = JSON.parse(raw || 'null');
+        return !!(d && d.name && d.email && d.submittedAt && d.submittedAt >= LOADED);
+      } catch (e) { return false; }
+    }
+    function onBooked(raw) {
+      var email = '', at = '';
+      try {
+        var d = JSON.parse(raw || 'null');
+        email = d && d.email ? String(d.email).toLowerCase() : '';
+        at = d && d.submittedAt ? String(d.submittedAt) : '';
+      } catch (e) {}
+      fhTrack('Schedule', 'schedule:' + (email || 'apply') + ':' + (at || 'book'));
+    }
+    window.addEventListener('storage', function (e) {
+      if (e.key === KEY && booked(e.newValue)) onBooked(e.newValue);
     });
+    setInterval(function () {
+      try {
+        var raw = localStorage.getItem(KEY);
+        if (booked(raw)) onBooked(raw);
+      } catch (e) {}
+    }, 1500);
   }
-  document.getElementById('confirm').addEventListener('click', function () {
-    if (!pick.time) return;
-    var c = document.getElementById('cal');
-    c.innerHTML = '<div class="done"><div class="ok pop">✓</div><h2>Your call is booked</h2><p class="sub">' +
-      pick.day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }) + ' at ' + esc(pick.time) +
-      '. Check your email for the confirmation and calendar invite.</p></div>';
-  });
   /* Approvals strip: sits still; each Next slides in the next higher batch (same 16 as /watch, deck.json). */
   var WINS = [
     { amount: 20000, img: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715364/file/b828126991a18a561b9b0489ffef31dc.jpg", alt: "Truist Business credit card approval showing $20,000" },

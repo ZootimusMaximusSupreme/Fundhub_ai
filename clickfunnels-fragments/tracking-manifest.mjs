@@ -289,14 +289,13 @@ export const PUSH_MANIFEST = [
   {
     key: "apply-survey",
     liveUrl: "https://apply.fundhub.ai/apply",
-    path: "/apply-page",
+    path: "/apply",
     pageId: "25068989",
-    fragments: [
-      "clickfunnels-fragments/02a-apply-top.html",
-      "clickfunnels-fragments/02b-apply-bottom.html",
-    ],
+    showPageStepId: "KmKBGB",
+    fragment: "clickfunnels-fragments/apply-survey.html",
     vslBeacon: false,
-    strategy: "head_footer_append_only",
+    strategy: "apply_survey_replace",
+    note: "Custom survey replaces native Survey/V1 on the /apply step. Ingest secret is injected at push, never stored in the fragment.",
   },
   {
     key: "apply-book",
