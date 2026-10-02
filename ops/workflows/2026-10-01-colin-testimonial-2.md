@@ -3,7 +3,7 @@
 | Unit | Owner | Status |
 |---|---|---|
 | A — script analysis (hook, caption, facts) | Sonnet subagent | done |
-| B — Drive find, cover (Opus), swap Colin #1 via marked draft | main session (Opus) | claimed |
+| B — Drive find, cover (Opus), swap Colin #1 | main session (Opus) | done — live 2026-10-02 (ship 4ad9f02c, CF push) |
 
 ## A — analysis
 

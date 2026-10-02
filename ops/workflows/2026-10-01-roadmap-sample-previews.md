@@ -88,3 +88,9 @@ Done. Nothing committed, nothing shipped, slo-01-sales.html untouched.
 - Mobile (390px) order summary height: 638px before, 729px after (+91).
 - Proof (local Chromium, 390px): all six open the right sample and close; fhq got 6 opens + 6 closes with open_ms; fbq got 6 PreviewOpened; no visible $15 text in #fh-order.
 - lint clean, tsc clean, track.test + routes.test 47/47.
+
+## Shipped 2026-10-02
+
+- Ship 4ad9f02c: live, 330 db changes applied, 0 pending (405 views live; 114/168/255/371/372 rename copies were already applied on prod — confirmed in schema_migrations before ship).
+- ClickFunnels API push slo-297-sales (page 25516164) OK. https://apply.fundhub.ai/roadmap serves 6 data-sample links, colin2 video, no $15 order-summary line.
+- Live proof (390px Chromium): Bank & Lender sample opened/closed; DB rows funnel.preview_opened + funnel.preview_closed (deliverable bank_lender_match_list, open_ms 1630, same session_id); marked actor=agent so the views leave it out. Both views query live.
