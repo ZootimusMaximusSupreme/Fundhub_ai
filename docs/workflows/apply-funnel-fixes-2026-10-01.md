@@ -13,8 +13,8 @@ once Chris says go. Nothing has moved yet. If it moves mid-work, re-read paths f
 | A1 | Question 4 ("What Would This Money Change Right Now?"): no Next button. One tap moves on. | https://apply.fundhub.ai/apply | session 1 (survey chat) | done — live 2026-10-01 |
 | A2 | The jump to "You're qualified" looks broken: the "Reviewing your answers" checklist crushes into circles | https://apply.fundhub.ai/apply | session 1 | done — live 2026-10-01 |
 | A3 | "You're qualified" screen slides down to the calendar by itself | https://apply.fundhub.ai/apply | session 1 | done — live 2026-10-01 |
-| B1 | Line under the headline → "Find out exactly what you and your businesses qualify for in one call" | https://apply.fundhub.ai/watch | session 1 | draft shared — waiting on "push it" |
-| C1 | Thank-you page: mobile friendly, stop it looking bad | https://apply.fundhub.ai/thank-you | session 1 | draft shared — waiting on "push it" |
+| B1 | Line under the headline → "Find out exactly what you and your businesses qualify for in one call" | https://apply.fundhub.ai/watch | session 1 | done — live 2026-10-01 |
+| C1 | Thank-you page: mobile friendly, stop it looking bad | https://apply.fundhub.ai/thank-you | session 1 | done — live 2026-10-01 |
 
 A and B/C touch different pages and different files. No dependencies — all parallel.
 
@@ -58,7 +58,12 @@ A and B/C touch different pages and different files. No dependencies — all par
   0 Next buttons on question 4, one tap moved on, checklist rows 36-37 px tall (were crushed), calendar landed 16 px from top
   about 1.1 s after "You're qualified", 0 page errors.
 
-## B1 + C1 — manifest (session 1)
+## B1 + C1 — manifest and live proof
+
+- PUSHED 2026-10-01 on Chris's "push": both blocks (watch-lede, ty-fit) appended to pages 25061160 and 25063539, verified by the API.
+  Live (cache-busted): new line on /watch, fit block on /thank-you. ClickFunnels pages serve the changes within 30 seconds of push.
+
+## B1 + C1 — how they work (session 1)
 
 - Draft link (same link every round): https://claude.ai/artifact/X24HWXafwnoyRhu1D2Tyfe
 - Builder: `clickfunnels-fragments/preview/watch-thankyou-fit-draft-build.mjs` — before/after shots from the live pages,
