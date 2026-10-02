@@ -20,7 +20,7 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 | P3-H3 | Booking: /funding-book-call footer block (fix 3), `slo/slo-02-booking.html`, manifest (+ /order row), push script code block | agent | done — committed `1c19a6bd` |
 | P4 | Meta pixel + Conversions API | **blocked** — no Conversions API token exists (see Blockers) | blocked |
 | G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | **waiting on Chris** |
-| Q1 | /roadmap and /roadmap/ → one URL | agent | claimed |
+| Q1 | /roadmap and /roadmap/ → one URL | agent | done — committed (see Results) |
 | Q2+Q3+Q6+Q7p | /roadmap page: tap speed under 200ms (INP 1.1s), layout shift (CLS 0.15), dead clicks (8.89%), "Fundhub LLC" in page consent + footers — marked draft | agent | claimed |
 | Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | done — no errors from our code |
 | Q5 | Buy box in Facebook/Instagram in-app browsers, iPhone + Android (test; fixes go to the page owner) | agent | claimed |
@@ -172,3 +172,13 @@ Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name
 - 34 live loads (8 pages × iPhone, Android, FB Android, IG Android, + FB/IG iOS on /roadmap): our scripts threw nothing. Errors seen are Meta pixel in-app calls (`properties://browser/*`), ClickFunnels' "unsafe header", and /order's ClickFunnels checkout failing a Cloudflare bot check in the test browser.
 - "Error invoking postMessage: Java object is gone" is Chromium's Android Java-bridge message (`gin_java_bridge_errors.cc`); it comes from Meta's in-app bridge code that the pixel triggers, not from our two framed postMessage calls (both framed-only, try/catch, never on unload). Nothing visible to the buyer.
 - Leftover (Phase 4): Meta's pixel config lists a Conversions API Gateway ("openbridge" on AWS us-east-1, backup on Google Cloud) — server events may already be flowing through Meta's gateway. Check before building a second sender.
+
+### Q1 — one URL for /roadmap (committed, not live)
+
+- The split: **every ad visit lands on apply.fundhub.ai/roadmap/** (234 people in 14 days, 127 from fb_ad); the no-slash form gets direct links only (48 people). Same page byte for byte. Our tracker already merges them (`page`), only `landing_path` and Clarity split. fundhub.ai/roadmap(/) still serves the OLD Netlify copy (200).
+- Canonical: https://apply.fundhub.ai/roadmap. Netlify 301s for fundhub.ai/roadmap, /roadmap/, /roadmap/index.html, /slo (query kept). pay.html / pull.html untouched.
+- apply.fundhub.ai/roadmap/ cannot get a real 301 (ClickFunnels API has no redirect setting; the DNS record is DNS-only at Cloudflare and no Cloudflare token exists). Fix there: a head block with `<link rel="canonical">` + `history.replaceState` to `/roadmap`, before pixel/Clarity/tracking. curl still sees 200; people, pixel, Clarity and our data see `/roadmap`.
+- 18 new tests, 4 deliberate breaks caught; Chromium + WebKit proof of the rewrite keeping utm/fbclid/ref/client_id/#fhw.
+- Order at ship: Netlify part with `npm run ship`; the /roadmap push after ship (it also carries the Colin #2 video, which 404s until ship).
+- Not changed (not asked): Meta ad URLs, discount-197 and infinite-drip links still say `/roadmap/` — the browser rewrite covers them.
+- At ship: update `docs/journeys/slo-offer-actual.md:5,11`, page-inventory row 21, CHANGELOG.
