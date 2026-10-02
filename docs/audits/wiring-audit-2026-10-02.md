@@ -196,3 +196,17 @@ Shipped by `npm run ship` at 00:26 (commit `4ad9f02c`, 3 database changes applie
 - Phase 4 (Meta Conversions API, META_PIXEL_ID in env, Lead/Purchase/Schedule everywhere): stopped — no Conversions API access token exists in `.env`, Netlify or the database. Meta's pixel config already lists a Conversions API Gateway — check it before building a second sender.
 - Database tests (`*.pg.test.mjs`) for the new SQL: not run — no scratch Postgres on this Mac.
 - Queued, not live: /roadmap tap speed / layout shift (measure first), dead clicks, Fundhub LLC on the /roadmap page itself, the in-app reload fix, /affiliates measurement, buy box version 2, guarantee restore. Each comes back with a diff before deploy.
+
+## Queued changes — built, committed, waiting for Chris's OK to go live (2026-10-02)
+
+| Item | What changes | Commit | Draft |
+|---|---|---|---|
+| Q2 tap speed | Measured first (owner correction): /roadmap slowest tap 96 ms, /affiliates 72 ms on a 4×-slow phone — under 200 ms, **no change** | — | — |
+| Q3 layout shift | /roadmap buy box jumps removed (card form 0.15 → 0, after paying 0.28 → 0, after Start My Soft Pull 0.89 → 0); /affiliates submit 0.23 → 0. Page load 0.08 left alone (under 0.1) | `24c002e8` | https://claude.ai/artifact/MPSifyuxfghteotFPHfVtA |
+| Q6 dead clicks | Locked steps look locked and say why; whole order-summary row opens its sample; testimonial captions play the video | `24c002e8` | same |
+| Q7 Fundhub LLC on /roadmap | Consent box + footer; matches stored soft-pull-v3 word for word | `24c002e8` | same |
+| Q5 in-app reload fix | Keeps a paid buyer on step 3 after the app reloads the page — **not applied** (permission check blocked the agent; needs Chris's OK) | — | — |
+| Buy box v2 | Refund line above the step-1 button; step 1 = first, last, email (phone required on step 3); "Step n of 3" replaces tabs; "Your roadmap shows up in your portal today."; button "Get My Funding Roadmap"; every buy box event carries `bbv:2`; marker row `funnel.buybox_version` written at deploy | `5880c174` | https://claude.ai/artifact/E89LUAhQv7VWu6vELVY7pt |
+| Guarantee | Restored word for word from `2019c1b5` in its old place before the FAQ: "If you're not happy with what you get, email support@fundhub.ai within 7 days and you get the full $297 back." | `5880c174` | same |
+
+Consequence of the phone move (owner-requested, noted once): unpaid visitors give no phone, so the 15-minute follow-up and the $197 offer reach them by email only.
