@@ -70,3 +70,9 @@ none
 - Cover re-rendered from it (frame 0:30); poster `public/funnel/slo-testimonial-colin2-poster.jpg`; web video `public/funnel/slo-testimonial-colin2.mp4` (1080x1920, 40 MB).
 - `colin2` approved, `colin` marked replaced in testimonials.json.
 - Still blocked: tool permission check refused editing `marketing/landing-pages/slo/slo-01-sales.html` (the card swap). Then: npm run ship → cf push slo-297-sales → prove live.
+
+## B — status: page edited, ship blocked
+
+- Card swap committed: f941b315 (only the Colin hunks; another session's uncommitted checkout edits in the same file were left alone).
+- `npm run ship` refuses: 2,401 uncommitted files in the tree (not this workflow's). Ship also requires branch `main`, so a clean side copy cannot ship either.
+- Not live yet. Needs: ship (video + poster to fundhub.ai/funnel) → `cf-push-custom-html.mjs push --only=slo-297-sales` → cache-bust proof.
