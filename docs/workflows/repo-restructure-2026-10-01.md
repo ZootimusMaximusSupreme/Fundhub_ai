@@ -12,10 +12,10 @@ Size measured 2026-10-01: **5,889 tracked files + 395 untracked** (not counting 
 | # | Workflow | Owner | Status | Waits on |
 |---|---|---|---|---|
 | W1 | Inventory: `src/` (1,712 files) | this session | done — 1,831 rows, all → `apps/platform/src/`, 0 unclear | — |
-| W2 | Inventory: app edges — `public/ api/ netlify/ db/ e2e/ vendor/ render-service/ extension/ wireframes/ assets/ dist/` (~2,300) | background agent | claimed | — |
-| W3 | Inventory: `scripts/ clickfunnels-fragments/ content/ lane-deliverables/ fundhub-docs/`, root files, dot-folders (~1,100) | background agent | claimed | — |
-| W4 | Inventory: `docs/` (1,201) + every untracked file (395) | background agent | claimed | — |
-| GATE | Merge W1–W4 into one moves table, show Chris | this session | pending | W1–W4 |
+| W2 | Inventory: app edges — `public/ api/ netlify/ db/ e2e/ vendor/ render-service/ extension/ wireframes/ assets/ dist/` (~2,300) | background agent | done — 1,986 rows, 1,985 → `apps/`, 0 unclear | — |
+| W3 | Inventory: `scripts/ clickfunnels-fragments/ content/ lane-deliverables/ fundhub-docs/`, root files, dot-folders (~1,100) | background agent | done — 1,596 rows, 1,376 move, 90 unclear → `archive/` | — |
+| W4 | Inventory: `docs/` (1,201) + every untracked file (395) | background agent | done — 1,364 rows, 1,198 move, 628 files → `archive/`, 0 unclear | — |
+| GATE | Merge W1–W4 into one moves table, show Chris | this session | waiting on Chris — https://claude.ai/artifact/79VFQuZWC8dZyoZRc9fP52 | W1–W4 |
 | W5 | Do the moves, fix every broken path, update `CLAUDE.md` | this session | pending | Chris says go on the table |
 | V1 | Prove: lint, types, full test suite on a scratch database | agent | pending | W5 |
 | V2 | Prove: Netlify build, routes, migration names unchanged | agent | pending | W5 |
@@ -52,7 +52,8 @@ archive/           anything unclear, plus dated one-off audits and old evidence
 
 - **Read only.** Inventory workflows move nothing, edit nothing but their own TSV.
 - **Never delete.** Unclear → `archive/<same path>`.
-- **Stays at root** (the tools only look there): `.claude/ .cursor/ .agents/ .github/ .serena/ .gitignore .gitattributes .mcp.json .nvmrc .env.example package.json package-lock.json netlify.toml tsconfig.json deno.lock skills-lock.json playwright*.config.mjs CLAUDE.md README.md TODO.md`.
+- **Stays at root** (the tools only look there): `.claude/ .cursor/ .agents/ .serena/ .gitignore .gitattributes .mcp.json .nvmrc .env.example package.json package-lock.json netlify.toml tsconfig.json deno.lock skills-lock.json playwright*.config.mjs CLAUDE.md README.md TODO.md`.
+- **No GitHub (owner-set 2026-10-01, restating CLAUDE.md 2026-09-09).** Nothing runs `.github/workflows/tests.yml`, and no code reads it — only comments mention it. So `.github/` → `archive/.github/`, and W5 does **not** rewrite paths inside it. W3 was told it stays at root; the GATE overrides that row.
 - **Gitignored stays put, one row each, no file listing:** `node_modules/ test-results/ .netlify/ credentials/ .playwright-mcp/ .env`. Never open `.env` or `credentials/`.
 - **Move the app as one block.** `src/ api/ netlify/ db/ public/` import each other by relative path. Keeping them together under `apps/platform/` keeps those imports working. Only split a folder when it is plainly not app code.
 - **A script that imports from `src/`** stays with the app unless it is plainly marketing.
@@ -132,8 +133,25 @@ When done: write docs/workflows/repo-restructure-2026-10-01/W4-manifest.md (see 
 
 ## Manifests
 
-(none yet)
+- W1: `repo-restructure-2026-10-01/W1-manifest.md` — `src/` (1,831 rows).
+- W2: `repo-restructure-2026-10-01/W2-manifest.md` — app edges (1,986 rows). Proved: migration names are `migrations/<file>`, no `db/` prefix, so moving `db/` is safe.
+- W3: `repo-restructure-2026-10-01/W3-manifest.md` — scripts, ClickFunnels, root, dot-folders (1,596 rows).
+- W4: `repo-restructure-2026-10-01/W4-manifest.md` — `docs/` + untracked (1,364 rows).
+- GATE merge: `moves.tsv` (6,777 rows: 6,286 files + 491 folders), `moves-summary.tsv` (141 folder lines), `moves-table.html` (the page Chris reviews). 0 missing, 0 duplicates, 0 two-files-one-destination clashes.
+
+### GATE calls (coordinator)
+
+- `.github/` → `archive/.github/` (no GitHub, owner-set).
+- `render-service/` stays at root: Render.com's Dockerfile Path setting points at it and lives outside this repo (CLAUDE.md §2). Its Dockerfile `COPY scripts/black-reports/` still needs the new path in W5.
+- Gitignored files inside a moving folder move with it and stay ignored (`.gitignore` lines 29–32 and `.git/info/exclude` updated). 2,064 evidence files under `docs/workflows/*-evidence`.
+- Untracked files (395) move with plain `mv` and stay untracked.
+- `.claude/settings.json` is not edited. `npm run ship` keeps working through the rewritten `package.json`.
+- `marketing/posts/` gets a one-line README so the folder exists.
 
 ## Blockers
 
-(none yet)
+(none)
+
+## Leftovers (not this batch — do not fix here)
+
+- W4 found four paths named in rules that already pointed at nothing before this batch: `docs/workflows/company-sim-2026-08-24.md`, `docs/workflows/live-playwright-100.md` (both now in `docs/workflows/archive/`), `docs/workflows/e2e-verify-run5-evidence/_tools/` (missing), `docs/workflows/full-launch-lattice-2026-09-20-evidence/` (gitignored). W5 rewrites them to the new home only; it does not repair them.

@@ -1,0 +1,142 @@
+from	to	files
+(18 files directly in here)	stays	18
+(8 files directly in here)	archive/	8
+DEPLOY.md	apps/platform/DEPLOY.md	1
+fundhub-brand.css	docs/rules/fundhub-brand.css	1
+.agents/	stays	40
+.claude/	stays	42
+.cursor/	stays	60
+.github/	archive/.github/	1
+.serena/	stays	14
+api/	apps/platform/api/	259
+assets/	apps/platform/assets/	11
+clickfunnels-fragments/	marketing/landing-pages/	288
+content/	marketing/	7
+db/	apps/platform/db/	321
+dist/	apps/platform/dist/	1
+docs/(13 files directly in here)	archive/docs/	13
+docs/(15 files directly in here)	stays	15
+docs/(3 files directly in here)	docs/rules/	3
+docs/RUNBOOK.md	docs/sops/RUNBOOK.md	1
+docs/STILL-MISSING.md	ops/STILL-MISSING.md	1
+docs/roadmap-updates-2026-09-21.md	marketing/landing-pages/roadmap-updates-2026-09-21.md	1
+docs/ads/(17 files directly in here)	marketing/ads/	17
+docs/ads/(2 files directly in here)	marketing/ads/slo/	2
+docs/ads/(2 files directly in here)	marketing/landing-pages/	2
+docs/ads/ascension-ads.md	marketing/ads/ascension/ascension-ads.md	1
+docs/ads/climate-claude-chat-pack-2026-09-18.zip	marketing/ads/climate/climate-claude-chat-pack-2026-09-18.zip	1
+docs/ads/(2 files directly in here)	marketing/copy/	2
+docs/ads/portal-welcome-video.md	marketing/vsl/portal-welcome-video.md	1
+docs/ads/build/	marketing/ads/build/	4
+docs/ads/climate-front-door-2026-09-18/	marketing/landing-pages/climate-front-door-2026-09-18/	4
+docs/ads/fundhub-297/	marketing/ads/slo/fundhub-297/	7
+docs/ads/reference/	marketing/ads/reference/	2
+docs/ads/scripts/	marketing/ads/scripts/	1
+docs/ads/trigger-maps/	marketing/ads/slo/trigger-maps/	7
+docs/audits/	archive/docs/audits/	1
+docs/avatars/	marketing/avatars/	9
+docs/canvases/	archive/docs/canvases/	5
+docs/clickfunnels/	marketing/landing-pages/clickfunnels/	5
+docs/company-resources/	docs/sops/company-resources/	14
+docs/compliance/	docs/rules/compliance/	1
+docs/contracts/	stays	8
+docs/copy/	marketing/copy/	2
+docs/designs/	stays	3
+docs/diagrams/	stays	11
+docs/finance/	stays	9
+docs/flywheel/	marketing/flywheel/	16
+docs/journeys/	stays	60
+docs/legacy-strong/	stays	9
+docs/metro2/	stays	6
+docs/offers/	marketing/offers/	7
+docs/ops/(6 files directly in here)	ops/	6
+docs/ops/clickfunnels-custom-html-push.md	docs/sops/clickfunnels-custom-html-push.md	1
+docs/ops/_lanes/	ops/_lanes/	14
+docs/prompts/	stays	1
+docs/runbooks/	docs/sops/	1
+docs/sops/	stays	2
+docs/specs/	stays	24
+docs/underwriteiq/	stays	1
+docs/workflows/(173 files directly in here)	ops/workflows/	173
+docs/workflows/ads-waterfall-projections-2026-08-26.md	docs/finance/ads-waterfall-projections-2026-08-26.md	1
+docs/workflows/(43 files directly in here)	archive/docs/workflows/	43
+docs/workflows/cf-vsl-watch-html-step1.html	marketing/landing-pages/cf-vsl-watch-html-step1.html	1
+docs/workflows/claude-submagic-style-brief-2026-09-23.md	marketing/ads/claude-submagic-style-brief-2026-09-23.md	1
+docs/workflows/full-end-to-end-audit-rule-2026-08-25.md	docs/rules/full-end-to-end-audit-rule-2026-08-25.md	1
+docs/workflows/(2 files directly in here)	docs/sops/	2
+docs/workflows/(3 files directly in here)	docs/specs/	3
+docs/workflows/repair-dashboard-wireframe.html	docs/designs/repair-dashboard-wireframe.html	1
+docs/workflows/(3 files directly in here)	marketing/ads/slo/	3
+docs/workflows/slo-video-script-check-2026-09-21.md	marketing/vsl/slo-video-script-check-2026-09-21.md	1
+docs/workflows/underwriteiq-logic-full-2026-08-25.md	docs/underwriteiq/underwriteiq-logic-full-2026-08-25.md	1
+docs/workflows/archive/	archive/docs/workflows/archive/	156
+docs/workflows/blueprint-portal-screens-2026-09-20/	archive/docs/workflows/blueprint-portal-screens-2026-09-20/	31
+docs/workflows/book-calendar-2026-09-22-evidence/	archive/docs/workflows/book-calendar-2026-09-22-evidence/	6
+docs/workflows/book-call-mobile-2026-09-22-evidence/	archive/docs/workflows/book-call-mobile-2026-09-22-evidence/	11
+docs/workflows/cf-push-snapshots/	marketing/landing-pages/cf-push-snapshots/	20
+docs/workflows/expected-deliverables-uwiq-2026-09-03-pack/	archive/docs/workflows/expected-deliverables-uwiq-2026-09-03-pack/	10
+docs/workflows/finish-the-build/	ops/workflows/finish-the-build/	6
+docs/workflows/fix-2026-08-18/	ops/workflows/fix-2026-08-18/	1
+docs/workflows/fundhub-beta-buildout/	ops/workflows/fundhub-beta-buildout/	1
+docs/workflows/generate-apps-named-2026-09-20/	archive/docs/workflows/generate-apps-named-2026-09-20/	6
+docs/workflows/gold-deliverables-v5/	docs/underwriteiq/gold-deliverables-v5/	53
+docs/workflows/lane-1/	archive/docs/workflows/lane-1/	19
+docs/workflows/live-prove-2026-09-18-claude-wrapup/	archive/docs/workflows/live-prove-2026-09-18-claude-wrapup/	5
+docs/workflows/live-prove-2026-09-18-follow/	archive/docs/workflows/live-prove-2026-09-18-follow/	5
+docs/workflows/live-prove-2026-09-18-grok-audit/	archive/docs/workflows/live-prove-2026-09-18-grok-audit/	5
+docs/workflows/live-prove-2026-09-18-letter-brain/	archive/docs/workflows/live-prove-2026-09-18-letter-brain/	7
+docs/workflows/live-prove-2026-09-18-letter-brain-independent/	archive/docs/workflows/live-prove-2026-09-18-letter-brain-independent/	3
+docs/workflows/live-prove-2026-09-18-n-holes-validate/	archive/docs/workflows/live-prove-2026-09-18-n-holes-validate/	6
+docs/workflows/live-prove-2026-09-18-twelve-prove/	archive/docs/workflows/live-prove-2026-09-18-twelve-prove/	2
+docs/workflows/live-walkthrough-2026-09-16-src/	ops/workflows/live-walkthrough-2026-09-16-src/	2
+docs/workflows/marketing-walkthrough-2026-09-17-src/	ops/workflows/marketing-walkthrough-2026-09-17-src/	2
+docs/workflows/overseer-closer/	archive/docs/workflows/overseer-closer/	3
+docs/workflows/portal-dispute-round-prove-2026-09-20/	archive/docs/workflows/portal-dispute-round-prove-2026-09-20/	20
+docs/workflows/portal-stepper-prove-2026-09-20/	archive/docs/workflows/portal-stepper-prove-2026-09-20/	20
+docs/workflows/roadmap-vslot-2026-09-22-evidence/	archive/docs/workflows/roadmap-vslot-2026-09-22-evidence/	27
+docs/workflows/sim-documents/	ops/workflows/sim-documents/	55
+docs/workflows/site-proof-2026-09-22-evidence/	archive/docs/workflows/site-proof-2026-09-22-evidence/	81
+docs/workflows/slo-loom-2026-09-23/	archive/docs/workflows/slo-loom-2026-09-23/	15
+docs/workflows/uwiq-reference-2026-07-25/	docs/underwriteiq/uwiq-reference-2026-07-25/	5
+docs/workflows/video-stack-2026-09-22-evidence/	archive/docs/workflows/video-stack-2026-09-22-evidence/	22
+docs/workflows/w10-pack-2026-09-04/	archive/docs/workflows/w10-pack-2026-09-04/	23
+docs/workflows/w3-progress-proof-2026-09-05/	archive/docs/workflows/w3-progress-proof-2026-09-05/	7
+docs/workflows/w4b-proof-2026-09-03/	archive/docs/workflows/w4b-proof-2026-09-03/	31
+docs/workflows/watch-card-sizes-2026-09-22-evidence/	archive/docs/workflows/watch-card-sizes-2026-09-22-evidence/	6
+docs/workflows/watch-organize-2026-09-22-evidence/	archive/docs/workflows/watch-organize-2026-09-22-evidence/	18
+docs/workflows/watch-proof-2026-09-22-evidence/	archive/docs/workflows/watch-proof-2026-09-22-evidence/	9
+docs/workflows/watch-sizes-2026-09-22-evidence/	archive/docs/workflows/watch-sizes-2026-09-22-evidence/	12
+docs/workflows/wave-3-checks/	ops/workflows/wave-3-checks/	11
+e2e/	apps/platform/e2e/	52
+extension/	apps/extension/	7
+fundhub-docs/	apps/platform/fundhub-docs/	3
+lane-deliverables/	archive/lane-deliverables/	1
+netlify/	apps/platform/netlify/	9
+public/	apps/platform/public/	777
+render-service/	stays	5
+scripts/(6 files directly in here)	marketing/ads/slo/scripts/	6
+scripts/(14 files directly in here)	archive/scripts/	14
+scripts/(56 files directly in here)	apps/platform/scripts/	56
+scripts/(24 files directly in here)	ops/scripts/	24
+scripts/(2 files directly in here)	marketing/ads/scripts/	2
+scripts/(4 files directly in here)	marketing/landing-pages/scripts/	4
+scripts/ads/	marketing/ads/scripts/	3
+scripts/black-reports/	apps/platform/scripts/black-reports/	5
+scripts/db/	apps/platform/scripts/db/	4
+scripts/diagrams/	apps/platform/scripts/diagrams/	4
+scripts/flywheel/	marketing/flywheel/scripts/	2
+scripts/gate-relay/	apps/platform/scripts/gate-relay/	4
+scripts/journeys/	apps/platform/scripts/journeys/	4
+scripts/lenders-audit/	apps/platform/scripts/lenders-audit/	7
+scripts/lenders-logos/	apps/platform/scripts/lenders-logos/	5
+scripts/marketing/	apps/platform/scripts/marketing/	17
+scripts/notion-scrape/	ops/scripts/notion-scrape/	2
+scripts/push/	apps/platform/scripts/push/	1
+scripts/sim/	apps/platform/scripts/sim/	14
+scripts/testimonials/	marketing/testimonials/scripts/	5
+scripts/tmp/	archive/scripts/tmp/	790
+scripts/tmp-sandbox-escalation-pack/	archive/scripts/tmp-sandbox-escalation-pack/	17
+scripts/tmp-sandbox-letters/	archive/scripts/tmp-sandbox-letters/	5
+src/	apps/platform/src/	1712
+vendor/	apps/platform/vendor/	379
+wireframes/	apps/platform/wireframes/	20
