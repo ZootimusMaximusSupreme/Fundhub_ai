@@ -1467,6 +1467,18 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     return sdkLoad;
   }
   function cardNote(msg){if(cardWait){cardWait.textContent=msg;cardWait.hidden=false;}}
+  /* Facebook and Instagram's in-app browsers often reload the page when the
+     buyer comes back from another app (a bank app, a text code). The order
+     lives only in this page, so a reload put a paid buyer back on step 1 with
+     a fresh $297 card form. Write the paid order into the address bar — the
+     same ?ref=&client_id=#fhw link the paid return already reads — so a reload
+     opens step 3. */
+  function keepPaid(o){
+    try{
+      var q=new URLSearchParams(location.search);q.set('ref',o.ref);q.set('client_id',o.client_id);
+      history.replaceState(history.state,'',location.pathname+'?'+q.toString()+'#fhw');
+    }catch(e){}
+  }
   function dropCard(){
     if(card&&typeof card.destroy==='function'){try{card.destroy();}catch(e){}}
     card=null;cardSig=null;cardReady=false;
@@ -1511,7 +1523,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       /* Paid. Stay here and open the soft pull — no redirect anywhere. */
       card.on('checkout:success',function(){
         setBusy(false);
-        if(order){order.locked=true;}
+        if(order){order.locked=true;keepPaid(order);}
         hideFormErr();
         fht('payment_result',{result:'success'});
         go(3);

@@ -312,7 +312,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .sum li{position:relative;padding-left:20px;margin-top:12px;font-size:15px;color:var(--gray);line-height:1.6}
 .fh-root .sum li::before{content:"";position:absolute;left:0;top:10px;width:10px;height:2px;background:var(--spectrum);border-radius:1px}
 .fh-root .sum li b{color:var(--ink);font-weight:600}
-.fh-root .sum li:has(.fh-peek){margin-top:8px}
+.fh-root .sum li:has(.fh-peek){margin-top:8px;cursor:pointer}
 .fh-root .sum .fh-peek{display:flex;align-items:center;gap:5px;width:max-content;margin-top:1px;font-size:12.5px;line-height:1.4;font-weight:500;color:#188bf6;text-decoration:none}
 .fh-root .sum .fh-peek:hover{text-decoration:underline}
 .fh-root .sum .fh-peek svg{flex:none}
@@ -679,9 +679,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0A0A0A;padding:10px 12px 14px;text-align:left;line-height:1.5;font-size:15px}
 .cfw *{box-sizing:border-box;margin:0}
 .cfw [hidden],[data-extra][hidden]{display:none!important}
-.cfw-steps{display:flex;gap:8px;margin-bottom:4px}
-.cfw-steps button{flex:1;min-width:0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:#8A8A93;border:1px solid #E4E4E7;border-radius:8px;padding:9px 6px;background:#fff;cursor:pointer;line-height:1.4}
-.cfw-steps button.on{color:#0A0A0A;border-color:#0A0A0A;cursor:default}
+/* Buy box v2 (owner-set 2026-10-02): a plain "Step 1 of 3" line replaces the
+   three step tabs. Nothing to tap, so nothing can look locked. */
+.cfw-progress{margin:2px 0 4px;text-align:center;font-size:13px;font-weight:600;line-height:1.4;color:#52525B}
+.cfw-refund{margin-top:14px;text-align:center;font-size:13.5px;line-height:1.5;color:#52525B}
 .cfw-step{display:none}.cfw-step.on{display:block}
 .cfw-addline{font-size:12.5px;color:#52525B;line-height:1.5;margin:6px 0 2px}
 .cfw label{display:block;font-size:12.5px;font-weight:600;color:#52525B;margin-top:12px;line-height:1.4}
@@ -704,11 +705,16 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw-secure{margin-top:16px;background:#F6FBF7;border:1px solid #CFE3D4;border-radius:12px;padding:6px 14px 14px;position:relative}
 .cfw-secure::before{content:"secured field";position:absolute;top:-9px;left:12px;background:#F6FBF7;padding:0 6px;font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:#3E8E58}
 .cfw-secure label{margin-top:8px}
-/* Commas draws its card form into this box. The height is theirs; we only keep
-   it from collapsing to nothing while the iframe is on its way. */
-.cfw-cardmount{margin-top:8px;min-height:190px}
+/* Commas draws its card form into this box at the 680px we hand it
+   (containerOptions, below). The box holds that height from the start and the
+   loading line sits on top, so the total and the button do not jump down when
+   the form arrives a second later (layout shift, 2026-10-02). Demo has no card
+   form: .cfw-nocard keeps the short box. */
+.cfw-cardmount{position:relative;margin-top:8px;min-height:680px}
+.cfw-cardmount.cfw-nocard{min-height:190px}
 .cfw-cardmount iframe{width:100%!important;border:0;display:block}
-.cfw-cardwait{padding:56px 0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A8A93}
+.cfw-cardwait{position:absolute;top:0;left:0;right:0;padding:56px 0;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:#8A8A93}
+.cfw-nocard .cfw-cardwait{position:static}
 /* Nothing may clip the card boxes. The green "secured field" wrapper sets its
    own padding; make sure neither it nor the step hides the bottom of the form. */
 .cfw-step.s2 .cfw-secure{overflow:visible}
@@ -760,9 +766,9 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
    and never sees step 1 or the card step again. Step 3 carries the hidden
    attribute in the markup, hence the !important. The widget script drops the
    class as soon as it owns which pane shows. */
-.fh-paid .cfw-steps,.fh-paid .cfw-step{display:none!important}
+.fh-paid .cfw-progress,.fh-paid .cfw-step{display:none!important}
 .fh-paid .cfw-step.s3{display:block!important}
-@media(max-width:380px){.cfw-steps button{font-size:9px;letter-spacing:.04em;padding:9px 3px}.cfw .row-sfx{grid-template-columns:1fr 88px}}
+@media(max-width:380px){.cfw .row-sfx{grid-template-columns:1fr 88px}}
 @media(prefers-reduced-motion:reduce){.cfw-spin{animation:none}}
 /* FH-DECK-CSS:END */
 /* FH-PEEK-CSS:START — What You Get sample covers, folder, lightbox, tabs, sample pages (owner paste 2026-09-22) */
@@ -973,6 +979,16 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 
 
 
+<!-- THE GUARANTEE: cut 2026-10-01, put back 2026-10-02 (owner ask) in its old
+     place, word for word from 2019c1b5. Same 7 days as the line above the
+     step-1 button. -->
+<section class="sect" data-fh-section="guarantee"><div class="cardw">
+        <span class="kicker">The Guarantee</span>
+        <p>If you're not happy with what you get, email support@fundhub.ai within 7 days and <b>you get the full $297 back.</b></p>
+      </div><a class="btn fh-go-pay" href="#fh-order">Get My Roadmap</a></section>
+
+
+
 <!-- SECTION 8: FAQ -->
     <section class="sect" data-fh-section="faq">
       <span class="kicker">FAQ</span>
@@ -999,7 +1015,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <span class="kicker">Checkout</span>
       <div class="h2">Get Your Funding Roadmap · $297</div>
       <div class="prose" style="margin-top:10px">
-        <p>$297. Soft pull. Ten seconds. Everything built from your own credit data. One payment, no contract.</p>
+        <p>$297. Soft pull. Ten seconds. Everything built from your own credit data.</p>
       </div>
       <div class="sum">
         <span class="kicker">Order summary &middot; Built from your own credit data &middot; Yours to keep</span>
@@ -1011,7 +1027,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
           <li><b>Bank &amp; Lender Match List</b>, the banks most likely to approve you where you live, and the order to apply<a class="fh-peek" href="#" data-sample="lenders"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
           <li><b><span class="fh-bonus">FREE BONUS</span>Business Duplication Map</b>, how you go from one company to five or ten, each one funded<a class="fh-peek" href="#" data-sample="duplication"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
         </ul>
-        <div class="tot"><span class="tl">Everything above &middot; one payment, no contract</span><span class="tp"><b>$297</b></span></div>
+        <div class="tot"><span class="tl">Get approved for the most funding</span><span class="tp"><b>$297</b></span></div>
       </div>
       
     </section>
@@ -1022,42 +1038,15 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     <script>
     (function(){
       var P={
-        analysis:'<div class="sp"><div class="sp-doc">Credit Analysis Report &middot; Alex Rivera</div><div class="sp-why">Why you need this: you stop getting declined for reasons nobody told you.</div>'
-          +'<div class="sp-sec"><div class="sp-h">bureau health</div><table><tr><th>bureau</th><th>status</th><th>negative items</th><th>notes</th></tr><tr><td>Experian</td><td><i class="tg bad">DISPUTE 2</i></td><td>2</td><td>Primary bureau, lenders pull this first</td></tr><tr><td>Equifax</td><td><i class="tg ok">CLEAN</i></td><td>0</td><td>Nothing negative on it</td></tr><tr><td>TransUnion</td><td><i class="tg bad">DISPUTE 1</i></td><td>1</td><td>Collection reporting</td></tr></table></div>'
-          +'<div class="sp-sec"><div class="sp-h">scores &middot; lenders use your middle score</div><div class="kpis"><div><b>648</b><i>Experian &middot; LOWEST</i></div><div class="mid"><b>672</b><i>Equifax &middot; YOUR MIDDLE SCORE</i></div><div><b>691</b><i>TransUnion &middot; HIGHEST</i></div></div><div class="sp-c">43 point spread between best and worst. Lenders underwrite on 672.</div></div>'
-          +'<div class="sp-sec"><div class="sp-h">utilization &middot; the fastest win on this file</div><table><tr><th>card</th><th>balance</th><th>limit</th><th>util</th><th>status</th></tr><tr><td>Chase Sapphire Preferred</td><td>$4,120</td><td>$5,000</td><td>82%</td><td><i class="tg bad">CRITICAL</i></td></tr><tr><td>Amex Blue Cash</td><td>$1,980</td><td>$6,000</td><td>33%</td><td><i class="tg warn">HIGH</i></td></tr><tr><td>Discover it</td><td>$210</td><td>$3,500</td><td>6%</td><td><i class="tg ok">OK</i></td></tr></table><div class="sp-c">Total revolving $6,310 of $14,500, 44% used. Your roadmap sets the paydown.</div></div>'
-          +'<div class="sp-sec"><div class="sp-h">negative items, one by one</div><table><tr><th>#</th><th>creditor</th><th>type</th><th>balance</th><th>bureaus</th></tr><tr><td>1</td><td>Midland Credit Management (orig. Banner Health)</td><td>Collection</td><td>$412</td><td>EX, TU</td></tr><tr><td>2</td><td>Capital One Platinum</td><td>Charge-off</td><td>$1,860</td><td>EX</td></tr></table><div class="sp-c">Both come with a dispute letter already written in the pack.</div></div>'
-          +'</div>',
-        roadmap:'<div class="sp"><div class="sp-doc">Credit Optimization Roadmap &middot; Alex Rivera</div><div class="sp-why">Why you need this: you reach your maximum funding fastest, with nothing to guess.</div>'
-          +'<div class="sp-sec"><div class="sp-h">six months, in order</div><div class="strip"><div><b>Month 1</b>Launch</div><div><b>Month 2</b>Results</div><div><b>Month 3</b>Escalation</div><div><b>Month 4</b>Push</div><div><b>Month 5</b>Complaints</div><div><b>Month 6</b>Re-pull</div></div></div>'
-          +'<div class="sp-sec"><div class="sp-h">month 1 &middot; step 1, the paydown plan</div><table><tr><th>card</th><th>balance</th><th>pay down to</th><th>amount to pay</th></tr><tr><td>Chase Sapphire Preferred</td><td>$4,120</td><td>$500</td><td><b>$3,620</b></td></tr><tr><td>Amex Blue Cash</td><td>$1,980</td><td>$600</td><td><b>$1,380</b></td></tr><tr><td colspan="3">Total to reach the 10% target</td><td><b>$5,000</b></td></tr></table></div>'
-          +'<div class="sp-sec"><div class="sp-h">month 1 &middot; steps 2 and 3, round one letters</div><ul class="sp-ul"><li><b>Experian first.</b> Midland Credit Management collection $412. Capital One Platinum charge-off $1,860.</li><li><b>TransUnion.</b> Midland Credit Management collection $412.</li><li><b>Do not open any new accounts</b> until the personal side is locked in.</li></ul></div>'
-          +'</div>',
-        snapshot:'<div class="sp"><div class="sp-doc">How Much You Qualify For &middot; Alex Rivera</div><div class="sp-why">Why you need this: you know what you can get before a bank ever sees your file.</div>'
-          +'<div class="sp-sec"><div class="sp-h">your numbers right now</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td>value of the roadmap</td><td></td><td><b>$61,500</b></td></tr></table></div>'
-          
-          
-          +'<div class="sp-sec"><div class="sp-h">what you are leaving on the table</div><div class="sp-c">$61,500 you are leaving on the table right now. The rest of the package is how you go get it.</div></div></div>',
-        lenders:'<div class="sp"><div class="sp-doc">Bank &amp; Lender Match List &middot; Alex Rivera</div><div class="sp-why">Why you need this: you apply only where you will get approved, in the right order.</div>'
-          +'<div class="kpis"><div class="mid"><b>15</b><i>lenders matched</i></div><div><b>6</b><i>your file fits today</i></div><div><b>9</b><i>need a business entity first</i></div></div>'
-          +'<div class="sp-sec"><div class="sp-h">available right now &middot; middle score 672</div><table><tr><th>lender</th><th>type</th><th>est. range</th><th>score floor</th></tr><tr><td>Wells Fargo personal loan</td><td>Personal loan</td><td>$10K to $25K</td><td>640</td></tr><tr><td>Chase Freedom Unlimited</td><td>Personal card</td><td>$8K to $15K</td><td>660</td></tr><tr><td>Capital One Venture</td><td>Personal card</td><td>$10K to $20K</td><td>660</td></tr><tr><td colspan="4" class="more">plus Discover it, Citi Double Cash and U.S. Bank Cash+ open on this file today</td></tr></table></div>'
-          +'<div class="sp-sec"><div class="sp-h">score ladder &middot; what unlocks as the score moves</div><table><tr><th>at</th><th>gap</th><th>lenders that unlock</th></tr><tr><td>680</td><td>8 points</td><td><b>4 more</b></td></tr><tr><td>700</td><td>28 points</td><td><b>5 more</b></td></tr></table><div class="sp-c">Business products additionally need an entity and time in business.</div></div>'
-          +'<div class="sp-sec"><div class="sp-h">application order</div><ol class="sp-ol"><li>Finish month one of your roadmap first.</li><li>Lowest score floor first.</li><li>One at a time. Wait for the decision.</li><li>Work up the list as the score moves.</li><li>Personal before business. Lock personal, then form the entity.</li></ol></div></div>',
-        startHere:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 01 Start here</div><div class="sp-sec"><div class="sp-h">how to use this package</div><ol class="sp-ol"><li>Mail certified with return receipt. Keep the receipt. It starts the 30 day clock.</li><li>One envelope per bureau. Never combine.</li><li>Keep every response. Photograph it the day it arrives.</li><li>Use the home address on your ID. No PO box.</li><li>Sign by hand, in ink.</li><li>Wait the full 30 days plus mail time before round 2.</li><li>Do not file the complaints until round 3 has failed.</li></ol></div></div>',
-        tree:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 02 Decision tree</div><div class="sp-sec"><div class="sp-h">after round 1 comes back</div><ul class="sp-ul"><li><b>All items deleted</b> &rarr; stop. Do not send round 2 or 3.</li><li><b>Some deleted, some verified</b> &rarr; round 2 for the verified items only. Cross out the rest.</li><li><b>All verified</b> &rarr; round 2 method of verification demand.</li><li><b>No response after 30 days plus mail time</b> &rarr; round 2 with the late response argument. Keep your certified receipt.</li><li><b>Round 3 still on the report</b> &rarr; file the CFPB complaint, then the state attorney general. Sign the declaration on each.</li></ul></div></div>',
-        round1:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 03 Round 1 &middot; Experian</div><div class="sp-why">Why you need this: the items costing you money come off, and no credit repair company gets paid to do it.</div><div class="sp-what">What this letter does: asks Experian to fix or delete two items reported wrong on your file.</div><div class="letter"><div><b>Alex Rivera</b> &middot; 4120 E Indian School Rd, Phoenix, AZ 85018</div><div style="margin-top:4px">Experian &middot; P.O. Box 4500, Allen, TX 75013</div><div style="margin-top:10px"><b>Re: Round 1 Metro 2 dispute &middot; M2-DOFD-01, M2-BAL-03</b></div><p>I am writing to dispute the following items on my credit file. Please reinvestigate each within 30 days as required under FCRA &sect; 611. For any item you keep, provide the method of verification.</p><p><b>Item 1 &middot; Violation M2-DOFD-01 &middot; Midland Credit Management &middot; account ending 4417</b><br>Field: date of first delinquency &middot; Severity: HIGH<br>Observed: a $412 collection reporting with no date of first delinquency.<br>Expected: DOFD is required for any collection under Metro 2 reporting standards.<br>Legal basis: FCRA &sect; 623(a)(5).</p><p><b>Item 2 &middot; Violation M2-BAL-03 &middot; Capital One Platinum &middot; account ending 8821</b><br>Field: balance &middot; Severity: HIGH<br>Observed: charge-off reporting a $1,860 balance after the account was sold.<br>Expected: a sold charge-off reports a zero balance to the original creditor.<br>Legal basis: FCRA &sect; 623(a)(2).</p><p>Delete or correct each item and send written confirmation of the results.</p><p>Sincerely,<br><span class="sig">Alex Rivera</span></p><div class="encl">Enclosed: copy of photo ID, proof of address.</div></div></div>',
-        cond:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 04 Round 2 &middot; cover sheet</div><div class="warn">SEND THIS LETTER ONLY IF the bureau said verified or remains.<br>DO NOT SEND IF deleted, no response yet, or too soon.</div><div class="sp-sec"><div class="sp-h">what round 2 asks for</div><div class="sp-c">Describe the method of verification for each item: who you contacted, what records they sent, and what you compared. Give each furnisher\'s name, address and telephone number. If you cannot produce that, delete the items. Cites FCRA &sect; 611(a)(7) and &sect; 611(a)(6)(B)(iii).</div></div><div class="sp-c">Before mailing: write today\'s date, cross out deleted items, sign by hand, enclose photo ID and proof of address.</div></div>',
-        complaints:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 06 Rounds 4 and 5 &middot; complaints</div><div class="warn">DO NOT FILE WITH ROUND 1.<br>Send only if round 3 is done and the items are still on the report.</div><div class="sp-sec"><div class="sp-h">what is in the folder</div><ul class="sp-ul"><li><b>CFPB complaint,</b> fully written. Timeline of rounds 1 to 3, the disputed accounts, what I want, harm, the documents checklist. You date it and sign the declaration.</li><li><b>State attorney general complaint,</b> pulled to your state. Same shape, plus the state consumer protection law.</li></ul></div><div class="sp-c">File the CFPB first, or the CFPB and the state AG at the same time.</div></div>',
-        final:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 07 Round 6 &middot; final notice</div><div class="warn">SEND THIS ONLY IF rounds 4 and 5 did not remove the item.</div><div class="sp-sec"><div class="sp-h">what round 6 is</div><div class="sp-c">The last letter to the bureau: a final notice, sent again after both complaints. Each round stands on stronger law than the one before it.</div></div></div>',
-        duplication:'<div class="sp"><div class="sp-doc">Business Duplication Map &middot; Alex Rivera</div><div class="sp-why">Why you need this: you keep getting funded after round one, one aged company after another.</div>'
-          +'<div class="sp-sec"><div class="sp-h">your business today &middot; Rivera Supply LLC, Arizona, 14 months old</div><table><tr><th>Experian Business check</th><th>status</th><th>the fix</th></tr><tr><td>Business credit score</td><td><i class="tg ok">OK</i></td><td>Keep it reporting</td></tr><tr><td>Blemishes</td><td><i class="tg bad">1 COLLECTION</i></td><td>Settle it and have it updated</td></tr><tr><td>Business card balance</td><td><i class="tg warn">64% USED</i></td><td>Pay it down before you apply</td></tr><tr><td>NAICS code</td><td><i class="tg bad">FLAGGED</i></td><td>Use the code that matches what you sell</td></tr><tr><td>Business name</td><td><i class="tg warn">DOES NOT MATCH</i></td><td>One exact name everywhere</td></tr></table></div>'
-          +'<div class="sp-sec"><div class="sp-h">what a company can get as it ages</div><table><tr><th>age</th><th>business funding</th></tr><tr><td>under 12 months</td><td>half your card funding</td></tr><tr><td>12 to 24 months</td><td>equal to your card funding</td></tr><tr><td>24 months and up</td><td><b>double your card funding</b></td></tr></table><div class="sp-c">Rivera Supply turns 24 months in July 2027. That is when its funding doubles.</div></div>'
-          +'<div class="sp-sec"><div class="sp-h">your quarterly plan</div><table><tr><th>quarter</th><th>step</th></tr><tr><td>Q4 2026</td><td>Open company two, set up right: clean name, right NAICS code, reporting from day one</td></tr><tr><td>Q1 2027</td><td>Open company three the same way</td></tr><tr><td>Q3 2027</td><td>Rivera Supply passes 24 months</td></tr><tr><td>Q4 2027</td><td>Company two passes 12 months</td></tr></table><div class="sp-c">Keep opening one to two a quarter and aged companies keep coming ready for funding.</div></div></div>',
-        tracker:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 08 Round tracker</div><table><tr><th>round</th><th>bureau</th><th>date mailed</th><th>certified #</th><th>response</th><th>outcome</th></tr><tr><td>R1</td><td>Experian</td><td>09/22/2026</td><td>7020 0000 0000 0001</td><td></td><td></td></tr><tr><td>R1</td><td>TransUnion</td><td>09/22/2026</td><td>7020 0000 0000 0002</td><td></td><td></td></tr><tr><td>R2</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R3</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R4 CFPB</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R5 State AG</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R6</td><td></td><td></td><td></td><td></td><td></td></tr></table><div class="sp-c">One row per round per bureau. The receipt number is what proves the clock started.</div></div>'
+        snapshot:'<div class="sp"><div class="sp-doc">How Much You Qualify For &middot; Sample Client</div><div class="sp-why">Why you need this: you know what you can get before a bank ever sees your file.</div><div class="sp-sec"><div class="sp-h">your numbers right now</div><div class="kpis"><div><b>$199,350</b><i>today</i></div><div class="mid"><b>$221,500</b><i>after optimization</i></div><div><b>$22,150</b><i>left on the table</i></div></div><table><tr><th></th><th>today</th><th>after optimization</th></tr><tr><td>middle score</td><td>762</td><td>&ndash;</td></tr><tr><td>pre-approval</td><td>$199,350</td><td><b>$221,500</b></td></tr></table><div class="sp-c">You are fundable right now at $199,350. But you are leaving $22,150 on the table by not fixing a few things first. The biggest fixes are fast.</div></div><div class="sp-cut" aria-hidden="true"><div class="sp-sec"><div class="sp-h">what is costing you money</div><div class="sp-blur"><p><b>1. Overall Utilization - 17%</b><br>You are using $7,850 out of $45,000 in available credit. Get total balances to $4,500 or less.</p><p><b>2. No Business Entity Registered</b><br>Without a business entity you cannot access business credit programs. Forming an LLC unlocks a whole second tier of funding.</p></div></div><div class="sp-sec"><div class="sp-h">where you could be &middot; after optimization</div><div class="sp-blur"><table><tr><td>Navy Federal*</td><td>Personal Loan</td><td>$5K-$15K</td></tr><tr><td>Chase Ink Preferred</td><td>Biz Card</td><td>$10K-$25K</td></tr><tr><td>Amex Blue Business Plus</td><td>Biz Card</td><td>$10K-$30K</td></tr><tr><td>Capital One Spark Cash</td><td>Biz Card</td><td>$5K-$20K</td></tr></table></div></div></div><div class="sp-unlock"><b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a></div></div>',
+        analysis:'<div class="sp"><div class="sp-doc">Credit Analysis Report &middot; Sample Client</div><div class="sp-why">Why you need this: you stop getting declined for reasons nobody told you.</div><div class="sp-sec"><div class="sp-h">your three scores</div><table><tr><th>bureau</th><th>score</th><th></th></tr><tr><td>TransUnion</td><td>758</td><td>lowest</td></tr><tr><td>Experian</td><td><b>762</b></td><td><b>your middle score</b></td></tr><tr><td>Equifax</td><td>770</td><td>highest</td></tr></table><div class="sp-c">Line them up from lowest to highest. Lenders use the middle one. Yours is 762.</div></div><div class="sp-sec"><div class="sp-h">cards costing you money</div><table><tr><th>card</th><th>balance</th><th>limit</th><th>used</th><th>pay down to</th></tr><tr><td>Chase Sapphire Preferred</td><td>$2,100</td><td>$12,000</td><td><b>18%</b></td><td>$1,200 or less</td></tr><tr><td>American Express Blue Business Cash</td><td>$4,800</td><td>$25,000</td><td><b>19%</b></td><td>$2,500 or less</td></tr><tr><td>Capital One Spark</td><td>$950</td><td>$8,000</td><td><b>12%</b></td><td>$800 or less</td></tr></table><div class="sp-c">Get total revolving balances from $7,850 down to under $4,500. That moves you from 17% utilization to under 10%. That one move alone can add 40-80 points to your score.</div></div><div class="sp-cut" aria-hidden="true"><div class="sp-sec"><div class="sp-h">negative items &middot; one by one</div><div class="sp-blur"><i class="sk" style="width:92%"></i><i class="sk" style="width:78%"></i><i class="sk" style="width:85%"></i><i class="sk" style="width:60%"></i></div></div><div class="sp-sec"><div class="sp-h">inquiries</div><div class="sp-blur"><i class="sk" style="width:80%"></i><i class="sk" style="width:64%"></i></div></div><div class="sp-sec"><div class="sp-h">the bottom line</div><div class="sp-blur"><i class="sk" style="width:88%"></i><i class="sk" style="width:70%"></i></div></div></div><div class="sp-unlock"><b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a></div></div>',
+        roadmap:'<div class="sp"><div class="sp-doc">Credit Optimization Roadmap &middot; Sample Client</div><div class="sp-why">Why you need this: you reach your maximum funding fastest, with nothing to guess.</div><div class="sp-c" style="margin-top:0">How long your plan runs depends on your file. This sample client&rsquo;s plan runs 6 months, projected <b>$221,500</b>, up from $199,350 today.</div><div class="sp-sec"><div class="sp-h">month 1 &middot; launch</div><ul class="sp-ul"><li>Pay American Express Blue Business Cash from $4,800 down to $2,500</li><li>Pay Chase Sapphire Preferred from $2,100 down to $1,200</li><li>Send inquiry removal letters for duplicate pulls</li><li>File LLC in TX</li><li>Open business checking account</li><li>Apply for personal loan pre-approval NOW</li></ul></div><div class="sp-sec"><div class="sp-h">month 2 &middot; results</div><div class="sp-c" style="margin-top:0">Utilization paydowns hit your score first - balance updates report within 30-45 days. Estimated score movement from utilization alone: +25 to +45 points. Dispute results start coming back at day 30-45.</div><ul class="sp-ul"><li>Check dispute results (30-45 days after sending)</li><li>Document every deletion and every verification</li><li>Keep American Express Blue Business Cash balance low</li></ul></div><div class="sp-cut" aria-hidden="true"><div class="sp-sec"><div class="sp-h">month 3 &middot; results</div><div class="sp-blur"><i class="sk" style="width:86%"></i><i class="sk" style="width:72%"></i></div></div><div class="sp-sec"><div class="sp-h">month 4 &middot; final push</div><div class="sp-blur"><i class="sk" style="width:86%"></i><i class="sk" style="width:72%"></i></div></div><div class="sp-sec"><div class="sp-h">month 5 &middot; business</div><div class="sp-blur"><i class="sk" style="width:86%"></i><i class="sk" style="width:72%"></i></div></div><div class="sp-sec"><div class="sp-h">month 6 &middot; reveal</div><div class="sp-blur"><i class="sk" style="width:86%"></i><i class="sk" style="width:72%"></i></div></div></div><div class="sp-unlock"><b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a></div></div>',
+        pack:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; Sample Client</div><div class="sp-why">Why you need this: the items costing you money come off, and no credit repair company gets paid to do it.</div><div class="sp-sec"><div class="sp-h">round 1 &middot; experian &middot; one complete letter</div><div class="letter"><p>Sample Client 100 Test Ave Denton, TX 76205</p><p>October 2, 2026</p><p>Experian</p><p>P.O. Box 4500 Allen, TX 75013</p><p><b>RE: Formal Dispute — SIGNET BANK/VIRGINIA | Account Ending in 4443</b></p><p>To Whom It May Concern,</p><p>I am writing to formally dispute inaccurate and incomplete information appearing on my Experian credit report. The account in question is reported by SIGNET BANK/VIRGINIA, ending in 4443. After reviewing my credit file, I have identified multiple Metro 2 reporting violations that make this account\'s current reporting inaccurate. I am requesting a full reinvestigation under FCRA § 1681i(a)(1)(A), which requires Experian to complete this investigation within 30 days of receipt of this letter. Each violation is detailed separately below.</p><p><b>DISPUTE ITEM 1 — Non-Zero Balance on a Closed Account</b></p><p class="sp-cite">Metro 2 Field 21 (Current Balance) | FCRA § 1681s-2(a)(1)(A)</p><p>This account is reported as closed, yet Field 21 shows a current balance of $4,798. Under Metro 2 standards, a closed account must report a $0 balance in Field 21. These two data points directly contradict each other. Either the account is closed and the balance should be $0, or the balance is still active and the status is wrong. Both cannot be true at the same time. Reporting a $4,798 balance on a closed account is inaccurate under FCRA § 1681s-2(a)(1)(A), which prohibits furnishing information that a person knows or has reasonable cause to believe is inaccurate. I am requesting that Experian investigate this contradiction and correct Field 21 to reflect an accurate balance consistent with the reported account status.</p><p><b>DISPUTE ITEM 2 — Stale Account Reporting</b></p><p class="sp-cite">Metro 2 Field 24 (Date of Account Information) | FCRA § 1681s-2(a)(2)</p><p>The last reported date for this account is September 3, 2021 — nearly five years ago. Field 24, the Date of Account Information, is required to reflect a current reporting cycle. An account that has not been updated in over 1,855 days does not meet that standard. FCRA § 1681s-2(a)(2) requires furnishers to correct and update information to ensure it remains accurate. Stale data in Field 24 means the information being reported may no longer reflect the true status of this account, which creates a misleading picture of my credit history. I am requesting that Experian verify whether SIGNET BANK/VIRGINIA has provided any updated account information since September 2021, and take appropriate action if no current data can be confirmed.</p><p><b>DISPUTE ITEM 3 — Missing Compliance Condition Code on a Derogatory Account</b></p><p class="sp-cite">Metro 2 Field 20 (Compliance Condition Code) | FCRA § 1681s-2(a)(3)</p><p>This account carries a charge-off rating and is flagged as derogatory, yet Field 20 contains no Compliance Condition Code whatsoever. Metro 2 guidelines require furnishers to populate Field 20 with the applicable code that reflects the account\'s legal and compliance standing. The complete absence of any code on an account with adverse information is a reporting omission. Under FCRA § 1681s-2(a)(3), furnishers are required to note when information is disputed, and more broadly, to report complete and accurate data. A missing Compliance Condition Code on a derogatory account leaves the reporting incomplete. I am requesting that Experian contact SIGNET BANK/VIRGINIA to determine what Compliance Condition Code, if any, should be applied to this account, and update the file accordingly.</p><p><b>REQUESTED ACTIONS</b></p><p>I am asking Experian to take the following steps:</p><p>1 Conduct a full reinvestigation of the SIGNET BANK/VIRGINIA account ending in 4443 within 30 days as required by FCRA § 1681i(a)(1)(A).</p><p>2 Contact SIGNET BANK/VIRGINIA and provide them with all relevant information included in this dispute.</p><p>3 Correct or delete any information that cannot be verified as accurate and complete.</p><p>4 Upon completion of the investigation, provide me with written results, an updated copy of my credit report, and — pursuant to FCRA § 1681i(a)(6)(B)(iii) — a full description of the method of verification used, including the name, address, and telephone number of any furnisher contacted during the process.</p><p>If SIGNET BANK/VIRGINIA cannot verify the accuracy of each specific data point identified above, FCRA § 1681i(a)(5)(A) requires that the item be promptly deleted or corrected.</p><p>Sincerely,</p><p>Sample Client</p><p>100 Test Ave Denton, TX 76205</p><p><b>Enclosures</b></p><p>Copy of government-issued photo ID Copy of proof of address (utility bill or bank statement) Copy of credit report with account ending in 4443 highlighted</p></div></div><div class="sp-sec"><div class="sp-h">every round in your pack</div><ul class="sp-rounds"><li><span class="rd">R1</span>Round 1 Metro 2 dispute <em>&middot; this letter</em></li><li><span class="rd">R2</span>Round 2 FCRA / method of verification <span class="lk" aria-label="locked">&#128274;</span></li><li><span class="rd">R3</span>Round 3 final notice <span class="lk" aria-label="locked">&#128274;</span></li><li><span class="rd">R4</span>CFPB complaint <span class="lk" aria-label="locked">&#128274;</span></li><li><span class="rd">R5</span>State attorney general complaint <span class="lk" aria-label="locked">&#128274;</span></li><li><span class="rd">R6</span>Final notice, reissued <span class="lk" aria-label="locked">&#128274;</span></li></ul><div class="sp-c">Every round is written for your accounts, on all three bureaus.</div></div><div class="sp-unlock"><b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a></div></div>',
+        lenders:'<div class="sp"><div class="sp-doc">Bank &amp; Lender Match List &middot; Sample Client</div><div class="sp-why">Why you need this: you apply only where you will get approved, in the right order.</div><div class="sp-sec"><div class="sp-h">12 national banks</div><table class="sp-lenders"><tr><th></th><th>bank &middot; what they offer</th><th>bureau they pull</th></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/chase.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Chase</b><br><span class="pd">Ink Business Cash, Unlimited, Preferred &middot; 0% intro APR, 12 months</span></td><td><span class="bl">Experian &middot; Equifax &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/american-express.png" alt="" width="28" height="28" loading="lazy"></td><td><b>American Express</b><br><span class="pd">Business Gold, Blue Business Cash, Blue Business Plus</span></td><td><span class="bl">Experian</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/bank-of-america.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Bank of America</b><br><span class="pd">Business credit card &middot; 0% intro APR, 6 months</span></td><td><span class="bl">Experian &middot; Equifax &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/capital-one.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Capital One</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian &middot; Equifax &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/citi.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Citi</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Equifax</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/us-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>U.S. Bank</b><br><span class="pd">Business Platinum, Business Leverage</span></td><td><span class="bl">Equifax &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/wells-fargo.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Wells Fargo</b><br><span class="pd">Business credit card &middot; 0% intro APR, 12 months</span></td><td><span class="bl">Experian &middot; Equifax &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/pnc-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>PNC Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian &middot; Equifax</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/truist.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Truist</b><br><span class="pd">Business cards &middot; 0% intro APR, 12 months</span></td><td><span class="bl">Equifax</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/keybank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>KeyBank</b><br><span class="pd">Business Visa up to $25k, line of credit up to $50k</span></td><td><span class="bl">Equifax</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/fifth-third.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Fifth Third</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/huntington-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Huntington Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Equifax &middot; TransUnion</span></td></tr></table></div><div class="sp-sec"><div class="sp-h">14 regional banks most people never hear about</div><table class="sp-lenders"><tr><th></th><th>bank &middot; what they offer</th><th>bureau they pull</th></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/m-and-t-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>M&amp;T Bank</b><br><span class="pd">Business credit card &middot; 0% intro APR, 12 months</span></td><td><span class="bl">TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/synovus-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Synovus Bank</b><br><span class="pd">Business credit card &middot; 0% intro APR, 6 months</span></td><td><span class="bl">TransUnion &middot; Equifax</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/first-citizens-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>First Citizens Bank</b><br><span class="pd">Business credit card &middot; 0% intro APR, 12 months</span></td><td><span class="bl">Equifax</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/bmo-harris.png" alt="" width="28" height="28" loading="lazy"></td><td><b>BMO</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/atlantic-union-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Atlantic Union Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian &middot; Equifax &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/webster-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Webster Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/umb-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>UMB Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/santander-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Santander Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/northwest-savings-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Northwest Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian &middot; Equifax &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/valley-national-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Valley National Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/busey-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Busey Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Experian &middot; TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/dime-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Dime Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">TransUnion</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/trustmark-national-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Trustmark National Bank</b><br><span class="pd">Business credit card &middot; 0% intro APR, 6 months</span></td><td><span class="bl">Equifax</span></td></tr><tr><td class="lg"><img src="https://fundhub.ai/assets/lenders/mechanics-bank.png" alt="" width="28" height="28" loading="lazy"></td><td><b>Mechanics Bank</b><br><span class="pd">Business credit card</span></td><td><span class="bl">Equifax</span></td></tr></table><div class="sp-c">The bureau each bank pulls is in your copy. That is how you avoid a decline on your weakest score.</div></div><div class="sp-cut" aria-hidden="true"><div class="sp-sec"><div class="sp-h">the order to apply</div><div class="sp-blur"><i class="sk" style="width:92%"></i><i class="sk" style="width:78%"></i><i class="sk" style="width:85%"></i><i class="sk" style="width:60%"></i></div></div><div class="sp-sec"><div class="sp-h">what each bank needs to say yes</div><div class="sp-blur"><i class="sk" style="width:84%"></i><i class="sk" style="width:70%"></i></div></div></div><div class="sp-unlock"><b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a></div></div>',
+        duplication:'<div class="sp"><div class="sp-doc">Business Duplication Map &middot; Sample Client</div><div class="sp-why">Why you need this: you keep getting funded after round one, one aged company after another.</div><div class="sp-sec"><div class="sp-h">your business today &middot; Rivera Supply LLC, Arizona, 14 months old</div><table><tr><th>Experian Business check</th><th>status</th><th>the fix</th></tr><tr><td>Business credit score</td><td><i class="tg ok">OK</i></td><td><span class="bl">Keep it reporting</span></td></tr><tr><td>Blemishes</td><td><i class="tg bad">1 COLLECTION</i></td><td><span class="bl">Settle it and have it updated</span></td></tr><tr><td>Business card balance</td><td><i class="tg warn">64% USED</i></td><td><span class="bl">Pay it down before you apply</span></td></tr><tr><td>NAICS code</td><td><i class="tg bad">FLAGGED</i></td><td><span class="bl">Use the code that matches what you sell</span></td></tr><tr><td>Business name</td><td><i class="tg warn">DOES NOT MATCH</i></td><td><span class="bl">One exact name everywhere</span></td></tr></table></div><div class="sp-cut" aria-hidden="true"><div class="sp-sec"><div class="sp-h">what a company can get as it ages</div><div class="sp-blur"><table><tr><th>age</th><th>business funding</th></tr><tr><td>under 12 months</td><td>half your card funding</td></tr><tr><td>12 to 24 months</td><td>equal to your card funding</td></tr><tr><td>24 months and up</td><td><b>double your card funding</b></td></tr></table><div class="sp-c">Rivera Supply turns 24 months in July 2027. That is when its funding doubles.</div></div></div><div class="sp-sec"><div class="sp-h">your quarterly plan</div><div class="sp-blur"><table><tr><th>quarter</th><th>step</th></tr><tr><td>Q4 2026</td><td>Open company two, set up right: clean name, right NAICS code, reporting from day one</td></tr><tr><td>Q1 2027</td><td>Open company three the same way</td></tr><tr><td>Q3 2027</td><td>Rivera Supply passes 24 months</td></tr><tr><td>Q4 2027</td><td>Company two passes 12 months</td></tr></table><div class="sp-c">Keep opening one to two a quarter and aged companies keep coming ready for funding.</div></div></div></div><div class="sp-unlock"><b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a></div></div>'
       };
       var lb=document.getElementById('fh-lb'),body=document.getElementById('fh-lb-body');
       if(!lb)return;
-      var PACK=[['startHere','01 Start here'],['tree','02 Decision tree'],['round1','03 Round 1'],['cond','04 Round 2'],['cond','05 Round 3'],['complaints','06 Rounds 4 and 5'],['final','07 Round 6'],['tracker','08 Tracker']];
       /* Show the top of each sample and glass the rest: the buyer sees enough to want it, not the whole thing. */
       function lock(){
         var sp=body.querySelector('.sp'); if(!sp||sp.querySelector('.sp-lock'))return;
@@ -1068,29 +1057,27 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         el.innerHTML='<b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a>';
         sp.appendChild(el);
       }
-      function render(k,tab){
-        var html='';
-        if(k==='pack'){
-          var cur=(tab==null?2:tab);
-          html+='<div class="ptabs">';
-          PACK.forEach(function(p,i){ html+='<button type="button" class="ptab'+(i===cur?' on':'')+'" data-tab="'+i+'">'+p[1]+'</button>'; });
-          html+='</div>'+P[PACK[cur][0]];
-        } else { if(!P[k]) return false; html=P[k]; }
-        body.innerHTML=html+'<div class="wm wm-lb">SAMPLE</div>'; requestAnimationFrame(lock); return true;
+      function render(k){
+        if(!P[k]) return false;
+        body.innerHTML=P[k]+'<div class="wm wm-lb">SAMPLE</div>';
+        if(!body.querySelector('.sp-unlock'))requestAnimationFrame(lock);
+        return true;
       }
       var SLUG={snapshot:'how_much_you_qualify_for',analysis:'credit_analysis_report',roadmap:'credit_optimization_roadmap',pack:'dispute_letter_pack',lenders:'bank_lender_match_list',duplication:'business_duplication_map'};
       var openD=null,openedAt=0;
-      function fht(e,p){try{(window.fhTrack||function(e,p){(window.fhq=window.fhq||[]).push([e,p]);})(e,p);}catch(x){}}
+      /* bbv:2 = buy box version 2 (owner-set 2026-10-02), same as the widget's own events. */
+      function fht(e,p){try{p=p||{};p.bbv=2;(window.fhTrack||function(e,p){(window.fhq=window.fhq||[]).push([e,p]);})(e,p);}catch(x){}}
       function trackClose(){ if(!openD)return; fht('preview_closed',{deliverable:openD,open_ms:Date.now()-openedAt}); openD=null; }
       function open(k){ if(!render(k))return; trackClose(); lb.hidden=false; document.body.style.overflow='hidden';
         var d=SLUG[k]; if(d){ openD=d; openedAt=Date.now(); fht('preview_opened',{deliverable:d});
           try{ if(typeof fbq!=='undefined') fbq('trackCustom','PreviewOpened',{content_name:d}); }catch(x){} } }
-      body.addEventListener('click',function(e){ var t=e.target.closest&&e.target.closest('.ptab'); if(t){ render('pack',parseInt(t.getAttribute('data-tab'),10)); body.scrollTop=0; } });
       function close(){ if(lb.hidden)return; lb.hidden=true; document.body.style.overflow=''; trackClose(); }
       window.addEventListener('pagehide',trackClose);
       document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden')trackClose(); });
       document.addEventListener('click',function(e){
         var a=e.target.closest&&e.target.closest('[data-sample]');
+        /* The whole order-summary row opens its sample, not only the link (dead clicks, 2026-10-02). */
+        if(!a&&e.target.closest){var row=e.target.closest('.sum li');a=row&&row.querySelector('[data-sample]');}
         if(a){e.preventDefault();open(a.getAttribute('data-sample'));return;}
         if(e.target.closest&&(e.target.closest('.lb-x')||e.target.closest('.sp-go')||e.target.classList.contains('lb-bg')))close();
       });
@@ -1127,14 +1114,17 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
                                         409 existing_account: the message goes under Email
        GET  slo-status                  polled every second after step 3
        POST slo-repair-checkout         only after a pull result on the repair path
-     Step 1 · Info: first, last, email, phone. Nothing else.
+     Step 1 · Info: first, last, email. Nothing else (buy box v2, owner-set
+                    2026-10-02: the phone moved to step 3). "Step 1 of 3"
+                    replaces the old three tabs.
      Step 2 · Card: the total, then Commas' own card boxes drawn into this page
                     (owner-set 2026-09-29). Paying opens step 3 in place. Nobody
                     is sent to a Commas page. The ?ref=&client_id= return is kept
                     only for an old link or a reload; it also opens step 3.
      Step 3 · Soft pull: legal name, DOB, social, home address, previous address,
                     businesses (first included, each extra $15 — the add-on sits
-                    here, after the card), consent, and the pull runs.
+                    here, after the card), phone (required), consent, and
+                    the pull runs.
      Nothing about repair or letter mailing shows before a pull result.
      The widget never decides demo or live. The server's answer does.
      UTM: read from sessionStorage fh_attribution (fh-attribution.js at the end of this file).
@@ -1154,7 +1144,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     }catch(e){}})();
     </script>
     <div class="cfw-formerr" data-formerr role="alert" hidden></div>
-    <div class="cfw-steps" data-tabs><button type="button" class="on" data-tab="1">1 &middot; Info</button><button type="button" data-tab="2">2 &middot; Card</button><button type="button" data-tab="3">3 &middot; Soft pull</button></div>
+    <div class="cfw-progress" data-progress>Step 1 of 3</div>
 
     <form class="cfw-step s1 on" novalidate autocomplete="on">
       <div class="row2">
@@ -1162,10 +1152,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <label>Last name<input type="text" name="c_last" data-f="c_last" autocomplete="family-name" maxlength="80"></label>
       </div>
       <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
-      <label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
 
-      <button type="submit" class="cfw-btn">Continue</button>
-      <div class="cfw-note">Step 1 of 3. Your card is next, then the short soft pull form.</div>
+      <p class="cfw-refund">If you're not happy with what you get, email us within 7 days and we'll refund you.</p>
+      <button type="submit" class="cfw-btn">Get My Funding Roadmap</button>
+      <div class="cfw-note">Your roadmap shows up in your portal today.</div>
     </form>
 
     <form class="cfw-step s2" novalidate autocomplete="off">
@@ -1238,8 +1228,13 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <div class="cfw-totline" data-bizline hidden></div>
       </div>
 
+      <div class="cfw-box">
+        <span class="cfw-kick">Your phone</span>
+        <label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
+      </div>
+
       <div class="cfw-note"><b>Check every answer before you continue.</b> Your legal name, date of birth, Social Security number and address &mdash; including the state &mdash; have to match your credit file exactly. One wrong character and the bureaus return nothing.</div>
-      <label class="check consent"><input type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub Credit Solutions LLC to run a soft pull of my credit report. A soft pull does not affect my credit score. I also agree Fundhub may call and text me at the number I gave, including automated texts, about my file. Message and data rates may apply. Reply STOP to stop. Agreeing to texts is not a condition of buying anything.</span></label>
+      <label class="check consent"><input type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub LLC to run a soft pull of my credit report. A soft pull does not affect my credit score. I also agree Fundhub LLC may call and text me at the number I gave, including automated texts, about my file. Message and data rates may apply. Reply STOP to stop. Agreeing to texts is not a condition of buying anything.</span></label>
       <button type="submit" class="cfw-btn" data-pull>Start My Soft Pull</button>
       <div class="cfw-note"><svg class="lk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Soft pull only &middot; it does not move your score &middot; your file is read in seconds</div>
     </form>
@@ -1320,7 +1315,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   var t0=0,busy=false,pollToken=0,logged=false;
 
   var s1=root.querySelector('.s1'),s2=root.querySelector('.s2'),s3=root.querySelector('.s3');
-  var tabs=root.querySelectorAll('[data-tab]'),tabBar=root.querySelector('[data-tabs]');
+  var progress=root.querySelector('[data-progress]');
   var bizList=root.querySelector('[data-bizlist]'),addBtn=root.querySelector('[data-add]');
   var payBtn=root.querySelector('[data-pay]'),pullBtn=root.querySelector('[data-pull]');
   var totalEl=root.querySelector('[data-total]'),totLine=root.querySelector('[data-totline]');
@@ -1341,8 +1336,11 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   /* ---- funnel tracking (docs/tracking/tracking-spec.md) ----
      Events carry a box's NAME and short slugs only. No typed value, no message
      text, no card data ever goes into an event. Queued in window.fhq until the
-     shared tracker loads; a tracking fault can never stop the checkout. */
-  function fht(e,p){try{(window.fhTrack||function(e,p){(window.fhq=window.fhq||[]).push([e,p]);})(e,p);}catch(x){}}
+     shared tracker loads; a tracking fault can never stop the checkout.
+     bbv: which buy box sent it (2 = phone on step 3, "Step 1 of 3" line,
+     owner-set 2026-10-02), so before and after can be told apart. */
+  var BBV=2;
+  function fht(e,p){try{p=p||{};p.bbv=BBV;(window.fhTrack||function(e,p){(window.fhq=window.fhq||[]).push([e,p]);})(e,p);}catch(x){}}
   function fhForm(el){return s1.contains(el)?'s1':s2.contains(el)?'s2':s3.contains(el)?'s3':'';}
   function fhField(el){return (el&&(el.name||el.getAttribute('data-f')))||'';}
   function fhSlug(c,d){return typeof c==='string'&&/^[a-z0-9_]{1,40}$/.test(c)?c:d;}
@@ -1481,20 +1479,19 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   }
   function phone10(v){var d=digits(v);if(d.length===11&&d.charAt(0)==='1')d=d.slice(1);return d.length===10?d:null;}
 
-  /* ---- step 1 ---- */
+  /* ---- step 1: first name, last name, email. The phone is asked on step 3
+     (buy box v2, owner-set 2026-10-02). ---- */
   function checkStep1(){
     clearAll(s1);var ok=true;
     function bad(el,msg){setErr(el,msg);ok=false;}
-    var f=s1.querySelector('[name="c_first"]'),l=s1.querySelector('[name="c_last"]'),em=s1.querySelector('[name="email"]'),ph=s1.querySelector('[name="phone"]');
+    var f=s1.querySelector('[name="c_first"]'),l=s1.querySelector('[name="c_last"]'),em=s1.querySelector('[name="email"]');
     if(!squeeze(f.value))bad(f,'Please enter your first name.');
     if(!squeeze(l.value))bad(l,'Please enter your last name.');
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(squeeze(em.value)))bad(em,'Please enter a real email address.');
-    if(!squeeze(ph.value))bad(ph,'Please enter your phone number.');
-    else if(!phone10(ph.value))bad(ph,'Use a 10-digit phone number.');
     return ok;
   }
   function contact(){
-    return {first_name:val(s1,'c_first'),last_name:val(s1,'c_last'),email:val(s1,'email').toLowerCase(),phone:phone10(val(s1,'phone'))||val(s1,'phone')};
+    return {first_name:val(s1,'c_first'),last_name:val(s1,'c_last'),email:val(s1,'email').toLowerCase()};
   }
 
   /* ---- step 2: the card, typed here ----
@@ -1691,13 +1688,18 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     checkAddress(function(k){return s3.querySelector('[name="'+k+'"]');},'your',bad);
     if(moved.checked)checkAddress(function(k){return s3.querySelector('[name="prev_'+k+'"]');},'your previous',bad);
     checkBusinesses(bad);
+    /* The phone lives here now (buy box v2) and is still required. */
+    var ph=s3.querySelector('[name="phone"]');
+    if(!squeeze(ph.value))bad(ph,'Please enter your phone number.');
+    else if(!phone10(ph.value))bad(ph,'Use a 10-digit phone number.');
     var c=s3.querySelector('[name="consent"]');
     if(!c.checked)bad(c,'Please check the box to authorize the soft pull before we can continue.');
     return ok;
   }
   function identity(){
     var o={first_name:val(s3,'first_name'),last_name:val(s3,'last_name'),dob:isoDob(val(s3,'dob')),ssn:digits(ssnInput.value),
-      address:val(s3,'address'),city:val(s3,'city'),state:val(s3,'state'),zip:val(s3,'zip')};
+      address:val(s3,'address'),city:val(s3,'city'),state:val(s3,'state'),zip:val(s3,'zip'),
+      phone:phone10(val(s3,'phone'))||val(s3,'phone')};
     var mid=val(s3,'middle_name'),sfx=val(s3,'suffix'),apt=val(s3,'apt');
     if(mid)o.middle_name=mid;if(sfx)o.suffix=sfx;if(apt)o.apt=apt;
     if(moved.checked){
@@ -1790,16 +1792,25 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(n===3&&!(order&&order.locked))return;
     if(fhTab!==n){fhTab=n;fht('buybox_tab',{tab:n});}
     step=n;
+    /* The top of the box goes on screen BEFORE the panes swap, in one jump
+       (layout shift, 2026-10-02). Step 3 opens seconds after the card is paid
+       and is far taller than step 2; swapping first shoved everything under
+       the box down the screen. */
+    var r=root.getBoundingClientRect();if(r.top<0)root.scrollIntoView({block:'start'});
     s1.classList.toggle('on',n===1);s2.classList.toggle('on',n===2);s3.classList.toggle('on',n===3);
-    each(tabs,function(t){t.classList.toggle('on',t.getAttribute('data-tab')===String(n));});
-    var r=root.getBoundingClientRect();if(r.top<0)root.scrollIntoView({behavior:'smooth',block:'start'});
+    progress.textContent='Step '+n+' of 3';
   }
   function showPane(name){
     var form=name==='form';
+    /* Reading, failed, slow and repair are much shorter than the step-3 form
+       and arrive seconds after the tap, when the server answers. Keep the box
+       at least as tall as it was, so nothing under it jumps up (layout shift,
+       2026-10-02). */
+    if(!form&&!root.style.minHeight){root.style.boxSizing='border-box';root.style.minHeight=root.offsetHeight+'px';}
     /* From here the script owns which pane shows, so the first-paint class
        comes off — otherwise its !important would pin the reading pane open. */
     document.documentElement.classList.remove('fh-paid');
-    tabBar.hidden=!form;
+    progress.hidden=!form;
     s1.hidden=!form;s2.hidden=!form;s3.hidden=!form;
     if(!form){hideFormErr();fhTab=0;} /* back to the form later = that tab is shown again */
     each(root.querySelectorAll('.cfw-state'),function(p){p.hidden=p.getAttribute('data-state')!==name;});
@@ -1817,14 +1828,6 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     beginCard();
   }
   s1.addEventListener('submit',function(e){e.preventDefault();onContinue();});
-  each(tabs,function(t){t.addEventListener('click',function(){
-    var want=t.getAttribute('data-tab'),paid=!!(order&&order.locked);
-    /* After the card there is nothing to go back to, and step 3 never opens
-       before the card is paid — the card comes first. */
-    if(want==='1'){if(!paid)go(1);return;}
-    if(want==='2'){if(paid)return;if(step===1)onContinue();else go(2);return;}
-    if(paid)go(3);
-  });});
   root.querySelector('[data-back]').addEventListener('click',function(e){e.preventDefault();go(1);});
 
   /* ---- the server ---- */
@@ -1881,7 +1884,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
   }
 
   function startCheckout(c,biz,sig){
-    var body={email:c.email,first_name:c.first_name,last_name:c.last_name,phone:c.phone,return_url:returnUrl()};
+    /* No phone here: it is asked on step 3 and sent with the soft pull. */
+    var body={email:c.email,first_name:c.first_name,last_name:c.last_name,return_url:returnUrl()};
     if(biz.length)body.businesses=biz;else body.business_count=1;
     var a=attribution();Object.keys(a).forEach(function(k){body[k]=a[k];});
     return call('POST','slo-checkout',body).then(function(r){
@@ -1954,7 +1958,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
      already sitting there when they arrive. Nothing is charged by this. */
   function beginCard(){
     if(order&&order.locked)return;
-    var biz=bizPayload(),c=contact(),sig=JSON.stringify([c.email,c.first_name,c.last_name,c.phone,biz]);
+    var biz=bizPayload(),c=contact(),sig=JSON.stringify([c.email,c.first_name,c.last_name,biz]);
     if(order&&order.sig===sig&&(order.demo||order.embedded)){if(!order.demo)mountCard(order,c);return;}
     dropCard();
     startCheckout(c,biz,sig).then(function(o){
@@ -2135,6 +2139,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     renumber();
     if(b.demo===true){demoEl.textContent=(b.notices&&b.notices.charge)||'Demo checkout: your card is not charged.';demoEl.hidden=false;liveNote.hidden=true;}
     else{demoEl.hidden=true;liveNote.hidden=false;}
+    cardMount.classList.toggle('cfw-nocard',b.demo===true);
     if(b.checkout&&b.checkout.ready===false){showFormErr(msgFor('checkout_not_configured'),'checkout_not_configured');payBtn.disabled=true;}
     if(b.mapsBrowserKey)placesInit(b.mapsBrowserKey);
   },function(){});
@@ -2303,7 +2308,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <p><strong>NOT AFFILIATED WITH META:</strong> This site is not a part of the Facebook website or Facebook Inc. FACEBOOK is a trademark of FACEBOOK, Inc.</p>
     </div>
     <div class="foot-support">Questions? <a href="mailto:support@fundhub.ai">support@fundhub.ai</a> &nbsp;&middot;&nbsp; <a href="tel:+15613048368">(561) 304-8368</a></div>
-    <div class="foot-bottom">Fundhub.ai | Copyright &copy; 2026 | All Rights Reserved &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/terms/">Terms &amp; Conditions</a></div>
+    <div class="foot-bottom">Fundhub.ai | Copyright &copy; 2026 Fundhub LLC | All Rights Reserved &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/terms/">Terms &amp; Conditions</a></div>
     
   </div>
   <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
@@ -2340,6 +2345,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 /* Testimonials (Chris, 2026-10-01): on a phone, one video at a time. Arrows and dots rotate them,
    a swipe works too. Nothing moves when the page scrolls. Computers keep all three side by side. */
 .fh-b .proofgrid .fhc-rail{display:contents}
+.fh-b .proofgrid .tcap{cursor:pointer}
 .fh-b .proofgrid .fhc-nav{display:none}
 @media(max-width:699px){
 .fh-b .proofgrid{grid-template-columns:minmax(0,1fr)!important}
@@ -2420,6 +2426,8 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     }
     if(o)o.addEventListener('click',big);
     v.addEventListener('click',big);
+    /* A tap on the caption starts the video, same as Play (dead clicks, 2026-10-02). */
+    var cap=c.querySelector('.tcap');if(cap&&o)cap.addEventListener('click',function(){o.click();});
   });
   paint(0);
 })();
@@ -2458,6 +2466,27 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .fh-work li:first-child{border-top:0}
 .fh-root .fh-work li b{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--gray2);text-align:right;max-width:45%}
 .fh-root .fh-tprod{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--gray2);margin-bottom:4px}
+.fh-root .lb .wm-lb{color:rgba(10,10,10,.05)}
+.fh-root .sp .tg{white-space:nowrap;display:inline-block}
+.fh-root .sp-unlock{display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;margin:-34px -4px 0;padding:46px 16px 8px;position:relative;background:linear-gradient(180deg,rgba(255,255,255,0) 0%,#fff 38%)}
+.fh-root .sp-unlock b{font-size:16px;color:var(--ink)}
+.fh-root .sp-unlock span{font-size:13.5px;color:var(--gray2)}
+.fh-root .sp-unlock .btn{margin-top:6px;max-width:320px;padding:12px 18px;font-size:15px}
+.fh-root .sp-cut{position:relative;max-height:230px;overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 45%,transparent);mask-image:linear-gradient(180deg,#000 45%,transparent)}
+.fh-root .sp-blur{filter:blur(4px);user-select:none;pointer-events:none}
+.fh-root .sp .sk{display:block;height:9px;margin:9px 0;border-radius:5px;background:#E4E4E7}
+.fh-root .sp-ul li{margin-top:4px}
+.fh-root .sp-cite{font-family:var(--mono);font-size:10.5px;color:var(--gray2);margin-top:2px!important}
+.fh-root .sp-rounds{list-style:none;margin-top:4px}
+.fh-root .sp-rounds li{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);font-size:13px;color:var(--ink)}
+.fh-root .sp-rounds .rd{font-family:var(--mono);font-size:10px;letter-spacing:.08em;background:#F4F4F5;border:1px solid var(--line);border-radius:5px;padding:3px 6px;color:var(--gray)}
+.fh-root .sp-rounds em{font-style:normal;color:#188bf6;font-size:12px}
+.fh-root .sp-rounds .lk{margin-left:auto;font-size:12px;opacity:.55}
+.fh-root .sp-lenders td{vertical-align:middle}
+.fh-root .sp-lenders .lg{width:40px;padding-right:0}
+.fh-root .sp-lenders img{display:block;width:28px;height:28px;object-fit:contain;border:1px solid var(--line);border-radius:6px;background:#fff;padding:2px}
+.fh-root .sp-lenders .pd{font-size:11.5px;color:var(--gray2)}
+.fh-root .sp .bl{filter:blur(4px);user-select:none}
 .fh-root .sp-why{font-weight:600;margin:4px 0 12px;font-size:14px}
 .fh-root .sp-what{margin:-6px 0 12px;font-size:13px;color:var(--gray2)}
 .fh-root .fh-bonus{display:inline-block;background:#A8D8B0;color:#0A0A0A;font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.14em;padding:4px 9px;border-radius:999px;margin-right:8px;vertical-align:middle}
