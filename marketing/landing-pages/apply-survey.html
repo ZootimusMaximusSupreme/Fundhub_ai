@@ -130,24 +130,24 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
 <body>
 <div class="wrap">
   <span class="logo">fundhub.</span>
-  <div class="hero">
+  <div class="hero" data-fh-section="hero">
     <span class="kicker">Application · Step 1 of 2</span>
     <h1>Let's See What You Qualify For</h1>
     <p class="lede">A few quick questions, then pick a time for your call. Soft pull only. Zero score impact.</p>
   </div>
-  <form class="card" id="sv" novalidate>
+  <form class="card" id="sv" novalidate data-fh-section="survey">
     <div class="bar"><i id="bar"></i></div>
     <div class="top"><span class="secure" id="secure"><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Secure application</span><button type="button" class="back" id="back" hidden>← Back</button><span class="step" id="count"></span></div>
-    <div class="body" id="body"></div>
+    <div class="body" id="body" data-fh-section="survey"></div>
     <!-- attribution hidden fields: names unchanged so fh-attribution.js stamps them -->
     <input type="hidden" name="utm_source"><input type="hidden" name="utm_medium"><input type="hidden" name="utm_campaign">
     <input type="hidden" name="utm_content"><input type="hidden" name="utm_term"><input type="hidden" name="landing_path">
     <input type="hidden" name="referrer_domain"><input type="hidden" name="a1"><input type="hidden" name="a2">
   </form>
-  <div class="wins" aria-label="Recent client approvals"><span class="wins-k">Recent client approvals</span><div class="wins-track" id="wins"></div></div>
+  <div class="wins" aria-label="Recent client approvals" data-fh-section="approvals"><span class="wins-k">Recent client approvals</span><div class="wins-track" id="wins"></div></div>
   <div class="trust" id="trust"><span>Takes about 10 seconds</span><span>·</span><span>Soft pull only</span><span>·</span><span>Zero score impact</span></div>
 
-  <section class="cal" id="cal" hidden aria-labelledby="cal-h">
+  <section class="cal" id="cal" hidden aria-labelledby="cal-h" data-fh-section="calendar">
     <h2 id="cal-h">Pick a time for your call</h2>
     <p class="sub">Your funding advisor meets you on Google Meet. Calls take about 30 minutes.</p>
     <div class="trustrow"><span><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Free call</span><span><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Soft pull only, zero score impact</span><span><svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2" y="5.5" width="8" height="5.5" rx="1.2" fill="currentColor"/><path d="M4 5.5V4a2 2 0 0 1 4 0v1.5" fill="none" stroke="currentColor" stroke-width="1.3"/></svg>Reschedule anytime</span></div>
@@ -215,11 +215,12 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
       h += '<div class="opts" role="' + (multi ? 'group' : 'radiogroup') + '">';
       q.opts.forEach(function (o, i) {
         var on = multi ? (cur || []).indexOf(o) > -1 : cur === o;
-        h += '<button type="button" class="opt' + (multi ? ' multi' : '') + '" role="' + (multi ? 'checkbox' : 'radio') + '" aria-checked="' + on + '" data-i="' + i + '"><span class="mk"></span><span>' + esc(o) + '</span></button>';
+        /* data-fh-track: the shared tracker labels this press "click:apply-option", never the answer words. */
+        h += '<button type="button" class="opt' + (multi ? ' multi' : '') + '" role="' + (multi ? 'checkbox' : 'radio') + '" aria-checked="' + on + '" data-i="' + i + '" data-fh-track="apply-option"><span class="mk"></span><span>' + esc(o) + '</span></button>';
       });
       if (q.other) {
         var isOther = cur && q.opts.indexOf(cur) < 0;
-        h += '<button type="button" class="opt" role="radio" aria-checked="' + !!isOther + '" data-other="1"><span class="mk"></span><span>Other</span></button>';
+        h += '<button type="button" class="opt" role="radio" aria-checked="' + !!isOther + '" data-other="1" data-fh-track="apply-option"><span class="mk"></span><span>Other</span></button>';
         h += '<div class="other"' + (isOther ? '' : ' hidden') + ' id="otherbox"><input type="text" id="f-other" aria-label="Other planned use" placeholder="Tell us what it’s for" value="' + esc(isOther ? cur : '') + '"></div>';
       }
       h += '</div><div class="err" id="err"></div>';
@@ -264,7 +265,30 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     if (next) next.addEventListener('click', function () { validate(q) && advance(); });
     if (q.type === 'contact') wireContact();
     var first = body.querySelector('input,.opt');
-    if (first && q.type === 'contact') first.focus();
+    if (first && q.type === 'contact') { first.__fhAuto = true; first.focus(); }   /* the page's own focus is not a field_focus */
+  }
+
+  /* Funnel tracking (docs/tracking/tracking-spec.md). Sends the screen key, the field NAME
+     and a short error code. Never an answer, never typed text. Safe before
+     public/funnel/fh-events.js loads: it drains window.fhq. */
+  function fht(e, p) { (window.fhTrack || function (e, p) { (window.fhq = window.fhq || []).push([e, p]); })(e, p); }
+  var FH_SENT = {};
+  function fhField(event, field) {   /* field_focus / field_complete: once per field per page load */
+    if (FH_SENT[event + ':' + field]) return;
+    FH_SENT[event + ':' + field] = 1;
+    fht(event, { form: 'apply', field: field });
+  }
+  function fieldOk(field, v) {   /* the same checks validate() makes */
+    v = String(v || '').trim();
+    if (field === 'email') { v = v.toLowerCase(); return /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(v) && !/\.\./.test(v); }
+    if (field === 'phone') { var d = v.replace(/\D/g, ''); return d.length === 10 && !/^[01]/.test(d); }
+    return !!v;
+  }
+  function trackContactField(el) {
+    var field = el.name;
+    el.addEventListener('focus', function () { if (el.__fhAuto) { el.__fhAuto = false; return; } fhField('field_focus', field); });
+    el.addEventListener('input', function () { fhField('field_focus', field); });
+    el.addEventListener('blur', function () { if (fieldOk(field, el.value)) fhField('field_complete', field); });
   }
 
   /* Contact polish: Capitalized names, email typo check, (555) 555-5555 phone. */
@@ -293,6 +317,7 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     return dp[a.length][b.length];
   }
   function wireContact() {
+    ['f-first', 'f-last', 'f-email', 'f-phone'].forEach(function (id) { trackContactField(document.getElementById(id)); });
     ['f-first', 'f-last'].forEach(function (id) {
       var el = document.getElementById(id);
       el.addEventListener('input', function () { var p = el.selectionStart, v = capName(el.value); if (v !== el.value) { el.value = v; el.setSelectionRange(p, p); } });
@@ -307,23 +332,29 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
       var s = suggest(em.value);
       if (s) {
         sug.hidden = false;
-        sug.innerHTML = 'Did you mean <button type="button" id="sugbtn">' + esc(s) + '</button>?';
+        /* data-fh-track: the click label is "click:apply-email-suggestion", never the address. */
+        sug.innerHTML = 'Did you mean <button type="button" id="sugbtn" data-fh-track="apply-email-suggestion">' + esc(s) + '</button>?';
         document.getElementById('sugbtn').addEventListener('click', function () { em.value = s; sug.hidden = true; });
       } else sug.hidden = true;
     });
   }
 
   function validate(q) {
-    var err = document.getElementById('err'), msg = '';
+    var err = document.getElementById('err'), msg = '', bad = q.key, code = 'required';
     if (q.type === 'contact') {
       var c = { first_name: capName(val('f-first')), last_name: capName(val('f-last')), email: val('f-email').toLowerCase(), phone: val('f-phone') };
-      if (!c.first_name || !c.last_name) msg = 'Enter your first and last name.';
-      else if (!/^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(c.email) || /\.\./.test(c.email)) msg = 'Enter a valid email so we can send your confirmation.';
-      else if (c.phone.replace(/\D/g, '').length !== 10 || /^[01]/.test(c.phone.replace(/\D/g, ''))) msg = 'Enter a valid 10-digit US phone number.';
-      if (!msg) A.contact = c;
+      if (!c.first_name || !c.last_name) { msg = 'Enter your first and last name.'; bad = c.first_name ? 'last_name' : 'first_name'; }
+      else if (!/^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/.test(c.email) || /\.\./.test(c.email)) { msg = 'Enter a valid email so we can send your confirmation.'; bad = 'email'; code = c.email ? 'invalid' : 'required'; }
+      else if (c.phone.replace(/\D/g, '').length !== 10 || /^[01]/.test(c.phone.replace(/\D/g, ''))) { msg = 'Enter a valid 10-digit US phone number.'; bad = 'phone'; code = c.phone ? 'invalid' : 'required'; }
+      if (!msg) {
+        A.contact = c;
+        /* Autofill can fill a field without a blur: every field passed, so each counts as complete. */
+        ['first_name', 'last_name', 'email', 'phone'].forEach(function (f) { fhField('field_complete', f); });
+      }
     } else if (q.type === 'multi' && !(A[q.key] || []).length) msg = 'Pick at least one.';
     else if (q.type === 'single' && !A[q.key]) msg = q.other ? 'Pick one, or tell us under Other.' : 'Pick one to continue.';
     err.textContent = msg;
+    if (msg) fht('validation_error', { form: 'apply', field: bad, code: code });
     return !msg;
   }
   function val(id) { return document.getElementById(id).value.trim(); }
@@ -403,6 +434,8 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
   function advance() {
     var list = path();
     SEND_STEP(list[at].key);
+    /* step_num: where this screen sat on the path this visitor saw (contact is 1). */
+    fht('survey_answer', { survey: 'apply', step_num: at + 1, question_id: list[at].key });
     if (at < list.length - 1) { at++; render(); }
     else finish();
   }

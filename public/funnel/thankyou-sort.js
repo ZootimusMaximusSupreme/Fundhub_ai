@@ -454,6 +454,25 @@
   }
   function show(node, on) { if (node) node.style.display = on ? "" : "none"; }
 
+  /* Funnel tracking (docs/tracking/tracking-spec.md). Safe before
+     https://fundhub.ai/funnel/fh-events.js loads: it drains window.fhq. */
+  function fht(e, p) { (window.fhTrack || function (e, p) { (window.fhq = window.fhq || []).push([e, p]); })(e, p); }
+
+  /* survey_route: the road this page shows. The Sorting Hat's real offer (FUNDING_DFY,
+     REPAIR_DFY, ...) is picked on the call, not here: the closer's cockpit saves it
+     through POST /api/closer-deck "log_disposition" (src/sales/closer-deck.mjs
+     logDeckDisposition). Since 2026-10-01 this page sends everyone to that one call;
+     the only thing it decides is whether a fresh booking came with the visitor.
+       offer "call-booked"  came straight from /funding-book-call with a fresh booking
+       offer "call"         everyone else (the call is still the next step)
+     survey "home" when the visitor came from fundhub.ai (the homepage survey sends its
+     DOWNSELL and MANUAL_REVIEW leads here, src/config/homepage-survey-steps.mjs);
+     "apply" otherwise. */
+  function trackRoute(booked) {
+    var fromHome = /^https?:\/\/(www\.)?fundhub\.ai(\/|$)/.test(String(document.referrer || ""));
+    fht("survey_route", { survey: fromHome ? "home" : "apply", offer: booked ? "call-booked" : "call" });
+  }
+
   function run() {
     var root = document.querySelector(".fh-root");
     if (!root || document.getElementById("fh-ty-proof")) return;
@@ -467,6 +486,7 @@
     var cal = document.getElementById("fh-cal-cta") || root.querySelector(".cal-cta");
     var faq = root.querySelector("section.faq");
     var booked = fhIsBooked(readBooking(), Date.now(), document.referrer);
+    trackRoute(booked);   /* once per page load: run() only gets here once */
 
     /* 1. Everyone sees the booked page and the confirm-your-call buttons (owner, 2026-10-01:
           "shouldn't show pick your call time ... a confirm your call button like we had before").

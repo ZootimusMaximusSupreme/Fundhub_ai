@@ -1,9 +1,16 @@
 /* Homepage multi-step survey — CF ground truth + OWNER attribute keys.
-   docs/clickfunnels/cf-survey-ground-truth.md
-   docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md
+   marketing/landing-pages/clickfunnels/cf-survey-ground-truth.md
+   marketing/landing-pages/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md
    Contact LAST. Business name optional. */
 (function () {
   var PERSONAL = "No, personal funding only";
+
+  /* Funnel tracking (docs/tracking/tracking-spec.md). Sends the screen id, the field NAME
+     and a short error code. Never an answer, never typed text. Safe before
+     /funnel/fh-events.js loads: it drains window.fhq. */
+  function fht(e, p) {
+    (window.fhTrack || function (e, p) { (window.fhq = window.fhq || []).push([e, p]); })(e, p);
+  }
 
   var STEPS = [
     {
@@ -198,6 +205,36 @@
       if (el) el.textContent = msg || "";
     }
 
+    var fhSent = {};
+    /* field_focus / field_complete: once per field per page load. */
+    function fhField(event, field) {
+      if (fhSent[event + ":" + field]) return;
+      fhSent[event + ":" + field] = 1;
+      fht(event, { form: "home", field: field });
+    }
+    function fhInvalid(field, code) {
+      fht("validation_error", { form: "home", field: field, code: code });
+    }
+    /* The same checks submitForm makes. Business and phone are optional: any value counts. */
+    function fieldOk(field, v) {
+      v = String(v || "").trim();
+      if (field === "email") return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      return !!v;
+    }
+    function trackField(el) {
+      if (!el) return;
+      var field = el.name;
+      el.addEventListener("focus", function () {
+        fhField("field_focus", field);
+      });
+      el.addEventListener("input", function () {
+        fhField("field_focus", field);
+      });
+      el.addEventListener("blur", function () {
+        if (fieldOk(field, el.value)) fhField("field_complete", field);
+      });
+    }
+
     function render() {
       var list = steps();
       if (idx < 0) idx = 0;
@@ -247,10 +284,11 @@
           '">';
         (step.options || []).forEach(function (opt) {
           var on = step.type === "multi" ? !!picked[opt] : selected === opt;
+          // data-fh-track: the shared tracker labels this press "click:home-option", never the answer words.
           html +=
             '<button type="button" class="sv-opt' +
             (on ? " on" : "") +
-            '" data-opt="' +
+            '" data-fh-track="home-option" data-opt="' +
             opt.replace(/"/g, "&quot;") +
             '">' +
             opt +
@@ -315,22 +353,27 @@
             });
             if (!picks.length) {
               setErr("We need this one to continue.");
+              fhInvalid(step.id, "required");
               return;
             }
             answers[step.id] = picks;
           } else if (!answers[step.id]) {
             setErr("We need this one to continue.");
+            fhInvalid(step.id, "required");
             return;
           } else if (step.otherEnabled && answers[step.id] === "Other") {
             var ot = (document.getElementById("sv-other") || {}).value || "";
             ot = String(ot).trim();
             if (!ot) {
               setErr("We need this one to continue.");
+              fhInvalid(step.id, "other_required");
               return;
             }
             otherText = ot;
             answers[step.id] = ot;
           }
+          // step_num: where this screen sat on the path this visitor saw.
+          fht("survey_answer", { survey: "home", step_num: idx + 1, question_id: step.id });
           if (step.id === "has_business") {
             if (answers[step.id] === PERSONAL) {
               delete answers.annual_business_revenue;
@@ -349,6 +392,11 @@
         submit.addEventListener("click", function () {
           submitForm(submit);
         });
+      if (step.type === "contact") {
+        ["sv-name", "sv-business", "sv-email", "sv-phone"].forEach(function (id) {
+          trackField(document.getElementById(id));
+        });
+      }
     }
 
     function submitForm(btn) {
@@ -363,16 +411,25 @@
       business = String(business).trim();
       if (!name) {
         setErr("We need this one to continue.");
+        fhInvalid("name", "required");
         return;
       }
       if (!email) {
         setErr("We need this one to continue.");
+        fhInvalid("email", "required");
         return;
       }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         setErr("That address doesn't look complete — check for a typo.");
+        fhInvalid("email", "invalid");
         return;
       }
+      // Autofill can fill a field without a blur: a field that passed counts as complete.
+      [["name", name], ["business", business], ["email", email], ["phone", phone]].forEach(function (f) {
+        if (fieldOk(f[0], f[1])) fhField("field_complete", f[0]);
+      });
+      var list = steps();
+      fht("survey_answer", { survey: "home", step_num: idx + 1, question_id: list[idx].id });
       btn.disabled = true;
       btn.textContent = "Sending…";
       setErr("");
