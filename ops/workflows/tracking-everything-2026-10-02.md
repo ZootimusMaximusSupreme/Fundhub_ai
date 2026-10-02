@@ -19,7 +19,7 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 | P3-H2 | Survey hooks: `apply-survey.html`, `public/js/homepage-survey.js` + `public/index.html`, sorting hat `public/funnel/thankyou-sort.js` | agent | done — committed `38d69440` |
 | P3-H3 | Booking: /funding-book-call footer block (fix 3), `slo/slo-02-booking.html`, manifest (+ /order row), push script code block | agent | done — committed `1c19a6bd` |
 | P4 | Meta pixel + Conversions API | **blocked** — no Conversions API token exists (see Blockers) | blocked |
-| G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | **waiting on Chris** |
+| G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | **done — live 2026-10-02** (ship `4ad9f02c` by another session + CF pushes by this session) |
 | Q1 | /roadmap and /roadmap/ → one URL | agent | done — committed (see Results) |
 | Q2+Q3+Q6+Q7p | /roadmap page: tap speed under 200ms (INP 1.1s), layout shift (CLS 0.15), dead clicks (8.89%), "Fundhub LLC" in page consent + footers — marked draft | agent | claimed |
 | Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | done — no errors from our code |
@@ -190,3 +190,10 @@ Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name
 - Can't be fixed from our side if it happens: the card company's frame failing inside the app; wallet / pay-later buttons (Apple Pay normally unavailable in FB/IG on iPhone, Google Pay not in Android in-app, pay-later pops out to their site). Card path unaffected.
 - Can't be proven by emulation: real in-app WebViews, Meta's injected scripts, real card boxes, real charge + bank check, real reload behaviour. Phone check (no charge) is in the final checklist; a full real-purchase proof needs one real $297 charge + refund — Chris's call.
 - Note: the agent installed Playwright's WebKit browser (77 MB) into ~/Library/Caches/ms-playwright to run the iPhone tests.
+
+## LIVE — 2026-10-02 00:26 onward
+
+- Netlify: ship `4ad9f02c` (run by another session holding the same "ship everything" order; this session waited, did not double-ship). 330 applied / 0 pending; migrations 381, 404, 405 applied.
+- ClickFunnels pushes (this session): apply-book (footer 193 → 6,982 bytes, verified), apply-order (footer 0 → 125, verified), apply-survey, slo-297-booking, slo-297-thank-you, slo-297-sales — all ok; API read-back confirms every marker.
+- Public proof: headless walk of https://apply.fundhub.ai/roadmap/?utm_source=liveproof → URL rewritten to /roadmap, canonical present, fhTrack live, tab 3 locked, no $15, Colin #2 video on page; DB holds funnel.page / buybox_tab / scroll / section_view / click / exit with funnel + step + UTMs (actor agent).
+- Docs: audit log, journeys (slo-offer-actual, sorting-hat-pages-flow, slo-roadmap-widget-flow), CHANGELOG, `docs/tracking/meta-events.md`, coverage + phone checklist in `docs/tracking/tracking-spec.md` — `f407649d`.
