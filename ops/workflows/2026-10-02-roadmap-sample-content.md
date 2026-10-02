@@ -119,3 +119,10 @@ Source of the book facts: `credentials/lenders-audit/lenders-unified-carl-merged
 - **(b)** Build the map as a new sixth document from parts 1, 2, 4 and 5. That is new work, so it starts with the workflow questions in CLAUDE.md §3a.
 
 No code changed. No tests run.
+
+## Shipped — website (2026-10-02)
+
+- Ship 44095339 (server, incl. queued buy box v2 slo-pull change): live, 330 db changes, 0 pending.
+- ClickFunnels API push slo-297-sales (page 25516164) ok. Live https://apply.fundhub.ai/roadmap (cache-busted): new samples (11 unlock cards, Sample Client), 26 bank logos all load, "Get approved for the most funding", no "no contract"/"One payment", guarantee back, roadmap plan-length line.
+- Live click test 390px: all six samples open with unlock card, 0 broken logos, checkout fields render, 0 page errors.
+- Next: Business Duplication Map as real UnderwriteIQ document (agent building) → ship after.
