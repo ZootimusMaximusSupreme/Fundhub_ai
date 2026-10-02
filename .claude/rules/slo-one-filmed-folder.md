@@ -8,7 +8,7 @@
 
 https://drive.google.com/drive/folders/13ZOjA56MNuM-PHSRK5fQK0bovRwR8raZ
 
-Phone upload, Riverside export, agent move — **all filmed MP4s land here** with names from `docs/ads/NAMING.md`.
+Phone upload, Riverside export, agent move — **all filmed MP4s land here** with names from `marketing/ads/NAMING.md`.
 
 `DRIVE_RAW_FOLDER_ID` in env **is this same folder** (sweeper watches SLO Ads root). There is no separate “Raw inbox” for Chris to check.
 

@@ -175,7 +175,7 @@ function page(journey, data) {
       "`ROLE_SETS` value, or write endpoints for it on its own initiative. When somebody does",
       "build it, this page starts drawing itself — nothing here needs editing by hand.",
       "",
-      "Recorded on the board at `docs/workflows/pii-and-journeys.md`.",
+      "Recorded on the board at `ops/workflows/pii-and-journeys.md`.",
       ""
     ].join("\n");
   }

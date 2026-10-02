@@ -1,11 +1,11 @@
 ---
 name: fundhub-perf-auditor
-description: Read-only performance audit against docs/PERF-STANDARDS.md. Triggers - perf audit, speed audit, why is this slow, load time, lighthouse, page speed, core web vitals.
+description: Read-only performance audit against docs/rules/PERF-STANDARDS.md. Triggers - perf audit, speed audit, why is this slow, load time, lighthouse, page speed, core web vitals.
 ---
 
 # Fundhub Perf Auditor
 
-Read-only. Findings only. Ground truth is `docs/PERF-STANDARDS.md`. Same discipline as fundhub-auditor and fundhub-ui-auditor — audit and fix never mix (audit-vs-fix-router applies).
+Read-only. Findings only. Ground truth is `docs/rules/PERF-STANDARDS.md`. Same discipline as fundhub-auditor and fundhub-ui-auditor — audit and fix never mix (audit-vs-fix-router applies).
 
 ## Prime rules
 
@@ -39,6 +39,6 @@ Funnel pages first — they cost money per visitor. CRM screens second. Rank all
 
 1. Funnel: apply.fundhub.ai/watch, apply, book, thank-you.
 2. CRM: the 39 screens in public/app/, logged in per primary role.
-3. Board: `docs/workflows/perf-audit-<date>.md`. Evidence: `docs/workflows/perf-audit-evidence/<page>/`.
+3. Board: `ops/workflows/perf-audit-<date>.md`. Evidence: `ops/workflows/perf-audit-evidence/<page>/`.
 4. Pattern findings (same cause across many pages — e.g. one blocking font, inline styles everywhere) get ONE row listing affected pages.
 5. Fan out in groups. Stop when the board is written.

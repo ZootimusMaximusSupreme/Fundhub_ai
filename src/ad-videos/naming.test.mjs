@@ -22,7 +22,7 @@ import {
 } from "./naming.mjs";
 
 describe("naming — the worked example from the plan", () => {
-  // docs/video-pipeline-plan.md §4, copied character for character.
+  // marketing/ads/video-pipeline-plan.md §4, copied character for character.
   test("Paul's folder is exactly what §4 draws", () => {
     assert.equal(PAUL_ROOT, "Fundhub Ads");
     assert.equal(paulFolderName("43"), "043");

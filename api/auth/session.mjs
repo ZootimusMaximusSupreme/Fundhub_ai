@@ -19,7 +19,7 @@
 // been ready for these three; nothing had ever handed them to it. So the role
 // this endpoint reports for an account session IS its principal kind, which is
 // exactly what that map expects. applyBrand() themes CRM chrome from
-// /api/org-brand (docs/BRAND-THEMING-SPEC.md); partner_id is still projected
+// /api/org-brand (docs/specs/BRAND-THEMING-SPEC.md); partner_id is still projected
 // for partner-surface screens, not for CRM colours.
 //
 // `principal` is added alongside, naming the kind honestly, so nothing has to

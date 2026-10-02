@@ -107,7 +107,7 @@ After a **named fix**: run this whole roleplay **twice**. One run is not enough.
 
 ## Board
 
-Write `docs/workflows/agent-tester-YYYY-MM-DD.md` (add `-2` if the date file exists).
+Write `ops/workflows/agent-tester-YYYY-MM-DD.md` (add `-2` if the date file exists).
 
 Must include:
 

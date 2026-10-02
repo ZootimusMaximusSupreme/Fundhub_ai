@@ -171,7 +171,7 @@ export async function retryOne(database, row, {
 /* closeAnsweredWaits — the reader came back, so stop saying it has not.
  *
  * MEASURED 2026-09-18 on live, file #9 Sim Nine-Repair (hole N4 on
- * docs/workflows/live-prove-2026-09-17-notes.md): this sweeper read all three
+ * ops/workflows/live-prove-2026-09-17-notes.md): this sweeper read all three
  * queued documents at 17:20 UTC — two accepted, one "please retake it" — and
  * resolved their queue rows. The three tasks doc-check raised when it queued
  * them, "Waiting on the document reader — this id document has not been read

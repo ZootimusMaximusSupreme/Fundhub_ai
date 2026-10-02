@@ -284,7 +284,7 @@ export async function listOpenRoster(db, { orgId } = {}) {
  * screen that writes no `staff_events` row — all of them still look idle from
  * the moment they clock in, and this sweep would end their shift at its start
  * time. `pull_run`, `text_sent` and `file_touched` have no writer at all; see
- * src/shifts/TELEMETRY-CALLSITES.md and docs/workflows/finish-the-build.md §W1.
+ * src/shifts/TELEMETRY-CALLSITES.md and ops/workflows/finish-the-build.md §W1.
  *
  * Nothing runs this — autoCloseStale() still has no caller and no scheduler — so
  * nothing is currently harmed. BEFORE SCHEDULING IT, decide what happens to a

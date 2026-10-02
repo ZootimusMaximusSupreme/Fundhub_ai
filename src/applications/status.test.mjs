@@ -129,7 +129,7 @@ test("listClientDecisionPlays reads named plays for a client", async () => {
 
    The rule these pin: a MISSING amount stays missing. It must never be written
    as 0 — a zero says the bank approved nothing, which is a different and false
-   claim (docs/CLOSEOUT-FEE-BASIS.md). */
+   claim (docs/finance/CLOSEOUT-FEE-BASIS.md). */
 
 function bankDecisionDb() {
   const calls = [];

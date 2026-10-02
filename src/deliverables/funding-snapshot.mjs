@@ -5,7 +5,7 @@
 //
 // TWO LOOKS (2026-09-17). With no `opts` this prints the older printer's markup
 // byte for byte (port-parity.test.mjs pins it). With `{ look: "gold" }` it draws
-// the gold pack (docs/workflows/gold-deliverables-v5/funding_snapshot.pdf): the
+// the gold pack (ops/workflows/gold-deliverables-v5/funding_snapshot.pdf): the
 // gold cover, closing panel and tables, the gold waterfall chart in 01, the
 // numbered cost items in 03, the cleanup items in 04 and the callout in 06.
 // The words are the same in both looks. Gold only changes the drawing.

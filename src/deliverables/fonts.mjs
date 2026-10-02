@@ -7,7 +7,7 @@
 // fell back to Arial and the whole design changed.
 //
 // The nine .ttf files were already git-tracked at
-// docs/workflows/gold-deliverables-v5/fonts/ and referenced by nothing. They are
+// ops/workflows/gold-deliverables-v5/fonts/ and referenced by nothing. They are
 // copied to assets/fonts/ and pointed at here.
 //
 // HOW THEY REACH THE PAGE. netlify.toml publishes `public/`, and assets/ is not

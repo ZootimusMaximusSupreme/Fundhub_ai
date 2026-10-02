@@ -2,7 +2,7 @@
  * page at public/climate/.
  *
  * Two things are being guarded here, and they are the two the offer brief bans
- * outright (docs/ads/climate-lead-magnet-offer-2026-09-18.md §7):
+ * outright (marketing/ads/climate-lead-magnet-offer-2026-09-18.md §7):
  *
  *   1. the count and the names come from the REAL matcher over REAL rows, and
  *   2. no approval odds, no percentage, no promised dollar amount ever reaches
@@ -142,7 +142,7 @@ test("climate-match: no business on file holds back the business cards and says 
 test("climate-match: a lender's own promotional product name never reaches the free teaser", async () => {
   /* "0% for 20 Months — No Business Checking Required" is a real product_name in
      the live book. On a public funding page that reads as our claim about credit
-     terms, which is banned outright (docs/ads/RULES.md Part 1). The brief's free
+     terms, which is banned outright (marketing/ads/RULES.md Part 1). The brief's free
      teaser is bank NAMES; product names belong to the gated list. */
   const promo = [{
     id: "9", name: "Elan Financial", product_name: "0% for 20 Months — No Business Checking Required",

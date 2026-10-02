@@ -1,6 +1,6 @@
 // The one screen in the ad-video pipeline, and it is throwaway on purpose.
 //
-// docs/video-pipeline-plan.md §2(5): "The front end, last and throwaway… a
+// marketing/ads/video-pipeline-plan.md §2(5): "The front end, last and throwaway… a
 // phone notification with two links would do the same job." It does — the two
 // buttons in the notification are the ordinary path and this page is the
 // fallback, for when Chris wants to watch the take before deciding.

@@ -182,7 +182,7 @@
 //
 // These are gaps, not bugs — the module behaves as described, and what it does
 // not do is written down here rather than discovered later. Also recorded on
-// the shared board at docs/workflows/finance-os-banking.md under "## W7".
+// the shared board at ops/workflows/finance-os-banking.md under "## W7".
 //
 //   ONE MERCHANT KEY YIELDS AT MOST ONE CADENCE. Grouping is by
 //   (account, merchant_key), so a merchant that genuinely bills monthly AND

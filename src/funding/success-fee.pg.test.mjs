@@ -13,7 +13,7 @@
    and asserts the money, the refusals, and that the closeout record and the
    invoice agree on the same basis.
 
-   Basis: CONFIRMED APPROVALS (owner-set 2026-08-30, docs/CLOSEOUT-FEE-BASIS.md). */
+   Basis: CONFIRMED APPROVALS (owner-set 2026-08-30, docs/finance/CLOSEOUT-FEE-BASIS.md). */
 
 import { describe, test, before, after } from "node:test";
 import assert from "node:assert/strict";

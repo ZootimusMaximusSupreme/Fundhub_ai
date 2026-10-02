@@ -94,7 +94,7 @@ const DEPLOYED = DEPLOY_SIGNAL !== null;
 const DATABASE_URL = process.env.DATABASE_URL;
 const OPT_OUT = process.env.ALLOW_SUPERUSER_DB === "1";
 
-const RUNBOOK = "docs/runbooks/postgres-least-privilege.md";
+const RUNBOOK = "docs/sops/postgres-least-privilege.md";
 
 function warn(lines) {
   const bar = "─".repeat(72);

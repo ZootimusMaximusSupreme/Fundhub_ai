@@ -11,7 +11,7 @@
    "Confirmed approvals" is defined once, in src/funding/success-fee.mjs, and
    both this file and the invoicing workflow (F-07) read it from there so the
    closeout record and the invoice can never disagree. See
-   docs/CLOSEOUT-FEE-BASIS.md.
+   docs/finance/CLOSEOUT-FEE-BASIS.md.
 
    THE OLD $0 TRAP IS GONE, THE OTHER WAY ROUND. The 2026-08-04 note said a
    funded round with no Approved rows "silently billed $0", and fixed that by

@@ -400,8 +400,8 @@ export async function launchCredentials({
       // failed"`. Without it the row's error_message just repeats error_code and
       // the advisor is told nothing about WHICH credential is absent.
       message: cfg.masked
-        ? "The saved OXYLABS_PASSWORD is the hidden copy (asterisks) the Oxylabs screen shows, not the real password. Nothing was sent to Oxylabs. See docs/STILL-MISSING.md."
-        : `Oxylabs credentials are not set (${cfg.missing.join(", ")}). See docs/STILL-MISSING.md.`,
+        ? "The saved OXYLABS_PASSWORD is the hidden copy (asterisks) the Oxylabs screen shows, not the real password. Nothing was sent to Oxylabs. See ops/STILL-MISSING.md."
+        : `Oxylabs credentials are not set (${cfg.missing.join(", ")}). See ops/STILL-MISSING.md.`,
       missing: cfg.missing,
       host: cfg.host,
       port: cfg.port
@@ -473,7 +473,7 @@ export async function launchCredentials({
       return {
         ok: false,
         error: "oxylabs_auth_failed",
-        message: "Oxylabs rejected the proxy login (407). Username is the account id without the customer- prefix. See docs/STILL-MISSING.md.",
+        message: "Oxylabs rejected the proxy login (407). Username is the account id without the customer- prefix. See ops/STILL-MISSING.md.",
         requested_city: requestedCity,
         requested_state: requestedState,
         sessid,
@@ -490,7 +490,7 @@ export async function launchCredentials({
       return {
         ok: false,
         error: "oxylabs_auth_failed",
-        message: "Oxylabs rejected the proxy login (407). Username is the account id without the customer- prefix. See docs/STILL-MISSING.md.",
+        message: "Oxylabs rejected the proxy login (407). Username is the account id without the customer- prefix. See ops/STILL-MISSING.md.",
         requested_city: requestedCity,
         requested_state: requestedState,
         sessid,

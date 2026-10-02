@@ -51,7 +51,7 @@
 //
 // This is the same call made on api/inquiries.mjs POST, and it is made on
 // weaker evidence here: there, every action in the branch wrote worked_by. Here
-// `done` does not. Flagged in docs/workflows/comp-and-shift-gate.md so the owner
+// `done` does not. Flagged in ops/workflows/comp-and-shift-gate.md so the owner
 // can narrow it to claim + reassign in one line if that reading is wrong.
 //
 // GET is untouched. It is the queue screen — read-only, and the rule ends "do

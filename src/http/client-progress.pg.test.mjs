@@ -378,7 +378,7 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
     assert.equal(by["Run a round now"].paidAlternative.serviceKey, SERVICE_KEY,
       "the key a screen posts back must be the one api/paid-services.mjs accepts");
     assert.equal(by["Run a round now"].paidAlternative.serviceKey, "paid_round",
-      "and that is the value docs/workflows/portal-progress-contract.md:87 specifies");
+      "and that is the value ops/workflows/portal-progress-contract.md:87 specifies");
     assert.strictEqual(by["Mail round 2"].overdue, false, "no due date is not overdue");
   });
 
@@ -487,7 +487,7 @@ describe("/api/read/client-progress", { skip: !HAVE_DB ? "no DATABASE_URL" : fal
          "filings", because the progress endpoint serves roundPriceList()
          (src/paid-services/round.mjs) instead of building its own list from the
          internal line codes, and that is the wording
-         docs/workflows/portal-progress-contract.md:110 specifies.
+         ops/workflows/portal-progress-contract.md:110 specifies.
          The difference is worth the words: a client reading "…filings — $20"
          could reasonably believe they are buying a filing. Nothing in this
          system records whether a complaint was ever submitted

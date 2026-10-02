@@ -11,7 +11,7 @@
 //   The machine half is `?strict=1` on /api/health: the same body, but 503 when
 //   the deployment is not trustworthy, so an off-the-shelf checker can finally
 //   see an outage. It lives in src/http/health.mjs (wantsStrict, httpStatus).
-//   The human half is docs/RUNBOOK.md. An alert with nowhere to point is not
+//   The human half is docs/sops/RUNBOOK.md. An alert with nowhere to point is not
 //   monitoring — the page that fires at 2am has to arrive at a written
 //   procedure, and until this round there was none.
 //
@@ -40,7 +40,7 @@ import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(HERE, "../..");
-const RUNBOOK = path.join(ROOT, "docs/RUNBOOK.md");
+const RUNBOOK = path.join(ROOT, "docs/sops/RUNBOOK.md");
 
 const runbook = () => fs.readFileSync(RUNBOOK, "utf8");
 
@@ -61,7 +61,7 @@ function section(text, re) {
   return out.join("\n");
 }
 
-test("runbook: docs/RUNBOOK.md exists", () => {
+test("runbook: docs/sops/RUNBOOK.md exists", () => {
   assert.ok(fs.existsSync(RUNBOOK),
     "There is no runbook. When the site is down, whoever is looking at it has no " +
     "written procedure — no rollback steps, no first action per failure, and " +
@@ -81,7 +81,7 @@ test("runbook: it covers monitoring, alerting, rollback, diagnosis and who is on
     ["diagnosis steps for a live incident", /^#{2,4}\s.*(fix|what to do|down|not answering)/mi]
   ];
   const missing = required.filter(([, re]) => !re.test(text)).map(([name]) => name);
-  assert.deepEqual(missing, [], `docs/RUNBOOK.md has no ${missing.join("; no ")}`);
+  assert.deepEqual(missing, [], `docs/sops/RUNBOOK.md has no ${missing.join("; no ")}`);
 });
 
 test("runbook: it names the monitored URL and says a failing check is a 503", () => {
@@ -101,7 +101,7 @@ test("runbook: every state the check can report has a written first action", () 
   const missing = ["up", "behind", "unconfigured", "unreachable", "error"]
     .filter((s) => !new RegExp(`\\b${s}\\b`).test(text));
   assert.deepEqual(missing, [],
-    `docs/RUNBOOK.md never mentions health states: ${missing.join(", ")} — /api/health ` +
+    `docs/sops/RUNBOOK.md never mentions health states: ${missing.join(", ")} — /api/health ` +
     `reports each of them and each has a different first action.`);
 });
 
@@ -110,7 +110,7 @@ test("runbook: rollback names the real deploy target and warns the database does
   // and records every file in schema_migrations, so putting the code back does
   // NOT put the schema back. Whoever rolls back has to read that first.
   const roll = section(runbook(), /roll ?back|rolling back/i);
-  assert.notEqual(roll, "", "no rollback section found in docs/RUNBOOK.md");
+  assert.notEqual(roll, "", "no rollback section found in docs/sops/RUNBOOK.md");
   assert.match(roll, /netlify/i,
     "The rollback section must name the real deploy target — this repo deploys to " +
     "Netlify (CLAUDE.md 11). A rollback section that does not say where to click " +
@@ -130,7 +130,7 @@ test("runbook: it does not claim a monitor or an alert exists when none is confi
   // metrics; the document has to say so out loud.
   const text = runbook();
   assert.match(text, /not (?:yet )?(?:done|set up|configured)|nothing (?:watches|checks|is watching)|no (?:monitoring|alerting|alarms)/i,
-    "docs/RUNBOOK.md must state plainly that no monitor and no alerting are " +
+    "docs/sops/RUNBOOK.md must state plainly that no monitor and no alerting are " +
     "configured yet. Nothing in this repo watches the site — that gap is only " +
     "manageable if it is written down.");
 });
@@ -141,7 +141,7 @@ test("runbook: the strict flag it tells operators to use is the one the code hon
   // 2am, when a stale URL means the monitor reads 200 through an outage.
   const text = runbook();
   const found = text.match(/\/api\/health\?([a-z0-9=&_-]+)/i);
-  assert.ok(found, "no /api/health?... URL in docs/RUNBOOK.md to check");
+  assert.ok(found, "no /api/health?... URL in docs/sops/RUNBOOK.md to check");
   const query = Object.fromEntries(new URLSearchParams(found[1]));
 
   // Dynamic import: if the strict helpers are missing, this has to fail with a
@@ -155,7 +155,7 @@ test("runbook: the strict flag it tells operators to use is the one the code hon
       "URL answer 503.");
 
     assert.equal(health.wantsStrict(query), true,
-      `docs/RUNBOOK.md points the monitor at /api/health?${found[1]}, and wantsStrict() ` +
+      `docs/sops/RUNBOOK.md points the monitor at /api/health?${found[1]}, and wantsStrict() ` +
       `does not recognise that query string.`);
     assert.equal(health.httpStatus({ ok: false, state: "unreachable" }, query), 503,
       "the documented URL must answer 503 when the database is not answering");
@@ -176,8 +176,8 @@ test("deploy doc: DEPLOY.md points at the runbook and at the monitored URL", () 
   // rollback, incident or on-call section. A link, not a copy: two procedures in
   // two files disagree within a month.
   const deploy = fs.readFileSync(path.join(ROOT, "DEPLOY.md"), "utf8");
-  assert.match(deploy, /docs\/RUNBOOK\.md/,
-    "DEPLOY.md has no link to docs/RUNBOOK.md — the person who just deployed is " +
+  assert.match(deploy, /docs\/sops\/RUNBOOK\.md/,
+    "DEPLOY.md has no link to docs/sops/RUNBOOK.md — the person who just deployed is " +
     "exactly the person who needs the rollback steps.");
   assert.match(deploy, /\/api\/health\?strict=1/,
     "DEPLOY.md's verify step must name the monitorable URL. The plain /api/health " +

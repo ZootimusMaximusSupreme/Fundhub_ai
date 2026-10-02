@@ -44,7 +44,7 @@ test.describe("Social connect", () => {
         "/api/social/oauth": () => ({
           ok: false, error: "not_configured",
           missing: ["META_APP_ID"],
-          message: "META_APP_ID unset — see docs/STILL-MISSING.md"
+          message: "META_APP_ID unset — see ops/STILL-MISSING.md"
         })
       }
     });

@@ -23,7 +23,7 @@
 // and UNIQUE (org_id, drive_file_id). Uploads carry `upload:<uuid>`, which no
 // real Drive id can collide with.
 //
-// Board: docs/workflows/company-brain-chat-2026-08-17.md §3.1, §3.2, §3.6, §3.7.
+// Board: ops/workflows/company-brain-chat-2026-08-17.md §3.1, §3.2, §3.6, §3.7.
 
 import crypto from "node:crypto";
 import { chunkText } from "./chunk.mjs";

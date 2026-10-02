@@ -47,7 +47,7 @@ Order matters. Do not skip.
 2. Live Playwright against the deployed site until **100/100** — `.cursor/rules/live-playwright-100-before-manual.mdc`. Prefer `npm run test:e2e:live`. Fix and re-run; do not dump a long failure list and stop.
 3. Human click path on `https://fundhub.ai` (or the page he named) — `.cursor/rules/test-means-human-click.mdc`. A green script alone is not a UI test.
 4. Chris does **exactly one** manual pass after that.
-5. If a journey changed: update `docs/journeys/*-actual.md` in the same commit as the code, append `docs/journeys/CHANGELOG.md`. Write the change manifest to the batch board under `docs/workflows/`.
+5. If a journey changed: update `docs/journeys/*-actual.md` in the same commit as the code, append `docs/journeys/CHANGELOG.md`. Write the change manifest to the batch board under `ops/workflows/`.
 
 ## Deploy
 

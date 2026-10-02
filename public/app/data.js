@@ -365,7 +365,7 @@ window.FHData = (function () {
 
     /* GET /api/partner-brand — not under /api/read, so it gets its own reader
        rather than a path-traversal through read(). Partner funnel lane only —
-       see docs/BRAND-THEMING-SPEC.md. */
+       see docs/specs/BRAND-THEMING-SPEC.md. */
     brand: function (partnerId) {
       if (!partnerId) return Promise.resolve(fail("nodata", "no partner id"));
       return get("/api/partner-brand?partner_id=" + encodeURIComponent(partnerId));

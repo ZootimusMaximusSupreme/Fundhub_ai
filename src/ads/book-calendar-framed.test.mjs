@@ -14,13 +14,13 @@ import { fileURLToPath } from "node:url";
 import {
   PUSH_MANIFEST,
   upsertMarkedBlock,
-} from "../../clickfunnels-fragments/tracking-manifest.mjs";
+} from "../../marketing/landing-pages/tracking-manifest.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 
-const FRAMED = "clickfunnels-fragments/04c-book-framed.html";
-const BOOKING = "clickfunnels-fragments/slo/slo-02-booking.html";
+const FRAMED = "marketing/landing-pages/04c-book-framed.html";
+const BOOKING = "marketing/landing-pages/slo/slo-02-booking.html";
 
 function cssSelectors(html) {
   const css = [...html.matchAll(/<style>([\s\S]*?)<\/style>/g)]
@@ -87,7 +87,7 @@ test("manifest pushes the framed layer as a head_code block on the native calend
   assert.equal(book.strategy, "head_footer_append_only", "apply-book itself is unchanged");
 });
 
-const FIT = "clickfunnels-fragments/04d-book-fit.html";
+const FIT = "marketing/landing-pages/04d-book-fit.html";
 
 test("standalone fit layer is one marked style block that never matches inside the frame", () => {
   const html = read(FIT).trim();

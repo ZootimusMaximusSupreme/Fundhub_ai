@@ -9,7 +9,7 @@
  * very first real take failed at the match step with the right answer to the
  * wrong question.
  *
- * SOURCE. docs/ads/fundhub-297/FundHub-LOCKED-ADS.md, verbatim. Chris approved
+ * SOURCE. marketing/ads/slo/fundhub-297/FundHub-LOCKED-ADS.md, verbatim. Chris approved
  * those words; this copies them, it does not touch them.
  *
  * NUMBERS. 84–90, agent-set 2026-09-24. The registry's highest id is 83, no
@@ -26,7 +26,7 @@ import { readFileSync } from "node:fs";
 import { asStaff } from "../src/partners/rls.mjs";
 import { db, close } from "../src/db.mjs";
 
-const SOURCE = new URL("../docs/ads/fundhub-297/FundHub-LOCKED-ADS.md", import.meta.url);
+const SOURCE = new URL("../marketing/ads/slo/fundhub-297/FundHub-LOCKED-ADS.md", import.meta.url);
 const FIRST_AD_ID = 84;
 const APPLY = process.argv.includes("--apply");
 

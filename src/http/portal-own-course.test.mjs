@@ -10,7 +10,7 @@
 // only from the five document codes in OWN_CODES, and a course is not one.
 //
 // The course has no file to hand over. It plays inside its own Unlock More card
-// (owner decision 2026-08-21, docs/workflows/archive/portal-course-surface-2026-08-21.md).
+// (owner decision 2026-08-21, ops/workflows/archive/portal-course-surface-2026-08-21.md).
 // So the row names the course, says plainly it is not a file, and its button
 // points at that card. Nothing is invented: no download, no "ready" file.
 

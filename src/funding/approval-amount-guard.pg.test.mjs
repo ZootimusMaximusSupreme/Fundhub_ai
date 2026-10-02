@@ -3,7 +3,7 @@
    coming.
 
    WHY. The success fee is a percent of CONFIRMED APPROVALS: Approved rows that
-   carry a real recorded amount (docs/CLOSEOUT-FEE-BASIS.md). An approval nobody
+   carry a real recorded amount (docs/finance/CLOSEOUT-FEE-BASIS.md). An approval nobody
    typed a number into is worth nothing on the bill, and once the round closes
    nobody goes back for it. So the blank one blocks the close.
 

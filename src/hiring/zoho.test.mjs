@@ -277,7 +277,7 @@ describe("time — the hazard that shifts a window by hours with no error", () =
 
   test("an Arizona wall-clock string round-trips to the right instant", () => {
     // Arizona is America/Phoenix and does not observe daylight saving, so -07:00
-    // is correct all year. See docs/workflows/arizona-time-2026-08-28.md.
+    // is correct all year. See ops/workflows/arizona-time-2026-08-28.md.
     assert.equal(zohoTimestamp("2026-01-15T08:00:00-07:00"), "2026-01-15T15:00:00.000Z");
     assert.equal(zohoTimestamp("2026-07-15T08:00:00-07:00"), "2026-07-15T15:00:00.000Z");
   });

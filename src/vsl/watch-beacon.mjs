@@ -71,7 +71,7 @@
 // ONE VIEWING IS TWO RUNS OF THE VIDEO, WHICH IS WHY THERE ARE TWO POSITIONS.
 //
 // The player auto-plays MUTED and tapping "Tap for sound" sets currentTime=0
-// (docs/workflows/cf-vsl-watch-html-step1.html:133). So a person who taps has
+// (ops/workflows/cf-vsl-watch-html-step1.html:133). So a person who taps has
 // watched the video twice: once silently, then again from the start.
 //
 // `pos` covers both runs together. `pos_unmuted` is the second run alone. Both
@@ -268,7 +268,7 @@ export function parseWatchBeacon(body) {
   /* `pos_unmuted` — THE FURTHEST SECOND OF THE SECOND RUN, and the reason this
      endpoint reports two positions instead of one.
 
-     Tapping "Tap for sound" sets currentTime=0 (docs/workflows/
+     Tapping "Tap for sound" sets currentTime=0 (ops/workflows/
      cf-vsl-watch-html-step1.html:133), so one viewing is two runs of the same
      video: the silent one, then the chosen one. `pos` is the furthest second of
      the whole viewing, both runs together. `pos_unmuted` is the furthest second

@@ -144,7 +144,7 @@ function urlsFromDotenv() {
     console.log("→ MIGRATION_DATABASE_URL not set; falling back to DATABASE_URL");
     console.log("  If that is now the restricted app role, migrations creating or");
     console.log("  altering tables will fail with a permission error. See");
-    console.log("  docs/runbooks/postgres-least-privilege.md");
+    console.log("  docs/sops/postgres-least-privilege.md");
   }
   const url = process.env.DATABASE_URL || "";
   if (!url) return;

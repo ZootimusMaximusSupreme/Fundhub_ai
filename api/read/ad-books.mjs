@@ -3,7 +3,7 @@
 // Booked calls and leads, grouped. `lane`, `ad_id` and `variant` come from the
 // database (286). `gate`, `entry`, `primary_offer` and `secondary_offer` are
 // registry tags: the rows are rolled up per ad_id, each ad_id is resolved
-// through docs/ads/registry.json, and the groups are folded on the tag. An
+// through marketing/ads/registry.json, and the groups are folded on the tag. An
 // unknown ad_id lands in the sorting default's groups (gate none, entry
 // sorting, primary none) and is reported under `unknown_ad_ids` so nobody
 // mistakes it for a filed ad.

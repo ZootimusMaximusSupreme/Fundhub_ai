@@ -21,7 +21,7 @@
 // bytes is rejected. The declared value narrows; it never promotes.
 //
 // Error codes match the frozen contract in
-// docs/workflows/company-brain-chat-2026-08-17.md §3.1 so a handler maps them
+// ops/workflows/company-brain-chat-2026-08-17.md §3.1 so a handler maps them
 // straight to a status with no translation table.
 
 export const PDF_MIME = "application/pdf";

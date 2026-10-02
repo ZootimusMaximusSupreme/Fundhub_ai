@@ -235,7 +235,7 @@ test("the Specialist is not shown a Soft pull or Clean personal info button", as
 
   const actions = page.locator("tr.repair-expand .case-actions");
   // Neither endpoint accepts this role, so neither button renders —
-  // docs/UI-STANDARDS.md §5, no control that the role cannot use.
+  // docs/rules/UI-STANDARDS.md §5, no control that the role cannot use.
   await expect(actions.locator("[data-act=repair-pull]")).toHaveCount(0);
   await expect(actions.locator("[data-act=repair-clean]")).toHaveCount(0);
   // The three they can actually use are all still there.

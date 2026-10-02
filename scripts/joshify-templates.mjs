@@ -223,7 +223,7 @@ for (const f of [
 
 const dumpJson = path.join(
   root,
-  "docs/workflows/messaging-review-2026-08-21-evidence/_templates.json"
+  "ops/workflows/messaging-review-2026-08-21-evidence/_templates.json"
 );
 if (fs.existsSync(dumpJson)) results.push(transformTemplatesJson(dumpJson));
 

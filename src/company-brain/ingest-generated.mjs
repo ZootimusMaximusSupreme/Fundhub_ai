@@ -22,7 +22,7 @@
 //
 // ACCESS TIER. Everything ingested here defaults to 'owner'. A weekly brief
 // or a raw performance number is exactly the kind of thing
-// docs/ops/2026-09-06-self-analysis.md already treats as owner-only
+// ops/2026-09-06-self-analysis.md already treats as owner-only
 // information, matching the fail-closed default upsertExtractedFile() itself
 // uses for an unclassified Drive file.
 

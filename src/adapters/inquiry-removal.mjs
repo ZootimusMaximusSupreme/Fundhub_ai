@@ -11,7 +11,7 @@
 //   3. write inquiry_removal_cases / inquiry_log, and emit inquiry.removed when
 //      a case clears
 //
-// Event types the IRA side should send (documented in docs/STILL-MISSING.md):
+// Event types the IRA side should send (documented in ops/STILL-MISSING.md):
 //   case.created | call_state.changed | inquiry.cleared | case.closed
 //
 // Header: x-inquiry-removal-signature

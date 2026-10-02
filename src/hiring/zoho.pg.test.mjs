@@ -582,7 +582,7 @@ describe("Zoho Recruit connector", { skip: !HAVE_DB ? "no DATABASE_URL" : false 
 
   test("the search window is sent as UTC with an explicit offset, pulled back by the overlap", async () => {
     // A bare local time here silently shifts the window by hours and nothing
-    // errors. See docs/workflows/arizona-time-2026-08-28.md.
+    // errors. See ops/workflows/arizona-time-2026-08-28.md.
     const cursor = new Date("2026-09-05T15:00:00.000Z");
     await db.query(
       `UPDATE hiring_channel_connections SET sync_cursor = $2 WHERE org_id = $1 AND channel = 'zoho'`,

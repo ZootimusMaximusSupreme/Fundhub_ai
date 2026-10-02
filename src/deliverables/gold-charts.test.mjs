@@ -1,7 +1,7 @@
 // The eleven gold-pack charts (gold-charts.mjs, a port of
-// docs/workflows/gold-deliverables-v5/fh_charts.py). Jordan Sample inputs are
+// ops/workflows/gold-deliverables-v5/fh_charts.py). Jordan Sample inputs are
 // the ones DIAGRAM_SPEC section 4 names, filled in from the gold pack's own
-// text layer (docs/workflows/gold-deliverables-v5/compare/gold-*.txt).
+// text layer (ops/workflows/gold-deliverables-v5/compare/gold-*.txt).
 // Then one test per DIAGRAM_SPEC section 6 edge case, the escaping, and the
 // proportion checks that are cheap without a rasterizer.
 

@@ -272,10 +272,10 @@ function main (argv) {
   const gateIdx = args.indexOf('--gate')
   const gate = gateIdx === -1 ? null : Number(args[gateIdx + 1])
   const campaign = args.find(a => !a.startsWith('--') && a !== String(gate)) || 'partner'
-  const dir = join(REPO, 'docs', 'flywheel', campaign)
+  const dir = join(REPO, 'marketing', 'flywheel', campaign)
 
   if (!existsSync(dir)) {
-    process.stdout.write(`\nNo flywheel at docs/flywheel/${campaign}. Nothing has been run yet.\n\n`)
+    process.stdout.write(`\nNo flywheel at marketing/flywheel/${campaign}. Nothing has been run yet.\n\n`)
     return gate ? 1 : 0
   }
 

@@ -1,6 +1,6 @@
 // Live affiliate path — against https://fundhub.ai only (not the local harness).
-// Board: docs/workflows/affiliate-wl-onboarding-2026-08-16.md
-// Scoreboard: docs/workflows/live-playwright-100.md
+// Board: ops/workflows/affiliate-wl-onboarding-2026-08-16.md
+// Scoreboard: ops/workflows/live-playwright-100.md
 //
 // These tests describe CURRENT live behavior. Gaps (apply does not mint a
 // login, /start?ref= is 404, no funnel/site builder) are on the board for

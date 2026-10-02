@@ -30,10 +30,10 @@ this skill for “make sure we don’t lose it.”
 
 Prove with `git status` / `git stash list` / branch list — don’t invent:
 
-1. **Huge untracked evidence** — agents write `docs/workflows/*-evidence/` and never commit or ignore; machine wipe / branch switch looks like “gone.”
+1. **Huge untracked evidence** — agents write `ops/workflows/*-evidence/` and never commit or ignore; machine wipe / branch switch looks like “gone.”
 2. **No commit habit** — WIP only on disk; stash pile grows; switch to `main` without a board.
 3. **Rules only in chat** — not in `.cursor/rules` / skills, so the next agent doesn’t know the policy.
-4. **Branch sprawl + stashes** — work parked in stash/`+` worktrees, not on a named WIP board under `docs/workflows/`.
+4. **Branch sprawl + stashes** — work parked in stash/`+` worktrees, not on a named WIP board under `ops/workflows/`.
 5. **Evidence already tracked (~thousands of files)** — slows status, confuses “what changed,” encourages abandoning dirty trees.
 
 ## Never commit (hard)
@@ -55,7 +55,7 @@ Confirm secrets by **name only**. Never print values.
 
 | Kind | Default |
 |---|---|
-| Board `.md` under `docs/workflows/` (task list, findings text) | OK to commit when he asks — small, useful |
+| Board `.md` under `ops/workflows/` (task list, findings text) | OK to commit when he asks — small, useful |
 | Small JSON prove summaries (no PII) | OK when he asks |
 | Huge screenshot / video evidence trees | Prefer **GITIGNORE** or ARCHIVE after hygiene go — do not silently `git add` multi‑hundred‑MB dumps |
 | Marked decision screenshots he needs in git | Commit only the marked set he named |
@@ -64,7 +64,7 @@ If unsure: propose on the board; wait.
 
 ## How not to lose work (order)
 
-1. **Named board** — `docs/workflows/<batch>.md` with status + claim (CLAUDE.md §5).
+1. **Named board** — `ops/workflows/<batch>.md` with status + claim (CLAUDE.md §5).
 2. **Named branch** — one concern per branch; push when he asks.
 3. **Commit when he asks** — small, green-enough units.
 4. **Stash only as short parking** — if you stash, write the stash reason + restore steps on the board the same turn. Stash is not the archive.

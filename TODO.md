@@ -16,13 +16,13 @@
 
 ## Marketing walk fixes — open items, 2026-09-17
 
-Full write-up: `docs/workflows/marketing-fixes-2026-09-17-board.md`. F1 (the script
+Full write-up: `ops/workflows/marketing-fixes-2026-09-17-board.md`. F1 (the script
 drop-down) is fixed and live. These three are what is left.
 
 - [ ] **Chris — paste the view counter onto the watch page.** The watch page lives in
   ClickFunnels, so no code here can reach it. Open the page for
-  `apply.fundhub.ai/watch`, paste `clickfunnels-fragments/06-utm-hidden-fields.html`
-  at the top and `clickfunnels-fragments/07-vsl-watch-beacon.html` at the bottom,
+  `apply.fundhub.ai/watch`, paste `marketing/landing-pages/06-utm-hidden-fields.html`
+  at the top and `marketing/landing-pages/07-vsl-watch-beacon.html` at the bottom,
   then Save and Publish. Until then, nobody watching the video is counted.
 - [ ] **Chris — is `ANTHROPIC_API_KEY` on the list?** Netlify → site → Site settings
   → Environment variables. Just say whether the name is there; do not show the value.
@@ -131,7 +131,7 @@ what fires it.
 
 ### The split, when it runs — 4 workflows, no dependencies
 
-Shared board: `docs/workflows/knowledge-panel-<date>.md`. Write the ground brief
+Shared board: `ops/workflows/knowledge-panel-<date>.md`. Write the ground brief
 (canonical name strings, `@id` URIs, sameAs list, production domain) to the board
 BEFORE launching any workflow — A and B both need those exact strings and must not
 invent them.
@@ -258,11 +258,11 @@ text exists for them. Academy and Blueprint are safe.
    * `feat/letters-all-rounds` (1 commit) — the mixed letter, the common real-client case, still
      asserts things its own items do not support.
    * `fix/r2-w11-notifications` (1 commit) — this is the HELD SMS COPY, deliberately. It is the
-     rewritten wording waiting for you to read, in `docs/ads/sms-copy-2026-09.md`.
+     rewritten wording waiting for you to read, in `marketing/ads/sms-copy-2026-09.md`.
 
    **Dead, safe to delete:** `fix/r2-w8b-fulfillment` — a rejected first attempt, fully superseded.
 
-0b. **Read the rewritten text messages.** `docs/ads/sms-copy-2026-09.md`. Nine texts plus one
+0b. **Read the rewritten text messages.** `marketing/ads/sms-copy-2026-09.md`. Nine texts plus one
    email subject. They are written and deliberately not seeded, because you said you would read
    the wording before it reaches a real phone. Everything else from that batch shipped without
    them.
@@ -289,7 +289,7 @@ text exists for them. Academy and Blueprint are safe.
 
    Two decisions, both yours: which tasks stay in the plan, and for the ones that stay,
    whether the platform tracks them or they remain advice. Until that is settled the
-   accountability layer (`docs/workflows/portal-accountability-spec.md`) cannot chase
+   accountability layer (`ops/workflows/portal-accountability-spec.md`) cannot chase
    Month 5 at all, because nothing knows those tasks exist.
 
 
@@ -300,10 +300,10 @@ text exists for them. Academy and Blueprint are safe.
 2. **Two ClickFunnels questions**, in the CF editor. "Annual Business Revenue"
    saves into nothing at all, so that answer never reaches us and cannot be
    recovered. "Can You Verify Revenue?" is saving into the other question's slot.
-   Part B of `docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md`.
+   Part B of `marketing/landing-pages/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md`.
 3. **A Bland phone number.** The account owns none, so every call dials from a
    shared pool line — the likeliest reason a call rings and nobody speaks.
-4. **21 ad names.** Ids in `docs/workflows/fix-batch-2026-09-03-remaining.md` §1.2.
+4. **21 ad names.** Ids in `ops/workflows/fix-batch-2026-09-03-remaining.md` §1.2.
    A check now fails while any is blank, so they cannot quietly stay unnamed.
 5. **Turn off the Gmail "FS Auto" filter** before the re-walk, or it hides Fundhub
    mail from your Inbox and the walk lies to you again.
@@ -339,7 +339,7 @@ text exists for them. Academy and Blueprint are safe.
 - **The database test phase never ran** — no DATABASE_URL, 693 tests skipped. The
   8,594 passing are the unit phase only.
 
-Full detail: `docs/workflows/fix-batch-2026-09-03-remaining.md`.
+Full detail: `ops/workflows/fix-batch-2026-09-03-remaining.md`.
 
 ---
 
@@ -410,7 +410,7 @@ label. It is good work aimed at the wrong date, so it moves down this list.
 ## The funnel
 
 - [ ] **Push the SLO live for the funding offer. Up, not running.** The pages are
-      built at `clickfunnels-fragments/slo/` — `slo-01-sales.html`,
+      built at `marketing/landing-pages/slo/` — `slo-01-sales.html`,
       `slo-02-order.html`, `slo-03-thank-you.html`, all ClickFunnels-ready with
       split markers where CF's native checkout and scheduler go.
       Its own README has a **SWAP BEFORE LAUNCH** list that must be cleared:
@@ -432,7 +432,7 @@ label. It is good work aimed at the wrong date, so it moves down this list.
       10% · Funding Mastery $5,000.
 - [ ] **Winner's Board becomes a subscription.** Owner decision 2026-08-31. It is
       currently one-time in `src/config/offers.mjs:175-184` with no `billing`
-      field, and a subscription in `docs/ads/ascension-ads.md:114`. The code is
+      field, and a subscription in `marketing/ads/ascension/ascension-ads.md:114`. The code is
       the half that is wrong. Chris wants it recurring so it sits inside the
       ecosystem rather than beside it.
 
@@ -562,7 +562,7 @@ allow-listed to the three right product codes.
 
 - [ ] **Refine the white-label offers.** Chris likes them and wants a pass — each
       one answers a different market pain.
-- [ ] **The Locked Book offer** — `docs/flywheel/partner/03-offer.md`. $10,000
+- [ ] **The Locked Book offer** — `marketing/flywheel/partner/03-offer.md`. $10,000
       once, sold on the Owner Lock. Needs its two guarantee numbers:
   - [ ] The Build Clock: how many business days
   - [ ] The First File: how many files in the first 30 days
@@ -630,17 +630,17 @@ Also live: message dispatcher on cron, `public/funnel-checkout` routed,
 
 | Stage | File |
 |---|---|
-| Avatar | `docs/flywheel/partner/01-avatar.md` |
-| Ad research | `docs/flywheel/partner/02-ad-research.md` |
-| Offer | `docs/flywheel/partner/03-offer.md` |
-| Copy | `docs/flywheel/partner/04-copy.md` |
-| Ad strategy | `docs/flywheel/partner/05-ad-strategy.md` |
+| Avatar | `marketing/flywheel/partner/01-avatar.md` |
+| Ad research | `marketing/flywheel/partner/02-ad-research.md` |
+| Offer | `marketing/flywheel/partner/03-offer.md` |
+| Copy | `marketing/flywheel/partner/04-copy.md` |
+| Ad strategy | `marketing/flywheel/partner/05-ad-strategy.md` |
 
 `npm run flywheel:status partner`. All of it is white label, and all of it is on
 branch `feat/flywheel-runner` until #321 merges.
 
 ## Chris — owed to the 2026-09-03 fix batch
-- [ ] Real contract text for each agreement (Funding Mastery, FUNDING-AGREEMENT, CREDIT-REPAIR-AGREEMENT; decide whether Capital Blueprint needs one). It may already be in the repo — W3 will search and tell you. See docs/workflows/fix-batch-2026-09-03.md W3.
+- [ ] Real contract text for each agreement (Funding Mastery, FUNDING-AGREEMENT, CREDIT-REPAIR-AGREEMENT; decide whether Capital Blueprint needs one). It may already be in the repo — W3 will search and tell you. See ops/workflows/fix-batch-2026-09-03.md W3.
 - [ ] Tell W7 the exact AI setter symptom (call not placed / silent / hangs up / ignores prompt).
 - [ ] Tell W4 whether the dispute-letter consent belongs on every client's portal or only repair clients (F35).
 - [ ] Turn off the Gmail "FS Auto" filter before the re-walk (F17).
@@ -687,7 +687,7 @@ yellow shit on the side of it needs to be green... hella confusing."
 
 The five blocker cards currently carry orange/yellow left borders. Those are ordinary
 open tasks on a clean file, so they are **green**. Applies across every operations
-screen, not just this panel. `docs/UI-STANDARDS.md` is the home for the rule.
+screen, not just this panel. `docs/rules/UI-STANDARDS.md` is the home for the rule.
 
 ### Also found on the same walk (not UI — data and wiring)
 
@@ -718,7 +718,7 @@ is broken.
 Two things:
 1. Chris logs into Oxylabs → Residential Proxies → user credentials, and the real
    `OXYLABS_USERNAME` / `OXYLABS_PASSWORD` get set. Nobody else can reach that dashboard
-   (`docs/STILL-MISSING.md:19`).
+   (`ops/STILL-MISSING.md:19`).
 2. Rewrite that error so it reports what actually happened — the proxy refused the
    login — instead of naming a formatting fix that does not apply.
 
@@ -917,7 +917,7 @@ says so outright: *"NO SEAT LIMIT IS ENFORCED, and none is invented."* Every cli
 "YOUR FUNDING ADVISOR — Not assigned yet" and always will.
 
 **The capacity rule is already locked** and does not need re-deciding. From
-`docs/workflows/archive/fundhub-conveyor-kpis-2026-08-23.md` §3, owner-set 2026-08-24:
+`ops/workflows/archive/fundhub-conveyor-kpis-2026-08-23.md` §3, owner-set 2026-08-24:
 
 | Seat | Bar | Time-max if they do nothing else |
 |---|---|---|
@@ -1031,7 +1031,7 @@ the page you are already on.
 
 ## Walkthrough 4 — 2026-09-06 — 28 confirmed defects where the code contradicts a rule the repo states
 
-Detail, rules, and code lines for every item: `docs/workflows/walkthrough-4-2026-09-06.md`.
+Detail, rules, and code lines for every item: `ops/workflows/walkthrough-4-2026-09-06.md`.
 
 - [ ] **high** — Credit-score bars on the client-facing deck are coloured by bureau, not by score — Experian's bar is always the red one (`public/app/present.js:350`)
 - [ ] **high** — The two contracts stamped "DO NOT SEND THIS" are one click away from a real client (`src/contracts/send.mjs:312-400`)
@@ -1068,5 +1068,5 @@ Also from the walk: Walk2 and Walk3 need enrolling by hand (Present deck, not th
 
 ## Open items — 2026-09-23
 
-- [ ] **SLO / marketing video Drive naming strategy.** Chris's system is `SLO Ad N Take M.mp4` (+ specials: Retargeting, Funding Roadmap, Portal Welcome, VSL). Need a written strategy doc + organizer script alignment so agents stop inventing LOCKED-AD / pipeline names. Reference: Riverside list (IMG_0448 email), `scripts/slo-ads-drive-organize.mjs`, `docs/workflows/slo-ads-drive-manifest-2026-09-23.md`.
+- [ ] **SLO / marketing video Drive naming strategy.** Chris's system is `SLO Ad N Take M.mp4` (+ specials: Retargeting, Funding Roadmap, Portal Welcome, VSL). Need a written strategy doc + organizer script alignment so agents stop inventing LOCKED-AD / pipeline names. Reference: Riverside list (IMG_0448 email), `scripts/slo-ads-drive-organize.mjs`, `ops/workflows/slo-ads-drive-manifest-2026-09-23.md`.
 - [ ] **Local AI models in Cursor.** Add/configure local models in Cursor settings (Ollama/LM Studio or whatever Chris uses); document steps in repo if there's a pattern.

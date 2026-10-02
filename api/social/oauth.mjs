@@ -96,7 +96,7 @@ export default async function handler(req, res, deps = {}) {
         ok: false,
         error: "not_configured",
         missing: ["AD_TOKEN_ENC_KEY"],
-        message: "AD_TOKEN_ENC_KEY unset — see docs/STILL-MISSING.md"
+        message: "AD_TOKEN_ENC_KEY unset — see ops/STILL-MISSING.md"
       });
     }
 
@@ -135,7 +135,7 @@ export default async function handler(req, res, deps = {}) {
         ok: false,
         error: "not_configured",
         missing: auth.missing,
-        message: `${auth.missing.join(" + ")} unset — see docs/STILL-MISSING.md`
+        message: `${auth.missing.join(" + ")} unset — see ops/STILL-MISSING.md`
       });
     }
     return res.status(200).json({ ok: true, url: auth.url, state });

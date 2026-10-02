@@ -19,7 +19,7 @@ Skill paths:
 - `.cursor/skills/fundhub-repo-hygiene/SKILL.md`
 - `.cursor/skills/fundhub-version-control/SKILL.md`
 
-Shared board for mass organize: `docs/workflows/repo-hygiene-*.md` (newest date). Reuse older purge boards when present (e.g. `repo-purge-candidates-2026-08-21.md`).
+Shared board for mass organize: `ops/workflows/repo-hygiene-*.md` (newest date). Reuse older purge boards when present (e.g. `repo-purge-candidates-2026-08-21.md`).
 
 ## Both in one message
 

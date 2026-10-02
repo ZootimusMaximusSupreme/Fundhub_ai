@@ -486,7 +486,7 @@ describe("client-control-panel.html — money is whole dollars", () => {
      * 2026-08-30, fee basis: the success fee is a percent of CONFIRMED
        APPROVALS — approved applications carrying a recorded amount, minus any
        recorded as not counting (src/funding/success-fee.mjs,
-       docs/CLOSEOUT-FEE-BASIS.md). A tile labelled Approved that shows the
+       docs/finance/CLOSEOUT-FEE-BASIS.md). A tile labelled Approved that shows the
        funded amount now contradicts the invoice.
      * 2026-08-30, this screen: "never leave a label that does not match its
        number."

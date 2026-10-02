@@ -3,7 +3,7 @@
 // The one test that matters most in this file: every ad that is filmed and
 // running today must pass the checker clean. The first version of this
 // checker failed all five of them — it banned the word "not" and banned
-// "soft pull", a phrase docs/ads/RULES.md lists as one that works. This
+// "soft pull", a phrase marketing/ads/RULES.md lists as one that works. This
 // test exists so that regression can never ship silently again.
 //
 // Runs under plain `node --test`, no database, no network. Covered by
@@ -18,7 +18,7 @@ import { checkOneScript, loadRules, main } from "./check-script.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = join(HERE, "..", "..");
-const CONTROLS_PATH = join(REPO_ROOT, "docs", "ads", "CONTROLS.md");
+const CONTROLS_PATH = join(REPO_ROOT, "marketing", "ads", "CONTROLS.md");
 
 // Mirrors the module's own splitBlocks so this test does not need to export
 // an internal function just to reach it.
@@ -64,7 +64,7 @@ test("all five filmed-and-running ads in CONTROLS.md pass the checker clean", ()
   }
 });
 
-test("docs/ads/CONTROLS.md is marked LIVE — DO NOT EDIT, and this test never edits it", () => {
+test("marketing/ads/CONTROLS.md is marked LIVE — DO NOT EDIT, and this test never edits it", () => {
   const text = readFileSync(CONTROLS_PATH, "utf8");
   assert.match(text, /^# LIVE — DO NOT EDIT/, "CONTROLS.md's own header changed shape; the file this checker is graded against may not be the locked baseline any more.");
 });

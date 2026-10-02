@@ -488,7 +488,7 @@ export function waitingOn({ stageKey, next }) {
  *   api/paid-services.mjs accepts exactly one service name and refuses every
  *   other with `unknown_service`: SERVICE_KEY, which is "paid_round"
  *   (src/paid-services/round.mjs:79). That is the PUBLIC name, and it is the
- *   name docs/workflows/portal-progress-contract.md:106 specifies.
+ *   name ops/workflows/portal-progress-contract.md:106 specifies.
  *
  * This file used to return the stored kind for both `paidServices[].serviceKey`
  * and `waypoints[].paidAlternative.serviceKey`, with a comment reasoning that a
@@ -518,7 +518,7 @@ export function paidRoundOffer({ paidRows = [], repairPath = false } = {}) {
      THIS FILE USED TO BUILD ITS OWN, KEYED ON PRICE_CODES — round_base,
      creditor_letter, escalation_filings. Those are the INTERNAL line codes from
      src/waypoints/pricing.mjs. The contract
-     (docs/workflows/portal-progress-contract.md:108-110) and the buy endpoint
+     (ops/workflows/portal-progress-contract.md:108-110) and the buy endpoint
      both name the same three things base / creditor / cfpb_and_ag, so the two
      reads of one product handed a screen two different sets of keys. Measured
      against both live endpoints on one client, 2026-09-05.

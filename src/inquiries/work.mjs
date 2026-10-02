@@ -46,7 +46,7 @@ const COUNTING_KINDS = new Set(["call", "letter", "portal"]);
    `portal` — filing through a bureau portal — is a real, counted, staff-performed
    action with no equivalent in EVENT_KINDS. Filing it under `letter_issued`
    because that is the nearest word would make "letters issued" a number nobody
-   can trust. It is reported as a gap in docs/workflows/finish-the-build.md
+   can trust. It is reported as a gap in ops/workflows/finish-the-build.md
    instead, and whoever owns the telemetry vocabulary decides.
 
    `note` is not an attempt at all (see the header) and must not become one here

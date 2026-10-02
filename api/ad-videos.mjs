@@ -5,7 +5,7 @@
 //   ?ad_id=43                          every take of one ad (UNPADDED)
 //   ?limit= ?offset=
 //
-// The read endpoint from docs/video-pipeline-plan.md §2 step (2), and the one
+// The read endpoint from marketing/ads/video-pipeline-plan.md §2 step (2), and the one
 // screen the plan allows itself: the finished videos waiting on Chris. The plan
 // calls that screen throwaway on purpose — if the table is right it rebuilds in
 // an hour, and a phone notification with two links does the same job.

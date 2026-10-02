@@ -430,7 +430,7 @@ export const ROUTES = {
   "read/affiliate-portal": readAffiliatePortal,
 
   /* "Refer a friend". Turns a client into a light affiliate and hands back
-     their share link (docs/workflows/portal-rebuild-plan.md §4, owner-set).
+     their share link (ops/workflows/portal-rebuild-plan.md §4, owner-set).
      Routed with its handler and its migration for the same reason as every
      other line here. Not under "read/" — it writes. */
   "affiliates/refer": affiliatesRefer,
@@ -860,7 +860,7 @@ export const ROUTES = {
      is the same 404, so the door answers no questions about which tokens
      exist. Read api/public/ad-video-approve.mjs before adding anything to it. */
   "public/ad-video-approve": publicAdVideoApprove,
-  /* The filmed takes and where each one is stuck (docs/video-pipeline-plan.md
+  /* The filmed takes and where each one is stuck (marketing/ads/video-pipeline-plan.md
      §2). Staff read, ROLE_SETS.OPS — owner and admin only, because these rows
      carry unreleased ad creative and links to the raw files. Read-only: nothing
      is approved here, that is public/ad-video-approve above. */

@@ -42,7 +42,7 @@
     } catch (e) { return ""; }
   }
 
-  /* Arizona, like every other clock in this app (docs/workflows/arizona-time-2026-08-28.md). */
+  /* Arizona, like every other clock in this app (ops/workflows/arizona-time-2026-08-28.md). */
   function whenText(iso) {
     if (!iso) return "";
     var d = new Date(iso);

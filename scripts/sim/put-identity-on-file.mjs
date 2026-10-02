@@ -15,7 +15,7 @@
 // "(DOB not on file)", while the checker's rules want both to match before it
 // accepts an ID or a bill (db/migrations/114_ghl_agent_seed.sql:216-219).
 //
-// It is the FALLBACK in docs/workflows/sim-documents/MATRIX.md: upload the clean
+// It is the FALLBACK in ops/workflows/sim-documents/MATRIX.md: upload the clean
 // ID first with nothing on file, record what the checker says, and run this only
 // if it comes back "request more".
 //

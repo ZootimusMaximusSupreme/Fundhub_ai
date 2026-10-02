@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 /**
- * Look at the testimonial slots in clickfunnels-fragments/slo/slo-01-sales.html
+ * Look at the testimonial slots in marketing/landing-pages/slo/slo-01-sales.html
  * before they go live.
  *
  *   node scripts/testimonials/proof-slots.mjs
  *
  * Serves https://fundhub.ai/funnel/* from the local public/funnel/ folder, so
  * this shows the files about to ship rather than whatever is live right now.
- * Shots land in docs/workflows/testimonial-thumbnails-2026-09-27-evidence/.
+ * Shots land in ops/workflows/testimonial-thumbnails-2026-09-27-evidence/.
  */
 import { chromium } from "playwright";
 import { readFileSync, existsSync, mkdirSync } from "node:fs";
@@ -16,10 +16,10 @@ import { fileURLToPath } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "../..");
-const PAGE = path.join(repo, "clickfunnels-fragments/slo/slo-01-sales.html");
+const PAGE = path.join(repo, "marketing/landing-pages/slo/slo-01-sales.html");
 const SHOTS = path.join(
   repo,
-  "docs/workflows/testimonial-thumbnails-2026-09-27-evidence",
+  "ops/workflows/testimonial-thumbnails-2026-09-27-evidence",
 );
 
 const TYPES = {

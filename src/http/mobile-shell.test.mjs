@@ -21,7 +21,7 @@
  * Read as text, same convention as app-nav-reachability.test.mjs — these are
  * static files with no server. Rendered behaviour (the drawer opens, closes on
  * scrim tap, and no screen scrolls sideways at 390px) is covered by
- * docs/workflows/mobile-check.mjs, which drives a real browser.
+ * ops/workflows/mobile-check.mjs, which drives a real browser.
  */
 import { test, describe } from "node:test";
 import assert from "node:assert";

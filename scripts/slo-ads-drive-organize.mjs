@@ -200,7 +200,7 @@ const inventory = mp4s.map((f) => ({
   size: f.size,
   md5: f.md5Checksum || null,
 }));
-const reportPath = "docs/workflows/slo-ads-drive-organize-2026-09-23.json";
+const reportPath = "ops/workflows/slo-ads-drive-organize-2026-09-23.json";
 writeFileSync(
   reportPath,
   JSON.stringify({ apply: APPLY, inventory, plan, mp4Count: mp4s.length }, null, 2)

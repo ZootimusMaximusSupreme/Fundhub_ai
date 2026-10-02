@@ -15,7 +15,7 @@ import { fontFaceCss } from "./fonts.mjs";
 /**
  * THE LOOK SWITCH (2026-09-17). Every builder and the three pieces of chrome
  * below take `opts` last. `{ look: "gold" }` draws the gold pack
- * (docs/workflows/gold-deliverables-v5/*.pdf, printed by fundhub_pdf_template.py
+ * (ops/workflows/gold-deliverables-v5/*.pdf, printed by fundhub_pdf_template.py
  * and fh_charts.py). Anything else draws the markup the older printer,
  * scripts/black-reports/fundhub_gen.py, emits — byte for byte, because
  * port-parity.test.mjs pins it and no test is weakened to make room.

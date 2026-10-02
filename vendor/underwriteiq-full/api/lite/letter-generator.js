@@ -1,6 +1,6 @@
 // ============================================================================
 // Dispute letter generator — gold layout (plain business letter, no branding)
-// Matches docs/workflows/gold-deliverables-v5/LETTER_SPEC.md and
+// Matches ops/workflows/gold-deliverables-v5/LETTER_SPEC.md and
 // fundhub_pdf_template.py render_letter() + css(plain=True).
 // ============================================================================
 
@@ -21,7 +21,7 @@ const { requireConsumerName, realConsumerName } = require(
 
 /** Bundled Inter + JetBrains Mono next to the gold templates. */
 function goldFontsDir() {
-  return path.resolve(__dirname, "../../../../docs/workflows/gold-deliverables-v5/fonts");
+  return path.resolve(__dirname, "../../../../assets/fonts");
 }
 
 async function embedGoldFont(pdfDoc, fontsDir, fileName, fallbackStandard) {

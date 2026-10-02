@@ -15,7 +15,7 @@ The AI or Submagic ships **one finished video** made from the **best** of those 
 
 One video per ad. One video per VSL (and the portal welcome counts as its own long video). Every take that belongs to that video is merged into that one file. The clip order is the script order. Correct order = the order the lines appear in the script. Not camera order, not file-name order, not upload order, not "Take 1 then Take 6" unless that is also the script order.
 
-One video per angle. The angle is the name in `docs/ads/NAMING.md`. Two files that share an ad number but have different angle names are different videos. Read the words before a join. Do not join them.
+One video per angle. The angle is the name in `marketing/ads/NAMING.md`. Two files that share an ad number but have different angle names are different videos. Read the words before a join. Do not join them.
 
 The finished ad must be the best of all clips and takes, and it must also kill these defects:
 

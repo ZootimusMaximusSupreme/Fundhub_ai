@@ -2,8 +2,8 @@
 name: fundhub-ad-writer
 description: >-
   Writes Fundhub ad scripts — cold direct-response ads, VSLs, and (once
-  confirmed) evergreen backend-selling ads — from docs/ads/RULES.md and
-  docs/ads/VOICE.md, then runs the checker before Chris ever sees a draft.
+  confirmed) evergreen backend-selling ads — from marketing/ads/RULES.md and
+  marketing/ads/VOICE.md, then runs the checker before Chris ever sees a draft.
   Use when Chris says ads, scripts, hooks, VSLs, or copy for Fundhub ad
   creative. Not the /flywheel copy skill — that is a different, general-
   purpose system for offer and email copy, not Fundhub ad scripts. Not a
@@ -20,13 +20,13 @@ Chris wants **ads**, not a company audit.
 - **Do not** run `CLAUDE.md` section 0 (no split, no workflow board, no parallel agent prompts).
 - **Do not** read journeys, CRM code, Creative Factory UI, or run the full repo test suite to write a hook.
 - **Do read** only:
-  1. `docs/ads/RULES.md`
-  2. `docs/ads/VOICE.md`
-  3. `docs/ads/fundhub-297/INDEX.md` — then **one** pack file for the ad id Chris named (do **not** regenerate locked 297 scripts)
-  4. `docs/ads/CONTROLS.md` — voice reference only; **never** rewrite those five ads
-- **Optional** (only when Chris named a lane, concept, or new angle): `docs/ads/registry.json`, `docs/ads/CONCEPTS.md`, `docs/ads/ASSET-BANK.md`
-- **$297 SLO only:** `docs/ads/SLO-CHAT-PROMPT.md` — not the general cold-ad path
-- Paste brief for Chris / lightweight agents: **`docs/ads/WRITE-ADS-FROM-HERE.md`**
+  1. `marketing/ads/RULES.md`
+  2. `marketing/ads/VOICE.md`
+  3. `marketing/ads/slo/fundhub-297/INDEX.md` — then **one** pack file for the ad id Chris named (do **not** regenerate locked 297 scripts)
+  4. `marketing/ads/CONTROLS.md` — voice reference only; **never** rewrite those five ads
+- **Optional** (only when Chris named a lane, concept, or new angle): `marketing/ads/registry.json`, `marketing/ads/CONCEPTS.md`, `marketing/ads/ASSET-BANK.md`
+- **$297 SLO only:** `marketing/ads/slo/SLO-CHAT-PROMPT.md` — not the general cold-ad path
+- Paste brief for Chris / lightweight agents: **`marketing/ads/WRITE-ADS-FROM-HERE.md`**
 
 Run the checker (below) before every handoff. That is the required gate — not reading the whole repo.
 
@@ -39,11 +39,11 @@ it applies to every message you send him, not just the finished script.
 
 ## Prime rules
 
-1. **`docs/ads/RULES.md` is law.** Read it before you write one word. It is
+1. **`marketing/ads/RULES.md` is law.** Read it before you write one word. It is
    the SOP — the hard no's, the word-count bands, the cause-first hook test,
    and the three ad-type formats. If a script breaks a rule in there, it
    does not ship.
-2. **`docs/ads/VOICE.md` is the voice reference.** It holds real
+2. **`marketing/ads/VOICE.md` is the voice reference.** It holds real
    before/after pairs of lines Chris has rewritten, so you can match how he
    actually talks instead of guessing.
 3. **You never name an ad.** Only Chris names an ad. This is owner-set,
@@ -54,7 +54,7 @@ it applies to every message you send him, not just the finished script.
 4. **You never add a page, tab, or menu row.** Not for this feature, not
    for anything. That is a standing rule across this whole repo.
 5. **The rule loader is swappable — the generator is not.** You never read
-   `docs/ads/RULES.md` or `docs/ads/VOICE.md` as files inside your own
+   `marketing/ads/RULES.md` or `marketing/ads/VOICE.md` as files inside your own
    writing logic. Think of it as: a loader hands you their words as plain
    text, and you write from that text. Tonight, the loader is "open these
    two markdown files." Later, as a real Fundhub product feature, the
@@ -71,17 +71,17 @@ it applies to every message you send him, not just the finished script.
 
 Full path, in order:
 
-1. **`docs/ads/RULES.md`** — the SOP.
-2. **`docs/ads/VOICE.md`** — the voice reference.
-3. **`docs/ads/fundhub-297/INDEX.md`** — locked 297 pack; lookup before writing any numbered ad.
-4. **`docs/ads/CONTROLS.md`** — five live ads. **Never rewrite.** Match voice only.
-5. **`docs/ads/CONCEPTS.md`** — angle sheet (full path only).
-6. **`docs/ads/ASSET-BANK.md`** — mechanisms and proof (full path only).
-7. **`docs/ads/registry.json`** — lane vocabulary (`funding600`, `premium`, `sorting`, `uwiq`, `wl`); use real values only.
+1. **`marketing/ads/RULES.md`** — the SOP.
+2. **`marketing/ads/VOICE.md`** — the voice reference.
+3. **`marketing/ads/slo/fundhub-297/INDEX.md`** — locked 297 pack; lookup before writing any numbered ad.
+4. **`marketing/ads/CONTROLS.md`** — five live ads. **Never rewrite.** Match voice only.
+5. **`marketing/ads/CONCEPTS.md`** — angle sheet (full path only).
+6. **`marketing/ads/ASSET-BANK.md`** — mechanisms and proof (full path only).
+7. **`marketing/ads/registry.json`** — lane vocabulary (`funding600`, `premium`, `sorting`, `uwiq`, `wl`); use real values only.
 
 ## The format per ad type
 
-`docs/ads/RULES.md` Part 3 has three shapes. Ask Chris which one he wants,
+`marketing/ads/RULES.md` Part 3 has three shapes. Ask Chris which one he wants,
 or read it off what he's already asked for.
 
 1. **Cold direct-response.** The main lane — most of the concepts, most of
@@ -116,22 +116,22 @@ judgment calls for Chris — bring them to him, don't claim them as passed.
 
 ## Where the output goes
 
-`docs/ads/scripts/<date>.md` — one file per day's batch, dated
+`marketing/ads/scripts/<date>.md` — one file per day's batch, dated
 `YYYY-MM-DD`.
 
 ## The correction loop
 
 When Chris rewrites a line, that rewrite is worth more than anything you
-wrote. In the same session — not later — add it to `docs/ads/VOICE.md` as a
+wrote. In the same session — not later — add it to `marketing/ads/VOICE.md` as a
 real pair, in the exact format that file documents at its own top. This is
 how the voice reference gets better over time instead of going stale.
 
 ## Never
 
 - Never run `CLAUDE.md` §0 or load the whole company to write one script.
-- Never regenerate a script that already lives under `docs/ads/fundhub-297/` unless Chris explicitly asked to rewrite that id.
+- Never regenerate a script that already lives under `marketing/ads/slo/fundhub-297/` unless Chris explicitly asked to rewrite that id.
 - Never invent an ad title. Only Chris names an ad.
-- Never seed `docs/ads/VOICE.md` from anything but real Chris rewrites.
+- Never seed `marketing/ads/VOICE.md` from anything but real Chris rewrites.
   Do not invent example pairs to fill it out.
 - Never skip the checker, and never hand Chris a script that has not
   passed it clean.

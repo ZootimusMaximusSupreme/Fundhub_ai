@@ -13,7 +13,7 @@
 // *** WHO MAY CALL IT, AND WHY THE LIST HAS THREE KINDS ON IT. ***
 //
 //   affiliate — their own rows. The original audience.
-//   client    — a LIGHT AFFILIATE. docs/workflows/portal-rebuild-plan.md §4 is
+//   client    — a LIGHT AFFILIATE. ops/workflows/portal-rebuild-plan.md §4 is
 //               owner-set: pressing "Refer a friend" in the portal gives a
 //               client an affiliate code and access to this screen, while they
 //               stay a client principal (see 340_client_light_affiliate.sql).

@@ -178,7 +178,7 @@ function landingPathOf(url) {
 
    THREE PLACES, IN ORDER OF TRUST, FIELD BY FIELD:
      1. an explicit `attribution` object on the payload (what the application
-        form's hidden fields post — clickfunnels-fragments/06-utm-hidden-fields.html)
+        form's hidden fields post — marketing/landing-pages/06-utm-hidden-fields.html)
      2. the same keys as hidden fields on the contact (custom_attributes /
         custom_fields), which is where ClickFunnels puts a form's hidden inputs
      3. CF's own visits.first_visit, the pre-existing source

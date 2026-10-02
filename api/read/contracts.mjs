@@ -10,7 +10,7 @@
 // is no column pointing back. Rather than give `documents` a contract column —
 // a schema change to serve one screen, and a second place for the same fact to
 // live — the Documents screen sends the ids it is showing and gets the owning
-// contracts back in a single request. See docs/workflows/contracts-dedup-2026-08-17.md.
+// contracts back in a single request. See ops/workflows/contracts-dedup-2026-08-17.md.
 //
 // Read-only. Auth, role gate and redaction come from src/http/read-api.mjs;
 // the SQL is in src/contracts/. Hand-rolled rather than readHandler-based

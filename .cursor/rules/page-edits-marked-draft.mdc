@@ -17,7 +17,7 @@ alwaysApply: true
 6. **Every fact comes from the repo, the product, or Chris.** Look it up. Never invent a number, a name, a quote, or a feature.
 7. **Push live only when Chris says push it.** Strip every mark first. Keep a copy of the old live page. Prove the live page after the push.
 
-The working example is `clickfunnels-fragments/slo/preview/reorg-draft-build.mjs`. It builds the red draft, the green draft, the share copy, and the clean live page from one script.
+The working example is `marketing/landing-pages/slo/preview/reorg-draft-build.mjs`. It builds the red draft, the green draft, the share copy, and the clean live page from one script.
 
 ## Never
 

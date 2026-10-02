@@ -73,7 +73,7 @@ describe("the paid round offer", () => {
     /* THE CONTRACT'S KEYS, not the internal line codes. These were round_base /
        creditor_letter / escalation_filings — src/waypoints/pricing.mjs's private
        spelling — while GET /api/paid-services and
-       docs/workflows/portal-progress-contract.md:108-110 both said base /
+       ops/workflows/portal-progress-contract.md:108-110 both said base /
        creditor / cfpb_and_ag. Two reads of one product, two sets of keys, and the
        screen decides which extras to buy from them. The prices are still asserted
        against the same constants, so this is not a looser test. */

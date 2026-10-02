@@ -2,7 +2,7 @@
 /*
  * B-roll screen clips for the Fundhub SLO ads — 2026-09-23.
  *
- * WHY THIS EXISTS. docs/workflows/submagic-settings-lock-2026-09-23.md §W3 measured
+ * WHY THIS EXISTS. ops/workflows/submagic-settings-lock-2026-09-23.md §W3 measured
  * that the whole B-roll library is still PICTURES. Submagic lays MOVING clips over
  * Chris's face, and a still frame reads as a broken video. These eight clips are the
  * moving cover for the beats W3's matrix found uncovered.
@@ -18,7 +18,7 @@
  * client. Every screen below is either (a) the real Fundhub deliverable rendered for
  * the built-in sample file "Jordan Sample" from scripts/black-reports/fundhub_gen.py,
  * (b) a real product screen with its network answers stubbed with sample values, or
- * (c) the already-sanitized approval crops in clickfunnels-fragments/slo/client-wins/
+ * (c) the already-sanitized approval crops in marketing/landing-pages/slo/client-wins/
  * which carry no names. Nothing in this script ever opens the production database.
  *
  * 4K. Owner law .claude/rules/video-4k-unless-ad.md — some of these land in VSLs, not
@@ -54,11 +54,11 @@ import { CURRENT_SOFT_PULL_VERSION, SOFT_PULL_DISCLOSURES } from "../src/consent
 import { softPullPricingPublic } from "../src/finance/soft-pull-pricing.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const WORK = path.join(ROOT, "docs/workflows/slo-broll-2026-09-23-evidence");
+const WORK = path.join(ROOT, "ops/workflows/slo-broll-2026-09-23-evidence");
 const STAGE = path.join(WORK, "stage");
 const RAW = path.join(WORK, "raw");
 const OUT = path.join(WORK, "clips");
-const WINS = path.join(ROOT, "clickfunnels-fragments/slo/client-wins");
+const WINS = path.join(ROOT, "marketing/landing-pages/slo/client-wins");
 
 /* The viewport IS the video frame. ZOOM puts the page back at its design width:
    3840 / 3 = 1280 CSS pixels of layout, painted three times as big. */
@@ -222,7 +222,7 @@ function buildDeliverables() {
 }
 
 /** Four real approval emails in a column. The crops come from
- *  clickfunnels-fragments/slo/client-wins/, which is the sanitized set — the names
+ *  marketing/landing-pages/slo/client-wins/, which is the sanitized set — the names
  *  are blacked out in the source images, not by anything this script does. */
 function buildApprovals() {
   const picks = ["proof-crop-04.png", "proof-crop-09.png", "proof-crop-01.png", "proof-crop-12.png"];

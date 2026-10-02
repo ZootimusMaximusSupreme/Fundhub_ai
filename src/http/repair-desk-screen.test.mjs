@@ -170,7 +170,7 @@ describe("Repair desk screen — E3 expand, soft pull, no dollars", () => {
   });
 
   test("Soft pull and Clean personal info do not render for a role the server refuses", () => {
-    /* docs/UI-STANDARDS.md §5 — no control renders for a role that lacks
+    /* docs/rules/UI-STANDARDS.md §5 — no control renders for a role that lacks
      * permission. A button that renders and 403s is the thing that forbids. */
     assert.match(HTML, /mayPullCredit\(\) \? '<button type="button" data-act="repair-pull">/);
     assert.match(HTML, /mayErase\(\) \? '<button type="button" data-act="repair-clean">/);

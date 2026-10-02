@@ -1,6 +1,6 @@
 // The eleven gold-pack charts, as web-page SVG.
 //
-// A Node port of docs/workflows/gold-deliverables-v5/fh_charts.py (reference
+// A Node port of ops/workflows/gold-deliverables-v5/fh_charts.py (reference
 // only, never run). The contract is DIAGRAM_SPEC.md in the same folder,
 // sections 3, 4, 6 and 7. Every function is pure: same arguments, byte-for-byte
 // the same string. No Math.random, no Date, no model in the drawing path.

@@ -3,7 +3,7 @@
 //
 // REGENERATE THE COMMITTED PROOF DOCUMENTS FROM THE CODE AS IT STANDS.
 //
-// WHY THIS EXISTS. The proof pack under docs/workflows/w10-pack-2026-09-04/ is a
+// WHY THIS EXISTS. The proof pack under ops/workflows/w10-pack-2026-09-04/ is a
 // set of real PDFs committed as evidence. On 2026-09-06 it was found to disagree
 // with the code: its lender lists said "6 lenders are open to you today" and
 // "11 lenders are open to you today", counts that included lenders stating a
@@ -66,7 +66,7 @@ const { runTierEngineFromCrsResult } = await import("../../src/finance/crs-tier.
 const { buildPayload } = await import("../sim/push-credit.mjs");
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const PACK_DIR = join(HERE, "..", "..", "docs", "workflows", "w10-pack-2026-09-04");
+const PACK_DIR = join(HERE, "..", "..", "ops", "workflows", "w10-pack-2026-09-04");
 
 /* A fixed pull date so the cover date on every page is a property of the input
    and not of the day this was run. Same date the 2026-09-04 pack carried. */

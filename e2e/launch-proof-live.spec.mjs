@@ -20,7 +20,7 @@ import {
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SHOTS = path.join(
   ROOT,
-  "docs/workflows/launch-proof-2026-08-20-evidence/screenshots"
+  "ops/workflows/launch-proof-2026-08-20-evidence/screenshots"
 );
 
 function clientPassword() {

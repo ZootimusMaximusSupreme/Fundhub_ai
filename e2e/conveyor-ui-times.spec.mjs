@@ -22,7 +22,7 @@ import {
 const EVIDENCE_DIR = path.join(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
-  "docs/workflows/fundhub-conveyor-kpis-2026-08-23-evidence"
+  "ops/workflows/fundhub-conveyor-kpis-2026-08-23-evidence"
 );
 const EVIDENCE_FILE = path.join(EVIDENCE_DIR, "ui-times.json");
 

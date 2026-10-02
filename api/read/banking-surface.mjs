@@ -33,7 +33,7 @@
 // from. Those read what this system was told; this reads a bank connection, and
 // bank connections are not approved: src/banking/plaid.mjs is two empty seams
 // waiting on a SOC 2 review of storing bank credentials and a consent-capture
-// flow compliance has signed off (docs/workflows/finish-the-build/W5.md, still
+// flow compliance has signed off (ops/workflows/finish-the-build/W5.md, still
 // open). isPlaidEnabled() below asks whether the credentials exist; it cannot
 // ask whether anyone agreed to this. So setting three environment variables for
 // one test client must not put that person's real balances on every employee's

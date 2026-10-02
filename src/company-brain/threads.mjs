@@ -1,6 +1,6 @@
 // Company Brain chat history — threads and their messages.
 //
-// Board: docs/workflows/company-brain-chat-2026-08-17.md §3.3 (W4).
+// Board: ops/workflows/company-brain-chat-2026-08-17.md §3.3 (W4).
 // Tables: db/migrations/175_company_brain_threads.sql.
 //
 // THE ONE RULE. A thread belongs to one org AND one staff member. Every read

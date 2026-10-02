@@ -103,7 +103,7 @@ const DIVERGENCES = Object.freeze({
     ["Jordan's 6-Month Business Readiness Roadmap", "Jordan&#39;s 6-Month Business Readiness Roadmap"],
     // 4. the Python heading literal is already "Before &amp; After" and is then
     //    escaped again, so it prints the entity. The designed PDF
-    //    (docs/workflows/gold-deliverables-v5/optimization_roadmap.pdf:541)
+    //    (ops/workflows/gold-deliverables-v5/optimization_roadmap.pdf:541)
     //    reads "Before & After Transformation Table".
     ["Before &amp;amp; After", "Before &amp; After"]
   ]

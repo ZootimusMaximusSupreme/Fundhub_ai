@@ -39,7 +39,7 @@
 // WHAT IS DELIBERATELY NOT HERE
 //   - No screen calls this. Adding a "start call" button is a send control on a
 //     screen no intended journey describes; that is the owner's call, and it is
-//     written up on docs/workflows/fix-2026-08-18/BOARD.md rather than built.
+//     written up on ops/workflows/fix-2026-08-18/BOARD.md rather than built.
 //   - No bureau call. vendor/inquiry-remover/UPDATE-REQUIRED.md is an owner-set
 //     hold: Experian now needs documents uploaded to its portal first, then a
 //     wait, then the call, and the bureau prompts still describe a call-first

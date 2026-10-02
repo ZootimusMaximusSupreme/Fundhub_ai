@@ -3,7 +3,7 @@ name: fundhub-repo-hygiene
 description: >-
   Inventories Fundhub repo mess and proposes KEEP / ARCHIVE / GITIGNORE / MOVE.
   Never deletes without Chris asking. Use when Chris says organize repo, repo
-  hygiene, messy repo, clean up evidence, declutter docs/workflows, or agentify
+  hygiene, messy repo, clean up evidence, declutter ops/workflows, or agentify
   hygiene. Does not edit live product code unless he named a path.
 ---
 
@@ -52,9 +52,9 @@ Also obey: owner-scope-minimal-diff, secrets-env-law, CLAUDE.md §0 split / §5 
 
 ## Workflow
 
-1. Read the shared board if present: `docs/workflows/repo-hygiene-*.md` (newest date). Also check older purge boards (e.g. `repo-purge-candidates-2026-08-21.md`) — reuse KEEP/KILL rows; do not re-inventory from zero.
+1. Read the shared board if present: `ops/workflows/repo-hygiene-*.md` (newest date). Also check older purge boards (e.g. `repo-purge-candidates-2026-08-21.md`) — reuse KEEP/KILL rows; do not re-inventory from zero.
 2. Categorize mess (examples):
-   - Untracked `docs/workflows/*-evidence/` dumps
+   - Untracked `ops/workflows/*-evidence/` dumps
    - Huge **tracked** evidence (git bloat)
    - Duplicate / orphan workflow `.md` boards
    - Skills/rules that exist but aren’t in a router

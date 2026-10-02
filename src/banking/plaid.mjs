@@ -145,7 +145,7 @@ export function isPlaidEnabled(env = process.env) {
    so reusing it would either share the key (wrong) or print a misleading name
    during an incident. The right long-term fix is one AEAD helper parameterised by
    key-env-name, which is a cross-module refactor and out of this unit's scope —
-   recorded in docs/workflows/finish-the-build/W5.md as a finding. */
+   recorded in ops/workflows/finish-the-build/W5.md as a finding. */
 function keyFor(keyId = "v1", { env = process.env } = {}) {
   const varName = keyId === "v1" ? "PLAID_TOKEN_ENC_KEY" : `PLAID_TOKEN_ENC_KEY_${keyId.toUpperCase()}`;
   const raw = env[varName];

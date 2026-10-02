@@ -58,7 +58,7 @@ printf '%s' 'your-inngest-signing-key' | vercel env add INNGEST_SIGNING_KEY prod
 - `INNGEST_SIGNING_KEY` — used by the serve handler to verify requests from Inngest. Required in production.
 - After deploy, sync the endpoint in the Inngest dashboard: `https://<deployment>/api/inngest`.
 
-## When it breaks — see [docs/RUNBOOK.md](docs/RUNBOOK.md)
+## When it breaks — see [docs/sops/RUNBOOK.md](docs/sops/RUNBOOK.md)
 
 Rollback steps, what each `/api/health` state means — `up`, `behind`,
 `unreachable`, `unconfigured`, `error` — and its first action, how to apply

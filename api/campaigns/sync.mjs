@@ -603,7 +603,7 @@ export function buildSyncResponse({ stats, missingApp }) {
       message,
       meta_app_configured: !missingApp,
       note: missingApp
-        ? "META_APP_ID / META_APP_SECRET unset — sync uses connection user tokens only; token refresh needs the app credentials (see docs/STILL-MISSING.md)."
+        ? "META_APP_ID / META_APP_SECRET unset — sync uses connection user tokens only; token refresh needs the app credentials (see ops/STILL-MISSING.md)."
         : null
     }
   };

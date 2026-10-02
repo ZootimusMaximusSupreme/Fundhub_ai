@@ -3,7 +3,7 @@
 // Chris already uses (public/app/company-brain.html).
 //
 // WHY A REPO FILE IS NOT PART OF THIS. A Netlify function has no persistent
-// filesystem and no git access at runtime — it cannot write to docs/ops/
+// filesystem and no git access at runtime — it cannot write to ops/
 // the way this session can. Company Brain IS the delivery mechanism: the
 // brief lands there, owner-tier, and Chris asks for it the same way he
 // would ask any other question. There is nothing else to build for "where

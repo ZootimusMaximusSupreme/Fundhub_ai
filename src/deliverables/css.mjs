@@ -1,8 +1,8 @@
 // The deliverables stylesheet.
 //
 // 2026-09-17: restyled to the GOLD PACK - the approved print system in
-// docs/workflows/gold-deliverables-v5/fundhub_pdf_template.py (css()), the
-// sheet that printed docs/workflows/gold-deliverables-v5/*.pdf. Same tokens,
+// ops/workflows/gold-deliverables-v5/fundhub_pdf_template.py (css()), the
+// sheet that printed ops/workflows/gold-deliverables-v5/*.pdf. Same tokens,
 // same type scale, same sizes in pt, so a hosted page sits next to the gold PDF
 // and reads as the same document. The class names the builders already emit
 // (ported from scripts/black-reports/fundhub_gen.py) are kept and restyled, and

@@ -4,7 +4,7 @@
 // `client_waypoints` has existed since migration 330 and src/waypoints/store.mjs
 // has had upsertWaypoint() the whole time, and a grep for every caller of it
 // across the repository returned FOUR files — three test files and one manual
-// check script under docs/workflows/wave-3-checks/. NOTHING IN THE PRODUCT HAS
+// check script under ops/workflows/wave-3-checks/. NOTHING IN THE PRODUCT HAS
 // EVER WRITTEN A ROW. So no real client has a checklist, every portal read of
 // the table returns the empty list, and any nudge loop built on top of it would
 // have nothing to chase. Proved by running it too: enrolling a client on a

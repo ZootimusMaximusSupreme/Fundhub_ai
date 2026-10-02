@@ -31,7 +31,7 @@ function cleanPlayName(playName) {
  * ABSENT IS UNKNOWN, NOT ZERO. Blank/undefined returns null, and the caller
  * must then leave the column alone rather than writing 0 over it — a zero says
  * the bank approved nothing, which is a different claim from "nobody has told
- * us yet" (docs/CLOSEOUT-FEE-BASIS.md). Never let a missing amount become 0.
+ * us yet" (docs/finance/CLOSEOUT-FEE-BASIS.md). Never let a missing amount become 0.
  *
  * Goes through integer cents so 450.10 cannot arrive as 450.09: toCents does
  * the rounding once, fromCents renders it back as dollars. Cents stay inside

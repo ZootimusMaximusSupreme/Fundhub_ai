@@ -4,7 +4,7 @@
 // GET ?thread_id=<uuid>  — one thread and its messages, oldest first
 // POST { title }         — start a thread
 //
-// Board: docs/workflows/company-brain-chat-2026-08-17.md §3.3 (W4).
+// Board: ops/workflows/company-brain-chat-2026-08-17.md §3.3 (W4).
 //
 // Auth is the same four gates as api/read/company-brain.mjs, in the same order.
 // Role and staff id come from the SESSION, never from the request. A thread is

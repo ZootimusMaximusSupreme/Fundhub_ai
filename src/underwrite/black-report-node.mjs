@@ -578,7 +578,7 @@ function firstName(c) {
    SHARED PIECES OF THE DESIGNED REFERENCE SET
 
    Every section below exists in Chris's reference PDFs
-   (docs/workflows/uwiq-reference-2026-07-25/). Nothing here writes a new claim
+   (ops/workflows/uwiq-reference-2026-07-25/). Nothing here writes a new claim
    about what will happen to a client's credit: the ranked problem text is the
    vendor engine's own optimization findings, and the headings and section
    numbers are copied from the reference design.

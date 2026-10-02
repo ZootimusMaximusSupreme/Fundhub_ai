@@ -1,5 +1,5 @@
 // Apply-survey rebuild: the browser SEND_STEP shape in
-// clickfunnels-fragments/apply-survey.html, and the door it posts to
+// marketing/landing-pages/apply-survey.html, and the door it posts to
 // (/api/webhooks/clickfunnels → handleWebhook). Fake db only — no live writes.
 //
 // node --test src/http/apply-survey-webhook.test.mjs
@@ -17,7 +17,7 @@ import { _resetRegistered } from "../register-all.mjs";
 import { CF_SURVEY_QUESTIONS } from "../survey/cf-question-map.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
-const HTML = fs.readFileSync(path.join(ROOT, "clickfunnels-fragments/apply-survey.html"), "utf8");
+const HTML = fs.readFileSync(path.join(ROOT, "marketing/landing-pages/apply-survey.html"), "utf8");
 const WATCH = fs.readFileSync(path.join(ROOT, "public/funnel/watch-proof.js"), "utf8");
 
 const INGEST = "apply_survey_route_test";

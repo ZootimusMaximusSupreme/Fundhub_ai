@@ -57,7 +57,7 @@ async function rename(id, name) {
     { method: "PATCH", headers: { "content-type": "application/json" }, body: JSON.stringify({ name }) });
 }
 
-/* The words Chris actually says, per ad, from docs/ads/fundhub-297/FundHub-LOCKED-ADS.md.
+/* The words Chris actually says, per ad, from marketing/ads/slo/fundhub-297/FundHub-LOCKED-ADS.md.
    Both singular and plural are spelled out because the matcher will not bridge them. */
 const APPROVAL_WORDS = "approve-approved-approval-approvals";
 

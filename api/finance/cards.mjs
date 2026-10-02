@@ -75,7 +75,7 @@ import { assertNoCardData } from "../../src/subscriptions/index.mjs";
    payment tracking moves into Finance OS). The API and its gate are unchanged
    and still routed; whatever screen Finance OS grows for cards must carry the
    matching OWNER_ADMIN_ONLY row in public/app/shell.js. See
-   docs/FINANCE-OS-REBUILD-HANDOVER.md. */
+   docs/finance/FINANCE-OS-REBUILD-HANDOVER.md. */
 const CARD_ROLES = ROLE_SETS.FINANCE;
 
 const SESSION_OWNED = ["org_id", "orgId"];

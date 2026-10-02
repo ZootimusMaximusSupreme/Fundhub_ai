@@ -270,7 +270,7 @@ describe("F45 — the lenders open to this client today reach all four pages", (
      scripts/black-reports/fundhub_gen.py     the WeasyPrint printer
      src/deliverables/roadmap.mjs             these hosted web pages
      src/underwrite/black-report-node.mjs     the pdf-lib printer
-     docs/workflows/gold-deliverables-v5/compare/gold-optimization_roadmap.txt   (a
+     ops/workflows/gold-deliverables-v5/compare/gold-optimization_roadmap.txt   (a
                                               captured document, not a renderer)
      src/deliverables/fixtures/python-bodies.json                (a captured body)
 

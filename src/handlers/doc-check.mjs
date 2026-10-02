@@ -115,7 +115,7 @@ export const WAITING_TASK_TITLE_PREFIX = "Waiting on the document reader";
 /* THE BACKUP READER — WAITING WAS NOT THE ONLY WAY OUT.
  *
  * MEASURED 2026-09-18 on live, file #9 (hole 16 on
- * docs/workflows/live-prove-2026-09-17-notes.md): the OpenAI account had no
+ * ops/workflows/live-prove-2026-09-17-notes.md): the OpenAI account had no
  * credit, so every read of the client's ID came back `openai 429 … no credits
  * remaining`. No verdict meant no "documents approved" text and no "please
  * retake it" text, and the ID stayed unread, so the dispute letters could not

@@ -94,7 +94,7 @@ export default async function handler(req, res) {
     });
   }
 
-  /* offerType decides which body of law an ad is screened under (docs/ads/RULES.md
+  /* offerType decides which body of law an ad is screened under (marketing/ads/RULES.md
      1.5). The old fallback spec below left it out entirely, so a caller that sent
      only a prompt — no spec, no offer_type — got a job that could never pass
      compliance: it came back blocked with "offer_type must be one of funding,

@@ -44,10 +44,10 @@ log(`ad strategy for ${CAMPAIGN} as of ${TODAY} | ${CREATIVE_COUNT} creative pie
 const ground = await agent(`Read the real operating numbers before any plan is written.
 
 Read and report exactly what they say:
-- docs/workflows/ads-waterfall-projections-2026-08-26.md
-- docs/workflows/ads-revenue-model-2026-08-24.md if it exists
+- ops/workflows/ads-waterfall-projections-2026-08-26.md
+- ops/workflows/ads-revenue-model-2026-08-24.md if it exists
 - src/config/offers.mjs
-- docs/ads/ascension-ads.md if it exists
+- marketing/ads/ascension/ascension-ads.md if it exists
 
 Report:
 - the daily ad budget actually being modelled, not an aspirational one

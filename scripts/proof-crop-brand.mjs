@@ -5,7 +5,7 @@
  *   node scripts/proof-crop-brand.mjs <manifest.json> <outDir>
  *
  * Owner decision 2026-09-23: every proof crop file ships branded.
- * The branding IS clickfunnels-fragments/slo/fundhub-proof-cards.html — this script
+ * The branding IS marketing/landing-pages/slo/fundhub-proof-cards.html — this script
  * reads that file's stylesheet and renders one <article class="fh-card"> per crop with
  * Playwright, so the card, the type and the fundhub mark are the real template.
  * This script NEVER edits that template (proof-cards-from-source.md).
@@ -21,7 +21,7 @@ import { basename, resolve } from "node:path";
 import pw from "playwright";
 const { chromium } = pw;
 
-const TEMPLATE = resolve("clickfunnels-fragments/slo/fundhub-proof-cards.html");
+const TEMPLATE = resolve("marketing/landing-pages/slo/fundhub-proof-cards.html");
 const [manifestPath, outDir] = process.argv.slice(2);
 if (!manifestPath || !outDir) {
   console.error("usage: proof-crop-brand.mjs <manifest.json> <outDir>");

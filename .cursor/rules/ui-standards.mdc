@@ -1,12 +1,12 @@
 ---
-description: Fundhub layout law — screens follow docs/UI-STANDARDS.md
+description: Fundhub layout law — screens follow docs/rules/UI-STANDARDS.md
 globs: public/app/**/*.{html,css,js},wireframes/**/*.{html,css}
 alwaysApply: false
 ---
 
 # UI standards (rebuild)
 
-When building or changing a screen, `docs/UI-STANDARDS.md` is law. Brand (colors, fonts, spectrum) stays in `fundhub-brand.css`.
+When building or changing a screen, `docs/rules/UI-STANDARDS.md` is law. Brand (colors, fonts, spectrum) stays in `fundhub-brand.css`.
 
 If a request conflicts with a rule in that file, flag it. Do not silently pick.
 

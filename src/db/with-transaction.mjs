@@ -28,7 +28,7 @@
 // — live, compliant, and explicitly not to be modified — and exporting a helper
 // out of it means editing it. Consolidating all three into this one file is the
 // right end state and is a cross-module refactor: recorded as a finding on
-// docs/workflows/fundhub-beta-buildout.md rather than done as a drive-by.
+// ops/workflows/fundhub-beta-buildout.md rather than done as a drive-by.
 //
 // THE ORDER OF THE THREE BRANCHES IS THE WHOLE POINT:
 //   1. the handle has connect()      -> a real Pool, or a test double that wants

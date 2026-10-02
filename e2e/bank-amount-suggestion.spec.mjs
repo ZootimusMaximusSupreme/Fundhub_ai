@@ -6,7 +6,7 @@
 // approval". So a funding advisor read the same email and retyped the same
 // number by hand, and when they forgot, the approval carried no amount at all.
 // Fundhub bills a percent of approvals that HAVE an amount, so a forgotten box
-// is a bill that never goes out (docs/CLOSEOUT-FEE-BASIS.md).
+// is a bill that never goes out (docs/finance/CLOSEOUT-FEE-BASIS.md).
 //
 // WHAT THESE PROVE, in a real browser, clicking real buttons:
 //   1. the figure from the bank's email is offered beside the box

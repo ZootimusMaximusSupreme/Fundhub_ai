@@ -1,7 +1,7 @@
 // The white-label signup walk, end to end, against a real Postgres.
 //
 // WHAT THIS EXISTS TO CATCH. The end-to-end audit of 2026-08-27
-// (docs/workflows/full-e2e-audit-2026-08-27.md, White-label lane) recorded a
+// (ops/workflows/full-e2e-audit-2026-08-27.md, White-label lane) recorded a
 // partner who applied, could sign in, and had a working branded site — while:
 //
 //   * Pipeline R-08 showed 0 cards, in every stage, for every partner;

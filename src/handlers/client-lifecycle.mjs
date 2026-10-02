@@ -27,7 +27,7 @@ import { normalizePhone } from "../messaging/providers/bland-voice.mjs";
 import { syncSloClickfunnelsContact } from "../slo/cf-contact.mjs";
 
 // Last question on the CF apply survey (Available Capital).
-// docs/clickfunnels/cf-survey-ground-truth.md — Survey Complete only when this lands.
+// marketing/landing-pages/clickfunnels/cf-survey-ground-truth.md — Survey Complete only when this lands.
 const CF_SURVEY_COMPLETE_KEY = "cf_svy_available_capital";
 
 function answersIncludeSurveyComplete(answers) {

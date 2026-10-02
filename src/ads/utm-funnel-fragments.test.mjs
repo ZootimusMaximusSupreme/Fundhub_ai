@@ -19,20 +19,20 @@ const UTM_NAMES = [
 const EXTRA = ["landing_path", "referrer_domain"];
 
 const APPLY_PAGES = [
-  "clickfunnels-fragments/01-vsl.html",
-  "clickfunnels-fragments/02a-apply-top.html",
-  "clickfunnels-fragments/02b-apply-bottom.html",
-  "clickfunnels-fragments/04a-book-top.html",
-  "clickfunnels-fragments/04b-book-bottom.html",
-  "clickfunnels-fragments/05-thank-you.html"
+  "marketing/landing-pages/01-vsl.html",
+  "marketing/landing-pages/02a-apply-top.html",
+  "marketing/landing-pages/02b-apply-bottom.html",
+  "marketing/landing-pages/04a-book-top.html",
+  "marketing/landing-pages/04b-book-bottom.html",
+  "marketing/landing-pages/05-thank-you.html"
 ];
 
 const DIAGNOSTIC_PAGES = [
   "public/roadmap/index.html",
   "public/roadmap/pay.html",
-  "clickfunnels-fragments/slo/slo-01-sales.html",
-  "clickfunnels-fragments/slo/slo-02-order.html",
-  "clickfunnels-fragments/slo/slo-03-thank-you.html"
+  "marketing/landing-pages/slo/slo-01-sales.html",
+  "marketing/landing-pages/slo/slo-02-order.html",
+  "marketing/landing-pages/slo/slo-03-thank-you.html"
 ];
 
 function extractInlineScript(html) {
@@ -47,7 +47,7 @@ test("Creative Factory keys are the seven 06 writes, and utm_content is among th
 });
 
 test("06 paste-in and /funnel/fh-attribution.js are the same script", () => {
-  const fromHtml = extractInlineScript(read("clickfunnels-fragments/06-utm-hidden-fields.html"));
+  const fromHtml = extractInlineScript(read("marketing/landing-pages/06-utm-hidden-fields.html"));
   const fromPublic = read("public/funnel/fh-attribution.js");
   assert.equal(fromPublic, fromHtml.endsWith("\n") ? fromHtml : fromHtml + "\n");
   for (const k of UTM_NAMES) assert.ok(fromPublic.includes(`"${k}"`), k);
@@ -60,7 +60,7 @@ test("06 paste-in and /funnel/fh-attribution.js are the same script", () => {
 });
 
 test("07 paste-in and /funnel/vsl-watch-beacon.js are the same script", () => {
-  const fromHtml = extractInlineScript(read("clickfunnels-fragments/07-vsl-watch-beacon.html"));
+  const fromHtml = extractInlineScript(read("marketing/landing-pages/07-vsl-watch-beacon.html"));
   const fromPublic = read("public/funnel/vsl-watch-beacon.js");
   assert.equal(fromPublic, fromHtml.endsWith("\n") ? fromHtml : fromHtml + "\n");
   assert.ok(fromPublic.includes("fh_attribution"));
@@ -79,7 +79,7 @@ test("apply funnel fragments load the UTM script (apply.fundhub.ai /watch /apply
 });
 
 test("watch page fragment also loads the VSL beacon", () => {
-  const html = read("clickfunnels-fragments/01-vsl.html");
+  const html = read("marketing/landing-pages/01-vsl.html");
   assert.ok(html.includes("https://fundhub.ai/funnel/vsl-watch-beacon.js"));
   const attrAt = html.indexOf("fh-attribution.js");
   const beaconAt = html.indexOf("vsl-watch-beacon.js");

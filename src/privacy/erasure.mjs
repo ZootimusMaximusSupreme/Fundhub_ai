@@ -88,7 +88,7 @@ const isUuid = (v) => typeof v === "string" && UUID_RE.test(v.trim());
    §7 is the governing rule ("flagged changes ship only after explicit human
    approval") and that approval has been given, so this list does not need
    re-flagging on every change that touches it.
-   Recorded on the board at docs/workflows/fundhub-beta-buildout.md.
+   Recorded on the board at ops/workflows/fundhub-beta-buildout.md.
 
    WHAT WOULD REOPEN IT: adding a table to this list, removing one, or changing
    what a reason claims. The approval covers the list below as it stands — it is

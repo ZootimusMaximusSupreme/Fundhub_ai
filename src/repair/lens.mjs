@@ -1,7 +1,7 @@
 /* Repair desk lens — pure. Row facts in → chip + due words out.
  *
  * No database. No clock unless the caller passes `asOf`.
- * Spec: docs/workflows/repair-build-spec-2026-08-21.md §8–§9.
+ * Spec: ops/workflows/repair-build-spec-2026-08-21.md §8–§9.
  * The API ships facts; this module draws conclusions (same split as
  * src/fulfillment/next-action.mjs).
  */

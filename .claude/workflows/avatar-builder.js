@@ -47,7 +47,7 @@ Service to profile: ${SERVICE}
 
 You have tool access. Ground every answer in the real business, not guesses:
 - Read the repo at /home/user/fundhub-platform - especially public/partner/ (the offer
-  pages), docs/ads/ascension-ads.md, docs/compliance/, and CLAUDE.md's locked terms.
+  pages), marketing/ads/ascension/ascension-ads.md, docs/rules/compliance/, and CLAUDE.md's locked terms.
 - Load Google Drive tools via ToolSearch ("select:mcp__Google_Drive__search_files,mcp__Google_Drive__read_file_content")
   and read FundHub-Copy-Source-of-Truth.md and fundhub-partner-platform-addendum.md if reachable.
 

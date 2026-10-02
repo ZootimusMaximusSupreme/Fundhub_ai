@@ -38,7 +38,7 @@
  * check sat below anything that could bypass it. It is now positional: code
  * that dispatches without going through the runner does not consult this file.
  * Nothing does that today (nothing schedules the dispatcher at all — see W5 on
- * docs/workflows/ghl-cutover-2026-08-01.md), so there is no live hole. But when
+ * ops/workflows/ghl-cutover-2026-08-01.md), so there is no live hole. But when
  * W5 plugs sending in, somebody has to decide what the per-message rule is for
  * a REAL client, and `check()` below is not it. That decision is an owner call
  * and it is recorded as an open question on the cutover board, not guessed at

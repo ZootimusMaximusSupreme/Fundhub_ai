@@ -18,7 +18,7 @@
 // without that, the delete fails citing a table that looks empty. Every statement
 // is pinned to the Fundhub org id so a tenant added later can never be caught.
 //
-// See docs/workflows/sim-data-removal.md for what was found and why.
+// See ops/workflows/sim-data-removal.md for what was found and why.
 import fs from "node:fs";
 import pg from "pg";
 import { clientChildTables } from "../src/demo/simulate-client.mjs";

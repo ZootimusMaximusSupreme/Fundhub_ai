@@ -24,7 +24,7 @@
  * A shape check follows it, because a second writer added elsewhere in the file
  * would not be caught by calling this one function.
  *
- * Owner-set 2026-08-31. docs/BRAND-THEMING-SPEC.md, "Status colors".
+ * Owner-set 2026-08-31. docs/specs/BRAND-THEMING-SPEC.md, "Status colors".
  */
 
 import test from "node:test";
@@ -129,7 +129,7 @@ test("nothing anywhere in shell.js writes a status colour", () => {
     const hits = SRC.match(re) || [];
     assert.equal(hits.length, 0,
       `shell.js writes ${token} — the four status colours are semantic and ` +
-      `fixed at their fundhub-brand.css values (docs/BRAND-THEMING-SPEC.md)`);
+      `fixed at their fundhub-brand.css values (docs/specs/BRAND-THEMING-SPEC.md)`);
   }
 });
 

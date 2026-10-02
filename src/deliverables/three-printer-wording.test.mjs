@@ -30,8 +30,8 @@
 //                              the Month 1 paydown checklist. Its target is
 //                              `limitCents > 0 ? ... : null` (:235, :324), so a
 //                              reported $0 produces no waypoint. Correct already.
-//   docs/workflows/gold-deliverables-v5/fundhub_pdf_template.py
-//   docs/workflows/gold-deliverables-v5/compare/*.txt
+//   ops/workflows/gold-deliverables-v5/fundhub_pdf_template.py
+//   ops/workflows/gold-deliverables-v5/compare/*.txt
 //   src/deliverables/fixtures/*.json
 //                              captured OUTPUT and reference material under docs/.
 //                              Nothing imports them at runtime.

@@ -152,7 +152,7 @@ export const OFFERS = Object.freeze({
        hint reads that state rather than asserting a drop — see the S-19 block in
        public/app/present.js. Whether Blueprint stays a rung of that ladder is a
        sales question, not a code one, and it is written up in
-       docs/workflows/fix-batch-2026-09-03-remaining.md.
+       ops/workflows/fix-batch-2026-09-03-remaining.md.
 
        priceMinCents stays $1,000 deliberately. It is the floor a closer may
        discount to on a custom-priced offer, not the list price, and moving a

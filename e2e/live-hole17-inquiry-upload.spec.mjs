@@ -11,7 +11,7 @@ import { BASE, liveStaffLogin } from "./live-auth.mjs";
 
 const CLIENT = "40f063e1-27e3-4857-be1a-91640eee90e1";
 const EMAIL = "stanbridgejchris+sim-inquiry-20260827@gmail.com";
-const SHOTS = "docs/workflows/e2e-round-2026-08-27-evidence/hole-17/shots";
+const SHOTS = "ops/workflows/e2e-round-2026-08-27-evidence/hole-17/shots";
 const RAW = `${SHOTS}/_raw`;
 
 test.setTimeout(1_500_000);

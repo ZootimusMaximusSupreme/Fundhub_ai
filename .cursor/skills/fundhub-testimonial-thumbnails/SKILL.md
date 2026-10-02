@@ -5,7 +5,7 @@ description: Turn raw testimonial videos into live cards on a Fundhub page — a
 
 # Fundhub testimonial thumbnails and captions
 
-Built 2026-09-27 from Colin, Gene and Sarah. Board: `docs/workflows/testimonial-thumbnails-2026-09-27.md`.
+Built 2026-09-27 from Colin, Gene and Sarah. Board: `ops/workflows/testimonial-thumbnails-2026-09-27.md`.
 Prompt of record: `docs/prompts/testimonial-thumbnails.md`.
 
 ## The problem this solves
@@ -30,7 +30,7 @@ Mac — the system python is 3.9.6 from Apple CommandLineTools and its pip has n
 such flag. Make a venv. And **there is no `ffprobe` here**; `ffmpeg -i <file>`
 prints the stream line to stderr and exits 1, which is the read, not a failure.
 
-### 2. `content/testimonials/testimonials.json` is the source of record
+### 2. `marketing/testimonials/testimonials.json` is the source of record
 
 One record per video. The page is generated from this file — never the other way
 round. Fields beyond the obvious:

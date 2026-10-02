@@ -1,7 +1,7 @@
 // POST /api/company-brain/upload — a staff member adds a document to Company Brain.
 // GET  /api/company-brain/upload — the documents this org has uploaded.
 //
-// Contracts: docs/workflows/company-brain-chat-2026-08-17.md §3.1 and §3.2.
+// Contracts: ops/workflows/company-brain-chat-2026-08-17.md §3.1 and §3.2.
 //
 // ROLE COMES FROM THE SESSION. The auth chain is the same three steps as
 // api/read/company-brain.mjs, in the same order, deliberately: requireAuth,

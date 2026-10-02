@@ -111,7 +111,7 @@ for (const f of smsFiles) {
 
 // Refresh _templates.json bodies with the same helpers
 const dumpPath =
-  "docs/workflows/messaging-review-2026-08-21-evidence/_templates.json";
+  "ops/workflows/messaging-review-2026-08-21-evidence/_templates.json";
 if (fs.existsSync(dumpPath)) {
   const templates = JSON.parse(fs.readFileSync(dumpPath, "utf8"));
   let n = 0;

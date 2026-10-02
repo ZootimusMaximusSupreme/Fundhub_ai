@@ -12,7 +12,7 @@
 //   1. A "Bank yes" with NO amount SAVES, and approved_amount stays NULL.
 //      NULL means UNKNOWN. A 0 would be a claim that the bank approved
 //      nothing, and that claim flows into a client's success-fee invoice
-//      looking perfectly legitimate (docs/CLOSEOUT-FEE-BASIS.md). This is the
+//      looking perfectly legitimate (docs/finance/CLOSEOUT-FEE-BASIS.md). This is the
 //      assertion that must never be softened to `>= 0` or `!= undefined`.
 //
 //   2. The amount can be filled in LATER, onto the SAME application row. No
@@ -31,7 +31,7 @@
 //      approvals total, not funding_rounds.funded_amount. That makes the
 //      distinction this whole file is about — "approved" versus "approved for
 //      a known amount" — the thing the client is billed from, so it matters
-//      more here than it ever did. docs/CLOSEOUT-FEE-BASIS.md.
+//      more here than it ever did. docs/finance/CLOSEOUT-FEE-BASIS.md.
 
 import { describe, test, before, after } from "node:test";
 import assert from "node:assert/strict";

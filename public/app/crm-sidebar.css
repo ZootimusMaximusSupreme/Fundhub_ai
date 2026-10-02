@@ -441,7 +441,7 @@ html.fh-side-mini .app-shell {
 
 /* ---------------------------------------------------------------------------
    MOBILE — added 2026-08-05, workflow 1 of the mobile-CRM batch.
-   See docs/workflows/mobile-crm.md.
+   See ops/workflows/mobile-crm.md.
 
    Two breakpoints for the whole app. Do not invent others.
      860px — sidebar goes off-canvas, content takes the full width
@@ -498,7 +498,7 @@ html.fh-side-mini .app-shell {
      table in a 390px viewport silently loses 187px and the layout check
      reports the screen as passing. Hiding the symptom would have made the
      remaining four workflows untestable. Overflow stays visible so
-     docs/workflows/mobile-check.mjs can fail on it and someone fixes the
+     ops/workflows/mobile-check.mjs can fail on it and someone fixes the
      element that is actually too wide. */
 
   /* UI-STANDARDS §11: "No sideways page scroll." The cap above is a MAXIMUM,
@@ -592,7 +592,7 @@ html.fh-side-mini .app-shell {
 /* ---------------------------------------------------------------------------
    SHARED RESPONSIVE HELPERS
    Available on every gated screen. Workflows 2-5 use these instead of rolling
-   their own. Documented in docs/workflows/mobile-crm.md section 2.
+   their own. Documented in ops/workflows/mobile-crm.md section 2.
    --------------------------------------------------------------------------- */
 
 /* Wrap a table that has to stay a table. It scrolls inside its own box so the

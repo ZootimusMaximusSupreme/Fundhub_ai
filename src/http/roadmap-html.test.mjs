@@ -159,7 +159,7 @@ test("staff operating notes never reach a client's screen", async () => {
   }
   // Scoped to the operating shorthand this page authors or could leak. Round
   // TITLES still come from the engine at runtime and remain technical — see the
-  // note in docs/workflows/smartcredit-api-2026-09-17.md.
+  // note in ops/workflows/smartcredit-api-2026-09-17.md.
   assert.doesNotMatch(html, /DIY pack|SEND ONLY IF/i,
     "staff letter-pack shorthand must not be in the page");
 });

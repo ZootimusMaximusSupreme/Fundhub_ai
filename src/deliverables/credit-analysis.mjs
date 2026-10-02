@@ -7,7 +7,7 @@
 // TWO LOOKS (2026-09-17). buildCreditAnalysis(client, opts). With no opts it
 // prints the older fundhub_gen.py markup byte for byte (port-parity.test.mjs
 // pins it). With { look: "gold" } it draws the gold pack
-// (docs/workflows/gold-deliverables-v5/credit_analysis_report.pdf): gold
+// (ops/workflows/gold-deliverables-v5/credit_analysis_report.pdf): gold
 // blocks (.lead, .co, .mrow/.mc, table.fh with chips) and the six gold charts
 // from gold-charts.mjs in place of the three old ones. The words are the same
 // in both looks. Where a gold chart draws a sentence the page also prints right

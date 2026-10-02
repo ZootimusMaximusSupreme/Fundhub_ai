@@ -40,7 +40,7 @@ export function sloPullSuccessUrl(env = process.env) {
 
 /* ── The /roadmap widget (owner-set 2026-09-22) ──────────────────────────────
    The checkout is a two-step widget ON the /roadmap sales page
-   (clickfunnels-fragments/slo/slo-01-sales.html), not separate pages. */
+   (marketing/landing-pages/slo/slo-01-sales.html), not separate pages. */
 
 /* DEMO PAY. SLO_DEMO_PAY="1" means the Pay button records the order exactly
    as a real one (a payment_links row with the real amount, is_demo = true) but

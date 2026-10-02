@@ -1,11 +1,11 @@
 // EVERY CRM SCREEN USES THE SAME FRAME. Owner rule, set 2026-08-30.
-// The frame itself is written down in docs/UI-STANDARDS.md §12.
+// The frame itself is written down in docs/rules/UI-STANDARDS.md §12.
 //
 // ═══════════════════════════════════════════════════════════════════════════
 // WHAT THIS PREVENTS
 //
 // On 2026-08-19 two screens were reworked on the same day with OPPOSITE
-// instructions, and both agents cited docs/UI-STANDARDS.md as their authority.
+// instructions, and both agents cited docs/rules/UI-STANDARDS.md as their authority.
 // Neither of them was lying. The document said nothing about what a container
 // looks like at rest, what a topbar has to carry, or that a font size written
 // in a screen's own <style> is thrown away by the brand file. So each agent
@@ -125,7 +125,7 @@ describe("every CRM screen uses the same frame (UI-STANDARDS §12, owner-set 202
       "     screen ends up with six sizes and no hierarchy (§3).\n" +
       "  3. Delete it. Most of these are leftovers from before the brand file existed.\n\n" +
       "The same trap eats the `font:` shorthand (`font:600 11px var(--sans)`) and inline\n" +
-      "style=\"font-size:12px\" in the markup. Full write-up: docs/UI-STANDARDS.md §12.7."
+      "style=\"font-size:12px\" in the markup. Full write-up: docs/rules/UI-STANDARDS.md §12.7."
     );
   });
 
@@ -171,7 +171,7 @@ describe("every CRM screen uses the same frame (UI-STANDARDS §12, owner-set 202
       "  .topbar-right{width:100%;gap:8px;flex-wrap:wrap}\n" +
       "Before the bar is ever allowed to wrap, spend the room instead: `.brand{min-width:0}`, the\n" +
       "screen name truncates with an ellipsis, and the clock is the first thing to hide.\n" +
-      "Full write-up: docs/UI-STANDARDS.md §12.8."
+      "Full write-up: docs/rules/UI-STANDARDS.md §12.8."
     );
   });
 
@@ -249,16 +249,16 @@ describe("every CRM screen uses the same frame (UI-STANDARDS §12, owner-set 202
     // is told to read is not a standard.
     const claude = fs.readFileSync(path.join(ROOT, "CLAUDE.md"), "utf8");
     assert.ok(
-      claude.includes("docs/UI-STANDARDS.md"),
-      "CLAUDE.md no longer names docs/UI-STANDARDS.md.\n\n" +
+      claude.includes("docs/rules/UI-STANDARDS.md"),
+      "CLAUDE.md no longer names docs/rules/UI-STANDARDS.md.\n\n" +
       "CLAUDE.md is the one file every agent reads before it does anything. It is the only reliable\n" +
       "route to the screen standard. Put the pointer back in §3:\n\n" +
-      "  Touching anything under `public/app/`? `docs/UI-STANDARDS.md` is law. Read it first.\n\n" +
+      "  Touching anything under `public/app/`? `docs/rules/UI-STANDARDS.md` is law. Read it first.\n\n" +
       "Without that line the standard is unreachable in practice, every screen change becomes a\n" +
       "guess again, and the guesses do not agree with each other."
     );
-    const standards = path.join(ROOT, "docs", "UI-STANDARDS.md");
-    assert.ok(fs.existsSync(standards), "docs/UI-STANDARDS.md itself is gone");
+    const standards = path.join(ROOT, "docs", "rules", "UI-STANDARDS.md");
+    assert.ok(fs.existsSync(standards), "docs/rules/UI-STANDARDS.md itself is gone");
     assert.match(
       fs.readFileSync(standards, "utf8"), /##\s*12\.\s*THE SCREEN FRAME/i,
       "UI-STANDARDS.md lost §12, the section this whole test file enforces"

@@ -1161,7 +1161,7 @@
                carry a recorded dollar amount and that nobody has marked as not
                counting, which is the definition in
                src/funding/success-fee.mjs (owner-set 2026-08-30,
-               docs/CLOSEOUT-FEE-BASIS.md). The label says "confirmed" because
+               docs/finance/CLOSEOUT-FEE-BASIS.md). The label says "confirmed" because
                that is the only claim the number can support. Painted by the
                funding block at the foot of this file, from the same read as the
                headline — never from funded_amount, and never from the guess. -->
@@ -1631,7 +1631,7 @@ document.querySelectorAll('.group-title.tog').forEach(function(t){
 
   /* The mirror: a bank yes we HAVE confirmed a number for. This is the set the
      success fee is a percent of (owner-set 2026-08-30,
-     docs/CLOSEOUT-FEE-BASIS.md), so it is the only honest thing to put under a
+     docs/finance/CLOSEOUT-FEE-BASIS.md), so it is the only honest thing to put under a
      label that says "Approved". */
   function isConfirmedApproval(app) {
     if (!app || String(app.status || "") !== "Approved") return false;
@@ -2675,7 +2675,7 @@ document.addEventListener("DOMContentLoaded", function () {
        immediately to its left. It never showed an approved amount at all, and
        since the 2026-08-30 fee decision (the success fee is a percent of
        CONFIRMED approvals — src/funding/success-fee.mjs,
-       docs/CLOSEOUT-FEE-BASIS.md) it also contradicted the invoice.
+       docs/finance/CLOSEOUT-FEE-BASIS.md) it also contradicted the invoice.
 
        It is now painted from the application rows, by the funding block at the
        foot of this file, which is the one place that reads them. Same read as
@@ -4267,7 +4267,7 @@ document.addEventListener("DOMContentLoaded", function () {
      an amount nobody typed: an empty box sends no approved_amount key at all,
      so the column is not written. A zero would be a claim that the bank
      approved nothing, and it would flow into a success-fee invoice looking
-     perfectly legitimate (docs/CLOSEOUT-FEE-BASIS.md).
+     perfectly legitimate (docs/finance/CLOSEOUT-FEE-BASIS.md).
 
      BUT AN UNKNOWN AMOUNT CANNOT BE ALLOWED TO ROT. Until the dollars are in,
      that approval is missing from the round's lender breakdown, so the client
@@ -4409,7 +4409,7 @@ document.addEventListener("DOMContentLoaded", function () {
      dollar figure out of it — then dropped the figure and kept only a yes/no.
      So a funding advisor retyped, from the same email, a number the system
      already had. When they forgot, the approval carried no amount and the round
-     could not be billed (docs/CLOSEOUT-FEE-BASIS.md).
+     could not be billed (docs/finance/CLOSEOUT-FEE-BASIS.md).
 
      THREE RULES, AND THEY ARE THE WHOLE DESIGN:
 

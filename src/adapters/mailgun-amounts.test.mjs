@@ -5,7 +5,7 @@
  * it to nudge its confidence — and then discarded it, so a funding advisor
  * retyped by hand a number the system already had. When they forgot, the
  * approval carried no dollar amount and the round could not be billed
- * (docs/CLOSEOUT-FEE-BASIS.md).
+ * (docs/finance/CLOSEOUT-FEE-BASIS.md).
  *
  * These tests pin the four rules the capture has to obey:
  *

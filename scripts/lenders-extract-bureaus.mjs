@@ -107,7 +107,7 @@ export const SOURCES = {
 
 const ALIAS_MAP_FILE = path.join(HERE, "lenders-alias-map.json");
 const OUT_BOOK = path.join(OUT_ROOT, "credentials/lenders-audit/lenders-audited-with-bureaus.csv");
-const OUT_REVIEW = path.join(OUT_ROOT, "docs/workflows/lender-list-2026-09-05.md");
+const OUT_REVIEW = path.join(OUT_ROOT, "ops/workflows/lender-list-2026-09-05.md");
 
 const CONFIRM = process.argv.includes("--confirm");
 

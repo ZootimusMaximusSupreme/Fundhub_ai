@@ -9,7 +9,7 @@
 // nothing with no clue why. This test compares the two lists directly.
 //
 // WHY THE TEST REACHES INTO AN HTML FILE. The beacon at
-// clickfunnels-fragments/07-vsl-watch-beacon.html is pasted by hand into a
+// marketing/landing-pages/07-vsl-watch-beacon.html is pasted by hand into a
 // ClickFunnels page. It cannot import anything, so the logic cannot live in a
 // module and be shared. Copying the two functions into this file instead would
 // mean the test proves a copy while the page runs something else — the exact
@@ -32,7 +32,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
-const FRAGMENT = path.join(ROOT, "clickfunnels-fragments", "07-vsl-watch-beacon.html");
+const FRAGMENT = path.join(ROOT, "marketing/landing-pages", "07-vsl-watch-beacon.html");
 const SOURCE = fs.readFileSync(FRAGMENT, "utf8");
 
 const START = "PURE LOGIC START";
@@ -106,7 +106,7 @@ describe("fhShouldSample — one row per whole second, never four", () => {
 
 describe("fhClassifySeek — telling a rewind from a skip from the unmute restart", () => {
   test("the tap for sound sends the video to zero, and that is NOT a rewind", () => {
-    // docs/workflows/cf-vsl-watch-html-step1.html:133-134 runs
+    // ops/workflows/cf-vsl-watch-html-step1.html:133-134 runs
     // v.muted=false; v.currentTime=0; v.controls=true.
     // Called a rewind, the opening looks like the best-watched part of the
     // video and there is a fake cliff at whatever second they tapped.
@@ -400,7 +400,7 @@ describe("the events in the order a real browser fires them", () => {
 
   test("TAPPING FOR SOUND WHILE PAUSED IS NOT A REWIND — the whole point of the file", () => {
     // This is the case the design exists for and the case it used to get wrong.
-    // The page's own code (docs/workflows/cf-vsl-watch-html-step1.html:133-134)
+    // The page's own code (ops/workflows/cf-vsl-watch-html-step1.html:133-134)
     // runs v.muted=false; v.currentTime=0; v.play(). A real browser then fires
     // volumechange, seeking, play, and seeked LAST, because seeked waits for the
     // picture. Any code that forgets the restart is coming by the time seeked
@@ -524,7 +524,7 @@ describe("the events in the order a real browser fires them", () => {
 
 // ── THE SECOND HIGH-WATER MARK ─────────────────────────────────────────────
 // The video auto-plays MUTED and the tap for sound sends it back to zero
-// (docs/workflows/cf-vsl-watch-html-step1.html:133). So "the video reached
+// (ops/workflows/cf-vsl-watch-html-step1.html:133). So "the video reached
 // 3:00" and "a person chose to watch and reached 3:00" are different facts.
 // `pos` is the first. `pos_unmuted` is the second, and it is the only one worth
 // quoting. src/vsl/watch-beacon.mjs:71-84 spells out why, and :285 is the

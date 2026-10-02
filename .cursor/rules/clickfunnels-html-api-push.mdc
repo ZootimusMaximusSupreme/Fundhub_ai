@@ -1,12 +1,12 @@
 ---
 description: Push FundHub funnel HTML to live ClickFunnels via Custom HTML Pages API — not manual paste
-globs: clickfunnels-fragments/**
+globs: marketing/landing-pages/**
 alwaysApply: false
 ---
 
 # ClickFunnels HTML — API push law
 
-When work touches `clickfunnels-fragments/**` or live `apply.fundhub.ai` funnel HTML:
+When work touches `marketing/landing-pages/**` or live `apply.fundhub.ai` funnel HTML:
 
 1. **Push via ClickFunnels 2.0 Custom HTML Pages API** (GA 2026-09-18). Load skill `.cursor/skills/fundhub-clickfunnels-html-push/SKILL.md`.
 2. **Never** tell Chris to paste fragments into the builder as the default finish line.

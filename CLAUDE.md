@@ -20,7 +20,7 @@ I forget to do this. When I forget, a ten-minute job takes ten hours. Your job i
 2. What runs at the same time vs. what has to wait. Name any real dependency. If there is none, say "no dependencies — all parallel."
 3. A copy-paste prompt for each workflow. Written so I can open a new session, paste it, and go. Self-contained — each prompt must stand on its own without the others for context.
 4. Which workflow **this session** owns. Put optional parallel prompts on the shared board — not a bash checklist for Chris.
-5. The shared board. Name the `docs/workflows/<batch>.md` file all workflows will read and write.
+5. The shared board. Name the `ops/workflows/<batch>.md` file all workflows will read and write.
 
 Then stop and wait for my go.
 
@@ -193,7 +193,7 @@ For each ad, agents merge every take and clip into one best-of master, kill the 
 
 ### Ad file names (owner-set 2026-09-24)
 
-Drive names are Offer, ad number, angle name, then take number. The angle is the script name. Same angle joins. A different angle is a different video. Book: `docs/ads/NAMING.md`. Same law: `.cursor/rules/ad-naming.mdc` and `.claude/rules/ad-naming.md`.
+Drive names are Offer, ad number, angle name, then take number. The angle is the script name. Same angle joins. A different angle is a different video. Book: `marketing/ads/NAMING.md`. Same law: `.cursor/rules/ad-naming.mdc` and `.claude/rules/ad-naming.md`.
 
 ### SLO filmed video — one folder (owner-set 2026-09-24)
 
@@ -209,7 +209,7 @@ If the answer needs a fact you can look up, look it up and put it in the same an
 
 ### Ad watch curve (owner-set 2026-09-27)
 
-Video ad drop-off uses Meta's own definitions. Most plays never reach 25% → fix the opening first. Dying ads buzz Chris on the ad-video notify path. Same law: `.cursor/rules/ad-watch-curve.mdc` and `.claude/rules/ad-watch-curve.md`. Book: `docs/ads/watch-curve.md`.
+Video ad drop-off uses Meta's own definitions. Most plays never reach 25% → fix the opening first. Dying ads buzz Chris on the ad-video notify path. Same law: `.cursor/rules/ad-watch-curve.mdc` and `.claude/rules/ad-watch-curve.md`. Book: `marketing/ads/watch-curve.md`.
 
 ### Page edits — marked draft first (owner-set 2026-09-29)
 
@@ -226,7 +226,7 @@ Clarity Data Export: one pull per time Chris asks. Go through `src/adapters/clar
 3. Produce a plan in plain English. Name: files to be touched, journeys affected, how the change will be verified.
 4. Wait for approval. Do not write code in the same turn as the plan.
 
-Touching anything under `public/app/`? `docs/UI-STANDARDS.md` is law. Read it first.
+Touching anything under `public/app/`? `docs/rules/UI-STANDARDS.md` is law. Read it first.
 
 ### 3a. Build order — back end first (owner rule, 2026-09-03)
 
@@ -242,9 +242,18 @@ Rule of thumb from Chris: "work backwards" — back end proven, then visualize h
 
 ### 3b. Everything goes in the repository (owner rule, 2026-09-03)
 
-Every deliverable, decision, list, script, and rule produced in a Claude session gets written to this repository in the same session — not left in chat, not left in an artifact. If a push is not possible from the environment, commit locally and name the path in the task report. Copy and ad scripts go under `docs/ads/`, task lists in `TODO.md`, flows in `docs/journeys/`, rules here.
+Every deliverable, decision, list, script, and rule produced in a Claude session gets written to this repository in the same session — not left in chat, not left in an artifact. If a push is not possible from the environment, commit locally and name the path in the task report. Copy and ad scripts go under `marketing/ads/`, task lists in `TODO.md`, flows in `docs/journeys/`, rules here.
 
-**Measured 2026-09-06: this rule is being broken where it costs the most.** The 83 ad scripts and the VSLs live in a chat window. `fundhub-scripts.md` and `fundhub-vsl.md` are not in the repo, not on any branch, and not anywhere on this Mac. `docs/ads/registry.json` was built without them, which is why 21 of its 24 ads have no title. See `docs/ops/2026-09-06-self-analysis.md`.
+**Where things live (owner-set 2026-10-01).**
+
+| Folder | What goes there |
+|---|---|
+| `src/ api/ netlify/ db/ public/ e2e/ vendor/ assets/ scripts/` | The live app and its tools. Not moved. |
+| `marketing/` | `ads/` (ads by offer: `ads/slo/`, `ads/ascension/`, `ads/climate/`), `landing-pages/` (ClickFunnels page HTML), `vsl/`, `posts/`, `offers/`, `avatars/`, `copy/`, `flywheel/`, `testimonials/` |
+| `docs/` | `rules/` (UI, speed, compliance standards, brand css), `sops/` (runbook, playbooks), `journeys/`, `specs/`, `finance/`, `diagrams/`, `legacy-strong/`, `metro2/`, `underwriteiq/` |
+| `ops/` | `workflows/` (work boards, `<batch>.md`), ops notes, `ship-log.md` |
+
+**Measured 2026-09-06: this rule is being broken where it costs the most.** The 83 ad scripts and the VSLs live in a chat window. `fundhub-scripts.md` and `fundhub-vsl.md` are not in the repo, not on any branch, and not anywhere on this Mac. `marketing/ads/registry.json` was built without them, which is why 21 of its 24 ads have no title. See `ops/2026-09-06-self-analysis.md`.
 
 **§3b is about where approved work is saved, not about what work to start.** It never authorizes writing, committing or pushing something you were not asked for. If §3b and §0, §2, §3 or §8 appear to disagree, those win — §3b applies only once the work itself is approved.
 
@@ -254,7 +263,7 @@ Chris drives ad, script and VSL generation from a Claude chat and that is fine. 
 
 So build marketing tooling as a **skill plus a rules pack in the repo**, never as a GitHub Action, a cron, or a headless job. Do not propose adding a schedule trigger, a repository secret, or an SDK for this. Three reasons it would be wasted work: GitHub Actions here has no `schedule:` trigger, holds `contents: read` only, and gets no model key; Netlify and Inngest run inside a serverless function with no git checkout, so neither can save a file or open a pull request; and none of that is what slows the work down.
 
-What actually makes generated scripts good is what the generator is allowed to read. Point it at the rules, the lane definitions and real examples of Chris's finished scripts. A rule that only exists in a chat, in a session log under `docs/workflows/`, or in an untracked skill on the laptop is a rule the generator cannot obey.
+What actually makes generated scripts good is what the generator is allowed to read. Point it at the rules, the lane definitions and real examples of Chris's finished scripts. A rule that only exists in a chat, in a session log under `ops/workflows/`, or in an untracked skill on the laptop is a rule the generator cannot obey.
 
 Enforce style and compliance with a checker that runs before Chris sees the output. A regex cannot lie about having run; an agent can. `.claude/workflows/copy.js` is the pattern to copy.
 
@@ -321,7 +330,7 @@ The split proposal is section 0. It happens before anything else. This section c
 
 Agents do not message each other. They coordinate through a shared file. That file is the communication layer.
 
-Every multi-workflow batch gets `docs/workflows/<batch-name>.md` containing:
+Every multi-workflow batch gets `ops/workflows/<batch-name>.md` containing:
 
 * The task list — every unit, its owner, its status (`pending` / `claimed` / `done` / `blocked`)
 * The shared context brief from the ground phase
@@ -355,7 +364,7 @@ If something fails and you cannot fix it, say so plainly. Do not report partial 
 
 Dead. No `COMPLIANCE REVIEW REQUIRED` label and no compliance/legal/regulatory nag in summaries, commits, or reports. If one specific thing is severely and obviously unsafe, say it once in plain language — no label — then drop it.
 
-`docs/compliance/` holds product rules. Read when a task touches them — same as any other domain doc, not as a review assignment for Chris.
+`docs/rules/compliance/` holds product rules. Read when a task touches them — same as any other domain doc, not as a review assignment for Chris.
 
 (Section number kept: `§7` is referenced across the repo.)
 
@@ -391,7 +400,7 @@ Before you report a task complete, run `git branch -r --no-merged origin/main` a
 
 **Conventions.** Simplest thing that works, no speculative abstraction. No new dependencies without asking. Match existing patterns in the file you are editing over your own preference. Never commit secrets — no keys, tokens, or PII in code, fixtures, or logs. Delete dead code you create.
 
-**Annotated screenshots (owner-set 2026-08-19).** Every screenshot shown to Chris for a decision, review, or fix-proof **must** be marked up before it counts as done. Draw **red boxes** (and arrows when helpful) on the exact element being discussed. Number marks when there are multiple (`1`, `2`, `3`…). Include one caption line per mark in a legend on the image. An unmarked screenshot is an incomplete deliverable — do not send it, embed it in review docs, or treat it as evidence. Applies to all audits, review sheets, and fixer before/after proof. Tooling: `docs/workflows/*-evidence/_mark-shots.mjs` + `_apply-marks.py`.
+**Annotated screenshots (owner-set 2026-08-19).** Every screenshot shown to Chris for a decision, review, or fix-proof **must** be marked up before it counts as done. Draw **red boxes** (and arrows when helpful) on the exact element being discussed. Number marks when there are multiple (`1`, `2`, `3`…). Include one caption line per mark in a legend on the image. An unmarked screenshot is an incomplete deliverable — do not send it, embed it in review docs, or treat it as evidence. Applies to all audits, review sheets, and fixer before/after proof. Tooling: `ops/workflows/*-evidence/_mark-shots.mjs` + `_apply-marks.py`.
 
 ## 9. Task report
 
@@ -449,7 +458,7 @@ Config lives in Netlify env vars. Schema lives in `db/schema`, `db/migrations`, 
   Chris does nothing for Netlify or the database. `scripts/ship.mjs` checks, applies pending
   database changes through the Supabase key the MCP already uses (`SUPABASE_ACCESS_TOKEN`),
   deploys once, confirms `/api/health` reads pending 0, and logs the ship in
-  `docs/ops/ship-log.md`. It skips when nothing changed, so it never burns a credit for
+  `ops/ship-log.md`. It skips when nothing changed, so it never burns a credit for
   nothing. This replaces the two bullets below for deploys and SQL: a plain laptop
   `netlify deploy` cannot migrate, because Netlify never hands a laptop build the hidden
   owner connection.

@@ -1020,7 +1020,7 @@ function restore(){
 /* ---- the Funded column is the one move that must carry money ----------------
    src/workflows/cards.mjs refuses a move onto Funded that has no dollars on it,
    because funding_rounds.funded_amount is what the success fee is billed from
-   (docs/CLOSEOUT-FEE-BASIS.md). Until this box existed nobody could answer that
+   (docs/finance/CLOSEOUT-FEE-BASIS.md). Until this box existed nobody could answer that
    question, so every drag to Funded bounced and no client was ever billed.
 
    Blank, Cancel, or a word all ABANDON the move. None of them sends a zero — a
@@ -2118,7 +2118,7 @@ restore();
   }
 
   /* One row per survey question, in the order the survey asks them
-     (docs/clickfunnels/cf-survey-ground-truth.md). The third slot is the
+     (marketing/landing-pages/clickfunnels/cf-survey-ground-truth.md). The third slot is the
      branch the question belongs to: the survey asks EITHER the two business
      questions OR the two personal ones, never both, so painting all four to
      everybody put two permanent "—" rows on every client and made a real

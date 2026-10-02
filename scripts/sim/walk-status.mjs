@@ -7,7 +7,7 @@
 // ever — the walk boards have been quoted from memory for four days and the
 // point of this file is to replace "the board said" with "the database says".
 //
-// It answers the four questions docs/workflows/2026-09-08-walk-readiness.md
+// It answers the four questions ops/workflows/2026-09-08-walk-readiness.md
 // left open, and it answers them in one pass so the answers cannot disagree
 // with each other:
 //

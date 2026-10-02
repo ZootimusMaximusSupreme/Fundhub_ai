@@ -2,10 +2,10 @@
 // scripts/ads/check-script.mjs — the fast pass on an ad script, before a
 // human reads it.
 //
-//   node scripts/ads/check-script.mjs docs/ads/scripts/2026-09-06.md
+//   node scripts/ads/check-script.mjs marketing/ads/scripts/2026-09-06.md
 //   node scripts/ads/check-script.mjs one.md two.md
 //   cat draft.md | node scripts/ads/check-script.mjs --stdin
-//   npm run ads:check -- docs/ads/CONTROLS.md
+//   npm run ads:check -- marketing/ads/CONTROLS.md
 //
 // Exits 0 when every script passes and 1 with a plain list of what failed and
 // the line it failed on.
@@ -13,7 +13,7 @@
 // WHY THIS IS A SCRIPT AND NOT AN INSTRUCTION IN A SKILL FILE
 // A regex cannot lie about having run. An agent told "check the banned words"
 // can believe it checked and be wrong, and the same bad line ships again next
-// week. So the ban lists live in code — docs/ads/rules-data.mjs — and the
+// week. So the ban lists live in code — marketing/ads/rules-data.mjs — and the
 // writing skill has to run this and fix what comes back.
 //
 // WHAT THIS IS NOT
@@ -25,13 +25,13 @@
 // tired wording before Chris ever opens the draft; the compliance gate is
 // the expensive pass that decides whether an asset may run.
 //
-// REWRITTEN 2026-09-07. The first version read docs/ads/RULES.md as prose and
+// REWRITTEN 2026-09-07. The first version read marketing/ads/RULES.md as prose and
 // guessed which sentences were rules. It found 106 "rules" in a 562-line
 // file, most of them section headings and stray words. It banned "not" and
 // banned "soft pull" — a phrase RULES.md itself lists as one that works — and
 // it rejected all five ads that are filmed, running, and booking calls right
 // now. This version reads a single machine-readable file
-// (docs/ads/rules-data.mjs) instead of parsing prose. There is no second
+// (marketing/ads/rules-data.mjs) instead of parsing prose. There is no second
 // place a rule can hide.
 //
 // Node built-ins only. No packages. Nothing here talks to a database or a
@@ -43,7 +43,7 @@ import {
   AVOID_PHRASES, ALLOWED_PHRASES,
   NEVER_SAY, NEVER_SAY_ALLOWED, CLOSE_PROMISES,
   WORD_COUNT_BANDS, FLOOR_WORDS, VENDOR_NAMES
-} from "../../docs/ads/rules-data.mjs";
+} from "../../marketing/ads/rules-data.mjs";
 
 // ---------------------------------------------------------------------------
 // READING A SCRIPT
@@ -52,7 +52,7 @@ import {
 // already filmed and running, and those were written before this format
 // existed.
 //
-//   LABELLED  — docs/ads/ANGLE-GENERATOR.md's locked format. A line begins
+//   LABELLED  — marketing/ads/ANGLE-GENERATOR.md's locked format. A line begins
 //               with HOOK, BODY, CTA or CLOSE (uppercase, at the start of
 //               the line) and everything until the next label or the next
 //               heading belongs to that section, blank lines included. A
@@ -61,7 +61,7 @@ import {
 //               light" is not an ad reading like a robot.
 //
 //   UNLABELLED — plain paragraphs under a heading, the shape every ad in
-//               docs/ads/CONTROLS.md is actually written in. Treated as one
+//               marketing/ads/CONTROLS.md is actually written in. Treated as one
 //               spoken block. The runtime-band ceiling is not enforced,
 //               because no band was declared — only the 60-second floor is,
 //               because that rule has no exception. The first sentence is
@@ -172,7 +172,7 @@ function findWholePhrase(haystackNorm, phraseNorm) {
 /** RULES.md 1.2 says a banned word counts in "any form (plural, past tense,
  *  -ing)". A literal match alone misses "moved the needle" against the
  *  banned phrase "move the needle" — caught by testing this checker against
- *  a real draft in docs/ads/CONTROLS.md. This builds a form-tolerant regex
+ *  a real draft in marketing/ads/CONTROLS.md. This builds a form-tolerant regex
  *  for the FIRST word of a term (banned single words are always one word;
  *  banned phrases are almost always verb-led, e.g. "move the needle",
  *  "circle back", "unlock the power of") and matches the rest of the term
@@ -192,7 +192,7 @@ function checkBannedWords(rows, sectionName) {
   for (const row of rows) {
     const text = norm(row.text);
     for (const w of BANNED_WORDS) {
-      if (findAnyForm(text, w)) out.push({ line: row.n, message: `banned word "${w}" (or a form of it) in the ${sectionName}. On the list in docs/ads/rules-data.mjs — say it plainly instead.` });
+      if (findAnyForm(text, w)) out.push({ line: row.n, message: `banned word "${w}" (or a form of it) in the ${sectionName}. On the list in marketing/ads/rules-data.mjs — say it plainly instead.` });
     }
   }
   return out;
@@ -216,7 +216,7 @@ function checkBannedPhrases(rows, sectionName) {
        word/phrase boundary logic every other list in this file already uses. */
     if (findWholePhrase(full, norm(p))) {
       const row = rows.find((r) => findWholePhrase(norm(r.text), norm(p))) || rows[0];
-      out.push({ line: row ? row.n : "?", message: `avoid "${p}" in the ${sectionName} — the market has worn this one out (docs/ads/ASSET-BANK.md section 8).` });
+      out.push({ line: row ? row.n : "?", message: `avoid "${p}" in the ${sectionName} — the market has worn this one out (marketing/ads/ASSET-BANK.md section 8).` });
     }
   }
   return out;
@@ -303,7 +303,7 @@ function checkVendorNames(rows, sectionName) {
   const out = [];
   const full = norm(joinText(rows));
   for (const v of VENDOR_NAMES) {
-    if (findWholePhrase(full, v)) out.push({ line: rows[0] ? rows[0].n : "?", message: `names a vendor ("${v}") in the ${sectionName}. Never the tech stack by name (docs/ads/RULES.md 1.4) — call it "our system".` });
+    if (findWholePhrase(full, v)) out.push({ line: rows[0] ? rows[0].n : "?", message: `names a vendor ("${v}") in the ${sectionName}. Never the tech stack by name (marketing/ads/RULES.md 1.4) — call it "our system".` });
   }
   return out;
 }
@@ -339,7 +339,7 @@ function checkCauseFirst(hookRows) {
 
 function checkClosePromises(closeRows, fullRows) {
   const rows = closeRows && closeRows.length ? closeRows : fullRows;
-  if (!rows || !rows.length) return [{ line: "?", message: "no CLOSE found, and RULES.md 3.6 requires one carrying two promises. See docs/ads/RULES.md 3.6." }];
+  if (!rows || !rows.length) return [{ line: "?", message: "no CLOSE found, and RULES.md 3.6 requires one carrying two promises. See marketing/ads/RULES.md 3.6." }];
   const full = norm(joinText(rows));
   const missing = CLOSE_PROMISES.filter((p) => !p.any.some((phrase) => full.includes(norm(phrase))));
   if (!missing.length) return [];
@@ -467,7 +467,7 @@ export function checkOneScript(block) {
     return { title: block.title, startLine: block.startLine, wordCount: totalWords, failures };
   }
 
-  // Unlabelled — the shape docs/ads/CONTROLS.md is actually written in.
+  // Unlabelled — the shape marketing/ads/CONTROLS.md is actually written in.
   const rows = parsed.sections.FULL;
   failures.push(...checkBannedWords(rows, "script"));
   failures.push(...checkBannedPhrases(rows, "script"));
@@ -514,9 +514,9 @@ function printHelp() {
     "  cat draft.md | node scripts/ads/check-script.mjs --stdin",
     "  npm run ads:check -- file.md",
     "",
-    "Reads rules from docs/ads/rules-data.mjs. Exits 0 if every script in every",
+    "Reads rules from marketing/ads/rules-data.mjs. Exits 0 if every script in every",
     "file passes, 1 otherwise. Accepts both the labelled HOOK/BODY/CTA/CLOSE",
-    "format and the plain-paragraph format used in docs/ads/CONTROLS.md."
+    "format and the plain-paragraph format used in marketing/ads/CONTROLS.md."
   ].join("\n"));
   return 0;
 }

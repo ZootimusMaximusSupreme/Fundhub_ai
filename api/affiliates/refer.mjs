@@ -1,7 +1,7 @@
 // POST /api/affiliates/refer — "Refer a friend". Turn a client into a light
 // affiliate and hand back their own share link.
 //
-// OWNER DECISION, docs/workflows/portal-rebuild-plan.md §4, option 2: pressing
+// OWNER DECISION, ops/workflows/portal-rebuild-plan.md §4, option 2: pressing
 // the button generates the client's unique share link and affiliate code and
 // instantly provisions their access to the affiliate screen. One press, no
 // application, no approval queue, no second login.

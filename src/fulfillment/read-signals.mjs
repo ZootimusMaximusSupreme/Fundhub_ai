@@ -11,7 +11,7 @@
  * different answers.
  *
  * Phase 0 mapping and the file:line evidence for every signal:
- *   docs/workflows/fulfillment-layer-2026-08-19.md
+ *   ops/workflows/fulfillment-layer-2026-08-19.md
  *
  *
  * ONE PASS, NEVER A LOOP.

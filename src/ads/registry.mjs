@@ -1,6 +1,6 @@
 // src/ads/registry.mjs — the ad registry the closer reads.
 //
-// One JSON file, docs/ads/registry.json, one entry per ad id. This module
+// One JSON file, marketing/ads/registry.json, one entry per ad id. This module
 // loads it once, validates every entry against the vocabulary at the top of
 // the file, and resolves an ad_id (the leading digits of utm_content, as
 // derived in the database by 286_client_ad_attribution.sql) to its tags.
@@ -19,7 +19,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-export const REGISTRY_PATH = path.join(ROOT, "docs", "ads", "registry.json");
+export const REGISTRY_PATH = path.join(ROOT, "marketing", "ads", "registry.json");
 
 export const LANES = Object.freeze(["funding600", "premium", "sorting", "uwiq", "wl"]);
 export const GATES = Object.freeze(["600", "720", "780", "none"]);
@@ -61,7 +61,7 @@ export function variantOf(utmTerm) {
 }
 
 function fail(id, msg) {
-  throw new Error(`docs/ads/registry.json: ad ${id == null ? "(no id)" : JSON.stringify(id)} — ${msg}`);
+  throw new Error(`marketing/ads/registry.json: ad ${id == null ? "(no id)" : JSON.stringify(id)} — ${msg}`);
 }
 
 /** Validate one raw entry; returns the frozen, normalised ad. */
@@ -107,7 +107,7 @@ let cache = null;
 /** Parse and validate a registry document (the JSON's object form). Exported for tests. */
 export function parseRegistry(doc) {
   if (!doc || typeof doc !== "object" || !Array.isArray(doc.ads)) {
-    throw new Error("docs/ads/registry.json: expected an object with an `ads` list");
+    throw new Error("marketing/ads/registry.json: expected an object with an `ads` list");
   }
   const byId = new Map();
   for (const raw of doc.ads) {
@@ -123,7 +123,7 @@ export function parseRegistry(doc) {
   });
 }
 
-/** Load docs/ads/registry.json once. `reload: true` re-reads the file. */
+/** Load marketing/ads/registry.json once. `reload: true` re-reads the file. */
 export function loadRegistry({ reload = false, file = REGISTRY_PATH } = {}) {
   if (cache && !reload && file === REGISTRY_PATH) return cache;
   const parsed = parseRegistry(JSON.parse(fs.readFileSync(file, "utf8")));

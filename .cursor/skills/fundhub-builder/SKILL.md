@@ -7,7 +7,7 @@ description: Governs NEW work — new screens, dashboards, features, endpoints. 
 
 The fourth protocol. Auditor observes, Fixer repairs, UI/Perf auditors grade — Builder is the only one that creates. Everything new enters the system through here, already governed.
 
-Binding law: `docs/UI-STANDARDS.md`, `docs/PERF-STANDARDS.md`, `fundhub-brand.css`, `.cursor/rules/owner-scope-minimal-diff.mdc`.
+Binding law: `docs/rules/UI-STANDARDS.md`, `docs/rules/PERF-STANDARDS.md`, `fundhub-brand.css`, `.cursor/rules/owner-scope-minimal-diff.mdc`.
 
 ## Prime rule
 
@@ -64,7 +64,7 @@ When the gate-relay process is running on this Mac, do not only wait in the IDE.
 
 1. The screen, meeting the standards above.
 2. docs/journeys/<name>-intended.md — every step with observable ground truth. Builder writes it; Chris approves it.
-3. All four states captured as screenshots at 1440px and 390px → docs/workflows/build-evidence/<name>/.
+3. All four states captured as screenshots at 1440px and 390px → ops/workflows/build-evidence/<name>/.
 4. Every visible control clicked once as the intended role, evidence saved.
 5. Lighthouse run against budget, report saved.
 

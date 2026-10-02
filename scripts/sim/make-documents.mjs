@@ -7,8 +7,8 @@
 //   node scripts/sim/make-documents.mjs --list          # the plan, writes nothing
 //   node scripts/sim/make-documents.mjs --today 2026-09-16
 //
-// Writes docs/workflows/sim-documents/<NN>/ (pictures + consent-form.txt, all fake)
-// and docs/workflows/sim-documents/
+// Writes ops/workflows/sim-documents/<NN>/ (pictures + consent-form.txt, all fake)
+// and ops/workflows/sim-documents/
 // MATRIX.md (committed: which file passes, which fails, and what you should see).
 //
 // WHY THESE EXIST. The DOC-CHECK agent decides accept / request_more / hold on a
@@ -57,7 +57,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
-const OUT = path.join(ROOT, "docs/workflows/sim-documents");
+const OUT = path.join(ROOT, "ops/workflows/sim-documents");
 const IDENTITY_FILE = path.join(ROOT, "credentials/sim-identity/owner-identity.local.json");
 const SIM_SSN = "666154480"; // push-credit.mjs:151
 
@@ -478,7 +478,7 @@ function matrix(people) {
   for (const p of people) {
     lines.push(`## #${Number(p.nn)} ${p.name} — ${CLIENTS[p.nn].path}`, "");
     if (ORDER_NOTE[p.nn]) lines.push(ORDER_NOTE[p.nn], "");
-    lines.push(`Folder: \`docs/workflows/sim-documents/${p.nn}/\``, "");
+    lines.push(`Folder: \`ops/workflows/sim-documents/${p.nn}/\``, "");
     lines.push("| Order | File | Needed? | Where | Pick | Should come back | How sure | You should see | Why |");
     lines.push("|---|---|---|---|---|---|---|---|---|");
     plan(p).forEach((d, i) => {
@@ -528,7 +528,7 @@ async function main() {
       await el.screenshot({ path: path.join(dir, d.file) });
     }
     fs.writeFileSync(path.join(dir, "consent-form.txt"), consentText(p));
-    console.log(`#${Number(p.nn)} ${p.name}: ${plan(p).length} files in docs/workflows/sim-documents/${p.nn}/`);
+    console.log(`#${Number(p.nn)} ${p.name}: ${plan(p).length} files in ops/workflows/sim-documents/${p.nn}/`);
   }
   await browser.close();
 
@@ -536,7 +536,7 @@ async function main() {
   const built = fs.readdirSync(OUT).filter((d) => CLIENTS[d] && fs.statSync(path.join(OUT, d)).isDirectory());
   const inMatrix = [...new Set([...DEFAULT_CLIENTS, ...built, ...nns])].sort().map(person);
   fs.writeFileSync(path.join(OUT, "MATRIX.md"), matrix(inMatrix));
-  console.log("wrote docs/workflows/sim-documents/MATRIX.md");
+  console.log("wrote ops/workflows/sim-documents/MATRIX.md");
 }
 
 export { bureauLetter, person, REPLY_09, REPLY_10, CSS };

@@ -223,7 +223,7 @@
 
   /* Screens an admin may not open. A star used to mean literally every screen, and
      that produced two proven defects at once (live walk 2026-08-18, evidence in
-     docs/workflows/fix-2026-08-18/evidence/T0/before/admin.json):
+     ops/workflows/fix-2026-08-18/evidence/T0/before/admin.json):
 
        1. The admin's rail carried a Client Portal row, and clicking it opened a
           client's own portal page. PORTAL_ONLY right above says "not an employee
@@ -378,7 +378,7 @@
        and nothing issues them a session. When the accounts table and its own
        auth land, these three move out of ROLE_TABS and 036 is reverted. */
     /* A CLIENT MAY NOW OPEN THE AFFILIATE SCREEN, and only because the owner
-       decided it. docs/workflows/portal-rebuild-plan.md section 4 (2026-09-05)
+       decided it. ops/workflows/portal-rebuild-plan.md section 4 (2026-09-05)
        says pressing "Refer a friend" in the portal "instantly provisions their
        access to affiliate.html". Their principal kind stays `client`
        (db/migrations/340_client_light_affiliate.sql), so without this row the
@@ -2357,7 +2357,7 @@
   }
 
   /* applyBrand — this company's CRM tokens over the CSS custom properties, at
-     boot. See docs/BRAND-THEMING-SPEC.md.
+     boot. See docs/specs/BRAND-THEMING-SPEC.md.
 
      CRM chrome comes from /api/org-brand, and WHOSE brand that endpoint answers
      with now depends on who is asking. A partner gets their own partner_brand
@@ -2372,7 +2372,7 @@
      white-label partner used to sign in and see Fundhub's colours, type and
      wordmark on every CRM screen, which is the thing white-label exists to
      prevent. The branch lives in api/org-brand.mjs, not here. See
-     docs/BRAND-THEMING-SPEC.md.
+     docs/specs/BRAND-THEMING-SPEC.md.
 
      FALLS BACK TO FUNDHUB. No session, no row, or a failed request leave the
      stylesheet untouched — the default brand is what the page already has, so

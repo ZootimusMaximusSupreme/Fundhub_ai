@@ -72,7 +72,24 @@ ls_additional_workspace_folders: []
 #     - "**/bin/**"
 #     - "**/obj/**"
 # Note: global ignored_paths from serena_config.yml are also applied additively.
-ignored_paths: []
+# Search-noise filter (owner-set 2026-10-01). Same list as .ignore and .cursorindexingignore.
+ignored_paths:
+  - "public/vendor/**"
+  - "public/climate/_next/**"
+  - "marketing/landing-pages/**/preview/*.html"
+  - "marketing/landing-pages/**/preview/shareable-*/**"
+  - "marketing/landing-pages/slo/archived/**"
+  - "marketing/landing-pages/**/*.before*.html"
+  - "ops/workflows/cf-push-snapshots/**"
+  - "ops/workflows/archive/**"
+  - "ops/workflows/*-prove-*/**"
+  - "ops/workflows/*-proof-*/**"
+  - "ops/workflows/live-prove-*/**"
+  - "ops/workflows/w10-pack-*/**"
+  - "ops/workflows/blueprint-portal-screens-*/**"
+  - "ops/workflows/expected-deliverables-*/**"
+  - "scripts/tmp/**"
+  - "ops/workflows/repo-restructure-2026-10-01/*.tar.gz"
 
 # whether the project is in read-only mode
 # If set to true, all editing tools will be disabled and attempts to use them will result in an error

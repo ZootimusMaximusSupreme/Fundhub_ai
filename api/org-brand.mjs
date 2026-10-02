@@ -9,7 +9,7 @@
 // affiliate, client — gets the org row, exactly as before.
 //
 // THIS REVERSES A WRITTEN DECISION, so the old one is stated rather than
-// deleted. From 2026-08-02 until 2026-08-31 docs/BRAND-THEMING-SPEC.md and
+// deleted. From 2026-08-02 until 2026-08-31 docs/specs/BRAND-THEMING-SPEC.md and
 // db/migrations/128_org_brand.sql said: "partners theme only their funnels; the
 // internal CRM has its own theme." The reasoning was sound for the shape the
 // product had then — every partner sits in the SHARED default org, so an
@@ -50,7 +50,7 @@
 // /api/partner-brand, which already gates that read. A query parameter here
 // would be a second, weaker way to reach the same rows.
 //
-// TWO LANES STILL — see docs/BRAND-THEMING-SPEC.md. Partner FUNNEL tokens are
+// TWO LANES STILL — see docs/specs/BRAND-THEMING-SPEC.md. Partner FUNNEL tokens are
 // still written on /api/partner-brand; this endpoint never writes partner_brand
 // and a partner still cannot PUT here.
 //

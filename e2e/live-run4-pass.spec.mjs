@@ -1,5 +1,5 @@
 // Live RUN4 PASS gate — against https://fundhub.ai + https://apply.fundhub.ai only.
-// Scoreboard: docs/workflows/live-playwright-100.md
+// Scoreboard: ops/workflows/live-playwright-100.md
 
 import { test, expect } from "@playwright/test";
 import { BASE, FUNNEL, liveStaffLogin, apiLogin, staffPassword } from "./live-auth.mjs";

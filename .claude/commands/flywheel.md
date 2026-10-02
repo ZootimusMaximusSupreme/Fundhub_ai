@@ -4,7 +4,7 @@ description: Run the marketing flywheel — avatar, ad research, offer, copy, ad
 
 # /flywheel
 
-Runs the marketing flywheel for a campaign. Read `docs/flywheel/README.md` before
+Runs the marketing flywheel for a campaign. Read `marketing/flywheel/README.md` before
 the first run.
 
 Usage the user may type:
@@ -27,7 +27,7 @@ Do not re-propose a split for this command. It is already decided:
 
 **Stages 1 and 2 run at the same time.** Ad research needs the market, not the
 avatar — the avatar only improves it. **Stages 3, 4 and 5 are strictly serial**;
-each genuinely needs the one before it. Board: `docs/workflows/flywheel-partner.md`.
+each genuinely needs the one before it. Board: `ops/workflows/flywheel-partner.md`.
 
 ## How to run a stage
 

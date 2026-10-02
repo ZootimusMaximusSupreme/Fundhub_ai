@@ -1,4 +1,4 @@
-/* Class quizzes from docs/company-resources/ramp-*.md.
+/* Class quizzes from docs/sops/company-resources/ramp-*.md.
    Scored on this page. No new route. PASS_BAR stays owner-locked.
    Day 5 files say "must miss zero" — that rule is in the packs, not invented. */
 (function (root) {

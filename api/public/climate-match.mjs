@@ -2,7 +2,7 @@
 //
 // COMPLIANCE REVIEW REQUIRED — public funding page. It returns a COUNT and real
 // lender NAMES out of the CRM book and nothing else. No approval odds, no
-// percentage, no dollar amount, no "you qualify". docs/ads/climate-lead-magnet-offer-2026-09-18.md
+// percentage, no dollar amount, no "you qualify". marketing/ads/climate-lead-magnet-offer-2026-09-18.md
 // §7 bans all of those on this page and climate-match.test.mjs fails if one appears.
 //
 // GET  — how many active lenders the book holds. No body, no write, so this is
@@ -127,7 +127,7 @@ export function parseClimateMatchBody(body) {
  * terms — "0% for 20 Months — No Business Checking Required" is a real
  * product_name in the live book — which on a public funding page reads as our
  * claim about credit terms rather than as a bank's product title. Nothing on
- * this page may say that (brief §7, docs/ads/RULES.md Part 1).
+ * this page may say that (brief §7, marketing/ads/RULES.md Part 1).
  *
  * The staff money columns (typical_approval_range, average_starting_loc,
  * max_known_loc, insider_tips, stated_requirements) are absent for the same

@@ -1,5 +1,5 @@
 // Social channel OAuth helpers — Meta (FB/IG page tokens) + LinkedIn org posts.
-// Credentials stay unset until the owner provisions apps (see docs/STILL-MISSING.md).
+// Credentials stay unset until the owner provisions apps (see ops/STILL-MISSING.md).
 
 import crypto from "node:crypto";
 import { encryptToken } from "../adplatforms/tokens.mjs";

@@ -1,6 +1,6 @@
 # Ad watch curve
 
-**Owner law (2026-09-27):** Video ad drop-off uses Meta's own definitions. Not a blog opinion. Book: `docs/ads/watch-curve.md`.
+**Owner law (2026-09-27):** Video ad drop-off uses Meta's own definitions. Not a blog opinion. Book: `marketing/ads/watch-curve.md`.
 
 ## What the numbers mean (Meta)
 

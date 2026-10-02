@@ -14,7 +14,7 @@
 //
 // IT ALSO WRITES THE EVIDENCE. Every scenario screenshots the page and records
 // the bounding box of the exact element under discussion into shot-marks.json,
-// which docs/workflows/w4b-proof-2026-09-03/_apply-marks.py burns into a red box
+// which ops/workflows/w4b-proof-2026-09-03/_apply-marks.py burns into a red box
 // with a number and a legend (CLAUDE.md §8 — an unmarked screenshot is not
 // evidence). Set W4B_PHASE=before to capture the pre-fix screen.
 //
@@ -23,7 +23,7 @@
 // ran it — for an unrelated reason, on an unrelated branch — silently changed
 // seven files of evidence. Output goes under the system temp directory unless
 // W4B_PROOF_OUT names somewhere else, and copying it into
-// docs/workflows/w4b-proof-2026-09-03/ is a deliberate second step.
+// ops/workflows/w4b-proof-2026-09-03/ is a deliberate second step.
 //
 // AND THE BOXES ARE CHECKED AGAINST THE PICTURE BEFORE IT IS KEPT. The first run
 // of this file measured elements sitting inside the portal's own inner scroll

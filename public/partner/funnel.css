@@ -1,5 +1,5 @@
 /* Ascension funnel shared styles.
-   Tokens are the canonical funnel set - clickfunnels-fragments/CURSOR-PROMPT.md,
+   Tokens are the canonical funnel set - marketing/landing-pages/CURSOR-PROMPT.md,
    marked "do not change". Every Ascension page links this file. Do not inline
    styles into a page; an inline style= is a finding the moment it ships
    (.cursor/skills/fundhub-builder/SKILL.md). */
@@ -11,7 +11,7 @@
    ========================================================================= */
 
 /* Design tokens are the canonical funnel set - see
-   clickfunnels-fragments/CURSOR-PROMPT.md, marked "do not change". */
+   marketing/landing-pages/CURSOR-PROMPT.md, marked "do not change". */
 :root{
   --paper:#FCFCFC; --ink:#0A0A0A; --ink2:#27272A;
   --line:#E4E4E7; --gray:#6B7280; --gray2:#9CA3AF;
@@ -109,7 +109,7 @@ h1{font-size:clamp(30px,5.2vw,52px);font-weight:700;letter-spacing:-.045em;line-
 .down{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:28px 26px;margin-top:26px;text-align:center}
 
 /* Footer and marquee are the canonical live-funnel treatment, copied from
-   clickfunnels-fragments/05-thank-you.html. Do not restyle these - every funnel
+   marketing/landing-pages/05-thank-you.html. Do not restyle these - every funnel
    footer in the system is this one. */
 footer{background:#FFFFFF;padding:36px 0 0;overflow:hidden;margin-bottom:0;
   width:100vw;margin-left:calc(50% - 50vw);margin-right:calc(50% - 50vw);

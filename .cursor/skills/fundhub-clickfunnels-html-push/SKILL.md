@@ -1,6 +1,6 @@
 ---
 name: fundhub-clickfunnels-html-push
-description: Push FundHub funnel HTML and tracking to live ClickFunnels via Custom HTML Pages API (GA 2026-09-18). Use when shipping clickfunnels-fragments, apply.fundhub.ai pages, $297 slo HTML, thank-you, UTM catcher, Meta pixel, or vsl-watch beacon. Never tell Chris to paste into the builder as the default path.
+description: Push FundHub funnel HTML and tracking to live ClickFunnels via Custom HTML Pages API (GA 2026-09-18). Use when shipping marketing/landing-pages, apply.fundhub.ai pages, $297 slo HTML, thank-you, UTM catcher, Meta pixel, or vsl-watch beacon. Never tell Chris to paste into the builder as the default path.
 ---
 
 **Docs first:** https://developers.myclickfunnels.com/ (changelog: https://changelog.myclickfunnels.com/)
@@ -9,7 +9,7 @@ description: Push FundHub funnel HTML and tracking to live ClickFunnels via Cust
 
 ## When to use
 
-- Ship or update `clickfunnels-fragments/**` on **live ClickFunnels** (`apply.fundhub.ai` or the $297 funnel workspace).
+- Ship or update `marketing/landing-pages/**` on **live ClickFunnels** (`apply.fundhub.ai` or the $297 funnel workspace).
 - Add or fix **tracking**: `fh-attribution.js`, `vsl-watch-beacon.js` (watch only), Meta pixel, UTM hidden fields (via attribution script — do not double-load `06-utm-hidden-fields.html` if `fh-attribution.js` is already on the page).
 - Chris says Custom HTML Pages / SDK / changelog 2026-09-18 — **this skill wins** over “paste in CF.”
 
@@ -19,7 +19,7 @@ description: Push FundHub funnel HTML and tracking to live ClickFunnels via Cust
 2. Use **`CLICKFUNNELS_API_KEY`** + **`CLICKFUNNELS_SUBDOMAIN`** (default workspace host: `chrisstanbridgestea3f77f.myclickfunnels.com`).
 3. Or **`analytics_connections`** row `platform = clickfunnels` (encrypted JSON with `api_key` + `subdomain`) via `DATABASE_URL`.
 4. Optional: **`CLICKFUNNELS_WORKSPACE_ID`** (else resolve via `/teams` → `/workspaces`).
-5. Meta pixel: **`META_PIXEL_ID`** (or `FACEBOOK_PIXEL_ID`, `FB_PIXEL_ID`, `PIXEL_ID`). If unset, script uses repo ground truth documented in `docs/workflows/archive/ads-revenue-model-2026-08-24.md`.
+5. Meta pixel: **`META_PIXEL_ID`** (or `FACEBOOK_PIXEL_ID`, `FB_PIXEL_ID`, `PIXEL_ID`). If unset, script uses repo ground truth documented in `ops/workflows/archive/ads-revenue-model-2026-08-24.md`.
 6. Clarity: **`CLARITY_PROJECT_ID`** only if set — never invent a project id.
 
 If **`CLICKFUNNELS_API_KEY`** is missing after searching `.env`, Netlify, and DB → **stop** and report that env name. Do not ask Chris to paste. Do not rotate keys unless a known-good API call returns **401**.
@@ -63,10 +63,10 @@ node scripts/cf-push-custom-html.mjs push --dry-run
 node scripts/cf-push-custom-html.mjs push
 ```
 
-Manifest: `clickfunnels-fragments/tracking-manifest.mjs`  
-Operator doc: `docs/ops/clickfunnels-custom-html-push.md`
+Manifest: `marketing/landing-pages/tracking-manifest.mjs`  
+Operator doc: `docs/sops/clickfunnels-custom-html-push.md`
 
-Snapshots before overwrite: `docs/workflows/cf-push-snapshots/` (gitignore if contains live HTML).
+Snapshots before overwrite: `ops/workflows/cf-push-snapshots/` (gitignore if contains live HTML).
 
 ## Live prove (required)
 

@@ -16,7 +16,7 @@ import { driveConfigFromEnv } from "../src/company-brain/config.mjs";
 import { fetchOAuthAccessToken } from "../src/company-brain/auth.mjs";
 
 const BROLL = process.env.DRIVE_BROLL_FOLDER_ID || "1GclLLeMNOVjVSQOJUVBgQYp7WAd3pF11";
-const DIR = "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/slo-broll-2026-09-23-evidence/clips";
+const DIR = "/Users/chrisstanbridge/Developer/fundhub-platform/ops/workflows/slo-broll-2026-09-23-evidence/clips";
 const APPLY = process.argv.includes("--apply");
 
 /* The documents Chris names out loud go in deliverables so they win the early

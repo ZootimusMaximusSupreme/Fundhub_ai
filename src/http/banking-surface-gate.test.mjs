@@ -4,7 +4,7 @@
  * a named real person, sourced from a bank connection. Bank connections are NOT
  * approved in this product: src/banking/plaid.mjs is two empty seams behind an
  * open SOC 2 review of storing bank credentials and a consent-capture flow that
- * compliance has not signed off (docs/workflows/finish-the-build/W5.md). The
+ * compliance has not signed off (ops/workflows/finish-the-build/W5.md). The
  * endpoint nevertheless admitted ROLE_SETS.STAFF — every employee role, closer
  * and setter included — and public/app/shell.js handed the screen to the same
  * set. So the day somebody sets the three PLAID_* variables for one test client,

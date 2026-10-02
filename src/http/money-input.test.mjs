@@ -5,7 +5,7 @@
  * pipeline.html asks what actually funded when a card lands on Funded, and
  * client-control-panel.html asks how much a bank approved on "Bank yes". Both
  * numbers become the basis a client is billed from
- * (docs/CLOSEOUT-FEE-BASIS.md). The failure this file exists to prevent is not
+ * (docs/finance/CLOSEOUT-FEE-BASIS.md). The failure this file exists to prevent is not
  * a crash — it is a blank box quietly becoming $0, or 450.10 quietly becoming
  * 450.09. Both look right on the screen and are wrong in the invoice.
  *

@@ -55,7 +55,7 @@
 // statement of caller intent — "I am an operator or a monitor, not a browser
 // chip" — and the only thing it protects is the DEFAULT body's shape and
 // contents, which stay exactly as they were. See httpStatus() and wantsStrict()
-// at the foot of this file, and docs/RUNBOOK.md for what to do with each answer.
+// at the foot of this file, and docs/sops/RUNBOOK.md for what to do with each answer.
 
 import { EXPECTED_MIGRATIONS } from "../../db/expected-migrations.mjs";
 

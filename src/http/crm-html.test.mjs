@@ -435,7 +435,7 @@ test("every clock and timestamp on a staff screen is Arizona — no exceptions",
       assert.ok(
         ALLOWED.has(zone),
         `${file} formats a time in ${zone}. Staff screens are Arizona ` +
-        `(America/Phoenix) — see docs/workflows/arizona-time-2026-08-28.md.`
+        `(America/Phoenix) — see ops/workflows/arizona-time-2026-08-28.md.`
       );
     }
   }

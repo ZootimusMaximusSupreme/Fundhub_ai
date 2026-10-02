@@ -1,6 +1,6 @@
 // ClickFunnels survey question map — single place for payload keys.
-// Question titles/options: docs/clickfunnels/cf-survey-ground-truth.md
-// Attribute keys: docs/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md (owner mapping in CF)
+// Question titles/options: marketing/landing-pages/clickfunnels/cf-survey-ground-truth.md
+// Attribute keys: marketing/landing-pages/clickfunnels/OWNER-CF-SETUP-CHECKLIST.md (owner mapping in CF)
 //
 // payloadKey = Contact Attribute key Chris is mapping in CF (cf_svy_*).
 // Change ONLY payloadKey here if a CF attribute name differs.

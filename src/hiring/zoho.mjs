@@ -3,7 +3,7 @@
 // ══════════════════════════════════════════════════════════════════════════════
 // WHY THIS EXISTS
 //
-// Owner-set 2026-09-05 (docs/workflows/hiring-ats-decision-2026-09-05.md): Zoho
+// Owner-set 2026-09-05 (ops/workflows/hiring-ats-decision-2026-09-05.md): Zoho
 // Recruit is the applicant tracking system and it owns the LinkedIn bridge. It is
 // an approved LinkedIn source, so it can post a job to LinkedIn. Our own code
 // never can — LinkedIn's Job Posting API is closed to new partners.
@@ -52,7 +52,7 @@
 //
 //   2. TIMEZONE. Zoho's own examples carry an explicit offset (-07:00 is Arizona,
 //      which does not observe daylight saving — see
-//      docs/workflows/arizona-time-2026-08-28.md). A cursor sent as a bare local
+//      ops/workflows/arizona-time-2026-08-28.md). A cursor sent as a bare local
 //      time is read by Zoho in some other zone and silently skips or re-reads
 //      hours of applicants. Everything here is UTC end to end and sent as ISO 8601
 //      with an explicit offset.
@@ -87,7 +87,7 @@
 // Webhooks are NOT available to us. On the Corporate HR edition they require
 // Enterprise (https://www.zoho.com/recruit/corporate-plan-comparison.html, fetched
 // 2026-09-05), and the free edition has no workflow rules to hang one on. So this
-// is a poll. See docs/workflows/zoho-connector-notes-2026-09-05.md for the daily
+// is a poll. See ops/workflows/zoho-connector-notes-2026-09-05.md for the daily
 // call-budget arithmetic, which is not comfortable under every reading of Zoho's
 // published limits.
 

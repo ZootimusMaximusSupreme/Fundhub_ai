@@ -544,7 +544,7 @@ export async function runFundingJourney(db, ctx, collector) {
   // Insert a lender + Approved application BEFORE round.funded. This is not
   // just line-item coverage any more: the Approved application's amount IS the
   // fee basis (confirmed approvals, owner-set 2026-08-30, see
-  // docs/CLOSEOUT-FEE-BASIS.md). Without it there is nothing to bill.
+  // docs/finance/CLOSEOUT-FEE-BASIS.md). Without it there is nothing to bill.
   let lenderId = null;
   try {
     lenderId = (await db.query(

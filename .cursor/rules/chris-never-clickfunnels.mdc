@@ -11,7 +11,7 @@ alwaysApply: true
 
 Chris never logs into ClickFunnels admin, the builder, or Developer Portal for routine funnel work.
 
-Agents do all ClickFunnels work via the **Custom HTML Pages API**, repo fragments (`clickfunnels-fragments/**`), and `scripts/cf-push-custom-html.mjs`, using gitignored **`CLICKFUNNELS_API_KEY`** (and subdomain / workspace env). Read `.env` — do not ask him to paste the key.
+Agents do all ClickFunnels work via the **Custom HTML Pages API**, repo fragments (`marketing/landing-pages/**`), and `scripts/cf-push-custom-html.mjs`, using gitignored **`CLICKFUNNELS_API_KEY`** (and subdomain / workspace env). Read `.env` — do not ask him to paste the key.
 
 ## Never
 
@@ -32,5 +32,5 @@ Agents do all ClickFunnels work via the **Custom HTML Pages API**, repo fragment
 Ask: "Put the $297 sales page on /roadmap."
 
 ❌ "Log into ClickFunnels and paste this HTML."
-✅ Push via API from `clickfunnels-fragments/slo/…`, prove https://apply.fundhub.ai/roadmap/
+✅ Push via API from `marketing/landing-pages/slo/…`, prove https://apply.fundhub.ai/roadmap/
 ```

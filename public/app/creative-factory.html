@@ -302,7 +302,7 @@ tr.det>td{background:var(--soft);padding:0 14px 13px!important}
 
      STATUTE CITATIONS DO NOT LIVE HERE. The block-reason list on this screen is
      plain words only. The full table, with the law behind each reason, is
-     docs/compliance/creative-block-reasons.md. -->
+     docs/rules/compliance/creative-block-reasons.md. -->
 <div class="app">
   <aside class="side" id="side">
   <div class="side-top"><a class="logo inv" href="pipeline.html" aria-label="fundhub"></a><button class="burger" id="burger" type="button" title="Collapse sidebar">‹‹</button></div>
@@ -878,7 +878,7 @@ var SCRIPTS = [];
    messages keep the engine's placeholders.
 
    NO CITATIONS HERE. The statute behind each reason is deliberately not carried
-   on this screen — it lives in docs/compliance/creative-block-reasons.md.
+   on this screen — it lives in docs/rules/compliance/creative-block-reasons.md.
    ════════════════════════════════════════════════════════════════════════ */
 var RULES = [
   {code:'guaranteed-score-increase', rule_set:'croa', match_type:'regex', severity:'block',
@@ -1841,7 +1841,7 @@ function renderApprovals(){
 }
 
 /* One reason, in plain words. The statute behind it is NOT shown here — it lives
-   in docs/compliance/creative-block-reasons.md. The reason code stays as a small
+   in docs/rules/compliance/creative-block-reasons.md. The reason code stays as a small
    muted reference so a person can look the reason up in that file. */
 function reasonCard(rz){
   var cls = 'rz' + (rz.rule_set==='approval' ? ' set-approval' : (rz.rule_set==='engine' ? ' set-engine' : ''));
@@ -1985,7 +1985,7 @@ function apprDetail(r){
 
 /* ══ WHY CREATIVE GETS STOPPED ═══════════════════════════════════════════
    Plain words only. No statute numbers, no rule-set names, no match type and no
-   severity column — that table now lives in docs/compliance/creative-block-reasons.md.
+   severity column — that table now lives in docs/rules/compliance/creative-block-reasons.md.
    Every message below is still verbatim from the code that enforces it. */
 var OFFER_WORDS    = { credit_repair:'Credit repair', credit_cards:'Credit cards', funding:'Funding' };
 var PLATFORM_WORDS = { tiktok:'TikTok', meta:'Meta ads', google:'Google ads' };

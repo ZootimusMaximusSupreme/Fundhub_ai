@@ -1,6 +1,6 @@
 // src/ad-videos/naming.mjs — what every file and folder in the pipeline is called.
 //
-// Ground truth: docs/video-pipeline-plan.md §4.
+// Ground truth: marketing/ads/video-pipeline-plan.md §4.
 //
 //   Paul's shared Drive          Our Raw folder (Paul never sees it)
 //   ─────────────────────        ──────────────────────────────────

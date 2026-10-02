@@ -3,7 +3,7 @@
  * A signed ClickFunnels webhook carrying the five Meta UTMs → entry.captured →
  * client-lifecycle → a client_ad_attribution row whose lane / ad_id / variant
  * the DATABASE derived (286) → GET /api/read/ad-attribution resolves the ad
- * through docs/ads/registry.json → GET /api/read/ad-books rolls it up.
+ * through marketing/ads/registry.json → GET /api/read/ad-books rolls it up.
  *
  * A pg test because the thing under test is SQL: the generated columns, the
  * enum, the CHECKs, the first-touch COALESCE, and the bookings join. A unit
@@ -40,7 +40,7 @@ describe("ad attribution: webhook → row → registry → reads", { skip: !HAVE
   const reset = () => { _resetOrgCache(); clearHandlers(); _resetRegistered(); _resetRegistry(); };
 
   /* A ClickFunnels contact.created delivery whose hidden form fields carry the
-     UTMs — the shape clickfunnels-fragments/06-utm-hidden-fields.html produces.
+     UTMs — the shape marketing/landing-pages/06-utm-hidden-fields.html produces.
      The UTMs sit in contact.custom_attributes, where CF puts hidden inputs. */
   async function deliver(tag, utm, extra = {}) {
     reset();

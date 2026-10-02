@@ -5,7 +5,7 @@
  * CRM screen: shell.js paints from /api/org-brand, and that endpoint read the
  * org row for everybody. Every partner sits in the SHARED default org, so an
  * org-keyed lookup is one answer for all of them — which is why the fix is to
- * resolve from the PRINCIPAL instead. docs/BRAND-THEMING-SPEC.md carries the
+ * resolve from the PRINCIPAL instead. docs/specs/BRAND-THEMING-SPEC.md carries the
  * decision and the two approaches that were rejected.
  *
  * WHAT THIS FILE PINS, in the order the risks matter:

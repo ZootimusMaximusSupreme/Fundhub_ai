@@ -12,7 +12,7 @@
       yeah if that is cool then make sure we bill based on confirmed approvals."
 
    The success fee is a percent of CONFIRMED APPROVALS. Not the funded amount.
-   See docs/CLOSEOUT-FEE-BASIS.md.
+   See docs/finance/CLOSEOUT-FEE-BASIS.md.
 
    ── WHAT "CONFIRMED APPROVALS" IS, EXACTLY ────────────────────────────────
        SUM(applications.approved_amount)

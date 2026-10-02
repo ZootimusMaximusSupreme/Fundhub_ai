@@ -4,7 +4,7 @@
 //   DATABASE_URL=… INNGEST_EVENT_KEY=… node scripts/sim/push-credit.mjs \
 //     --email stanbridgejchris+sim-01@gmail.com --profile fundable [--dry]
 //
-// For the manual walkthrough (docs/workflows/manual-walkthrough-SOP.md). Chris
+// For the manual walkthrough (ops/workflows/manual-walkthrough-SOP.md). Chris
 // opts a simulated client in through ClickFunnels; this puts the credit report
 // behind that client WITHOUT touching the bureau — no CRS call, no $32, no
 // inquiry on anyone's file. Everything downstream of a real pull still runs:
@@ -799,7 +799,7 @@ export const PROFILES = Object.freeze({
 
 /* The old profile names still work. scripts/sim/seed-fulfillment-client.mjs
    prints `--profile funding` and `--profile repair` in the runbook it hands
-   Chris, and five walkthrough documents in docs/workflows/ do the same. Renaming
+   Chris, and five walkthrough documents in ops/workflows/ do the same. Renaming
    without an alias would break every one of those commands with a "unknown
    profile" a week after they were written. `blueprint` and `academy` were both
    clean files and both now resolve to the one clean file there is. */

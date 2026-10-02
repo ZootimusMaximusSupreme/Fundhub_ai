@@ -1,7 +1,7 @@
 // The Capital Readiness Snapshot in the gold look (W4a, 2026-09-17).
 //
 // What the hosted funding snapshot must be true of now that it draws the gold
-// pack (docs/workflows/gold-deliverables-v5/funding_snapshot.pdf): every gold
+// pack (ops/workflows/gold-deliverables-v5/funding_snapshot.pdf): every gold
 // section in the gold order, the gold waterfall where the file supports one and
 // nowhere else, the gold blocks, the owner-set booking link, and not one of the
 // builder's sentences lost on the way. The old look is pinned separately by

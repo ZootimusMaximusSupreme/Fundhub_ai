@@ -44,9 +44,9 @@ anything yet - this step exists so nobody downstream invents a price.
 
 Read these files and report what they actually say:
 - src/config/offers.mjs  (the live prices and SKUs)
-- docs/workflows/ads-waterfall-projections-2026-08-26.md  (real cost per booked call, close rate, daily budget)
-- docs/avatars/partner/COPY-DIRECTIVES.md  (owner-set rules that constrain what may be promised)
-- docs/ads/ascension-ads.md if it exists
+- ops/workflows/ads-waterfall-projections-2026-08-26.md  (real cost per booked call, close rate, daily budget)
+- marketing/avatars/partner/COPY-DIRECTIVES.md  (owner-set rules that constrain what may be promised)
+- marketing/ads/ascension/ascension-ads.md if it exists
 
 Find and report, exactly as written:
 - every price and SKU currently live, with its constant name

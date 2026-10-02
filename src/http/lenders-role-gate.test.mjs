@@ -147,7 +147,7 @@ describe("lender database: the role gate", () => {
     assert.notEqual(res.statusCode, 403,
       "a closer was locked out of read/lender-matches. That endpoint is the " +
       "closer dashboard's match box and stays on ROLE_SETS.STAFF by an explicit " +
-      "owner-scope decision (docs/workflows/lenders-role-lock-2026-08-17.md).");
+      "owner-scope decision (ops/workflows/lenders-role-lock-2026-08-17.md).");
   });
 });
 

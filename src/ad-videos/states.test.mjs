@@ -3,7 +3,7 @@
 // A table-driven "for each state, for each state" loop would pass just as
 // happily against a machine that allowed everything, because the expectation
 // would be derived from the same table the code reads. So the legal moves are
-// written out by hand below, from docs/video-pipeline-plan.md §5, and the
+// written out by hand below, from marketing/ads/video-pipeline-plan.md §5, and the
 // illegal ones are checked as a set difference against them.
 //
 // PURE — no database. This file runs on a laptop with no Postgres, which is

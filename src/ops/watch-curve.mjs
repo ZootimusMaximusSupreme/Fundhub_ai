@@ -1,6 +1,6 @@
 // Watch curve — when a running video ad dies before 25%, buzz Chris.
 //
-// Definitions are Meta's (see docs/ads/watch-curve.md). The rule lives in
+// Definitions are Meta's (see marketing/ads/watch-curve.md). The rule lives in
 // .cursor/rules/ad-watch-curve.mdc. This module only scores and notifies.
 //
 // "Dies before 25%" = most plays never reach the quarter mark:

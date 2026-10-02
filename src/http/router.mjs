@@ -107,7 +107,7 @@ const PROVIDER_ALIASES = table({});
    ClickFunnels is the only adapter that writes its own row, and it does so
    CONDITIONALLY: src/adapters/clickfunnels.mjs inserts only when
    process.env.CF_CAPTURE_MODE === "1". That flag is unset on Netlify
-   (docs/E2E-REPORT.md, docs/workflows/e2e-verify-run4.md), so in production the
+   (docs/E2E-REPORT.md, ops/workflows/e2e-verify-run4.md), so in production the
    adapter writes nothing — and while this router skipped ClickFunnels
    unconditionally, one writer minus a default-off flag was ZERO receipts for
    the provider that carries every real booking in the system.

@@ -315,7 +315,7 @@ describe("closer-call.js never states what it does not know", () => {
     assert.match(src, /action:\s*"send_pay_link"/, "one send path — POST /api/closer-deck, not a new endpoint");
     assert.ok(!/\/api\/read\/closer-deck/.test(src),
       "a second shared client read on this screen is a FAIL against " +
-      "docs/CLOSER-DASHBOARD-SCREEN-MERGE-BUILD-SPEC.md §4 — the offer list rides on closer-call");
+      "docs/specs/CLOSER-DASHBOARD-SCREEN-MERGE-BUILD-SPEC.md §4 — the offer list rides on closer-call");
   });
 
   test("the compliance checklist sits above Up next in the rail", () => {

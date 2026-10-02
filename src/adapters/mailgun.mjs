@@ -105,7 +105,7 @@ const DOLLAR_PATTERN = /\$[\d,]+(?:\.\d{2})?/;
    Meanwhile a funding advisor reads the same email and types the same number
    into the Approved $ box by hand, and when they forget, the approval carries
    no amount. Fundhub bills a percent of approvals that HAVE an amount
-   (docs/CLOSEOUT-FEE-BASIS.md), so a forgotten box is a bill that never goes
+   (docs/finance/CLOSEOUT-FEE-BASIS.md), so a forgotten box is a bill that never goes
    out. That is the leak these two functions close.
 
    WHAT THIS IS NOT. It is not a decision, and nothing downstream may treat it

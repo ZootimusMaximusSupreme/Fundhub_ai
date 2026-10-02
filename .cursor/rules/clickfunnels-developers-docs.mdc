@@ -9,7 +9,7 @@ alwaysApply: true
 
 Extra (not a substitute): https://changelog.myclickfunnels.com/
 
-Also applies when working under `clickfunnels-fragments/**`, `docs/clickfunnels/**`, `src/adapters/clickfunnels*`, or `api/**/clickfunnels*`.
+Also applies when working under `marketing/landing-pages/**`, `marketing/landing-pages/clickfunnels/**`, `src/adapters/clickfunnels*`, or `api/**/clickfunnels*`.
 
 ## Never
 

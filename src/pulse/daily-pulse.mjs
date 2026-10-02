@@ -41,7 +41,7 @@ export function scorecardPath(boardDir, dateStr) {
 
 export function defaultBoardDir(env = process.env, root = REPO_ROOT) {
   const named = String((env && env.PULSE_BOARD_DIR) || "").trim();
-  return named || path.join(root, "docs/workflows");
+  return named || path.join(root, "ops/workflows");
 }
 
 function check(id, status, detail, suggestedFix = null) {

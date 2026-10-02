@@ -2456,7 +2456,7 @@ window.FHDeskHead = (function () {
     } else if (C.case_status === "Blocked") {
       /* Words, not colour. shell.js paintBrand() repaints --warn off the
          tenant's ramp, so a one-hue brand paints every state the same
-         (docs/UI-STANDARDS.md §12.6). The sentence has to carry it alone. */
+         (docs/rules/UI-STANDARDS.md §12.6). The sentence has to carry it alone. */
       note = '<p style="font-size:var(--fs-body);color:var(--text-dim)">'
         + 'This case was blocked earlier for missing paperwork. Everything needed is on file now, '
         + 'so pressing Send will clear the block.</p>';
@@ -3076,7 +3076,7 @@ function initials(name) {
    folds it (staff.role is free text, so "Owner" and "owner " are one role).
 
    It is used for ONE thing: deciding whether a control renders at all.
-   docs/UI-STANDARDS.md §5 — "no controls the role lacks permission for". The
+   docs/rules/UI-STANDARDS.md §5 — "no controls the role lacks permission for". The
    server gate is still the authority and still refuses; this only stops the
    page offering a button whose answer is already known to be no.
 
@@ -3317,7 +3317,7 @@ try { tok = localStorage.getItem("fh_token") || ""; } catch (e) {}
 
 /* ── who may press what ────────────────────────────────────────────────────
    Mirrors of the two server gates, so a control whose answer is already known
-   to be "no" never renders. docs/UI-STANDARDS.md §5: "Every visible control
+   to be "no" never renders. docs/rules/UI-STANDARDS.md §5: "Every visible control
    works. No buttons wired to nothing, no controls the role lacks permission
    for." A button that renders and refuses is the thing that rule forbids.
 

@@ -29,7 +29,7 @@
 //   6. /api/health must answer pending 0 for this build's list.
 //   7. re-register the app with Inngest (PUT /api/inngest) — Inngest keeps the job
 //      list it was last handed, so a job added in a ship never runs without this
-//      (board N25, 2026-09-18). Then the ship is written to docs/ops/ship-log.md and
+//      (board N25, 2026-09-18). Then the ship is written to ops/ship-log.md and
 //      committed. A failed run writes nothing, so the next run tries again.
 
 import { loadEnv } from "./load-env.mjs";
@@ -41,7 +41,7 @@ import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const LOG = path.join(ROOT, "docs/ops/ship-log.md");
+const LOG = path.join(ROOT, "ops/ship-log.md");
 const PROJECT_REF = "oqpnlusrotpxfenysfxz"; // CLAUDE.md §11
 const SITE = "https://fundhub.ai";
 const DRY = process.argv.includes("--dry");
@@ -72,7 +72,7 @@ function lastShipped() {
 }
 const prev = lastShipped();
 if (prev && run("git", ["cat-file", "-e", `${prev}^{commit}`], { quiet: true }).ok) {
-  const same = run("git", ["diff", "--quiet", prev, "HEAD", "--", ".", ":(exclude)docs/ops/ship-log.md"], { quiet: true }).ok;
+  const same = run("git", ["diff", "--quiet", prev, "HEAD", "--", ".", ":(exclude)ops/ship-log.md"], { quiet: true }).ok;
   if (same) {
     say(`Nothing to ship: main (${head}) matches the last ship (${prev}).`);
     process.exit(0);
@@ -206,6 +206,6 @@ if (!fs.existsSync(LOG)) {
   ].join("\n"));
 }
 fs.appendFileSync(LOG, `| ${stamp} | ${head} | ${applied} | ${health.migrations} applied, ${health.pending} pending |\n`);
-run("git", ["add", "docs/ops/ship-log.md"], { quiet: true });
+run("git", ["add", "ops/ship-log.md"], { quiet: true });
 run("git", ["commit", "-q", "-m", `ship: ${head} is live\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>`], { quiet: true });
-say(`\n✔ Shipped ${head}. Logged in docs/ops/ship-log.md.\n`);
+say(`\n✔ Shipped ${head}. Logged in ops/ship-log.md.\n`);

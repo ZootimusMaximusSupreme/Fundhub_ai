@@ -1,6 +1,6 @@
 // One take, one state at a time.
 //
-// docs/video-pipeline-plan.md §2 lists the states a take moves through and what
+// marketing/ads/video-pipeline-plan.md §2 lists the states a take moves through and what
 // fires each move. This file is that table as code: given a row, do the ONE
 // next thing, and hand back what changed. It writes nothing itself — the
 // sweeper (src/workflows/ad-video-sweeper.mjs) owns the database — which is what
@@ -9,7 +9,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // THE ORDER CHANGED FROM THE PLAN, AND HERE IS EXACTLY WHERE.
 //
-// docs/video-pipeline-plan.md puts `transcribed` before Submagic, because it was
+// marketing/ads/video-pipeline-plan.md puts `transcribed` before Submagic, because it was
 // written against Deepgram. The owner's decision of 2026-09-22 replaced Deepgram
 // with Submagic's own word-level transcript, and that transcript does not exist
 // until the project has been created. So two states swap places:
@@ -74,7 +74,7 @@ import { planBroll } from "./broll.mjs";
 import { matchTakeToScript } from "./match.mjs";
 import { linkNumber } from "./naming.mjs";
 
-/** The states, exactly as docs/video-pipeline-plan.md §2 names them. */
+/** The states, exactly as marketing/ads/video-pipeline-plan.md §2 names them. */
 export const STATES = Object.freeze([
   "scripted", "filming", "raw_landed", "staged", "editing", "transcribed",
   "matched", "rendered", "awaiting_approval", "approved", "delivered",
@@ -811,7 +811,7 @@ export async function renotify(row, { notify, env = process.env } = {}) {
 /* ─────────────────────────────────────────────────────────────────────────
    deliverToPaul — the folder, the brief, and the one file in it.
 
-   docs/video-pipeline-plan.md §4: one folder per ad number, one finished file
+   marketing/ads/video-pipeline-plan.md §4: one folder per ad number, one finished file
    inside it. The brief's landing link reads the ad number from the row, NEVER
    from the folder name — `fundhub_ad_id()` returns text, so utm_content=043 and
    utm_content=43 are two different ads and one ad's results split in half.

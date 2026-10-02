@@ -58,7 +58,7 @@ describe("the set", () => {
   });
 });
 
-// 28, the gold pack's count (docs/workflows/gold-deliverables-v5/compare/gold-*.txt).
+// 28, the gold pack's count (ops/workflows/gold-deliverables-v5/compare/gold-*.txt).
 // The older fundhub_gen.py printed 27: its lender list had no 04 / STRATEGY
 // section. The owner listed five sections for the Capital Partner Shortlist
 // (2026-09-17), so the hosted page carries five.

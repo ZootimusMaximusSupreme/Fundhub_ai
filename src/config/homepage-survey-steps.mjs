@@ -1,5 +1,5 @@
 // Homepage survey steps — re-export CF ground truth map.
-// Source of truth: docs/clickfunnels/cf-survey-ground-truth.md
+// Source of truth: marketing/landing-pages/clickfunnels/cf-survey-ground-truth.md
 // Contact is LAST on the homepage (CF has contact first).
 
 import {

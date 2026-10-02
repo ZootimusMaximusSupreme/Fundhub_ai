@@ -5,7 +5,7 @@
 // in the pipeline can be proved by a unit test that runs on a laptop with no
 // Postgres, which is the only kind of proof available here today.
 //
-// Ground truth: docs/video-pipeline-plan.md §2 (the state table) and §5 (the
+// Ground truth: marketing/ads/video-pipeline-plan.md §2 (the state table) and §5 (the
 // diagram). db/migrations/389_ad_videos.sql carries the same thirteen names in
 // ad_videos_status_ck, and STATES below is the list that must match it.
 //

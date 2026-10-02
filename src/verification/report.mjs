@@ -217,7 +217,7 @@ export function writeReport({ collector, meta = {}, journeyNotes = [], credentia
     "### Decisions this pass (2026-08-04)",
     "- Closeout fee = 10% of CONFIRMED APPROVALS — the sum of applications.approved_amount",
     "  on Approved rows that carry a recorded amount. Owner-set 2026-08-30, superseding the",
-    "  2026-08-04 funded-amount basis (docs/CLOSEOUT-FEE-BASIS.md). Nothing confirmed means no",
+    "  2026-08-04 funded-amount basis (docs/finance/CLOSEOUT-FEE-BASIS.md). Nothing confirmed means no",
     "  invoice and a named reason, never a $0 one.",
     "- Static HTML direct-URL is not a P0 leak: Netlify serves files; API ROLE_SET probes prove isolation.",
     "- Company Brain tier gate verified via access.mjs + SQL filter; live retrieve needs OPENAI_API_KEY.",

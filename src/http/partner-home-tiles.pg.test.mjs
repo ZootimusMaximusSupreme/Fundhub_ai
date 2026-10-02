@@ -17,7 +17,7 @@
 // the "zero funded clients -> not known" case end to end.
 //
 // Skipped without DATABASE_URL, like every other *.pg.test.mjs file (CLAUDE.md
-// §12). Score by exit code — docs/workflows/pg-suite-to-zero-2026-08-27.md.
+// §12). Score by exit code — ops/workflows/pg-suite-to-zero-2026-08-27.md.
 
 import { test, before, beforeEach, after, describe } from "node:test";
 import assert from "node:assert";

@@ -1,7 +1,7 @@
 /* Repair desk — THE READ LAYER for src/repair/lens.mjs.
  *
  * READ ONLY. SELECT only. No money columns from repair_programs (§2.11 / §9).
- * Spec: docs/workflows/repair-build-spec-2026-08-21.md §8–§9.
+ * Spec: ops/workflows/repair-build-spec-2026-08-21.md §8–§9.
  *
  * The API ships facts; lens.mjs draws conclusions. Same split as
  * src/fulfillment/read-signals.mjs.

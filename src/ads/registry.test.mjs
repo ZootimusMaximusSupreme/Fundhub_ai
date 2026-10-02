@@ -16,7 +16,7 @@ const RULES = {
   wl: { gate: "none", entry: "direct", primary_offer: "white_label" }
 };
 
-describe("docs/ads/registry.json", () => {
+describe("marketing/ads/registry.json", () => {
   beforeEach(() => _resetRegistry());
 
   test("loads, and every ad obeys its lane's seeding rule", () => {
@@ -84,7 +84,7 @@ describe("docs/ads/registry.json", () => {
   /* Ads Chris has not named yet, measured 2026-09-03 (F7 — the walk log said
      three, it is twenty-one). An agent may not invent an ad title, so these
      are listed rather than fixed. Naming one is two edits: add "title" to the
-     ad in docs/ads/registry.json, delete its id from here. The list only ever
+     ad in marketing/ads/registry.json, delete its id from here. The list only ever
      shrinks — a NEW ad arriving without a title fails this test, which is the
      point. `node scripts/ads/check-registry-titles.mjs` prints the same list
      and exits non-zero while any of it remains. */
@@ -100,7 +100,7 @@ describe("docs/ads/registry.json", () => {
     const unexpected = missing.filter((id) => !UNTITLED_ALLOW_LIST.includes(id));
     assert.deepEqual(
       unexpected, [],
-      `ad(s) ${unexpected.join(", ")} were added to docs/ads/registry.json with no title. ` +
+      `ad(s) ${unexpected.join(", ")} were added to marketing/ads/registry.json with no title. ` +
       `Ask Chris for the name — do not invent one.`
     );
     const named = UNTITLED_ALLOW_LIST.filter((id) => !missing.includes(id));

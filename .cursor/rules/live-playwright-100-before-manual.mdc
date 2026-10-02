@@ -20,7 +20,7 @@ Not the local static harness. Harness specs may exist for offline UI, but they d
 score = (passed_required / required) * 100
 ```
 
-Required ids live on `docs/workflows/live-playwright-100.md`. Report the score after every run. Fix and re-run until 100 — do not dump a long failure list on Chris and stop.
+Required ids live on `ops/workflows/live-playwright-100.md`. Report the score after every run. Fix and re-run until 100 — do not dump a long failure list on Chris and stop.
 
 ## Agent duties
 

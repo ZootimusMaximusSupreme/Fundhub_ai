@@ -18,7 +18,7 @@
  * not a swatch strip built for the test.
  *
  * IT ALSO WRITES THE EVIDENCE. Set SHOOT=1 and each test saves a marked-up PNG
- * to docs/workflows/partner-brand-evidence/ — red boxes, numbered, with a
+ * to ops/workflows/partner-brand-evidence/ — red boxes, numbered, with a
  * legend baked into the image (CLAUDE.md §8). Off by default so the normal run
  * stays fast and writes nothing.
  *
@@ -32,7 +32,7 @@ import { fileURLToPath } from "node:url";
 import { openScreen, PARTNER, OWNER } from "./harness.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const SHOTS = path.join(HERE, "..", "docs", "workflows", "partner-brand-evidence");
+const SHOTS = path.join(HERE, "..", "ops", "workflows", "partner-brand-evidence");
 const SHOOT = process.env.SHOOT === "1";
 
 /* The Fundhub defaults, from public/app/fundhub-brand.css. These four must come

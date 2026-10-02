@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Named-fix hard gate
 
-**Owner law (2026-09-18):** AI must not make shit up. AI must not ship a fix that is not real. This gate wins on **done** over `three-step-repair.mdc` FINISH. Board: `docs/workflows/live-prove-2026-09-17-notes.md`.
+**Owner law (2026-09-18):** AI must not make shit up. AI must not ship a fix that is not real. This gate wins on **done** over `three-step-repair.mdc` FINISH. Board: `ops/workflows/live-prove-2026-09-17-notes.md`.
 
 ## Law
 

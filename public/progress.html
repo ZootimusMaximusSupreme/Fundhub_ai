@@ -30,7 +30,7 @@
 
   IT HOLDS NO SERVER-RENDERED HTML AND NEVER WILL. Everything below the fold is
   built here, in the browser, from the JSON facts described in
-  docs/workflows/portal-progress-contract.md. Storing generated markup would put
+  ops/workflows/portal-progress-contract.md. Storing generated markup would put
   a second copy of the truth on disk and would reopen the stored-HTML hole that
   api/documents/[id].mjs:33-70 was hardened to close. There is exactly ONE
   escape function on this page, esc(), and every value that reaches innerHTML
@@ -123,7 +123,7 @@ h2.sec{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transfor
 .wp.done .tick{background:var(--ok);border-color:var(--ok);color:#2C5138}
 /* The checkbox a client ticks (owner-set 2026-09-17). The circle stays 18px so
    it lines up with every other row; the BUTTON around it is 40px, the minimum
-   hit area in docs/UI-STANDARDS.md §5. Negative margin keeps the row height. */
+   hit area in docs/rules/UI-STANDARDS.md §5. Negative margin keeps the row height. */
 .wp .tickbtn{flex:0 0 40px;width:40px;height:40px;margin:-9px -11px -11px;padding:0;border:0;background:none;
      cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:50%}
 .wp .tickbtn .tick{border-color:var(--gray2);margin-top:0}
@@ -265,7 +265,7 @@ dialog .da{display:flex;gap:8px;justify-content:flex-end;margin-top:20px;flex-wr
   var $ = function (id) { return document.getElementById(id); };
 
   /* ── WAVE 2'S ENDPOINTS, NAMED IN ONE PLACE ───────────────────────────────
-     The read is built to docs/workflows/portal-progress-contract.md by a
+     The read is built to ops/workflows/portal-progress-contract.md by a
      separate lane. The paid-round write is built by a third. Both are named
      here and nowhere else, so if either lane chose a different path this page
      is a one-line change rather than a search.

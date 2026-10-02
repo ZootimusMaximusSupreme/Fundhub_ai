@@ -7,7 +7,7 @@
 // Pattern matches src/handlers/client-lifecycle.mjs and payment-links.mjs:
 // register() → on(event, handler). Every write is idempotent (Rule 9).
 //
-// Owner calls made in this session (also in docs/workflows/money-chain-writers.md):
+// Owner calls made in this session (also in ops/workflows/money-chain-writers.md):
 //   1. sale.closed writes the sales row — no separate sale.recorded event.
 //   2. Product resolve: name/alias first, then semantic-bucket → product code.
 //   3. Attribution only from the event payload (attributions[] / staffId /
@@ -1276,7 +1276,7 @@ export async function onRoundFundedMoney(event, db) {
      straight at this handler and walk past the board's refusal.
 
      WHY IT MATTERS. The success fee is a percent of CONFIRMED APPROVALS
-     (docs/CLOSEOUT-FEE-BASIS.md). A card-stacking round closed with no bank yes
+     (docs/finance/CLOSEOUT-FEE-BASIS.md). A card-stacking round closed with no bank yes
      on it can never be invoiced, and once it is closed nobody goes back for it.
      Measured 2026-09-16 on the live walk: round 1 on Sim Eight-Funding was
      marked funded for $25,000 with zero application rows.

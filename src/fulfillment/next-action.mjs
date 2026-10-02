@@ -8,7 +8,7 @@
  * copies of the rule drifting apart.
  *
  * Phase 0 mapping and the file:line evidence for every signal:
- *   docs/workflows/fulfillment-layer-2026-08-19.md
+ *   ops/workflows/fulfillment-layer-2026-08-19.md
  *
  *
  * THE ORDER IS CHRIS'S, AND IT IS FIRST-MATCH-WINS.

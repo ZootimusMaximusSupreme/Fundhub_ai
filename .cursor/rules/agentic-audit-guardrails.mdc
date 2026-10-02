@@ -50,7 +50,7 @@ Sims / Full E2E: assume paid and skip ClickFunnels apply — see `sim-assume-pai
 
 ## Parallel agents
 
-- Shared board only (`docs/workflows/…`)
+- Shared board only (`ops/workflows/…`)
 - One lane per thread (Fund / Repair / DocGate / Inquiry / SM)
 - Claim before work; no reminting shared people
 - Cap concurrent agents (~5)

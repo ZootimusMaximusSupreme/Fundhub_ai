@@ -14,7 +14,7 @@
 //
 // (2) is the one that matters. A zero here is a claim that nothing funded, and
 // it would flow straight into an invoice looking perfectly legitimate
-// (docs/CLOSEOUT-FEE-BASIS.md).
+// (docs/finance/CLOSEOUT-FEE-BASIS.md).
 //
 // NO BACKEND — /api/** is answered by page.route() via harness.mjs.
 

@@ -19,7 +19,7 @@
    { ok:false, reason:"blank" } and the caller must refuse the save. Never
    default an unknown amount to 0 — a zero is a claim that the bank approved
    nothing, and unknown is not nothing. This is the exact bug
-   docs/CLOSEOUT-FEE-BASIS.md records and the reason funded moves are guarded
+   docs/finance/CLOSEOUT-FEE-BASIS.md records and the reason funded moves are guarded
    at all.
 
    Shared deliberately: pipeline.html and client-control-panel.html both read

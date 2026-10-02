@@ -10,7 +10,7 @@
 - A testimonial is only a real quote that is in the source.
 - If the source has no photo of a person, do not add a face.
 - If the source has no name, do not add a name.
-- Build the card with the proof-card HTML template at `clickfunnels-fragments/slo/fundhub-proof-cards.html`. Do not edit that HTML file.
+- Build the card with the proof-card HTML template at `marketing/landing-pages/slo/fundhub-proof-cards.html`. Do not edit that HTML file.
 - Match that file's article markup and its switches: `data-layout`, `data-photo`, `data-name`, `data-amount`. `data-photo` stays off when there is no photo. `data-name` stays off when there is no name. `data-layout="win"` for an approval. `data-layout="quote"` only for a real quote.
 
 ## Never

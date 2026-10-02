@@ -4,7 +4,7 @@
 // different question — "is this a repair client" — and three other things lean
 // on that answer. It says yes on EITHER the repair entitlement OR an
 // outcome_tier of REPAIR_ONLY. This file answers the question the OWNER set on
-// 2026-09-03, quoted in docs/workflows/manual-walkthrough-2026-09-03.md:1135:
+// 2026-09-03, quoted in ops/workflows/manual-walkthrough-2026-09-03.md:1135:
 //
 //   "if they aren't going through credit repair, they don't need to
 //    authorize... It's only for repair and for the funding offer. If they're

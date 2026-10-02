@@ -23,7 +23,7 @@
 //                                is the only signal that exists, and it was
 //                                pinned at 200 forever.
 //
-// docs/RUNBOOK.md is the human half of this: what each state means and what to
+// docs/sops/RUNBOOK.md is the human half of this: what each state means and what to
 // do about it.
 
 import { db } from "../src/db.mjs";

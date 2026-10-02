@@ -1,6 +1,6 @@
 ---
 description: Audit screenshots must be marked; Chris decides by drawing on PNGs
-globs: docs/workflows/**/*-evidence/**,docs/workflows/*audit*.md,docs/workflows/*redundancy*.md,docs/workflows/simplify-review*.md
+globs: ops/workflows/**/*-evidence/**,ops/workflows/*audit*.md,ops/workflows/*redundancy*.md,ops/workflows/simplify-review*.md
 alwaysApply: false
 ---
 
@@ -15,7 +15,7 @@ alwaysApply: false
 3. Burn marks into the PNG Chris opens. Raw unmarked copies live in `shots/_raw/`.
 4. Review copy must say what each circle means and what KEEP / KILL / WIRE-UP / FIX does.
 
-Tooling: `docs/workflows/*-evidence/_mark-shots.mjs` + `_apply-marks.py` + `shot-marks.json`.
+Tooling: `ops/workflows/*-evidence/_mark-shots.mjs` + `_apply-marks.py` + `shot-marks.json`.
 
 ## Chris draws (owner decision path — preferred)
 
@@ -39,7 +39,7 @@ Canvas **cannot** freehand-draw on photos today (no paint layer). Do **not** pre
 Canvas = questions + plain-English “what’s wrong” + which circles matter + decision buttons.  
 Screenshots open as **files** (Preview / editor). Drawing happens on the **PNG**, not inside Canvas.
 
-If Canvas later gains a draw layer, still keep PNG marks as the durable record in `docs/workflows/`.
+If Canvas later gains a draw layer, still keep PNG marks as the durable record in `ops/workflows/`.
 
 ## In chat
 
@@ -49,4 +49,4 @@ Never post an unmarked audit screenshot for a decision. Never say “look at the
 
 - fundhub-auditor · fundhub-ui-auditor · fundhub-perf-auditor
 - Display / button / action / data redundancy reviews
-- Any `docs/workflows/*-evidence/shots/` pack
+- Any `ops/workflows/*-evidence/shots/` pack

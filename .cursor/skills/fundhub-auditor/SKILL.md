@@ -38,7 +38,7 @@ Never skip. Never merge. Stop between 1 and 2 for Chris approval.
 
 1. Read the relevant `docs/journeys/*-intended.md` files.
 2. Trace the same paths in code. Do not edit.
-3. Write a board at `docs/workflows/<batch>.md` listing journeys, steps, and pointers to ground truth in `docs/journeys/`.
+3. Write a board at `ops/workflows/<batch>.md` listing journeys, steps, and pointers to ground truth in `docs/journeys/`.
 4. **Stop.** Wait for Chris to approve the board before Step 2.
 
 ### Step 2 — Spec writing (only after approval)

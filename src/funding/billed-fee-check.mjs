@@ -1,6 +1,6 @@
 /* After the bill — does the success fee still follow the rule?
 
-   THE RULE (owner-set 2026-08-30, docs/CLOSEOUT-FEE-BASIS.md): the success fee
+   THE RULE (owner-set 2026-08-30, docs/finance/CLOSEOUT-FEE-BASIS.md): the success fee
    is the agreed percent of CONFIRMED APPROVALS on the round, defined once in
    ./success-fee.mjs. F-07 applies it at the moment the round is funded and
    freezes the figure on the bill.
@@ -138,7 +138,7 @@ export function feeDriftTask(check) {
 
   const lines = [
     `A bank decision on round ${check.roundNumber ?? "?"} changed after this bill was raised.`,
-    "The success fee is a percent of the bank approvals that carry a dollar amount (docs/CLOSEOUT-FEE-BASIS.md).",
+    "The success fee is a percent of the bank approvals that carry a dollar amount (docs/finance/CLOSEOUT-FEE-BASIS.md).",
     "",
     `Bill ${bill}: ${dollars(check.billedCents)} (status: ${check.invoice.status}).`,
     check.confirmedApprovedAmount != null
@@ -262,7 +262,7 @@ export function overpaidTask(check, reissue) {
     title: `Bill ${oldNo} was reissued as ${newNo} at ${dollars(check.ruleFeeCents)} — ${over} was paid over the new fee`,
     body: [
       `A bank decision on round ${check.roundNumber ?? "?"} changed after bill ${oldNo} was raised.`,
-      `The success fee follows the bank approvals that carry a dollar amount: ${check.feePercent}% of ${formatBalanceDue(check.confirmedApprovedAmount)} = ${dollars(check.ruleFeeCents)} (docs/CLOSEOUT-FEE-BASIS.md).`,
+      `The success fee follows the bank approvals that carry a dollar amount: ${check.feePercent}% of ${formatBalanceDue(check.confirmedApprovedAmount)} = ${dollars(check.ruleFeeCents)} (docs/finance/CLOSEOUT-FEE-BASIS.md).`,
       "",
       `Old bill ${oldNo}: ${dollars(check.billedCents)}, now void.`,
       `New bill ${newNo}: ${dollars(check.ruleFeeCents)}, status ${reissue.invoice.status}.`,

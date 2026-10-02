@@ -49,7 +49,7 @@ export function eventForStage(stageKey) {
  * Sum of confirmed approvals on a funding round — Approved applications that
  * carry a real recorded amount. Used here to PREFILL the funded amount when
  * staff omit it; the same number is also the fee basis under the 2026-08-30
- * decision (docs/CLOSEOUT-FEE-BASIS.md). One definition, in success-fee.mjs.
+ * decision (docs/finance/CLOSEOUT-FEE-BASIS.md). One definition, in success-fee.mjs.
  */
 export async function sumApprovedApplications(db, fundingRoundId) {
   return sumConfirmedApprovals(db, { fundingRoundId });
@@ -159,7 +159,7 @@ function missingAmountRefusal(names) {
  *
  * (a) came second in time but comes FIRST here, and it is not overridable by
  * sending a funded amount. The success fee is a percent of approvals that carry
- * a recorded amount (docs/CLOSEOUT-FEE-BASIS.md), so a round closing with a
+ * a recorded amount (docs/finance/CLOSEOUT-FEE-BASIS.md), so a round closing with a
  * blank approval on it is revenue that is never invoiced — and once the round
  * is closed nobody ever goes back for it. Staff can still close the round: they
  * either fill the amount in, or say on the record that the approval does not
@@ -218,7 +218,7 @@ export async function guardFundedAmount(db, {
      application rows, fell straight through the rule above, and was marked
      funded for $25,000 unopposed. Nothing was billed for it, and that refusal
      was correct — F-07 writes a named reason rather than a $0 invoice
-     (docs/CLOSEOUT-FEE-BASIS.md) — so the round simply closed for free.
+     (docs/finance/CLOSEOUT-FEE-BASIS.md) — so the round simply closed for free.
      The fee is a percent of confirmed approvals. With none there is nothing to
      bill, so the door stays shut and the refusal says which box to type in.
      A blank approval already gets the better, bank-naming refusal above; this
@@ -233,7 +233,7 @@ export async function guardFundedAmount(db, {
      a reason against and decided bills nothing. Refusing it would lock the door
      the exclusion escape exists to open, and there would then be no way to close
      the round at all. It closes, and F-07 still writes a named reason instead of
-     a $0 invoice (docs/CLOSEOUT-FEE-BASIS.md).
+     a $0 invoice (docs/finance/CLOSEOUT-FEE-BASIS.md).
      What is refused below is a round with NOTHING recorded on it — no bank yes
      anybody filled in and none anybody excluded. */
   const excused = confirmed.length

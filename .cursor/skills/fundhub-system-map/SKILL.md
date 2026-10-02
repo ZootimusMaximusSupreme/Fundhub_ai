@@ -3,7 +3,7 @@ name: fundhub-system-map
 description: >-
   Discovery-only index of how FundHub actually works. Use before claiming a
   journey PASS, e2e done, call sequence, or “we tested it.” Read
-  docs/workflows/system-map-2026-08-26.md. Forbids desk-load, API-write, and
+  ops/workflows/system-map-2026-08-26.md. Forbids desk-load, API-write, and
   0.13s Bland as sequence. Does not fix product code.
 ---
 
@@ -15,7 +15,7 @@ You find the real order. You do not fix the app.
 
 ## Before you say PASS or done
 
-1. Read `docs/workflows/system-map-2026-08-26.md` end to end.
+1. Read `ops/workflows/system-map-2026-08-26.md` end to end.
 2. Cite the intended file **and** say if it has event order or only doors.
 3. Walk **live fire** (`src/workflows/`) for that path. Editor trees in `src/journeys/seed-journeys.mjs` are the story, not proof.
 4. Voice agents: load `.cursor/skills/fundhub-agent-tester/SKILL.md`. Use the **live** Agent Editor prompt. Count letters. A short stub that is “ready” still beats a long unused file on disk.

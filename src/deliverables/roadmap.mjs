@@ -6,7 +6,7 @@
 // TWO LOOKS, ONE SET OF WORDS (2026-09-17). buildRoadmap(client) with no opts
 // prints the fundhub_gen.py markup byte for byte (port-parity.test.mjs pins it).
 // buildRoadmap(client, { look: "gold" }) draws the gold pack
-// (docs/workflows/gold-deliverables-v5/optimization_roadmap.pdf): the gold
+// (ops/workflows/gold-deliverables-v5/optimization_roadmap.pdf): the gold
 // cover and closing panel, the timeline and dispute-clock charts, a card per
 // revolving card that has a balance to pay, gold lists, callouts and tables.
 // Every sentence the old look prints, the gold look prints too. The gold look
@@ -615,7 +615,7 @@ export function buildRoadmap(client, opts = {}) {
   //
   // The Python heading reads "Before &amp; After Transformation Table" and is
   // then passed through esc(), so it prints the literal "&amp;". The designed
-  // PDF at docs/workflows/gold-deliverables-v5/optimization_roadmap.pdf:541
+  // PDF at ops/workflows/gold-deliverables-v5/optimization_roadmap.pdf:541
   // reads "Before & After Transformation Table". The designed output wins.
   h.push(PB);
   h.push(section("07", "transformation", "Before & After Transformation Table"));

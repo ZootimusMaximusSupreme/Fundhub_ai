@@ -3,7 +3,7 @@
 // sections: available now, shortlist, application order, at a glance.
 //
 // GOLD LOOK (2026-09-17). With `opts.look === "gold"` the same words are drawn
-// the way the gold pack draws them (docs/workflows/gold-deliverables-v5/
+// the way the gold pack draws them (ops/workflows/gold-deliverables-v5/
 // lender_match_list.pdf): the unlock ladder chart in 01, gold lender cards in
 // 02, the application order chart in 03, and a fifth numbered section, 04
 // STRATEGY, that spells the five order rules out as sentences. At a glance

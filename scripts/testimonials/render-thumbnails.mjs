@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * Render testimonial thumbnails from content/testimonials/testimonials.json.
+ * Render testimonial thumbnails from marketing/testimonials/testimonials.json.
  *
  *   node scripts/testimonials/render-thumbnails.mjs            # all records
  *   node scripts/testimonials/render-thumbnails.mjs colin      # just one
  *
  * Each record supplies the words. The picture is the frame already pulled to
- * content/testimonials/frames/<id>.jpg. The look lives in thumbnail.html, which
+ * marketing/testimonials/frames/<id>.jpg. The look lives in thumbnail.html, which
  * also opens straight in a browser if you want to nudge the design by hand.
  *
  * Output: public/testimonials/thumbnails/<id>.png, at the frame's own size, so
@@ -20,7 +20,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const repo = path.resolve(here, "../..");
-const DATA = path.join(repo, "content/testimonials/testimonials.json");
+const DATA = path.join(repo, "marketing/testimonials/testimonials.json");
 const OUT = path.join(repo, "public/testimonials/thumbnails");
 const FFMPEG = path.join(process.env.HOME, ".local/bin/ffmpeg");
 
@@ -60,7 +60,7 @@ const browser = await chromium.launch({
 const results = [];
 
 for (const r of records) {
-  const framePath = path.join(repo, `content/testimonials/frames/${r.id}.jpg`);
+  const framePath = path.join(repo, `marketing/testimonials/frames/${r.id}.jpg`);
   if (!existsSync(framePath)) {
     console.error(`SKIP ${r.id} — no frame at ${framePath}`);
     continue;
