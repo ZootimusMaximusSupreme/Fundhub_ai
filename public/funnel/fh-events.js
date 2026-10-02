@@ -1,7 +1,7 @@
 /* fh-events.js — which step a visitor opened and which buttons they pressed,
    on the /watch path and the /roadmap path.
 
-   Loaded on every step of both funnels (clickfunnels-fragments/tracking-manifest.mjs
+   Loaded on every step of both funnels (marketing/landing-pages/tracking-manifest.mjs
    puts it there). It sends two things to https://fundhub.ai/api/public/slo-interest:
 
      kind "page"   one per session per step    -> events row funnel.page

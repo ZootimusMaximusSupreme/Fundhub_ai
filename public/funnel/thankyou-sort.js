@@ -2,7 +2,7 @@
  * Fundhub /thank-you, lined up with the Sorting Hat offer — https://fundhub.ai/funnel/thankyou-sort.js
  *
  * Loaded from the footer code of apply.fundhub.ai/thank-you (ClickFunnels builder
- * page 25063539) and from clickfunnels-fragments/05-thank-you.html. A builder page's
+ * page 25063539) and from marketing/landing-pages/05-thank-you.html. A builder page's
  * body cannot be replaced by API, so this script changes the page itself.
  *
  * What it does:
@@ -20,7 +20,7 @@
  * Proof law (.claude/rules/proof-cards-from-source.md): every card is the
  * proof-card template's own markup, amounts read off the screenshots, photo off,
  * name off. The template CSS below is a verbatim copy of
- * clickfunnels-fragments/slo/fundhub-proof-cards.html; src/ads/funnel-proof-scripts.test.mjs
+ * marketing/landing-pages/slo/fundhub-proof-cards.html; src/ads/funnel-proof-scripts.test.mjs
  * fails if they drift.
  */
 (function () {
@@ -66,7 +66,7 @@
     try { return JSON.parse(raw); } catch (e) { return null; }
   }
 
-  /* Approvals shown here: amount read off each crop (clickfunnels-fragments/slo/client-wins/deck.json). */
+  /* Approvals shown here: amount read off each crop (marketing/landing-pages/slo/client-wins/deck.json). */
   var WINS = [
     { id: "t-74k-chase-ink", amount: "$74,000", alt: "Chase Ink Business Cash card approval showing $74,000",
       src: "https://statics.myclickfunnels.com/workspace/edLgGE/image/23715350/file/685c4e87c43f57142cfe2bd70318efeb.jpg" },

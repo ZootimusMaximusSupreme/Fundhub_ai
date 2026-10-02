@@ -2,7 +2,7 @@
  * Fundhub /watch proof block — https://fundhub.ai/funnel/watch-proof.js
  *
  * Loaded from the footer code of apply.fundhub.ai/watch (ClickFunnels builder
- * page 25061160) and from clickfunnels-fragments/01-vsl.html. A builder page's
+ * page 25061160) and from marketing/landing-pages/01-vsl.html. A builder page's
  * body cannot be replaced by API, so this script adds the new section itself,
  * right under the first "Get Started" button and its note, above the ticker.
  *
@@ -25,7 +25,7 @@
  * The video and the first button are not touched.
  *
  * Proof law (.claude/rules/proof-cards-from-source.md): every card is the
- * proof-card template's own markup (clickfunnels-fragments/slo/fundhub-proof-cards.html),
+ * proof-card template's own markup (marketing/landing-pages/slo/fundhub-proof-cards.html),
  * every amount is read off its screenshot, photo off, name off. The template CSS
  * below is a verbatim copy of that file's <style> block; a test fails if they drift
  * (src/ads/funnel-proof-scripts.test.mjs).
@@ -40,7 +40,7 @@
   var SECTION_ID = "fh-watch-proof";
   var GIF = "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7";
 
-  /* Approvals: every card in clickfunnels-fragments/slo/client-wins/deck.json, in the
+  /* Approvals: every card in marketing/landing-pages/slo/client-wins/deck.json, in the
      deck's order (smallest first, climbing to the biggest). Amount read off each crop;
      src, width, height and alt are the deck's. */
   var WINS = [
@@ -343,7 +343,7 @@
 
   /* Page alignment with /roadmap. run() puts .fhw on <html>, so none of this reaches
      any page this script is not on. The H1 rule is the /roadmap H1 rule, word for word
-     (clickfunnels-fragments/slo/slo-01-sales.html); a test fails if they drift. */
+     (marketing/landing-pages/slo/slo-01-sales.html); a test fails if they drift. */
   var ALIGN_CSS = [
     ".fhw .fhw-flush{padding-left:0!important;padding-right:0!important;margin-left:0!important;margin-right:0!important}",
     ".fhw .fh-root .hero h1{font-family:var(--sans);font-size:clamp(28px,4.8vw,46px);font-weight:700;letter-spacing:-.045em;line-height:1.02;margin:20px auto 0;max-width:26ch}",
@@ -382,7 +382,7 @@
     "#fh-watch-proof .fh-card>.fh-shot{padding:5px}",
     "#fh-watch-proof .fh-card>.fh-mark{--fh-mark-h:14px}",
     /* Video testimonial placeholders: the /roadmap slot, word for word (.fh-b .vslot in
-       clickfunnels-fragments/slo/slo-01-sales.html); a test fails if they drift. Only the
+       marketing/landing-pages/slo/slo-01-sales.html); a test fails if they drift. Only the
        size cap is lifted below: /roadmap's 300px height cap left three 169px cards floating
        in an 852px row, which is the padding the owner asked us to take out. The cards grow
        to fill the row instead; the look, the 9:16 shape and the label are untouched. */
