@@ -71,6 +71,16 @@ Rows are added from `docs/tracking/page-inventory.md` (Phase 2). Same map in the
 | `calendar_view` | A booking calendar is on screen | `calendar` | booking hook |
 | `time_selected` | A time slot picked | `calendar` | booking hook |
 | `booking_confirmed` | Book / Confirm pressed and the booking saved | `calendar` | booking hook |
+| `preview_opened` | A "See a sample" preview opened under a /roadmap order summary line | `deliverable` | /roadmap buy box hook |
+| `preview_closed` | That preview closed (close press, or tab hidden / page closed while open) | `deliverable`, `open_ms` | /roadmap buy box hook |
+
+## Sample previews (/roadmap, 2026-10-01)
+
+`deliverable` is one of exactly: `how_much_you_qualify_for`, `credit_analysis_report`, `credit_optimization_roadmap`, `dispute_letter_pack`, `bank_lender_match_list`, `business_duplication_map`. Any other value (or none) is refused with `deliverable_invalid` (HTTP 400) and nothing is saved. `open_ms` is whole milliseconds the preview stayed open, clamped 0..600000 (missing = 0).
+
+Each open also fires Meta custom event `PreviewOpened` with `content_name` = the deliverable (`fbq('trackCustom','PreviewOpened',{content_name:d})`, the same pixel and call style the thank-you pages use).
+
+Same `session_id` (`fh_sid`) as the `continue` event, so a visitor's opens and their step-1 press join. View `v_roadmap_preview_continue_daily` (opened vs not-opened Continue rate per day) and `v_roadmap_preview_open_ms_daily` (average `open_ms` per deliverable per day): `db/migrations/405_roadmap_preview_views.sql`. Days are UTC. Only `actor = 'person'` sessions count.
 
 ## Browser API
 

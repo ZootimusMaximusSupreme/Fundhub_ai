@@ -47,6 +47,18 @@ const FORM = slug(40);
 const FIELD = slug(64);
 const CALENDAR = { calendar: slug(64) };
 
+// The six sample previews under the /roadmap order summary. Exactly these;
+// anything else is refused (see PREVIEW_EVENTS below).
+export const PREVIEW_DELIVERABLES = Object.freeze([
+  "how_much_you_qualify_for",
+  "credit_analysis_report",
+  "credit_optimization_roadmap",
+  "dispute_letter_pack",
+  "bank_lender_match_list",
+  "business_duplication_map",
+]);
+const DELIVERABLE = oneOf(...PREVIEW_DELIVERABLES);
+
 export const TRACK_EVENTS = Object.freeze({
   page_view: { title: text(120) },
   time_on_page: { seconds: SECONDS },
@@ -84,7 +96,12 @@ export const TRACK_EVENTS = Object.freeze({
   calendar_view: CALENDAR,
   time_selected: CALENDAR,
   booking_confirmed: CALENDAR,
+  preview_opened: { deliverable: DELIVERABLE },
+  preview_closed: { deliverable: DELIVERABLE, open_ms: int(0, 600_000) },
 });
+
+/** Events that mean nothing without a valid deliverable: refused, not saved empty. */
+export const PREVIEW_EVENTS = Object.freeze(["preview_opened", "preview_closed"]);
 
 // ── sensitive values ─────────────────────────────────────────────────────────
 //
@@ -267,6 +284,11 @@ export async function recordTrack(body, deps = {}) {
   const where = funnelFor(body.page);
   if (!where) return { ok: false, error: "page_invalid" };
 
+  const props = cleanProps(event, body.props);
+  if (PREVIEW_EVENTS.includes(event) && !props.deliverable) return { ok: false, error: "deliverable_invalid" };
+  // A close with no usable time still counts as a close, at zero.
+  if (event === "preview_closed" && props.open_ms === undefined) props.open_ms = 0;
+
   const who = classifyVisitor({
     email: "",
     userAgent: deps.userAgent,
@@ -280,7 +302,7 @@ export async function recordTrack(body, deps = {}) {
     session_id: sessionId,
     seq,
     event,
-    props: cleanProps(event, body.props),
+    props,
     attribution: pickAttribution(body),
     landing_path: clip(body.landing_path, 200) || null,
     actor: who.actor,

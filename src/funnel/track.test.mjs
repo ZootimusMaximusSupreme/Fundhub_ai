@@ -86,7 +86,7 @@ describe("the map and the allow-lists are the spec's tables", () => {
       cells[0].replace(/`/g, ""),
       [...cells[2].matchAll(/`([a-z_]+)`/g)].map((m) => m[1]).sort()
     ]));
-    assert.equal(Object.keys(fromSpec).length, 22);
+    assert.equal(Object.keys(fromSpec).length, 24);
     const fromCode = Object.fromEntries(
       Object.entries(TRACK_EVENTS).map(([e, props]) => [e, Object.keys(props).sort()]));
     assert.deepEqual(fromCode, fromSpec);

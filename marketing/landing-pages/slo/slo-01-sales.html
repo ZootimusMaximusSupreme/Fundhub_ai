@@ -255,6 +255,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .sum li{position:relative;padding-left:20px;margin-top:12px;font-size:15px;color:var(--gray);line-height:1.6}
 .fh-root .sum li::before{content:"";position:absolute;left:0;top:10px;width:10px;height:2px;background:var(--spectrum);border-radius:1px}
 .fh-root .sum li b{color:var(--ink);font-weight:600}
+.fh-root .sum li:has(.fh-peek){margin-top:8px}
+.fh-root .sum .fh-peek{display:flex;align-items:center;gap:5px;width:max-content;margin-top:1px;font-size:12.5px;line-height:1.4;font-weight:500;color:#188bf6;text-decoration:none}
+.fh-root .sum .fh-peek:hover{text-decoration:underline}
+.fh-root .sum .fh-peek svg{flex:none}
 .fh-root .sum .tot{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .fh-root .sum .tot .tl{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--gray2)}
 .fh-root .sum .tot .tp b{font-family:var(--mono);font-size:20px;color:var(--ink);font-weight:600}
@@ -943,18 +947,101 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       <div class="sum">
         <span class="kicker">Order summary &middot; Built from your own credit data &middot; Yours to keep</span>
         <ul>
-          <li><b>How Much You Qualify For</b>, today and once your file is optimized</li>
-          <li><b>Credit Analysis Report</b>, what's hurting your file, item by item, on all three bureaus</li>
-          <li><b>Credit Optimization Roadmap</b>, what to do first and what comes after, month by month</li>
-          <li><b>Dispute Letter Pack</b>, every letter written for your accounts, all six rounds, ready to mail</li>
-          <li><b>Bank &amp; Lender Match List</b>, the banks most likely to approve you where you live, and the order to apply</li>
-          <li><b><span class="fh-bonus">FREE BONUS</span>Business Duplication Map</b>, how you go from one company to five or ten, each one funded</li>
+          <li><b>How Much You Qualify For</b>, today and once your file is optimized<a class="fh-peek" href="#" data-sample="snapshot"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
+          <li><b>Credit Analysis Report</b>, what's hurting your file, item by item, on all three bureaus<a class="fh-peek" href="#" data-sample="analysis"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
+          <li><b>Credit Optimization Roadmap</b>, what to do first and what comes after, month by month<a class="fh-peek" href="#" data-sample="roadmap"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
+          <li><b>Dispute Letter Pack</b>, every letter written for your accounts, all six rounds, ready to mail<a class="fh-peek" href="#" data-sample="pack"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
+          <li><b>Bank &amp; Lender Match List</b>, the banks most likely to approve you where you live, and the order to apply<a class="fh-peek" href="#" data-sample="lenders"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
+          <li><b><span class="fh-bonus">FREE BONUS</span>Business Duplication Map</b>, how you go from one company to five or ten, each one funded<a class="fh-peek" href="#" data-sample="duplication"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>See a sample</a></li>
         </ul>
-        <p class="fh-sumnote" data-extra hidden>Your first business is included. Each extra business is $15, added at the soft-pull step.</p>
         <div class="tot"><span class="tl">Everything above &middot; one payment, no contract</span><span class="tp"><b>$297</b></span></div>
       </div>
       
     </section>
+<!-- FH-SAMPLE-PREVIEW: sample viewer for the order summary's "See a sample" links.
+     Restored from 07b7308b (removed 4be7a35a). Tracks preview_opened / preview_closed
+     (docs/tracking/tracking-spec.md, Sample previews) and Meta PreviewOpened. -->
+    <div class="lb" id="fh-lb" hidden><div class="lb-bg"></div><div class="lb-card"><button class="lb-x" type="button" aria-label="Close">&times;</button><div class="lb-body" id="fh-lb-body"></div><div class="lb-note">Sample file for a made-up client. Yours is built from your own credit file. Estimates, not an offer of credit.</div></div></div>
+    <script>
+    (function(){
+      var P={
+        analysis:'<div class="sp"><div class="sp-doc">Credit Analysis Report &middot; Alex Rivera</div><div class="sp-why">Why you need this: you stop getting declined for reasons nobody told you.</div>'
+          +'<div class="sp-sec"><div class="sp-h">bureau health</div><table><tr><th>bureau</th><th>status</th><th>negative items</th><th>notes</th></tr><tr><td>Experian</td><td><i class="tg bad">DISPUTE 2</i></td><td>2</td><td>Primary bureau, lenders pull this first</td></tr><tr><td>Equifax</td><td><i class="tg ok">CLEAN</i></td><td>0</td><td>Nothing negative on it</td></tr><tr><td>TransUnion</td><td><i class="tg bad">DISPUTE 1</i></td><td>1</td><td>Collection reporting</td></tr></table></div>'
+          +'<div class="sp-sec"><div class="sp-h">scores &middot; lenders use your middle score</div><div class="kpis"><div><b>648</b><i>Experian &middot; LOWEST</i></div><div class="mid"><b>672</b><i>Equifax &middot; YOUR MIDDLE SCORE</i></div><div><b>691</b><i>TransUnion &middot; HIGHEST</i></div></div><div class="sp-c">43 point spread between best and worst. Lenders underwrite on 672.</div></div>'
+          +'<div class="sp-sec"><div class="sp-h">utilization &middot; the fastest win on this file</div><table><tr><th>card</th><th>balance</th><th>limit</th><th>util</th><th>status</th></tr><tr><td>Chase Sapphire Preferred</td><td>$4,120</td><td>$5,000</td><td>82%</td><td><i class="tg bad">CRITICAL</i></td></tr><tr><td>Amex Blue Cash</td><td>$1,980</td><td>$6,000</td><td>33%</td><td><i class="tg warn">HIGH</i></td></tr><tr><td>Discover it</td><td>$210</td><td>$3,500</td><td>6%</td><td><i class="tg ok">OK</i></td></tr></table><div class="sp-c">Total revolving $6,310 of $14,500, 44% used. Your roadmap sets the paydown.</div></div>'
+          +'<div class="sp-sec"><div class="sp-h">negative items, one by one</div><table><tr><th>#</th><th>creditor</th><th>type</th><th>balance</th><th>bureaus</th></tr><tr><td>1</td><td>Midland Credit Management (orig. Banner Health)</td><td>Collection</td><td>$412</td><td>EX, TU</td></tr><tr><td>2</td><td>Capital One Platinum</td><td>Charge-off</td><td>$1,860</td><td>EX</td></tr></table><div class="sp-c">Both come with a dispute letter already written in the pack.</div></div>'
+          +'</div>',
+        roadmap:'<div class="sp"><div class="sp-doc">Credit Optimization Roadmap &middot; Alex Rivera</div><div class="sp-why">Why you need this: you reach your maximum funding fastest, with nothing to guess.</div>'
+          +'<div class="sp-sec"><div class="sp-h">six months, in order</div><div class="strip"><div><b>Month 1</b>Launch</div><div><b>Month 2</b>Results</div><div><b>Month 3</b>Escalation</div><div><b>Month 4</b>Push</div><div><b>Month 5</b>Complaints</div><div><b>Month 6</b>Re-pull</div></div></div>'
+          +'<div class="sp-sec"><div class="sp-h">month 1 &middot; step 1, the paydown plan</div><table><tr><th>card</th><th>balance</th><th>pay down to</th><th>amount to pay</th></tr><tr><td>Chase Sapphire Preferred</td><td>$4,120</td><td>$500</td><td><b>$3,620</b></td></tr><tr><td>Amex Blue Cash</td><td>$1,980</td><td>$600</td><td><b>$1,380</b></td></tr><tr><td colspan="3">Total to reach the 10% target</td><td><b>$5,000</b></td></tr></table></div>'
+          +'<div class="sp-sec"><div class="sp-h">month 1 &middot; steps 2 and 3, round one letters</div><ul class="sp-ul"><li><b>Experian first.</b> Midland Credit Management collection $412. Capital One Platinum charge-off $1,860.</li><li><b>TransUnion.</b> Midland Credit Management collection $412.</li><li><b>Do not open any new accounts</b> until the personal side is locked in.</li></ul></div>'
+          +'</div>',
+        snapshot:'<div class="sp"><div class="sp-doc">How Much You Qualify For &middot; Alex Rivera</div><div class="sp-why">Why you need this: you know what you can get before a bank ever sees your file.</div>'
+          +'<div class="sp-sec"><div class="sp-h">your numbers right now</div><table><tr><th></th><th>today</th><th>after the roadmap</th></tr><tr><td>middle score</td><td>672</td><td><b>700+</b></td></tr><tr><td>qualifies for</td><td>$84,500</td><td><b>$146,000</b></td></tr><tr><td>value of the roadmap</td><td></td><td><b>$61,500</b></td></tr></table></div>'
+          
+          
+          +'<div class="sp-sec"><div class="sp-h">what you are leaving on the table</div><div class="sp-c">$61,500 you are leaving on the table right now. The rest of the package is how you go get it.</div></div></div>',
+        lenders:'<div class="sp"><div class="sp-doc">Bank &amp; Lender Match List &middot; Alex Rivera</div><div class="sp-why">Why you need this: you apply only where you will get approved, in the right order.</div>'
+          +'<div class="kpis"><div class="mid"><b>15</b><i>lenders matched</i></div><div><b>6</b><i>your file fits today</i></div><div><b>9</b><i>need a business entity first</i></div></div>'
+          +'<div class="sp-sec"><div class="sp-h">available right now &middot; middle score 672</div><table><tr><th>lender</th><th>type</th><th>est. range</th><th>score floor</th></tr><tr><td>Wells Fargo personal loan</td><td>Personal loan</td><td>$10K to $25K</td><td>640</td></tr><tr><td>Chase Freedom Unlimited</td><td>Personal card</td><td>$8K to $15K</td><td>660</td></tr><tr><td>Capital One Venture</td><td>Personal card</td><td>$10K to $20K</td><td>660</td></tr><tr><td colspan="4" class="more">plus Discover it, Citi Double Cash and U.S. Bank Cash+ open on this file today</td></tr></table></div>'
+          +'<div class="sp-sec"><div class="sp-h">score ladder &middot; what unlocks as the score moves</div><table><tr><th>at</th><th>gap</th><th>lenders that unlock</th></tr><tr><td>680</td><td>8 points</td><td><b>4 more</b></td></tr><tr><td>700</td><td>28 points</td><td><b>5 more</b></td></tr></table><div class="sp-c">Business products additionally need an entity and time in business.</div></div>'
+          +'<div class="sp-sec"><div class="sp-h">application order</div><ol class="sp-ol"><li>Finish month one of your roadmap first.</li><li>Lowest score floor first.</li><li>One at a time. Wait for the decision.</li><li>Work up the list as the score moves.</li><li>Personal before business. Lock personal, then form the entity.</li></ol></div></div>',
+        startHere:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 01 Start here</div><div class="sp-sec"><div class="sp-h">how to use this package</div><ol class="sp-ol"><li>Mail certified with return receipt. Keep the receipt. It starts the 30 day clock.</li><li>One envelope per bureau. Never combine.</li><li>Keep every response. Photograph it the day it arrives.</li><li>Use the home address on your ID. No PO box.</li><li>Sign by hand, in ink.</li><li>Wait the full 30 days plus mail time before round 2.</li><li>Do not file the complaints until round 3 has failed.</li></ol></div></div>',
+        tree:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 02 Decision tree</div><div class="sp-sec"><div class="sp-h">after round 1 comes back</div><ul class="sp-ul"><li><b>All items deleted</b> &rarr; stop. Do not send round 2 or 3.</li><li><b>Some deleted, some verified</b> &rarr; round 2 for the verified items only. Cross out the rest.</li><li><b>All verified</b> &rarr; round 2 method of verification demand.</li><li><b>No response after 30 days plus mail time</b> &rarr; round 2 with the late response argument. Keep your certified receipt.</li><li><b>Round 3 still on the report</b> &rarr; file the CFPB complaint, then the state attorney general. Sign the declaration on each.</li></ul></div></div>',
+        round1:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 03 Round 1 &middot; Experian</div><div class="sp-why">Why you need this: the items costing you money come off, and no credit repair company gets paid to do it.</div><div class="sp-what">What this letter does: asks Experian to fix or delete two items reported wrong on your file.</div><div class="letter"><div><b>Alex Rivera</b> &middot; 4120 E Indian School Rd, Phoenix, AZ 85018</div><div style="margin-top:4px">Experian &middot; P.O. Box 4500, Allen, TX 75013</div><div style="margin-top:10px"><b>Re: Round 1 Metro 2 dispute &middot; M2-DOFD-01, M2-BAL-03</b></div><p>I am writing to dispute the following items on my credit file. Please reinvestigate each within 30 days as required under FCRA &sect; 611. For any item you keep, provide the method of verification.</p><p><b>Item 1 &middot; Violation M2-DOFD-01 &middot; Midland Credit Management &middot; account ending 4417</b><br>Field: date of first delinquency &middot; Severity: HIGH<br>Observed: a $412 collection reporting with no date of first delinquency.<br>Expected: DOFD is required for any collection under Metro 2 reporting standards.<br>Legal basis: FCRA &sect; 623(a)(5).</p><p><b>Item 2 &middot; Violation M2-BAL-03 &middot; Capital One Platinum &middot; account ending 8821</b><br>Field: balance &middot; Severity: HIGH<br>Observed: charge-off reporting a $1,860 balance after the account was sold.<br>Expected: a sold charge-off reports a zero balance to the original creditor.<br>Legal basis: FCRA &sect; 623(a)(2).</p><p>Delete or correct each item and send written confirmation of the results.</p><p>Sincerely,<br><span class="sig">Alex Rivera</span></p><div class="encl">Enclosed: copy of photo ID, proof of address.</div></div></div>',
+        cond:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 04 Round 2 &middot; cover sheet</div><div class="warn">SEND THIS LETTER ONLY IF the bureau said verified or remains.<br>DO NOT SEND IF deleted, no response yet, or too soon.</div><div class="sp-sec"><div class="sp-h">what round 2 asks for</div><div class="sp-c">Describe the method of verification for each item: who you contacted, what records they sent, and what you compared. Give each furnisher\'s name, address and telephone number. If you cannot produce that, delete the items. Cites FCRA &sect; 611(a)(7) and &sect; 611(a)(6)(B)(iii).</div></div><div class="sp-c">Before mailing: write today\'s date, cross out deleted items, sign by hand, enclose photo ID and proof of address.</div></div>',
+        complaints:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 06 Rounds 4 and 5 &middot; complaints</div><div class="warn">DO NOT FILE WITH ROUND 1.<br>Send only if round 3 is done and the items are still on the report.</div><div class="sp-sec"><div class="sp-h">what is in the folder</div><ul class="sp-ul"><li><b>CFPB complaint,</b> fully written. Timeline of rounds 1 to 3, the disputed accounts, what I want, harm, the documents checklist. You date it and sign the declaration.</li><li><b>State attorney general complaint,</b> pulled to your state. Same shape, plus the state consumer protection law.</li></ul></div><div class="sp-c">File the CFPB first, or the CFPB and the state AG at the same time.</div></div>',
+        final:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 07 Round 6 &middot; final notice</div><div class="warn">SEND THIS ONLY IF rounds 4 and 5 did not remove the item.</div><div class="sp-sec"><div class="sp-h">what round 6 is</div><div class="sp-c">The last letter to the bureau: a final notice, sent again after both complaints. Each round stands on stronger law than the one before it.</div></div></div>',
+        duplication:'<div class="sp"><div class="sp-doc">Business Duplication Map &middot; Alex Rivera</div><div class="sp-why">Why you need this: you keep getting funded after round one, one aged company after another.</div>'
+          +'<div class="sp-sec"><div class="sp-h">your business today &middot; Rivera Supply LLC, Arizona, 14 months old</div><table><tr><th>Experian Business check</th><th>status</th><th>the fix</th></tr><tr><td>Business credit score</td><td><i class="tg ok">OK</i></td><td>Keep it reporting</td></tr><tr><td>Blemishes</td><td><i class="tg bad">1 COLLECTION</i></td><td>Settle it and have it updated</td></tr><tr><td>Business card balance</td><td><i class="tg warn">64% USED</i></td><td>Pay it down before you apply</td></tr><tr><td>NAICS code</td><td><i class="tg bad">FLAGGED</i></td><td>Use the code that matches what you sell</td></tr><tr><td>Business name</td><td><i class="tg warn">DOES NOT MATCH</i></td><td>One exact name everywhere</td></tr></table></div>'
+          +'<div class="sp-sec"><div class="sp-h">what a company can get as it ages</div><table><tr><th>age</th><th>business funding</th></tr><tr><td>under 12 months</td><td>half your card funding</td></tr><tr><td>12 to 24 months</td><td>equal to your card funding</td></tr><tr><td>24 months and up</td><td><b>double your card funding</b></td></tr></table><div class="sp-c">Rivera Supply turns 24 months in July 2027. That is when its funding doubles.</div></div>'
+          +'<div class="sp-sec"><div class="sp-h">your quarterly plan</div><table><tr><th>quarter</th><th>step</th></tr><tr><td>Q4 2026</td><td>Open company two, set up right: clean name, right NAICS code, reporting from day one</td></tr><tr><td>Q1 2027</td><td>Open company three the same way</td></tr><tr><td>Q3 2027</td><td>Rivera Supply passes 24 months</td></tr><tr><td>Q4 2027</td><td>Company two passes 12 months</td></tr></table><div class="sp-c">Keep opening one to two a quarter and aged companies keep coming ready for funding.</div></div></div>',
+        tracker:'<div class="sp"><div class="sp-doc">Dispute Letter Pack &middot; 08 Round tracker</div><table><tr><th>round</th><th>bureau</th><th>date mailed</th><th>certified #</th><th>response</th><th>outcome</th></tr><tr><td>R1</td><td>Experian</td><td>09/22/2026</td><td>7020 0000 0000 0001</td><td></td><td></td></tr><tr><td>R1</td><td>TransUnion</td><td>09/22/2026</td><td>7020 0000 0000 0002</td><td></td><td></td></tr><tr><td>R2</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R3</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R4 CFPB</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R5 State AG</td><td></td><td></td><td></td><td></td><td></td></tr><tr><td>R6</td><td></td><td></td><td></td><td></td><td></td></tr></table><div class="sp-c">One row per round per bureau. The receipt number is what proves the clock started.</div></div>'
+      };
+      var lb=document.getElementById('fh-lb'),body=document.getElementById('fh-lb-body');
+      if(!lb)return;
+      var PACK=[['startHere','01 Start here'],['tree','02 Decision tree'],['round1','03 Round 1'],['cond','04 Round 2'],['cond','05 Round 3'],['complaints','06 Rounds 4 and 5'],['final','07 Round 6'],['tracker','08 Tracker']];
+      /* Show the top of each sample and glass the rest: the buyer sees enough to want it, not the whole thing. */
+      function lock(){
+        var sp=body.querySelector('.sp'); if(!sp||sp.querySelector('.sp-lock'))return;
+        var first=sp.querySelector('.sp-sec,.letter,.kpis,.warn,table');
+        var top=first?first.offsetTop+Math.min(first.offsetHeight,190):160;
+        top=Math.min(top,sp.scrollHeight-170);
+        var el=document.createElement('div'); el.className='sp-lock'; el.style.top=top+'px';
+        el.innerHTML='<b>The rest is built from your own file.</b><span>Unlock yours for $297.</span><a class="btn sp-go" href="#fh-order">Get My $297 Funding Roadmap</a>';
+        sp.appendChild(el);
+      }
+      function render(k,tab){
+        var html='';
+        if(k==='pack'){
+          var cur=(tab==null?2:tab);
+          html+='<div class="ptabs">';
+          PACK.forEach(function(p,i){ html+='<button type="button" class="ptab'+(i===cur?' on':'')+'" data-tab="'+i+'">'+p[1]+'</button>'; });
+          html+='</div>'+P[PACK[cur][0]];
+        } else { if(!P[k]) return false; html=P[k]; }
+        body.innerHTML=html+'<div class="wm wm-lb">SAMPLE</div>'; requestAnimationFrame(lock); return true;
+      }
+      var SLUG={snapshot:'how_much_you_qualify_for',analysis:'credit_analysis_report',roadmap:'credit_optimization_roadmap',pack:'dispute_letter_pack',lenders:'bank_lender_match_list',duplication:'business_duplication_map'};
+      var openD=null,openedAt=0;
+      function fht(e,p){try{(window.fhTrack||function(e,p){(window.fhq=window.fhq||[]).push([e,p]);})(e,p);}catch(x){}}
+      function trackClose(){ if(!openD)return; fht('preview_closed',{deliverable:openD,open_ms:Date.now()-openedAt}); openD=null; }
+      function open(k){ if(!render(k))return; trackClose(); lb.hidden=false; document.body.style.overflow='hidden';
+        var d=SLUG[k]; if(d){ openD=d; openedAt=Date.now(); fht('preview_opened',{deliverable:d});
+          try{ if(typeof fbq!=='undefined') fbq('trackCustom','PreviewOpened',{content_name:d}); }catch(x){} } }
+      body.addEventListener('click',function(e){ var t=e.target.closest&&e.target.closest('.ptab'); if(t){ render('pack',parseInt(t.getAttribute('data-tab'),10)); body.scrollTop=0; } });
+      function close(){ if(lb.hidden)return; lb.hidden=true; document.body.style.overflow=''; trackClose(); }
+      window.addEventListener('pagehide',trackClose);
+      document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='hidden')trackClose(); });
+      document.addEventListener('click',function(e){
+        var a=e.target.closest&&e.target.closest('[data-sample]');
+        if(a){e.preventDefault();open(a.getAttribute('data-sample'));return;}
+        if(e.target.closest&&(e.target.closest('.lb-x')||e.target.closest('.sp-go')||e.target.classList.contains('lb-bg')))close();
+      });
+      document.addEventListener('keydown',function(e){if(e.key==='Escape')close();});
+    })();
+    </script>
+
+
 
 
 
