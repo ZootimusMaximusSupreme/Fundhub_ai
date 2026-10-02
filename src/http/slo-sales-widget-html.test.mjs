@@ -58,17 +58,21 @@ test("three steps, in this order: info, card, soft pull", () => {
   assert.ok(html.indexOf('<form class="cfw-step s2"') < html.indexOf('<form class="cfw-step s3"'));
 });
 
-test("buy box v2: a plain 'Step 1 of 3' line replaces the three tabs (owner-set 2026-10-02)", () => {
+test("buy box v2: a blue progress bar replaces the three tabs, no step words on screen (owner-set 2026-10-02)", () => {
   const widget = html.slice(html.indexOf('<div class="cfw" id="fhw">'), html.indexOf('<form class="cfw-step s1 on"'));
-  assert.match(widget, /<div class="cfw-progress" data-progress>Step 1 of 3<\/div>/);
+  assert.match(widget, /<div class="cfw-progress" data-progress role="progressbar" aria-label="Checkout progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" aria-valuetext="Step 1 of 3"><i><\/i><\/div>/);
+  /* No visible "Step n of 3" words: the bar is the whole indicator. */
+  assert.doesNotMatch(widget, />Step 1 of 3</);
+  assert.match(html, /\.cfw-progress i\{display:block;height:100%;width:33\.333%;background:#188bf6;/);
   /* The tabs are gone: no step buttons, no tab note, no tab code. */
   assert.doesNotMatch(html, /data-tab="[123]"/);
   assert.doesNotMatch(html, /1 &middot; Info|2 &middot; Card|3 &middot; Soft pull/);
   assert.doesNotMatch(html, /data-tabnote|cfw-tabnote|cfw-steps/);
   for (const dead of ["paintTabs", "lockNote", "tabNote", "tabBar"]) assert.ok(!widgetScript.includes(dead), dead);
-  /* go() writes the line for every step shown, and keeps its tracking. */
+  /* go() moves the bar for every step shown, and keeps its tracking. */
   const go = widgetScript.slice(widgetScript.indexOf("function go(n){"), widgetScript.indexOf("function showPane("));
-  assert.match(go, /progress\.textContent='Step '\+n\+' of 3';/);
+  assert.match(go, /progress\.firstChild\.style\.width=\(n\*100\/3\)\+'%';progress\.setAttribute\('aria-valuenow',n\);progress\.setAttribute\('aria-valuetext','Step '\+n\+' of 3'\);/);
+  assert.doesNotMatch(go, /progress\.textContent/);
   assert.match(go, /if\(fhTab!==n\)\{fhTab=n;fht\('buybox_tab',\{tab:n\}\);\}/, "same event name, so before and after compare");
   /* Step 3 still never opens before the card is paid. */
   assert.match(go, /if\(n===3&&!\(order&&order\.locked\)\)return;/);

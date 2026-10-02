@@ -622,9 +622,13 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0A0A0A;padding:10px 12px 14px;text-align:left;line-height:1.5;font-size:15px}
 .cfw *{box-sizing:border-box;margin:0}
 .cfw [hidden],[data-extra][hidden]{display:none!important}
-/* Buy box v2 (owner-set 2026-10-02): a plain "Step 1 of 3" line replaces the
-   three step tabs. Nothing to tap, so nothing can look locked. */
-.cfw-progress{margin:2px 0 4px;text-align:center;font-size:13px;font-weight:600;line-height:1.4;color:#52525B}
+/* Buy box v2 (owner-set 2026-10-02): a thin blue progress bar replaces the
+   three step tabs, the same look as the /apply survey bar (track #E4E4E7, fill
+   #188bf6). No "Step 1 of 3" words on screen (owner-set 2026-10-02); screen
+   readers still hear it from aria-valuetext. Nothing to tap. */
+.cfw-progress{height:6px;margin:4px 0 6px;border-radius:999px;background:#E4E4E7;overflow:hidden}
+.cfw-progress i{display:block;height:100%;width:33.333%;background:#188bf6;border-radius:inherit;transition:width .35s ease}
+@media (prefers-reduced-motion:reduce){.cfw-progress i{transition:none}}
 .cfw-refund{margin-top:14px;text-align:center;font-size:13.5px;line-height:1.5;color:#52525B}
 .cfw-step{display:none}.cfw-step.on{display:block}
 .cfw-addline{font-size:12.5px;color:#52525B;line-height:1.5;margin:6px 0 2px}
@@ -1087,7 +1091,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     }catch(e){}})();
     </script>
     <div class="cfw-formerr" data-formerr role="alert" hidden></div>
-    <div class="cfw-progress" data-progress>Step 1 of 3</div>
+    <div class="cfw-progress" data-progress role="progressbar" aria-label="Checkout progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" aria-valuetext="Step 1 of 3"><i></i></div>
 
     <form class="cfw-step s1 on" novalidate autocomplete="on">
       <div class="row2">
@@ -1741,7 +1745,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
        the box down the screen. */
     var r=root.getBoundingClientRect();if(r.top<0)root.scrollIntoView({block:'start'});
     s1.classList.toggle('on',n===1);s2.classList.toggle('on',n===2);s3.classList.toggle('on',n===3);
-    progress.textContent='Step '+n+' of 3';
+    progress.firstChild.style.width=(n*100/3)+'%';progress.setAttribute('aria-valuenow',n);progress.setAttribute('aria-valuetext','Step '+n+' of 3');
   }
   function showPane(name){
     var form=name==='form';

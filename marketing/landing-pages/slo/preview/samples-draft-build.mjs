@@ -60,6 +60,14 @@ const marked = `<div class="prose">${prose.replace("</p>", ' <del class="mk-del"
   .replace('<span class="tl">Get approved for the most funding</span>',
     '<span class="tl"><span class="mk-inline mk-green">Get approved for the most funding</span> <del class="mk-del">Everything above &middot; one payment, no contract</del></span>');
 
+/* Checkout step 1, as it will ship: the blue bar instead of "Step 1 of 3". */
+const cfwStart = page.indexOf('<div class="cfw" id="fhw">');
+const s1End = page.indexOf("</form>", page.indexOf('<form class="cfw-step s1 on"')) + "</form>".length;
+if (cfwStart < 0 || s1End < 7) throw new Error("buy box not found");
+const step1 = page.slice(cfwStart, s1End)
+  .replace('<div class="cfw-progress"', '<div class="mk-inline mk-green" style="display:block;padding:4px 0"><del class="mk-del" style="display:block;text-align:center;margin:0 0 6px;font-size:13px">Step 1 of 3</del><div class="cfw-progress"')
+  .replace('<i></i></div>', '<i></i></div></div>') + "</div>";
+
 const out = `<title>Roadmap Sample Previews</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -89,7 +97,7 @@ body{background:var(--rv-bg);color:var(--rv-ink);font-family:'Inter',system-ui,-
 .mk-box.mk-amber{outline:3px dashed var(--rv-amber);outline-offset:3px}
 .mk-inline.mk-green{outline:2px solid var(--rv-green);outline-offset:2px;border-radius:3px}
 .mk-del{color:var(--rv-red);text-decoration:line-through;margin-left:6px}
-.sumwrap .fh-root .sum{margin-top:12px}
+.sumwrap .fh-root .sum{margin-top:12px}\n.cfwrap{background:#F2F2F2;border:1px solid var(--rv-line);border-radius:10px}\n.cfwrap .cfw-step.s1{display:block}
 body.clean .mk-note,body.clean .mk-del,body.clean .legend{display:none}
 body.clean .mk-box,body.clean .mk-inline{outline:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -108,6 +116,11 @@ body.clean .mk-box,body.clean .mk-inline{outline:0}
     <header class="row-h"><span class="num">0</span><h2>Order summary</h2></header>
     <p class="mk-note mk-green">"One payment, no contract" is gone from both lines. The line beside $297 is new.</p>
     <div class="fh-root">${marked}</div>
+  </section>
+  <section class="row" id="s-stepbar">
+    <header class="row-h"><span class="num">7</span><h2>Checkout step bar</h2></header>
+    <p class="mk-note mk-green">"Step 1 of 3" words are gone. A thin blue bar shows progress instead, the same look as the /apply survey bar. It fills a third per step.</p>
+    <div class="cfwrap">${step1}</div>
   </section>
 ${SAMPLES.map(card).join("\n")}
 </div>

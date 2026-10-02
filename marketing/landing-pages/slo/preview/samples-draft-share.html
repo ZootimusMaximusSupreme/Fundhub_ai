@@ -596,9 +596,13 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0A0A0A;padding:10px 12px 14px;text-align:left;line-height:1.5;font-size:15px}
 .cfw *{box-sizing:border-box;margin:0}
 .cfw [hidden],[data-extra][hidden]{display:none!important}
-/* Buy box v2 (owner-set 2026-10-02): a plain "Step 1 of 3" line replaces the
-   three step tabs. Nothing to tap, so nothing can look locked. */
-.cfw-progress{margin:2px 0 4px;text-align:center;font-size:13px;font-weight:600;line-height:1.4;color:#52525B}
+/* Buy box v2 (owner-set 2026-10-02): a thin blue progress bar replaces the
+   three step tabs, the same look as the /apply survey bar (track #E4E4E7, fill
+   #188bf6). No "Step 1 of 3" words on screen (owner-set 2026-10-02); screen
+   readers still hear it from aria-valuetext. Nothing to tap. */
+.cfw-progress{height:6px;margin:4px 0 6px;border-radius:999px;background:#E4E4E7;overflow:hidden}
+.cfw-progress i{display:block;height:100%;width:33.333%;background:#188bf6;border-radius:inherit;transition:width .35s ease}
+@media (prefers-reduced-motion:reduce){.cfw-progress i{transition:none}}
 .cfw-refund{margin-top:14px;text-align:center;font-size:13.5px;line-height:1.5;color:#52525B}
 .cfw-step{display:none}.cfw-step.on{display:block}
 .cfw-addline{font-size:12.5px;color:#52525B;line-height:1.5;margin:6px 0 2px}
@@ -1002,6 +1006,8 @@ body{background:var(--rv-bg);color:var(--rv-ink);font-family:'Inter',system-ui,-
 .mk-inline.mk-green{outline:2px solid var(--rv-green);outline-offset:2px;border-radius:3px}
 .mk-del{color:var(--rv-red);text-decoration:line-through;margin-left:6px}
 .sumwrap .fh-root .sum{margin-top:12px}
+.cfwrap{background:#F2F2F2;border:1px solid var(--rv-line);border-radius:10px}
+.cfwrap .cfw-step.s1{display:block}
 body.clean .mk-note,body.clean .mk-del,body.clean .legend{display:none}
 body.clean .mk-box,body.clean .mk-inline{outline:0}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -1031,6 +1037,37 @@ body.clean .mk-box,body.clean .mk-inline{outline:0}
         </ul>
         <div class="tot"><span class="tl"><span class="mk-inline mk-green">Get approved for the most funding</span> <del class="mk-del">Everything above &middot; one payment, no contract</del></span><span class="tp"><b>$297</b></span></div>
       </div></div>
+  </section>
+  <section class="row" id="s-stepbar">
+    <header class="row-h"><span class="num">7</span><h2>Checkout step bar</h2></header>
+    <p class="mk-note mk-green">"Step 1 of 3" words are gone. A thin blue bar shows progress instead, the same look as the /apply survey bar. It fills a third per step.</p>
+    <div class="cfwrap"><div class="cfw" id="fhw">
+    <script>
+    /* FIRST PAINT on the paid return. The card page sends the payer back to
+       ?ref=&client_id=#fhw, and the big widget script at the end of this file
+       does not run until the whole page is parsed. Without this, the checkout
+       form is what they see for that gap, and it reads as a lost payment.
+       Marks documentElement so the CSS hides the forms before anything draws. */
+    (function(){try{
+      var q=new URLSearchParams(location.search),r=q.get('ref'),c=q.get('client_id');
+      if(r&&c&&/^slo_[A-Za-z0-9_-]{6,100}$/.test(r)&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c))
+        document.documentElement.className+=' fh-paid';
+    }catch(e){}})();
+    </script>
+    <div class="cfw-formerr" data-formerr role="alert" hidden></div>
+    <div class="mk-inline mk-green" style="display:block;padding:4px 0"><del class="mk-del" style="display:block;text-align:center;margin:0 0 6px;font-size:13px">Step 1 of 3</del><div class="cfw-progress" data-progress role="progressbar" aria-label="Checkout progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" aria-valuetext="Step 1 of 3"><i></i></div></div>
+
+    <form class="cfw-step s1 on" novalidate autocomplete="on">
+      <div class="row2">
+        <label>First name<input type="text" name="c_first" data-f="c_first" autocomplete="given-name" maxlength="80"></label>
+        <label>Last name<input type="text" name="c_last" data-f="c_last" autocomplete="family-name" maxlength="80"></label>
+      </div>
+      <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
+
+      <p class="cfw-refund">If you're not happy with what you get, email us within 7 days and we'll refund you.</p>
+      <button type="submit" class="cfw-btn">Get My Funding Roadmap</button>
+      <div class="cfw-note">Your roadmap shows up in your portal today.</div>
+    </form></div></div>
   </section>
 
   <section class="row" id="s-snapshot">

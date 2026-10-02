@@ -159,3 +159,8 @@ Reused from the 2026-09-27 stash (187c17f0): company-audit.mjs (name and NAICS c
 - `src/underwrite/funding-letter-pdf.pg.test.mjs` was updated for the map but never run here: this Mac has no Postgres (no psql, no brew, no docker) and the agent cannot read `.env`. Run it against a scratch database before trusting it.
 - `docs/journeys/` generated pages (client-actual and 8 more) were already stale on HEAD from other route changes. Not regenerated here.
 - The funding delivery email (`src/messaging/templates/u02-funding-delivery.html`) lists five items and does not name the map.
+
+## Step bar (not live)
+
+- Owner ask 2026-10-02: drop the "Step 1 of 3" words; blue progress bar like the /apply survey (track #E4E4E7, fill #188bf6), a third per step; aria-valuetext keeps "Step n of 3" for screen readers. Test updated in src/http/slo-sales-widget-html.test.mjs. Draft section 7 on the shared link.
+- Leftover card (not fixed, not this ask): `item 8: the lander never offers done-for-you` in src/http/slo-sales-widget-html.test.mjs fails on HEAD too — it expects old FAQ wording ("No. This is do-it-yourself...") that a copy round changed.
