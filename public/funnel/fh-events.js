@@ -37,6 +37,26 @@
    Click labels also go to Clarity and gtag as custom events, first press of each
    label per page load, as before.
 
+   Meta (docs/tracking/meta-events.md, "Phase 4 contract"). Every post also
+   carries url (origin + path, never the query), fbc and fbp (when there are
+   any), and meta_event_id when the event stands for a Meta event. The same
+   id goes to fbq as eventID, so Meta counts the browser copy and our
+   server's copy once:
+     page_view            meta_event_id = window.__fhPv (set by the head pixel
+                          snippet, which fires PageView itself; this file never
+                          does). No __fhPv: "pv.<sid>.<seq>".
+                          /roadmap /watch /apply /home also fire ViewContent,
+                          eventID "<that id>.vc".
+     everything else      "<sid>.<seq>" (the seq of the same post), except
+     payment_result       success with an order_ref: Purchase, "purchase.<ref>",
+                          once per order. No order_ref: no browser Purchase (the
+                          payment webhook sends it with the same id).
+   fbq is called only when the pixel is on the page (its stub queues the call
+   until it loads), and never from an automated browser (navigator.webdriver),
+   the rule the old InitiateCheckout on the Pay press followed. custom_data is
+   built only from props this file already kept, by name: never a field value,
+   survey answer, email or phone.
+
    It reads no form field value and sends no typed text. A label is the visible
    words of the button or link, lowercased. Nothing here can throw into the page.
    Inside an iframe it stays silent: the parent page counts the step. */
@@ -73,6 +93,15 @@
   var MAX = 64;
   var RELAY_ORIGIN = "https://apply.fundhub.ai";
   var RELAYED = { calendar_view: 1, time_selected: 1, booking_confirmed: 1 };
+  /* Meta: the map is docs/tracking/meta-events.md, "Map (database event → Meta)". */
+  var VIEW_CONTENT = { "/roadmap": 1, "/watch": 1, "/apply": 1, "/home": 1 };
+  var BUY_BOX = { "fh-cf-form": 1, fhw: 1 };
+  var LAST_QUESTION = { "/apply": "cf_svy_available_capital", "/home": "contact" };
+  var PRICE = { value: 297, currency: "USD" };
+  var REF = /^[A-Za-z0-9_-]{1,64}$/;
+  var PV_ID = /^[A-Za-z0-9_.-]{1,120}$/;
+  var CLICK_ID = /^[A-Za-z0-9_-]{1,500}$/;
+  var FB_COOKIE = /^fb\.[0-9]\.[0-9]{10,16}\.[A-Za-z0-9_.-]{1,500}$/;
   var has = Object.prototype.hasOwnProperty;
 
   function clip(s) { return String(s == null ? "" : s).slice(0, MAX); }
@@ -147,6 +176,8 @@
     for (var k in p) {
       if (!has.call(p, k) || !PROP.test(k) || SECRET.test(k)) continue;
       var v = p[k];
+      // The order's ref (slo_<hex>) names the Purchase; slug-safe or not sent.
+      if (k === "order_ref" && !(typeof v === "string" && REF.test(v))) continue;
       if (typeof v === "number") { if (isFinite(v)) out[k] = v; else continue; }
       else if (typeof v === "boolean") out[k] = v;
       else if (typeof v === "string") { if (v === "") continue; out[k] = clip(v); }
@@ -170,14 +201,144 @@
     })["catch"](function () {});
   }
 
+  /* ── Meta ids: fbclid, fbc, fbp, the page url ─────────────────────────── */
+
+  function urlParam(name) {
+    try {
+      var m = new RegExp("[?&]" + name + "=([^&#]*)").exec(String(location.search || ""));
+      return m ? decodeURIComponent(m[1].replace(/\+/g, " ")).replace(/^\s+|\s+$/g, "") : "";
+    } catch (e) { return ""; }
+  }
+
+  /* One cookie by name, only when it has Meta's fb.<n>.<ms>.<id> shape. */
+  function cookie(name) {
+    var all = "";
+    try { all = String(document.cookie || ""); } catch (e) { return ""; }
+    var parts = all.split(";");
+    for (var i = 0; i < parts.length; i++) {
+      var kv = parts[i].replace(/^\s+/, "");
+      if (kv.indexOf(name + "=") !== 0) continue;
+      var v = kv.slice(name.length + 1);
+      try { v = decodeURIComponent(v); } catch (e2) {}
+      return FB_COOKIE.test(v) ? v : "";
+    }
+    return "";
+  }
+
+  /* The fbc built from the first fbclid, kept in fh_attribution next to the
+     UTMs — the same keys and rule as fh-attribution.js, so whichever script
+     sees the click first saves it ("fb.1.<ms first seen>.<fbclid>"). */
+  var builtFbc = null;
+  function storedFbc() {
+    if (builtFbc !== null) return builtFbc;
+    builtFbc = "";
+    var saved = attribution();
+    if (CLICK_ID.test(saved.fbclid || "") && FB_COOKIE.test(saved.fbc || "")) return (builtFbc = saved.fbc);
+    var id = urlParam("fbclid");
+    if (!CLICK_ID.test(id) || saved.fbclid) return builtFbc;
+    builtFbc = "fb.1." + now() + "." + id;
+    saved.fbclid = id;
+    saved.fbc = builtFbc;
+    try { sessionStorage.setItem("fh_attribution", JSON.stringify(saved)); } catch (e) {}
+    return builtFbc;
+  }
+
+  /* The page without its query string or anchor. */
+  function pageUrl() {
+    try {
+      var o = location.origin || ((location.protocol || "https:") + "//" + (location.host || location.hostname || ""));
+      return String(o + (location.pathname || "/")).slice(0, 300);
+    } catch (e) { return ""; }
+  }
+
+  /* ── Meta events ──────────────────────────────────────────────────────── */
+
+  /* true the first time key is asked for (per page load; per session too
+     when perSession, so a reload does not count it again). */
+  var metaDone = {};
+  function first(key, perSession) {
+    if (metaDone[key]) return false;
+    metaDone[key] = 1;
+    if (!perSession) return true;
+    try { if (sessionStorage.getItem(key)) return false; sessionStorage.setItem(key, "1"); } catch (e) {}
+    return true;
+  }
+
+  /* custom_data from kept props only, by name; empty values left out. */
+  function data(pairs) {
+    var out = {};
+    for (var k in pairs) if (has.call(pairs, k) && pairs[k] != null && pairs[k] !== "") out[k] = pairs[k];
+    return out;
+  }
+
+  /* The Meta events one of our events stands for, as [method, name,
+     custom_data, eventID]. id is "<sid>.<seq>" of this post. */
+  function metaFor(event, p, page, id) {
+    var out = [];
+    function add(name, cd, eid, custom) { out.push([custom ? "trackCustom" : "track", name, cd, eid || id]); }
+    if (event === "continue") {
+      if (page === "/roadmap" && (p.step == null || p.step === 1)) add("Lead", { content_name: "roadmap_buybox" });
+    } else if (event === "survey_answer") {
+      var last = p.last === true || (has.call(LAST_QUESTION, page) && p.question_id === LAST_QUESTION[page]);
+      if (last) add("Lead", data({ content_name: p.survey }));
+      add("SurveyStep", data({ survey: p.survey, step: p.step_num }), null, true);
+    } else if (event === "buybox_tab") {
+      if (p.tab === 2 && first("fh_ic_sent", true)) add("InitiateCheckout", data(PRICE));
+    } else if (event === "payment_result") {
+      if (p.result === "success" && REF.test(p.order_ref || "") && first("fh_buy_" + p.order_ref, true)) {
+        add("Purchase", data(PRICE), "purchase." + p.order_ref);
+      }
+    } else if (event === "booking_confirmed") {
+      add("Schedule", data({ content_name: p.calendar }));
+    } else if (event === "survey_route") {
+      add("SurveyRouted", data({ offer: p.offer }), null, true);
+    } else if (event === "video") {
+      if (p.action === "progress" && (p.pct === 25 || p.pct === 50 || p.pct === 75 || p.pct === 100)) {
+        add("VideoProgress", data({ video: p.video, pct: p.pct }), null, true);
+      }
+    } else if (event === "section_view") {
+      if (has.call(BUY_BOX, p.section) && first("reached_buy_box", false)) add("ReachedBuyBox", {}, null, true);
+    } else if (event === "softpull_submit") {
+      add("SoftPullSubmitted", data({ businesses: p.businesses }), null, true);
+    }
+    return out;
+  }
+
+  function fire(list) {
+    if (!list.length || navigator.webdriver === true) return;
+    var fbq = window.fbq;
+    if (typeof fbq !== "function") return;
+    for (var i = 0; i < list.length; i++) {
+      try { fbq(list[i][0], list[i][1], list[i][2], { eventID: list[i][3] }); } catch (e) {}
+    }
+  }
+
   function send(event, props) {
     try {
       var page = pagePath();
       if (!has.call(PAGES, page)) return;
-      var body = { kind: "track", event: event, seq: nextSeq(), session_id: sid(), page: page, props: cleanProps(props) };
+      var seq = nextSeq(), session = sid(), kept = cleanProps(props);
+      var body = { kind: "track", event: event, seq: seq, session_id: session, page: page, props: kept };
       var saved = attribution();
       for (var i = 0; i < KEYS.length; i++) if (saved[KEYS[i]]) body[KEYS[i]] = saved[KEYS[i]];
       body.webdriver = navigator.webdriver === true;
+      body.url = pageUrl();
+      var fbc = cookie("_fbc") || storedFbc(), fbp = cookie("_fbp");
+      if (fbc) body.fbc = fbc;
+      if (fbp) body.fbp = fbp;
+
+      var list;
+      if (event === "page_view") {
+        // PageView itself is the head snippet's; only its id rides along here.
+        var pv = "";
+        try { pv = window.__fhPv; } catch (e) {}
+        body.meta_event_id = typeof pv === "string" && PV_ID.test(pv) ? pv : "pv." + session + "." + seq;
+        list = has.call(VIEW_CONTENT, page) ? [["track", "ViewContent", { content_name: page }, body.meta_event_id + ".vc"]] : [];
+      } else {
+        list = metaFor(event, kept, page, session + "." + seq);
+        if (list.length) body.meta_event_id = list[0][3];
+      }
+      try { fire(list); } catch (e) {}
       beacon(JSON.stringify(body));
     } catch (e) {}
   }

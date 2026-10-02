@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { ATTRIBUTION_KEYS, pickAttribution } from "./attribution-keys.mjs";
+import { ATTRIBUTION_KEYS, CLICK_ID_KEYS, pickAttribution } from "./attribution-keys.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
@@ -57,6 +57,11 @@ test("06 paste-in and /funnel/fh-attribution.js are the same script", () => {
   assert.ok(fromPublic.includes('qs.get("ref")'), "ref aliases to a1");
   assert.ok(fromPublic.includes("if (stored.a1 && !parsed.a1) parsed.a1 = stored.a1"),
     "slo-checkout POST carries a1");
+  /* Meta Phase 4: fbclid is kept (first touch), never stamped on a form. */
+  assert.ok(fromPublic.includes('qs.get("fbclid")'), "fbclid is read off the landing URL");
+  assert.ok(fromPublic.includes("KEYS.concat(EXTRA).concat(AFF).forEach(function (k) { ensure(forms[i], k, data[k] || \"\"); })"),
+    "hidden inputs are the UTMs, landing_path, referrer_domain, a1 and a2 only");
+  assert.ok(!/var (KEYS|EXTRA|AFF) = \[[^\]]*fbclid/.test(fromPublic), "fbclid is in no stamped list");
 });
 
 test("07 paste-in and /funnel/vsl-watch-beacon.js are the same script", () => {
@@ -121,4 +126,17 @@ test("pickAttribution keeps first-touch keys and drops empties", () => {
     extra: "nope"
   });
   assert.deepEqual(got, { utm_source: "fb", utm_content: "42-ringlights" });
+});
+
+test("pickAttribution keeps Meta's fbclid when it looks like one (Phase 4), and nothing else new", () => {
+  assert.deepEqual(CLICK_ID_KEYS, ["fbclid"]);
+  assert.ok(!ATTRIBUTION_KEYS.includes("fbclid"), "fbclid is not a stamped / typed-column key");
+  assert.deepEqual(pickAttribution({ fbclid: " IwAR0x_9-AbC " }), { fbclid: "IwAR0x_9-AbC" });
+  assert.deepEqual(pickAttribution({ utm_source: "fb", fbclid: "IwAR0x_9-AbC", gclid: "DROPME", fbc: "fb.1.1.x" }),
+    { utm_source: "fb", fbclid: "IwAR0x_9-AbC" });
+  const long = "a".repeat(500);
+  assert.equal(pickAttribution({ fbclid: long }).fbclid, long, "500 is the most kept");
+  for (const bad of ["a".repeat(501), "pat@gmail.com", "has space", "x;y", "", 12345, null, { a: 1 }]) {
+    assert.equal(pickAttribution({ fbclid: bad }), null, `dropped whole, never cut: ${String(bad).slice(0, 20)}`);
+  }
 });
