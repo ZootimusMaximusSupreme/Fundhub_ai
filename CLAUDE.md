@@ -179,6 +179,10 @@ Chris never logs into ClickFunnels admin. Agents push funnel HTML via API using 
 
 Approval cards, client wins, and testimonials are built from the source screenshot only — real crop, real amount, real quote if any. Never invent faces, names, or dollars. Same law: `.cursor/rules/proof-cards-from-source.mdc` and `.claude/rules/proof-cards-from-source.md`.
 
+
+### Sample clients make sense (owner-set 2026-10-02)
+
+Every sample client is one realistic person: one credit file, run through UnderwriteIQ, and every number, negative item, letter, and roadmap step in the set follows from that file. No stitching two files together; if no single file tells the story, say so and stop. Same law: `.cursor/rules/sample-clients-consistent.mdc` and `.claude/rules/sample-clients-consistent.md`.
 ### 4K unless it is an ad (owner-set 2026-09-22)
 
 Every video that is not a paid ad — VSLs, welcome and portal videos, testimonials, walkthroughs — is shot and exported in 4K. Ads may stay 1080p. Name any tool that caps at 1080p before filming, never after. Same law: `.cursor/rules/video-4k-unless-ad.mdc` and `.claude/rules/video-4k-unless-ad.md`.
