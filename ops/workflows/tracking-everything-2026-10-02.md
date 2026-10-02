@@ -22,7 +22,7 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 | G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | **waiting on Chris** |
 | Q1 | /roadmap and /roadmap/ → one URL | agent | claimed |
 | Q2+Q3+Q6+Q7p | /roadmap page: tap speed under 200ms (INP 1.1s), layout shift (CLS 0.15), dead clicks (8.89%), "Fundhub LLC" in page consent + footers — marked draft | agent | claimed |
-| Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | claimed |
+| Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | done — no errors from our code |
 | Q5 | Buy box in Facebook/Instagram in-app browsers, iPhone + Android (test; fixes go to the page owner) | agent | claimed |
 | Q7c | "Fundhub LLC" in stored consent record (new consent version) + other /roadmap funnel pages | agent | done — committed `d9808d03` |
 
@@ -164,3 +164,11 @@ Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name
 - pull.html, /roadmap-book and /roadmap-thank-you footers now "Fundhub LLC". Removed the small "Credit Solutions" tag under the logo on pull.html.
 - After the page agent lands: sync `src/http/slo-sales-widget-html.test.mjs:185,190` and `src/consent/disclosures.test.mjs:99,106-118` to the new sales-page consent text.
 - At ship: `docs/journeys/slo-offer-actual.md:57` says soft-pull-v1 → v3; CHANGELOG line.
+
+### Q4 — Clarity JS errors (report; no code change)
+
+- One Clarity export pull (1 of 10 today): 3 days, URL + Browser + OS. Export has no INP/CLS fields. Script errors: only /roadmap, 3 of 96 sessions (iPhone Safari 2, Instagram Android 1). /roadmap dead clicks 8 clicks in 5 sessions (5.2%), rage clicks 0. Raw data kept in the session scratchpad (URLs carry fbclid).
+- Clarity IS recording real visitors (96 /roadmap sessions in 3 days). The "not being collected" reply only applies to this Mac — most likely Clarity IP blocking covers this office. The earlier audit's "Clarity broken" was wrong for real visitors.
+- 34 live loads (8 pages × iPhone, Android, FB Android, IG Android, + FB/IG iOS on /roadmap): our scripts threw nothing. Errors seen are Meta pixel in-app calls (`properties://browser/*`), ClickFunnels' "unsafe header", and /order's ClickFunnels checkout failing a Cloudflare bot check in the test browser.
+- "Error invoking postMessage: Java object is gone" is Chromium's Android Java-bridge message (`gin_java_bridge_errors.cc`); it comes from Meta's in-app bridge code that the pixel triggers, not from our two framed postMessage calls (both framed-only, try/catch, never on unload). Nothing visible to the buyer.
+- Leftover (Phase 4): Meta's pixel config lists a Conversions API Gateway ("openbridge" on AWS us-east-1, backup on Google Cloud) — server events may already be flowing through Meta's gateway. Check before building a second sender.
