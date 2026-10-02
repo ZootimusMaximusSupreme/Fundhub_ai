@@ -122,7 +122,7 @@ input:focus{border-color:rgb(var(--blue))}
 .btn:disabled{opacity:.45;cursor:default}
 .trust{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 14px;margin-top:16px;font-family:var(--mono);font-size:11px;color:var(--gray)}
 .done{text-align:center;padding:12px 0 6px}
-.done .ok{width:48px;height:48px;border-radius:50%;background:rgba(21,128,61,.1);color:var(--good);display:grid;place-items:center;margin:0 auto;font-size:22px;font-weight:700}
+.done > .ok{width:48px;height:48px;border-radius:50%;background:rgba(21,128,61,.1);color:var(--good);display:grid;place-items:center;margin:0 auto;font-size:22px;font-weight:700}
 pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font:12px/1.5 var(--mono);text-align:left;overflow-x:auto;max-height:280px}
 @media(prefers-reduced-motion:reduce){.q,.ok.pop,.wins .win{animation:none}.bar i{transition:none}}
 </style>
@@ -167,7 +167,7 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
       opts: ['Less than $50k', '$50k - $100k', '$100k - $200k', '$200k - $400k', '$400k+'] },
     { key: 'cf_svy_planned_use', type: 'single', title: 'Planned Use', hint: 'What will you use the funding for?',
       opts: ['Growth (marketing, inventory, hiring)', 'Equipment or buildout', 'Debt consolidation', 'Payroll or rent', 'Covering a shortfall right now', 'Not sure yet'] },
-    { key: 'cf_svy_money_change_now', type: 'multi', title: 'What Would This Money Change Right Now?', hint: 'Pick all that apply.',
+    { key: 'cf_svy_money_change_now', type: 'multi', title: 'What Would This Money Change Right Now?', hint: 'Pick the one that matters most.',
       opts: ['Peace of mind (stop stressing about cash)', 'Grow faster (more customers / more reach)', 'Pay off pressure (wipe out high-interest debt)', 'Stability (cover bills / buffer slow weeks)', 'Fresh start (new business / startup launch)'] },
     { key: 'cf_svy_self_reported_fico', type: 'single', title: 'Your Current Score', hint: 'Your best guess is fine. Every score has a path, and this just tells your advisor where to start.',
       note: { '500-579': 'Plenty of clients start here. Your advisor will show you exactly what to fix first.', '580-649': 'A lot of clients start in this range. We\'ll show you what it takes to get to funding.', 'Not sure': 'No problem. The soft pull on your call shows exactly where you stand.' },
@@ -223,7 +223,7 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
         h += '<div class="other"' + (isOther ? '' : ' hidden') + ' id="otherbox"><input type="text" id="f-other" aria-label="Other planned use" placeholder="Tell us what it’s for" value="' + esc(isOther ? cur : '') + '"></div>';
       }
       h += '</div><div class="err" id="err"></div>';
-      if (multi || q.other) h += '<div class="actions"><button type="button" class="btn" id="next">Next</button></div>';
+      if (q.other) h += '<div class="actions"><button type="button" class="btn" id="next">Next</button></div>';
     }
     body.innerHTML = h + '</div>';
     wire(q);
@@ -233,11 +233,11 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     var next = document.getElementById('next');
     body.querySelectorAll('.opt').forEach(function (b) {
       b.addEventListener('click', function () {
-        if (q.type === 'multi') {
-          var arr = A[q.key] || [], o = q.opts[+b.dataset.i], k = arr.indexOf(o);
-          k > -1 ? arr.splice(k, 1) : arr.push(o);
-          A[q.key] = arr;
-          b.setAttribute('aria-checked', k < 0);
+        if (q.type === 'multi') {   /* one tap moves on; the answer is still sent as a list */
+          body.querySelectorAll('.opt').forEach(function (x) { x.setAttribute('aria-checked', 'false'); });
+          b.setAttribute('aria-checked', 'true');
+          A[q.key] = [q.opts[+b.dataset.i]];
+          setTimeout(advance, 220);
           return;
         }
         body.querySelectorAll('.opt').forEach(function (x) { x.setAttribute('aria-checked', 'false'); });
@@ -447,7 +447,10 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     document.getElementById('book').addEventListener('click', function () {
       document.getElementById('cal').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
-    setTimeout(function () { document.getElementById('cal').scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 1600);
+    /* Slide down to the calendar on its own, then check it got there (a dropped smooth scroll jumps instead). */
+    function toCal(smooth) { var c = document.getElementById('cal'); window.scrollTo({ top: c.getBoundingClientRect().top + window.pageYOffset - 16, behavior: smooth ? 'smooth' : 'auto' }); }
+    setTimeout(function () { toCal(true); }, 900);
+    setTimeout(function () { if (Math.abs(document.getElementById('cal').getBoundingClientRect().top - 16) > 40) toCal(false); }, 2400);
     var leadEmail = (A.contact && A.contact.email) ? String(A.contact.email).toLowerCase() : 'apply';
     fhTrack('Lead', 'lead:' + leadEmail);
   }

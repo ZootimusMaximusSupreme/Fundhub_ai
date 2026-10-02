@@ -10,9 +10,9 @@ once Chris says go. Nothing has moved yet. If it moves mid-work, re-read paths f
 
 | # | Work | Page | Owner | Status |
 |---|---|---|---|---|
-| A1 | Question 4 ("What Would This Money Change Right Now?"): no Next button. One tap moves on. | https://apply.fundhub.ai/apply | session 1 (survey chat) | draft shared — waiting on "push it" |
-| A2 | The jump to "You're qualified" looks broken: the "Reviewing your answers" checklist crushes into circles | https://apply.fundhub.ai/apply | session 1 | draft shared — waiting on "push it" |
-| A3 | "You're qualified" screen slides down to the calendar by itself | https://apply.fundhub.ai/apply | session 1 | draft shared — waiting on "push it" |
+| A1 | Question 4 ("What Would This Money Change Right Now?"): no Next button. One tap moves on. | https://apply.fundhub.ai/apply | session 1 (survey chat) | done — live 2026-10-01 |
+| A2 | The jump to "You're qualified" looks broken: the "Reviewing your answers" checklist crushes into circles | https://apply.fundhub.ai/apply | session 1 | done — live 2026-10-01 |
+| A3 | "You're qualified" screen slides down to the calendar by itself | https://apply.fundhub.ai/apply | session 1 | done — live 2026-10-01 |
 | B1 | Line under the headline → "Find out exactly what you and your businesses qualify for in one call" | https://apply.fundhub.ai/watch | open — paste prompt B below, or session 1 takes it after A | pending |
 | C1 | Thank-you page: mobile friendly, stop it looking bad | https://apply.fundhub.ai/thank-you | open — paste prompt B below, or session 1 takes it after A | pending |
 
@@ -51,6 +51,12 @@ A and B/C touch different pages and different files. No dependencies — all par
   calendar top lands 16 px from the top about 1.4 s after "You're qualified". Before/after: `apply-funnel-fixes-2026-10-01-evidence/checklist-before-after.png`.
 - On push: copy `apply-survey-fixed.html` over `apply-survey.html`; update `clickfunnels-fragments/tests/apply-survey.spec.mjs`
   (walkTrunk clicks Next after the checkbox — remove that click); push with `scripts/cf-push-custom-html.mjs` (key `apply-survey`); prove live with a cache-busted URL.
+
+- PUSHED 2026-10-01 on Chris's "push": `apply-survey.html` = `preview/apply-survey-fixed.html`; spec updated (asserts 0 Next buttons on question 4);
+  `npx playwright test tests/apply-survey.spec.mjs` 6/6 pass; `cf-push-custom-html.mjs push --only=apply-survey` ok (page 25515671, ingest + attribution kept).
+  Live proof (cache-busted, real Chrome, lead send and Meta blocked so no lead was created), desktop 1280 and phone 390:
+  0 Next buttons on question 4, one tap moved on, checklist rows 36-37 px tall (were crushed), calendar landed 16 px from top
+  about 1.1 s after "You're qualified", 0 page errors.
 
 ## Prompt B — paste into a new chat (owns B1 + C1)
 

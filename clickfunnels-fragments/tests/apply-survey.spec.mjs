@@ -51,8 +51,8 @@ async function walkTrunk(page) {
   await expectStep(page, "Planned Use", "Question 3 of 9", "20%");
   await pickSingle(page, "Growth (marketing, inventory, hiring)", "What Would This Money Change Right Now?");
   await expectStep(page, "What Would This Money Change Right Now?", "Question 4 of 9", "30%");
-  await page.getByRole("checkbox", { name: /Peace of mind/ }).click();
-  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.getByRole("button", { name: "Next" })).toHaveCount(0);
+  await page.getByRole("checkbox", { name: /Peace of mind/ }).click();   // one tap moves on
   await expectStep(page, "Your Current Score", "Question 5 of 9", "40%");
   await pickSingle(page, "650-699", "Do You Have a Business?");
   await expectStep(page, "Do You Have a Business?", "Question 6 of 9", "50%");
