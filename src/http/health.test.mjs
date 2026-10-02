@@ -210,7 +210,7 @@ test("wantsStrict reads the values a monitor would actually be configured with",
    M18, completed — "behind by 18" sends somebody hunting. A list does not.
    ===========================================================================
    The counts landed with the M18 fix. What was still missing is WHICH files, and
-   that is what an operator needs at the moment they are reading docs/RUNBOOK.md.
+   that is what an operator needs at the moment they are reading docs/sops/RUNBOOK.md.
    It rides the same opt-in as the status code, because the default body is
    world-readable and health-migrations.test.mjs:65 pins that it names no .sql
    file — a filename list also describes which features and vendors exist. */
