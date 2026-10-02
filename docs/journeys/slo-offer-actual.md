@@ -2,7 +2,7 @@
 
 Generated from the code in this worktree. Not from the spec.
 
-Public folder is `public/roadmap/`. Old `/slo` URLs 301 to `/roadmap`. APIs stay `/api/public/slo-*`. The live pages do not use a new product name.
+Public folder is `public/roadmap/`. Since 2026-10-02 `fundhub.ai/roadmap`, `/roadmap/`, `/roadmap/index.html` and `/slo` 301 to the live sales page `https://apply.fundhub.ai/roadmap` (netlify.toml, query kept); `pay.html` and `pull.html` still serve. On apply.fundhub.ai the page itself rewrites `/roadmap/` to `/roadmap` before any tracking loads (`marketing/landing-pages/slo/slo-canonical-head.html`). APIs stay `/api/public/slo-*`. The live pages do not use a new product name.
 
 ## What the code does
 
@@ -54,7 +54,7 @@ flowchart TD
   types the card without leaving the page. Commas publishes no endpoint that accepts a card number, so none is
   ever posted to Fundhub. `checkoutUrl` is still answered and still written to `payment_links` — the webhook is
   matched to that row, and `public/roadmap/pay.html` is the one door that still navigates to it.
-- `api/public/slo-pull.mjs` — POST only. Matching `ref` + `client_id` required. Server stores `soft-pull-v1` consent text. Then `diagnostic.paid`.
+- `api/public/slo-pull.mjs` — POST only. Matching `ref` + `client_id` required. Server stores `soft-pull-v3` consent text (`ROADMAP_SOFT_PULL_VERSION`, "Fundhub LLC", since 2026-10-02; other consent screens still store v2). Then `diagnostic.paid`.
 - `src/slo/buyer.mjs` — client, portal account, `slo_ref` stamp.
 - `src/slo/deliver.mjs` — same UnderwriteIQ funding pack and email the closer deck uses. The four analysis docs are the gold HTML pages (`src/deliverables/`), not the short PDFs.
 - `src/workflows/slo-pack-delivery.mjs` — on `analysis.completed`, only if `slo_ref` is on the client.

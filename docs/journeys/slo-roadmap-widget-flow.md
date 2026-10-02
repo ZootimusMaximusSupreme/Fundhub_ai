@@ -19,8 +19,18 @@ which is the branch `runSloPull` already had.
 ## Saved before Pay
 
 Step 1 (first name, last name, email, phone) is posted to
-`POST /api/public/slo-interest` once the email is real, including when they
-leave the page without pressing Pay. A page open on the widget is one
+`POST /api/public/slo-interest` as soon as the email is valid (leaving the
+email box, pressing Continue, or closing the page) — the phone is no longer
+required for this save (2026-10-02). A phone or name typed later is merged
+into the same `slo.contact_started` row. A person (not an agent) is also
+upserted to ClickFunnels by email at that moment and again when the phone
+lands (`src/slo/cf-contact.mjs`); step 3 updates the same contact.
+
+Step 3 (soft pull) opens only after the card is paid (`order.locked`, set on
+`checkout:success`, demo pay, or a paid return link). An unpaid try goes back
+to step 2 with "Finish the card step first. The soft pull opens after you pay."
+The $15 extra-business option is hidden (`EXTRA_BIZ=false`) until charging for
+it is built. A page open on the widget is one
 `slo.visit` per browser session. Neither call creates a client, a card page,
 or an email.
 

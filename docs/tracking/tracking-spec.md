@@ -117,3 +117,49 @@ The shared tracker on the parent page listens for `message` events from origin `
 ## Clarity
 
 `public/js/clarity.js` (project `tscu15s674`) loads on every page in the inventory. The shared tracker also sends `click` labels to Clarity as custom events, as today.
+
+## Coverage — live 2026-10-02
+
+Every page also gets page_view, time_on_page, exit, click (id, label, position), scroll 25/50/75/100 and section_view from the shared tracker. Meta column: B = browser pixel only (no server copy yet — Phase 4 stopped, see `docs/tracking/meta-events.md`).
+
+| Page | Extra database events | Clarity | Meta today | Missing |
+|---|---|---|---|---|
+| /watch | video (VSL), carousel/FAQ if present | yes | PageView B | ViewContent, server copies |
+| /apply | survey_answer (9 screens), field_focus/complete, validation_error; calendar_view / time_selected / booking_confirmed relayed from the framed calendar | yes | PageView B, Lead B, Schedule B | server copies, SurveyStep custom |
+| /funding-book-call | calendar_view, time_selected, booking_confirmed (framed → parent; direct → itself) | yes | PageView B | Schedule when opened directly |
+| /thank-you | survey_route | yes | PageView B, AddToCalendar B, OpenInboxConfirm B | SurveyRouted custom, Purchase per offer |
+| /order | — | yes (added 2026-10-02) | PageView B | the native ClickFunnels checkout has no hooks of ours |
+| /roadmap | buybox_tab, field_focus/complete, continue, validation_error, payment_attempt, payment_result, softpull_submit, video, carousel, faq_open | yes | PageView B, InitiateCheckout B, PreviewOpened B | Lead, Purchase, ReachedBuyBox, SoftPullSubmitted, server copies |
+| /roadmap-book | calendar events relayed from the framed calendar, video | yes | PageView B | Schedule |
+| /roadmap-thank-you | — | yes | PageView B, AddToCalendar B, OpenInboxConfirm B | — |
+| fundhub.ai homepage survey (`/home`) | survey_answer (10 screens), field_focus/complete, validation_error | yes | none (no pixel on fundhub.ai) | pixel + all Meta events |
+| apply.fundhub.ai/schedule/phonecall | none — ClickFunnels gives no way to add code | ClickFunnels' own | none | cannot be tracked by us |
+
+## Phone checklist — run on your phone
+
+Open Meta Test Events first: https://business.facebook.com/events_manager2/list/pixel/2403674420141513/test_events — type `https://apply.fundhub.ai/roadmap` into "Test browser events", open the link it gives you on your phone. Our database events show up within a minute (an agent can read them back for you by session).
+
+Use an email ending `@fundhub.ai` so the system marks you as us, not a buyer.
+
+### /roadmap
+| # | Tap | You should see | Meta Test Events | Our database / ClickFunnels |
+|---|---|---|---|---|
+| 1 | Open https://apply.fundhub.ai/roadmap/ (with the slash) | The address bar drops the slash | PageView | funnel.page, then scroll / section_view as you scroll |
+| 2 | Tap "3 · Soft pull" | Nothing opens | — | funnel.click label click:3-soft-pull |
+| 3 | Type first name, last name, a valid email; tap out of the email box | Nothing visible | — | slo.contact_started with your email, no phone; ClickFunnels contact appears (agent emails are kept out of ClickFunnels — use a real non-@fundhub.ai email you own if you want to see it there) |
+| 4 | Type the phone, wait 2 seconds | — | — | the same row gets the phone; ClickFunnels contact gets the phone |
+| 5 | Tap Continue | Card boxes load | — | funnel.continue, funnel.buybox_tab tab 2 |
+| 6 | Look for "$15" anywhere | Not there | — | — |
+| 7 | **Stop. Do not tap Get My Roadmap** (it charges $297) | — | — | — |
+
+### /apply → booking
+| # | Tap | You should see | Meta Test Events | Our database / CRM |
+|---|---|---|---|---|
+| 1 | Open https://apply.fundhub.ai/watch, tap Get Started | /apply | PageView ×2 | funnel.page /watch then /apply |
+| 2 | Fill contact, answer every screen | "You're qualified. Pick a time below." | Lead | survey_answer steps 1–9 |
+| 3 | Pick a time | Contact form inside the calendar | — | time_selected |
+| 4 | Book with a **bad phone** (e.g. 123) | ClickFunnels refuses | **No** Schedule | no booking_confirmed |
+| 5 | Book with a real phone | Booking confirmed | Schedule | booking_confirmed; a real appointment in ClickFunnels + CRM booking (cancel it after) |
+
+### Facebook / Instagram in-app (no charge)
+Send `https://apply.fundhub.ai/roadmap` to yourself in an Instagram DM (or post it to Facebook as Only me), tap it, fill step 1, tap Continue. Pass: card boxes show within ~10 seconds and the card number box brings up a number keyboard. Switch to Messages for a minute and come back — note whether the page reloaded to an empty step 1 (the reload fix is coming with the page agent's batch). Do not tap Get My Roadmap.

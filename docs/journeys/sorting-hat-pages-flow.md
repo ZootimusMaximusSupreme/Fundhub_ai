@@ -53,9 +53,12 @@ flowchart TD
     I --> J["FAQ (unchanged)"]
 ```
 
-`capturedAt` counts because the live /funding-book-call page still runs the older
-booking writer, which never stamps `submittedAt`. The repo writer
-(`clickfunnels-fragments/04a-book-top.html`) stamps both.
+Since 2026-10-02 the live /funding-book-call page stamps `submittedAt` from a
+footer block (`marketing/landing-pages/04e-book-confirm.html`, marker
+`fh-book-confirm`) only when ClickFunnels fires `cf:form_submitted:ok` — the
+booking POST came back OK. A Book press ClickFunnels refuses (bad phone, 422)
+stamps nothing. The older body writer still saves on every change; the block
+re-stamps after it. `capturedAt` still counts for records made before that.
 
 The live writer saves the record every time the slot, name or email changes,
 before Book is pressed. So a record alone is not a booking: the visitor must also

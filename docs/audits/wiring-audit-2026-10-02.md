@@ -166,3 +166,33 @@ Same Test Events link, with `https://apply.fundhub.ai/watch` as the test URL.
 - SMS/CRM code still defaults to `services.leadconnectorhq.com` (`src/messaging/providers/ghl-relay.mjs:56`, `src/messaging/crm-contacts.mjs:34`) though GoHighLevel was cancelled 2026-08-15.
 - The 2026-09-26 replay of the real 2026-09-24 booking is stored as demo with no booking row, which contradicts `ops/workflows/sleep-fears-2026-09-25.md:35`.
 - `.env` has no `META_PIXEL_ID`; the pixel comes from a hardcoded fallback (`tracking-manifest.mjs:22`).
+
+---
+
+## What changed — 2026-10-02 (live)
+
+Shipped by `npm run ship` at 00:26 (commit `4ad9f02c`, 3 database changes applied, 330 applied / 0 pending) plus ClickFunnels pushes the same night. Proof is an API read-back of each page plus a headless browser walk of the public /roadmap with its events read back from the database. Full work board: `ops/workflows/tracking-everything-2026-10-02.md`.
+
+| # | Fix | Status | Proof |
+|---|---|---|---|
+| 1 | Buy box step 3 locked until `checkout:success`; "Your payment went through" removed from unpaid paths | **Live** | API read of page 25516164 holds `Finish the card step first`; live browser: tab 3 tap does nothing before payment |
+| 2 | Step-1 contact saved on a valid email (our row + ClickFunnels upsert by email), phone merged later | **Live** | fundhub.ai/funnel/fh-attribution.js serves the new script; server `api/public/slo-interest.mjs` |
+| 3 | Booking marked only when ClickFunnels accepts it → Meta Schedule on /apply, /roadmap-book → /roadmap-thank-you | **Live** (new footer block; the old body fix could not be pushed without deleting the calendar) | API read of page 25062844 footer: `fh-book-confirm`, `cf:form_submitted:ok` |
+| 4 | $15 extra-business option and its summary line hidden | **Live** | API read: `EXTRA_BIZ=false`; live browser: no "$15", no add button |
+| 5 | Address warning names "Start My Soft Pull" | **Live** | API read holds `Start My Soft Pull again` |
+| 6 | `marketing/landing-pages/slo/` in git | Done | `2019c1b5` |
+| Q1 | /roadmap and /roadmap/ → one URL | **Live** | `curl -sI https://fundhub.ai/roadmap` → 301 `https://apply.fundhub.ai/roadmap`; live browser: `/roadmap/?utm…#fhw` became `/roadmap?utm…#fhw`, canonical link present |
+| Q4 | Clarity JS errors incl. "Java object is gone" | Checked — none from our code | Meta in-app bridge (Chromium `gin_java_bridge_errors.cc`), not our postMessage |
+| Q5 | Buy box in Facebook / Instagram in-app browsers | Our side passes all 3 steps (emulated). One break found (reload after paying) — fix with the page agent, **not live yet** | `ops/workflows/tracking-everything-2026-10-02.md` Q5 |
+| Q7 | "Fundhub LLC" in the /roadmap funnel | **Live** on stored consent (soft-pull-v3), pull.html, /roadmap-book, /roadmap-thank-you. The /roadmap page's own consent box and footer are with the page agent, **not live yet** | API read of 25516165 / 25516166 |
+| P3 | Database tracking on every funnel page | **Live** | Live walk wrote `funnel.page`, `buybox_tab`, `scroll` 25/50/75/100, `section_view`, `click` (label + position), `video`, `carousel`, `exit`, each with page, funnel, step, session and UTMs |
+
+**Corrections to the 2026-10-01 audit above:**
+- Clarity is recording real visitors (96 /roadmap sessions in 3 days). Its "not being collected" reply only reaches this office's machine (most likely an IP block in Clarity settings).
+- The INP 1.4 s / CLS 0.2 scores came from fundhub.ai/affiliates/ (2 pageviews), not /roadmap (owner correction).
+- The one real booking in 14 days (2026-09-23) reached the bookings table on 2026-09-26 and was then deleted by a bulk test-data cleanup; not restored (data write — owner call).
+
+**Not done:**
+- Phase 4 (Meta Conversions API, META_PIXEL_ID in env, Lead/Purchase/Schedule everywhere): stopped — no Conversions API access token exists in `.env`, Netlify or the database. Meta's pixel config already lists a Conversions API Gateway — check it before building a second sender.
+- Database tests (`*.pg.test.mjs`) for the new SQL: not run — no scratch Postgres on this Mac.
+- Queued, not live: /roadmap tap speed / layout shift (measure first), dead clicks, Fundhub LLC on the /roadmap page itself, the in-app reload fix, /affiliates measurement, buy box version 2, guarantee restore. Each comes back with a diff before deploy.
