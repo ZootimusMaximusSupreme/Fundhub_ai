@@ -136,4 +136,6 @@ Can go live without ship (ClickFunnels-only): /funding-book-call booking block (
 
 1. /roadmap and /roadmap/ → one URL. 2. Tap speed (INP 1.1s → under 200ms), esp. buy box. 3. Layout shift (CLS 0.15) — reserve space for video, carousel, buy box. 4. Clarity JS errors incl. FB Android "Java object is gone"; fix ours. 5. Buy box in FB/IG in-app browsers iPhone + Android. 6. Dead clicks 8.89% — step tabs, order summary, testimonial cards, FAQ rows. 7. "Fundhub LLC" everywhere in /roadmap funnel.
 
+**Owner correction (2026-10-02):** the Clarity INP (1.4 s) and CLS (0.2) were from fundhub.ai/affiliates/ (2 pageviews), not /roadmap. Measure /roadmap's real tap response and layout shift on mobile first; fix only what the measurement shows. Same check on /affiliates (page agent also owns `public/affiliates/index.html`).
+
 File ownership: the page agent owns `marketing/landing-pages/slo/slo-01-sales.html` alone; Q4/Q5 hand page fixes to it through this session.
