@@ -1,8 +1,13 @@
 // src/ads/fh-events.test.mjs — step opens and button presses on /watch and /roadmap.
 //
-// public/funnel/fh-events.js is loaded on every step of both funnels and talks
-// to api/public/slo-interest.mjs (kind "page" / "click"). This test runs the
-// real script against a tiny fake page and holds it to the real door.
+// public/funnel/fh-events.js is loaded on every step of both funnels and sends
+// kind "track" events to api/public/slo-interest.mjs (docs/tracking/tracking-spec.md).
+// This file holds the page open and the press labels; every other tracked event
+// is in src/ads/fh-events-track.test.mjs. Both run the real script against the
+// tiny fake page in src/ads/fh-events-harness.mjs.
+//
+// The door tests below still hold the old kinds "page" and "click", which the
+// door keeps accepting unchanged (spec: "Old kinds ... keep working").
 //
 // WHAT THIS CANNOT TEST: a real browser, ClickFunnels, or Clarity. The live
 // check is the Playwright / view-source walk recorded on the board.
@@ -13,7 +18,6 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import path from "node:path";
-import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 import { recordInterest } from "../../api/public/slo-interest.mjs";
@@ -26,180 +30,153 @@ import {
   clarityHeadHtml,
   ga4HeadHtml,
   nextFooterCode,
-} from "../../clickfunnels-fragments/tracking-manifest.mjs";
+} from "../../marketing/landing-pages/tracking-manifest.mjs";
+import { makePage, SRC } from "./fh-events-harness.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
-const SRC = fs.readFileSync(path.join(ROOT, "public/funnel/fh-events.js"), "utf8");
 
-// ── a tiny page: just enough DOM for the script ─────────────────────────────
-
-function el({ tag = "a", text = "", cls = [], id = "", attrs = {}, parent = null, src = "" } = {}) {
-  const node = {
-    tagName: tag.toUpperCase(), id, textContent: text, value: "", parentNode: parent,
-    currentSrc: src, src,
-    classList: { contains: (c) => cls.includes(c) },
-    getAttribute: (n) => (n in attrs ? attrs[n] : null),
-    hasAttribute: (n) => n in attrs,
-    matches(sel) {
-      return sel.split(",").some((raw) => {
-        const s = raw.trim();
-        if (s.startsWith("#")) return node.id === s.slice(1);
-        if (s.startsWith(".")) return cls.includes(s.slice(1));
-        if (s === "a[href]") return node.tagName === "A" && "href" in attrs;
-        if (s === "button") return node.tagName === "BUTTON";
-        if (s === '[role="button"]') return attrs.role === "button";
-        if (s === 'input[type="submit"]') return node.tagName === "INPUT" && attrs.type === "submit";
-        if (s === 'input[type="button"]') return node.tagName === "INPUT" && attrs.type === "button";
-        if (s === "[data-pay]") return "data-pay" in attrs;
-        return false;
-      });
-    },
-  };
-  return node;
-}
-
-function runPage({ pathname, nodes = [], framed = false, clarity = true, webdriver = false }) {
-  const sent = [];
-  const listeners = {};
-  const store = {};
-  const document = {
-    readyState: "complete",
-    addEventListener: (n, fn) => { (listeners[n] ||= []).push(fn); },
-    getElementById: (id) => nodes.find((x) => x.id === id) || null,
-    querySelectorAll: () => nodes.filter((x) => x.matches('a[href],button,[role="button"],input[type="submit"],input[type="button"],[data-pay]')),
-  };
-  const win = {
-    location: { pathname },
-    navigator: { webdriver, sendBeacon: (url, blob) => { sent.push({ url, blob }); return true; } },
-    sessionStorage: {
-      getItem: (k) => (k in store ? store[k] : null),
-      setItem: (k, v) => { store[k] = String(v); },
-    },
-    Blob: class { constructor(parts) { this.text = parts.join(""); } },
-    fetch: () => ({ catch() {} }),
-    JSON, Math, Date, String, Array, Object,
-  };
-  win.self = win;
-  win.top = framed ? {} : win;
-  win.document = document;
-  const calls = [];
-  if (clarity) win.clarity = (...a) => calls.push(a);
-  vm.runInNewContext(SRC, { ...win, window: win, document, location: win.location, navigator: win.navigator, sessionStorage: win.sessionStorage, Blob: win.Blob, fetch: win.fetch });
-  const bodies = () => sent.map((s) => JSON.parse(s.blob.text));
-  return {
-    sent, calls, store, bodies,
-    click: (target) => (listeners.click || []).forEach((fn) => fn({ target })),
-    play: (target) => (listeners.play || []).forEach((fn) => fn({ target })),
-  };
-}
+const clicks = (p) => p.events("click").map((b) => b.props.label);
 
 describe("fh-events.js, the page", () => {
-  test("opening a step sends one page event, once per session", () => {
-    const p = runPage({ pathname: "/watch/" });
+  test("opening a step sends one page_view, once per session", () => {
+    const p = makePage({ pathname: "/watch/", title: "Watch the video" }).run();
     assert.equal(p.sent.length, 1);
     assert.equal(p.sent[0].url, "https://fundhub.ai/api/public/slo-interest");
     const b = p.bodies()[0];
-    assert.equal(b.kind, "page");
+    assert.equal(b.kind, "track");
+    assert.equal(b.event, "page_view");
     assert.equal(b.page, "/watch");
+    assert.equal(b.seq, 1);
+    assert.deepEqual(b.props, { title: "Watch the video" });
     assert.match(b.session_id, /^[A-Za-z0-9_-]{8,80}$/);
+    const again = makePage({ pathname: "/watch", storage: p.store }).run();
+    assert.equal(again.events("page_view").length, 0, "same session, same page: no second page_view");
   });
 
   test("a page that is not a funnel step sends nothing", () => {
-    assert.equal(runPage({ pathname: "/somewhere-else" }).sent.length, 0);
-  });
-
-  test("the /funding-book-call calendar inside the /roadmap-book frame stays quiet", () => {
-    const p = runPage({ pathname: "/funding-book-call", framed: true });
+    const p = makePage({ pathname: "/somewhere-else" });
+    const a = p.node("a", { cls: ["btn"], text: "Go", attrs: { href: "/x" } });
+    p.add(a).run();
+    p.click(a);
+    p.win.fhTrack("continue", { step: 1 });
     assert.equal(p.sent.length, 0);
   });
 
+  test("the fundhub.ai homepage is /home; apply.fundhub.ai/ stays off the map; /order is on it", () => {
+    for (const hostname of ["fundhub.ai", "www.fundhub.ai"]) {
+      const p = makePage({ hostname, pathname: "/" }).run();
+      assert.deepEqual(p.bodies().map((b) => [b.event, b.page]), [["page_view", "/home"]], hostname);
+      assert.equal(p.store["fh_pg_/home"], "1");
+    }
+    assert.equal(makePage({ hostname: "apply.fundhub.ai", pathname: "/" }).run().sent.length, 0);
+    assert.equal(makePage({ hostname: "fundhub.ai", pathname: "/pricing" }).run().sent.length, 0);
+    assert.equal(makePage({ hostname: "apply.fundhub.ai", pathname: "/order/" }).run().bodies()[0].page, "/order");
+  });
+
+  test("the /funding-book-call calendar inside the /roadmap-book frame stays quiet", () => {
+    const p = makePage({ pathname: "/funding-book-call", framed: true }).run();
+    assert.equal(p.sent.length, 0);
+    assert.equal(p.win.fhTrack, undefined);
+  });
+
   test("an automated browser says so", () => {
-    assert.equal(runPage({ pathname: "/watch", webdriver: true }).bodies()[0].webdriver, true);
+    assert.equal(makePage({ pathname: "/watch", webdriver: true }).run().bodies()[0].webdriver, true);
   });
 });
 
 describe("fh-events.js, the presses", () => {
-  test("the VSL 'Tap for sound' is named vsl:unmute and sent once", () => {
-    const overlay = el({ tag: "div", id: "fh-unmute", cls: ["unmute"] });
-    const pill = el({ tag: "span", parent: overlay });
-    const p = runPage({ pathname: "/watch", nodes: [overlay, pill] });
+  test("the VSL 'Tap for sound' is named vsl:unmute; every press is sent, Clarity hears it once", () => {
+    const p = makePage({ pathname: "/watch" });
+    const overlay = p.node("div", { id: "fh-unmute", cls: ["unmute"] });
+    const pill = p.node("span");
+    overlay.append(pill);
+    p.add(overlay).run();
     p.click(pill); p.click(pill);
-    const clicks = p.bodies().filter((b) => b.kind === "click");
-    assert.deepEqual(clicks.map((c) => c.target), ["vsl:unmute"]);
-    assert.deepEqual(p.calls, [["event", "vsl:unmute"]], "Clarity hears the same press");
+    assert.deepEqual(clicks(p), ["vsl:unmute", "vsl:unmute"]);
+    assert.equal(p.events("click")[0].props.element_id, "fh-unmute");
+    assert.deepEqual(p.calls, [["event", "vsl:unmute"]], "Clarity hears the same press, once");
   });
 
   test("a click on the VSL itself counts only while the sound overlay is showing", () => {
-    const overlay = el({ tag: "div", id: "fh-unmute", cls: ["unmute", "hidden"] });
-    const video = el({ tag: "video", id: "fh-vsl", attrs: { autoplay: "" } });
-    const p = runPage({ pathname: "/watch", nodes: [overlay, video] });
+    const p = makePage({ pathname: "/watch" });
+    const overlay = p.node("div", { id: "fh-unmute", cls: ["unmute", "hidden"] });
+    const video = p.node("video", { id: "fh-vsl", attrs: { autoplay: "" }, video: {} });
+    p.add(overlay, video).run();
     p.click(video);
-    assert.equal(p.bodies().filter((b) => b.kind === "click").length, 0);
+    assert.equal(p.events("click").length, 0);
   });
 
-  test("a testimonial started by hand is video:play:<file>; the VSL's own autoplay is not a press", () => {
-    const gene = el({ tag: "video", src: "https://fundhub.ai/funnel/slo-testimonial-gene.mp4" });
-    const vsl = el({ tag: "video", id: "fh-vsl", attrs: { autoplay: "" }, src: "https://fundhub.ai/funnel/slo-vsl.mp4" });
-    const p = runPage({ pathname: "/roadmap", nodes: [gene, vsl] });
-    p.play(vsl); p.play(gene); p.play(gene);
-    assert.deepEqual(
-      p.bodies().filter((b) => b.kind === "click").map((c) => c.target),
-      ["video:play:slo-testimonial-gene"]
-    );
+  test("a testimonial started by hand tells Clarity video:play:<file>; the VSL's own autoplay does not", () => {
+    const p = makePage({ pathname: "/roadmap" });
+    const gene = p.node("video", { video: { currentSrc: "https://fundhub.ai/funnel/slo-testimonial-gene.mp4" } });
+    const vsl = p.node("video", { id: "fh-vsl", attrs: { autoplay: "" }, video: { currentSrc: "https://fundhub.ai/funnel/slo-vsl.mp4" } });
+    p.add(gene, vsl).run();
+    p.fireDoc("play", vsl); p.fireDoc("play", gene); p.fireDoc("play", gene);
+    assert.deepEqual(p.calls, [["event", "video:play:slo-testimonial-gene"]]);
+    assert.equal(p.events("click").length, 0, "a video start is a video event, not a click");
+    assert.deepEqual(p.events("video").map((b) => b.props.video), ["slo-vsl", "slo-testimonial-gene", "slo-testimonial-gene"]);
   });
 
   test("the sticky roadmap bar is cta:sticky, not a second copy of the same words", () => {
-    const bar = el({ tag: "div", id: "fh-sticky" });
-    const a = el({
-      tag: "a", cls: ["btn"], text: "Get My $297 Funding Roadmap",
-      attrs: { href: "#fh-order" }, parent: bar,
-    });
-    const p = runPage({ pathname: "/roadmap", nodes: [bar, a] });
+    const p = makePage({ pathname: "/roadmap" });
+    const bar = p.node("div", { id: "fh-sticky", css: { position: "fixed" } });
+    const a = p.node("a", { cls: ["btn"], text: "Get My $297 Funding Roadmap", attrs: { href: "#fh-order" } });
+    bar.append(a);
+    p.add(bar).run();
     p.click(a);
-    assert.equal(p.bodies().find((x) => x.kind === "click").target, "cta:sticky");
+    const c = p.events("click")[0].props;
+    assert.equal(c.label, "cta:sticky");
+    assert.equal(c.href_path, "#fh-order");
+    assert.equal(c.section, "fh-sticky");
   });
 
-  test("the testimonial Play button is left to the video's own play event", () => {
-    const btn = el({ tag: "button", cls: ["tplay"], text: "Play" });
-    const p = runPage({ pathname: "/roadmap", nodes: [btn] });
+  test("the testimonial Play button is not a click; it is a carousel play", () => {
+    const p = makePage({ pathname: "/roadmap" });
+    const grid = p.node("div", { cls: ["proofgrid"] });
+    const card = p.node("figure", { cls: ["tcard"] });
+    const btn = p.node("button", { cls: ["tplay"], text: "Play" });
+    card.append(btn);
+    grid.append(card);
+    p.add(grid).run();
     p.click(btn);
-    assert.equal(p.bodies().filter((b) => b.kind === "click").length, 0);
+    assert.equal(p.events("click").length, 0);
+    assert.deepEqual(p.events("carousel").map((b) => b.props), [{ carousel: "testimonials", action: "play", index: 1 }]);
   });
 
   test("a CTA button is cta:<words>; two with the same words are told apart by order", () => {
-    const a = el({ tag: "a", cls: ["btn"], text: "Get Started", attrs: { href: "/apply" } });
-    const b = el({ tag: "a", cls: ["btn"], text: "Get Started", attrs: { href: "/apply" } });
-    const p = runPage({ pathname: "/watch", nodes: [a, b] });
+    const p = makePage({ pathname: "/watch" });
+    const a = p.node("a", { cls: ["btn"], text: "Get Started", attrs: { href: "/apply" } });
+    const b = p.node("a", { cls: ["btn"], text: "Get Started", attrs: { href: "/apply" } });
+    p.add(a, b).run();
     p.click(a); p.click(b);
-    assert.deepEqual(
-      p.bodies().filter((x) => x.kind === "click").map((c) => c.target),
-      ["cta:get-started", "cta:get-started-2"]
-    );
+    assert.deepEqual(clicks(p), ["cta:get-started", "cta:get-started-2"]);
+    assert.deepEqual(p.events("click").map((c) => c.props.nth), [1, 2]);
   });
 
   test("a plain link is click:<words>; a pay button is a cta", () => {
-    const link = el({ tag: "a", text: "Talk to us first", attrs: { href: "https://apply.fundhub.ai/roadmap-book" } });
-    const pay = el({ tag: "button", text: "Pay $297", attrs: { "data-pay": "" } });
-    const p = runPage({ pathname: "/roadmap", nodes: [link, pay] });
+    const p = makePage({ pathname: "/roadmap" });
+    const link = p.node("a", { text: "Talk to us first", attrs: { href: "https://apply.fundhub.ai/roadmap-book" } });
+    const pay = p.node("button", { text: "Pay $297", attrs: { "data-pay": "" } });
+    p.add(link, pay).run();
     p.click(link); p.click(pay);
-    assert.deepEqual(
-      p.bodies().filter((x) => x.kind === "click").map((c) => c.target),
-      ["click:talk-to-us-first", "cta:pay-297"]
-    );
+    assert.deepEqual(clicks(p), ["click:talk-to-us-first", "cta:pay-297"]);
+    assert.equal(p.events("click")[0].props.href_path, "/roadmap-book");
   });
 
   test("data-fh-track names a button on purpose", () => {
-    const b = el({ tag: "button", text: "Go", attrs: { "data-fh-track": "Book Call Top" } });
-    const p = runPage({ pathname: "/thank-you", nodes: [b] });
+    const p = makePage({ pathname: "/thank-you" });
+    const b = p.node("button", { text: "Go", attrs: { "data-fh-track": "Book Call Top" } });
+    p.add(b).run();
     p.click(b);
-    assert.equal(p.bodies().find((x) => x.kind === "click").target, "click:book-call-top");
+    assert.equal(p.events("click")[0].props.label, "click:book-call-top");
   });
 
   test("a click on something that is not a button sends nothing", () => {
-    const para = el({ tag: "p", text: "Some words" });
-    const p = runPage({ pathname: "/watch", nodes: [para] });
+    const p = makePage({ pathname: "/watch" });
+    const para = p.node("p", { text: "Some words" });
+    p.add(para).run();
     p.click(para);
-    assert.equal(p.bodies().filter((b) => b.kind === "click").length, 0);
+    assert.equal(p.events("click").length, 0);
   });
 });
 
@@ -210,9 +187,17 @@ describe("the door accepts exactly what the script sends", () => {
   };
   const deps = (cap) => ({ emit: cap.emit, orgId: "org-1", db: { query: async () => ({ rows: [{ n: 0 }] }) }, userAgent: "Mozilla/5.0" });
 
-  test("every page the script knows is a page the door accepts", async () => {
-    const listed = [...SRC.match(/var PAGES = \{([\s\S]*?)\};/)[1].matchAll(/"(\/[a-z-]+)"/g)].map((m) => m[1]);
-    assert.ok(listed.length >= 7, "the script lists the /watch and /roadmap steps");
+  test("the script's page map is the spec's page map, row for row", () => {
+    const spec = fs.readFileSync(path.join(ROOT, "docs/tracking/tracking-spec.md"), "utf8");
+    const table = spec.slice(spec.indexOf("## Pages → funnel and step"), spec.indexOf("## Events"));
+    const want = [...table.matchAll(/^\| (\/[a-z-]+) \| ([a-z-]+) \| (\d+) \|$/gm)].map((m) => [m[1], m[2], Number(m[3])]);
+    const got = [...SRC.match(/var PAGES = \{([\s\S]*?)\};/)[1].matchAll(/"(\/[a-z-]+)": \["([a-z-]+)", (\d+)\]/g)].map((m) => [m[1], m[2], Number(m[3])]);
+    assert.ok(want.length >= 9, "the spec table was read");
+    assert.deepEqual(got, want);
+  });
+
+  test("the seven /watch and /roadmap steps still open through the old kind \"page\"", async () => {
+    const listed = ["/watch", "/apply", "/funding-book-call", "/thank-you", "/roadmap", "/roadmap-book", "/roadmap-thank-you"];
     for (const page of listed) {
       const cap = capture();
       const out = await recordInterest({ kind: "page", session_id: "sess-abcdef12", page }, deps(cap));

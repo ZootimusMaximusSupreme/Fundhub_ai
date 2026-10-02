@@ -18,6 +18,10 @@
 // It does not create a client, mint a card page, charge anyone, or send mail.
 // Pay is still POST /api/public/slo-checkout.
 //
+// kind "track" is every other funnel event (scroll, video, time on page, ...).
+// It lives in src/funnel/track.mjs; the contract is
+// docs/tracking/tracking-spec.md.
+//
 // Each row says actor "person" or "agent", and why. See src/slo/visitor.mjs.
 
 import { db as defaultDb } from "../../src/db.mjs";
@@ -29,6 +33,8 @@ import { classifyVisitor, phoenixDay } from "../../src/slo/visitor.mjs";
 import { answerPreflight, applySloCors } from "../../src/slo/cors.mjs";
 import { syncSloClickfunnelsContact } from "../../src/slo/cf-contact.mjs";
 import { inngest } from "../../src/workflows/client.mjs";
+import { FUNNEL_PAGES } from "../../src/funnel/pages.mjs";
+import { recordTrack } from "../../src/funnel/track.mjs";
 
 const METHODS = "GET, POST, OPTIONS";
 const SESSION = /^[A-Za-z0-9_-]{8,80}$/;
@@ -52,10 +58,7 @@ export const CF_WAIT_MS = 3000;
 // kind "page" and "click": one step open, one button press, on the /watch path
 // or the /roadmap path (public/funnel/fh-events.js). Pages are an allow-list so
 // a stranger cannot invent step names; a target is a short lowercase label.
-const FUNNEL_PAGES = new Set([
-  "/watch", "/apply", "/funding-book-call", "/thank-you",
-  "/roadmap", "/roadmap-book", "/roadmap-thank-you"
-]);
+// The page list is the shared map in src/funnel/pages.mjs (FUNNEL_PAGES).
 const TARGET = /^[a-z0-9][a-z0-9_:.-]{0,63}$/;
 const MAX_CLICKS_PER_SESSION = 60;
 
@@ -142,6 +145,7 @@ function settleWithin(promise, ms) {
 export async function recordInterest(body, deps = {}) {
   if (!body || typeof body !== "object") return { ok: false, error: "invalid_json" };
   const kind = clip(body.kind, 20);
+  if (kind === "track") return recordTrack(body, deps);
   if (kind !== "visit" && kind !== "contact" && kind !== "engage" && kind !== "page" && kind !== "click") {
     return { ok: false, error: "kind_invalid" };
   }
