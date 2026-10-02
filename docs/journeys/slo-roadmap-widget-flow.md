@@ -18,7 +18,7 @@ which is the branch `runSloPull` already had.
 
 ## Saved before Pay
 
-Step 1 (first name, last name, email, phone) is posted to
+Since buy box version 2 (live 2026-10-02) step 1 is first name, last name and email only; the phone is asked on step 3 (required) and merged into the same contact. Step 1 is posted to
 `POST /api/public/slo-interest` as soon as the email is valid (leaving the
 email box, pressing Continue, or closing the page) — the phone is no longer
 required for this save (2026-10-02). A phone or name typed later is merged

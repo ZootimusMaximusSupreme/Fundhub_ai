@@ -210,3 +210,11 @@ Shipped by `npm run ship` at 00:26 (commit `4ad9f02c`, 3 database changes applie
 | Guarantee | Restored word for word from `2019c1b5` in its old place before the FAQ: "If you're not happy with what you get, email support@fundhub.ai within 7 days and you get the full $297 back." | `5880c174` | same |
 
 Consequence of the phone move (owner-requested, noted once): unpaid visitors give no phone, so the 15-minute follow-up and the $197 offer reach them by email only.
+
+## Queued changes — LIVE (2026-10-02)
+
+All rows in the table above are now live. The /roadmap page went out with another session's push (it carried this repo's working copy), and the server side shipped in `56f3545f` (08:17). Proof is an API read-back of page 25516164, which holds `bbv:2`, `keepPaid`, "Get My Funding Roadmap", "Your roadmap shows up in your portal today", "The Guarantee", `cfw-progress`, `cfw-nocard`, "Fundhub LLC to run a soft pull" and `fh-canonical:start`.
+- In-app reload fix: committed `b2a649e0`. Emulated reload test 4/4 (iPhone/Android × Facebook/Instagram).
+- Another session replaced the "Step n of 3" words with a blue progress bar (`92042164`); that is the live version.
+- Buy box version marker: row `funnel.buybox_version` id `83ea0f34-…` written 2026-10-02 17:06 UTC. The **real go-live** is the first `bbv:2` event: 2026-10-02 14:52:28 UTC (07:52 Phoenix). Compare before/after on `payload.props.bbv = 2` or on that time, not on the marker's time.
+- Real visitors, last 12 h: /roadmap 123 section views, 90 video events, 58 time-on-page marks, 57 scroll marks, 48 clicks, 32 sample previews, 26 FAQ opens, 18 buy-box step views (people, not agents).
