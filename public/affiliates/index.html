@@ -749,6 +749,11 @@
         if(err){err.textContent=msg;err.style.display='block';}
         return;
       }
+      /* The thank-you box is shorter than the form it replaces and shows up after
+         the server answers, so everything under it jumped up the screen (layout
+         shift, 2026-10-02). Hold the column at the form's height. */
+      var col=document.getElementById('pform').parentNode;
+      if(col&&col.style)col.style.minHeight=col.offsetHeight+'px';
       document.getElementById('pform').style.display='none';
       if(d.kind==='partner'){
         /* WHITE-LABEL IS INVITE ONLY. The endpoint writes one partners row at

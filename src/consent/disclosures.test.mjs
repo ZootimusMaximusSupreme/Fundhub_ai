@@ -97,23 +97,10 @@ const consentLabel = (html) => {
   return m ? (m[1] ?? m[2]).replace(/\s+/g, " ").trim() : null;
 };
 
-for (const page of ["../../public/roadmap/pull.html"]) {
+for (const page of ["../../public/roadmap/pull.html", "../../marketing/landing-pages/slo/slo-01-sales.html"]) {
   test(`the consent box on ${path.basename(page)} shows the stored ${ROADMAP_SOFT_PULL_VERSION} text exactly`, () => {
     const html = read(page);
     assert.equal(consentLabel(html), SOFT_PULL_DISCLOSURES[ROADMAP_SOFT_PULL_VERSION].text);
     assert.doesNotMatch(html, /Credit Solutions|FundHub/);
-  });
-}
-
-/* slo-01-sales.html is being moved to "Fundhub LLC" by its page owner. Until
-   that lands it keeps the older loose check below. When it does: add its path
-   to the exact-match list above and delete this loop. */
-for (const page of ["../../marketing/landing-pages/slo/slo-01-sales.html"]) {
-  test(`the consent box on ${path.basename(page)} names the texts`, () => {
-    const html = read(page);
-    assert.match(html, /soft pull of my credit report/);
-    assert.match(html, /agree Fundhub may call and text me at the number I gave, including automated texts/);
-    assert.match(html, /Reply STOP to stop/);
-    assert.match(html, /not a condition of buying anything/);
   });
 }
