@@ -176,9 +176,12 @@ export function nextHeadCode(live, { funnelHead = "" } = {}) {
  * The footer code a builder-page push leaves behind, sent whole with
  * footer_code_mode "replace". Extra copies of attribution, the video beacon,
  * and each extra src collapse to one. A step with no film loses the beacon.
- * @returns {{ next: string, changed: boolean, added: string[], collapsed: string[] }}
+ * `blocks` ({ block, marker }[]) are marked inline blocks (upsertMarkedBlock):
+ * added once at the end, swapped in place when they differ, left alone when the
+ * same. They ride in the same whole-footer write as the script tags.
+ * @returns {{ next: string, changed: boolean, added: string[], collapsed: string[], blocks: { marker: string, action: string }[] }}
  */
-export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], dropSrcs = [], existing = "" } = {}) {
+export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [], dropSrcs = [], existing = "", blocks = [] } = {}) {
   let code = String(live ?? "");
   const collapsed = [];
   // Scripts this step no longer loads come out of the footer.
@@ -223,9 +226,15 @@ export function nextFooterCode(live, { includeVslBeacon = false, extraSrcs = [],
     extraSrcs,
     existing: seen,
   });
-  const next = add ? (code.trim() ? `${code.replace(/\s+$/, "")}\n${add}` : add) : code;
+  let next = add ? (code.trim() ? `${code.replace(/\s+$/, "")}\n${add}` : add) : code;
   const added = [...add.matchAll(/src="([^"]+)"/g)].map((m) => m[1]);
-  return { next, changed: next !== String(live ?? ""), added, collapsed };
+  const blockPlans = [];
+  for (const { block, marker } of blocks) {
+    const plan = upsertMarkedBlock(next, block, marker);
+    blockPlans.push({ marker, action: plan.mode });
+    next = plan.next;
+  }
+  return { next, changed: next !== String(live ?? ""), added, collapsed, blocks: blockPlans };
 }
 
 /**
@@ -407,8 +416,11 @@ export const PUSH_MANIFEST = [
     ],
     vslBeacon: false,
     extraFooterScripts: [FH_EVENTS_SRC, CLARITY_SRC],
+    // Booking accepted -> fh_booking_v1.submittedAt + calendar_view / time_selected /
+    // booking_confirmed. Sent in the same whole-footer write as the scripts above.
+    footerBlocks: [{ fragment: "marketing/landing-pages/04e-book-confirm.html", marker: "fh-book-confirm" }],
     strategy: "head_footer_append_only",
-    note: "Native calendar — never POST custom_html full page replace",
+    note: "Native calendar — never POST custom_html full page replace. The body writer cannot be changed by API, so the booking-accepted stamp rides in footer_code (fh-book-confirm).",
   },
   {
     key: "apply-book-framed",
@@ -473,6 +485,17 @@ export const PUSH_MANIFEST = [
     vslBeacon: false,
     strategy: "code_block_upsert",
     note: "Phone fit (Chris, 2026-10-01): builder section and row layers drop their side padding under 768px so content gets 358px of 390. Desktop untouched.",
+  },
+  {
+    key: "apply-order",
+    funnelId: "968281",
+    liveUrl: "https://apply.fundhub.ai/order",
+    path: "/order--53172",
+    pageId: "25426768",
+    vslBeacon: false,
+    extraFooterScripts: [FH_EVENTS_SRC, CLARITY_SRC],
+    strategy: "head_footer_append_only",
+    note: "Native ClickFunnels $297 checkout (Complete Funding Diagnostic) — footer scripts only, never full replace",
   },
   {
     key: "slo-297-sales",

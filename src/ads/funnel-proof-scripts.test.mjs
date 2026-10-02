@@ -8,7 +8,7 @@
 // they now carry.
 //
 // WHAT THIS CANNOT TEST: layout, image loading and the live page. That is the
-// Playwright walk recorded on the board (docs/workflows/2026-09-22-watch-proof.md).
+// Playwright walk recorded on the board (ops/workflows/2026-09-22-watch-proof.md).
 //
 // npm test's glob is src/** and scripts/** only (CLAUDE.md §12).
 
@@ -37,18 +37,18 @@ import {
   hasScriptSrc,
   metaPixelHeadHtml,
   directRoasHeadHtml,
-} from "../../clickfunnels-fragments/tracking-manifest.mjs";
+} from "../../marketing/landing-pages/tracking-manifest.mjs";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 
 const WATCH = read("public/funnel/watch-proof.js");
 const THANKS = read("public/funnel/thankyou-sort.js");
-const TEMPLATE = read("clickfunnels-fragments/slo/fundhub-proof-cards.html");
+const TEMPLATE = read("marketing/landing-pages/slo/fundhub-proof-cards.html");
 const TEMPLATE_CSS = TEMPLATE.slice(TEMPLATE.indexOf("<style>") + "<style>".length, TEMPLATE.indexOf("</style>"));
-const DECK = JSON.parse(read("clickfunnels-fragments/slo/client-wins/deck.json"));
+const DECK = JSON.parse(read("marketing/landing-pages/slo/client-wins/deck.json"));
 // /roadmap is only read here, to hold /watch to the same H1 and the same video slot.
-const ROADMAP = read("clickfunnels-fragments/slo/slo-01-sales.html");
+const ROADMAP = read("marketing/landing-pages/slo/slo-01-sales.html");
 
 function cssBody(src, selector) {
   const at = src.indexOf(`${selector}{`);
@@ -141,7 +141,7 @@ describe("no client texts in the watch funnel (owner, 2026-09-22)", () => {
   test("the client-text crops still served on fundhub.ai stay byte-for-byte the deck crops", () => {
     for (const id of ["s34-q1", "s21-b", "s23-b"]) {
       const served = fs.readFileSync(path.join(ROOT, "public/funnel/proof", `${id}.jpg`));
-      const deck = fs.readFileSync(path.join(ROOT, "clickfunnels-fragments/slo/client-wins/deck", `${id}.jpg`));
+      const deck = fs.readFileSync(path.join(ROOT, "marketing/landing-pages/slo/client-wins/deck", `${id}.jpg`));
       assert.ok(served.equals(deck), `${id}.jpg`);
     }
   });
@@ -450,19 +450,19 @@ describe("screenshots open full size (the cards are small, and on /watch they mo
 
 describe("the fragments and the push manifest load the scripts once", () => {
   test("01-vsl.html loads watch-proof.js after attribution and beacon, and no funding-paths.js", () => {
-    const html = read("clickfunnels-fragments/01-vsl.html");
+    const html = read("marketing/landing-pages/01-vsl.html");
     const at = (s) => html.indexOf(s);
     assert.ok(at(WATCH_PROOF_SRC) > at(VSL_WATCH_BEACON_SRC) && at(VSL_WATCH_BEACON_SRC) > at(FH_ATTRIBUTION_SRC));
     assert.equal(hasScriptSrc(html, FUNDING_PATHS_SRC), false, "graphics moved to /thank-you");
   });
 
   test("05-thank-you.html loads funding-paths.js (defer) after thankyou-sort.js", () => {
-    const html = read("clickfunnels-fragments/05-thank-you.html");
+    const html = read("marketing/landing-pages/05-thank-you.html");
     assert.ok(html.indexOf(footerScriptTag(FUNDING_PATHS_SRC, { defer: true })) > html.indexOf(THANKYOU_SORT_SRC));
   });
 
   test("05-thank-you.html loads thankyou-sort.js and no longer carries its own booking check", () => {
-    const html = read("clickfunnels-fragments/05-thank-you.html");
+    const html = read("marketing/landing-pages/05-thank-you.html");
     assert.ok(html.includes(`<script src="${THANKYOU_SORT_SRC}"></script>`));
     assert.equal(html.includes("T14-01: nothing on this page may claim"), false, "the check lives in thankyou-sort.js now");
     assert.equal(html.includes("You get your exact funding number"), false);
@@ -478,6 +478,7 @@ describe("the fragments and the push manifest load the scripts once", () => {
         ["apply-watch", "25061160", [WATCH_PROOF_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
         ["apply-book", "25062844", [FH_EVENTS_SRC, CLARITY_SRC]],
         ["apply-thank-you", "25063539", [THANKYOU_SORT_SRC, FUNDING_PATHS_SRC, FH_EVENTS_SRC, CLARITY_SRC]],
+        ["apply-order", "25426768", [FH_EVENTS_SRC, CLARITY_SRC]],
       ],
     );
     assert.deepEqual(PUSH_MANIFEST.find((r) => r.key === "apply-watch").dropFooterScripts, [FUNDING_PATHS_SRC]);

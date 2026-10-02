@@ -33,7 +33,7 @@ import {
   FH_EVENTS_SRC,
   CLARITY_SRC,
   ga4HeadHtml,
-} from "../clickfunnels-fragments/tracking-manifest.mjs";
+} from "../marketing/landing-pages/tracking-manifest.mjs";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DEFAULT_SUBDOMAIN = "chrisstanbridgestea3f77f";
@@ -420,6 +420,8 @@ async function pushBuilderFooter(creds, pageId, row, ctx, dryRun, snapDir) {
     extraSrcs: row.extraFooterScripts ?? [],
     dropSrcs: row.dropFooterScripts ?? [],
     existing: liveHtml,
+    // Marked inline blocks (apply-book: fh-book-confirm) go out in this same replace write.
+    blocks: (row.footerBlocks ?? []).map((b) => ({ block: readFragment(b.fragment), marker: b.marker })),
   });
   // No funnel head read means we do not know if the pixel already loads once.
   // Leave the page head alone rather than strip the only copy.
@@ -430,6 +432,7 @@ async function pushBuilderFooter(creds, pageId, row, ctx, dryRun, snapDir) {
     head_snapshot: headSnapshot.slice(ROOT.length + 1),
     would_append_footer_srcs: plan.added,
     collapsed_duplicate_srcs: plan.collapsed,
+    footer_blocks: plan.blocks,
     head_changed: headPlan.changed,
     funnel_head_read: funnelHeadRead,
   };
@@ -636,7 +639,7 @@ async function pushApplySurveyReplace(creds, workspaceId, row, ctx, dryRun) {
           added: patched.added,
         };
       }
-      const snapDir = join(ROOT, "docs/workflows/cf-push-snapshots");
+      const snapDir = join(ROOT, "ops/workflows/cf-push-snapshots");
       await snapshotCustomHtml(creds, current.id, ctx, snapDir);
       await putCustomHtml(creds, current.id, patched.html, ctx, false);
       return {
@@ -741,7 +744,7 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
   const byId = new Map(pages.map((p) => [String(p.id), p]));
 
   const results = [];
-  const snapDir = join(ROOT, "docs/workflows/cf-push-snapshots");
+  const snapDir = join(ROOT, "ops/workflows/cf-push-snapshots");
 
   for (const row of PUSH_MANIFEST) {
     if (only && row.key !== only) continue;
