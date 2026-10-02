@@ -232,3 +232,11 @@ At $1,000 you get a number with no explanation. The cheapest thing that changes
 that is the ClickFunnels step data and the UTMs, not more spend.
 
 **Not fixed. Not asked for. One leftover card, per the hard lock.**
+
+## Owner correction (merged from branch 2026-09-28)
+
+Chris confirmed the live site works and the pixels are set up. Repo-only teardown items
+(no pixel in fragment files, `FH_SIM`, bare `/order` hrefs) describe the **repo copy** unless
+someone re-checks live. Still open: ad id on the SLO order path and real proof cards on the
+sales page.
+
