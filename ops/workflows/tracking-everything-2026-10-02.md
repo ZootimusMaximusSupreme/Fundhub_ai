@@ -9,17 +9,22 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 |---|---|---|---|
 | P1-6 | Commit `marketing/landing-pages/slo/` | this session | done — `2019c1b5` (+ baseline `fa03308c` for the rest of landing-pages) |
 | P1-A | Fixes 1, 4, 5 in `slo/slo-01-sales.html` (lock step 3, hide $15 extras, address warning) + green marked draft | agent | done — 23/23 browser checks; draft `slo/preview/wiring-fixes-draft.html` |
-| P1-B | Fix 2: save step-1 contact on valid email (ours + ClickFunnels), merge phone later | agent | claimed |
+| P1-B | Fix 2: save step-1 contact on valid email (ours + ClickFunnels), merge phone later | agent | done — committed `1feca0d1` |
 | P1-C | Fix 3: prepare push of `04a-book-top.html` to /funding-book-call (diff vs live, no push) | agent | done — **cannot ship as written**; folded into P3-H3 (see Results) |
 | P1-R | Report only: real bookings 14 days, SMS/CRM vs leadconnectorhq, three entity names | agent | done (see Results) |
 | P2 | Page inventory: manifest list + every page not in it; add missing pages to manifest | agent | done — `docs/tracking/page-inventory.md`; manifest unchanged (see Results) |
-| P3-C | Shared browser tracker `public/funnel/fh-events.js` (+ framed-calendar relay) | agent | claimed |
-| P3-S | Server: `src/funnel/pages.mjs`, `src/funnel/track.mjs`, tests; patch for slo-interest handed to this session | agent | claimed |
-| P3-H1 | Buy box hooks + section/FAQ/carousel attributes in `slo/slo-01-sales.html` | agent | claimed |
-| P3-H2 | Survey hooks: `apply-survey.html`, `public/js/homepage-survey.js`, sorting hat `public/funnel/thankyou-sort.js` | agent | pending (next free slot) |
-| P3-H3 | Booking: /funding-book-call footer block (fix 3), `slo/slo-02-booking.html`, manifest (+ /order row), push script code block | agent | claimed |
+| P3-C | Shared browser tracker `public/funnel/fh-events.js` (+ framed-calendar relay) | agent | done — committed `76d8e3ff` with P3-S |
+| P3-S | Server: `src/funnel/pages.mjs`, `src/funnel/track.mjs`, tests; patch for slo-interest handed to this session | agent | done — patch applied by this session |
+| P3-H1 | Buy box hooks + section/FAQ/carousel attributes in `slo/slo-01-sales.html` | agent | done — committed `bf563492` with fixes 1/4/5 |
+| P3-H2 | Survey hooks: `apply-survey.html`, `public/js/homepage-survey.js` + `public/index.html`, sorting hat `public/funnel/thankyou-sort.js` | agent | done — committed `38d69440` |
+| P3-H3 | Booking: /funding-book-call footer block (fix 3), `slo/slo-02-booking.html`, manifest (+ /order row), push script code block | agent | done — committed `1c19a6bd` |
 | P4 | Meta pixel + Conversions API | **blocked** — no Conversions API token exists (see Blockers) | blocked |
-| G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | pending |
+| G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | **waiting on Chris** |
+| Q1 | /roadmap and /roadmap/ → one URL | agent | claimed |
+| Q2+Q3+Q6+Q7p | /roadmap page: tap speed under 200ms (INP 1.1s), layout shift (CLS 0.15), dead clicks (8.89%), "Fundhub LLC" in page consent + footers — marked draft | agent | claimed |
+| Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | claimed |
+| Q5 | Buy box in Facebook/Instagram in-app browsers, iPhone + Android (test; fixes go to the page owner) | agent | claimed |
+| Q7c | "Fundhub LLC" in stored consent record (new consent version) + other /roadmap funnel pages | agent | claimed |
 
 ## File ownership (no two units edit the same file)
 
@@ -71,3 +76,64 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 - Survey steps: /apply 9 question screens (contact, funding_target_amount, planned_use, money_change_now, self_reported_fico, has_business, revenue or income ×2, available_capital) + review + result/calendar. Homepage survey 9 + contact.
 - Dead: /apply-page (25068989), Hero Theme template pages, archived funnels, slo-02-order.html (not on any live page), climate front door (never built).
 - Leftover: manifest `apply-survey` row names dead page 25068989 (push still finds the right one by path). Pre-existing test failure `src/ads/funnel-proof-scripts.test.mjs:452` (01-vsl.html still loads funding-paths.js).
+
+### P1-B — step-1 contact on email (committed `1feca0d1`, not live)
+
+- Saves on a valid email (leave the box, Continue, or tab close). Phone/name merge into the same row and the same ClickFunnels contact (upsert by email). Agents/test emails never reach ClickFunnels.
+- `src/workflows/slo-genuine-followup.mjs` touched on purpose: without it, an email-first visitor who typed a phone during the 15-minute wait would get no text.
+- Not passing: `src/ads/utm-funnel-fragments.test.mjs` "06 paste-in and fh-attribution.js are the same script" — the agent's copy into `marketing/landing-pages/06-utm-hidden-fields.html` (not live, not in the push list) was blocked by a permission check. Left for Chris at the gate.
+- No real-Postgres run (no scratch DB on this Mac). New SQL unproven on a real DB: `payload || $1::jsonb`.
+- Production has no `CLICKFUNNELS_WORKSPACE_ID`, so each ClickFunnels write does 3 calls; handler waits up to 3s after answering.
+- Risk: anyone can type someone else's email on step 1 and change that person's ClickFunnels name/phone.
+
+### P3-H1 — buy box hooks (committed `bf563492` with fixes 1/4/5, not live)
+
+- 71 events captured in a stubbed walk; 38 typed values searched, none found in any payload. Layout identical (1,616 elements) phone + desktop. Fix checks 23/23 still pass. No new test failures.
+- Card fields: no focus/complete (inside the card company's frame, no field events exposed).
+- Another session committed `f941b315` (Colin testimonial #2) into this same page today. A push of /roadmap will carry that change too.
+
+### P3-S — server side of kind "track" (not live)
+
+- New: `src/funnel/pages.mjs` (page → funnel/step, incl. /order and /home), `src/funnel/track.mjs` (`recordTrack`: per-event props allow-list, sensitive-value drop, seq idempotency, 500/session/day cap), `src/funnel/track.test.mjs` (32 tests, two read the spec tables so code and spec can't drift), `src/http/slo-interest-track.pg.test.mjs` (skips without a scratch DB), `db/migrations/404_funnel_track_index.sql` (partial index for the cap count).
+- `api/public/slo-interest.mjs`: kind "track" → `recordTrack`; page list now the shared map (old kinds page/click also accept /order and /home).
+- Live DB measured read-only: `events` is 4,606 rows / 5.3 MB, collation `en_US.UTF-8` — the existing idempotency index cannot serve a LIKE prefix, so the new partial index is needed; build time is negligible.
+- **Not run: database tests.** No Postgres on this Mac (no brew, no docker). Needs a scratch database.
+- Leftover: `db/expected-migrations.mjs` lacks six older migrations (114, 168, 255, 371, 372, 381) from today's stash merge `7edde860` → `health-migrations.test.mjs` already failing. Only the 404 line was added.
+
+### P3-C — shared tracker (committed `76d8e3ff`, not live)
+
+- Every event goes out as kind "track". Old kinds page/click are no longer sent, so the server must ship with it — both are on Netlify, so one `npm run ship` turns on both.
+- Every press is now a row (was first press only). Cap 500/session/day.
+- Headless walk on /roadmap and /apply captured page_view, click, scroll, section_view, video play/25%/unmute, carousel next/play, faq_open, exit, calendar relay. Typed test text never appeared in a payload. Relay dropped an `email` prop and ignored a relayed `click`.
+- Combined: lint clean, tsc clean, tracker + server tests 112/112. Full suite 28 failures, all also failing at HEAD (other uncommitted work).
+- Not exercised: a real exit beacon on the network, real phone, live ClickFunnels pages.
+
+### P3-H3 — booking confirm block + /order (committed `1c19a6bd`, not live)
+
+- Success signal: ClickFunnels' own `cf:form_submitted:ok` on `document` — fired only when the booking POST comes back OK (live `user_pages-*.js` `submitPage()`); bad phone never submits; 422 fires `checkout:order-submit-errors`.
+- Block stamps `submittedAt` after the old writer and keeps it for 6s against the old 400ms loop. Sends calendar_view / time_selected / booking_confirmed (framed → parent relay; direct → fhTrack).
+- Browser proof on the real live page with real ClickFunnels + Cronofy scripts, POST faked: bad phone → nothing; 422 → nothing; 200 direct → stamped + booking_confirmed; 200 framed in /roadmap-book → parent relayed events and moved to /roadmap-thank-you; 422 framed → stayed.
+- Push preview: apply-book footer 193 → 6,982 bytes (same 3 script tags + block, whole-footer replace); apply-order footer empty → fh-events + Clarity.
+- 22 new tests; three deliberate breaks each caught.
+- Not proven: a real ClickFunnels booking (would create a real appointment).
+- At ship: update `docs/journeys/slo-offer-actual.md:86` and `docs/journeys/sorting-hat-pages-flow.md:57` (both say submittedAt is never stamped) + CHANGELOG.
+
+## Gate — waiting on Chris (2026-10-02)
+
+Built, tested, committed, **not live**: `1feca0d1`, `bf563492`, `76d8e3ff`, `1c19a6bd`, `38d69440`. Full diff: `ops/workflows/tracking-everything-2026-10-02.diff`. Marked draft of /roadmap: https://claude.ai/artifact/XD5JRJQ87do6GvCk5eFSja
+
+**Deploy blocker:** `npm run ship` refuses an uncommitted tree (`scripts/ship.mjs:63`). The tree holds another session's cleanup: 2,010 deleted paths (596 moved with the same content, 1,414 removed: 734 old `docs/workflows` boards, 443 `scripts/tmp*`, 96 `vendor/` copies, old root notes), 230 modified, 140 untracked. Same block stopped the Colin #2 deploy (`ops/workflows/2026-10-01-colin-testimonial-2.md`). Committing it is Chris's call.
+
+Also: the /roadmap page now points at the Colin #2 video, which is not on fundhub.ai yet (404). So /roadmap must not be pushed before ship.
+
+Can go live without ship (ClickFunnels-only): /funding-book-call booking block (fix 3), /order footer, /apply hooks, /roadmap-book attributes.
+
+## Owner decisions logged
+
+- 2026-10-02: company name in the /roadmap funnel is **Fundhub LLC** (consent text, stored consent record, footer). Owner-set.
+
+## Queue (owner ask 2026-10-02, after Phase 3) — log every change in `docs/audits/wiring-audit-2026-10-02.md`, diff before deploy
+
+1. /roadmap and /roadmap/ → one URL. 2. Tap speed (INP 1.1s → under 200ms), esp. buy box. 3. Layout shift (CLS 0.15) — reserve space for video, carousel, buy box. 4. Clarity JS errors incl. FB Android "Java object is gone"; fix ours. 5. Buy box in FB/IG in-app browsers iPhone + Android. 6. Dead clicks 8.89% — step tabs, order summary, testimonial cards, FAQ rows. 7. "Fundhub LLC" everywhere in /roadmap funnel.
+
+File ownership: the page agent owns `marketing/landing-pages/slo/slo-01-sales.html` alone; Q4/Q5 hand page fixes to it through this session.
