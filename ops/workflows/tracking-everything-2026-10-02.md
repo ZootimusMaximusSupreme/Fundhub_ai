@@ -21,7 +21,7 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 | P4 | Meta pixel + Conversions API | **blocked** — no Conversions API token exists (see Blockers) | blocked |
 | G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | **done — live 2026-10-02** (ship `4ad9f02c` by another session + CF pushes by this session) |
 | Q1 | /roadmap and /roadmap/ → one URL | agent | done — committed (see Results) |
-| Q2+Q3+Q6+Q7p | /roadmap page: tap speed under 200ms (INP 1.1s), layout shift (CLS 0.15), dead clicks (8.89%), "Fundhub LLC" in page consent + footers — marked draft | agent | claimed |
+| Q2+Q3+Q6+Q7p | /roadmap page: tap speed, layout shift, dead clicks, Fundhub LLC on page; /affiliates | agent | done — committed `24c002e8`, **not live**, draft https://claude.ai/artifact/MPSifyuxfghteotFPHfVtA |
 | Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | done — no errors from our code |
 | Q5 | Buy box in Facebook/Instagram in-app browsers, iPhone + Android (test; fixes go to the page owner) | agent | done — 1 break, patch handed to page agent |
 | Q7c | "Fundhub LLC" in stored consent record (new consent version) + other /roadmap funnel pages | agent | done — committed `d9808d03` |
@@ -197,3 +197,15 @@ Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name
 - ClickFunnels pushes (this session): apply-book (footer 193 → 6,982 bytes, verified), apply-order (footer 0 → 125, verified), apply-survey, slo-297-booking, slo-297-thank-you, slo-297-sales — all ok; API read-back confirms every marker.
 - Public proof: headless walk of https://apply.fundhub.ai/roadmap/?utm_source=liveproof → URL rewritten to /roadmap, canonical present, fhTrack live, tab 3 locked, no $15, Colin #2 video on page; DB holds funnel.page / buybox_tab / scroll / section_view / click / exit with funnel + step + UTMs (actor agent).
 - Docs: audit log, journeys (slo-offer-actual, sorting-hat-pages-flow, slo-roadmap-widget-flow), CHANGELOG, `docs/tracking/meta-events.md`, coverage + phone checklist in `docs/tracking/tracking-spec.md` — `f407649d`.
+
+### Page batch (committed `24c002e8`, not live — waiting on Chris's OK)
+
+- Measured first: /roadmap slowest tap 96 ms (phone, 4× slow CPU), /affiliates 72 ms — both under 200 ms, no speed change. The Clarity 1.4 s / 0.2 came from /affiliates with 2 pageviews.
+- Layout shift fixed where measured: /roadmap buy box (card form arriving 0.15 → 0, after paying 0.28 → 0, after Start My Soft Pull 0.89 → 0); /affiliates submit 0.23 → 0. Page-load shift 0.08 left alone (under 0.1).
+- Dead clicks: locked tabs look locked and explain why; whole order-summary row opens its sample; testimonial captions play the video.
+- Fundhub LLC on the /roadmap consent box + footer; tests now pin the page to stored soft-pull-v3 exactly.
+- **In-app reload fix (item 5) NOT applied:** the page agent's `git apply` was blocked by the permission check ("Modify Shared Resources"). This session did not apply it on its behalf. Patch: session scratchpad `q5/q5-keep-paid-on-reload.patch`. Needs Chris's OK to apply.
+- Leftover: /affiliates "run ↻" button looked covered on desktop in the measurement — not checked.
+
+### Queue 2 — buy box v2 + guarantee (agent running)
+- Old guarantee (from `2019c1b5:…/slo-01-sales.before-2026-10-01-copy.html`): own section directly before the FAQ — "The Guarantee · If you're not happy with what you get, email support@fundhub.ai within 7 days and you get the full $297 back." + "Get My Roadmap" button. Already 7 days.
