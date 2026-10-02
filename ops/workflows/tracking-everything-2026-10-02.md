@@ -24,7 +24,7 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 | Q2+Q3+Q6+Q7p | /roadmap page: tap speed under 200ms (INP 1.1s), layout shift (CLS 0.15), dead clicks (8.89%), "Fundhub LLC" in page consent + footers — marked draft | agent | claimed |
 | Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | claimed |
 | Q5 | Buy box in Facebook/Instagram in-app browsers, iPhone + Android (test; fixes go to the page owner) | agent | claimed |
-| Q7c | "Fundhub LLC" in stored consent record (new consent version) + other /roadmap funnel pages | agent | claimed |
+| Q7c | "Fundhub LLC" in stored consent record (new consent version) + other /roadmap funnel pages | agent | done — committed `d9808d03` |
 
 ## File ownership (no two units edit the same file)
 
@@ -152,3 +152,15 @@ File ownership: the page agent owns `marketing/landing-pages/slo/slo-01-sales.ht
 ## Queue 2 (owner ask 2026-10-02) — after the page agent finishes `slo-01-sales.html`
 
 Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name, last name, email (phone moves to step 3, still required; contact still saved on valid email); "Step 1 of 3" label replaces the tabs; under-button text "Your roadmap shows up in your portal today."; button "Get My Funding Roadmap"; all tracking still fires; "buy box version 2" marker with deploy time. Restore the old guarantee section from git history in its original position, 7-day window, consistent with the new line. Diff before deploy; log in the audit doc.
+
+## Second ship attempt — 2026-10-02 (Chris: "ship go go go")
+
+- Reorganization commit retried with queue-agent files left out → denied again by the auto-mode safety check ("Irreversible Local Destruction"). Unstaged; tree as found. Not retried again.
+- Found while preparing: `npm run ship` also stops on six db files missing from `db/expected-migrations.mjs` (from the 2026-10-01 parked-stash commit `7edde860`). Five are already applied in production (114_crm_agent_seed, 168_retire_legacy_crm_agents, 255_doc_agent_docs_received, 371_doc02_email_partner_sms_requeue, 372_rename_legacy_crm_column_and_keys). **One is not: `381_blueprint_entitlement.sql`** — grants the Capital Blueprint tile to product `consulting-package`; its own header says DIY letter buyers who fall back to that code would also unlock the tile. Owner decision before it goes to production.
+- Queue agents are still editing files, so ship has to run from a clean copy of the committed main (ships only committed, approved work).
+
+### Q7c — Fundhub LLC (committed `d9808d03`, not live)
+- New stored consent `soft-pull-v3` used only by the /roadmap pull; v1/v2 untouched; other consent screens keep v2 (owner decision covered /roadmap only).
+- pull.html, /roadmap-book and /roadmap-thank-you footers now "Fundhub LLC". Removed the small "Credit Solutions" tag under the logo on pull.html.
+- After the page agent lands: sync `src/http/slo-sales-widget-html.test.mjs:185,190` and `src/consent/disclosures.test.mjs:99,106-118` to the new sales-page consent text.
+- At ship: `docs/journeys/slo-offer-actual.md:57` says soft-pull-v1 → v3; CHANGELOG line.
