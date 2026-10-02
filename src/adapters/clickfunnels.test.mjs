@@ -1271,3 +1271,101 @@ test("F39: sixteen posts produce ONE Inngest fan-out for survey.submitted", asyn
     else process.env.INNGEST_EVENT_KEY = realKey;
   }
 });
+
+/* ── Meta click ids (Phase 4, docs/tracking/meta-events.md "Stop dropping fbclid") ── */
+
+const META_FBC = "fb.1.1727800000000.IwAR2abcDEF_123-xyz";
+const META_FBP = "fb.1.1727800000000.1234567890";
+
+test("normalizeClickFunnelsEvent: first-visit fbclid becomes fbc at the visit's time; UTMs unchanged", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.created",
+    data: {
+      email_address: "ad@example.com",
+      visits: {
+        first_visit: {
+          created_at: "2026-10-01T12:00:00.000Z",
+          landing_page: "https://apply.fundhub.ai/watch?utm_source=fb_ad&fbclid=IwAR9xyz",
+          utm_source: "fb_ad"
+        }
+      }
+    }
+  });
+  assert.deepEqual(evt.metaClickIds, { fbc: `fb.1.${Date.parse("2026-10-01T12:00:00.000Z")}.IwAR9xyz`, fbp: null });
+  assert.equal("fbclid" in evt.attribution, false, "the click id is never a UTM column");
+});
+
+test("normalizeClickFunnelsEvent: fbc / fbp sent as hidden fields win over a built one", () => {
+  const evt = normalizeClickFunnelsEvent({
+    event_type: "contact.updated",
+    data: {
+      email_address: "ad@example.com",
+      custom_attributes: { fbc: META_FBC, fbp: META_FBP, fbclid: "IwAROTHER" }
+    }
+  });
+  assert.deepEqual(evt.metaClickIds, { fbc: META_FBC, fbp: META_FBP });
+});
+
+test("wrapApplySurveyIngestBody: fbc / fbp / fbclid ride along but never reach the ClickFunnels contact", () => {
+  const body = {
+    source: "apply-survey",
+    funnel: "apply-survey",
+    email: "lead@gmail.com",
+    fbc: META_FBC,
+    attribution: { utm_source: "meta", fbp: META_FBP, fbclid: "IwAR1" }
+  };
+  const wrapped = wrapApplySurveyIngestBody(body);
+  assert.equal(wrapped.data.custom_attributes.fbc, META_FBC);
+  assert.equal(wrapped.data.custom_attributes.fbp, META_FBP);
+  const contact = applySurveyCfContact(body);
+  assert.equal(JSON.stringify(contact).includes("fb.1."), false);
+});
+
+test("handleClickFunnelsWebhook: survey webhook keeps fbc / fbp on the client (blanks only)", async () => {
+  _resetOrgCache(); clearHandlers();
+  const writes = [];
+  const db = {
+    query(sql, params) {
+      const text = String(sql);
+      if (/FROM orgs/.test(text)) return { rows: [{ id: "org-1" }] };
+      if (/SELECT id, ghl_contact_id FROM clients/.test(text)) return { rows: [{ id: "client-1", ghl_contact_id: "ghl-1" }] };
+      if (/meta_fbc/.test(text)) { writes.push(params); return { rows: [{ id: params[0] }] }; }
+      if (/INSERT INTO events/.test(text)) return { rows: [{ id: "evt-1" }] };
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_meta_1",
+    event: "contact_created",
+    data: {
+      contact: { email: "fbclick@gmail.com", first_name: "Fb" },
+      visits: { first_visit: { created_at: "2026-10-01T12:00:00.000Z", landing_page: "https://apply.fundhub.ai/watch?fbclid=IwAR5abc" } }
+    }
+  });
+  const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.equal(writes.length, 1);
+  assert.deepEqual(writes[0], ["client-1", "org-1", `fb.1.${Date.parse("2026-10-01T12:00:00.000Z")}.IwAR5abc`, null]);
+});
+
+test("handleClickFunnelsWebhook: a failed click-id write never costs the lead", async () => {
+  _resetOrgCache(); clearHandlers();
+  const db = {
+    query(sql) {
+      const text = String(sql);
+      if (/FROM orgs/.test(text)) return { rows: [{ id: "org-1" }] };
+      if (/SELECT id, ghl_contact_id FROM clients/.test(text)) return { rows: [{ id: "client-1", ghl_contact_id: "ghl-1" }] };
+      if (/meta_fbc/.test(text)) throw new Error("db down");
+      if (/INSERT INTO events/.test(text)) return { rows: [{ id: "evt-1" }] };
+      return { rows: [] };
+    }
+  };
+  const raw = JSON.stringify({
+    id: "cf_meta_2",
+    event: "contact_created",
+    data: { contact: { email: "fbclick2@gmail.com", custom_attributes: { fbc: META_FBC } } }
+  });
+  const res = await handleClickFunnelsWebhook({ db, rawBody: raw, signatureHeader: sign(raw), secret: SECRET });
+  assert.equal(res.ok, true);
+  assert.deepEqual(res.emitted.map((e) => e.name), ["entry.captured"]);
+});

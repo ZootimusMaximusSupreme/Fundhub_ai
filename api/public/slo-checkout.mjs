@@ -24,7 +24,7 @@
 // number is ever posted here — see createEmbeddedCheckoutSession.
 //
 // POST — { email, first_name?, last_name?, phone?, businesses?, business_count?,
-//          return_url?, utm_*? }
+//          return_url?, utm_*?, fbc?, fbp? }
 //        The amount is $297 + $15 × (n − 1), n = businesses on the order.
 //        phone is optional; when sent it must be a 10-digit US number and is
 //        stored as +1XXXXXXXXXX on a client this checkout creates.
@@ -34,6 +34,15 @@
 // client, this door writes no name, phone, account, businesses or slo_ref.
 // It records the order row (ref + business count). What that order may later
 // write is decided by src/slo/pull.mjs.
+//
+// Meta match keys (Phase 4, docs/tracking/meta-events.md): the page POSTs fbc /
+// fbp. They, the request's IP (x-nf-client-connection-ip, else the first
+// x-forwarded-for) and its user agent are kept ON THE ORDER — the
+// slo.checkout_started row, payload.meta_match — so the payment webhook's
+// server-only Purchase (src/handlers/meta-purchase.mjs) can send them. fbc /
+// fbp also fill BLANK meta_fbc / meta_fbp on the client (first touch, never
+// overwritten — src/ads/meta-match.mjs), for later offer purchases. A failure
+// there never stops the checkout.
 //
 // Ad tags are different (2026-09-25): when the page POSTs utm_* / landing_path,
 // they are written on every checkout — new or existing — through
@@ -94,6 +103,8 @@ import { upsertClientAdAttribution } from "../../src/ads/store.mjs";
 import { mergeCustomFields } from "../../src/workflows/custom-fields.mjs";
 import { classifyVisitor } from "../../src/slo/visitor.mjs";
 import { attributeWithUpline } from "../../src/affiliates/economics.mjs";
+import { cleanIp, clientIpFrom } from "../../src/meta/user-data.mjs";
+import { pickMetaClickIds, storeClientMetaClickIds } from "../../src/ads/meta-match.mjs";
 
 const METHODS = "GET, POST, OPTIONS";
 
@@ -264,8 +275,23 @@ export function parseSloCheckoutBody(body, { now = new Date() } = {}) {
     // null unless https on an allow-listed origin; see src/slo/cors.mjs.
     returnUrl: sloReturnUrl(body.return_url ?? body.returnUrl),
     attribution: pickAttribution(body),
-    affiliateTrackingId: parseAffiliateTrackingId(body)
+    affiliateTrackingId: parseAffiliateTrackingId(body),
+    // { fbc, fbp } — either may be null. fbclid builds fbc when fbc is missing.
+    metaClickIds: pickMetaClickIds([body])
   };
+}
+
+/** What the order keeps for Meta: only the keys that were sent. */
+export function sloMetaMatch(parsed, { clientIp = null, userAgent = null } = {}) {
+  const ids = parsed?.metaClickIds || {};
+  const out = {};
+  if (ids.fbc) out.fbc = ids.fbc;
+  if (ids.fbp) out.fbp = ids.fbp;
+  const ip = cleanIp(clientIp);
+  if (ip) out.client_ip_address = ip;
+  const ua = String(userAgent || "").trim().slice(0, 512);
+  if (ua) out.client_user_agent = ua;
+  return Object.keys(out).length ? out : null;
 }
 
 /**
@@ -317,6 +343,17 @@ export async function runSloCheckout(parsed, deps = {}) {
       orgId, clientId, trackingId: parsed.affiliateTrackingId
     });
   }
+  /* Meta click ids: blanks only, any client. See "Meta match keys" above. */
+  const clickIds = parsed.metaClickIds || {};
+  if (clickIds.fbc || clickIds.fbp) {
+    try {
+      await (deps.storeClickIds || storeClientMetaClickIds)(dbh, {
+        orgId, clientId, fbc: clickIds.fbc, fbp: clickIds.fbp
+      });
+    } catch (err) {
+      console.warn("slo-checkout: meta click ids not stored —", String(err?.message || err).slice(0, 160));
+    }
+  }
   if (newClient) {
     await (deps.ensureAccount || ensureSloAccount)(dbh, {
       orgId, clientId, email: parsed.email, name: parsed.name
@@ -341,6 +378,7 @@ export async function runSloCheckout(parsed, deps = {}) {
     userAgent: deps.userAgent,
     webdriver: deps.webdriver === true
   });
+  const metaMatch = sloMetaMatch(parsed, { clientIp: deps.clientIp, userAgent: deps.userAgent });
   await (deps.emit || emit)(
     dbh,
     "slo.checkout_started",
@@ -356,6 +394,7 @@ export async function runSloCheckout(parsed, deps = {}) {
       demo,
       actor: who.actor,
       actor_reason: who.reason,
+      ...(metaMatch ? { meta_match: metaMatch } : {}),
       occurredAt: new Date().toISOString()
     },
     { orgId, clientId, allowNonCanonical: true, idempotencyKey: `slo-checkout:${ref}` }
@@ -489,6 +528,7 @@ export default async function handler(req, res, deps = {}) {
       ...deps,
       env,
       userAgent: deps.userAgent || h["user-agent"] || h["User-Agent"] || "",
+      clientIp: deps.clientIp || clientIpFrom(req),
       webdriver: raw?.webdriver === true || raw?.webdriver === "true"
     });
     if (!result.ok) {

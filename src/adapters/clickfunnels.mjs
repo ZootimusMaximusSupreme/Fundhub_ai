@@ -19,6 +19,7 @@ import { emit, defaultOrgId } from "../events/bus.mjs";
 import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { handleSloPaidWebhook } from "../slo/purchase.mjs";
 import { upsertContact } from "../analytics/clickfunnels.mjs";
+import { pickMetaClickIds, storeClientMetaClickIds } from "../ads/meta-match.mjs";
 
 // --- 1. Signature verification (fail-closed) --------------------------------
 // ClickFunnels 2.0 (official): HMAC-SHA256(secret, `${timestamp}.${rawBody}`)
@@ -174,7 +175,10 @@ function landingPathOf(url) {
   }
 }
 
-/* Facebook / UTM attribution. Never keep click ids (fbclid).
+/* Facebook / UTM attribution. The click id (fbclid) is NOT part of this
+   object — it never becomes a UTM column. It is read separately, into
+   metaClickIds (fbc / fbp), and kept on the client for Meta's Conversions API
+   (docs/tracking/meta-events.md, Phase 4, "Stop dropping fbclid").
 
    THREE PLACES, IN ORDER OF TRUST, FIELD BY FIELD:
      1. an explicit `attribution` object on the payload (what the application
@@ -412,6 +416,24 @@ export function normalizeClickFunnelsEvent(body) {
 
   const attribution = pickVisitAttribution(d, b, contact);
 
+  /* Meta click ids for a later server-only Purchase (src/handlers/meta-purchase.mjs).
+     fbc / fbp as sent (explicit attribution, hidden fields, form bag, top level);
+     no fbc but an fbclid — sent, or on the first visit's landing URL — builds
+     fbc "fb.1.<ms>.<fbclid>" at the visit's time. Stored on the client in
+     handleClickFunnelsWebhook, first touch only. */
+  const visitSeenMs = Date.parse(String(visitForRef.created_at || visitForRef.createdAt || ""));
+  const metaClickIds = pickMetaClickIds(
+    [
+      b.attribution, d.attribution, contact.attribution,
+      contact.custom_attributes, d.custom_attributes, contact.custom_fields, d.custom_fields,
+      formBag, d.formData, d.form_data, b, d
+    ],
+    {
+      fbclidUrl: visitForRef.landing_page || visitForRef.url || null,
+      seenAtMs: Number.isFinite(visitSeenMs) ? visitSeenMs : Date.now()
+    }
+  );
+
   // Appointment slot fields the booking handlers already read.
   const startTime = d.start_on || d.startTime || schedule?.start_on || b.start_on || null;
   const endTime = d.end_on || d.endTime || schedule?.end_on || b.end_on || null;
@@ -429,6 +451,7 @@ export function normalizeClickFunnelsEvent(body) {
     a1,
     a2,
     attribution,
+    metaClickIds,
     bookingUid,
     startTime,
     endTime,
@@ -486,6 +509,12 @@ export function wrapApplySurveyIngestBody(body) {
   }
   if (body.a1) custom_attributes.a1 = body.a1;
   if (body.a2) custom_attributes.a2 = body.a2;
+  /* Meta click ids ride along for metaClickIds. Never pushed to ClickFunnels:
+     APPLY_SURVEY_CF_ATTR below does not let them through. */
+  for (const k of ["fbc", "fbp", "fbclid"]) {
+    const v = body[k] ?? attr[k];
+    if (typeof v === "string" && v.trim()) custom_attributes[k] = v.trim();
+  }
   const step = String(body.step_key || body.step || "step").slice(0, 80);
   const id = body.id || `apply-survey:${email || "unknown"}:${step}`;
   return {
@@ -800,6 +829,21 @@ export async function handleClickFunnelsWebhook({
      this webhook produces names the same client. */
   const ingestOrgId = await defaultOrgId(db);
   const ingestClientId = await resolveIngestClientId(db, ingestOrgId, evt);
+
+  /* Keep fbc / fbp on the client (blanks only — first touch). Never blocks the
+     delivery: a failure here costs one Meta match key, not a lead. */
+  if (ingestClientId && (evt.metaClickIds?.fbc || evt.metaClickIds?.fbp)) {
+    try {
+      await storeClientMetaClickIds(db, {
+        orgId: ingestOrgId,
+        clientId: ingestClientId,
+        fbc: evt.metaClickIds.fbc,
+        fbp: evt.metaClickIds.fbp
+      });
+    } catch (err) {
+      console.warn(`[clickfunnels] meta click ids not stored: ${String(err?.message || err).slice(0, 160)}`);
+    }
+  }
 
   const emitted = [];
   for (const c of canonical) {
