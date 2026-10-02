@@ -139,3 +139,16 @@ Can go live without ship (ClickFunnels-only): /funding-book-call booking block (
 **Owner correction (2026-10-02):** the Clarity INP (1.4 s) and CLS (0.2) were from fundhub.ai/affiliates/ (2 pageviews), not /roadmap. Measure /roadmap's real tap response and layout shift on mobile first; fix only what the measurement shows. Same check on /affiliates (page agent also owns `public/affiliates/index.html`).
 
 File ownership: the page agent owns `marketing/landing-pages/slo/slo-01-sales.html` alone; Q4/Q5 hand page fixes to it through this session.
+
+## Ship attempt — 2026-10-02 (Chris said "ship")
+
+- Product files in the pending tree were checked: 145 files, path strings only (238/238 lines), every new path exists.
+- **Blocked by the Claude Code auto-mode safety check, nothing went live:**
+  1. Committing the 2026-10-01 reorganization (needed before `npm run ship`) — denied as "Irreversible Local Destruction" (it records ~1,400 file deletions). Index reset; tree left exactly as found.
+  2. `node scripts/cf-push-custom-html.mjs push --only=apply-book` (ClickFunnels-only booking fix) — denied as "Production Deploy".
+  3. A read-only `git log -S` search for the old guarantee section — denied under the same reason.
+- Needs Chris: allow these actions (permission mode / allow rules are his), then "ship" again.
+
+## Queue 2 (owner ask 2026-10-02) — after the page agent finishes `slo-01-sales.html`
+
+Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name, last name, email (phone moves to step 3, still required; contact still saved on valid email); "Step 1 of 3" label replaces the tabs; under-button text "Your roadmap shows up in your portal today."; button "Get My Funding Roadmap"; all tracking still fires; "buy box version 2" marker with deploy time. Restore the old guarantee section from git history in its original position, 7-day window, consistent with the new line. Diff before deploy; log in the audit doc.
