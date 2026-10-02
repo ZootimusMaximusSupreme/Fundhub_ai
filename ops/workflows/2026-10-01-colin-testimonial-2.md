@@ -63,3 +63,10 @@ none
 - Blocked 1: Submagic API (docs.submagic.co upload-project) has no eye-contact field. No eye-contact tool exists in the repo.
 - Blocked 2: tool permission check refused the edit to `marketing/landing-pages/slo/slo-01-sales.html` and refused reading `.env` key names.
 - Uncaptioned web encode at `public/funnel/slo-testimonial-colin2.mp4` is NOT committed; it is the wrong video.
+
+## B — status update (unblocked on video)
+
+- Right source: Chris's Submagic export `Colin Testimonial #2.mp4` (captions + eye contact, 1440x2560, 2:02), from ~/Downloads.
+- Cover re-rendered from it (frame 0:30); poster `public/funnel/slo-testimonial-colin2-poster.jpg`; web video `public/funnel/slo-testimonial-colin2.mp4` (1080x1920, 40 MB).
+- `colin2` approved, `colin` marked replaced in testimonials.json.
+- Still blocked: tool permission check refused editing `marketing/landing-pages/slo/slo-01-sales.html` (the card swap). Then: npm run ship → cf push slo-297-sales → prove live.

@@ -13,11 +13,12 @@
     "best_frame_timestamp": "1:26",
     "thumbnail_path": "public/testimonials/thumbnails/colin.png",
     "sort_order": 0,
-    "status": "approved",
+    "status": "replaced",
     "thumbnail_band_top": "62%",
     "thumbnail_band_bottom": "100%",
     "thumbnail_foot_top": "80%",
-    "poster_src": "https://fundhub.ai/funnel/slo-testimonial-colin-poster.jpg"
+    "poster_src": "https://fundhub.ai/funnel/slo-testimonial-colin-poster.jpg",
+    "replaced_by": "colin2"
   },
   {
     "id": "colin2",
@@ -34,11 +35,12 @@
     "best_frame_timestamp": "0:30",
     "thumbnail_path": "public/testimonials/thumbnails/colin2.png",
     "sort_order": 0,
-    "status": "draft",
+    "status": "approved",
     "thumbnail_band_top": "58%",
     "thumbnail_band_bottom": "100%",
     "thumbnail_foot_top": "78%",
-    "poster_src": "https://fundhub.ai/funnel/slo-testimonial-colin2-poster.jpg"
+    "poster_src": "https://fundhub.ai/funnel/slo-testimonial-colin2-poster.jpg",
+    "source_file": "Submagic export \"Colin Testimonial #2.mp4\" (captions + eye contact), 1440x2560"
   },
   {
     "id": "gene",
