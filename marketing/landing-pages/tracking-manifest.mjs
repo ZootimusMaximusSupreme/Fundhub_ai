@@ -291,6 +291,8 @@ gtag('config', '${id}');
  * @param {string} [opts.pageToken] cfp_ token from CF create response
  * @param {string} opts.pixelId
  * @param {boolean} opts.includeVslBeacon
+ * @param {string} [opts.headFirstHtml] marked head blocks (headBlocksHtml) that must run
+ *   before the pixel, Clarity and the body scripts — e.g. the /roadmap one-address block
  * @param {Record<string, string | undefined>} [opts.env]
  */
 export function wrapCustomHtmlDocument({
@@ -298,15 +300,19 @@ export function wrapCustomHtmlDocument({
   pageToken,
   pixelId,
   includeVslBeacon,
+  headFirstHtml = "",
   env = process.env,
 }) {
   const headBits = [
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
+  ];
+  if (String(headFirstHtml).trim()) headBits.push(String(headFirstHtml).trim());
+  headBits.push(
     metaPixelHeadHtml(pixelId),
     clarityHeadHtml(env),
     ga4HeadHtml(env),
-  ];
+  );
   if (pageToken) {
     headBits.push(
       `<meta name="cf-page-token" content="${String(pageToken).replace(/"/g, "&quot;")}">`,
@@ -368,6 +374,30 @@ export function upsertMarkedBlock(live, block, marker) {
   if (current === b) return { changed: false, mode: "none", send: "", next: code };
   const next = code.slice(0, i) + b + code.slice(j + end.length);
   return { changed: true, mode: "replace", send: next, next };
+}
+
+/**
+ * The marked head blocks a custom HTML row carries (`headBlocks: [{ fragment, marker }]`),
+ * read and joined, for wrapCustomHtmlDocument's `headFirstHtml`. A custom HTML page
+ * refuses head_code (422), so these ride inside the document the push writes whole.
+ * Same marker rule as upsertMarkedBlock: each block starts with `<!-- ${marker}:start`
+ * and ends with `<!-- ${marker}:end -->`, once.
+ * @param {{ headBlocks?: { fragment: string, marker: string }[] }} row
+ * @param {(relPath: string) => string} readFragment
+ */
+export function headBlocksHtml(row, readFragment) {
+  const out = [];
+  for (const { fragment, marker } of row?.headBlocks ?? []) {
+    const b = String(readFragment(fragment)).trim();
+    const start = `<!-- ${marker}:start`;
+    const end = `<!-- ${marker}:end -->`;
+    if (!b.startsWith(start) || !b.endsWith(end)) {
+      throw new Error(`${fragment} must start with "${start}" and end with "${end}"`);
+    }
+    if (b.indexOf(start, 1) !== -1) throw new Error(`${fragment} holds "${start}" twice`);
+    out.push(b);
+  }
+  return out.join("\n");
 }
 
 /** Pages we never full-replace (native CF calendar / checkout). */
@@ -505,8 +535,12 @@ export const PUSH_MANIFEST = [
     pageId: "25516164",
     fragment: "marketing/landing-pages/slo/slo-01-sales.html",
     vslBeacon: true,
+    // One address (owner ask 2026-10-02): first in <head>, /roadmap/ -> /roadmap with
+    // history.replaceState before the pixel, Clarity and attribution load, plus
+    // <link rel="canonical">. ClickFunnels serves /roadmap/ as a 200 and has no redirect API.
+    headBlocks: [{ fragment: "marketing/landing-pages/slo/slo-canonical-head.html", marker: "fh-canonical" }],
     strategy: "custom_html_put",
-    note: "Live step path /roadmap, in its own funnel (Fundhub $297 Roadmap, 984178) since 2026-10-01. Replace custom_html with the full sales page fragment.",
+    note: "Live step path /roadmap, in its own funnel (Fundhub $297 Roadmap, 984178) since 2026-10-01. Replace custom_html with the full sales page fragment; headBlocks go first in <head> of the same whole-page write.",
   },
   {
     key: "slo-297-booking",

@@ -20,6 +20,7 @@ import {
   metaPixelHeadHtml,
   directRoasHeadHtml,
   wrapCustomHtmlDocument,
+  headBlocksHtml,
   DO_NOT_FULL_REPLACE_PATHS,
   PUSH_MANIFEST,
   trackingFooterScripts,
@@ -884,6 +885,7 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
       pageToken: sdkToken,
       pixelId: pixel.id,
       includeVslBeacon: !!row.vslBeacon,
+      headFirstHtml: headBlocksHtml(row, readFragment),
       env: process.env,
     });
 

@@ -222,25 +222,53 @@
   status = 200
 
 # apply.fundhub.ai is a Netlify domain alias on this site (same public/ as fundhub.ai).
-# External DNS: CNAME apply → transcendent-wisp-888771.netlify.app (see docs/ops/apply-fundhub-netlify.md).
+# External DNS: CNAME apply → transcendent-wisp-888771.netlify.app (see ops/apply-fundhub-netlify.md).
 
-# $297 diagnostic pages live in public/roadmap/. A sibling public/roadmap.html
-# used to steal /roadmap (same class as the old /app.html stub). That file is now
-# /optimize-plan. These rules make the folder the public URL.
+# The $297 sales page has ONE address: https://apply.fundhub.ai/roadmap (the
+# ClickFunnels page, owner ask 2026-10-02 — one URL so tracking and Clarity are
+# not split). The old copy in public/roadmap/index.html is no longer served on
+# fundhub.ai: /roadmap, /roadmap/ and /roadmap/index.html all 301 there. Netlify
+# matches /roadmap and /roadmap/ to the same rule and passes the query string
+# (UTMs, fbclid, ref, client_id) through. force = true because the folder exists.
+#
+# Only the sales page moves. public/roadmap/pay.html and pull.html stay where
+# they are: pull.html is where Commas sends a payer when no return address is
+# sent (src/slo/offer.mjs SLO_PULL_PATH). No rule here may catch them.
+#
+# Scoped to https://fundhub.ai on purpose. apply.fundhub.ai is still a domain
+# alias on this site (DNS points it at ClickFunnels); a path-only rule would loop
+# forever if that DNS were ever pointed back here. www.fundhub.ai already 301s to
+# fundhub.ai with the path and query, and fundhub.ai forces https.
+# Pinned by src/http/roadmap-canonical.test.mjs.
 [[redirects]]
-  from = "/roadmap"
-  to = "/roadmap/"
+  from = "https://fundhub.ai/roadmap"
+  to = "https://apply.fundhub.ai/roadmap"
   status = 301
+  force = true
 
+[[redirects]]
+  from = "https://fundhub.ai/roadmap/"
+  to = "https://apply.fundhub.ai/roadmap"
+  status = 301
+  force = true
+
+[[redirects]]
+  from = "https://fundhub.ai/roadmap/index.html"
+  to = "https://apply.fundhub.ai/roadmap"
+  status = 301
+  force = true
+
+# A sibling public/roadmap.html used to steal /roadmap (same class as the old
+# /app.html stub). That file is now /optimize-plan.
 [[redirects]]
   from = "/roadmap.html"
   to = "/optimize-plan"
   status = 301
 
-# Old $297 diagnostic URL. Public pages now live at /roadmap.
+# Old $297 diagnostic URL. Straight to the one sales page address, one hop.
 [[redirects]]
   from = "/slo"
-  to = "/roadmap/"
+  to = "https://apply.fundhub.ai/roadmap"
   status = 301
 
 [[redirects]]
