@@ -28,6 +28,7 @@ import {
   upsertMarkedBlock,
   nextFooterCode,
   nextHeadCode,
+  nextFunnelHeadCode,
   hasScriptSrc,
   footerScriptTag,
   FH_ATTRIBUTION_SRC,
@@ -323,6 +324,45 @@ async function getFunnelHead(creds, funnelId, ctx) {
     throw new Error(`funnel ${funnelId}: head_code not returned with expand — refusing to strip a pixel blind`);
   }
   return String(body.head_code ?? "");
+}
+
+/**
+ * Funnel-level head_code (row strategy "funnel_head_pixel"): swap the one Meta pixel
+ * <script> for metaPixelHeadHtml (PageView with eventID) and leave every other byte.
+ * Reads first and stops, writing nothing, when the head cannot be read or does not hold
+ * exactly one pixel. Snapshots the live head before the write, sends the whole head with
+ * head_code_mode "replace" (PUT /funnels/{id}), then reads it back and fails unless it
+ * matches what was sent.
+ */
+async function pushFunnelHeadPixel(creds, row, pixelId, ctx, dryRun, snapDir) {
+  let live;
+  try {
+    live = await getFunnelHead(creds, row.funnelId, ctx);
+  } catch (err) {
+    return { ok: false, skipped: true, reason: "funnel_head_unreadable", detail: err.message };
+  }
+  let plan;
+  try {
+    plan = nextFunnelHeadCode(live, pixelId);
+  } catch (err) {
+    return { ok: false, skipped: true, reason: "funnel_head_pixel_not_one", detail: err.message };
+  }
+  const base = { funnel_id: row.funnelId, head_changed: plan.changed, head_length_before: live.length };
+  if (!plan.changed) return { ok: true, ...base, skipped: true, reason: "pixel_already_right" };
+  if (dryRun) return { ok: true, dryRun: true, ...base, head_length_after: plan.next.length };
+  mkdirSync(snapDir, { recursive: true });
+  const snapshot = join(snapDir, `funnel-${row.funnelId}-head_code.html`);
+  writeFileSync(snapshot, live, "utf8");
+  await cfApi({
+    url: `${baseUrl(creds.subdomain)}/funnels/${row.funnelId}`,
+    apiKey: creds.api_key,
+    ctx,
+    method: "PUT",
+    body: JSON.stringify({ funnel: { head_code: plan.next, head_code_mode: "replace" } }),
+  });
+  const after = await getFunnelHead(creds, row.funnelId, ctx);
+  const verified = after.trim() === plan.next.trim();
+  return { ok: verified, ...base, verified, snapshot: snapshot.slice(ROOT.length + 1), head_length_after: after.length };
 }
 
 async function getPageCode(creds, pageId, slot, ctx) {
@@ -769,6 +809,12 @@ async function cmdPush(creds, { dryRun = false, only = null } = {}) {
           error: redactSecret(err.message, secret),
         });
       }
+      continue;
+    }
+    if (row.strategy === "funnel_head_pixel") {
+      const r = await pushFunnelHeadPixel(creds, row, pixel.id, ctx, dryRun, snapDir);
+      if (!r.ok) process.exitCode = 1;
+      results.push({ key: row.key, liveUrl: row.liveUrl, mode: "funnel_head_pixel", pixel_env: pixel.envName, ...r });
       continue;
     }
     if (!row.path && !row.pageId) {

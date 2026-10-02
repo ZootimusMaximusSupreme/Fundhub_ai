@@ -92,7 +92,13 @@ test("buy box v2: step 1 — the refund line right above the button, the button,
   assert.doesNotMatch(html, /Step 1 of 3\. Your card is next, then the short soft pull form\./);
   /* The button keeps its handler and its tracking event. */
   assert.match(widgetScript, /s1\.addEventListener\('submit',function\(e\)\{e\.preventDefault\(\);onContinue\(\);\}\);/);
-  assert.match(widgetScript, /function onContinue\(\)\{\n\s*fht\('continue',\{step:1\}\);/);
+  /* continue (Meta Lead via the shared tracker) only after the step-1 checks pass:
+     a failed press sends validation_error, never continue. */
+  assert.match(
+    widgetScript,
+    /function onContinue\(\)\{\n(?:\s*\/\*[^*]*\*\/\n)?\s*if\(order&&order\.locked\)\{go\(3\);return;\}\n\s*if\(!checkStep1\(\)\)\{var f=s1\.querySelector\('\.err'\);if\(f\)f\.focus\(\);return;\}\n(?:\s*\/\*[\s\S]*?\*\/\n)?\s*fht\('continue',\{step:1\}\);\n\s*var c=contact\(\);/
+  );
+  assert.equal((widgetScript.match(/fht\('continue'/g) || []).length, 1, "one continue send");
 });
 
 test("buy box v2: every buy box event carries bbv:2 (widget and sample previews)", () => {
@@ -101,6 +107,22 @@ test("buy box v2: every buy box event carries bbv:2 (widget and sample previews)
   assert.match(preview, /function fht\(e,p\)\{try\{p=p\|\|\{\};p\.bbv=2;/);
   /* Meta's PreviewOpened is unchanged. */
   assert.match(preview, /fbq\('trackCustom','PreviewOpened',\{content_name:d\}\)/);
+});
+
+test("checkout:success sends payment_result with the order's ref, for Meta Purchase id purchase.<ref> (Phase 4)", () => {
+  const at = widgetScript.indexOf("card.on('checkout:success'");
+  const success = widgetScript.slice(at, widgetScript.indexOf("card.on('form:submission_error'", at));
+  assert.match(success, /var pr=\{result:'success'\};if\(order&&order\.ref\)pr\.order_ref=String\(order\.ref\);\n\s*fht\('payment_result',pr\);\n\s*go\(3\);/);
+  /* bbv still rides on it: fht adds it to every buy box event. */
+  assert.match(widgetScript, /function fht\(e,p\)\{try\{p=p\|\|\{\};p\.bbv=BBV;/);
+  /* The fails carry no ref. */
+  assert.match(widgetScript, /fht\('payment_result',\{result:'fail',code:'card_declined'\}\);/);
+  assert.match(widgetScript, /fht\('payment_result',\{result:'fail',code:'checkout_error'\}\);/);
+});
+
+test("the page sends Meta nothing itself except PreviewOpened: Lead, InitiateCheckout, Purchase come from the shared tracker", () => {
+  const fbqCalls = [...html.matchAll(/fbq\(([^)]*)\)/g)].map((m) => m[1]);
+  assert.deepEqual(fbqCalls, ["'trackCustom','PreviewOpened',{content_name:d}"]);
 });
 
 test("the guarantee is back in its old place, right before the FAQ, word for word (owner ask 2026-10-02)", () => {

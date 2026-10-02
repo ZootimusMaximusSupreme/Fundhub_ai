@@ -151,11 +151,11 @@ describe("Lead", () => {
     assert.equal("meta_event_id" in p.events("continue")[0], false);
   });
 
-  test("/apply: the last question (cf_svy_available_capital) is Lead + SurveyStep on one id; earlier ones SurveyStep only", () => {
+  test("/apply: the last question (page marks last:true) is Lead + SurveyStep on one id; earlier ones SurveyStep only", () => {
     const p = page({ pathname: "/apply" }).run();
     p.fbqCalls.length = 0;
     p.win.fhTrack("survey_answer", { survey: "apply", step_num: 1, question_id: "contact" });
-    p.win.fhTrack("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital" });
+    p.win.fhTrack("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true });
     const [first, last] = p.events("survey_answer");
     assert.deepEqual(fbqs(p), [
       ["trackCustom", "SurveyStep", { survey: "apply", step: 1 }, first.meta_event_id],
@@ -165,9 +165,10 @@ describe("Lead", () => {
     assert.equal(last.meta_event_id, `${SID}.${last.seq}`);
   });
 
-  test("/home: the contact step (last) is Lead; so is any survey_answer the page marks last:true", () => {
+  test("/home: Lead only on the page's once-only last:true — a resend after a failed submit (no last) is not a second Lead", () => {
     const home = page({ hostname: "fundhub.ai", pathname: "/" }).run();
     home.win.fhTrack("survey_answer", { survey: "home", step_num: 1, question_id: "funding_target_amount" });
+    home.win.fhTrack("survey_answer", { survey: "home", step_num: 10, question_id: "contact", last: true });
     home.win.fhTrack("survey_answer", { survey: "home", step_num: 10, question_id: "contact" });
     assert.deepEqual(named(home, "Lead").map((c) => c[2]), [{ content_name: "home" }]);
 

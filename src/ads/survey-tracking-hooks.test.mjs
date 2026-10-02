@@ -30,7 +30,9 @@ const THANKS_JS = read("public/funnel/thankyou-sort.js");
 
 /* The props each event may carry (spec, "Events"). */
 const ALLOWED = {
-  survey_answer: ["survey", "step_num", "question_id"],
+  /* last: true on the final question only (docs/tracking/meta-events.md, Phase 4 map:
+     the shared tracker turns it into Meta Lead). */
+  survey_answer: ["survey", "step_num", "question_id", "last"],
   survey_route: ["survey", "offer"],
   field_focus: ["form", "field"],
   field_complete: ["form", "field"],
@@ -377,8 +379,11 @@ const APPLY_CONTACT_EVENTS = [
   ev("survey_answer", { survey: "apply", step_num: 1, question_id: "contact" }),
 ];
 
+/* The final question (cf_svy_available_capital) carries last: true; no other screen does. */
 const answersOf = (path) =>
-  path.map(([key], i) => ev("survey_answer", { survey: "apply", step_num: i + 2, question_id: key }));
+  path.map(([key], i) => ev("survey_answer", {
+    survey: "apply", step_num: i + 2, question_id: key, ...(i === path.length - 1 ? { last: true } : {}),
+  }));
 
 describe("/apply survey hooks (apply-survey.html)", () => {
   test("business path: contact fields, then one survey_answer per screen in the order seen", () => {
@@ -395,6 +400,13 @@ describe("/apply survey hooks (apply-survey.html)", () => {
     assert.deepEqual(got, [...APPLY_CONTACT_EVENTS, ...answersOf([...APPLY_COMMON, ...APPLY_PERSONAL])]);
     assert.deepEqual(got.at(-3)[1], { survey: "apply", step_num: 7, question_id: "cf_svy_annual_income_range" });
     assertShape(got);
+  });
+
+  test("only the final question (available capital, step 9) carries last: true, on both paths", () => {
+    for (const rest of [APPLY_BIZ, APPLY_PERSONAL]) {
+      const lasts = walkApply(rest).page.events().filter((e) => e[1].last !== undefined);
+      assert.deepEqual(lasts, [ev("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true })]);
+    }
   });
 
   test("no answer and no typed value is ever queued", () => {
@@ -571,7 +583,7 @@ const HOME_CONTACT_EVENTS = [
   ev("field_complete", { form: "home", field: "email" }),
   ev("field_focus", { form: "home", field: "phone" }),
   ev("field_complete", { form: "home", field: "phone" }),
-  ev("survey_answer", { survey: "home", step_num: 10, question_id: "contact" }),
+  ev("survey_answer", { survey: "home", step_num: 10, question_id: "contact", last: true }),
 ];
 
 describe("fundhub.ai homepage survey hooks (public/js/homepage-survey.js)", () => {
@@ -589,6 +601,19 @@ describe("fundhub.ai homepage survey hooks (public/js/homepage-survey.js)", () =
     assert.deepEqual(got, [...homeAnswers([...HOME_COMMON, ...HOME_PERSONAL]), ...HOME_CONTACT_EVENTS]);
     assert.deepEqual(got[6][1], { survey: "home", step_num: 7, question_id: "annual_personal_income" });
     assertShape(got);
+  });
+
+  test("last: true goes on the contact submit once per page load: a second press after a failed send is not a second Lead", async () => {
+    const failFetch = () => Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({ ok: false }) });
+    const h = await walkHome(HOME_BIZ, { fetchImpl: failFetch });
+    h.page.click(h.act("submit"));
+    await new Promise((r) => setImmediate(r));
+    const contact = h.page.events().filter((e) => e[0] === "survey_answer" && e[1].question_id === "contact");
+    assert.deepEqual(contact, [
+      ev("survey_answer", { survey: "home", step_num: 10, question_id: "contact", last: true }),
+      ev("survey_answer", { survey: "home", step_num: 10, question_id: "contact" }),
+    ]);
+    assert.equal(h.page.events().filter((e) => e[1].last !== undefined).length, 1, "no other screen carries last");
   });
 
   test("no answer and no typed value is ever queued", async () => {
@@ -642,7 +667,7 @@ describe("fundhub.ai homepage survey hooks (public/js/homepage-survey.js)", () =
     assert.deepEqual(tail, [
       ev("field_complete", { form: "home", field: "name" }),
       ev("field_complete", { form: "home", field: "email" }),
-      ev("survey_answer", { survey: "home", step_num: 10, question_id: "contact" }),
+      ev("survey_answer", { survey: "home", step_num: 10, question_id: "contact", last: true }),
     ]);
   });
 

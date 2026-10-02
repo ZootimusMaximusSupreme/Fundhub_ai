@@ -1525,7 +1525,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         setBusy(false);
         if(order){order.locked=true;keepPaid(order);}
         hideFormErr();
-        fht('payment_result',{result:'success'});
+        /* order_ref: the shared tracker sends Meta Purchase with event id
+           "purchase.<order_ref>", the same id the payment webhook's server copy uses. */
+        var pr={result:'success'};if(order&&order.ref)pr.order_ref=String(order.ref);
+        fht('payment_result',pr);
         go(3);
       });
       /* A declined card or a gateway refusal. Their words, on our page. */
@@ -1776,10 +1779,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(!form){var r=root.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*0.6)root.scrollIntoView({behavior:'smooth',block:'start'});}
   }
   function onContinue(){
-    fht('continue',{step:1});
     /* Paid: steps 1 and 2 are behind them. The soft pull is all that is left. */
     if(order&&order.locked){go(3);return;}
     if(!checkStep1()){var f=s1.querySelector('.err');if(f)f.focus();return;}
+    /* Only a press that passes the step-1 checks counts (the shared tracker sends it
+       to Meta as Lead). A failed press already sends validation_error. */
+    fht('continue',{step:1});
     var c=contact();
     var lf=s3.querySelector('[name="first_name"]'),ll=s3.querySelector('[name="last_name"]');
     if(!lf.value)lf.value=c.first_name;if(!ll.value)ll.value=c.last_name;

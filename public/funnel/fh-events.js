@@ -96,7 +96,6 @@
   /* Meta: the map is docs/tracking/meta-events.md, "Map (database event → Meta)". */
   var VIEW_CONTENT = { "/roadmap": 1, "/watch": 1, "/apply": 1, "/home": 1 };
   var BUY_BOX = { "fh-cf-form": 1, fhw: 1 };
-  var LAST_QUESTION = { "/apply": "cf_svy_available_capital", "/home": "contact" };
   var PRICE = { value: 297, currency: "USD" };
   var REF = /^[A-Za-z0-9_-]{1,64}$/;
   var PV_ID = /^[A-Za-z0-9_.-]{1,120}$/;
@@ -279,7 +278,9 @@
     if (event === "continue") {
       if (page === "/roadmap" && (p.step == null || p.step === 1)) add("Lead", { content_name: "roadmap_buybox" });
     } else if (event === "survey_answer") {
-      var last = p.last === true || (has.call(LAST_QUESTION, page) && p.question_id === LAST_QUESTION[page]);
+      /* Lead only on the page's own once-only last:true (a resend after a failed
+         submit carries no last, so it cannot count a second Lead). */
+      var last = p.last === true;
       if (last) add("Lead", data({ content_name: p.survey }));
       add("SurveyStep", data({ survey: p.survey, step: p.step_num }), null, true);
     } else if (event === "buybox_tab") {
