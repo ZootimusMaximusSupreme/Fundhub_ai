@@ -1,0 +1,2180 @@
+{
+  "at": "2026-09-18T20:07:17.242Z",
+  "read_only": "on",
+  "sales_cols": {
+    "label": "sales_cols",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "id"
+      },
+      {
+        "column_name": "org_id"
+      },
+      {
+        "column_name": "client_id"
+      },
+      {
+        "column_name": "product_id"
+      },
+      {
+        "column_name": "agreed_price"
+      },
+      {
+        "column_name": "agreed_success_fee_percent"
+      },
+      {
+        "column_name": "currency"
+      },
+      {
+        "column_name": "sold_at"
+      },
+      {
+        "column_name": "status"
+      },
+      {
+        "column_name": "external_ref"
+      },
+      {
+        "column_name": "notes"
+      },
+      {
+        "column_name": "created_at"
+      },
+      {
+        "column_name": "updated_at"
+      },
+      {
+        "column_name": "is_demo"
+      },
+      {
+        "column_name": "sale_motion"
+      }
+    ]
+  },
+  "sale_pay_cols": {
+    "label": "sale_pay_cols",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "id"
+      },
+      {
+        "column_name": "org_id"
+      },
+      {
+        "column_name": "sale_id"
+      },
+      {
+        "column_name": "transaction_id"
+      },
+      {
+        "column_name": "kind"
+      },
+      {
+        "column_name": "amount"
+      },
+      {
+        "column_name": "paid_at"
+      },
+      {
+        "column_name": "notes"
+      },
+      {
+        "column_name": "created_at"
+      },
+      {
+        "column_name": "updated_at"
+      },
+      {
+        "column_name": "source_event_id"
+      },
+      {
+        "column_name": "is_demo"
+      },
+      {
+        "column_name": "product_id"
+      },
+      {
+        "column_name": "payment_link_id"
+      },
+      {
+        "column_name": "sale_motion"
+      }
+    ]
+  },
+  "msg_cols": {
+    "label": "msg_cols",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "id"
+      },
+      {
+        "column_name": "org_id"
+      },
+      {
+        "column_name": "client_id"
+      },
+      {
+        "column_name": "conversation_id"
+      },
+      {
+        "column_name": "direction"
+      },
+      {
+        "column_name": "channel"
+      },
+      {
+        "column_name": "template_key"
+      },
+      {
+        "column_name": "rendered_body"
+      },
+      {
+        "column_name": "provider"
+      },
+      {
+        "column_name": "provider_ref"
+      },
+      {
+        "column_name": "status"
+      },
+      {
+        "column_name": "compliance_check_passed"
+      },
+      {
+        "column_name": "created_at"
+      },
+      {
+        "column_name": "updated_at"
+      },
+      {
+        "column_name": "scheduled_at"
+      },
+      {
+        "column_name": "attempts"
+      },
+      {
+        "column_name": "last_attempt_at"
+      },
+      {
+        "column_name": "last_error"
+      },
+      {
+        "column_name": "provider_message_id"
+      },
+      {
+        "column_name": "blocked_reason"
+      },
+      {
+        "column_name": "blocked_at"
+      },
+      {
+        "column_name": "to_address"
+      },
+      {
+        "column_name": "subject"
+      },
+      {
+        "column_name": "sender_staff_id"
+      },
+      {
+        "column_name": "sender_kind"
+      },
+      {
+        "column_name": "sender_agent_code"
+      },
+      {
+        "column_name": "is_demo"
+      },
+      {
+        "column_name": "attachments"
+      }
+    ]
+  },
+  "doc_cols": {
+    "label": "doc_cols",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "id"
+      },
+      {
+        "column_name": "org_id"
+      },
+      {
+        "column_name": "client_id"
+      },
+      {
+        "column_name": "document_key"
+      },
+      {
+        "column_name": "kind"
+      },
+      {
+        "column_name": "subtype"
+      },
+      {
+        "column_name": "title"
+      },
+      {
+        "column_name": "invoice_id"
+      },
+      {
+        "column_name": "current_version"
+      },
+      {
+        "column_name": "current_version_id"
+      },
+      {
+        "column_name": "storage_key"
+      },
+      {
+        "column_name": "mime_type"
+      },
+      {
+        "column_name": "byte_size"
+      },
+      {
+        "column_name": "checksum"
+      },
+      {
+        "column_name": "generated_by"
+      },
+      {
+        "column_name": "generated_at"
+      },
+      {
+        "column_name": "delivered_at"
+      },
+      {
+        "column_name": "delivery_channel"
+      },
+      {
+        "column_name": "delivery_status"
+      },
+      {
+        "column_name": "signature_required"
+      },
+      {
+        "column_name": "signed_at"
+      },
+      {
+        "column_name": "signer_name"
+      },
+      {
+        "column_name": "signature_ref"
+      },
+      {
+        "column_name": "expires_at"
+      },
+      {
+        "column_name": "source_event_id"
+      },
+      {
+        "column_name": "metadata"
+      },
+      {
+        "column_name": "created_at"
+      },
+      {
+        "column_name": "updated_at"
+      },
+      {
+        "column_name": "is_demo"
+      }
+    ]
+  },
+  "staff_cols": {
+    "label": "staff_cols",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "email"
+      },
+      {
+        "column_name": "avatar_key"
+      }
+    ]
+  },
+  "dead_cols": {
+    "label": "dead_tables",
+    "ok": true,
+    "rows": [
+      {
+        "table_name": "failed_events"
+      },
+      {
+        "table_name": "v_failed_events_summary"
+      }
+    ]
+  },
+  "sales": {
+    "label": "sales",
+    "ok": true,
+    "rows": [
+      {
+        "id": "d164e2c8-2238-4384-b91c-be156d0e8aef",
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "agreed_price": "3000.00",
+        "status": "active",
+        "sold_at": "2026-09-18T15:13:40.311Z",
+        "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+      },
+      {
+        "id": "1771ffee-7550-4cb2-98aa-22b7fd75cb93",
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "agreed_price": "3000.00",
+        "status": "active",
+        "sold_at": "2026-09-18T15:13:26.146Z",
+        "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+      },
+      {
+        "id": "3028bb50-744f-4e83-9997-da6af10c5426",
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "agreed_price": "3000.00",
+        "status": "active",
+        "sold_at": "2026-09-18T15:13:07.503Z",
+        "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+      },
+      {
+        "id": "d7f8d653-c419-4df0-b12c-ce67258092c1",
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "agreed_price": "3000.00",
+        "status": "active",
+        "sold_at": "2026-09-17T17:46:48.921Z",
+        "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+      },
+      {
+        "id": "76694056-628e-4855-abf3-cd9b99fc051d",
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "agreed_price": "5000.00",
+        "status": "active",
+        "sold_at": "2026-09-17T17:46:38.967Z",
+        "product_id": "29809c86-347f-4c09-87e5-04f6420ac9e9"
+      },
+      {
+        "id": "37209774-b6bb-4db3-918e-104775fda7c8",
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "agreed_price": "1000.00",
+        "status": "active",
+        "sold_at": "2026-09-17T17:46:35.278Z",
+        "product_id": "0e4087cf-4a2f-4af4-b1a9-ce2f6319bdaa"
+      },
+      {
+        "id": "4730a421-f545-472a-8e50-caf9c7f6584f",
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "agreed_price": "5000.00",
+        "status": "active",
+        "sold_at": "2026-09-17T17:46:32.997Z",
+        "product_id": "e062800d-19e7-45d7-9196-595e6689244f"
+      },
+      {
+        "id": "316f30c2-215d-4d36-a26b-093e5519bba3",
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "agreed_price": "3000.00",
+        "status": "active",
+        "sold_at": "2026-09-06T03:06:05.580Z",
+        "product_id": "c087bdd2-0314-46b7-88f6-dc5c54b46a63"
+      }
+    ]
+  },
+  "products": {
+    "label": "products",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "id"
+      },
+      {
+        "column_name": "org_id"
+      },
+      {
+        "column_name": "code"
+      },
+      {
+        "column_name": "name"
+      },
+      {
+        "column_name": "description"
+      },
+      {
+        "column_name": "category"
+      },
+      {
+        "column_name": "default_price"
+      },
+      {
+        "column_name": "min_price"
+      },
+      {
+        "column_name": "max_price"
+      },
+      {
+        "column_name": "price_is_variable"
+      },
+      {
+        "column_name": "default_success_fee_percent"
+      },
+      {
+        "column_name": "active"
+      },
+      {
+        "column_name": "sort_order"
+      },
+      {
+        "column_name": "notes"
+      },
+      {
+        "column_name": "created_at"
+      },
+      {
+        "column_name": "updated_at"
+      }
+    ]
+  },
+  "sale_payments": {
+    "label": "sale_payments",
+    "ok": true,
+    "rows": [
+      {
+        "id": "a025f500-ddaf-497b-8d2e-1c7d0593c9af",
+        "sale_id": "37209774-b6bb-4db3-918e-104775fda7c8",
+        "kind": "refund",
+        "amount": "1000.00",
+        "paid_at": "2026-09-18T19:03:42.102Z",
+        "transaction_id": null,
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "agreed_price": "1000.00"
+      },
+      {
+        "id": "54a6fdba-a4fa-4c4e-b6fb-6f7ce6199c84",
+        "sale_id": "d7f8d653-c419-4df0-b12c-ce67258092c1",
+        "kind": "refund",
+        "amount": "3000.00",
+        "paid_at": "2026-09-18T19:03:42.102Z",
+        "transaction_id": null,
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "agreed_price": "3000.00"
+      },
+      {
+        "id": "180102ec-72b5-408f-ad46-3669b28ee5d8",
+        "sale_id": "d164e2c8-2238-4384-b91c-be156d0e8aef",
+        "kind": "deposit",
+        "amount": "3000.00",
+        "paid_at": "2026-09-18T15:13:40.504Z",
+        "transaction_id": "b7f2b8c6-49ba-4080-a992-a16a8fbda037",
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "agreed_price": "3000.00"
+      },
+      {
+        "id": "01c4d646-3830-419f-9555-52d69be3b4d2",
+        "sale_id": "d7f8d653-c419-4df0-b12c-ce67258092c1",
+        "kind": "deposit",
+        "amount": "3000.00",
+        "paid_at": "2026-09-18T15:13:34.407Z",
+        "transaction_id": "2f448720-cf69-4138-bb41-375bb431c179",
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "agreed_price": "3000.00"
+      },
+      {
+        "id": "b6171087-83bd-4432-acca-bc46ba936858",
+        "sale_id": "1771ffee-7550-4cb2-98aa-22b7fd75cb93",
+        "kind": "deposit",
+        "amount": "3000.00",
+        "paid_at": "2026-09-18T15:13:26.321Z",
+        "transaction_id": "eacbf48b-dedc-4f2c-99aa-c642df69733d",
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "agreed_price": "3000.00"
+      },
+      {
+        "id": "d5fb98a0-3f10-4a0b-aeb0-11f5b551219c",
+        "sale_id": "37209774-b6bb-4db3-918e-104775fda7c8",
+        "kind": "installment",
+        "amount": "1000.00",
+        "paid_at": "2026-09-18T15:13:19.821Z",
+        "transaction_id": "ecc55b44-79c0-4c18-9342-dd6504f42401",
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "agreed_price": "1000.00"
+      },
+      {
+        "id": "1d0b49b0-644f-49a9-83be-ce30cc8f395e",
+        "sale_id": "d7f8d653-c419-4df0-b12c-ce67258092c1",
+        "kind": "success_fee",
+        "amount": "2500.00",
+        "paid_at": "2026-09-18T15:13:17.145Z",
+        "transaction_id": "8483ab79-668a-4fd4-93e0-5ac369c3a3c3",
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "agreed_price": "3000.00"
+      },
+      {
+        "id": "d5a78445-3197-464d-8f34-bc449764a04e",
+        "sale_id": "3028bb50-744f-4e83-9997-da6af10c5426",
+        "kind": "deposit",
+        "amount": "3000.00",
+        "paid_at": "2026-09-18T15:13:07.719Z",
+        "transaction_id": "b7d3e044-28de-4202-8de4-6cab5ac007ed",
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "agreed_price": "3000.00"
+      },
+      {
+        "id": "67383724-4a8e-4e0d-b27b-538b6bdd8c71",
+        "sale_id": "d7f8d653-c419-4df0-b12c-ce67258092c1",
+        "kind": "deposit",
+        "amount": "3000.00",
+        "paid_at": "2026-09-17T17:46:49.059Z",
+        "transaction_id": "ca13882a-e4c1-4fbb-9004-e8d385e93c71",
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "agreed_price": "3000.00"
+      },
+      {
+        "id": "9a778be5-ab0e-4283-b632-e06e55e41516",
+        "sale_id": "76694056-628e-4855-abf3-cd9b99fc051d",
+        "kind": "deposit",
+        "amount": "5000.00",
+        "paid_at": "2026-09-17T17:46:39.099Z",
+        "transaction_id": "08ae60ee-25cd-496e-96c9-c9ab522eebc6",
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "agreed_price": "5000.00"
+      },
+      {
+        "id": "2d30026d-e39c-4267-88bf-32d9ef212aa5",
+        "sale_id": "37209774-b6bb-4db3-918e-104775fda7c8",
+        "kind": "installment",
+        "amount": "1000.00",
+        "paid_at": "2026-09-17T17:46:35.411Z",
+        "transaction_id": "50fe33fe-1ef0-42b4-a1ac-80dc6c36a875",
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "agreed_price": "1000.00"
+      },
+      {
+        "id": "63ab09d9-fa55-437b-aa3a-2dfbcb00dac5",
+        "sale_id": "4730a421-f545-472a-8e50-caf9c7f6584f",
+        "kind": "installment",
+        "amount": "5000.00",
+        "paid_at": "2026-09-17T17:46:33.138Z",
+        "transaction_id": "2a9e61d3-a53c-4c60-8231-cd6fae04a24a",
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "agreed_price": "5000.00"
+      },
+      {
+        "id": "c0596504-f07a-4f9e-b44f-1887e63e436d",
+        "sale_id": "316f30c2-215d-4d36-a26b-093e5519bba3",
+        "kind": "deposit",
+        "amount": "3000.00",
+        "paid_at": "2026-09-06T03:06:05.763Z",
+        "transaction_id": "6457cece-ed80-4226-a3ef-be50da296c84",
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "agreed_price": "3000.00"
+      }
+    ]
+  },
+  "clients": {
+    "label": "clients",
+    "ok": true,
+    "rows": [
+      {
+        "id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "first_name": "Sim",
+        "last_name": "Twelve-Academy",
+        "funded": false,
+        "funded_amount": null
+      },
+      {
+        "id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "first_name": "Sim",
+        "last_name": "Thirteen-NoBook",
+        "funded": false,
+        "funded_amount": null
+      },
+      {
+        "id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "first_name": "Walk1",
+        "last_name": "Funding",
+        "funded": false,
+        "funded_amount": null
+      },
+      {
+        "id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "first_name": "Sim",
+        "last_name": "Nine-Repair",
+        "funded": false,
+        "funded_amount": null
+      },
+      {
+        "id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "first_name": "Sim",
+        "last_name": "Combo-20260918",
+        "funded": false,
+        "funded_amount": null
+      },
+      {
+        "id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "first_name": "Sim",
+        "last_name": "Eleven-Blueprint",
+        "funded": false,
+        "funded_amount": null
+      },
+      {
+        "id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "first_name": "Sim",
+        "last_name": "Eight-Funding",
+        "funded": true,
+        "funded_amount": "50000.00"
+      }
+    ]
+  },
+  "rounds": {
+    "label": "rounds",
+    "ok": true,
+    "rows": [
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "round_number": 1,
+        "status": "started",
+        "approved_amount": null,
+        "funded_amount": null
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "round_number": 1,
+        "status": "started",
+        "approved_amount": null,
+        "funded_amount": null
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "round_number": 1,
+        "status": "funded",
+        "approved_amount": "50000.00",
+        "funded_amount": "45000.00"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "round_number": 2,
+        "status": "started",
+        "approved_amount": "45000.00",
+        "funded_amount": null
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "round_number": 1,
+        "status": "funded",
+        "approved_amount": null,
+        "funded_amount": "25000.00"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "round_number": 2,
+        "status": "funded",
+        "approved_amount": "10000.00",
+        "funded_amount": "25000.00"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "round_number": 1,
+        "status": "started",
+        "approved_amount": null,
+        "funded_amount": null
+      }
+    ]
+  },
+  "links": {
+    "label": "links",
+    "ok": true,
+    "rows": [
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "purpose": "deposit",
+        "description": "Consulting Services Engagement",
+        "status": "paid",
+        "amount_cents": "300000",
+        "paid_amount_cents": "300000",
+        "paid_at": "2026-09-18T15:13:05.922Z",
+        "has_session": true
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "sent",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "sent",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "purpose": "custom",
+        "description": "Capital Academy",
+        "status": "sent",
+        "amount_cents": "500000",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "purpose": "custom",
+        "description": "Capital Blueprint",
+        "status": "sent",
+        "amount_cents": "500000",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "purpose": "custom",
+        "description": "Success fee INV-B4B9C768",
+        "status": "paid",
+        "amount_cents": "250000",
+        "paid_amount_cents": "250000",
+        "paid_at": "2026-09-18T15:13:16.344Z",
+        "has_session": true
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment (+1 business)",
+        "status": "sent",
+        "amount_cents": "4200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "expired",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "purpose": "deposit",
+        "description": "Funding, done-for-you",
+        "status": "paid",
+        "amount_cents": "300000",
+        "paid_amount_cents": "300000",
+        "paid_at": "2026-09-18T15:13:24.830Z",
+        "has_session": true
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "purpose": "deposit",
+        "description": "Funding, done-for-you",
+        "status": "paid",
+        "amount_cents": "300000",
+        "paid_amount_cents": "300000",
+        "paid_at": "2026-09-18T15:13:38.891Z",
+        "has_session": true
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "purpose": "repair",
+        "description": "Credit repair, done-for-you",
+        "status": "paid",
+        "amount_cents": "100000",
+        "paid_amount_cents": "100000",
+        "paid_at": "2026-09-18T15:13:18.673Z",
+        "has_session": true
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "purpose": "deposit",
+        "description": "Funding, done-for-you",
+        "status": "paid",
+        "amount_cents": "300000",
+        "paid_amount_cents": "300000",
+        "paid_at": "2026-09-18T15:13:33.349Z",
+        "has_session": true
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "sent",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "sent",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "sent",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "expired",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "purpose": "custom",
+        "description": "Capital Academy",
+        "status": "paid",
+        "amount_cents": "500000",
+        "paid_amount_cents": "500000",
+        "paid_at": "2026-09-17T17:46:32.362Z",
+        "has_session": true
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "purpose": "custom",
+        "description": "Capital Blueprint",
+        "status": "paid",
+        "amount_cents": "500000",
+        "paid_amount_cents": "500000",
+        "paid_at": "2026-09-17T17:46:38.338Z",
+        "has_session": true
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "purpose": "repair",
+        "description": "Credit repair, done-for-you",
+        "status": "paid",
+        "amount_cents": "100000",
+        "paid_amount_cents": "100000",
+        "paid_at": "2026-09-17T17:46:33.942Z",
+        "has_session": true
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "purpose": "deposit",
+        "description": "Funding, done-for-you",
+        "status": "paid",
+        "amount_cents": "300000",
+        "paid_amount_cents": "300000",
+        "paid_at": "2026-09-17T17:46:47.895Z",
+        "has_session": true
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "purpose": "diagnostic",
+        "description": "UnderwriteIQ soft-pull assessment",
+        "status": "expired",
+        "amount_cents": "3200",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "purpose": "custom",
+        "description": "Success fee INV-AE12B967",
+        "status": "created",
+        "amount_cents": "500000",
+        "paid_amount_cents": null,
+        "paid_at": null,
+        "has_session": true
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "purpose": "deposit",
+        "description": "Funding, done-for-you",
+        "status": "paid",
+        "amount_cents": "300000",
+        "paid_amount_cents": "300000",
+        "paid_at": "2026-09-06T03:06:04.885Z",
+        "has_session": true
+      }
+    ]
+  },
+  "tx": {
+    "label": "tx",
+    "ok": true,
+    "rows": [
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "product_name": "Card Stacking DFY",
+        "amount_paid": "3000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-18T15:13:39.074Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "product_name": "Card Stacking DFY",
+        "amount_paid": "3000.00",
+        "status": "refunded",
+        "created_at": "2026-09-18T15:13:33.525Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "product_name": "Card Stacking DFY",
+        "amount_paid": "3000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-18T15:13:25.006Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "product_name": "Credit Repair Bundle",
+        "amount_paid": "1000.00",
+        "status": "refunded",
+        "created_at": "2026-09-18T15:13:18.877Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "product_name": "Success fee INV-B4B9C768",
+        "amount_paid": "2500.00",
+        "status": "succeeded",
+        "created_at": "2026-09-18T15:13:16.298Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "product_name": "Card Stacking DFY",
+        "amount_paid": "3000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-18T15:13:06.169Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "product_name": "Card Stacking DFY",
+        "amount_paid": "3000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-17T17:46:48.030Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "product_name": "Consulting Services Package",
+        "amount_paid": "5000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-17T17:46:38.320Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "product_name": "Credit Repair Bundle",
+        "amount_paid": "1000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-17T17:46:34.079Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "product_name": "Funding Mastery Course",
+        "amount_paid": "5000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-17T17:46:32.342Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "product_name": "Card Stacking DFY",
+        "amount_paid": "3000.00",
+        "status": "succeeded",
+        "created_at": "2026-09-06T03:06:04.836Z"
+      }
+    ]
+  },
+  "inv": {
+    "label": "inv",
+    "ok": true,
+    "rows": [
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "source": "funding_success_fee",
+        "status": "paid",
+        "amount_due": "2500.00",
+        "amount_paid": "2500.00",
+        "open_balance": "0.00"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "source": "funding_success_fee",
+        "status": "sent",
+        "amount_due": "5000.00",
+        "amount_paid": "0",
+        "open_balance": "5000.00"
+      }
+    ]
+  },
+  "apps": {
+    "label": "apps",
+    "ok": true,
+    "rows": [
+      {
+        "bank": "Arizona Bank & Trust (0% - HTLF)",
+        "status": "Denied",
+        "approved_amount": null,
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "round_number": 2
+      },
+      {
+        "bank": "Native American Bank",
+        "status": "Approved",
+        "approved_amount": "10000.00",
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "round_number": 2
+      }
+    ]
+  },
+  "msgs": {
+    "label": "msgs",
+    "ok": true,
+    "rows": [
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "template_key": "SMS-F02-ID-PORTAL-NEEDED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub needs your ID upload to keep onboarding moving. Reply STOP to opt out.",
+        "created_at": "2026-09-18T18:20:59.328Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "template_key": "SMS-F02-ID-PORTAL-NEEDED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub needs your ID upload to keep onboarding moving. Reply STOP to opt out.",
+        "created_at": "2026-09-18T18:20:59.314Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "SMS-F02-ID-PORTAL-NEEDED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub needs your ID upload to keep onboarding moving. Reply STOP to opt out.",
+        "created_at": "2026-09-18T18:20:59.212Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Sim,\n\n Quick heads up — your onboarding isn’t fully complete yet, and we can’t start your funding rounds until it is.\n\n What we still need from you (one or both may apply):\n\n • Government ID uploaded \n\n • Portal onboarding marked complete \n\n Please use the button below to finish onboarding. Once that’s done, your file automatically moves forward.\n\n Fini",
+        "created_at": "2026-09-18T18:20:21.027Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Sim,\n\n Quick heads up — your onboarding isn’t fully complete yet, and we can’t start your funding rounds until it is.\n\n What we still need from you (one or both may apply):\n\n • Government ID uploaded \n\n • Portal onboarding marked complete \n\n Please use the button below to finish onboarding. Once that’s done, your file automatically moves forward.\n\n Fini",
+        "created_at": "2026-09-18T18:20:20.984Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Sim,\n\n Quick heads up — your onboarding isn’t fully complete yet, and we can’t start your funding rounds until it is.\n\n What we still need from you (one or both may apply):\n\n • Government ID uploaded \n\n • Portal onboarding marked complete \n\n Please use the button below to finish onboarding. Once that’s done, your file automatically moves forward.\n\n Fini",
+        "created_at": "2026-09-18T18:20:20.976Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-02-REQUEST-MORE",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Got your upload — one thing needs fixing before we can move forward. Details in your portal: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-09%40gmail.com Reply STOP to opt out.",
+        "created_at": "2026-09-18T17:20:57.463Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-03-APPROVED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, documents approved. We're optimizing your profile now and your specialist will start Round 1 shortly. Reply STOP to opt out.",
+        "created_at": "2026-09-18T17:20:49.486Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "EMAIL-DOC-03-APPROVED",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Documents approved — you're moving</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\">\n",
+        "created_at": "2026-09-18T17:20:49.073Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-03-APPROVED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, documents approved. We're optimizing your profile now and your specialist will start Round 1 shortly. Reply STOP to opt out.",
+        "created_at": "2026-09-18T17:20:44.651Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "EMAIL-DOC-03-APPROVED",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Documents approved — you're moving</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\">\n",
+        "created_at": "2026-09-18T17:20:44.174Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-02-REQUEST-MORE",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Got your upload — one thing needs fixing before we can move forward. Details in your portal: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-09%40gmail.com Reply STOP to opt out.",
+        "created_at": "2026-09-18T15:27:25.726Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "template_key": "SMS-DOC-01-REQUEST",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Before we can start, we need a few documents from you. Upload them here: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-11%40gmail.com Or just reply to this text with photos. Reply STOP to opt out.",
+        "created_at": "2026-09-18T15:13:47.692Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "template_key": "EMAIL-DOC-01-REQUEST",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Documents needed before we can start</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\"",
+        "created_at": "2026-09-18T15:13:47.241Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "template_key": "SMS-DOC-01-REQUEST",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Before we can start, we need a few documents from you. Upload them here: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-12%40gmail.com Or just reply to this text with photos. Reply STOP to opt out.",
+        "created_at": "2026-09-18T15:13:32.933Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "template_key": "EMAIL-DOC-01-REQUEST",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Documents needed before we can start</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\"",
+        "created_at": "2026-09-18T15:13:32.520Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "SMS-DOC-01-REQUEST",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Before we can start, we need a few documents from you. Upload them here: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-combo-20260918%40gmail.com Or just reply to this text with photos. Reply STOP to opt out.",
+        "created_at": "2026-09-18T15:13:15.450Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "EMAIL-DOC-01-REQUEST",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Documents needed before we can start</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\"",
+        "created_at": "2026-09-18T15:13:14.924Z"
+      },
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "template_key": "EMAIL-NOBOOK-01",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Your file is ready</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\">\n<table role=\"pre",
+        "created_at": "2026-09-18T14:54:58.027Z"
+      },
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "template_key": "SMS-NOBOOK-01",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Sim, it's Josh at Fundhub. Your application is in, but there's no call on the calendar yet — and the call is where an advisor goes through your options with you. Pick a time: https://apply.fundhub.ai/funding-book-call Reply STOP to opt out.",
+        "created_at": "2026-09-18T14:54:58.027Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "EMAIL-NOBOOK-01",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Your file is ready</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\">\n<table role=\"pre",
+        "created_at": "2026-09-18T10:52:37.485Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "SMS-NOBOOK-01",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Sim, it's Josh at Fundhub. Your application is in, but there's no call on the calendar yet — and the call is where an advisor goes through your options with you. Pick a time: https://apply.fundhub.ai/funding-book-call Reply STOP to opt out.",
+        "created_at": "2026-09-18T10:52:36.931Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "SMS-F02-ID-PORTAL-NEEDED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub needs your ID upload to keep onboarding moving. Reply STOP to opt out.",
+        "created_at": "2026-09-17T20:49:22.543Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Sim,\n\n Quick heads up — your onboarding isn’t fully complete yet, and we can’t start your funding rounds until it is.\n\n What we still need from you (one or both may apply):\n\n • Government ID uploaded \n\n • Portal onboarding marked complete \n\n Please use the button below to finish onboarding. Once that’s done, your file automatically moves forward.\n\n Fini",
+        "created_at": "2026-09-17T20:49:21.613Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "EMAIL-F07-FUNDING-LOCKED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Your total funding is locked 🔓\n\n Hey Sim,\n\n You made it. \n After 10 rounds of strategic submissions, lender sequencing, inquiry spacing, \n and profile management — your total funding is now locked in. \n\n Total funding secured:\n\n $\n\n This includes the combined approvals from:\n\n Your personal funding rounds\n\n Your business funding rounds\n\n All premium-tier ba",
+        "created_at": "2026-09-17T18:58:28.550Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "EMAIL-F03-ROUND-SUBMITTED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Sim,\n\n Quick update — we’ve submitted Funding Round  for your file.\n\n What happens next:\n\n • Lenders review the submission and return decisions on their timelines.\n\n • If anything is needed to finalize this round (identity, verification, or additional documentation), we’ll notify you as soon as it’s requested.\n\n You can monitor round status and next ste",
+        "created_at": "2026-09-17T18:11:35.605Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "EMAIL-F03-ROUND-SUBMITTED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Sim,\n\n Quick update — we’ve submitted Funding Round  for your file.\n\n What happens next:\n\n • Lenders review the submission and return decisions on their timelines.\n\n • If anything is needed to finalize this round (identity, verification, or additional documentation), we’ll notify you as soon as it’s requested.\n\n You can monitor round status and next ste",
+        "created_at": "2026-09-17T17:48:57.123Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "SMS-DOC-01-REQUEST",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Before we can start, we need a few documents from you. Upload them here: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-08%40gmail.com Or just reply to this text with photos. Reply STOP to opt out.",
+        "created_at": "2026-09-17T17:46:54.200Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "EMAIL-DOC-01-REQUEST",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Documents needed before we can start</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\"",
+        "created_at": "2026-09-17T17:46:53.873Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "template_key": "EMAIL-S05A-NOSHOW-RECOVERY",
+        "channel": "email",
+        "status": "delivered",
+        "body": "Hey Sim,\n\nWe had you down for  and didn't connect. No problem, things come up.\n\nWorth saying: the work on your file is already done. Your profile has been run and your funding position is sitting in front of us — we just need fifteen minutes to walk you through what it says.\n\nThat's the whole call. What your file supports today, what's holding back the rest,",
+        "created_at": "2026-09-17T17:41:07.717Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP",
+        "channel": "email",
+        "status": "delivered",
+        "body": " You’re stalling your own funding\n\n Hey Walk1,\n\n Quick follow-up — your file is ready to move, but we’re still blocked.\n\n We still need your ID / portal onboarding completed before we can start Round 1.\n\n This is verification (lenders require it). Until it’s done, we can’t submit anything, and approvals can’t start.\n\n Knock this out here:\n\n Upload ID / Finis",
+        "created_at": "2026-09-08T14:59:32.725Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED-FOLLOWUP",
+        "channel": "email",
+        "status": "delivered",
+        "body": " You’re stalling your own funding\n\n Hey Walk1,\n\n Quick follow-up — your file is ready to move, but we’re still blocked.\n\n We still need your ID / portal onboarding completed before we can start Round 1.\n\n This is verification (lenders require it). Until it’s done, we can’t submit anything, and approvals can’t start.\n\n Knock this out here:\n\n Upload ID / Finis",
+        "created_at": "2026-09-08T06:07:36.494Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "SMS-F02-ID-PORTAL-NEEDED",
+        "channel": "sms",
+        "status": "failed",
+        "body": "Hey Walk1, Fundhub needs your ID upload to keep onboarding moving. Reply STOP to opt out.",
+        "created_at": "2026-09-06T14:59:22.039Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Walk1,\n\n Quick heads up — your onboarding isn’t fully complete yet, and we can’t start your funding rounds until it is.\n\n What we still need from you (one or both may apply):\n\n • Government ID uploaded \n\n • Portal onboarding marked complete \n\n Please use the button below to finish onboarding. Once that’s done, your file automatically moves forward.\n\n Fi",
+        "created_at": "2026-09-06T14:59:17.301Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-F03-ROUND-SUBMITTED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Walk1,\n\n Quick update — we’ve submitted Funding Round  for your file.\n\n What happens next:\n\n • Lenders review the submission and return decisions on their timelines.\n\n • If anything is needed to finalize this round (identity, verification, or additional documentation), we’ll notify you as soon as it’s requested.\n\n You can monitor round status and next s",
+        "created_at": "2026-09-06T12:02:59.147Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-F07-FUNDING-LOCKED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Your total funding is locked 🔓\n\n Hey Walk1,\n\n You made it. \n After 10 rounds of strategic submissions, lender sequencing, inquiry spacing, \n and profile management — your total funding is now locked in. \n\n Total funding secured:\n\n $\n\n This includes the combined approvals from:\n\n Your personal funding rounds\n\n Your business funding rounds\n\n All premium-tier ",
+        "created_at": "2026-09-06T11:21:09.171Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-F03-ROUND-SUBMITTED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Walk1,\n\n Quick update — we’ve submitted Funding Round  for your file.\n\n What happens next:\n\n • Lenders review the submission and return decisions on their timelines.\n\n • If anything is needed to finalize this round (identity, verification, or additional documentation), we’ll notify you as soon as it’s requested.\n\n You can monitor round status and next s",
+        "created_at": "2026-09-06T11:16:28.444Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "SMS-F02-ID-PORTAL-NEEDED",
+        "channel": "sms",
+        "status": "failed",
+        "body": "Hey Walk1, Fundhub needs your ID upload to keep onboarding moving. Reply STOP to opt out.",
+        "created_at": "2026-09-06T06:07:10.062Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-F02-ID-PORTAL-NEEDED",
+        "channel": "email",
+        "status": "delivered",
+        "body": " Hey Walk1,\n\n Quick heads up — your onboarding isn’t fully complete yet, and we can’t start your funding rounds until it is.\n\n What we still need from you (one or both may apply):\n\n • Government ID uploaded \n\n • Portal onboarding marked complete \n\n Please use the button below to finish onboarding. Once that’s done, your file automatically moves forward.\n\n Fi",
+        "created_at": "2026-09-06T06:06:59.492Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "SMS-DOC-01-REQUEST",
+        "channel": "sms",
+        "status": "failed",
+        "body": "Hey Walk1, Fundhub. Before we can start, we need a few documents from you. Upload them here: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bwalk-01%40gmail.com Or just reply to this text with photos. Reply STOP to opt out.",
+        "created_at": "2026-09-06T03:06:11.933Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "template_key": "EMAIL-DOC-01-REQUEST",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\">\n<title>Documents needed before we can start</title>\n</head>\n<body style=\"margin:0;padding:0;background-color:#F4F4F5;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;\"",
+        "created_at": "2026-09-06T03:06:11.472Z"
+      }
+    ]
+  },
+  "ent": {
+    "label": "ent",
+    "ok": false,
+    "error": "column \"key\" does not exist"
+  },
+  "inq": {
+    "label": "inq",
+    "ok": true,
+    "rows": [
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "bureau": "EX",
+        "inquiry": "CAPITAL ONE",
+        "status": "open"
+      },
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "bureau": "EX",
+        "inquiry": "SYNCB/PAYPAL CREDIT",
+        "status": "open"
+      },
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "bureau": "EQ",
+        "inquiry": "CITIBANK NA",
+        "status": "open"
+      },
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "bureau": "TU",
+        "inquiry": "NAVY FEDERAL CU",
+        "status": "open"
+      }
+    ]
+  },
+  "credit": {
+    "label": "credit",
+    "ok": true,
+    "rows": [
+      {
+        "table_name": "creditor_bureau_map"
+      }
+    ]
+  },
+  "failed_cols": {
+    "label": "failed_cols",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "id"
+      },
+      {
+        "column_name": "org_id"
+      },
+      {
+        "column_name": "event_id"
+      },
+      {
+        "column_name": "event_name"
+      },
+      {
+        "column_name": "event_version"
+      },
+      {
+        "column_name": "client_id"
+      },
+      {
+        "column_name": "payload"
+      },
+      {
+        "column_name": "handler_name"
+      },
+      {
+        "column_name": "error_message"
+      },
+      {
+        "column_name": "error_stack"
+      },
+      {
+        "column_name": "error_code"
+      },
+      {
+        "column_name": "status"
+      },
+      {
+        "column_name": "attempts"
+      },
+      {
+        "column_name": "max_attempts"
+      },
+      {
+        "column_name": "first_seen_at"
+      },
+      {
+        "column_name": "last_seen_at"
+      },
+      {
+        "column_name": "next_attempt_at"
+      },
+      {
+        "column_name": "resolved_at"
+      },
+      {
+        "column_name": "resolved_by"
+      },
+      {
+        "column_name": "resolution_note"
+      },
+      {
+        "column_name": "created_at"
+      },
+      {
+        "column_name": "updated_at"
+      }
+    ]
+  },
+  "failed": {
+    "label": "failed",
+    "ok": true,
+    "rows": [
+      {
+        "id": "3615e261-5957-45bf-bc1f-12893c30cce3",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "event_id": "24d1f97c-39eb-4da2-8240-d465923d150e",
+        "event_name": "payment.received",
+        "event_version": 1,
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "payload": {
+          "ref": "pl_1e1cf8fa9d5f62953e744fd8",
+          "dueBy": null,
+          "email": "stanbridgejchris+sim-11@gmail.com",
+          "amount": 3000,
+          "itemId": null,
+          "saleId": null,
+          "source": "commas",
+          "product": "deposit",
+          "purpose": "deposit",
+          "closerId": null,
+          "invoiceId": null,
+          "paymentId": "sim-pay-1789668311445",
+          "productId": "c087bdd2-0314-46b7-88f6-dc5c54b46a63",
+          "saleMotion": null,
+          "productCode": "card-stacking-dfy",
+          "productName": "Card Stacking DFY",
+          "providerRef": "sim-pay-1789668311445",
+          "paymentLinkId": "ace601c3-1296-4b14-8bd4-62409ce9ddf6",
+          "fundingRoundId": null,
+          "salesManagerId": null
+        },
+        "handler_name": "onPaymentReceivedForLink",
+        "error_message": "duplicate key value violates unique constraint \"payment_links_commas_session\"",
+        "error_stack": "error: duplicate key value violates unique constraint \"payment_links_commas_session\"\n    at /var/task/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async markPaid (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3038:18)\n    at async onPaymentReceivedForLink (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3079:19)\n    at async dispatch (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:501:7)\n    at async emit (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:483:22)\n    at async processCommasInboxRow (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34346:17)\n    at async drain (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:158:21)\n    at async sweepCommasInbox (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34403:20)\n    at async Object.handler (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34420:18)",
+        "error_code": "23505",
+        "status": "resolved",
+        "attempts": 1,
+        "max_attempts": 7,
+        "first_seen_at": "2026-09-18T15:13:39.171Z",
+        "last_seen_at": "2026-09-18T15:13:39.171Z",
+        "next_attempt_at": null,
+        "resolved_at": "2026-09-18T18:49:59.423Z",
+        "resolved_by": null,
+        "resolution_note": "N2 fix 2026-09-18: link settled by its own ref with the Commas payment id; the old step stored our product id as the Commas id and hit payment_links_commas_session",
+        "created_at": "2026-09-18T15:13:39.449Z",
+        "updated_at": "2026-09-18T18:49:56.661Z"
+      },
+      {
+        "id": "4432ac53-f731-472b-8cf7-e29fcdbe0606",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "event_id": "43cdc591-d22d-44ca-9ec6-cefca2b31890",
+        "event_name": "deposit.paid",
+        "event_version": 1,
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "payload": {
+          "ref": "pl_a67876f5f5e9d4018f3ce507",
+          "dueBy": null,
+          "email": "stanbridgejchris+sim-08@gmail.com",
+          "amount": 3000,
+          "itemId": null,
+          "saleId": "d7f8d653-c419-4df0-b12c-ce67258092c1",
+          "source": "commas",
+          "product": "deposit",
+          "purpose": "deposit",
+          "closerId": null,
+          "invoiceId": null,
+          "paymentId": "sim-pay-1789668284193",
+          "productId": "c087bdd2-0314-46b7-88f6-dc5c54b46a63",
+          "saleMotion": null,
+          "productCode": "card-stacking-dfy",
+          "productName": "Card Stacking DFY",
+          "providerRef": "sim-pay-1789668284193",
+          "paymentLinkId": "0e843523-4afa-41df-8acb-aaac8085d96d",
+          "fundingRoundId": null,
+          "salesManagerId": null
+        },
+        "handler_name": "onDepositPaidGate",
+        "error_message": "duplicate key value violates unique constraint \"inquiry_removal_cases_org_id_case_id_key\"",
+        "error_stack": "error: duplicate key value violates unique constraint \"inquiry_removal_cases_org_id_case_id_key\"\n    at /var/task/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async createCase (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:26534:14)\n    at async upsertBureauCase (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:27025:11)\n    at async onInquiryGateTrigger (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:27084:17)\n    at async dispatch (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:501:7)\n    at async emit (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:483:22)\n    at async processCommasInboxRow (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34346:17)\n    at async drain (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:158:21)\n    at async sweepCommasInbox (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34403:20)",
+        "error_code": "23505",
+        "status": "pending",
+        "attempts": 1,
+        "max_attempts": 7,
+        "first_seen_at": "2026-09-18T15:13:38.440Z",
+        "last_seen_at": "2026-09-18T15:13:38.440Z",
+        "next_attempt_at": "2026-09-18T15:14:38.440Z",
+        "resolved_at": null,
+        "resolved_by": null,
+        "resolution_note": null,
+        "created_at": "2026-09-18T15:13:38.707Z",
+        "updated_at": "2026-09-18T15:13:38.707Z"
+      },
+      {
+        "id": "bbca2cef-d441-426e-994f-b46ec2dd863d",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "event_id": "0948a846-9697-4a02-8d3a-9b38515dbc7e",
+        "event_name": "payment.received",
+        "event_version": 1,
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "payload": {
+          "ref": "pl_a67876f5f5e9d4018f3ce507",
+          "dueBy": null,
+          "email": "stanbridgejchris+sim-08@gmail.com",
+          "amount": 3000,
+          "itemId": null,
+          "saleId": "d7f8d653-c419-4df0-b12c-ce67258092c1",
+          "source": "commas",
+          "product": "deposit",
+          "purpose": "deposit",
+          "closerId": null,
+          "invoiceId": null,
+          "paymentId": "sim-pay-1789668284193",
+          "productId": "c087bdd2-0314-46b7-88f6-dc5c54b46a63",
+          "saleMotion": null,
+          "productCode": "card-stacking-dfy",
+          "productName": "Card Stacking DFY",
+          "providerRef": "sim-pay-1789668284193",
+          "paymentLinkId": "0e843523-4afa-41df-8acb-aaac8085d96d",
+          "fundingRoundId": null,
+          "salesManagerId": null
+        },
+        "handler_name": "onPaymentReceivedForLink",
+        "error_message": "duplicate key value violates unique constraint \"payment_links_commas_session\"",
+        "error_stack": "error: duplicate key value violates unique constraint \"payment_links_commas_session\"\n    at /var/task/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async markPaid (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3038:18)\n    at async onPaymentReceivedForLink (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3079:19)\n    at async dispatch (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:501:7)\n    at async emit (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:483:22)\n    at async processCommasInboxRow (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34346:17)\n    at async drain (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:158:21)\n    at async sweepCommasInbox (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34403:20)\n    at async Object.handler (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34420:18)",
+        "error_code": "23505",
+        "status": "resolved",
+        "attempts": 1,
+        "max_attempts": 7,
+        "first_seen_at": "2026-09-18T15:13:33.619Z",
+        "last_seen_at": "2026-09-18T15:13:33.619Z",
+        "next_attempt_at": null,
+        "resolved_at": "2026-09-18T18:49:59.156Z",
+        "resolved_by": null,
+        "resolution_note": "N2 fix 2026-09-18: link settled by its own ref with the Commas payment id; the old step stored our product id as the Commas id and hit payment_links_commas_session",
+        "created_at": "2026-09-18T15:13:33.906Z",
+        "updated_at": "2026-09-18T18:49:56.661Z"
+      },
+      {
+        "id": "124a94d2-43ab-4112-8484-e72cd79c13d9",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "event_id": "216b6c9d-890b-4ade-8e42-6dc76ab0dfa5",
+        "event_name": "payment.received",
+        "event_version": 1,
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "payload": {
+          "ref": "pl_552b0cb4eace7a9d3d83c521",
+          "dueBy": null,
+          "email": "stanbridgejchris+sim-12@gmail.com",
+          "amount": 3000,
+          "itemId": null,
+          "saleId": null,
+          "source": "commas",
+          "product": "deposit",
+          "purpose": "deposit",
+          "closerId": null,
+          "invoiceId": null,
+          "paymentId": "sim-pay-1789668321123",
+          "productId": "c087bdd2-0314-46b7-88f6-dc5c54b46a63",
+          "saleMotion": null,
+          "productCode": "card-stacking-dfy",
+          "productName": "Card Stacking DFY",
+          "providerRef": "sim-pay-1789668321123",
+          "paymentLinkId": "f6f55613-46ed-4c30-8375-2bf3741e2669",
+          "fundingRoundId": null,
+          "salesManagerId": null
+        },
+        "handler_name": "onPaymentReceivedForLink",
+        "error_message": "duplicate key value violates unique constraint \"payment_links_commas_session\"",
+        "error_stack": "error: duplicate key value violates unique constraint \"payment_links_commas_session\"\n    at /var/task/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async markPaid (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3038:18)\n    at async onPaymentReceivedForLink (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3079:19)\n    at async dispatch (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:501:7)\n    at async emit (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:483:22)\n    at async processCommasInboxRow (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34346:17)\n    at async drain (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:158:21)\n    at async sweepCommasInbox (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34403:20)\n    at async Object.handler (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34420:18)",
+        "error_code": "23505",
+        "status": "resolved",
+        "attempts": 1,
+        "max_attempts": 7,
+        "first_seen_at": "2026-09-18T15:13:25.098Z",
+        "last_seen_at": "2026-09-18T15:13:25.098Z",
+        "next_attempt_at": null,
+        "resolved_at": "2026-09-18T18:49:58.887Z",
+        "resolved_by": null,
+        "resolution_note": "N2 fix 2026-09-18: link settled by its own ref with the Commas payment id; the old step stored our product id as the Commas id and hit payment_links_commas_session",
+        "created_at": "2026-09-18T15:13:25.353Z",
+        "updated_at": "2026-09-18T18:49:56.661Z"
+      },
+      {
+        "id": "915ca134-2143-4ef4-8aea-639d3bd53e51",
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "event_id": "c87d6c45-c584-43b7-891b-d251018d4f74",
+        "event_name": "payment.received",
+        "event_version": 1,
+        "client_id": "22103bca-0ec9-4491-bb75-5d1b6528f116",
+        "payload": {
+          "ref": "pl_1e9313f04d99e691dcca0c40",
+          "dueBy": null,
+          "email": "stanbridgejchris+sim-10@gmail.com",
+          "amount": 1000,
+          "itemId": null,
+          "saleId": null,
+          "source": "commas",
+          "product": "unmatched",
+          "purpose": "repair",
+          "closerId": null,
+          "invoiceId": null,
+          "paymentId": "sim-pay-1789668301380",
+          "productId": "0e4087cf-4a2f-4af4-b1a9-ce2f6319bdaa",
+          "saleMotion": null,
+          "productCode": "repair-bundle",
+          "productName": "Credit Repair Bundle",
+          "providerRef": "sim-pay-1789668301380",
+          "paymentLinkId": "6e136bd9-60ef-4382-b4ea-475074c8b2e3",
+          "fundingRoundId": null,
+          "salesManagerId": null
+        },
+        "handler_name": "onPaymentReceivedForLink",
+        "error_message": "duplicate key value violates unique constraint \"payment_links_commas_session\"",
+        "error_stack": "error: duplicate key value violates unique constraint \"payment_links_commas_session\"\n    at /var/task/node_modules/pg-pool/index.js:45:11\n    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)\n    at async markPaid (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3038:18)\n    at async onPaymentReceivedForLink (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:3079:19)\n    at async dispatch (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:501:7)\n    at async emit (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:483:22)\n    at async processCommasInboxRow (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34346:17)\n    at async drain (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:158:21)\n    at async sweepCommasInbox (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34403:20)\n    at async Object.handler (file:///var/task/netlify/functions/commas-inbox-sweeper.mjs:34420:18)",
+        "error_code": "23505",
+        "status": "resolved",
+        "attempts": 1,
+        "max_attempts": 7,
+        "first_seen_at": "2026-09-18T15:13:22.100Z",
+        "last_seen_at": "2026-09-18T15:13:22.100Z",
+        "next_attempt_at": null,
+        "resolved_at": "2026-09-18T18:49:58.616Z",
+        "resolved_by": null,
+        "resolution_note": "N2 fix 2026-09-18: link settled by its own ref with the Commas payment id; the old step stored our product id as the Commas id and hit payment_links_commas_session",
+        "created_at": "2026-09-18T15:13:22.349Z",
+        "updated_at": "2026-09-18T18:49:56.661Z"
+      }
+    ]
+  },
+  "failed_dup": {
+    "label": "failed_dup",
+    "ok": true,
+    "rows": [
+      {
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "event_name": "deposit.paid",
+        "handler_name": "onDepositPaidGate",
+        "status": "pending",
+        "rows": 1,
+        "total_attempts": 1,
+        "first_seen_at": "2026-09-18T15:13:38.440Z",
+        "last_seen_at": "2026-09-18T15:13:38.440Z",
+        "next_attempt_at": "2026-09-18T15:14:38.440Z",
+        "latest_error": "duplicate key value violates unique constraint \"inquiry_removal_cases_org_id_case_id_key\""
+      },
+      {
+        "org_id": "fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6",
+        "event_name": "payment.received",
+        "handler_name": "onPaymentReceivedForLink",
+        "status": "resolved",
+        "rows": 10,
+        "total_attempts": 10,
+        "first_seen_at": "2026-09-06T19:50:34.238Z",
+        "last_seen_at": "2026-09-18T15:13:39.171Z",
+        "next_attempt_at": null,
+        "latest_error": "duplicate key value violates unique constraint \"payment_links_commas_session\""
+      }
+    ]
+  },
+  "ent_cols": {
+    "label": "ent_cols",
+    "ok": true,
+    "rows": [
+      {
+        "column_name": "id"
+      },
+      {
+        "column_name": "org_id"
+      },
+      {
+        "column_name": "client_id"
+      },
+      {
+        "column_name": "entitlement_code"
+      },
+      {
+        "column_name": "source_transaction_id"
+      },
+      {
+        "column_name": "source_event_id"
+      },
+      {
+        "column_name": "granted_by"
+      },
+      {
+        "column_name": "grant_reason"
+      },
+      {
+        "column_name": "granted_at"
+      },
+      {
+        "column_name": "expires_at"
+      },
+      {
+        "column_name": "revoked_at"
+      },
+      {
+        "column_name": "revoked_by"
+      },
+      {
+        "column_name": "revoke_reason"
+      },
+      {
+        "column_name": "created_at"
+      },
+      {
+        "column_name": "updated_at"
+      },
+      {
+        "column_name": "is_demo"
+      }
+    ]
+  },
+  "docs": {
+    "label": "docs",
+    "ok": true,
+    "rows": [
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Metro 2 Dispute Letter Pack — TransUnion R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime_type": "text/html",
+        "byte_size": "7287",
+        "created_at": "2026-09-18T18:21:35.243Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Metro 2 Dispute Letter Pack — Experian R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime_type": "text/html",
+        "byte_size": "6880",
+        "created_at": "2026-09-18T18:21:30.854Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Metro 2 Dispute Letter Pack — Equifax R1",
+        "kind": "deliverable",
+        "subtype": "metro2_dispute_letter_pack",
+        "mime_type": "text/html",
+        "byte_size": "8755",
+        "created_at": "2026-09-18T18:21:26.075Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Personal info — EQ",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3091",
+        "created_at": "2026-09-18T17:30:56.414Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Personal info — TU",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3127",
+        "created_at": "2026-09-18T17:30:56.167Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Personal info — EX",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3327",
+        "created_at": "2026-09-18T17:30:55.921Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Inquiry removal — EQ",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2470",
+        "created_at": "2026-09-18T17:30:55.646Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Inquiry removal — TU",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2461",
+        "created_at": "2026-09-18T17:30:55.369Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Inquiry removal — EX",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2448",
+        "created_at": "2026-09-18T17:30:55.092Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Capital Readiness Summary",
+        "kind": "deliverable",
+        "subtype": "funding_summary",
+        "mime_type": "application/pdf",
+        "byte_size": "1603",
+        "created_at": "2026-09-18T14:34:41.230Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "title": "Funding Snapshot",
+        "kind": "deliverable",
+        "subtype": "funding_snapshot",
+        "mime_type": "text/html",
+        "byte_size": "1876952",
+        "created_at": "2026-09-18T14:34:21.489Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Bureau Response Letter",
+        "kind": "bureau_response",
+        "subtype": "bureau_letter",
+        "mime_type": "image/png",
+        "byte_size": "560005",
+        "created_at": "2026-09-18T08:54:10.558Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Personal info — EQ",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3178",
+        "created_at": "2026-09-18T05:55:29.942Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Personal info — TU",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3207",
+        "created_at": "2026-09-18T05:55:25.838Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Personal info — EX",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3418",
+        "created_at": "2026-09-18T05:55:21.540Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Inquiry removal — EQ",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2564",
+        "created_at": "2026-09-18T05:55:17.421Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Inquiry removal — TU",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2557",
+        "created_at": "2026-09-18T05:55:13.232Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Inquiry removal — EX",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2543",
+        "created_at": "2026-09-18T05:55:08.604Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Capital Readiness Summary",
+        "kind": "deliverable",
+        "subtype": "funding_summary",
+        "mime_type": "application/pdf",
+        "byte_size": "1598",
+        "created_at": "2026-09-18T05:55:03.745Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Funding Snapshot",
+        "kind": "deliverable",
+        "subtype": "funding_snapshot",
+        "mime_type": "text/html",
+        "byte_size": "1876951",
+        "created_at": "2026-09-18T05:54:48.005Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Bureau Response Letter",
+        "kind": "bureau_response",
+        "subtype": "bureau_letter",
+        "mime_type": "image/png",
+        "byte_size": "393303",
+        "created_at": "2026-09-17T19:48:10.514Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Bureau Response Letter",
+        "kind": "bureau_response",
+        "subtype": "bureau_letter",
+        "mime_type": "image/png",
+        "byte_size": "560005",
+        "created_at": "2026-09-17T19:48:06.255Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Bureau Response Letter",
+        "kind": "bureau_response",
+        "subtype": "bureau_letter",
+        "mime_type": "image/png",
+        "byte_size": "393303",
+        "created_at": "2026-09-17T19:26:46.020Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Bureau Response Letter",
+        "kind": "bureau_response",
+        "subtype": "bureau_letter",
+        "mime_type": "image/png",
+        "byte_size": "560005",
+        "created_at": "2026-09-17T19:26:40.596Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "title": "Funding Agreement (signed)",
+        "kind": "contract",
+        "subtype": "funding_agreement",
+        "mime_type": "application/pdf",
+        "byte_size": "3694",
+        "created_at": "2026-09-17T18:53:56.142Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Funding Agreement (signed)",
+        "kind": "contract",
+        "subtype": "funding_agreement",
+        "mime_type": "application/pdf",
+        "byte_size": "3684",
+        "created_at": "2026-09-17T18:53:51.635Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Funding Agreement (signed)",
+        "kind": "contract",
+        "subtype": "funding_agreement",
+        "mime_type": "application/pdf",
+        "byte_size": "3680",
+        "created_at": "2026-09-17T18:53:24.239Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "title": "Funding Agreement",
+        "kind": "contract",
+        "subtype": "funding_agreement",
+        "mime_type": "text/html",
+        "byte_size": "1481",
+        "created_at": "2026-09-17T18:53:18.738Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Bureau Response Letter",
+        "kind": "bureau_response",
+        "subtype": "bureau_letter",
+        "mime_type": "image/png",
+        "byte_size": "393303",
+        "created_at": "2026-09-17T18:11:58.697Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "title": "Bureau Response Letter",
+        "kind": "bureau_response",
+        "subtype": "bureau_letter",
+        "mime_type": "image/png",
+        "byte_size": "560005",
+        "created_at": "2026-09-17T18:11:48.513Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "title": "Funding Agreement",
+        "kind": "contract",
+        "subtype": "funding_agreement",
+        "mime_type": "text/html",
+        "byte_size": "1485",
+        "created_at": "2026-09-17T18:05:20.303Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Funding Agreement",
+        "kind": "contract",
+        "subtype": "funding_agreement",
+        "mime_type": "text/html",
+        "byte_size": "1487",
+        "created_at": "2026-09-17T18:05:10.947Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Personal info — EQ",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3194",
+        "created_at": "2026-09-17T17:48:06.451Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Personal info — TU",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3224",
+        "created_at": "2026-09-17T17:48:06.190Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Personal info — EX",
+        "kind": "deliverable",
+        "subtype": "funding_personal_info",
+        "mime_type": "application/pdf",
+        "byte_size": "3425",
+        "created_at": "2026-09-17T17:48:05.932Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Inquiry removal — EQ",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2563",
+        "created_at": "2026-09-17T17:48:05.698Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Inquiry removal — TU",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2557",
+        "created_at": "2026-09-17T17:48:05.439Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Inquiry removal — EX",
+        "kind": "deliverable",
+        "subtype": "funding_inquiry_removal",
+        "mime_type": "application/pdf",
+        "byte_size": "2546",
+        "created_at": "2026-09-17T17:48:05.207Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Capital Readiness Summary",
+        "kind": "deliverable",
+        "subtype": "funding_summary",
+        "mime_type": "application/pdf",
+        "byte_size": "1603",
+        "created_at": "2026-09-17T17:48:04.977Z"
+      },
+      {
+        "client_id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "title": "Funding Snapshot",
+        "kind": "deliverable",
+        "subtype": "funding_snapshot",
+        "mime_type": "text/html",
+        "byte_size": "1877763",
+        "created_at": "2026-09-17T17:48:04.174Z"
+      }
+    ]
+  },
+  "staff": {
+    "label": "staff",
+    "ok": false,
+    "error": "column \"first_name\" does not exist"
+  }
+}

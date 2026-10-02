@@ -1,0 +1,77 @@
+{
+  "at": "2026-09-20T05:00:52.707Z",
+  "client_id": "9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+  "client_name": "Sim Repair E2E20",
+  "mint": false,
+  "paid": false,
+  "bureau_mail": false,
+  "portal_1": {
+    "url": "https://fundhub.ai/app/client-portal.html?id=9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+    "has_progress_link": true,
+    "has_continue": false,
+    "has_have_us": false,
+    "has_sign_auth": true,
+    "has_paid_go": 0,
+    "shot": "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-dispute-round-prove-2026-09-20/portal-1.png"
+  },
+  "portal_2": {
+    "url": "https://fundhub.ai/app/client-portal.html?id=9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+    "has_progress_link": true,
+    "has_continue": false,
+    "has_have_us": false,
+    "has_sign_auth": true,
+    "has_paid_go": 0,
+    "shot": "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-dispute-round-prove-2026-09-20/portal-2.png"
+  },
+  "progress_link_href": "/progress.html?client_id=9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+  "progress_1": {
+    "url": "https://fundhub.ai/progress.html?client_id=9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+    "has_run_a_round": true,
+    "has_continue": 1,
+    "continue_visible": true,
+    "continue_text": "Continue",
+    "has_have_us": false,
+    "has_not_available": false,
+    "has_in_progress": false,
+    "total_today": "$100",
+    "body_slice": "FUNDHUB Your progress Everything on your file, as it stands today. ← Back to your portal WHERE YOU ARE READY TO SEND Your next round is ready to go out Round 6 of 6. Started 20 September 2026. 6 / 6 rounds Waiting on you. Rounds 4 and above are escalation letters. We prepare them and send them for you. We do not report them as received or accepted by anyone until we hear back. YOUR SCORES EXPERIAN 541 Pulled 20 September 2026 Report not saved yet EQUIFAX 566 Pulled 20 September 2026 Report not saved yet TRANSUNION 552 Pulled 20 September 2026 Report not saved yet BUSINESS CREDIT EXPERIAN BUSINESS Not pulled yet Sim Repair E2E20 Holdings LLC No report on file yet WHAT MOVED Nothing has come off yet. That is normal early on. We have challenged 144 items so far. Your middle score is unchanged at 552 since September. Experian Equifax TransUnion 19 September 2026 → 20 September 2026 WHAT HAPP",
+    "shot": "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-dispute-round-prove-2026-09-20/progress-1.png"
+  },
+  "progress_2": {
+    "url": "https://fundhub.ai/progress.html?client_id=9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+    "has_run_a_round": true,
+    "has_continue": 1,
+    "continue_visible": true,
+    "continue_text": "Continue",
+    "has_have_us": false,
+    "has_not_available": false,
+    "has_in_progress": false,
+    "total_today": "$100",
+    "body_slice": "FUNDHUB Your progress Everything on your file, as it stands today. ← Back to your portal WHERE YOU ARE READY TO SEND Your next round is ready to go out Round 6 of 6. Started 20 September 2026. 6 / 6 rounds Waiting on you. Rounds 4 and above are escalation letters. We prepare them and send them for you. We do not report them as received or accepted by anyone until we hear back. YOUR SCORES EXPERIAN 541 Pulled 20 September 2026 Report not saved yet EQUIFAX 566 Pulled 20 September 2026 Report not saved yet TRANSUNION 552 Pulled 20 September 2026 Report not saved yet BUSINESS CREDIT EXPERIAN BUSINESS Not pulled yet Sim Repair E2E20 Holdings LLC No report on file yet WHAT MOVED Nothing has come off yet. That is normal early on. We have challenged 144 items so far. Your middle score is unchanged at 552 since September. Experian Equifax TransUnion 19 September 2026 → 20 September 2026 WHAT HAPP",
+    "shot": "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-dispute-round-prove-2026-09-20/progress-2.png"
+  },
+  "confirm_1": {
+    "title": "Here is what you are buying",
+    "sub": "Check this over. Nothing is charged on this screen.",
+    "body": "Three bureaus\n$100\nTotal\n$100\nWe pull your credit again first, so the round is built from today’s report and not an old one."
+  },
+  "confirm_2": {
+    "title": "Confirm $100",
+    "sub": "This is the last step before the payment page.",
+    "body": "What happens after you pay: we pull your credit, build your round from what we find, and get it ready to go out. A member of our team sends it — it does not go out automatically.\nThis does not use one of the rounds in your programme."
+  },
+  "mint_dialog": {
+    "title": "That did not go through",
+    "sub": "Pick a client first. Nothing has been charged."
+  },
+  "paid_posts": [
+    {
+      "status": 400,
+      "ok": false,
+      "has_checkout": false,
+      "checkout_host": null,
+      "message": "Pick a client first.",
+      "checkout_pending": null
+    }
+  ]
+}

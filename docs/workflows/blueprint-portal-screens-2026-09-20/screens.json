@@ -1,0 +1,85 @@
+{
+  "at": "2026-09-20T05:11:03.229Z",
+  "authMode": "magic_link",
+  "magicOk": true,
+  "magicLimited": false,
+  "pngs": [
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/01-portal-dashboard.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/01-portal-dashboard-full.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/01-portal-dashboard-click2.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/02-portal-scores.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/02-portal-docs-own-list.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/03-blueprint-tile.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/04-progress-overview.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/04-progress-full.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/05-progress-waypoints.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/05-progress-scores-next.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/04-progress-click2.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/06-progress-business-toggle.png",
+    "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/blueprint-portal-screens-2026-09-20/07-portal-chat.png"
+  ],
+  "ui": {
+    "dashboard1": {
+      "url": "https://fundhub.ai/app/client-portal.html",
+      "greeting": true,
+      "nameOnFile": true,
+      "couldNotLoad": false,
+      "scores": {
+        "experian": true,
+        "equifax": true,
+        "transunion": true,
+        "business": false
+      },
+      "prequal": true,
+      "blueprint": false,
+      "body": "Client Portal SE Sim Eleven-Blueprint Sim Eleven-Blueprint · client LIVE Sign out × Welcome back, Sim Here's where things stand on your funding. CP-01 / START HERE FUNDHUB PORTAL Welcome to your FundHub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. 1:19 Sign to authorize dispute letters This lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button. I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review. Letters and complaints are not mailed or filed until I send or file them, or until staff I authorize send or file them. I must sign CFPB and state AG complaints myself before filing. I may withdraw this authorization at any time. Withdrawing this authorization does not undo letters already prepared. This authorization makes no promise about deletions, scores, funding, or legal outcomes. Your legal name Draw your signature Clear Draw your signature. An empty box does not count. I sign to authorize Fundhub to prepare my dispute letters f Join the Fundhub wins group This is where we post wins. Come say hi before your call. Join on Facebook YOUR AGREEMENTS Review and sign anything we sent you. Signed copies stay here. Funding Agreement 9/17/2026, 11:05:10 AM · Signed SIGNED CURRENT STATUS Your funding file is open. We will update this as your round moves. PRE-QUALIFIED FOR $212,000 See exactly where your file stands → YOUR CREDIT SCORES EXPERIAN 771 EQUIFAX 778 TRANSUNION 766 EXPERIAN BUSINESS (1–100) 64 Send a file Use the door that matches what you have. We still need a photo ID and proof of your address — a bank statement counts. Send them through the ID and personal d"
+    },
+    "dashboard2": {
+      "greeting": true,
+      "couldNotLoad": false,
+      "scoresVisible": true
+    },
+    "ownList": "Credit Optimization Roadmap Ready. It is yours to keep. DOWNLOAD Funding Snapshot Ready. It is yours to keep. DOWNLOAD Metro 2 Dispute Letter Pack Part of your package. It is not built yet — it appears here, ready to download, as soon as it is. NOT READY YET",
+    "ownHasUwiq": true,
+    "blueprintTile": {
+      "count": 1,
+      "className": "tile is-course",
+      "locked": false,
+      "body": "UNLOCKED Capital Blueprint Report, letter pack, roadmap, funding snapshot, lender list, and the mini course. Pricing is set on your call. Included — you own this Close Talk to an advisor HOW TO USE THIS · MINI COURSE 1 · Your Credit Analysis Report 2 · Your dispute letter pack 3 · Your Credit Optimization Roadmap 4 · Your Funding Snapshot 5 · Your Bank and Lender Match List"
+    },
+    "progress1": {
+      "url": "https://fundhub.ai/progress.html?client_id=029964c5-4d8e-47ed-88c9-53ac13863fd4",
+      "title": true,
+      "loginBounce": false,
+      "fatal": false,
+      "scores": true,
+      "businesses": true,
+      "waypoints": [
+        "Do not open new credit",
+        "personal loan",
+        "File your LLC",
+        "Get your EIN",
+        "business checking"
+      ],
+      "overdue": true,
+      "body": "FUNDHUB Your progress Everything on your file, as it stands today. ← Back to your portal WHERE YOU ARE IN PROGRESS In progress We will update this as your file moves. Waiting on you. YOUR SCORES EXPERIAN 771 Pulled 17 September 2026 Tap to open this report EQUIFAX 778 Pulled 17 September 2026 Tap to open this report TRANSUNION 766 Pulled 17 September 2026 Tap to open this report BUSINESS CREDIT ELEVEN-BLUEPRINT HOLDINGS LLC ELEVEN-BLUEPRINT OPS LLC EXPERIAN BUSINESS 76 Eleven-Blueprint Holdings LLC Report not saved yet WHAT MOVED Nothing has come off yet. That is normal early on. Your middle score is unchanged at 771 since September. WHAT HAPPENS NEXT YOUR MOVE Do not open new credit while we work on your file This one is yours. Nothing moves until it is done. YOUR CHECKLIST Do not open new credit while we work on your file YOU Talk to your advisor about a personal loan YOU OVERDUE was due 19 September 2026 File your LLC YOU due 18 October 2026 Get your EIN from the IRS YOU Open a business checking account YOU RUN A ROUND NOW Do not want to wait for the next scheduled round? You can run one now. Pick what you want included. Three bureaus ALWAYS INCLUDED $100 Creditor letter $10 CFPB and state attorney general $20 Total today $100 Continue This does not use one of your included rounds. The rounds in your programme stay exactly as they are. We take payment on a secure checkout page. We never store your card and we never charge you without you doing this again. YOUR DOCUMENTS Credit Optimization Roadmap 18 September 2026 Bank and Lender Match List 18 September 2026 Funding Snapshot 18 September 2026 Credit Analysis Report 18 September 2026 Personal info — EQ 17 September 2026 Personal info — TU 17 September 2026 Personal info — EX 17 September 2026 Inquiry removal — EQ 17 "
+    },
+    "waypointsHtml": "Do not open new credit while we work on your file YOU Talk to your advisor about a personal loan YOU OVERDUE was due 19 September 2026 File your LLC YOU due 18 October 2026 Get your EIN from the IRS YOU Open a business checking account YOU",
+    "progress2": {
+      "title": true,
+      "waypointHits": [
+        "Do not open new credit",
+        "personal loan",
+        "File your LLC",
+        "Get your EIN",
+        "business checking"
+      ],
+      "scores": true
+    },
+    "bizToggleCount": 3,
+    "chat": {
+      "fabCount": 2,
+      "panelVisible": true
+    }
+  }
+}

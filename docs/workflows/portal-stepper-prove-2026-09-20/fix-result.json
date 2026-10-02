@@ -1,0 +1,45 @@
+{
+  "at": "2026-09-20T05:27:00.000Z",
+  "hole": "portal 8-step bar does not match stored progress",
+  "verdict": "PASS — code and stored-truth read. Live page still old until deploy.",
+  "diagnostic_paid": "Told apart: diagnostic.paid event, diagnostic payment link, sales.diagnostic_paid, or product name Business Financial Assessment / Consulting Services Assessment / contains diagnostic. Any other succeeded payment does not light the tick.",
+  "docs_received": "docs.received or repair.docs.complete event, or a client_upload document. Generated letter packs do not count.",
+  "tests": {
+    "unit": "src/portal/stepper.test.mjs 9/9",
+    "playwright": "e2e/client-portal-ux.spec.mjs 20/20",
+    "pg": "not re-run against live; scratch not available in this session"
+  },
+  "live_read": {
+    "funding": {
+      "id": "1982d8a6-bb09-4308-8d12-837c600c4bd8",
+      "kind": "funding",
+      "booked": true,
+      "diagnostic_paid": true,
+      "docs_received": true,
+      "round_started": true,
+      "round_submitted": true,
+      "round_approved": true,
+      "round_funded": true,
+      "file_finalized": true
+    },
+    "repair": {
+      "id": "9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+      "kind": "repair",
+      "booked": true,
+      "diagnostic_paid": true,
+      "docs_received": true,
+      "letter_round": true,
+      "ready_to_send": true,
+      "file_finalized": false,
+      "capital_ticks": false
+    },
+    "eleven": {
+      "id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+      "kind": "funding",
+      "booked": false,
+      "diagnostic_paid": false,
+      "docs_received": false,
+      "round_started": true
+    }
+  }
+}

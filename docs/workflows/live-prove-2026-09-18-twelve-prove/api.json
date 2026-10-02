@@ -1,0 +1,819 @@
+{
+  "at": "2026-09-18T22:44:31.229Z",
+  "login_status": 200,
+  "health": {
+    "status": [
+      200,
+      200
+    ],
+    "ok": [
+      true,
+      true
+    ],
+    "pending": [
+      null,
+      null
+    ]
+  },
+  "dash": {
+    "eight": {
+      "status": [
+        200,
+        200
+      ],
+      "one": {
+        "name": "Sim Eight-Funding",
+        "funded": true,
+        "funded_amount": "50000.00",
+        "next": "Remove Inquiries",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-17T17:44:14.610Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-17T17:44:14.610Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 992,
+          "blankBetweenNameEmail": true,
+          "hasStreetNum": true,
+          "hasAddrWord": true,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-17\n\n Sim Eight-Funding\n\nstanbridgejchris+sim-08@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplete. "
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      },
+      "two": {
+        "name": "Sim Eight-Funding",
+        "funded": true,
+        "funded_amount": "50000.00",
+        "next": "Remove Inquiries",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-17T17:44:14.610Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-17T17:44:14.610Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 992,
+          "blankBetweenNameEmail": true,
+          "hasStreetNum": true,
+          "hasAddrWord": true,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-17\n\n Sim Eight-Funding\n\nstanbridgejchris+sim-08@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplete. "
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      }
+    },
+    "eleven": {
+      "status": [
+        200,
+        200
+      ],
+      "one": {
+        "name": "Sim Eleven-Blueprint",
+        "funded": false,
+        "funded_amount": null,
+        "next": "Apply for Funding",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-17T17:44:55.296Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-17T17:44:55.296Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 998,
+          "blankBetweenNameEmail": false,
+          "hasStreetNum": true,
+          "hasAddrWord": false,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-18\n\n Sim Eleven-Blueprint\n\nstanbridgejchris+sim-11@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplet"
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      },
+      "two": {
+        "name": "Sim Eleven-Blueprint",
+        "funded": false,
+        "funded_amount": null,
+        "next": "Apply for Funding",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-17T17:44:55.296Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-17T17:44:55.296Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 998,
+          "blankBetweenNameEmail": false,
+          "hasStreetNum": true,
+          "hasAddrWord": false,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-18\n\n Sim Eleven-Blueprint\n\nstanbridgejchris+sim-11@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplet"
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      }
+    },
+    "twelve": {
+      "status": [
+        200,
+        200
+      ],
+      "one": {
+        "name": "Sim Twelve-Academy",
+        "funded": false,
+        "funded_amount": null,
+        "next": "Apply for Funding",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-17T17:44:28.922Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-17T17:44:28.922Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 991,
+          "blankBetweenNameEmail": false,
+          "hasStreetNum": true,
+          "hasAddrWord": false,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-18\n\n Sim Twelve-Academy\n\nstanbridgejchris+sim-12@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplete."
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      },
+      "two": {
+        "name": "Sim Twelve-Academy",
+        "funded": false,
+        "funded_amount": null,
+        "next": "Apply for Funding",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-17T17:44:28.922Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-17T17:44:28.922Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 991,
+          "blankBetweenNameEmail": false,
+          "hasStreetNum": true,
+          "hasAddrWord": false,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-18\n\n Sim Twelve-Academy\n\nstanbridgejchris+sim-12@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplete."
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      }
+    },
+    "thirteen": {
+      "status": [
+        200,
+        200
+      ],
+      "one": {
+        "name": "Sim Thirteen-NoBook",
+        "funded": false,
+        "funded_amount": null,
+        "next": "Remove Inquiries",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-18T08:54:06.344Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-18T08:54:06.344Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": null,
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      },
+      "two": {
+        "name": "Sim Thirteen-NoBook",
+        "funded": false,
+        "funded_amount": null,
+        "next": "Remove Inquiries",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-18T08:54:06.344Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-18T08:54:06.344Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": null,
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      }
+    },
+    "walk1": {
+      "status": [
+        200,
+        200
+      ],
+      "one": {
+        "name": "Walk1 Funding",
+        "funded": true,
+        "funded_amount": "45000.00",
+        "next": "Remove Inquiries",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-06T03:04:59.564Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-06T03:04:59.564Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 992,
+          "blankBetweenNameEmail": false,
+          "hasStreetNum": true,
+          "hasAddrWord": false,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-06\n\n Walk1 Funding\n\nstanbridgejchris+walk-01@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplete. Und"
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      },
+      "two": {
+        "name": "Walk1 Funding",
+        "funded": true,
+        "funded_amount": "45000.00",
+        "next": "Remove Inquiries",
+        "scores": {
+          "experian": 771,
+          "equifax": 778,
+          "transunion": 766,
+          "spread": 12,
+          "asOf": "2026-09-06T03:04:59.564Z",
+          "source": "crs_results"
+        },
+        "utilisation": {
+          "percent": 6,
+          "band": "excellent",
+          "asOf": "2026-09-06T03:04:59.564Z"
+        },
+        "sample_flags": {
+          "credit_is_sample": null,
+          "crs_simulated": null,
+          "system_facts": null
+        },
+        "letter": {
+          "len": 992,
+          "blankBetweenNameEmail": false,
+          "hasStreetNum": true,
+          "hasAddrWord": false,
+          "head": " \n    Dispute — TransUnion  \n \n 2026-09-06\n\n Walk1 Funding\n\nstanbridgejchris+walk-01@gmail.com\n\n To: TransUnion Consumer Dispute Department\n\n Re: Personal-information and inquiry reinvestigation demand — 15 U.S.C. §1681i\n\n Dear TransUnion,\n\n Please accept this letter as my written demand for reinvestigation under the FCRA. My file with your bureau shows items that are inaccurate or incomplete. Und"
+        },
+        "entitlements": [],
+        "keys": [
+          "ok",
+          "client",
+          "transactions",
+          "crs_results",
+          "messages",
+          "tasks",
+          "funding_rounds",
+          "invoices",
+          "inquiry_removal_case",
+          "tier_reasoning",
+          "tri_merge",
+          "utilisation",
+          "income_estimates",
+          "business_credit",
+          "latest_booking",
+          "open_blockers",
+          "next_action",
+          "active_blockers",
+          "funding_round",
+          "next_action_degraded"
+        ]
+      }
+    }
+  },
+  "portal_keys": {
+    "twelve": [
+      "ok",
+      "prequal_amount",
+      "prequal_display",
+      "scores",
+      "soft_pull_complete",
+      "doc_agent_message",
+      "inquiry_open",
+      "documents",
+      "repair_path",
+      "dispute_consent",
+      "invoice_due",
+      "payments",
+      "advisor",
+      "stage"
+    ],
+    "thirteen": [
+      "ok",
+      "prequal_amount",
+      "prequal_display",
+      "scores",
+      "soft_pull_complete",
+      "doc_agent_message",
+      "inquiry_open",
+      "documents",
+      "repair_path",
+      "dispute_consent",
+      "invoice_due",
+      "payments",
+      "advisor",
+      "stage"
+    ],
+    "walk1": [
+      "ok",
+      "prequal_amount",
+      "prequal_display",
+      "scores",
+      "soft_pull_complete",
+      "doc_agent_message",
+      "inquiry_open",
+      "documents",
+      "repair_path",
+      "dispute_consent",
+      "invoice_due",
+      "payments",
+      "advisor",
+      "stage"
+    ],
+    "eleven": [
+      "ok",
+      "prequal_amount",
+      "prequal_display",
+      "scores",
+      "soft_pull_complete",
+      "doc_agent_message",
+      "inquiry_open",
+      "documents",
+      "repair_path",
+      "dispute_consent",
+      "invoice_due",
+      "payments",
+      "advisor",
+      "stage"
+    ]
+  },
+  "progress12": {
+    "status": [
+      200,
+      200
+    ],
+    "keys": [
+      "ok",
+      "stage",
+      "scores",
+      "movement",
+      "waypoints",
+      "nextStep",
+      "escalations",
+      "timeline",
+      "deliverables",
+      "ownedNotReady",
+      "paidServices",
+      "referral"
+    ],
+    "waypoints": [],
+    "snapshot": "{\"ok\":true,\"stage\":{\"key\":null,\"roundCurrent\":null,\"roundCap\":null,\"enteredAt\":null,\"expectedResponseBy\":null,\"waitingOn\":null,\"roundLabel\":null},\"scores\":{\"personal\":[{\"bureau\":\"experian\",\"score\":771,\"pulledAt\":\"2026-09-17T17:44:28.922Z\",\"reportDocumentId\":null},{\"bureau\":\"equifax\",\"score\":778,\"pulledAt\":\"2026-09-17T17:44:28.922Z\",\"reportDocumentId\":null},{\"bureau\":\"transunion\",\"score\":766,\"pulledAt\":\"2026-09-17T17:44:28.922Z\",\"reportDocumentId\":null}],\"business\":[]},\"movement\":{\"middleScoreNow\":771,\"middleScoreBaseline\":771,\"baselineAt\":\"2026-09-17T17:44:28.922Z\",\"itemsRemoved\":0,\"itemsDisputed\":0,\"series\":[{\"at\":\"2026-09-17T17:44:28.922Z\",\"experian\":771,\"equifax\":778,\"transunion\":766}]},\"waypoints\":[],\"nextStep\":null,\"escalations\":[],\"timeline\":[{\"at\":\"2026-09-18T15:13:27.565Z\",\"text\":\"Sep 18 · funding round started\"},{\"at\":\"2026-09-18T15:13:24.830Z\",\"text\":\"Sep 18 · payment received\"},{\"at\":\"2026-09-17T18:53:56.552Z\",\"text\":\"Sep 17 · agreement signed\"},{\"at\":\"2026-09-17T17:46:32.205Z\",\"text\":\"Sep 17 · payment received\"}],\"deliverables\":[],\"ownedNotReady\":[{\"code\":\"funding-snapshot\",\"subtype\":\"funding_snapshot\",\"name\":\"Funding Snapshot\"}],\"paidServices\":[{\"serviceKey\":\"paid_round\",\"available\":false,\"components\":[{\"key\":\"base\",\"label\":\"Three bureaus\",\"priceCents\":10000,\"required\":true},{\"key\":\"creditor\",\"label\":\"Creditor letter\",\"priceCents\":1000,\"required\":false},{\"key\":\"cfpb_and_ag\",\"label\":\"CFPB and state attorney general\",\"priceCents\":2000,\"required\":false}],\"inFlight\":"
+  },
+  "progress13": {
+    "status": [
+      200,
+      200
+    ],
+    "keys": [
+      "ok",
+      "stage",
+      "scores",
+      "movement",
+      "waypoints",
+      "nextStep",
+      "escalations",
+      "timeline",
+      "deliverables",
+      "ownedNotReady",
+      "paidServices",
+      "referral"
+    ]
+  },
+  "ent12": {
+    "status": [
+      200,
+      200
+    ],
+    "items": [
+      {
+        "code": "funding-snapshot",
+        "name": "Funding Snapshot",
+        "active": true
+      },
+      {
+        "code": "funding-mastery-course",
+        "name": "Funding Mastery course (A to Z)",
+        "active": true
+      }
+    ]
+  },
+  "docs12": {
+    "status": [
+      200,
+      200
+    ],
+    "titles": [
+      "Funding Agreement (signed)",
+      "Funding Agreement"
+    ]
+  },
+  "deck13": {
+    "status": [
+      200,
+      200
+    ],
+    "keys": [
+      "ok",
+      "client_id",
+      "survey",
+      "businesses",
+      "income_estimates",
+      "engine",
+      "soft_pull",
+      "offers"
+    ],
+    "sample": null,
+    "scores": null
+  },
+  "pipeline_cards": {
+    "walk1": [],
+    "thirteen": [
+      {
+        "name": "Decision Rendered"
+      },
+      {
+        "name": "Sim Thirteen-NoBook",
+        "funded": false,
+        "id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042"
+      }
+    ]
+  },
+  "conv13_keys": [
+    "ok",
+    "count",
+    "limit",
+    "offset",
+    "hasMore",
+    "items"
+  ],
+  "messages13": {
+    "status": [
+      200,
+      200
+    ],
+    "rows": [
+      {
+        "subject": null,
+        "status": "delivered",
+        "has_token": false,
+        "has_word": false,
+        "tail": "'s no call on the calendar yet — and the call is where an advisor goes through your options with you. Pick a time: https://apply.fundhub.ai/funding-book-call Reply STOP to opt out."
+      },
+      {
+        "subject": null,
+        "status": "delivered",
+        "has_token": false,
+        "has_word": false,
+        "tail": "Your application is in. Nothing is reviewed yet; that happens live with an advisor on your call. Pick a time here: https://apply.fundhub.ai/funding-book-call Reply STOP to opt out."
+      }
+    ]
+  },
+  "db": {
+    "skipped": false,
+    "read_only": "on",
+    "nobook": [
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "status": "delivered",
+        "template_key": "EMAIL-NOBOOK-01",
+        "has_token": false,
+        "has_word": false,
+        "n": 1657,
+        "tail": " what isn't, and what order to do things in.</p>\n            <p style=\"margin:0 0 16px 0;\">It takes about 30 minutes.</p>\n            <p style=\"margin:0 0 16px 0;\">Grab a time: https://apply.fundhub.ai/funding-book-call</p>\n            <p style=\"margin:0 0 16px 0;\">Josh<br>\n            Fundhub</p>\n            <p style=\"margin:0 0 16px 0;\">fundhub.ai • Funding Intelligence for Entrepreneurs<br>\n            </p>\n          </td>\n        </tr>\n      </table>\n    </td>\n  </tr>\n</table>\n</body>\n</html>"
+      }
+    ],
+    "walk1": [
+      {
+        "id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "first_name": "Walk1",
+        "last_name": "Funding",
+        "funded": true,
+        "funded_amount": "45000.00"
+      }
+    ],
+    "walk1_rounds": [
+      {
+        "round_number": 1,
+        "status": "funded",
+        "funded_amount": "45000.00"
+      },
+      {
+        "round_number": 2,
+        "status": "started",
+        "funded_amount": null
+      }
+    ],
+    "twelve_rounds": [
+      {
+        "round_number": 1,
+        "status": "started",
+        "funded_amount": null
+      }
+    ],
+    "error": "column \"entitlement_name\" does not exist"
+  }
+}

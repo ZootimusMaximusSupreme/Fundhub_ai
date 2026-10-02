@@ -1,0 +1,31 @@
+{
+  "at": "2026-09-19T07:15:02.690Z",
+  "hole": 17,
+  "claim": "Hole 17 PASS",
+  "method": "Adversarial skeptic — read finish PNGs/JSON; live staff GET client-portal 2×; no POST send-portal-link / no magic-link POST",
+  "client_id": "40f063e1-27e3-4857-be1a-91640eee90e1",
+  "png_review": {
+    "hole17-finish-portal-click1-2026-09-20.png": "footer shows live entitlements · 0 unlocked · 6 locked; staff owner LIVE",
+    "hole17-finish-portal-click2-2026-09-20.png": "same footer both loads",
+    "hole17-finish-magic-link-2026-09-20.png": "client LIVE; same footer text"
+  },
+  "finish_json_gaps": [
+    "hole17-finish-2026-09-20.json shots[] lists hole17-magic-portal-click1/2 PNGs — files not on disk",
+    "hole17-footer-pass-click1/2 and hole17-magic-link-click1/2 referenced in hole17-prove — not on disk"
+  ],
+  "live_staff_independent": {
+    "run1_at": "2026-09-19T07:15:02.690Z",
+    "run1_click1_footer": "empty (banner and line blank after 9s)",
+    "run1_click2_footer": "live entitlements · 0 unlocked · 6 locked",
+    "run2_at": "2026-09-19T07:16:00.000Z",
+    "run2_timing": "matched hole17-finish-live script (9s + scroll fh-data-banner + 400ms)",
+    "run2_both_clicks": "live entitlements · 0 unlocked · 6 locked"
+  },
+  "conflicting_evidence": "hole17-magic-link-prove-2026-09-20.json same-day 07:00Z verdict_overall_hole17 FAIL (magic portal clicks landed_portal false); hole17-prove-2026-09-20.json overall FAIL while footer_leg PASS",
+  "verdict": {
+    "footer_staff_portal": "TRUST",
+    "full_hole17_pass_including_magic_2x": "DONOTTRUST",
+    "headline_claim_hole_17_pass": "DONOTTRUST unless scoped to footer-only"
+  },
+  "why": "Finish PNGs and a matched-timing live staff re-run show the footnote. First independent load was flaky (empty click 1). Finish JSON overclaims magic 2× PNGs missing; later prove JSON FAIL on magic portal clicks. Did not POST send-portal-link."
+}

@@ -1,0 +1,25 @@
+{
+  "named_fail": "Funding desk Apply / Oxylabs",
+  "verdict": "TRUST",
+  "apply_touched": false,
+  "at": "2026-09-20T00:00:00.000Z",
+  "checks": {
+    "env_names_production": ["OXYLABS_USERNAME", "OXYLABS_PASSWORD"],
+    "env_values_present_production": true,
+    "get_proxy_launch": { "method": "GET", "http": 405, "note": "route up; not Apply health" },
+    "api_health": { "ok": true, "db": "up" }
+  },
+  "db_proxy_sessions": {
+    "last_failed_at": "2026-09-19T06:03:59.826Z",
+    "last_error_code": "oxylabs_auth_failed",
+    "last_message_snip": "Oxylabs rejected the proxy login (407)",
+    "ready_last_30d": 0,
+    "failed_last_30d": 24
+  },
+  "disk_cites": [
+    "docs/workflows/full-launch-lattice-2026-09-20-evidence/lane-3/fulfillment-funding/summary.json",
+    "docs/workflows/launch-prove-2026-09-19-evidence/lane-a/live-apply-verify.json",
+    "docs/workflows/launch-prove-2026-09-19-evidence/lane-f/rebook-agent-2026-09-19.json"
+  ],
+  "owner_action": "Reset Oxylabs sub-user password in dashboard; then one Funding Apply on a sim (no hammer)."
+}

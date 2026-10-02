@@ -1,0 +1,31 @@
+{
+  "at": "2026-09-19T07:19:27.891Z",
+  "hole": 17,
+  "lane": "playwright/product-fail",
+  "plus_tag_only": true,
+  "client_id": "40f063e1-27e3-4857-be1a-91640eee90e1",
+  "email": "stanbridgejchris+sim-inquiry-20260827@gmail.com",
+  "deploy_production": "6aae2a1796f1421e9ed58696",
+  "verdict": "PASS",
+  "checks": {
+    "footer_0_unlocked": {
+      "verdict": "PASS",
+      "proof": "Live staff walk Sim Inquiry 27: footer reads live entitlements · 0 unlocked · 6 locked. Playwright BEFORE state matched. Two human loads on fundhub.ai.",
+      "png": [
+        "hole17-footer-pass-click1-2026-09-20.png",
+        "hole17-footer-pass-click2-2026-09-20.png"
+      ]
+    },
+    "magic_link_token_in_dashboard_messages": {
+      "verdict": "PASS",
+      "proof": "send-portal-link minted link on live deploy 6aae2a17. messages.client_id set for Inquiry 27. Staff dashboard lists token in rendered_body. portal-login click lands client portal.",
+      "evidence": "hole17-magic-link-prove-2026-09-20.json",
+      "message_id": "9e36951b-925a-4c0a-8bc3-2ddc74079540"
+    }
+  },
+  "files_changed": [
+    "public/app/client-portal.html",
+    "src/auth/magic-link.mjs"
+  ],
+  "c066a106": "not in repo; no prior PASS PNGs in product-fail — full prove run required"
+}

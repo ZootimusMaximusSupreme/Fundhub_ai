@@ -1,0 +1,658 @@
+{
+  "at": "2026-09-18T21:44:33.872Z",
+  "login": 200,
+  "dash8": {
+    "a": {
+      "funded": true,
+      "funded_amount": "50000.00",
+      "keys": [
+        "ok",
+        "client",
+        "transactions",
+        "crs_results",
+        "messages",
+        "tasks",
+        "funding_rounds",
+        "invoices",
+        "inquiry_removal_case",
+        "tier_reasoning",
+        "tri_merge",
+        "utilisation",
+        "income_estimates",
+        "business_credit",
+        "latest_booking",
+        "open_blockers",
+        "next_action",
+        "active_blockers",
+        "funding_round",
+        "next_action_degraded"
+      ],
+      "fulfillment": null,
+      "total_approved": {
+        "key": "remove_inquiries",
+        "label": "Remove Inquiries",
+        "why": "They have credit inquiries we are still working to get taken off."
+      },
+      "credit": null,
+      "entitlements": null,
+      "blockers_head": []
+    },
+    "b": {
+      "funded": true,
+      "funded_amount": "50000.00",
+      "keys": [
+        "ok",
+        "client",
+        "transactions",
+        "crs_results",
+        "messages",
+        "tasks",
+        "funding_rounds",
+        "invoices",
+        "inquiry_removal_case",
+        "tier_reasoning",
+        "tri_merge",
+        "utilisation",
+        "income_estimates",
+        "business_credit",
+        "latest_booking",
+        "open_blockers",
+        "next_action",
+        "active_blockers",
+        "funding_round",
+        "next_action_degraded"
+      ],
+      "fulfillment": null,
+      "total_approved": {
+        "key": "remove_inquiries",
+        "label": "Remove Inquiries",
+        "why": "They have credit inquiries we are still working to get taken off."
+      },
+      "credit": null,
+      "entitlements": null,
+      "blockers_head": []
+    }
+  },
+  "dash13_credit": null,
+  "portal12_keys": [
+    "ok",
+    "prequal_amount",
+    "prequal_display",
+    "scores",
+    "soft_pull_complete",
+    "doc_agent_message",
+    "inquiry_open",
+    "documents",
+    "repair_path",
+    "dispute_consent",
+    "invoice_due",
+    "advisor",
+    "stage"
+  ],
+  "portal8_due": {
+    "count": 0,
+    "currency": "USD",
+    "total": 0,
+    "total_display": "$0.00",
+    "items": []
+  },
+  "portalW_due": {
+    "count": 1,
+    "currency": "USD",
+    "total": 5000,
+    "total_display": "$5,000.00",
+    "items": [
+      {
+        "reference": "INV-AE12B967",
+        "kind": "Funding success fee",
+        "amount": 5000,
+        "amount_display": "$5,000.00",
+        "currency": "USD",
+        "status": "sent",
+        "due_at": null,
+        "sent_at": "2026-09-06T11:21:28.515Z",
+        "pay_url": "https://www.fanbasis.com/agency-checkout/fundhub-1/w8jZg"
+      }
+    ]
+  },
+  "repairFiles": [
+    {
+      "name": "Sim Nine-Repair",
+      "stage": "Ready to send",
+      "need_me": true,
+      "address_ok": true,
+      "letters_ready": 3,
+      "can_send": true,
+      "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd"
+    },
+    {
+      "name": "Sim SloEighteen",
+      "stage": "Waiting on papers",
+      "need_me": false,
+      "address_ok": false,
+      "letters_ready": 0,
+      "can_send": false,
+      "client_id": "0dd8892c-6f1c-4fd5-84e4-4dc1b992b3d0"
+    },
+    {
+      "name": "Sim Combo-20260918",
+      "stage": "Waiting on papers",
+      "need_me": false,
+      "address_ok": true,
+      "letters_ready": 0,
+      "can_send": false,
+      "client_id": "567c12ce-64de-4043-aa98-d842434bd267"
+    },
+    {
+      "name": "Sim Ten-Trial",
+      "stage": "Reviewing the report",
+      "need_me": false,
+      "address_ok": true,
+      "letters_ready": 0,
+      "can_send": false,
+      "client_id": "22103bca-0ec9-4491-bb75-5d1b6528f116"
+    },
+    {
+      "name": "Walk2 Repair",
+      "stage": "Waiting on papers",
+      "need_me": false,
+      "address_ok": true,
+      "letters_ready": 0,
+      "can_send": false,
+      "client_id": "4cd0dbd1-4e37-4df4-bc90-ced7052e183f"
+    },
+    {
+      "name": "Walk3 Trial",
+      "stage": "Waiting on papers",
+      "need_me": false,
+      "address_ok": true,
+      "letters_ready": 0,
+      "can_send": false,
+      "client_id": "9b03c7f2-b75f-4700-88b2-0fe783c3143a"
+    }
+  ],
+  "db": {
+    "ro": "on",
+    "round_cols": [
+      "id",
+      "org_id",
+      "client_id",
+      "round_number",
+      "status",
+      "product",
+      "submitted_amount",
+      "approved_amount",
+      "funded_amount",
+      "hold_reason",
+      "conditions",
+      "created_at",
+      "updated_at",
+      "source_event_id",
+      "is_demo"
+    ],
+    "rounds": [
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "round_number": 1,
+        "status": "funded",
+        "funded_amount": "25000.00",
+        "approved_amount": null,
+        "created_at": "2026-09-17T17:46:50.295Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "round_number": 2,
+        "status": "started",
+        "funded_amount": null,
+        "approved_amount": "45000.00",
+        "created_at": "2026-09-06T11:58:59.336Z"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "round_number": 2,
+        "status": "funded",
+        "funded_amount": "25000.00",
+        "approved_amount": "10000.00",
+        "created_at": "2026-09-17T17:48:55.750Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "round_number": 1,
+        "status": "started",
+        "funded_amount": null,
+        "approved_amount": null,
+        "created_at": "2026-09-18T15:13:09.532Z"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "round_number": 1,
+        "status": "started",
+        "funded_amount": null,
+        "approved_amount": null,
+        "created_at": "2026-09-18T15:13:27.856Z"
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "round_number": 1,
+        "status": "funded",
+        "funded_amount": "45000.00",
+        "approved_amount": "50000.00",
+        "created_at": "2026-09-06T03:06:07.329Z"
+      }
+    ],
+    "msg_cols": [
+      "client_id",
+      "channel",
+      "template_key",
+      "rendered_body",
+      "status",
+      "created_at"
+    ],
+    "msgs": [
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-02-REQUEST-MORE",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Got your upload — one thing needs fixing before we can move forward. Details in your portal: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-09%",
+        "created_at": "2026-09-18T17:20:57.463Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-03-APPROVED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, documents approved. We're optimizing your profile now and your specialist will start Round 1 shortly. Reply STOP to opt out.",
+        "created_at": "2026-09-18T17:20:49.486Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "EMAIL-DOC-03-APPROVED",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=e",
+        "created_at": "2026-09-18T17:20:49.073Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-03-APPROVED",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, documents approved. We're optimizing your profile now and your specialist will start Round 1 shortly. Reply STOP to opt out.",
+        "created_at": "2026-09-18T17:20:44.651Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "EMAIL-DOC-03-APPROVED",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=e",
+        "created_at": "2026-09-18T17:20:44.174Z"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "template_key": "SMS-DOC-02-REQUEST-MORE",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Hey Sim, Fundhub. Got your upload — one thing needs fixing before we can move forward. Details in your portal: https://fundhub.ai/portal-login.html?email=stanbridgejchris%2Bsim-09%",
+        "created_at": "2026-09-18T15:27:25.726Z"
+      },
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "template_key": "EMAIL-NOBOOK-01",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=e",
+        "created_at": "2026-09-18T14:54:58.027Z"
+      },
+      {
+        "client_id": "7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+        "template_key": "SMS-NOBOOK-01",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Sim, it's Josh at Fundhub. Your application is in, but there's no call on the calendar yet — and the call is where an advisor goes through your options with you. Pick a time: https",
+        "created_at": "2026-09-18T14:54:58.027Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "EMAIL-NOBOOK-01",
+        "channel": "email",
+        "status": "delivered",
+        "body": "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n<meta http-equiv=\"X-UA-Compatible\" content=\"IE=e",
+        "created_at": "2026-09-18T10:52:37.485Z"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "template_key": "SMS-NOBOOK-01",
+        "channel": "sms",
+        "status": "delivered",
+        "body": "Sim, it's Josh at Fundhub. Your application is in, but there's no call on the calendar yet — and the call is where an advisor goes through your options with you. Pick a time: https",
+        "created_at": "2026-09-18T10:52:36.931Z"
+      }
+    ],
+    "ent_cols": [
+      "id",
+      "org_id",
+      "client_id",
+      "entitlement_code",
+      "source_transaction_id",
+      "source_event_id",
+      "granted_by",
+      "grant_reason",
+      "granted_at",
+      "expires_at",
+      "revoked_at",
+      "revoked_by",
+      "revoke_reason",
+      "created_at",
+      "updated_at",
+      "is_demo"
+    ],
+    "ent": [
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267"
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267"
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4"
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f"
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4"
+      }
+    ],
+    "pii_cols": [
+      "id",
+      "org_id",
+      "client_id",
+      "ssn_enc",
+      "dob",
+      "addresses",
+      "created_at",
+      "updated_at",
+      "verified_legal_name",
+      "verified_address",
+      "verified_dob",
+      "verified_by",
+      "verified_at",
+      "verified_field_sources"
+    ],
+    "pii": [
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "addresses": [
+          {
+            "zip": "85233",
+            "city": "Gilbert",
+            "state": "AZ",
+            "postalCode": "85233",
+            "addressLine1": "1005 W Hudson Way"
+          }
+        ],
+        "verified_address": null
+      },
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "addresses": [
+          {
+            "city": "Gilbert",
+            "state": "AZ",
+            "postalCode": "85234",
+            "addressLine1": "4218 E Cactus Wren Dr"
+          }
+        ],
+        "verified_address": null
+      },
+      {
+        "client_id": "be3dcfd7-faae-4001-b97f-9bc30875bbcd",
+        "addresses": [
+          {
+            "city": "Gilbert",
+            "state": "AZ",
+            "postalCode": "85234",
+            "addressLine1": "4218 E Cactus Wren Dr"
+          }
+        ],
+        "verified_address": {
+          "zip": "85234",
+          "city": "Gilbert",
+          "line1": "4218 E Cactus Wren Dr",
+          "line2": null,
+          "state": "AZ",
+          "formatted": "4218 E Cactus Wren Dr Gilbert, AZ 85234"
+        }
+      },
+      {
+        "client_id": "f01cc0e0-c8f6-4343-93e5-6a33f0d3112f",
+        "addresses": [
+          {
+            "city": "Gilbert",
+            "state": "AZ",
+            "postalCode": "85234",
+            "addressLine1": "4218 E Cactus Wren Dr"
+          }
+        ],
+        "verified_address": null
+      },
+      {
+        "client_id": "567c12ce-64de-4043-aa98-d842434bd267",
+        "addresses": [
+          {
+            "city": "GILBERT",
+            "state": "AZ",
+            "postalCode": "85234",
+            "addressLine1": "4218 E CACTUS WREN DR"
+          }
+        ],
+        "verified_address": null
+      }
+    ],
+    "inv_cols": [
+      "invoice_id",
+      "org_id",
+      "client_id",
+      "client_code",
+      "source",
+      "status",
+      "sale_id",
+      "funding_round_id",
+      "currency",
+      "amount_due",
+      "amount_paid",
+      "balance_due",
+      "gross_paid",
+      "refunded",
+      "reversed",
+      "payment_count",
+      "last_payment_at",
+      "line_items_total",
+      "line_item_count",
+      "line_items_reconciled",
+      "settlement_state",
+      "open_balance",
+      "idempotency_key",
+      "source_event_id",
+      "external_ref",
+      "provider",
+      "due_at",
+      "sent_at",
+      "reminded_at",
+      "reminder_count",
+      "escalated_at",
+      "paid_at",
+      "written_off_at",
+      "voided_at",
+      "created_at",
+      "days_overdue",
+      "is_overdue",
+      "aging_bucket",
+      "status_reconciled"
+    ],
+    "inv": [
+      {
+        "client_id": "d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+        "client_code": "FH-000392",
+        "source": "funding_success_fee",
+        "status": "paid",
+        "amount_due": "2500.00",
+        "amount_paid": "2500.00",
+        "balance_due": "0.00",
+        "refunded": "0",
+        "open_balance": "0.00",
+        "source_event_id": "fd5368e3-0c0a-49e1-afd1-0d945c7f95d3",
+        "external_ref": "jPOOR",
+        "status_reconciled": true
+      },
+      {
+        "client_id": "ab277630-8309-4c02-b187-f244e7e369e8",
+        "client_code": "FH-000388",
+        "source": "funding_success_fee",
+        "status": "sent",
+        "amount_due": "5000.00",
+        "amount_paid": "0",
+        "balance_due": "5000.00",
+        "refunded": "0",
+        "open_balance": "5000.00",
+        "source_event_id": "d75ced04-0bb4-4f27-942a-c90a2da3a394",
+        "external_ref": "w8jZg",
+        "status_reconciled": true
+      }
+    ]
+  },
+  "ui": {
+    "ccp8": [
+      {
+        "next": "Remove Inquiries",
+        "funded_line": "Funded",
+        "funded_yes": false,
+        "fifty": false,
+        "total_approved": "$10,000",
+        "n7_blocker": true
+      },
+      {
+        "next": "Remove Inquiries",
+        "funded_line": "Funded",
+        "funded_yes": false,
+        "fifty": false,
+        "total_approved": "$10,000",
+        "n7_blocker": true
+      }
+    ],
+    "portal12s": [
+      {
+        "nothing": false,
+        "course": false,
+        "open_course": false,
+        "what_you_own": "WHAT YOU OWN\nYours to keep — each one downloads here as soon as it is ready\nFunding Snapshot\nPart of your package. It is not built yet — it appears here, ready to download, as soon as it is.\nNOT READY YET\nFiles from your package. Nothing here expires.\nThis list fills in on its own as files are ready.\nUNLOCK MORE\nEverything here — book a call for pricing\nDONE\nUnderwriteIQ soft-pull assessment\nA soft inquiry so we can see your file. Price is fixed.\nAlready run — this is where your scores came from"
+      },
+      {
+        "nothing": false,
+        "course": false,
+        "open_course": false,
+        "what_you_own": "WHAT YOU OWN\nYours to keep — each one downloads here as soon as it is ready\nFunding Snapshot\nPart of your package. It is not built yet — it appears here, ready to download, as soon as it is.\nNOT READY YET\nFiles from your package. Nothing here expires.\nThis list fills in on its own as files are ready.\nUNLOCK MORE\nEverything here — book a call for pricing\nDONE\nUnderwriteIQ soft-pull assessment\nA soft inquiry so we can see your file. Price is fixed.\nAlready run — this is where your scores came from"
+      }
+    ],
+    "scores13": [
+      {
+        "sample": false,
+        "not_real": false,
+        "permission": true,
+        "scores": true,
+        "scores_line": "EX 771 · EQ 778 · TU 766\nCard Use\n6% · excellent\nFunding Round\n—\nBUSINESSES\n\nNo busine",
+        "facts": "SYSTEM FACTS\ncollapsed ⌄\nFUNDHUB-CCP · live\nORG: fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\n7ccbeb76-df98-4125-8c14-0d1c9f5e3042\nnotes save to this client file\nlive file · 0 payments · 4 messages\nChat"
+      },
+      {
+        "sample": false,
+        "not_real": false,
+        "permission": true,
+        "scores": true,
+        "scores_line": "EX 771 · EQ 778 · TU 766\nCard Use\n6% · excellent\nFunding Round\n—\nBUSINESSES\n\nNo busine",
+        "facts": "SYSTEM FACTS\ncollapsed ⌄\nFUNDHUB-CCP · live\nORG: fb789b0b-8d8d-4cdc-8a24-ee6b6659e0b6\n7ccbeb76-df98-4125-8c14-0d1c9f5e3042\nnotes save to this client file\nlive file · 0 payments · 4 messages\nChat"
+      }
+    ],
+    "payWalk": [
+      {
+        "due": false,
+        "fivek": false,
+        "inv": null,
+        "pay_now": false,
+        "slice": "Payments · Agreements · Documents · Activity · Messages\nYOUR FUNDING ADVISOR\n—\nNot assigned yet\nLooks after your file\nNobody is on your file yet. Your round, your documents, a payment — use the chat button in the corner and the right person will pick it up. No charge, no pitch.\nWANT MORE FUNDING?\nTALK IT THROUGH\n20 minutes on what a bigger approval would take, and what it would cost.\nAsk for a call\nNOTIFICATIONS ON YOUR PHONE\nGet a nudge when something on your file needs you. No amounts, no card names — just a tap through to this page.\nNotifications are blocked for this site. You can turn them back on in your browser's settings for fundhub.\nfundhub client portal\n·\nquestions? use the chat but"
+      },
+      {
+        "due": false,
+        "fivek": false,
+        "inv": null,
+        "pay_now": false,
+        "slice": "Payments · Agreements · Documents · Activity · Messages\nYOUR FUNDING ADVISOR\n—\nNot assigned yet\nLooks after your file\nNobody is on your file yet. Your round, your documents, a payment — use the chat button in the corner and the right person will pick it up. No charge, no pitch.\nWANT MORE FUNDING?\nTALK IT THROUGH\n20 minutes on what a bigger approval would take, and what it would cost.\nAsk for a call\nNOTIFICATIONS ON YOUR PHONE\nGet a nudge when something on your file needs you. No amounts, no card names — just a tap through to this page.\nNotifications are blocked for this site. You can turn them back on in your browser's settings for fundhub.\nfundhub client portal\n·\nquestions? use the chat but"
+      }
+    ],
+    "pay8": [
+      {
+        "due": false,
+        "twok": false,
+        "inv": null,
+        "succeeded": false,
+        "slice": "Payments · Agreements · Documents · Activity · Messages\nYOUR FUNDING ADVISOR\n—\nNot assigned yet\nLooks after your file\nNobody is on your file yet. Your round, your documents, a payment — use the chat button in the corner and the right person will pick it up. No charge, no pitch.\nWANT MORE FUNDING?\nTALK IT THROUGH\n20 minutes on what a bigger approval would take, and what it would cost.\nAsk for a call\nNOTIFICATIONS ON YOUR PHONE\nGet a nudge when something on your file needs you. No amounts, no card names — just a tap through to this page.\nNotifications are blocked for this site. You can turn them back on in your browser's settings for fundhub.\nfundhub client portal\n·\nquestions? use the chat but"
+      },
+      {
+        "due": false,
+        "twok": false,
+        "inv": null,
+        "succeeded": false,
+        "slice": "Payments · Agreements · Documents · Activity · Messages\nYOUR FUNDING ADVISOR\n—\nNot assigned yet\nLooks after your file\nNobody is on your file yet. Your round, your documents, a payment — use the chat button in the corner and the right person will pick it up. No charge, no pitch.\nWANT MORE FUNDING?\nTALK IT THROUGH\n20 minutes on what a bigger approval would take, and what it would cost.\nAsk for a call\nNOTIFICATIONS ON YOUR PHONE\nGet a nudge when something on your file needs you. No amounts, no card names — just a tap through to this page.\nNotifications are blocked for this site. You can turn them back on in your browser's settings for fundhub.\nfundhub client portal\n·\nquestions? use the chat but"
+      }
+    ],
+    "repairUi": [
+      {
+        "waiting_every": false,
+        "header": "REPAIR DESK\n\nOne look tells you what needs doing. Press a tile to filter. Nothing mails until you press Send.\n\nNEED ME\n1\nREADY TO SEND\n1\nWAITING ON BUREAU\n0\nSTUCK\n1\nTRIAL ENDING\n0\nCLIENT\tPROGRAM\tROUND\tSTAGE\tNEED",
+        "need": "NEED ME\n1",
+        "waiting": "WAITING ON BUREAU\n0",
+        "stuck": "STUCK\n1",
+        "combo": "Combo-20260918\tfull\t— / 6\tawaiting documents\t—\t—",
+        "no_address_combo": false
+      },
+      {
+        "waiting_every": false,
+        "header": "REPAIR DESK\n\nOne look tells you what needs doing. Press a tile to filter. Nothing mails until you press Send.\n\nNEED ME\n1\nREADY TO SEND\n1\nWAITING ON BUREAU\n0\nSTUCK\n1\nTRIAL ENDING\n0\nCLIENT\tPROGRAM\tROUND\tSTAGE\tNEED",
+        "need": "NEED ME\n1",
+        "waiting": "WAITING ON BUREAU\n0",
+        "stuck": "STUCK\n1",
+        "combo": "Combo-20260918\tfull\t— / 6\tawaiting documents\t—\t—",
+        "no_address_combo": false
+      }
+    ]
+  },
+  "gmail": {
+    "tried": true,
+    "ready": true,
+    "missing": [],
+    "tokenSource": "GOOGLE_GMAIL_OAUTH_TOKEN_PATH",
+    "list_ok": true,
+    "result_size": 201,
+    "ids": [
+      "1a0b503abaccebf7",
+      "1a0b427ed4ff7fff",
+      "1a06a6e7b9e1127f"
+    ]
+  }
+}

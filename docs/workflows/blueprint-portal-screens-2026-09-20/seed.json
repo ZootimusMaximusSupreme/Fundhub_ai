@@ -1,0 +1,201 @@
+{
+  "at": "2026-09-20T05:10:11.497Z",
+  "clientId": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+  "email": "stanbridgejchris+sim-11@gmail.com",
+  "phone_is_agent": true,
+  "phone_matches_named": true,
+  "consent_sms": true,
+  "dnd_sms": false,
+  "planted": {
+    "businesses": "skip_already_2"
+  },
+  "waypoints": {
+    "seed": {
+      "ok": true,
+      "seeded": [
+        "no_new_credit",
+        "personal_loan",
+        "form_llc",
+        "get_ein",
+        "business_checking"
+      ],
+      "skipped": [
+        {
+          "definitionKey": "paydown_revolving_account",
+          "accountKey": "amex",
+          "reason": "already_at_target"
+        },
+        {
+          "definitionKey": "paydown_revolving_account",
+          "accountKey": "capital_one",
+          "reason": "already_at_target"
+        },
+        {
+          "definitionKey": "paydown_revolving_account",
+          "accountKey": "chase_card_services",
+          "reason": "already_at_target"
+        }
+      ],
+      "completed": [],
+      "creditFile": "crs_result",
+      "accounts": 3,
+      "definitions": 6
+    },
+    "rows": [
+      {
+        "key": "no_new_credit",
+        "title": "Do not open new credit while we work on your file",
+        "state": "not_started",
+        "due_at": null,
+        "owner": "client"
+      },
+      {
+        "key": "personal_loan",
+        "title": "Talk to your advisor about a personal loan",
+        "state": "not_started",
+        "due_at": "2026-09-20T03:09:59.160Z",
+        "owner": "client"
+      },
+      {
+        "key": "form_llc",
+        "title": "File your LLC",
+        "state": "not_started",
+        "due_at": "2026-10-18T01:39:39.891Z",
+        "owner": "client"
+      },
+      {
+        "key": "get_ein",
+        "title": "Get your EIN from the IRS",
+        "state": "not_started",
+        "due_at": null,
+        "owner": "client"
+      },
+      {
+        "key": "business_checking",
+        "title": "Open a business checking account",
+        "state": "not_started",
+        "due_at": null,
+        "owner": "client"
+      }
+    ]
+  },
+  "scores": {
+    "experian": 771,
+    "equifax": 778,
+    "transunion": 766,
+    "experian_business": 76
+  },
+  "sms": {
+    "rung": {
+      "step": 1,
+      "kind": "client_message",
+      "channel": "sms",
+      "templateKey": "SMS-WAYPOINT-DUE"
+    },
+    "queued": {
+      "action": "queued",
+      "reasons": null,
+      "messageId": "bc63227f-3521-4654-bd84-aaf3d5458062",
+      "channel": "sms"
+    },
+    "to_is_agent": true,
+    "dispatch": {
+      "outcome": "retry",
+      "detail": "{\"code\":20003,\"message\":\"Authentication Error - invalid username\",\"more_info\":\"https://www.twilio.com/docs/errors/20003\",\"status\":401}"
+    },
+    "after": {
+      "status": "queued",
+      "provider": "twilio",
+      "has_provider_id": false,
+      "last_error": "{\"code\":20003,\"message\":\"Authentication Error - invalid username\",\"more_info\":\"https://www.twilio.com/docs/errors/20003\",\"status\":401}"
+    }
+  },
+  "prequal": "$212,000",
+  "businesses": [
+    {
+      "name": "Eleven-Blueprint Holdings LLC",
+      "age_months": 36,
+      "intelliscore": 76
+    },
+    {
+      "name": "Eleven-Blueprint Ops LLC",
+      "age_months": 18,
+      "intelliscore": 64
+    }
+  ],
+  "docs": [
+    {
+      "kind": "deliverable",
+      "subtype": "credit_optimization_roadmap",
+      "title": "Credit Optimization Roadmap"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "bank_lender_match_list",
+      "title": "Bank and Lender Match List"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_snapshot",
+      "title": "Funding Snapshot"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "credit_analysis_report",
+      "title": "Credit Analysis Report"
+    },
+    {
+      "kind": "contract",
+      "subtype": "funding_agreement",
+      "title": "Funding Agreement (signed)"
+    },
+    {
+      "kind": "contract",
+      "subtype": "funding_agreement",
+      "title": "Funding Agreement"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_personal_info",
+      "title": "Personal info — EQ"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_personal_info",
+      "title": "Personal info — TU"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_personal_info",
+      "title": "Personal info — EX"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_inquiry_removal",
+      "title": "Inquiry removal — EQ"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_inquiry_removal",
+      "title": "Inquiry removal — TU"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_inquiry_removal",
+      "title": "Inquiry removal — EX"
+    },
+    {
+      "kind": "deliverable",
+      "subtype": "funding_summary",
+      "title": "Capital Readiness Summary"
+    }
+  ],
+  "csm_tasks": [
+    {
+      "title": "Accountability call — halfway check-in",
+      "role": "csm",
+      "source": "customer-insights-mid",
+      "done": false
+    }
+  ]
+}

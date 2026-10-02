@@ -1,0 +1,220 @@
+{
+  "at": "2026-09-19T01:40:09.531Z",
+  "blocked": [],
+  "pages": [
+    {
+      "label": "h23-portal",
+      "rows": [
+        {
+          "label": "h23-portal-1",
+          "url": "https://fundhub.ai/app/client-portal.html?client_id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": false,
+          "pulled": false,
+          "snippet": "Client Portal — — Search ⌘K Chris Stanbridge · owner ··· Sign out × Welcome to your Fundhub portal Welcome to your Fundhub portal. Your credit pull is in and your call is next. CP-01 / START HERE FUNDHUB PORTAL Welcome to your FundHub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. 1:19 f Join the Fundhub wins group This is where we post wins. Co"
+        },
+        {
+          "label": "h23-portal-2",
+          "url": "https://fundhub.ai/app/client-portal.html?client_id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "Client Portal ST Sim Thirteen-NoBook Search ⌘K Chris Stanbridge · owner LIVE Sign out × Welcome back, Sim Welcome to your Fundhub portal. Your credit pull is in and your call is next. CP-01 / START HERE FUNDHUB PORTAL Welcome to your FundHub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. 1:19 f Join the Fundhub wins group This is where we post w"
+        }
+      ]
+    },
+    {
+      "label": "h23-progress",
+      "rows": [
+        {
+          "label": "h23-progress-1",
+          "url": "https://fundhub.ai/progress.html?client_id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": false,
+          "pulled": false,
+          "snippet": "FUNDHUB Your progress Everything on your file, as it stands today. ← Back to your portal WHERE YOU ARE IN PROGRESS In progress We will update this as your file moves. YOUR SCORES EXPERIAN 771 Sample report loaded 18 September 2026 Report not saved yet EQUIFAX 778 Sample report loaded 18 September 2026 Report not saved yet TRANSUNION 766 Sample report loaded 18 September 2026 Report not saved yet Sample scores. Not a "
+        },
+        {
+          "label": "h23-progress-2",
+          "url": "https://fundhub.ai/progress.html?client_id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": false,
+          "pulled": false,
+          "snippet": "FUNDHUB Your progress Everything on your file, as it stands today. ← Back to your portal WHERE YOU ARE IN PROGRESS In progress We will update this as your file moves. YOUR SCORES EXPERIAN 771 Sample report loaded 18 September 2026 Report not saved yet EQUIFAX 778 Sample report loaded 18 September 2026 Report not saved yet TRANSUNION 766 Sample report loaded 18 September 2026 Report not saved yet Sample scores. Not a "
+        }
+      ]
+    },
+    {
+      "label": "h23-pipeline",
+      "rows": [
+        {
+          "label": "h23-pipeline-1",
+          "url": "https://fundhub.ai/app/pipeline.html",
+          "sample": false,
+          "sampleAny": false,
+          "scores771": false,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline Fri, Sep 18, 6:40:27 PM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × R-01 Sales R-02 Funding: Card Stacking R-04 Optimization (Repair) Rounds R-05 Inquiry Removal R-06 AR / Collections R-08 Affiliates + White Label R-09 Hiring WAITING ON US 0 Not"
+        },
+        {
+          "label": "h23-pipeline-2",
+          "url": "https://fundhub.ai/app/pipeline.html",
+          "sample": false,
+          "sampleAny": false,
+          "scores771": false,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline Fri, Sep 18, 6:40:29 PM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × R-01 Sales R-02 Funding: Card Stacking R-04 Optimization (Repair) Rounds R-05 Inquiry Removal R-06 AR / Collections R-08 Affiliates + White Label R-09 Hiring WAITING ON US 0 Not"
+        }
+      ]
+    },
+    {
+      "label": "h23-closer-call",
+      "rows": [
+        {
+          "label": "h23-closer-call-1",
+          "url": "https://fundhub.ai/app/closer-dashboard.html?client_id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Closer Dashboard Fri, Sep 18, 6:40:32 PM MST Search ⌘K Chris Stanbridge · owner LIVE Sign out × LIVE CALL SHIFT OPEN SINCE AUG 22 — NEVER CLOCKED OUT CHRIS STANBRIDGE Sim Thirteen-NoBook no booked time Decision Rendered GATENo FICO gate ENTRYSorting · every road is open"
+        },
+        {
+          "label": "h23-closer-call-2",
+          "url": "https://fundhub.ai/app/closer-dashboard.html?client_id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Closer Dashboard Fri, Sep 18, 6:40:35 PM MST Search ⌘K Chris Stanbridge · owner LIVE Sign out × LIVE CALL SHIFT OPEN SINCE AUG 22 — NEVER CLOCKED OUT CHRIS STANBRIDGE Sim Thirteen-NoBook no booked time Decision Rendered GATENo FICO gate ENTRYSorting · every road is open"
+        }
+      ]
+    },
+    {
+      "label": "h23-panel",
+      "rows": [
+        {
+          "label": "h23-panel-1",
+          "url": "https://fundhub.ai/app/client-control-panel.html?id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Fri, Sep 18, 6:40:38 PM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Sim Thirteen-NoBook stanbridgejchris+sim-13@gmail.com DO THIS NEXT Remove Inquiries They have credit inquiries we are still working to get taken off. THE 4 INQUIRIES ON THIS FILE From a sample report. Not a r"
+        },
+        {
+          "label": "h23-panel-2",
+          "url": "https://fundhub.ai/app/client-control-panel.html?id=7ccbeb76-df98-4125-8c14-0d1c9f5e3042",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Fri, Sep 18, 6:40:41 PM MST LIVE Search ⌘K Chris Stanbridge · owner ··· Sign out × Sim Thirteen-NoBook stanbridgejchris+sim-13@gmail.com DO THIS NEXT Remove Inquiries They have credit inquiries we are still working to get taken off. THE 4 INQUIRIES ON THIS FILE From a sample report. Not a re"
+        }
+      ]
+    },
+    {
+      "label": "n7-panel",
+      "rows": [
+        {
+          "label": "n7-panel-1",
+          "url": "https://fundhub.ai/app/client-control-panel.html?id=d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Fri, Sep 18, 6:40:44 PM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Sim Eight-Funding stanbridgejchris+sim-08@gmail.com DO THIS NEXT Remove Inquiries They have credit inquiries we are still working to get taken off. THE 4 INQUIRIES ON THIS FILE From a sample report. Not a rea"
+        },
+        {
+          "label": "n7-panel-2",
+          "url": "https://fundhub.ai/app/client-control-panel.html?id=d682c13b-11f3-4bd5-a0c5-232b6a7875c4",
+          "sample": true,
+          "sampleAny": true,
+          "scores771": true,
+          "thirteen": true,
+          "pulled": false,
+          "snippet": "‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Fri, Sep 18, 6:40:47 PM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Sim Eight-Funding stanbridgejchris+sim-08@gmail.com DO THIS NEXT Remove Inquiries They have credit inquiries we are still working to get taken off. THE 4 INQUIRIES ON THIS FILE From a sample report. Not a rea"
+        }
+      ]
+    },
+    {
+      "label": "n17",
+      "rows": [
+        {
+          "label": "n17-1",
+          "url": "https://fundhub.ai/app/ops-admin.html",
+          "sample": false,
+          "sampleAny": false,
+          "scores771": false,
+          "thirteen": false,
+          "pulled": false,
+          "snippet": "What needs doing today? New clients: 18 Booked calls: 4 Show rate: 125% Close rate: 175% Cash: $29k Funded files in the last 7 days: 1 Funded dollars: $50k Cost per funded: $0 Closer starting bar (per pod, company scaled): target 108 deposits. this month 2 deposits. Funding advisor starting bar (per pod, company scaled): target 108 funded files. this month 2 funded files (3 funded rounds). Pods: 4 complete. 4 closer(s) and 4 funding advisor(s). They work in tandem. Calendar: not packed. No close",
+          "n17": {
+            "lines": [
+              "Funded files in the last 7 days: 1",
+              "Funding advisor starting bar (per pod, company scaled): target 108 funded files. this month 2 funded files (3 funded rounds).",
+              "3. Not enough deposits (2) to learn deposits that fund. Need 10. We have 2. funded files in the last 7 days: 1. No invented rate.",
+              "Funding advisor funded files this month 2 are under the starting bar of 108."
+            ],
+            "nums": [
+              108,
+              2
+            ],
+            "unique": [
+              108,
+              2
+            ],
+            "agree": false,
+            "pulseHeroFunded": null,
+            "pulseKpi": null
+          }
+        },
+        {
+          "label": "n17-2",
+          "url": "https://fundhub.ai/app/ops-admin.html",
+          "sample": false,
+          "sampleAny": false,
+          "scores771": false,
+          "thirteen": false,
+          "pulled": false,
+          "snippet": "What needs doing today? New clients: 18 Booked calls: 4 Show rate: 125% Close rate: 175% Cash: $29k Funded files in the last 7 days: 1 Funded dollars: $50k Cost per funded: $0 Closer starting bar (per pod, company scaled): target 108 deposits. this month 2 deposits. Funding advisor starting bar (per pod, company scaled): target 108 funded files. this month 2 funded files (3 funded rounds). Pods: 4 complete. 4 closer(s) and 4 funding advisor(s). They work in tandem. Calendar: not packed. No close",
+          "n17": {
+            "lines": [
+              "Funded files in the last 7 days: 1",
+              "Funding advisor starting bar (per pod, company scaled): target 108 funded files. this month 2 funded files (3 funded rounds).",
+              "3. Not enough deposits (2) to learn deposits that fund. Need 10. We have 2. funded files in the last 7 days: 1. No invented rate.",
+              "Funding advisor funded files this month 2 are under the starting bar of 108."
+            ],
+            "nums": [
+              108,
+              2
+            ],
+            "unique": [
+              108,
+              2
+            ],
+            "agree": false,
+            "pulseHeroFunded": null,
+            "pulseKpi": null
+          }
+        }
+      ]
+    }
+  ],
+  "login": 200
+}

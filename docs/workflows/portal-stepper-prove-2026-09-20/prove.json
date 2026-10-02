@@ -1,0 +1,1038 @@
+{
+  "at": "2026-09-20T05:12:05.450Z",
+  "mapping": {
+    "bar_file": "public/app/client-portal.html #stepper-pre (.precall-only)",
+    "paint": "paintPreStepper() — only steps 1–2",
+    "visibility": "shown only when body.no-funding (NO funding-snapshot entitlement)",
+    "post_call_stepper": "retired — funding-only card has status line, no ticks",
+    "real_progress_page": "/progress.html via GET /api/read/client-progress (repair pipeline / dispute rounds)",
+    "labels": {
+      "Booked": {
+        "bar": "Anyone who opened portal with a file. Not bookings table.",
+        "real": "sales.booked OR bookings row OR booking.created"
+      },
+      "Diagnostic Paid": {
+        "bar": "ANY succeeded non-demo transaction (SLO, program, anything)",
+        "real": "sales.diagnostic_paid OR diagnostic.paid event OR named diagnostic product"
+      },
+      "Docs Received": {
+        "bar": "never paints",
+        "real": "docs.received event; documents rows; repair.docs.complete"
+      },
+      "Round Started": {
+        "bar": "never paints — FUNDING event round.started / apply_now, NOT repair dispute round",
+        "real": "funding_card_stacking.apply_now → round.started; funding_rounds row"
+      },
+      "Round Submitted": {
+        "bar": "never paints",
+        "real": "funding_card_stacking.round_submitted → round.submitted"
+      },
+      "Round Approved": {
+        "bar": "never paints",
+        "real": "funding_card_stacking.approved → round.approved"
+      },
+      "Round Funded": {
+        "bar": "never paints",
+        "real": "funding_card_stacking.funded → round.funded + funded_amount > 0"
+      },
+      "File Finalized": {
+        "bar": "never paints",
+        "real": "funding closed / round.closeout; repair program_complete is a DIFFERENT rail"
+      }
+    }
+  },
+  "catalog": [
+    {
+      "id": "95b9f4bd-f86c-4413-9aa5-a06998dea77b",
+      "name": "Sim Combo E2E20",
+      "email": "stanbridgejchris+sim-combo-e2e200920-y2otg@gmail.com"
+    },
+    {
+      "id": "8bdc923f-7570-4833-9e66-23014faba487",
+      "name": "Sim Course E2E20",
+      "email": "stanbridgejchris+sim-course-e2e200920-y2otg@gmail.com"
+    },
+    {
+      "id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+      "name": "Sim Eleven-Blueprint",
+      "email": "stanbridgejchris+sim-11@gmail.com"
+    },
+    {
+      "id": "1982d8a6-bb09-4308-8d12-837c600c4bd8",
+      "name": "Sim Fund E2E20",
+      "email": "stanbridgejchris+sim-funding-e2e200920-y2otg@gmail.com"
+    },
+    {
+      "id": "71ca6983-75c1-4114-bb04-3333dfd5d705",
+      "name": "Sim Inquiry E2E20",
+      "email": "stanbridgejchris+sim-inquiry-e2e200920-y2otg@gmail.com"
+    },
+    {
+      "id": "9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+      "name": "Sim Repair E2E20",
+      "email": "stanbridgejchris+sim-repair-e2e200920-y2otg@gmail.com"
+    }
+  ],
+  "files": {
+    "funding": {
+      "id": "1982d8a6-bb09-4308-8d12-837c600c4bd8",
+      "name": "Sim Fund E2E20",
+      "email": "stanbridgejchris+sim-funding-e2e200920-y2otg@gmail.com",
+      "slo_ref": false,
+      "outcome_tier": "PREMIUM_STACK",
+      "entitlements": [
+        {
+          "entitlement_code": "credit-analysis-report",
+          "active": true
+        },
+        {
+          "entitlement_code": "funding-snapshot",
+          "active": true
+        }
+      ],
+      "fundingEntitlement": true,
+      "repairEntitlement": false,
+      "barVisibleIfNoFundingEntitlement": false,
+      "salesStage": {
+        "pipeline": "sales",
+        "stage_key": "decision_rendered",
+        "stage_name": "Decision Rendered",
+        "entered_at": "2026-09-19T05:27:53.806Z"
+      },
+      "fundingStage": {
+        "pipeline": "funding_card_stacking",
+        "stage_key": "apply_now",
+        "stage_name": "Apply Now",
+        "entered_at": "2026-09-19T05:27:47.430Z"
+      },
+      "repairStage": null,
+      "fundingRounds": [
+        {
+          "round_number": 1,
+          "status": "funded",
+          "product": "card_stacking",
+          "submitted_amount": null,
+          "approved_amount": null,
+          "funded_amount": "50000.00"
+        }
+      ],
+      "disputeCases": [],
+      "repairProgram": null,
+      "bookings": [
+        {
+          "id": "046edf18-02af-4208-9072-d0f5ea8f2170",
+          "status": "booked",
+          "starts_at": "2026-09-21T05:27:43.053Z",
+          "created_at": "2026-09-19T05:27:43.405Z"
+        }
+      ],
+      "hasBooking": true,
+      "transactions": [
+        {
+          "product_name": "Consulting Services Deposit",
+          "amount_paid": "3000.00",
+          "status": "succeeded",
+          "provider": "commas",
+          "is_demo": false,
+          "created_at": "2026-09-19T05:27:45.901Z"
+        },
+        {
+          "product_name": "Business Financial Assessment",
+          "amount_paid": "32.00",
+          "status": "succeeded",
+          "provider": "commas",
+          "is_demo": false,
+          "created_at": "2026-09-19T05:27:43.960Z"
+        }
+      ],
+      "paidProductNames": [
+        "Consulting Services Deposit",
+        "Business Financial Assessment"
+      ],
+      "anySucceededPayment": true,
+      "diagnosticNamedPayment": false,
+      "sloPaidWouldLightDiagnosticPaid": false,
+      "events": [
+        {
+          "name": "round.closeout",
+          "created_at": "2026-09-19T06:47:32.015Z"
+        },
+        {
+          "name": "round.approved",
+          "created_at": "2026-09-19T06:47:31.923Z"
+        },
+        {
+          "name": "round.closeout",
+          "created_at": "2026-09-19T06:16:51.798Z"
+        },
+        {
+          "name": "round.funded",
+          "created_at": "2026-09-19T06:16:50.824Z"
+        },
+        {
+          "name": "round.approved",
+          "created_at": "2026-09-19T06:16:50.749Z"
+        },
+        {
+          "name": "round.submitted",
+          "created_at": "2026-09-19T06:16:50.705Z"
+        },
+        {
+          "name": "round.started",
+          "created_at": "2026-09-19T06:16:50.150Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:58:40.579Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:51:00.676Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:50:55.486Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:45:17.570Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:45:12.487Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:35:56.452Z"
+        },
+        {
+          "name": "call.completed",
+          "created_at": "2026-09-19T05:34:58.550Z"
+        },
+        {
+          "name": "round.started",
+          "created_at": "2026-09-19T05:27:48.569Z"
+        },
+        {
+          "name": "round.started",
+          "created_at": "2026-09-19T05:27:47.592Z"
+        },
+        {
+          "name": "diagnostic.paid",
+          "created_at": "2026-09-19T05:27:44.585Z"
+        },
+        {
+          "name": "booking.created",
+          "created_at": "2026-09-19T05:27:43.082Z"
+        }
+      ],
+      "callOutcomes": [
+        {
+          "outcome": "deposit",
+          "logged_at": "2026-09-19T07:40:51.912Z",
+          "is_demo": false
+        }
+      ],
+      "contracts": [
+        {
+          "status": "sent",
+          "signed_at": null,
+          "title": "Soft Pull Authorization"
+        },
+        {
+          "status": "sent",
+          "signed_at": null,
+          "title": "Soft Pull Authorization"
+        },
+        {
+          "status": "sent",
+          "signed_at": null,
+          "title": "Soft Pull Authorization"
+        }
+      ],
+      "crs": [
+        {
+          "outcome_tier": "FULL_FUNDING",
+          "is_demo": false,
+          "created_at": "2026-09-19T06:46:57.908Z"
+        },
+        {
+          "outcome_tier": "PREMIUM_STACK",
+          "is_demo": false,
+          "created_at": "2026-09-19T05:31:39.987Z"
+        },
+        {
+          "outcome_tier": "PREMIUM_STACK",
+          "is_demo": false,
+          "created_at": "2026-09-19T05:27:49.741Z"
+        }
+      ],
+      "documentCount": 9,
+      "recentDocuments": [
+        {
+          "kind": "client_upload",
+          "subtype": "other",
+          "title": "Uploaded Document"
+        },
+        {
+          "kind": "client_upload",
+          "subtype": "proof_of_address",
+          "title": "Proof of Address"
+        },
+        {
+          "kind": "client_upload",
+          "subtype": "id_document",
+          "title": "ID Document"
+        },
+        {
+          "kind": "authorization",
+          "subtype": "soft_pull_consent",
+          "title": "Soft Pull Authorization"
+        },
+        {
+          "kind": "client_upload",
+          "subtype": "proof_of_address",
+          "title": "Proof of Address"
+        },
+        {
+          "kind": "client_upload",
+          "subtype": "id_document",
+          "title": "ID Document"
+        },
+        {
+          "kind": "client_upload",
+          "subtype": "other",
+          "title": "Uploaded Document"
+        },
+        {
+          "kind": "authorization",
+          "subtype": "soft_pull_consent",
+          "title": "Soft Pull Authorization"
+        }
+      ],
+      "storedWouldLight": {
+        "booked": true,
+        "diagnostic_paid": true,
+        "docs_received": true,
+        "round_started": true,
+        "round_submitted": true,
+        "round_approved": true,
+        "round_funded": true,
+        "file_finalized": true
+      },
+      "portalPaints": {
+        "booked": "always current-or-done if this bar is on screen (anyone with a file)",
+        "diagnostic_paid": "current (any succeeded transaction)",
+        "other_six": "always future — payload has no fact"
+      },
+      "liveApi": {
+        "portal_summary": {
+          "status": 200,
+          "stage": {
+            "key": "paid",
+            "before_call": false,
+            "contract_signed_at": null,
+            "soft_pull_complete": true,
+            "call_held": true,
+            "agreement_signed": false,
+            "payment_posted": true
+          },
+          "repair_path": false
+        },
+        "client_progress": {
+          "status": 200,
+          "stage": {
+            "key": null,
+            "roundCurrent": null,
+            "roundCap": null,
+            "enteredAt": null,
+            "expectedResponseBy": null,
+            "waitingOn": "client",
+            "roundLabel": null
+          },
+          "nextStep": {
+            "waypointId": "45903b57-e2ab-49cb-9530-da36fa6c5e81",
+            "owner": "client"
+          },
+          "waypointTitles": [
+            "Upload bank statements (comms prove)"
+          ]
+        },
+        "entitlements": {
+          "status": 200,
+          "codes": [
+            "credit-analysis-report",
+            "funding-snapshot"
+          ]
+        }
+      },
+      "ui": {
+        "url": "https://fundhub.ai/app/client-portal.html?client_id=1982d8a6-bb09-4308-8d12-837c600c4bd8",
+        "preVisible": false,
+        "fundVisible": true,
+        "steps": [
+          {
+            "label": "Booked",
+            "state": "done",
+            "dot": "✓"
+          },
+          {
+            "label": "Diagnostic Paid",
+            "state": "current",
+            "dot": "●"
+          },
+          {
+            "label": "Docs Received",
+            "state": "future",
+            "dot": "3"
+          },
+          {
+            "label": "Round Started",
+            "state": "future",
+            "dot": "4"
+          },
+          {
+            "label": "Round Submitted",
+            "state": "future",
+            "dot": "5"
+          },
+          {
+            "label": "Round Approved",
+            "state": "future",
+            "dot": "6"
+          },
+          {
+            "label": "Round Funded",
+            "state": "future",
+            "dot": "7"
+          },
+          {
+            "label": "File Finalized",
+            "state": "future",
+            "dot": "8"
+          }
+        ],
+        "copy": {
+          "eyebrow": "Current status",
+          "main": "Your payment is in. Your advisor is working your file.",
+          "fundingMain": "Your funding file is open. We will update this as your round moves.",
+          "bodyClass": "no-bureau-door"
+        },
+        "shots": [
+          "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-stepper-prove-2026-09-20/funding-click1.png",
+          "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-stepper-prove-2026-09-20/funding-click2.png"
+        ],
+        "bodySnippet": "Client Portal SF Sim Fund E2E20 Search ⌘K Chris Stanbridge · owner LIVE Sign out × Welcome back, Sim Here's where things stand on your funding. CP-01 / START HERE FUNDHUB PORTAL Welcome to your FundHub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. 1:19 Sign to authorize dispute letters This lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button. I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review. Letters and complaints are not mailed or filed until I send or file them, or until staff I authorize send or file them. I must sign CFPB and state AG complaints myself before filing. I may withdraw this authorization at any time. Withdrawing this authorization does not undo letters already prepared. This authorization makes no promise about deletions, scores, funding, or legal outcomes. Your legal name Draw your signature Clear Draw your signature. An empty box does not count. I sign to authorize Fundhub to prepare my dispute letters f Join the Fundhub wins group This is where we post wins. Come say hi before your call. Join on Facebook YOUR AGREEMENTS Review and sign anything we sent you. Signed copies stay here. Soft Pull Authorization 9/18/2026, 10:46:05 PM · Needs signature Review & sign Soft Pull Authorization 9/18/2026, 10:35:42 PM · Needs signature Review & sign Soft Pull Authorization 9/18/2026, 10:34:49 PM · Needs signature Review & sign CURRENT STATUS Your funding file is open. We will update this as your round moves. PRE-QUALIFIED FOR $212,000 See exactly where your file stands → YOUR CREDIT SCORES EXPERIAN 771 EQUIFAX 778 TRANSUNION 766 EXPERIAN BUSINESS (1"
+      }
+    },
+    "repair": {
+      "id": "9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+      "name": "Sim Repair E2E20",
+      "email": "stanbridgejchris+sim-repair-e2e200920-y2otg@gmail.com",
+      "slo_ref": false,
+      "outcome_tier": "REPAIR_ONLY",
+      "entitlements": [
+        {
+          "entitlement_code": "credit-analysis-report",
+          "active": true
+        },
+        {
+          "entitlement_code": "metro2-letter-pack",
+          "active": true
+        },
+        {
+          "entitlement_code": "credit-optimization-roadmap",
+          "active": true
+        }
+      ],
+      "fundingEntitlement": false,
+      "repairEntitlement": true,
+      "barVisibleIfNoFundingEntitlement": true,
+      "salesStage": {
+        "pipeline": "sales",
+        "stage_key": "decision_rendered",
+        "stage_name": "Decision Rendered",
+        "entered_at": "2026-09-19T05:30:05.824Z"
+      },
+      "fundingStage": null,
+      "repairStage": {
+        "pipeline": "optimization",
+        "stage_key": "ready_to_send",
+        "stage_name": "Ready to Send",
+        "entered_at": "2026-09-20T04:59:41.671Z"
+      },
+      "fundingRounds": [],
+      "disputeCases": [
+        {
+          "round": "R6",
+          "status": "open",
+          "response_due_at": null
+        },
+        {
+          "round": "R6",
+          "status": "open",
+          "response_due_at": null
+        },
+        {
+          "round": "R6",
+          "status": "open",
+          "response_due_at": null
+        },
+        {
+          "round": "R5",
+          "status": "open",
+          "response_due_at": null
+        },
+        {
+          "round": "R5",
+          "status": "open",
+          "response_due_at": null
+        },
+        {
+          "round": "R5",
+          "status": "open",
+          "response_due_at": null
+        }
+      ],
+      "repairProgram": {
+        "rounds_cap": 6,
+        "program": "full",
+        "status": "active"
+      },
+      "bookings": [
+        {
+          "id": "80db9253-82ae-4343-890b-684704c23d74",
+          "status": "booked",
+          "starts_at": "2026-09-21T05:29:58.841Z",
+          "created_at": "2026-09-19T05:29:59.224Z"
+        }
+      ],
+      "hasBooking": true,
+      "transactions": [
+        {
+          "product_name": "Consulting Services Package",
+          "amount_paid": "0.00",
+          "status": "succeeded",
+          "provider": "commas",
+          "is_demo": false,
+          "created_at": "2026-09-19T06:16:57.966Z"
+        },
+        {
+          "product_name": "Consulting Services Standard",
+          "amount_paid": "1000.00",
+          "status": "succeeded",
+          "provider": "commas",
+          "is_demo": false,
+          "created_at": "2026-09-19T05:30:01.749Z"
+        }
+      ],
+      "paidProductNames": [
+        "Consulting Services Package",
+        "Consulting Services Standard"
+      ],
+      "anySucceededPayment": true,
+      "diagnosticNamedPayment": false,
+      "sloPaidWouldLightDiagnosticPaid": false,
+      "events": [
+        {
+          "name": "call.completed",
+          "created_at": "2026-09-19T06:16:57.500Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:56:02.612Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:51:16.537Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:51:11.251Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:45:33.406Z"
+        },
+        {
+          "name": "docs.received",
+          "created_at": "2026-09-19T05:45:28.118Z"
+        },
+        {
+          "name": "diagnostic.paid",
+          "created_at": "2026-09-19T05:30:00.435Z"
+        },
+        {
+          "name": "booking.created",
+          "created_at": "2026-09-19T05:29:58.883Z"
+        }
+      ],
+      "callOutcomes": [],
+      "contracts": [
+        {
+          "status": "signed",
+          "signed_at": "2026-09-19T05:54:07.406Z",
+          "title": "Credit Repair Agreement"
+        }
+      ],
+      "crs": [
+        {
+          "outcome_tier": "REPAIR_ONLY",
+          "is_demo": false,
+          "created_at": "2026-09-20T04:59:39.019Z"
+        },
+        {
+          "outcome_tier": "REPAIR_ONLY",
+          "is_demo": false,
+          "created_at": "2026-09-20T04:59:36.130Z"
+        },
+        {
+          "outcome_tier": "REPAIR_ONLY",
+          "is_demo": false,
+          "created_at": "2026-09-20T04:59:33.309Z"
+        },
+        {
+          "outcome_tier": "REPAIR_ONLY",
+          "is_demo": false,
+          "created_at": "2026-09-20T04:59:30.336Z"
+        }
+      ],
+      "documentCount": 13,
+      "recentDocuments": [
+        {
+          "kind": "deliverable",
+          "subtype": "metro2_dispute_letter_pack",
+          "title": "Metro 2 Dispute Letter Pack — personal_info_eq.pdf"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "metro2_dispute_letter_pack",
+          "title": "Metro 2 Dispute Letter Pack — personal_info_tu.pdf"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "metro2_dispute_letter_pack",
+          "title": "Metro 2 Dispute Letter Pack — personal_info_ex.pdf"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "metro2_dispute_letter_pack",
+          "title": "Metro 2 Dispute Letter Pack — eq_round1.pdf"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "metro2_dispute_letter_pack",
+          "title": "Metro 2 Dispute Letter Pack — tu_round1.pdf"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "metro2_dispute_letter_pack",
+          "title": "Metro 2 Dispute Letter Pack — ex_round1.pdf"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "issue_priority_sheet",
+          "title": "Issue Priority Sheet — issue_priority_sheet.pdf"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "repair_plan_summary",
+          "title": "Optimization Plan Summary — Optimization-Plan-Summary.pdf"
+        }
+      ],
+      "storedWouldLight": {
+        "booked": true,
+        "diagnostic_paid": true,
+        "docs_received": true,
+        "round_started": null,
+        "round_submitted": null,
+        "round_approved": null,
+        "round_funded": null,
+        "file_finalized": false
+      },
+      "portalPaints": {
+        "booked": "always current-or-done if this bar is on screen (anyone with a file)",
+        "diagnostic_paid": "current (any succeeded transaction)",
+        "other_six": "always future — payload has no fact"
+      },
+      "liveApi": {
+        "portal_summary": {
+          "status": 200,
+          "stage": {
+            "key": "paid",
+            "before_call": false,
+            "contract_signed_at": "2026-09-19T05:54:07.406Z",
+            "soft_pull_complete": true,
+            "call_held": true,
+            "agreement_signed": true,
+            "payment_posted": true
+          },
+          "repair_path": true
+        },
+        "client_progress": {
+          "status": 200,
+          "stage": {
+            "key": "ready_to_send",
+            "roundCurrent": 6,
+            "roundCap": 6,
+            "enteredAt": "2026-09-20T04:59:41.671Z",
+            "expectedResponseBy": null,
+            "waitingOn": "client",
+            "roundLabel": "Final notice, reissued"
+          },
+          "nextStep": {
+            "waypointId": "555804ce-031c-4e71-b133-496c519c0ff9",
+            "owner": "client"
+          },
+          "waypointTitles": [
+            "Pay CAPITAL ONE down to $300",
+            "Pay CREDIT ONE BANK down to $150",
+            "Do not open new credit while we work on your file",
+            "Talk to your advisor about a personal loan",
+            "File your LLC",
+            "Get your EIN from the IRS",
+            "Open a business checking account"
+          ]
+        },
+        "entitlements": {
+          "status": 200,
+          "codes": [
+            "credit-analysis-report",
+            "credit-optimization-roadmap",
+            "metro2-letter-pack"
+          ]
+        }
+      },
+      "ui": {
+        "url": "https://fundhub.ai/app/client-portal.html?client_id=9b58de7f-7942-4354-aa4b-c61cfe23e7a4",
+        "preVisible": true,
+        "fundVisible": false,
+        "steps": [
+          {
+            "label": "Booked",
+            "state": "done",
+            "dot": "✓"
+          },
+          {
+            "label": "Diagnostic Paid",
+            "state": "current",
+            "dot": "●"
+          },
+          {
+            "label": "Docs Received",
+            "state": "future",
+            "dot": "3"
+          },
+          {
+            "label": "Round Started",
+            "state": "future",
+            "dot": "4"
+          },
+          {
+            "label": "Round Submitted",
+            "state": "future",
+            "dot": "5"
+          },
+          {
+            "label": "Round Approved",
+            "state": "future",
+            "dot": "6"
+          },
+          {
+            "label": "Round Funded",
+            "state": "future",
+            "dot": "7"
+          },
+          {
+            "label": "File Finalized",
+            "state": "future",
+            "dot": "8"
+          }
+        ],
+        "copy": {
+          "eyebrow": "CURRENT STATUS",
+          "main": "Your payment is in. Your advisor is working your file.",
+          "fundingMain": "Your funding file is open. Amounts show here when a round is approved on your file.",
+          "bodyClass": "no-funding"
+        },
+        "shots": [
+          "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-stepper-prove-2026-09-20/repair-click1.png",
+          "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-stepper-prove-2026-09-20/repair-click2.png"
+        ],
+        "bodySnippet": "Client Portal SR Sim Repair E2E20 Search ⌘K Chris Stanbridge · owner LIVE Sign out × Welcome back, Sim Welcome to your Fundhub portal. You are all set. CP-01 / START HERE FUNDHUB PORTAL Welcome to your FundHub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. 1:19 Sign to authorize dispute letters This lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button. I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review. Letters and complaints are not mailed or filed until I send or file them, or until staff I authorize send or file them. I must sign CFPB and state AG complaints myself before filing. I may withdraw this authorization at any time. Withdrawing this authorization does not undo letters already prepared. This authorization makes no promise about deletions, scores, funding, or legal outcomes. Your legal name Draw your signature Clear Draw your signature. An empty box does not count. I sign to authorize Fundhub to prepare my dispute letters f Join the Fundhub wins group This is where we post wins. Come say hi before your call. Join on Facebook YOUR AGREEMENTS Review and sign anything we sent you. Signed copies stay here. Credit Repair Agreement 9/18/2026, 10:54:07 PM · Signed SIGNED CURRENT STATUS Your payment is in. Your advisor is working your file. ✓ Booked ● Diagnostic Paid 3 Docs Received 4 Round Started 5 Round Submitted 6 Round Approved 7 Round Funded 8 File Finalized See exactly where your file stands → YOUR CREDIT SCORES EXPERIAN 541 EQUIFAX 566 TRANSUNION 552 EXPERIAN BUSINESS (1–100) — Send a file Use the door that matches what you have. We could not read y"
+      }
+    },
+    "eleven": {
+      "id": "029964c5-4d8e-47ed-88c9-53ac13863fd4",
+      "name": "Sim Eleven-Blueprint",
+      "email": "stanbridgejchris+sim-11@gmail.com",
+      "slo_ref": false,
+      "outcome_tier": "PREMIUM_STACK",
+      "entitlements": [
+        {
+          "entitlement_code": "metro2-letter-pack",
+          "active": true
+        },
+        {
+          "entitlement_code": "credit-optimization-roadmap",
+          "active": true
+        },
+        {
+          "entitlement_code": "funding-snapshot",
+          "active": true
+        }
+      ],
+      "fundingEntitlement": true,
+      "repairEntitlement": true,
+      "barVisibleIfNoFundingEntitlement": false,
+      "salesStage": {
+        "pipeline": "sales",
+        "stage_key": "decision_rendered",
+        "stage_name": "Decision Rendered",
+        "entered_at": "2026-09-17T17:44:58.909Z"
+      },
+      "fundingStage": {
+        "pipeline": "funding_card_stacking",
+        "stage_key": "apply_now",
+        "stage_name": "Apply Now",
+        "entered_at": "2026-09-18T15:13:41.669Z"
+      },
+      "repairStage": null,
+      "fundingRounds": [
+        {
+          "round_number": 1,
+          "status": "started",
+          "product": "card_stacking",
+          "submitted_amount": null,
+          "approved_amount": null,
+          "funded_amount": null
+        }
+      ],
+      "disputeCases": [],
+      "repairProgram": null,
+      "bookings": [],
+      "hasBooking": false,
+      "transactions": [
+        {
+          "product_name": "Card Stacking DFY",
+          "amount_paid": "3000.00",
+          "status": "succeeded",
+          "provider": "commas",
+          "is_demo": false,
+          "created_at": "2026-09-18T15:13:39.074Z"
+        },
+        {
+          "product_name": "Consulting Services Package",
+          "amount_paid": "5000.00",
+          "status": "succeeded",
+          "provider": "commas",
+          "is_demo": false,
+          "created_at": "2026-09-17T17:46:38.320Z"
+        }
+      ],
+      "paidProductNames": [
+        "Card Stacking DFY",
+        "Consulting Services Package"
+      ],
+      "anySucceededPayment": true,
+      "diagnosticNamedPayment": false,
+      "sloPaidWouldLightDiagnosticPaid": false,
+      "events": [
+        {
+          "name": "round.started",
+          "created_at": "2026-09-18T15:13:41.860Z"
+        },
+        {
+          "name": "call.completed",
+          "created_at": "2026-09-17T17:48:11.148Z"
+        }
+      ],
+      "callOutcomes": [
+        {
+          "outcome": "downsell",
+          "logged_at": "2026-09-17T17:48:11.087Z",
+          "is_demo": false
+        }
+      ],
+      "contracts": [
+        {
+          "status": "signed",
+          "signed_at": "2026-09-17T18:53:51.138Z",
+          "title": "Funding Agreement"
+        }
+      ],
+      "crs": [
+        {
+          "outcome_tier": "PREMIUM_STACK",
+          "is_demo": false,
+          "created_at": "2026-09-17T17:44:55.296Z"
+        }
+      ],
+      "documentCount": 13,
+      "recentDocuments": [
+        {
+          "kind": "contract",
+          "subtype": "funding_agreement",
+          "title": "Funding Agreement (signed)"
+        },
+        {
+          "kind": "contract",
+          "subtype": "funding_agreement",
+          "title": "Funding Agreement"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "funding_personal_info",
+          "title": "Personal info — EQ"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "funding_personal_info",
+          "title": "Personal info — TU"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "funding_personal_info",
+          "title": "Personal info — EX"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "funding_inquiry_removal",
+          "title": "Inquiry removal — EQ"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "funding_inquiry_removal",
+          "title": "Inquiry removal — TU"
+        },
+        {
+          "kind": "deliverable",
+          "subtype": "funding_inquiry_removal",
+          "title": "Inquiry removal — EX"
+        }
+      ],
+      "storedWouldLight": {
+        "booked": false,
+        "diagnostic_paid": false,
+        "docs_received": true,
+        "round_started": true,
+        "round_submitted": false,
+        "round_approved": false,
+        "round_funded": false
+      },
+      "portalPaints": {
+        "booked": "always current-or-done if this bar is on screen (anyone with a file)",
+        "diagnostic_paid": "current (any succeeded transaction)",
+        "other_six": "always future — payload has no fact"
+      },
+      "liveApi": {
+        "portal_summary": {
+          "status": 200,
+          "stage": {
+            "key": "paid",
+            "before_call": false,
+            "contract_signed_at": "2026-09-17T18:53:51.138Z",
+            "soft_pull_complete": true,
+            "call_held": true,
+            "agreement_signed": true,
+            "payment_posted": true
+          },
+          "repair_path": true
+        },
+        "client_progress": {
+          "status": 200,
+          "stage": {
+            "key": null,
+            "roundCurrent": null,
+            "roundCap": null,
+            "enteredAt": null,
+            "expectedResponseBy": null,
+            "waitingOn": "client",
+            "roundLabel": null
+          },
+          "nextStep": {
+            "waypointId": "9bd71aca-72fc-4344-a6da-d7a9a7c6e550",
+            "owner": "client"
+          },
+          "waypointTitles": [
+            "Do not open new credit while we work on your file",
+            "Talk to your advisor about a personal loan",
+            "File your LLC",
+            "Get your EIN from the IRS",
+            "Open a business checking account"
+          ]
+        },
+        "entitlements": {
+          "status": 200,
+          "codes": [
+            "credit-optimization-roadmap",
+            "funding-snapshot",
+            "metro2-letter-pack"
+          ]
+        }
+      },
+      "ui": {
+        "url": "https://fundhub.ai/app/client-portal.html?client_id=029964c5-4d8e-47ed-88c9-53ac13863fd4",
+        "preVisible": false,
+        "fundVisible": true,
+        "steps": [
+          {
+            "label": "Booked",
+            "state": "done",
+            "dot": "✓"
+          },
+          {
+            "label": "Diagnostic Paid",
+            "state": "current",
+            "dot": "●"
+          },
+          {
+            "label": "Docs Received",
+            "state": "future",
+            "dot": "3"
+          },
+          {
+            "label": "Round Started",
+            "state": "future",
+            "dot": "4"
+          },
+          {
+            "label": "Round Submitted",
+            "state": "future",
+            "dot": "5"
+          },
+          {
+            "label": "Round Approved",
+            "state": "future",
+            "dot": "6"
+          },
+          {
+            "label": "Round Funded",
+            "state": "future",
+            "dot": "7"
+          },
+          {
+            "label": "File Finalized",
+            "state": "future",
+            "dot": "8"
+          }
+        ],
+        "copy": {
+          "eyebrow": "Current status",
+          "main": "Your soft-pull assessment is in. You're pre-qualified for approximately $212,000.",
+          "fundingMain": "Your funding file is open. We will update this as your round moves.",
+          "bodyClass": ""
+        },
+        "shots": [
+          "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-stepper-prove-2026-09-20/eleven-click1.png",
+          "/Users/chrisstanbridge/Developer/fundhub-platform/docs/workflows/portal-stepper-prove-2026-09-20/eleven-click2.png"
+        ],
+        "bodySnippet": "Client Portal SE Sim Eleven-Blueprint Search ⌘K Chris Stanbridge · owner LIVE Sign out × Welcome back, Sim Here's where things stand on your funding. CP-01 / START HERE FUNDHUB PORTAL Welcome to your FundHub portal A short hello: what this page is, what happens on your call, and how to use this portal so you are not guessing. 1:19 Sign to authorize dispute letters This lets Fundhub prepare dispute letters for you. It is not a credit pull. Draw your signature, type your legal name, then press the button. I authorize Fundhub to prepare credit dispute letters and complaint drafts from my credit file for my review. Letters and complaints are not mailed or filed until I send or file them, or until staff I authorize send or file them. I must sign CFPB and state AG complaints myself before filing. I may withdraw this authorization at any time. Withdrawing this authorization does not undo letters already prepared. This authorization makes no promise about deletions, scores, funding, or legal outcomes. Your legal name Draw your signature Clear Draw your signature. An empty box does not count. I sign to authorize Fundhub to prepare my dispute letters f Join the Fundhub wins group This is where we post wins. Come say hi before your call. Join on Facebook YOUR AGREEMENTS Review and sign anything we sent you. Signed copies stay here. Funding Agreement 9/17/2026, 11:05:10 AM · Signed SIGNED CURRENT STATUS Your funding file is open. We will update this as your round moves. PRE-QUALIFIED FOR $212,000 See exactly where your file stands → YOUR CREDIT SCORES EXPERIAN 771 EQUIFAX 778 TRANSUNION 766 EXPERIAN BUSINESS (1–100) 64 Send a file Use the door that matches what you have. We still need a photo ID and proof of your address — a bank statement counts. Send them through the ID and perso"
+      }
+    }
+  },
+  "login": {
+    "status": 200,
+    "ok": true
+  }
+}

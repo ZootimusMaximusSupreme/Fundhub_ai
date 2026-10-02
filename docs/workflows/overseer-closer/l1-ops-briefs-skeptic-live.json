@@ -1,0 +1,26 @@
+{
+  "claim": "Ops admin briefs PASS on live load",
+  "citedEvidence": "overseer-closer/l1-ops-briefs-prove.json",
+  "citedEvidenceExists": false,
+  "verifiedAt": "2026-09-19T07:15:17.325Z",
+  "url": "https://fundhub.ai/app/ops-admin.html",
+  "loginOk": true,
+  "apiOpsPulse": {
+    "status": 200,
+    "ok": true,
+    "hasBriefs": false
+  },
+  "dom": {
+    "stateHidden": true,
+    "stateText": "",
+    "bodyHidden": false,
+    "meta": "discovery · INSUFFICIENT",
+    "ceoLen": 2053,
+    "ownLen": 743,
+    "ceoPreview": "What needs doing today?\n\nNew clients: 32\nBooked calls: 14\nShow rate: 64%\nClose rate: 93%\nCash: $38k\nFunded files: 2\nFund",
+    "ownPreview": "What will be done.\n\nWatch the eight company numbers. They are company health, not eight scores per person.\nTop discovery"
+  },
+  "painted": true,
+  "stuckSpinner": false,
+  "verdict": "TRUST"
+}

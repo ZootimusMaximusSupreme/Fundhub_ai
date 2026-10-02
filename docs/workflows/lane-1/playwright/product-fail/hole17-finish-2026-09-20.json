@@ -1,0 +1,56 @@
+{
+  "at": "2026-09-19T06:45:14.340Z",
+  "deploy": "6aae2a0f98b6c0968348d49f",
+  "client_id": "40f063e1-27e3-4857-be1a-91640eee90e1",
+  "email": "stanbridgejchris+sim-inquiry-20260827@gmail.com",
+  "passes": [
+    {
+      "click": 1,
+      "footer": {
+        "banner": "live entitlements · 0 unlocked · 6 locked",
+        "line": "live entitlements · 0 unlocked · 6 locked"
+      }
+    },
+    {
+      "click": 2,
+      "footer": {
+        "banner": "live entitlements · 0 unlocked · 6 locked",
+        "line": "live entitlements · 0 unlocked · 6 locked"
+      }
+    }
+  ],
+  "shots": [
+    "hole17-finish-portal-click1-2026-09-20.png",
+    "hole17-finish-portal-click2-2026-09-20.png",
+    "hole17-magic-portal-click1-2026-09-20.png",
+    "hole17-magic-portal-click2-2026-09-20.png"
+  ],
+  "magicLinkAsk": {
+    "status": 200,
+    "body": {
+      "ok": true,
+      "message": "If that email address has a Fundhub portal, a sign-in link is on its way. The link expires in 15 minutes."
+    }
+  },
+  "magicLinkClicks": [
+    {
+      "click": 1,
+      "footer": {
+        "banner": "live entitlements · 0 unlocked · 6 locked",
+        "line": "live entitlements · 0 unlocked · 6 locked"
+      }
+    },
+    {
+      "click": 2,
+      "footer": {
+        "banner": "live entitlements · 0 unlocked · 6 locked",
+        "line": "live entitlements · 0 unlocked · 6 locked"
+      }
+    }
+  ],
+  "tokenFound": true,
+  "tokenProof": "dashboard/client?id= returned rendered_body with portal-login?t=",
+  "verdict": "PASS",
+  "reason": "Staff portal 2× + magic-link client portal 2× show 0 unlocked footnote. Shell 905160 failed on 429 after staff clicks; magic prove in full-launch-lattice hole17-magic-two-clicks.json.",
+  "shell_905160": "exit 1 — magic-link 429 after ~18m wait"
+}
