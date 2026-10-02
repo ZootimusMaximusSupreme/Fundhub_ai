@@ -81,3 +81,41 @@ Source of the book facts: `credentials/lenders-audit/lenders-unified-carl-merged
 - Draft: `marketing/landing-pages/slo/preview/samples-draft-build.mjs` → `samples-draft-share.html` (green new, amber Chris's call, red removed; Hide marks button).
 - Proof: 390px Chromium, all six open, no script errors, 12 logos load, lint clean.
 - Note: one-file engine re-run on the vendor sandbox is blocked (three different people, reports 205 days old → MANUAL_REVIEW, $0).
+
+## Business Duplication Map
+
+**Result: NOT FOUND. No code anywhere makes a Business Duplication Map. Nothing was built or wired.** (Agent, 2026-10-02.) Per the task, I did not build one from scratch.
+
+**"RDIQ".** The word is not in the repo, git history, Claude memory, or past Claude or Cursor chats (the only hits are random letters inside base64 images). Read as UnderwriteIQ.
+
+**What I searched.**
+- Working tree, all of it, including `.cursor/`, `.claude/`, `ops/`, `marketing/`, `docs/`, `credentials/` (file names plus text files), and 1,084 gitignored text files. `apps/` and `content/` do not exist.
+- Words: "Duplication Map", "duplication", `business_duplication`, `dup-map`, `duplicationMap`, "companies #2", "one to two aged", "Experian Business", "RDIQ", "aged compan", "shell LLC".
+- Git: 1 local branch, 26 remote branches, 1 tag, `git log --all -S` for "Duplication", `duplication_map`, `business_duplication`, `RDIQ`, `dup-map`; 0 stashes; `git fsck --lost-found` (125 dangling commits, each one's own tree and its untracked-files tree searched).
+- `~/.claude/projects/-Users-chrisstanbridge-Developer-fundhub-platform/memory/` and past Claude and Cursor chats for this repo.
+
+**What the search found.**
+- Every hit for the map is sales copy or tracking. Examples: the page and its drafts (`marketing/landing-pages/slo/`), ClickFunnels snapshots, the preview allow-list (`src/funnel/track.mjs`, `business_duplication_map`), `docs/tracking/tracking-spec.md`, and `docs/finance/capital-blueprint-next-2026-09-29.md`. That doc says: "Promised on sales page / Not listed in `UWIQ_DELIVERABLES_CONTENTS`".
+- Git history: the map first shows up in `3a5b326a` ("Roadmap draft: add the Business Duplication Map as document six"), then `8b8995c8` ("free Business Duplication Map bonus"). Both are page commits. The page's "Rivera Supply LLC" sample was written by hand.
+- The 2026-09-29 chat where Chris named it (Claude session `09c81e74`). Agent: "I won't build anything until I understand how you do it today." Chris: "ADD IT TO THE FUNNEL BRO." It was then added to the page only. Memory note `roadmap-offer-owner-calls.md` says "Not designed yet."
+- UnderwriteIQ makes 4 HTML documents (`DELIVERABLE_DOCS` in `src/deliverables/index.mjs`) plus the letter pack. There is no sixth document. `UWIQ_DELIVERABLES_CONTENTS` (`src/config/offers.mjs`) does not list the map.
+
+**Closest real parts (built, but none of them makes the map):**
+1. `src/underwrite/company-audit.mjs` (on main since `7edde860`). It checks each company's name for risky words, checks its NAICS code against the low-risk list, and holds the shell-LLC rule (owner-set 2026-09-27): "Keep at least two. Open one new shell LLC each quarter". It also has the website and LinkedIn lines. **Nothing calls it.** Only its own test imports it.
+2. `src/underwrite/funding-sequence.mjs` (on main since `7edde860`). The walk order is prime personal → personal funding → companies → lender list → apply forever. **Nothing calls it either.**
+3. **Lost wiring for both, held only in a dangling stash.** Stash `187c17f020d0ddd12cd40d4b81769097fac5a56e` (2026-09-27 23:04, "hold unrelated work while shipping first-text split"). Nine earlier stashes from that day hold copies too. It changed these files:
+   - `api/read/underwrite.mjs` and `src/underwrite/report.mjs` return `fundingSequence` and `companyAudit` on every UnderwriteIQ read.
+   - `src/underwrite/black-report-client.mjs` adds `company_suggestions`.
+   - `src/deliverables/roadmap.mjs` prints the website, LinkedIn and shell-LLC lines under "Step 5: Form Your LLC".
+   - `src/slo/businesses.mjs` saves `naics`.
+   
+   The 2026-10-01 stash merge (`7edde860`) kept main's version of those files ("Stale stash code conflicts kept current main"), so this wiring is not on main. A dangling commit can be deleted at the next git cleanup.
+4. `src/underwrite/business-funding.mjs`: stacked business funding per company by age, up to 20 companies. Age bands are 0.5× under 12 months, 1× under 24 months, 2× at 24+ months. Used by the read, the cockpit and closer-ready.
+5. Experian Business pull: one report per saved company (`src/finance/crs-pull.mjs:281`, `orderBusinessReport` in `src/finance/crs-client.mjs`). Signals come from `vendor/underwriteiq-full/api/lite/crs/derive-business-signals.js` (Intelliscore, risk class, recommended limit, fraud shield).
+6. `src/deliverables/roadmap.mjs` Month 5 "Business Milestone". It still prints DUNS and net-30 steps, which the owner calls rule out.
+
+**Left for Chris.** Pick one:
+- **(a)** Bring back the 2026-09-27 stash wiring (item 3). That puts the company audit lines in the roadmap and on the read. It is not a separate map document.
+- **(b)** Build the map as a new sixth document from parts 1, 2, 4 and 5. That is new work, so it starts with the workflow questions in CLAUDE.md §3a.
+
+No code changed. No tests run.
