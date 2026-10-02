@@ -60,19 +60,19 @@ Rows are added from `docs/tracking/page-inventory.md` (Phase 2). Same map in the
 | `faq_open` | Each FAQ question opened (`<details>` toggle or FAQ button) | `question` (label slug) | shared tracker |
 | `survey_answer` | Each survey question answered | `survey`, `step_num`, `question_id` | survey page hook |
 | `survey_route` | Sorting hat routes someone | `survey`, `offer` (offer code) | thank-you / survey hook |
-| `buybox_tab` | Each buy box tab shown | `tab` (1/2/3) | /roadmap buy box hook |
-| `field_focus` | A buy box / survey / booking field gets focus, once per field per page load | `form`, `field` (name only) | page hook |
-| `field_complete` | That field left with a value that passes its check, once per field | `form`, `field` | page hook |
-| `continue` | Buy box step 1 Continue pressed | `step` | buy box hook |
-| `validation_error` | A field or step check fails | `form`, `field`, `code` (short slug, never the value) | page hook |
-| `payment_attempt` | Pay pressed and card form submitted | `amount_cents` | buy box hook |
-| `payment_result` | checkout:success or a decline / error | `result` (success/fail), `code` | buy box hook |
-| `softpull_submit` | Start My Soft Pull pressed and accepted by the form check | `businesses` (count) | buy box hook |
+| `buybox_tab` | Each buy box step shown (buy box v2 has no tabs: the "Step n of 3" line; same event, so before and after compare) | `tab` (1/2/3), `bbv` | /roadmap buy box hook |
+| `field_focus` | A buy box / survey / booking field gets focus, once per field per page load | `form`, `field` (name only), `bbv` (buy box only) | page hook |
+| `field_complete` | That field left with a value that passes its check, once per field | `form`, `field`, `bbv` (buy box only) | page hook |
+| `continue` | Buy box step 1 button pressed ("Get My Funding Roadmap" on buy box v2, "Continue" before) | `step`, `bbv` | buy box hook |
+| `validation_error` | A field or step check fails | `form`, `field`, `code` (short slug, never the value), `bbv` (buy box only) | page hook |
+| `payment_attempt` | Pay pressed and card form submitted | `amount_cents`, `bbv` | buy box hook |
+| `payment_result` | checkout:success or a decline / error | `result` (success/fail), `code`, `bbv` | buy box hook |
+| `softpull_submit` | Start My Soft Pull pressed and accepted by the form check | `businesses` (count), `bbv` | buy box hook |
 | `calendar_view` | A booking calendar is on screen | `calendar` | booking hook |
 | `time_selected` | A time slot picked | `calendar` | booking hook |
 | `booking_confirmed` | Book / Confirm pressed and the booking saved | `calendar` | booking hook |
-| `preview_opened` | A "See a sample" preview opened under a /roadmap order summary line | `deliverable` | /roadmap buy box hook |
-| `preview_closed` | That preview closed (close press, or tab hidden / page closed while open) | `deliverable`, `open_ms` | /roadmap buy box hook |
+| `preview_opened` | A "See a sample" preview opened under a /roadmap order summary line | `deliverable`, `bbv` | /roadmap buy box hook |
+| `preview_closed` | That preview closed (close press, or tab hidden / page closed while open) | `deliverable`, `open_ms`, `bbv` | /roadmap buy box hook |
 
 ## Sample previews (/roadmap, 2026-10-01)
 
@@ -81,6 +81,14 @@ Rows are added from `docs/tracking/page-inventory.md` (Phase 2). Same map in the
 Each open also fires Meta custom event `PreviewOpened` with `content_name` = the deliverable (`fbq('trackCustom','PreviewOpened',{content_name:d})`, the same pixel and call style the thank-you pages use).
 
 Same `session_id` (`fh_sid`) as the `continue` event, so a visitor's opens and their step-1 press join. View `v_roadmap_preview_continue_daily` (opened vs not-opened Continue rate per day) and `v_roadmap_preview_open_ms_daily` (average `open_ms` per deliverable per day): `db/migrations/405_roadmap_preview_views.sql`. Days are UTC. Only `actor = 'person'` sessions count.
+
+## Buy box versions (/roadmap, 2026-10-02)
+
+Buy box v2 (owner-set 2026-10-02): step 1 asks first name, last name and email only, with the refund line above the button "Get My Funding Roadmap"; the phone moved to step 3 (still required); a "Step 1 of 3" line replaced the three tabs. Event names did not change, so before and after compare on the same names.
+
+- **`bbv` prop.** Every buy box event the /roadmap page sends (`buybox_tab`, `field_focus`, `field_complete`, `continue`, `validation_error`, `payment_attempt`, `payment_result`, `softpull_submit`, `preview_opened`, `preview_closed`) carries `bbv: 2`. Rows from the old buy box have no `bbv`. Whole number 1..99; the survey pages never send it.
+- **Phone on step 3.** `field_focus` / `field_complete` / `validation_error` for the phone now say `form: "s3", field: "phone"` (was `s1`). The contact save (`slo.contact_started`, kind `contact`) still starts on a valid step-1 email; a phone typed on step 3 is merged into the same row and the same ClickFunnels contact (`public/funnel/fh-attribution.js`). No other step-3 box is read for it.
+- **One marker row with the deploy time.** `funnel.buybox_version`, payload `{ version: 2, page: "/roadmap", deployed_at: <ISO time> }`, idempotency key `buybox-version:2` (a second run saves nothing). Written once, right after the deploy, by `node scripts/tracking/mark-buybox-version.mjs` through the normal `emit()`. Not a browser event: it is not in the Events table and the door refuses it.
 
 ## Browser API
 
@@ -145,10 +153,10 @@ Use an email ending `@fundhub.ai` so the system marks you as us, not a buyer.
 | # | Tap | You should see | Meta Test Events | Our database / ClickFunnels |
 |---|---|---|---|---|
 | 1 | Open https://apply.fundhub.ai/roadmap/ (with the slash) | The address bar drops the slash | PageView | funnel.page, then scroll / section_view as you scroll |
-| 2 | Tap "3 · Soft pull" | Nothing opens | — | funnel.click label click:3-soft-pull |
+| 2 | Look at the top of the buy box (buy box v2) | "Step 1 of 3", no tabs; "If you're not happy with what you get, email us within 7 days and we'll refund you." right above the button | — | funnel.buybox_tab tab 1, bbv 2 |
 | 3 | Type first name, last name, a valid email; tap out of the email box | Nothing visible | — | slo.contact_started with your email, no phone; ClickFunnels contact appears (agent emails are kept out of ClickFunnels — use a real non-@fundhub.ai email you own if you want to see it there) |
-| 4 | Type the phone, wait 2 seconds | — | — | the same row gets the phone; ClickFunnels contact gets the phone |
-| 5 | Tap Continue | Card boxes load | — | funnel.continue, funnel.buybox_tab tab 2 |
+| 4 | Look for a phone box on step 1 | Not there (it is on step 3, after paying; typed there, it merges into the same row and the same ClickFunnels contact) | — | — |
+| 5 | Tap Get My Funding Roadmap | Card boxes load; "Step 2 of 3" | — | funnel.continue, funnel.buybox_tab tab 2 (both bbv 2) |
 | 6 | Look for "$15" anywhere | Not there | — | — |
 | 7 | **Stop. Do not tap Get My Roadmap** (it charges $297) | — | — | — |
 
@@ -162,4 +170,4 @@ Use an email ending `@fundhub.ai` so the system marks you as us, not a buyer.
 | 5 | Book with a real phone | Booking confirmed | Schedule | booking_confirmed; a real appointment in ClickFunnels + CRM booking (cancel it after) |
 
 ### Facebook / Instagram in-app (no charge)
-Send `https://apply.fundhub.ai/roadmap` to yourself in an Instagram DM (or post it to Facebook as Only me), tap it, fill step 1, tap Continue. Pass: card boxes show within ~10 seconds and the card number box brings up a number keyboard. Switch to Messages for a minute and come back — note whether the page reloaded to an empty step 1 (the reload fix is coming with the page agent's batch). Do not tap Get My Roadmap.
+Send `https://apply.fundhub.ai/roadmap` to yourself in an Instagram DM (or post it to Facebook as Only me), tap it, fill step 1, tap Get My Funding Roadmap. Pass: card boxes show within ~10 seconds and the card number box brings up a number keyboard. Switch to Messages for a minute and come back — note whether the page reloaded to an empty step 1 (the reload fix is coming with the page agent's batch). Do not tap Get My Roadmap.

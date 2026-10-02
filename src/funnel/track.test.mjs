@@ -398,3 +398,51 @@ describe("props: a sensitive value never reaches a row", () => {
     }
   });
 });
+
+// ── buy box version (bbv) ────────────────────────────────────────────────────
+// Buy box v2 on /roadmap (owner-set 2026-10-02) tags every event it sends with
+// bbv: 2, so before and after compare on the same event names. Spec: "Buy box
+// versions".
+
+describe("bbv: which buy box sent the event", () => {
+  const BUYBOX = ["buybox_tab", "field_focus", "field_complete", "continue", "validation_error",
+    "payment_attempt", "payment_result", "softpull_submit", "preview_opened", "preview_closed"];
+
+  test("every buy box event keeps bbv; no other event takes it", () => {
+    for (const e of Object.keys(TRACK_EVENTS)) {
+      assert.equal(Object.hasOwn(TRACK_EVENTS[e], "bbv"), BUYBOX.includes(e), e);
+    }
+    assert.equal(isSensitiveKey("bbv"), false);
+  });
+
+  test("bbv 2 rides along with each buy box event's own props", () => {
+    assert.deepEqual(cleanProps("buybox_tab", { tab: 3, bbv: 2 }), { tab: 3, bbv: 2 });
+    assert.deepEqual(cleanProps("field_complete", { form: "s3", field: "phone", bbv: 2 }), { form: "s3", field: "phone", bbv: 2 });
+    assert.deepEqual(cleanProps("validation_error", { form: "s3", field: "phone", code: "phone_invalid", bbv: 2 }),
+      { form: "s3", field: "phone", code: "phone_invalid", bbv: 2 });
+    assert.deepEqual(cleanProps("continue", { step: 1, bbv: 2 }), { step: 1, bbv: 2 });
+    assert.deepEqual(cleanProps("preview_opened", { deliverable: "dispute_letter_pack", bbv: 2 }),
+      { deliverable: "dispute_letter_pack", bbv: 2 });
+  });
+
+  test("bbv is a whole number 1..99: clamped, and junk dropped", () => {
+    assert.deepEqual(cleanProps("continue", { step: 1, bbv: "2" }), { step: 1, bbv: 2 });
+    assert.deepEqual(cleanProps("continue", { step: 1, bbv: 2.4 }), { step: 1, bbv: 2 });
+    assert.deepEqual(cleanProps("continue", { step: 1, bbv: 0 }), { step: 1, bbv: 1 });
+    assert.deepEqual(cleanProps("continue", { step: 1, bbv: 500 }), { step: 1, bbv: 99 });
+    assert.deepEqual(cleanProps("continue", { step: 1, bbv: "v2" }), { step: 1 });
+    assert.deepEqual(cleanProps("scroll", { depth: 50, bbv: 2 }), { depth: 50 }, "not a buy box event");
+  });
+
+  test("the old buy box (no bbv) and the survey pages are unchanged", () => {
+    assert.deepEqual(cleanProps("field_focus", { form: "apply", field: "phone" }), { form: "apply", field: "phone" });
+    assert.deepEqual(cleanProps("buybox_tab", { tab: 2 }), { tab: 2 });
+  });
+
+  test("the stored row carries bbv in props", async () => {
+    const h = harness();
+    await send(h, { event: "softpull_submit", props: { businesses: 1, bbv: 2 } });
+    assert.deepEqual(h.rows[0].payload.props, { businesses: 1, bbv: 2 });
+    assert.equal(h.rows[0].name, "funnel.softpull_submit");
+  });
+});

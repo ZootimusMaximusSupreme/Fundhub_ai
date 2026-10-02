@@ -3,9 +3,14 @@
 //
 // public/funnel/fh-attribution.js posts kind "contact" to
 // api/public/slo-interest.mjs. This test runs the real script against a tiny
-// fake page (the #fhw widget's form.s1: email, phone, c_first, c_last), then
-// hands what it posted to the real door, with a fake events table and a fake
-// ClickFunnels that matches on email the way its docs say the upsert does.
+// fake page, then hands what it posted to the real door, with a fake events
+// table and a fake ClickFunnels that matches on email the way its docs say the
+// upsert does.
+//
+// Buy box v2 (owner-set 2026-10-02) is the default fake page: form.s1 holds
+// c_first, c_last, email; form.s3 holds the phone next to the soft pull boxes
+// (legal name, dob, ssn, address). The older page (phone on form.s1) is kept as
+// layout "v1" because the shared script can go live before or after the page.
 //
 // WHAT THIS CANNOT TEST: a real browser, sendBeacon on a real tab close, or the
 // live ClickFunnels account. The live check is the /roadmap phone checklist.
@@ -24,7 +29,7 @@ import { recordInterest } from "../../api/public/slo-interest.mjs";
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SRC = fs.readFileSync(path.join(ROOT, "public/funnel/fh-attribution.js"), "utf8");
 
-function runRoadmap() {
+function runRoadmap({ layout = "v2" } = {}) {
   const posts = [];
   const doc = {};
   const win = {};
@@ -33,18 +38,26 @@ function runRoadmap() {
   let nextTimer = 1;
 
   const input = (name) => ({ name, value: "" });
-  const fields = { email: input("email"), phone: input("phone"), c_first: input("c_first"), c_last: input("c_last") };
-  const form = {
-    querySelector(sel) {
-      const m = /name="([^"]+)"/.exec(sel);
-      return m && fields[m[1]] ? fields[m[1]] : null;
-    },
-    contains: (n) => n === form || Object.values(fields).includes(n),
-    appendChild() {}
+  const fakeForm = (names) => {
+    const own = Object.fromEntries(names.map((n) => [n, input(n)]));
+    const f = {
+      own,
+      querySelector(sel) {
+        const m = /name="([^"]+)"/.exec(sel);
+        return m && own[m[1]] ? own[m[1]] : null;
+      },
+      contains: (n) => n === f || Object.values(own).includes(n),
+      appendChild() {}
+    };
+    return f;
   };
+  const STEP3 = ["first_name", "last_name", "dob", "ssn", "address", "city", "zip"];
+  const form = fakeForm(layout === "v1" ? ["email", "phone", "c_first", "c_last"] : ["email", "c_first", "c_last"]);
+  const s3 = fakeForm(layout === "v1" ? STEP3 : [...STEP3, "phone"]);
+  const fields = { ...s3.own, ...form.own };
   const widget = {
-    querySelector: (sel) => (sel === "form.s1" ? form : null),
-    contains: (n) => n === widget || form.contains(n)
+    querySelector: (sel) => (sel === "form.s1" ? form : sel === "form.s3" ? s3 : null),
+    contains: (n) => n === widget || form.contains(n) || s3.contains(n)
   };
 
   Object.assign(doc, {
@@ -55,7 +68,7 @@ function runRoadmap() {
     listeners: {},
     addEventListener(n, fn) { (doc.listeners[n] ||= []).push(fn); },
     getElementById: (id) => (id === "fhw" ? widget : null),
-    querySelectorAll: (sel) => (sel === "form" ? [form] : []),
+    querySelectorAll: (sel) => (sel === "form" ? [form, s3] : []),
     createElement: () => ({}),
     head: { appendChild() {} }
   });
@@ -96,6 +109,7 @@ function runRoadmap() {
   return {
     posts,
     store,
+    fields,
     contacts: () => posts.filter((p) => p.body.kind === "contact"),
     /** Type into a field; focus stays there. */
     type(name, value) {
@@ -111,6 +125,7 @@ function runRoadmap() {
     /** 1.5 seconds pass with no typing. */
     pause() { const due = timers; timers = []; due.forEach((t) => t.fn()); },
     submit() { fire("submit", form); },
+    submit3() { fire("submit", s3); },
     close() { (win.listeners.pagehide || []).forEach((fn) => fn({})); }
   };
 }
@@ -229,6 +244,72 @@ describe("fh-attribution.js on /roadmap step 1", () => {
     assert.equal(c.length, 1);
     assert.equal(c[0].via, "beacon");
     assert.equal(c[0].body.email, "pat@gmail.com");
+  });
+});
+
+describe("buy box v2: the phone is typed on step 3", () => {
+  test("a step-3 phone merges into the same contact save: email + phone, nothing else from step 3", () => {
+    const p = runRoadmap();
+    p.type("c_first", "Pat");
+    p.type("c_last", "Lee");
+    p.type("email", "pat@gmail.com");
+    p.leave("email");
+    assert.equal(p.contacts().length, 1, "saved on the email, before any phone");
+    assert.equal("phone" in p.contacts()[0].body, false);
+
+    /* Step 3, after the card: the soft pull boxes are typed first. None of
+       them is a reason to post, and none of them is ever read. */
+    for (const [k, v] of [["first_name", "Patricia"], ["last_name", "Leeway"], ["dob", "01/02/1980"],
+      ["ssn", "123-45-6789"], ["address", "742 Evergreen Ter"], ["city", "Springfield"], ["zip", "62704"]]) {
+      p.type(k, v);
+      p.leave(k);
+      p.pause();
+    }
+    assert.equal(p.contacts().length, 1, "no step-3 box but the phone triggers a save");
+
+    p.type("phone", "(415) 555-01");
+    p.pause();
+    assert.equal(p.contacts().length, 1, "a part phone is not a reason to post");
+    p.type("phone", "(415) 555-0134");
+    p.pause();
+    const c = p.contacts();
+    assert.equal(c.length, 2);
+    assert.equal(c[1].body.email, "pat@gmail.com", "the same email, so the server merges into the same row");
+    assert.equal(c[1].body.phone, "4155550134");
+    assert.equal(c[1].body.first_name, "Pat", "the step-1 name, not the legal name typed on step 3");
+    assert.equal(c[1].body.last_name, "Lee");
+    assert.deepEqual(Object.keys(c[1].body).sort(),
+      ["email", "first_name", "kind", "landing_path", "last_name", "phone", "session_id", "utm_content", "utm_source", "webdriver"]);
+    const all = JSON.stringify(p.posts);
+    for (const v of ["Patricia", "Leeway", "1980", "6789", "Evergreen", "Springfield", "62704"]) {
+      assert.equal(all.includes(v), false, `${v} must never leave the page through this script`);
+    }
+
+    p.leave("phone");
+    p.submit3();
+    assert.equal(p.contacts().length, 2, "same data, no second post");
+  });
+
+  test("a phone autofilled on step 3 with no typing is still saved when step 3 is submitted", () => {
+    const p = runRoadmap();
+    p.type("email", "pat@gmail.com");
+    p.leave("email");
+    p.fields.phone.value = "415 555 0134"; // autofill: no input event reached us
+    p.submit3();
+    const c = p.contacts();
+    assert.equal(c.length, 2);
+    assert.equal(c[1].body.phone, "4155550134");
+  });
+
+  test("the older page (phone on step 1) still merges the phone the same way", () => {
+    const p = runRoadmap({ layout: "v1" });
+    p.type("email", "pat@gmail.com");
+    p.leave("email", "phone");
+    p.type("phone", "415-555-0134");
+    p.pause();
+    const c = p.contacts();
+    assert.equal(c.length, 2);
+    assert.equal(c[1].body.phone, "4155550134");
   });
 });
 

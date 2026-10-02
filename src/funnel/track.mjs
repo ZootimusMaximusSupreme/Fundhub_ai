@@ -46,6 +46,11 @@ const PERCENT = int(0, 100);
 const FORM = slug(40);
 const FIELD = slug(64);
 const CALENDAR = { calendar: slug(64) };
+// Which /roadmap buy box sent the event (2 = phone on step 3 and the
+// "Step 1 of 3" line, owner-set 2026-10-02). Only the buy box sends it; the
+// survey pages that share field_focus / field_complete / validation_error
+// never do. Whole number 1..99.
+const BBV = int(1, 99);
 
 // The six sample previews under the /roadmap order summary. Exactly these;
 // anything else is refused (see PREVIEW_EVENTS below).
@@ -85,19 +90,19 @@ export const TRACK_EVENTS = Object.freeze({
   faq_open: { question: slug(80) },
   survey_answer: { survey: slug(40), step_num: int(0, 100), question_id: slug(64) },
   survey_route: { survey: slug(40), offer: slug(40) },
-  buybox_tab: { tab: int(1, 3) },
-  field_focus: { form: FORM, field: FIELD },
-  field_complete: { form: FORM, field: FIELD },
-  continue: { step: int(0, 20) },
-  validation_error: { form: FORM, field: FIELD, code: slug(40) },
-  payment_attempt: { amount_cents: int(0, 10_000_000) },
-  payment_result: { result: oneOf("success", "fail"), code: slug(40) },
-  softpull_submit: { businesses: int(0, 50) },
+  buybox_tab: { tab: int(1, 3), bbv: BBV },
+  field_focus: { form: FORM, field: FIELD, bbv: BBV },
+  field_complete: { form: FORM, field: FIELD, bbv: BBV },
+  continue: { step: int(0, 20), bbv: BBV },
+  validation_error: { form: FORM, field: FIELD, code: slug(40), bbv: BBV },
+  payment_attempt: { amount_cents: int(0, 10_000_000), bbv: BBV },
+  payment_result: { result: oneOf("success", "fail"), code: slug(40), bbv: BBV },
+  softpull_submit: { businesses: int(0, 50), bbv: BBV },
   calendar_view: CALENDAR,
   time_selected: CALENDAR,
   booking_confirmed: CALENDAR,
-  preview_opened: { deliverable: DELIVERABLE },
-  preview_closed: { deliverable: DELIVERABLE, open_ms: int(0, 600_000) },
+  preview_opened: { deliverable: DELIVERABLE, bbv: BBV },
+  preview_closed: { deliverable: DELIVERABLE, open_ms: int(0, 600_000), bbv: BBV },
 });
 
 /** Events that mean nothing without a valid deliverable: refused, not saved empty. */

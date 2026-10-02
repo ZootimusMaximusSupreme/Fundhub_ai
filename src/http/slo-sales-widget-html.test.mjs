@@ -51,12 +51,63 @@ test("demo or live is read from the server, never decided by the page", () => {
 });
 
 test("three steps, in this order: info, card, soft pull", () => {
-  assert.match(html, /data-tab="1">1 &middot; Info</);
-  assert.match(html, /data-tab="2">2 &middot; Card</);
-  assert.match(html, /data-tab="3">3 &middot; Soft pull</);
   assert.match(html, /<form class="cfw-step s1 on"/);
   assert.match(html, /<form class="cfw-step s2"/);
   assert.match(html, /<form class="cfw-step s3"/);
+  assert.ok(html.indexOf('<form class="cfw-step s1 on"') < html.indexOf('<form class="cfw-step s2"'));
+  assert.ok(html.indexOf('<form class="cfw-step s2"') < html.indexOf('<form class="cfw-step s3"'));
+});
+
+test("buy box v2: a plain 'Step 1 of 3' line replaces the three tabs (owner-set 2026-10-02)", () => {
+  const widget = html.slice(html.indexOf('<div class="cfw" id="fhw">'), html.indexOf('<form class="cfw-step s1 on"'));
+  assert.match(widget, /<div class="cfw-progress" data-progress>Step 1 of 3<\/div>/);
+  /* The tabs are gone: no step buttons, no tab note, no tab code. */
+  assert.doesNotMatch(html, /data-tab="[123]"/);
+  assert.doesNotMatch(html, /1 &middot; Info|2 &middot; Card|3 &middot; Soft pull/);
+  assert.doesNotMatch(html, /data-tabnote|cfw-tabnote|cfw-steps/);
+  for (const dead of ["paintTabs", "lockNote", "tabNote", "tabBar"]) assert.ok(!widgetScript.includes(dead), dead);
+  /* go() writes the line for every step shown, and keeps its tracking. */
+  const go = widgetScript.slice(widgetScript.indexOf("function go(n){"), widgetScript.indexOf("function showPane("));
+  assert.match(go, /progress\.textContent='Step '\+n\+' of 3';/);
+  assert.match(go, /if\(fhTab!==n\)\{fhTab=n;fht\('buybox_tab',\{tab:n\}\);\}/, "same event name, so before and after compare");
+  /* Step 3 still never opens before the card is paid. */
+  assert.match(go, /if\(n===3&&!\(order&&order\.locked\)\)return;/);
+  /* The way back from the card step is still there. */
+  assert.match(html, /<a class="cfw-back" href="#" data-back>Back to step 1<\/a>/);
+  assert.match(widgetScript, /root\.querySelector\('\[data-back\]'\)\.addEventListener\('click',function\(e\)\{e\.preventDefault\(\);go\(1\);\}\);/);
+  /* Hidden while a status pane shows, and on the paid-return first paint. */
+  assert.match(widgetScript, /progress\.hidden=!form;/);
+  assert.match(html, /\.fh-paid \.cfw-progress,\.fh-paid \.cfw-step\{display:none!important\}/);
+});
+
+test("buy box v2: step 1 — the refund line right above the button, the button, the line under it", () => {
+  const step1 = html.slice(html.indexOf('<form class="cfw-step s1 on"'), html.indexOf('<form class="cfw-step s2"'));
+  assert.match(step1,
+    /<p class="cfw-refund">If you're not happy with what you get, email us within 7 days and we'll refund you\.<\/p>\s*<button type="submit" class="cfw-btn">Get My Funding Roadmap<\/button>\s*<div class="cfw-note">Your roadmap shows up in your portal today\.<\/div>/);
+  assert.doesNotMatch(step1, />Continue</);
+  assert.doesNotMatch(html, /Step 1 of 3\. Your card is next, then the short soft pull form\./);
+  /* The button keeps its handler and its tracking event. */
+  assert.match(widgetScript, /s1\.addEventListener\('submit',function\(e\)\{e\.preventDefault\(\);onContinue\(\);\}\);/);
+  assert.match(widgetScript, /function onContinue\(\)\{\n\s*fht\('continue',\{step:1\}\);/);
+});
+
+test("buy box v2: every buy box event carries bbv:2 (widget and sample previews)", () => {
+  assert.match(widgetScript, /var BBV=2;\n\s*function fht\(e,p\)\{try\{p=p\|\|\{\};p\.bbv=BBV;/);
+  const preview = inlineScripts.find((x) => x.includes("preview_opened")) || "";
+  assert.match(preview, /function fht\(e,p\)\{try\{p=p\|\|\{\};p\.bbv=2;/);
+  /* Meta's PreviewOpened is unchanged. */
+  assert.match(preview, /fbq\('trackCustom','PreviewOpened',\{content_name:d\}\)/);
+});
+
+test("the guarantee is back in its old place, right before the FAQ, word for word (owner ask 2026-10-02)", () => {
+  const g = html.indexOf('<section class="sect" data-fh-section="guarantee">');
+  const faq = html.indexOf('<section class="sect" data-fh-section="faq">');
+  assert.ok(g > 0 && faq > g, "guarantee section sits before the FAQ");
+  assert.equal(html.slice(g, faq).split("<section").length - 1, 1, "nothing but the guarantee between them");
+  assert.match(html.slice(g, faq), /<section class="sect" data-fh-section="guarantee"><div class="cardw">\s*<span class="kicker">The Guarantee<\/span>\s*<p>If you're not happy with what you get, email support@fundhub\.ai within 7 days and <b>you get the full \$297 back\.<\/b><\/p>\s*<\/div><a class="btn fh-go-pay" href="#fh-order">Get My Roadmap<\/a><\/section>/);
+  /* The CTA is caught by the scroll-to-the-buy-box handler. */
+  assert.match(html, /closest\('a\[href="#fh-order"\]'\)/);
+  assert.match(html, /\.fh-root \.cardw\{/);
 });
 
 test("the words social and SSN appear nowhere a buyer can read before step 3", () => {
@@ -94,12 +145,28 @@ test("step 1 is contact only — businesses are the add-on on step 3", () => {
   const step1 = html.slice(html.indexOf('<form class="cfw-step s1 on"'), html.indexOf('<form class="cfw-step s2"'));
   assert.ok(!step1.includes("data-bizlist"), "no business block on step 1");
   assert.ok(!step1.includes("data-add"), "no Add a business button on step 1");
-  for (const name of ["c_first", "c_last", "email", "phone"]) assert.ok(step1.includes(`name="${name}"`), name);
+  /* Buy box v2 (owner-set 2026-10-02): first name, last name, email. That is all. */
+  assert.deepEqual([...step1.matchAll(/<input[^>]*name="([^"]+)"/g)].map((m) => m[1]), ["c_first", "c_last", "email"]);
 
   const step3 = html.slice(html.indexOf('<form class="cfw-step s3"'));
   assert.match(step3, /<div data-bizlist><\/div>/);
   assert.match(step3, /data-add>\+ Add a business/);
   assert.match(step3, /Your first business is included\. Each extra one is \$15\./);
+});
+
+test("buy box v2: the phone moved to step 3, still required, and is sent with the soft pull", () => {
+  const step3 = html.slice(html.indexOf('<form class="cfw-step s3"'));
+  assert.match(step3, /<label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"><\/label>/);
+  /* before the consent that names "the number I gave" */
+  assert.ok(step3.indexOf('name="phone"') < step3.indexOf('name="consent"'));
+  const check3 = widgetScript.slice(widgetScript.indexOf("function checkStep3()"), widgetScript.indexOf("function identity()"));
+  assert.match(check3, /if\(!squeeze\(ph\.value\)\)bad\(ph,'Please enter your phone number\.'\);/);
+  assert.match(check3, /else if\(!phone10\(ph\.value\)\)bad\(ph,'Use a 10-digit phone number\.'\);/);
+  assert.match(widgetScript, /phone:phone10\(val\(s3,'phone'\)\)\|\|val\(s3,'phone'\)\};/, "identity() carries it to slo-pull");
+  /* Step 1 no longer checks or sends one. */
+  const check1 = widgetScript.slice(widgetScript.indexOf("function checkStep1()"), widgetScript.indexOf("function contact()"));
+  assert.doesNotMatch(check1, /phone/);
+  assert.match(widgetScript, /var body=\{email:c\.email,first_name:c\.first_name,last_name:c\.last_name,return_url:returnUrl\(\)\};/);
 });
 
 test("the card charges the base price on its own — step 3 cannot change it", () => {

@@ -544,6 +544,26 @@ test("item 7: the phone reaches the new client through the one client door (reso
   assert.ok(inserts[0].includes("+15555550100"), "clients.phone is written on the new row");
 });
 
+test("buy box v2: step 1 sends no phone (it moved to step 3) — the order still opens and no phone is written", async () => {
+  /* The exact body the /roadmap widget's step 1 sends now (owner-set 2026-10-02). */
+  const parsed = parseSloCheckoutBody({
+    email: "buyer@example.com", first_name: "Pat", last_name: "Lee",
+    return_url: "https://apply.fundhub.ai/roadmap#fhw", business_count: 1
+  });
+  assert.equal(parsed.ok, true);
+  assert.equal(parsed.phone, null);
+  const buyers = [];
+  const sql = [];
+  const out = await runSloCheckout(parsed, sloDeps({
+    env: { SLO_DEMO_PAY: "1" },
+    db: { async query(q) { sql.push(q); return { rows: [] }; } },
+    resolveBuyer: async (_db, args) => { buyers.push(args); return { clientId: CLIENT, created: true }; }
+  }));
+  assert.equal(out.ok, true);
+  assert.equal(buyers[0].phone, null, "the new client is created with no phone; step 3 fills it in");
+  assert.equal(sql.filter((q) => /SET phone/.test(q)).length, 0, "no phone write at checkout");
+});
+
 test("item 10: GET carries mapsBrowserKey from GOOGLE_MAPS_BROWSER_KEY, null when unset, never the server key", () => {
   assert.equal(sloPageConfig({ ...LIVE_ENV, GOOGLE_MAPS_BROWSER_KEY: "browser-key-1" }).mapsBrowserKey, "browser-key-1");
   assert.equal(sloPageConfig(LIVE_ENV).mapsBrowserKey, null);

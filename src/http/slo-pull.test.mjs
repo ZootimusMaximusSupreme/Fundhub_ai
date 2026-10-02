@@ -100,3 +100,35 @@ test("DEMO: bad fields are still refused by field", async () => {
   assert.equal(res.statusCode >= 400, true);
   assert.equal(res.body.ok, false);
 });
+
+/* Buy box v2 (owner-set 2026-10-02): the phone is asked on step 3 and required
+   there. Refused before the demo branch and before any lookup or write. */
+for (const demo of [true, false]) {
+  test(`buy box v2 (${demo ? "demo" : "live"}): a blank or bad phone is a 400 on the phone box, nothing touched`, async () => {
+    for (const [phone, code, message] of [
+      ["", "phone_required", "Please enter your phone number."],
+      ["555-0100", "phone_invalid", "Use a 10-digit phone number."]
+    ]) {
+      const res = fakeRes();
+      const touched = [];
+      const trap = (name) => async () => { touched.push(name); throw new Error(`${name} must not run`); };
+      await handler({
+        method: "POST", headers: {},
+        body: {
+          ref: REF, client_id: CLIENT, first_name: "Ada", last_name: "Byron", dob: "1990-01-02",
+          ssn: "987654321", address: "100 Test Ave", city: "Denton", state: "TX", zip: "76205", consent: true, phone
+        }
+      }, res, {
+        demo,
+        db: { query: trap("db.query") }, findOrder: trap("findOrder"), checkAddresses: trap("checkAddresses"),
+        storeIdentity: trap("storeIdentity"), captureConsent: trap("captureConsent"), emit: trap("emit")
+      });
+      assert.equal(res.statusCode, 400, phone);
+      assert.equal(res.body.error, code);
+      assert.deepEqual(res.body.errors, [{ field: "phone", code, message }]);
+      assert.deepEqual(touched, []);
+      assert.equal(JSON.stringify(res.body).includes("987654321"), false);
+      assert.equal(JSON.stringify(res.body).includes("555-0100"), false, "the typed phone is not echoed");
+    }
+  });
+}

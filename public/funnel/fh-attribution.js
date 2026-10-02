@@ -57,9 +57,12 @@
   var tries = 0;
   var t = setInterval(function () { stamp(); if (++tries > 20) clearInterval(t); }, 500);
 
-  // /roadmap only. Step 1 (name, email, phone) is saved when the email is
-  // real, even if they never press Pay. Pressing Pay tells Meta, unless this
-  // browser or this email is one of us. Rules match src/slo/visitor.mjs.
+  // /roadmap only. Step 1 (name, email) is saved when the email is real, even
+  // if they never press Pay. The phone (asked on step 3 since buy box v2,
+  // 2026-10-02; on step 1 before that) is merged into the same save when it is
+  // typed. No other step-3 box is ever read here. Pressing Pay tells Meta,
+  // unless this browser or this email is one of us. Rules match
+  // src/slo/visitor.mjs.
   var nativeFetch = window.fetch;
   if (typeof nativeFetch === "function") {
     window.fetch = function (url, opt) {
@@ -87,6 +90,25 @@
   function step1() {
     var w = widget();
     return w ? w.querySelector("form.s1") : null;
+  }
+  /* The phone box: step 3 on buy box v2, step 1 on the older page. Only this
+     one box is read off step 3 — never the soft pull fields around it. */
+  function phoneBoxes() {
+    var w = widget();
+    var out = [];
+    var s3 = w ? w.querySelector("form.s3") : null;
+    var s1 = step1();
+    var a = s3 ? s3.querySelector('[name="phone"]') : null;
+    var b = s1 ? s1.querySelector('[name="phone"]') : null;
+    if (a) out.push(a);
+    if (b) out.push(b);
+    return out;
+  }
+  /* A box whose typing can change what the contact save holds. */
+  function contactBox(node) {
+    var form = step1();
+    if (form && form.contains(node)) return true;
+    return phoneBoxes().indexOf(node) !== -1;
   }
   function field(form, name) {
     var el = form.querySelector('[name="' + name + '"]');
@@ -158,7 +180,9 @@
     // or a name typed later posts again and merges into the same day's row
     // and the same ClickFunnels contact on the server.
     // Digits only — server turns this into +1XXXXXXXXXX.
-    var phone = phone10(field(form, "phone"));
+    var phone = "";
+    var boxes = phoneBoxes();
+    for (var i = 0; i < boxes.length && !phone; i++) phone = phone10(boxes[i].value);
     var first = field(form, "c_first");
     var last = field(form, "c_last");
     var now = sig([email, phone, first, last].join("|"));
@@ -204,8 +228,7 @@
     } catch (e) {}
     var contactTimer = null;
     document.addEventListener("input", function (ev) {
-      var form = step1();
-      if (!form || !form.contains(ev.target)) return;
+      if (!contactBox(ev.target)) return;
       clearTimeout(contactTimer);
       contactTimer = setTimeout(function () {
         // Still in the email box: wait until they leave it (change below), so
@@ -215,12 +238,13 @@
       }, 1500);
     });
     document.addEventListener("change", function (ev) {
-      var form = step1();
-      if (form && form.contains(ev.target)) sendContact(false);
+      if (contactBox(ev.target)) sendContact(false);
     });
     document.addEventListener("submit", function (ev) {
+      var w = widget();
       var form = step1();
-      if (form && ev.target === form) sendContact(false);
+      var s3 = w ? w.querySelector("form.s3") : null;
+      if ((form && ev.target === form) || (s3 && ev.target === s3)) sendContact(false);
     }, true);
 
     /* Time on /roadmap + whether #fhw entered the viewport. One engage row

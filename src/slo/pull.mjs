@@ -101,6 +101,7 @@ import {
 } from "./fields.mjs";
 import { parseSloBusinesses, replaceSloBusinesses } from "./businesses.mjs";
 import { syncSloClickfunnelsContact } from "./cf-contact.mjs";
+import { parseSloPhone } from "../../api/public/slo-checkout.mjs";
 
 const KIND = "soft_pull_consent";
 
@@ -179,6 +180,23 @@ export function parseSloPullBody(body, { now = new Date() } = {}) {
   errors.push(...biz.errors);
   warnings.push(...biz.warnings);
 
+  /* PHONE (buy box v2, owner-set 2026-10-02): the /roadmap widget asks for it
+     on step 3, after the card, instead of step 1, and it is required there.
+     Same rule as the checkout (parseSloPhone): 10 US digits, stored as
+     +1XXXXXXXXXX. A body that carries `phone` must hold a valid one — blank is
+     phone_required, anything else phone_invalid. The widget always sends the
+     key. A body with no phone key at all is the older public/roadmap/pull.html
+     page, which has no phone box; it is taken exactly as before so a payer
+     there is not locked out of their pull. */
+  let phone = null;
+  if (Object.hasOwn(body, "phone")) {
+    const ph = parseSloPhone(body.phone);
+    if (ph.error) errors.push(ph.error);
+    else if (!ph.value) {
+      errors.push({ field: "phone", code: "phone_required", message: "Please enter your phone number." });
+    } else phone = ph.value;
+  }
+
   if (!isChecked(body.consent ?? body.soft_pull_consent)) {
     errors.push({
       field: "consent",
@@ -209,6 +227,7 @@ export function parseSloPullBody(body, { now = new Date() } = {}) {
     previousAddress: previous ? addresses[1] : null,
     addresses,
     businesses: businessesGiven ? biz.businesses : null,
+    phone,
     /* Kept for the record only. Since the 2026-09-22 review an unpaid live
        order is deferred whether or not the body asks. */
     deferPull: isChecked(body.defer_pull ?? body.deferPull),
@@ -336,6 +355,22 @@ export async function runSloPull(parsed, deps = {}) {
     [clientId, parsed.firstName, parsed.lastName, orgId]
   );
 
+  /* PHONE — written the way api/public/slo-checkout.mjs wrote it while the
+     phone was on step 1: +1XXXXXXXXXX, and only into a blank phone. A number
+     already on the client is never changed. Same statement, moved here with
+     the box (buy box v2). After the gates above, so a refused order writes
+     nothing. */
+  if (parsed.phone) {
+    await dbh.query(
+      `UPDATE clients
+          SET phone = COALESCE(NULLIF(BTRIM(phone), ''), $1)
+        WHERE id = $2::uuid AND org_id = $3::uuid`,
+      [parsed.phone, clientId, orgId]
+    );
+  }
+  /* What the client's phone is after that write: the stored one wins. */
+  const phoneOnFile = String(found.phone ?? "").trim() || parsed.phone || null;
+
   const accountId = await (deps.ensureAccount || ensureSloAccount)(dbh, {
     orgId,
     clientId,
@@ -411,12 +446,13 @@ export async function runSloPull(parsed, deps = {}) {
     warnings: Array.isArray(parsed.warnings) ? parsed.warnings : []
   };
 
-  /* Paul reads this person in ClickFunnels. SSN stays in Fundhub. */
+  /* Paul reads this person in ClickFunnels. SSN stays in Fundhub. The phone
+     is the client's, including one this form just filled in (buy box v2). */
   await (deps.syncCf || syncSloClickfunnelsContact)({
     email: found.email,
     firstName: parsed.firstName,
     lastName: parsed.lastName,
-    phone: found.phone || null,
+    phone: phoneOnFile,
     address: parsed.address,
     businesses: parsed.businesses
   }, { env });

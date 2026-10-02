@@ -511,3 +511,85 @@ test("item 9: the previous address is checked too", async () => {
   })), { db: orderDb({ order_is_demo: true }), env: { SLO_DEMO_PAY: "1" }, ...deps });
   assert.deepEqual(seen[0].map((a) => a.residency), ["current", "previous"]);
 });
+
+/* ── Buy box v2 (owner-set 2026-10-02): the phone moved from step 1 to step 3 ── */
+
+test("buy box v2: step 3 must carry a valid phone — blank and bad are refused by the phone box", () => {
+  const blank = parseSloPullBody(validBody({ phone: "" }));
+  assert.equal(blank.ok, false);
+  assert.equal(blank.error, "phone_required");
+  assert.deepEqual(blank.errors, [{ field: "phone", code: "phone_required", message: "Please enter your phone number." }]);
+  assert.equal(parseSloPullBody(validBody({ phone: "   " })).error, "phone_required");
+
+  for (const bad of ["555-0100", "12345", "25555550100", "phone"]) {
+    const got = parseSloPullBody(validBody({ phone: bad }));
+    assert.equal(got.ok, false, bad);
+    assert.deepEqual(got.errors, [{ field: "phone", code: "phone_invalid", message: "Use a 10-digit phone number." }], bad);
+  }
+
+  /* Same rule as the checkout (parseSloPhone): stored as +1XXXXXXXXXX. */
+  for (const good of ["(415) 555-0134", "415.555.0134", "4155550134", "+1 415 555 0134", "14155550134"]) {
+    const ok = parseSloPullBody(validBody({ phone: good }));
+    assert.equal(ok.ok, true, good);
+    assert.equal(ok.phone, "+14155550134", good);
+  }
+});
+
+test("buy box v2: a body with no phone key at all (the old /roadmap/pull.html) is taken as before", () => {
+  const got = parseSloPullBody(validBody());
+  assert.equal(got.ok, true);
+  assert.equal(got.phone, null);
+});
+
+test("buy box v2: the phone is stored like the checkout stored it — +1 form, blank phone only, after the gates", async () => {
+  const cf = [];
+  const { calls, deps } = spyDeps({ syncCf: async (input) => { cf.push(input); return { ok: true }; } });
+  const db = orderDb({ order_is_demo: false, order_status: "paid" });
+  const out = await runSloPull(parseSloPullBody(validBody({ phone: "(415) 555-0134" })), { db, env: {}, ...deps });
+  assert.equal(out.ok, true);
+  const w = db.writes.filter((x) => /SET phone/.test(x.sql));
+  assert.equal(w.length, 1, "one phone write");
+  assert.match(w[0].sql, /SET phone = COALESCE\(NULLIF\(BTRIM\(phone\), ''\), \$1\)/, "a number already on the file is never changed");
+  assert.match(w[0].sql, /WHERE id = \$2::uuid AND org_id = \$3::uuid/);
+  assert.deepEqual(w[0].params, ["+14155550134", CLIENT, ORG]);
+  assert.equal(calls.identity, 1);
+  assert.equal(cf.length, 1);
+  assert.equal(cf[0].phone, "+14155550134", "ClickFunnels gets the phone this form filled in");
+});
+
+test("buy box v2: an existing phone on the client wins, for the client row and for ClickFunnels", async () => {
+  const cf = [];
+  const { deps } = spyDeps({ syncCf: async (input) => { cf.push(input); return { ok: true }; } });
+  const db = orderDb({ order_is_demo: false, order_status: "paid", phone: "+12125550199" });
+  const out = await runSloPull(parseSloPullBody(validBody({ phone: "4155550134" })), { db, env: {}, ...deps });
+  assert.equal(out.ok, true);
+  /* The statement still runs, but COALESCE keeps +12125550199 in the row. */
+  assert.equal(cf[0].phone, "+12125550199");
+});
+
+test("buy box v2: no phone in the body → no phone write, ClickFunnels gets what is on file", async () => {
+  const cf = [];
+  const { deps } = spyDeps({ syncCf: async (input) => { cf.push(input); return { ok: true }; } });
+  const db = orderDb({ order_is_demo: false, order_status: "paid" });
+  const out = await runSloPull(parseSloPullBody(validBody()), { db, env: {}, ...deps });
+  assert.equal(out.ok, true);
+  assert.equal(db.writes.filter((x) => /SET phone/.test(x.sql)).length, 0);
+  assert.equal(cf[0].phone, null);
+});
+
+test("buy box v2: a refused order writes no phone (existing account, address not found)", async () => {
+  {
+    const { calls, deps } = spyDeps({ priorFile: async () => ({ identity: true, paid: false }) });
+    const db = orderDb({ order_is_demo: false, order_status: "sent" });
+    const out = await runSloPull(parseSloPullBody(validBody({ phone: "4155550134" })), { db, env: {}, ...deps });
+    assert.equal(out.error, "existing_account");
+    nothingWritten(calls, db);
+  }
+  {
+    const { calls, deps } = spyDeps({ checkAddresses: async () => [{ field: "address", code: "address_unverified", message: "x" }] });
+    const db = orderDb({ order_is_demo: false, order_status: "paid" });
+    const out = await runSloPull(parseSloPullBody(validBody({ phone: "4155550134" })), { db, env: {}, ...deps });
+    assert.equal(out.error, "address_unverified");
+    nothingWritten(calls, db);
+  }
+});

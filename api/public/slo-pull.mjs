@@ -24,6 +24,11 @@
 // ({ name, address, city, state, zip, ein?, phone?, started }), consent,
 // address_confirmed (true = take the address as typed after the
 // address_unverified warning).
+// phone (buy box v2, 2026-10-02): the /roadmap widget asks it on step 3 and
+// always sends it; when the key is present it must be 10 US digits
+// (phone_required / phone_invalid, 400). Stored +1XXXXXXXXXX into a blank
+// client phone only (src/slo/pull.mjs). public/roadmap/pull.html sends no
+// phone key and is unchanged.
 // A refusal carries errors: [{ field, code, message }] — one per bad box.
 //
 //   409 existing_account    the email's client already has an identity on
@@ -63,6 +68,8 @@ const STATUS = {
   dob_required: 400,
   ssn_required: 400,
   address_required: 400,
+  phone_required: 400,
+  phone_invalid: 400,
   not_found: 404,
   no_account: 409,
   order_not_paid: 409,

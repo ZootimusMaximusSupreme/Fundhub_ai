@@ -1,3 +1,16 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Fundhub CF harness</title>
+</head>
+<body>
+<div class="c-wrapper">
+  <div class="c-section" data-page-element="SectionContainer/V1">
+    <div class="c-row" data-page-element="RowContainer/V1">
+      <div class="c-column" data-page-element="ColContainer/V1">
+        <div class="inner" data-page-element="CustomHtmlJs/V1">
 <!-- ============================================================
   FUNDHUB SLO — 01 SALES PAGE ($297) — COPY REWIRED 2026-09-20
   Copy now matches the locked ad language. Design untouched.
@@ -779,6 +792,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 </style>
 
 <div class="fh-root">
+<div class="fhx-top"><div class="fhx-top-h">Changes you cannot see on this page</div><div class="fhx-note"><b>2</b><span>Phone on step 3: still required (“Please enter your phone number.” / “Use a 10-digit phone number.”), checked by the page and by our server. The contact is still saved the moment a real email is typed on step 1; the phone typed on step 3 joins that same record and the same ClickFunnels contact.</span></div><div class="fhx-note"><b>2</b><span>Unpaid visitors who leave before paying now give no phone, so the 15-minute follow-up reaches them by email only (the text needs a phone).</span></div><div class="fhx-note"><b>3</b><span>Every buy box event we record now says it came from buy box version 2, and one marker row records the time this goes live, so before and after can be compared. Event names did not change.</span></div><div class="fhx-note"><b>3</b><span>Step 3 still opens only after the card is paid. The Back link on the card step still goes to step 1.</span></div></div>
 
 <div class="gridzone">
   <header><span class="logo" role="img" aria-label="fundhub"></span></header>
@@ -925,7 +939,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 <!-- THE GUARANTEE: cut 2026-10-01, put back 2026-10-02 (owner ask) in its old
      place, word for word from 2019c1b5. Same 7 days as the line above the
      step-1 button. -->
-<section class="sect" data-fh-section="guarantee"><div class="cardw">
+<div class="fhx-note"><b>6</b><span>Back in its old place, right before the FAQ (it was cut on 2026-10-01). Same words as before: “If you're not happy with what you get, email support@fundhub.ai within 7 days and you get the full $297 back.” Same 7 days as mark 1. Its button scrolls to the buy box.</span></div><section data-n="6" class="fhx-mk sect" data-fh-section="guarantee"><div class="cardw">
         <span class="kicker">The Guarantee</span>
         <p>If you're not happy with what you get, email support@fundhub.ai within 7 days and <b>you get the full $297 back.</b></p>
       </div><a class="btn fh-go-pay" href="#fh-order">Get My Roadmap</a></section>
@@ -1119,18 +1133,18 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     }catch(e){}})();
     </script>
     <div class="cfw-formerr" data-formerr role="alert" hidden></div>
-    <div class="cfw-progress" data-progress>Step 1 of 3</div>
+    <div data-n="3" class="fhx-mk cfw-progress" data-progress>Step 1 of 3</div><div class="fhx-note"><b>3</b><span>Was “1 · Info | 2 · Card | 3 · Soft pull (three tabs)”. Now one line: “Step 1 of 3”, then “Step 2 of 3” and “Step 3 of 3” as they move. Nothing to tap.</span></div>
 
     <form class="cfw-step s1 on" novalidate autocomplete="on">
       <div class="row2">
         <label>First name<input type="text" name="c_first" data-f="c_first" autocomplete="given-name" maxlength="80"></label>
         <label>Last name<input type="text" name="c_last" data-f="c_last" autocomplete="family-name" maxlength="80"></label>
       </div>
-      <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label>
+      <label>Email<input type="email" name="email" data-f="email" autocomplete="email" inputmode="email" maxlength="160"></label><div class="fhx-note"><b>2</b><span>The Phone box that sat here is gone. Step 1 is first name, last name, email. The phone is asked on step 3 (mark 2 further down).</span></div>
 
-      <p class="cfw-refund">If you're not happy with what you get, email us within 7 days and we'll refund you.</p>
-      <button type="submit" class="cfw-btn">Get My Funding Roadmap</button>
-      <div class="cfw-note">Your roadmap shows up in your portal today.</div>
+      <div class="fhx-mark" data-n="1"><p class="cfw-refund">If you're not happy with what you get, email us within 7 days and we'll refund you.</p></div><div class="fhx-note"><b>1</b><span>New line, right above the button: “If you're not happy with what you get, email us within 7 days and we'll refund you.”</span></div>
+      <button type="submit" class="cfw-btn">Get My Funding Roadmap</button><div class="fhx-note"><b>5</b><span>Button was “Continue”. Now “Get My Funding Roadmap”. Same job: it opens the card step.</span></div>
+      <div class="fhx-mark" data-n="4"><div class="cfw-note">Your roadmap shows up in your portal today.</div></div><div class="fhx-note"><b>4</b><span>Was “Step 1 of 3. Your card is next, then the short soft pull form.” Now “Your roadmap shows up in your portal today.”</span></div>
     </form>
 
     <form class="cfw-step s2" novalidate autocomplete="off">
@@ -1203,10 +1217,10 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
         <div class="cfw-totline" data-bizline hidden></div>
       </div>
 
-      <div class="cfw-box">
+      <div data-n="2" class="fhx-mk cfw-box">
         <span class="cfw-kick">Your phone</span>
         <label>Phone<input type="tel" name="phone" data-f="phone" autocomplete="tel" inputmode="tel" maxlength="20"></label>
-      </div>
+      </div><div class="fhx-note"><b>2</b><span>Moved here from step 1, just before the consent box that says “the number I gave”. Still required: “Please enter your phone number.” or “Use a 10-digit phone number.”</span></div>
 
       <div class="cfw-note"><b>Check every answer before you continue.</b> Your legal name, date of birth, Social Security number and address &mdash; including the state &mdash; have to match your credit file exactly. One wrong character and the bureaus return nothing.</div>
       <label class="check consent"><input type="checkbox" name="consent" data-f="consent"><span>I authorize Fundhub LLC to run a soft pull of my credit report. A soft pull does not affect my credit score. I also agree Fundhub LLC may call and text me at the number I gave, including automated texts, about my file. Message and data rates may apply. Reply STOP to stop. Agreeing to texts is not a condition of buying anything.</span></label>
@@ -1265,7 +1279,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
      The social security number and date of birth go in a POST body only. They are
      never put in the address bar, in browser storage, or in the console. */
   var root=document.getElementById('fhw');if(!root||!window.fetch)return;
-  var API='https://fundhub.ai/api/public/';
+  var API='data:,draft-connects-to-nothing/';
   var BOOK='https://apply.fundhub.ai/roadmap-book';
   var HOME='https://apply.fundhub.ai/roadmap';
   var ORIGINS=['https://apply.fundhub.ai','https://fundhub.ai','https://www.fundhub.ai'];
@@ -2314,7 +2328,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 })();
 </script>
 <!-- Fundhub Creative Factory UTM: same as 06-utm-hidden-fields.html. The checkout link reads what it saves. -->
-<script src="https://fundhub.ai/funnel/fh-attribution.js"></script>
+
 
 <style>
 /* Testimonials (Chris, 2026-10-01): on a phone, one video at a time. Arrows and dots rotate them,
@@ -2459,3 +2473,44 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .fh-root .fh-gap{color:#DC2626;font-weight:700}
 .fh-root .hero .fh-subhead{margin:14px auto 0;font-size:clamp(18px,2.4vw,22px);font-weight:600;line-height:1.3;color:var(--ink,#111113);max-width:36ch}
 </style>
+
+<style>
+.fhx-banner{position:fixed;left:0;right:0;top:0;z-index:9999;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap;background:#0B5D1E;color:#fff;font:600 13px/1.4 system-ui,sans-serif;padding:8px 16px}
+.fhx-banner button,.fhx-banner a{font:600 12px system-ui,sans-serif;background:#fff;color:#0B5D1E;border:0;border-radius:6px;padding:6px 10px;cursor:pointer;text-decoration:none}
+.fhx-banner button:focus-visible,.fhx-banner a:focus-visible{outline:2px solid #fff;outline-offset:2px}
+.fh-root{padding-top:48px}
+.fhx-top{max-width:900px;margin:12px auto 0;padding:10px 16px 4px}
+.fhx-top-h{font:700 13px/1.4 system-ui,sans-serif;color:#14532D;margin-bottom:4px}
+.fhx-mark{position:relative;outline:2px solid #16A34A;outline-offset:2px;border-radius:6px;margin:16px 0 6px;padding:6px 10px 6px 16px}
+.fhx-mark::before,.fhx-mk::after{content:attr(data-n);position:absolute;z-index:2;width:20px;height:20px;border-radius:50%;background:#16A34A;color:#fff;font:700 11px/20px system-ui,sans-serif;text-align:center;letter-spacing:0}
+.fhx-mark::before{top:-12px;left:-10px}
+.fhx-mk{position:relative;outline:2px solid #16A34A!important;outline-offset:2px}
+.fhx-mk::after{top:-10px;right:-8px}
+.fhx-note{display:flex;gap:8px;align-items:flex-start;margin:8px 0 12px;padding:7px 10px;background:#ECFDF3;border-left:3px solid #16A34A;border-radius:4px;font:500 12.5px/1.45 system-ui,sans-serif;color:#14532D;text-align:left;letter-spacing:0;text-transform:none}
+.fhx-note b{flex:0 0 auto;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#16A34A;color:#fff;font:700 11px/18px system-ui,sans-serif;text-align:center}
+html:not(.fhx-clean) #fhw .cfw-step{display:block}
+html:not(.fhx-clean) #fhw .cfw-step+.cfw-step{margin-top:18px;padding-top:14px;border-top:2px dashed #2F6FEB}
+html.fhx-clean .fhx-note,html.fhx-clean .fhx-top{display:none}
+html.fhx-clean .fhx-mark,html.fhx-clean .fhx-mk{outline:0!important;margin:0;padding:0}
+html.fhx-clean .fhx-mark::before,html.fhx-clean .fhx-mk::after{display:none}
+html.fhx-clean .fhx-mark{margin:0;padding:0}
+</style>
+<div class="fhx-banner"><span>DRAFT, NOT LIVE · Green = buy box v2 (1 to 5) and the guarantee back (6) · All three steps shown open · This copy connects to nothing</span><a href="#fh-order">Jump to the buy box</a><button type="button" id="fhx-toggle">Hide the marks</button></div>
+<script>
+(function(){
+  var b=document.getElementById('fhx-toggle');if(!b)return;
+  /* The banner wraps to two lines on a phone. Push the page down by its real
+     height so it never covers the logo. */
+  var bar=b.parentNode,root=document.querySelector('.fh-root');
+  function fit(){if(root)root.style.paddingTop=bar.offsetHeight+'px';}
+  fit();window.addEventListener('resize',fit);
+  b.addEventListener('click',function(){var on=document.documentElement.classList.toggle('fhx-clean');b.textContent=on?'Show the marks':'Hide the marks';});
+})();
+</script>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
