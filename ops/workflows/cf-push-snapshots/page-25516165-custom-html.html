@@ -137,21 +137,21 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 <div class="fh-root">
   <header><span class="logo" role="img" aria-label="fundhub"></span></header>
   <div class="wrap">
-    <section class="hero">
+    <section class="hero" data-fh-section="hero">
       <span class="eyebrow">Order complete &middot; Everything is in your account</span>
       <h1>Want to Get There Faster?</h1>
       <h1 class="sec">Get the most amount of funding, in the shortest amount of time.</h1>
       <p class="lede">Your roadmap is already in your account: the analysis, all six rounds of letters, the snapshot and the lender list. Book a call and we'll walk your file with you and show you where the shortcuts are. <b>Below is how much we think you'll qualify for right now.</b></p>
     </section>
 
-    <div class="pa">
+    <div class="pa" data-fh-section="pre-approval">
       <div class="pk">UnderwriteIQ &middot; How much we think you'll qualify for right now</div>
       <div class="num" id="fh-pa-num">$--</div>
       <p class="note" id="fh-pa-note">Based on your soft pull. How much you qualify for once your file is optimized is in your Funding Snapshot.</p>
     </div>
 
     <!-- SLOT-VSL2: swap src for the DFY Funding VSL (VSL #2) -->
-    <div class="media" id="fh-media2">
+    <div class="media" id="fh-media2" data-fh-section="video">
       <video id="fh-vsl2" autoplay muted playsinline preload="auto"
         src="https://fundhub.ai/funnel/slo-vsl2-funding.mp4">
       </video>
@@ -294,7 +294,7 @@ var FH_SIM_PA = '84500';  /* stand-in amount, sim only */
      NATIVE ClickFunnels AppointmentScheduler at split time.
      BELOW -> 03b BOTTOM fragment
      ================================================ -->
-<div class="fh-widget-slot fh-book-embed" style="padding:0!important;overflow:hidden!important">
+<div class="fh-widget-slot fh-book-embed" data-fh-section="calendar" style="padding:0!important;overflow:hidden!important">
 <iframe id="fh-book-frame" title="Book your Fundhub funding call" src="https://apply.fundhub.ai/funding-book-call" style="display:block;width:100%;height:920px;min-height:600px;border:0;background:#fff" loading="lazy"></iframe>
 </div>
 <script>
@@ -444,14 +444,14 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 
   <div class="marq" aria-hidden="true"><div class="marq-track"><div class="marq-set"><span>Tri-bureau soft pull</span><i></i><span>Nationwide lender matrix</span><i></i><span>Up to 12 funding rounds</span><i></i><span>Inquiries cleared between rounds</span><i></i><span>Soft inquiry &middot; no score impact</span><i></i><span>Dedicated funding advisor</span><i></i><span>We never sell your data</span><i></i></div><div class="marq-set"><span>Tri-bureau soft pull</span><i></i><span>Nationwide lender matrix</span><i></i><span>Up to 12 funding rounds</span><i></i><span>Inquiries cleared between rounds</span><i></i><span>Soft inquiry &middot; no score impact</span><i></i><span>Dedicated funding advisor</span><i></i><span>We never sell your data</span><i></i></div></div></div>
 
-  <footer>
+  <footer data-fh-section="footer">
   <div class="wrap">
     <div class="disc">
       <p><strong>FUNDING DISCLAIMER:</strong> Fundhub LLC is not a bank or a lender. We are a funding advisory and application service. Funding amounts shown are maximum potential amounts and are not an offer of credit.</p>
       <p>Results vary. Individual outcomes depend on credit profile, business history, and other factors.</p>
       <p><strong>NOT AFFILIATED WITH META:</strong> This site is not a part of the Facebook website or Facebook Inc. FACEBOOK is a trademark of FACEBOOK, Inc.</p>
     </div>
-    <div class="foot-bottom">Fundhub.ai | Copyright &copy; 2026 | All Rights Reserved &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/terms/">Terms &amp; Conditions</a></div>
+    <div class="foot-bottom">Fundhub.ai | Copyright &copy; 2026 Fundhub LLC | All Rights Reserved &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/privacy/">Privacy Policy</a> &nbsp;&middot;&nbsp; <a href="https://fundhub.ai/terms/">Terms &amp; Conditions</a></div>
     <div class="sysline"><span class="pulse"></span>systems nominal &middot; fundhub.ai</div>
   </div>
   <div class="ghost-mark" aria-hidden="true"><span class="logo"></span></div>
