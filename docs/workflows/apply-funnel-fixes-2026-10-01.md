@@ -13,8 +13,8 @@ once Chris says go. Nothing has moved yet. If it moves mid-work, re-read paths f
 | A1 | Question 4 ("What Would This Money Change Right Now?"): no Next button. One tap moves on. | https://apply.fundhub.ai/apply | session 1 (survey chat) | done — live 2026-10-01 |
 | A2 | The jump to "You're qualified" looks broken: the "Reviewing your answers" checklist crushes into circles | https://apply.fundhub.ai/apply | session 1 | done — live 2026-10-01 |
 | A3 | "You're qualified" screen slides down to the calendar by itself | https://apply.fundhub.ai/apply | session 1 | done — live 2026-10-01 |
-| B1 | Line under the headline → "Find out exactly what you and your businesses qualify for in one call" | https://apply.fundhub.ai/watch | open — paste prompt B below, or session 1 takes it after A | pending |
-| C1 | Thank-you page: mobile friendly, stop it looking bad | https://apply.fundhub.ai/thank-you | open — paste prompt B below, or session 1 takes it after A | pending |
+| B1 | Line under the headline → "Find out exactly what you and your businesses qualify for in one call" | https://apply.fundhub.ai/watch | session 1 | draft shared — waiting on "push it" |
+| C1 | Thank-you page: mobile friendly, stop it looking bad | https://apply.fundhub.ai/thank-you | session 1 | draft shared — waiting on "push it" |
 
 A and B/C touch different pages and different files. No dependencies — all parallel.
 
@@ -57,6 +57,25 @@ A and B/C touch different pages and different files. No dependencies — all par
   Live proof (cache-busted, real Chrome, lead send and Meta blocked so no lead was created), desktop 1280 and phone 390:
   0 Next buttons on question 4, one tap moved on, checklist rows 36-37 px tall (were crushed), calendar landed 16 px from top
   about 1.1 s after "You're qualified", 0 page errors.
+
+## B1 + C1 — manifest (session 1)
+
+- Draft link (same link every round): https://claude.ai/artifact/X24HWXafwnoyRhu1D2Tyfe
+- Builder: `clickfunnels-fragments/preview/watch-thankyou-fit-draft-build.mjs` — before/after shots from the live pages,
+  the block added in the test browser only; throws if desktop moves or the new line stays hidden.
+- B1 block: `clickfunnels-fragments/01b-watch-lede.html` (marker `fh-watch-lede`, /watch head_code). Sets the new words on load;
+  old line hidden until then, shown anyway after 1.5 s if the script never runs.
+- C1 block: `clickfunnels-fragments/05b-thank-you-fit.html` (marker `fh-ty-fit`, /thank-you head_code). Under 768px the
+  ClickFunnels section/row layers drop side padding and `.wrap` keeps 16px. Content 222 → 358 px of 390; page 7795 → 6144 px;
+  1280px desktop identical (5585 px tall, 852 px content).
+- Push entries added to `PUSH_MANIFEST`: `apply-watch-lede`, `apply-thank-you-fit` (strategy `code_block_upsert`).
+  Dry runs: both "append", ok. Nothing pushed.
+- On push: `node scripts/cf-push-custom-html.mjs push --only=apply-watch-lede` and `--only=apply-thank-you-fit`, then prove both live (cache-busted).
+
+## Leftover cards (not worked)
+
+- `src/ads/funnel-proof-scripts.test.mjs` "01-vsl.html loads watch-proof.js … and no funding-paths.js" fails at HEAD:
+  committed `clickfunnels-fragments/01-vsl.html` still carries funding-paths.js (last touched e4d068f0, 17:38 merge). Not caused by this board.
 
 ## Prompt B — paste into a new chat (owns B1 + C1)
 
