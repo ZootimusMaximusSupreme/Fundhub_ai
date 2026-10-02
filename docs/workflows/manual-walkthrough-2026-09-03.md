@@ -1450,3 +1450,88 @@ personal info dispute letters clean this up to one current address" and
 Consequence for the sim: push-credit.mjs writes no names/addresses/SSN and no
 personal-info variants, so the sim can never exercise this. Add name/address
 variants and inquiries to the repair and trial profiles.
+
+
+## Live fulfillment click — 2026-09-17 (existing people, no remake)
+
+Walk file: docs/workflows/manual-walkthrough-runbook.html. Did not remake ads. Did not Enroll. Did not paper mail. Did not pay $32. Did not Mark funded without a bank yes.
+
+| Step | Result | What the live screen showed |
+|---|---|---|
+| P1-One-queue | FAIL | Sim One-Funding card=0 ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline Thu, Sep 17, 11:29:15 |
+| P1-One-next | PASS | ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Calendar Thu, Sep 17, 11:29:16 AM MST LIVE Search  |
+| P1-One-docs | PASS | ‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Thu, Sep 17, 11:29:18 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIV |
+| P1-One-apply | FAIL | Approved$=0. ‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Thu, Sep 17, 11:29:18 AM MST LIVE Search ⌘K Chris St |
+| P1-One-fulfillment | FAIL | Apply door 0 banks. Did not invent a bank yes. Did not Mark funded. |
+| W1-queue | FAIL | Walk1 Funding card=0 ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline Thu, Sep 17, 11:29:24 |
+| W1-next | PASS | ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Calendar Thu, Sep 17, 11:29:25 AM MST LIVE Search  |
+| W1-docs | PASS | ‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Thu, Sep 17, 11:29:27 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIV |
+| W1-apply | PASS | Approved$=6. ‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Thu, Sep 17, 11:29:27 AM MST LIVE Search ⌘K Chris St |
+| W1-fulfillment | PASS | Apply door has 6 banks. |
+| P2-Two-queue | FAIL | Sim Two-Repair ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline T |
+| P2-Two-next | PASS | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:35 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out |
+| P2-Two-docs | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:35 AM MST LIVE Search ⌘ |
+| P2-Two-stage | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:35 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Inquiries Repair NEED ME 0 of 4 open Nothing needs you —  |
+| P2-Two-no-enroll | PASS | Did not click Enroll. Did not click Send. |
+| P2-Two-fulfillment | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:35 AM MST LIVE Search ⌘ |
+| W2-queue | FAIL | Walk2 Repair ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline T |
+| W2-next | PASS | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:43 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out |
+| W2-docs | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:43 AM MST LIVE Search ⌘ |
+| W2-stage | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:43 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Inquiries Repair NEED ME 0 of 4 open Nothing needs you —  |
+| W2-no-enroll | PASS | Did not click Enroll. Did not click Send. |
+| W2-fulfillment | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:29:43 AM MST LIVE Search ⌘ |
+
+Runbook existing-people totals: PASS 10 · FAIL 12
+
+Walk1 apply-door bank yes (existing rows; not seeded):
+| W1-1.10 | PASS | Approved$ boxes=6 |
+| W1-1.12 | FAIL | Clicked Approved on an existing row. Screen did not show “Approved · $25000 saved.” Saw Funding-round “Approved — On hold because —”. Did not treat that as a bank yes. Did not Mark funded. |
+| W1-bank-inbox | PASS | ‹‹ SALES ▾ FUNDING ▾ ⬡ Lenders ◎ Client Control Panel CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Client Control Panel Thu, Sep 17, 11:30:07 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIV |
+| W1-1.13 | FAIL | Did not Mark funded this click. Need a proven bank-yes save first; recode if 1.12 PASS after read. |
+
+
+## Runbook P3–P6 — 2026-09-17 (existing people, no remake)
+
+| Step | Result | What the live screen showed |
+|---|---|---|
+| P3-3.1-remake | FAIL | Did not remake ad/survey/book. Walked existing Sim Three-Trial only. |
+| P3-3.1-queue | FAIL | Three-Trial repair-board card=0 ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline T |
+| P3-3.1-next | PASS | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:31:45 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out |
+| P3-3.1-docs | FAIL | TRIAL ENDING 0 CLIENT PROGRAM ROUND STAGE NEEDS DUE Sim Ten-Trial |
+| P3-3.1-stage | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:31:45 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Inquiries Repair NEED ME 0 of 4 open Nothing needs you —  |
+| P3-3.1 | FAIL | Program Trial 2 rounds on screen=true letters=false. TRIAL ENDING 0 CLIENT PROGRAM ROUND STAGE NEEDS DUE Sim Ten-Trial trial — / 2 analysi |
+| P3-3.2 | FAIL | Existing trial chip on #10/#3: Ten-Trial MOVE DEL ⠿ — (661) 605-4248 stanbridgejchris+sim-10@gmail.com $0 funding est. 2 |
+| P4-4.1-remake | FAIL | Did not remake ad/survey/book. Opened existing Sim Four-Blueprint. |
+| P4-4.1 | PASS | ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Closer Dashboard Thu, Sep 17, 11:31:52 AM MST Search ⌘K Chris Stanbridge · owner LIVE Sign out × LIVE CALL SHI |
+| P4-4.2 | FAIL | SIM FOUR-BLUEPRINT YOUR NUMBERS ARE NOT ON THIS FILE YET Client screen only S-01 / SESSION fundhub. FUNDING STRATEGY SESSION Sim Four-Blueprint — CUSTOMER-INITIATED · SOFT INQUIRY · NO OBLIGATION 01 INTRO 1 / 24 Rapport SAY THIS Hey Sim! It |
+| P4-4.3 | FAIL | Did not push a new payment. Existing person only. Opening portal via staff sign-in link. |
+| P4-4.4 | PASS | LOCKED seen Capital Blueprint Report, letter pack, roadmap, funding snapshot, lender list, and the mini course. Pricing is set on your call. On your call Talk to an advisor 🔒 LOCKED Capita |
+| P4-4.5 | FAIL | After-fix unlock not claimed. Tile: Capital Blueprint Report, letter pack, roadmap, funding snapshot, lender list, and the mini course. Pricing is set on your call. On your call Talk to an advisor 🔒 LOCKED Capita |
+| P5-5.1-remake | FAIL | Did not remake ad/survey/book. Opened existing Sim Five-Academy. |
+| P5-5.1 | PASS | ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Closer Dashboard Thu, Sep 17, 11:32:03 AM MST Search ⌘K Chris Stanbridge · owner LIVE Sign out × LIVE CALL SHI |
+| P5-5.2 | FAIL | SIM FIVE-ACADEMY Client screen only S-01 / SESSION fundhub. FUNDING STRATEGY SESSION Sim Five-Academy — CUSTOMER-INITIATED · SOFT INQUIRY · NO OBLIGATION 01 INTRO 1 / 24 Rapport SAY THIS Hey Sim! It's [Your Name] over at Fundhub. How's your |
+| P5-5.3 | FAIL | Did not push a new payment. Existing person only. |
+| P5-5.4 | FAIL | Capital Academy The course. Pricing is set on your call. On your call Talk to an advisor › Account & history Payments · Agreements · Documents · Activity · Messages YOUR FUNDING ADVISOR — Not ass |
+| P6-6.1-remake | FAIL | Sim Six-Partner does not exist. Did not submit affiliates form. |
+| P6-6.1 | PASS | Affiliates page opened. FUNDING EDUCATION LOG IN Apply to partner PARTNER PROGRAM Two ways to build on fundhub. Refer business owners as an affiliate, or run your own funding brand as a white-label partner. Either way, our team runs fulfillment |
+| P6-6.2 | FAIL | Six on rail=false. Did not approve a new partner. ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Pipeline Thu, Sep 17, 11:32:17 AM MST LIVE Search ⌘K Chris Stanbridge  |
+| P6-6.3 | PASS | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Galaxy Your page · this sign-in does not have one 14 partners on file Thu, Sep 17, 11:32:19 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × GX-01 / READING THE SKY |
+| P6-6.4 | PASS | Opened existing partner apply. Did not apply as Seven. Nothing is live at this web address There is no published page here. If this is meant to be your page: a page you have saved but not published is a draft, and a draft is never shown to the public. Sign in to Fundhub, ope |
+| P6-6.5 | FAIL | Sim Seven-Underpartner does not exist. Did not mint. partner_id not checked on a new file. |
+| P6-6.6 | FAIL | Skipped optional Live Trial $297. Did not provision. |
+| FUND-queue | PASS | #8 card=1 |
+| FUND-next | PASS | ‹‹ SALES ▾ ▤ Pipeline ★ Closer Dashboard ＃ My numbers ▣ Sales floor ▦ Calendar FUNDING ▾ CLIENT OPS ▾ MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub Fundhub / Calendar Thu, Sep 17, 11:32:28 |
+| FUND-docs | PASS | CCP docs/hold surface |
+| FUND-apply | FAIL | Approved$=0 |
+| FUND-fulfillment | FAIL | Apply door 0 banks. Did not invent a bank yes. Did not Mark funded. |
+| REPAIR-queue | PASS | #9 card=1 |
+| REPAIR-next | PASS | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:32:36 AM MST LIVE Search ⌘K Chris Stanbridge · |
+| REPAIR-docs | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:32:36  |
+| REPAIR-stage | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:32:36 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Inquiries Repair NEED ME 0 of 4 open  |
+| REPAIR-fulfillment | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:32:36 AM MST LIVE Search ⌘ |
+| REPAIR-no-enroll | PASS | Did not Enroll. Did not Send. |
+
+P3–P6 + desks totals: PASS 13 · FAIL 23
+| P3-Ten-row | PASS | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:32:57 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out |
+| P3-Ten-stage | FAIL | ‹‹ SALES ▾ FUNDING ▾ CLIENT OPS ▾ ✉ Messaging ▧ Documents ⊘ Specialist ◎ Company Brain MARKETING ▾ ADMIN ▾ PORTALS ▾ fundhub / Specialist Thu, Sep 17, 11:33:00 AM MST LIVE Search ⌘K Chris Stanbridge · owner LIVE Sign out × Inquiries Repair NEED ME 0 of 4 open Nothing needs you —  |
+| P3-Ten-no-enroll | PASS | Did not Enroll. Did not Send. |
