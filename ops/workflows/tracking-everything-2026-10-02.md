@@ -23,7 +23,7 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 | Q1 | /roadmap and /roadmap/ → one URL | agent | done — committed (see Results) |
 | Q2+Q3+Q6+Q7p | /roadmap page: tap speed under 200ms (INP 1.1s), layout shift (CLS 0.15), dead clicks (8.89%), "Fundhub LLC" in page consent + footers — marked draft | agent | claimed |
 | Q4 | Clarity JS errors (one Clarity pull) incl. FB Android "Java object is gone"; fix ours | agent | done — no errors from our code |
-| Q5 | Buy box in Facebook/Instagram in-app browsers, iPhone + Android (test; fixes go to the page owner) | agent | claimed |
+| Q5 | Buy box in Facebook/Instagram in-app browsers, iPhone + Android (test; fixes go to the page owner) | agent | done — 1 break, patch handed to page agent |
 | Q7c | "Fundhub LLC" in stored consent record (new consent version) + other /roadmap funnel pages | agent | done — committed `d9808d03` |
 
 ## File ownership (no two units edit the same file)
@@ -182,3 +182,11 @@ Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name
 - Order at ship: Netlify part with `npm run ship`; the /roadmap push after ship (it also carries the Colin #2 video, which 404s until ship).
 - Not changed (not asked): Meta ad URLs, discount-197 and infinite-drip links still say `/roadmap/` — the browser rewrite covers them.
 - At ship: update `docs/journeys/slo-offer-actual.md:5,11`, page-inventory row 21, CHANGELOG.
+
+### Q5 — buy box in Facebook / Instagram in-app browsers (emulated)
+
+- All 4 (iPhone FB, iPhone IG, Android FB, Android IG): step 1, card form frame, pay path, step 3, redirect to /roadmap-book PASS on our side (104/104 checks). No window.open anywhere; keyboards, autofill attributes, 16px inputs, sticky bar, storage-blocked fallback all fine. Card company API does not block in-app user agents; its bank check shows inside the frame, not a popup.
+- **Break:** if the app reloads the page after payment (common when coming back from a bank app or text code), the buyer lands on an empty step 1 with a fresh $297 card form. Patch (`keepPaid`: write the paid order into the address bar so a reload reopens step 3) handed to the page agent; reload test 0/4 → 4/4 with it.
+- Can't be fixed from our side if it happens: the card company's frame failing inside the app; wallet / pay-later buttons (Apple Pay normally unavailable in FB/IG on iPhone, Google Pay not in Android in-app, pay-later pops out to their site). Card path unaffected.
+- Can't be proven by emulation: real in-app WebViews, Meta's injected scripts, real card boxes, real charge + bank check, real reload behaviour. Phone check (no charge) is in the final checklist; a full real-purchase proof needs one real $297 charge + refund — Chris's call.
+- Note: the agent installed Playwright's WebKit browser (77 MB) into ~/Library/Caches/ms-playwright to run the iPhone tests.
