@@ -15,7 +15,7 @@ test("the consent gate exists and names the right thing", () => {
   assert.match(html, /id="consent"/, "a consent checkbox must exist");
   assert.match(
     html,
-    /authorize Fundhub Credit Solutions LLC to run a soft pull/i,
+    /authorize Fundhub LLC to run a soft pull/i,
     "consent wording must name the entity and the soft pull"
   );
   assert.match(
@@ -135,7 +135,7 @@ test("no SIM MODE, no fake testimonials, no earnings or score-increase claims", 
 });
 
 test("trust copy only uses wording already in the fragment source", () => {
-  // clickfunnels-fragments/slo/slo-01-sales.html:406 — "Your $297 credits
+  // marketing/landing-pages/slo/slo-01-sales.html:406 — "Your $297 credits
   // toward your $3,000 deposit." This page must reuse that fact, not invent
   // new numbers or claims.
   // The price is a slot the server fills, like the sales and pay pages — never typed.
@@ -162,9 +162,13 @@ test("no horizontal-scroll traps: html/body overflow-x is hidden", () => {
   assert.match(html, /html,body\{overflow-x:hidden\}/);
 });
 
-test("the soft-pull consent names Fundhub Credit Solutions LLC (owner-set 2026-09-17)", () => {
-  // Owner decision: the entity that runs the SLO soft pull is Fundhub Credit
-  // Solutions LLC — not Fundhub LLC, which is named on the sales and pay pages
-  // as the funding advisory service. Do not "fix" the mismatch.
-  assert.match(html, /authorize Fundhub Credit Solutions LLC to run a soft pull/);
+test("the soft-pull consent names Fundhub LLC (owner-set 2026-10-02)", () => {
+  // Owner decision 2026-10-02 (replaces the 2026-09-17 "Fundhub Credit
+  // Solutions LLC" call): the company name everywhere in the /roadmap funnel is
+  // Fundhub LLC — consent text, stored consent record, footer. The exact words
+  // are pinned to the stored soft-pull-v3 in src/consent/disclosures.test.mjs.
+  assert.match(html, /authorize Fundhub LLC to run a soft pull/);
+  assert.match(html, /agree Fundhub LLC may call and text me/);
+  assert.match(html, /&copy; 2026 Fundhub LLC\. All rights reserved\./);
+  assert.doesNotMatch(html, /Credit Solutions|FundHub|FUNDHUB/);
 });

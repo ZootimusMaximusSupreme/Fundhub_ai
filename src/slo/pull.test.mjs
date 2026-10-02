@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { CURRENT_SOFT_PULL_VERSION } from "../consent/disclosures.mjs";
+import { ROADMAP_SOFT_PULL_VERSION, SOFT_PULL_DISCLOSURES } from "../consent/disclosures.mjs";
 import {
   EXISTING_ACCOUNT_MESSAGE,
   businessesPaidFor,
@@ -94,8 +94,12 @@ test("runSloPull on a PAID order stores identity, captures server consent, emits
   assert.equal(result.ok, true);
   assert.equal(calls.identity.ssn, "987654321");
   assert.equal(calls.identity.dob, "1990-01-02");
-  assert.equal(calls.consent.consentVersion, CURRENT_SOFT_PULL_VERSION);
-  assert.match(calls.consent.consentText, /soft inquiry/i);
+  /* Owner-set 2026-10-02: /roadmap stores soft-pull-v3 — the words on the box,
+     with "Fundhub LLC" as the company name. */
+  assert.equal(calls.consent.consentVersion, "soft-pull-v3");
+  assert.equal(calls.consent.consentVersion, ROADMAP_SOFT_PULL_VERSION);
+  assert.equal(calls.consent.consentText, SOFT_PULL_DISCLOSURES["soft-pull-v3"].text);
+  assert.match(calls.consent.consentText, /^I authorize Fundhub LLC to run a soft pull/);
   assert.equal(calls.consent.captureMethod, "checkbox");
   assert.equal(calls.emit.name, "diagnostic.paid");
   assert.equal(calls.emit.opts.clientId, CLIENT);

@@ -1,9 +1,11 @@
 // SLO pull form → identity + businesses + consent + diagnostic.paid.
 // COMPLIANCE REVIEW REQUIRED — credit-pull type/reuse.
 //
-// The page POSTs once. Consent wording is the server soft-pull-v1 text, never
-// the body. The order is the payment_links row this ref names, on the client
-// this client_id names (findSloOrder). A naked client_id is not enough. Email
+// The page POSTs once. Consent wording is the server soft-pull-v3 text
+// (ROADMAP_SOFT_PULL_VERSION — the words on both /roadmap checkboxes, with
+// "Fundhub LLC", owner-set 2026-10-02), never the body. The order is the
+// payment_links row this ref names, on the client this client_id names
+// (findSloOrder). A naked client_id is not enough. Email
 // is never used to find them.
 //
 // FIELD CHECKS live in ./fields.mjs (identity, address) and ./businesses.mjs.
@@ -74,7 +76,7 @@
 import { emit } from "../events/bus.mjs";
 import { captureConsent, ConsentError } from "../consent/index.mjs";
 import {
-  CURRENT_SOFT_PULL_VERSION,
+  ROADMAP_SOFT_PULL_VERSION,
   SOFT_PULL_DISCLOSURES
 } from "../consent/disclosures.mjs";
 import { storeIdentity, PiiError } from "../pii/index.mjs";
@@ -275,7 +277,7 @@ export async function runSloPull(parsed, deps = {}) {
   const dbh = deps.db;
   if (!dbh) return { ok: false, error: "db_missing" };
   const env = deps.env || process.env;
-  const disclosure = SOFT_PULL_DISCLOSURES[CURRENT_SOFT_PULL_VERSION];
+  const disclosure = SOFT_PULL_DISCLOSURES[ROADMAP_SOFT_PULL_VERSION];
   if (!disclosure?.text) return { ok: false, error: "disclosure_missing" };
 
   const found = await (deps.findOrder || findSloOrder)(dbh, {
@@ -386,7 +388,7 @@ export async function runSloPull(parsed, deps = {}) {
       clientId,
       kind: KIND,
       consentText: disclosure.text,
-      consentVersion: CURRENT_SOFT_PULL_VERSION,
+      consentVersion: ROADMAP_SOFT_PULL_VERSION,
       captureMethod: "checkbox",
       grantedBy: { kind: "client", id: accountId },
       capturedIp: deps.ip || null,

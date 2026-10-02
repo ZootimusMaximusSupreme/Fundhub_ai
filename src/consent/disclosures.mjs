@@ -90,13 +90,36 @@ export const SOFT_PULL_DISCLOSURES = Object.freeze({
       "",
       "I understand that agreeing to calls and texts is not a condition of buying anything from Fundhub, and that I may withdraw it at any time without affecting my order or my soft pull authorization."
     ].join("\n")
+  }),
+  // *** OWNER-SET: Chris, 2026-10-02 — the company name everywhere in the
+  // /roadmap funnel is "Fundhub LLC": the step-3 soft pull consent text, the
+  // stored consent record, and the footer. v1 and v2 are untouched; this is a
+  // NEW key, which is the only way this file allows new wording. ***
+  //
+  // The words on the /roadmap step-3 checkbox and the public/roadmap/pull.html
+  // checkbox, character for character, with "Fundhub LLC" as the company name.
+  // One paragraph, because that is what the box shows. Both boxes post to
+  // runSloPull (src/slo/pull.mjs), which stores this version.
+  // src/consent/disclosures.test.mjs fails if a box and this text drift apart.
+  "soft-pull-v3": Object.freeze({
+    version: "soft-pull-v3",
+    title: "Soft Pull and Text Message Authorization",
+    text: "I authorize Fundhub LLC to run a soft pull of my credit report. A soft pull does not affect my credit score. I also agree Fundhub LLC may call and text me at the number I gave, including automated texts, about my file. Message and data rates may apply. Reply STOP to stop. Agreeing to texts is not a condition of buying anything."
   })
 });
 
 /** The version new captures default to when the caller names none.
  *  soft-pull-v2 since 2026-09-27: the soft pull agreement now also carries the
- *  texting agreement. v1 rows keep v1's words — see WHY VERSIONS ARE APPEND-ONLY. */
+ *  texting agreement. v1 rows keep v1's words — see WHY VERSIONS ARE APPEND-ONLY.
+ *  Still v2 for every caller that names no version (the signed-link approval
+ *  page, the consent capture screen, a signed contract). The /roadmap funnel
+ *  names its own version — ROADMAP_SOFT_PULL_VERSION below. */
 export const CURRENT_SOFT_PULL_VERSION = "soft-pull-v2";
+
+/** The version the /roadmap funnel stores (src/slo/pull.mjs runSloPull), the
+ *  one path both /roadmap soft pull checkboxes post to. soft-pull-v3 since
+ *  2026-10-02: the words on those boxes, with "Fundhub LLC" (owner-set). */
+export const ROADMAP_SOFT_PULL_VERSION = "soft-pull-v3";
 
 /* Every version ever shown for dispute-letter authorization. Add to this map;
    never edit an entry. Owner-set 2026-08-15 (W2a). No credit-outcome promises. */
