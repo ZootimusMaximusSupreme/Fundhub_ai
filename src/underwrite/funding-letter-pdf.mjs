@@ -98,7 +98,11 @@ export const FUNDING_ANALYSIS_SUBTYPE = Object.freeze({
   funding_summary: "funding_summary",
   // Conditional: only a thin-file or authorized-user-dominant client gets this
   // one (build-documents.js:162-168). Its absence from a pack is normal.
-  business_prep_summary: "business_prep_summary"
+  business_prep_summary: "business_prep_summary",
+  // The Business Duplication Map, the $297 Funding Roadmap's free bonus
+  // (src/deliverables/business-duplication-map.mjs, 2026-10-02). Same key the
+  // /roadmap sample tracks (src/funnel/track.mjs PREVIEW_DELIVERABLES).
+  business_duplication_map: "business_duplication_map"
 });
 
 const ANALYSIS_TITLES = Object.freeze({
@@ -112,7 +116,8 @@ const ANALYSIS_TITLES = Object.freeze({
   funding_summary: "Capital Readiness Summary",
   // The title its own renderer draws on page one
   // (summary-doc-generator.js:368, generateBusinessPrepSummary).
-  business_prep_summary: "Business Readiness Guide"
+  business_prep_summary: "Business Readiness Guide",
+  business_duplication_map: "Business Duplication Map"
 });
 
 // ── WHY A FILE DID NOT GET STORED ──────────────────────────────────────────
@@ -216,6 +221,10 @@ function analysisTypeOf(file) {
     || fn.includes("business_readiness") || fn.includes("business-readiness")) {
     return "business_prep_summary";
   }
+  // The map. Only its own name: `business_duplication_map.html`.
+  if (fn.includes("business_duplication_map") || fn.includes("business-duplication-map")) {
+    return "business_duplication_map";
+  }
   return null;
 }
 
@@ -249,8 +258,10 @@ function excludedReason(file) {
 }
 
 /**
- * Store funding-stack letter PDFs and the analysis deliverables — five for an
- * ordinary client, six when the pack also carries the Business Readiness Guide.
+ * Store funding-stack letter PDFs and the analysis deliverables — the four
+ * analysis pages, the Business Duplication Map, the Capital Readiness Summary
+ * when the vendor builds it, and the Business Readiness Guide for a thin-file or
+ * authorized-user-dominant client.
  * Letters: one row per client+type+bureau. Analysis: one row per subtype.
  * Skips dispute / Metro 2 round letters even if they are in the pack.
  *

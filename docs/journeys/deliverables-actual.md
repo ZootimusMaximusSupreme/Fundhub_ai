@@ -17,8 +17,9 @@ Related: `docs/DELIVERABLES-AND-REPAIR-TRUTH.md` (which printer actually runs, a
 
 **How many ANALYSIS documents a funding pack carries is NOT a fixed number.**
 
-* An **ordinary** funding client gets **five**.
-* A **thin-file or authorized-user-dominant** client gets **six** — the extra one is the Business
+* An **ordinary** funding client gets **six** — five, plus the Business Duplication Map (added
+  2026-10-02, see "The Business Duplication Map" below).
+* A **thin-file or authorized-user-dominant** client gets **seven** — the extra one is the Business
   Readiness Guide.
 
 **Five and six count the analysis documents only — they are not the client's whole row count.**
@@ -59,6 +60,11 @@ flowchart TD
     PRINT --> P3[lender_match]
     PRINT --> P4[roadmap]
 
+    TIER --> MAPQ{all four pages built?}
+    MAPQ -->|yes| SCORE[scoreCompanyReports — the tier engine scores each stored<br/>Experian Business report: crs_results.result.businessReports]
+    SCORE --> P7[business_duplication_map<br/>business_duplication_map.html]
+    MAPQ -->|no, or the map throws| MAPSKIP[no map — duplicationMapSkip says why<br/>the four still ship]
+
     TIER --> BD{buildDocuments — which tier?}
     BD -->|FRAUD_HOLD or MANUAL_REVIEW| HOLD[hold_notice + operator_checklist<br/>NEITHER is on the funding stack<br/>so NO summary is built]
     BD -->|REPAIR_ONLY| REP[repair_plan_summary + issue_priority_sheet<br/>repair pack only]
@@ -79,6 +85,7 @@ flowchart TD
     P2 --> SAVE
     P3 --> SAVE
     P4 --> SAVE
+    P7 --> SAVE
     P5 --> SAVE
     P6 --> SAVE
 
@@ -99,11 +106,36 @@ flowchart TD
 | `funding_snapshot` | `funding_snapshot` | Funding Snapshot | always |
 | `lender_match` | `bank_lender_match_list` | Bank and Lender Match List | always |
 | `roadmap` | `credit_optimization_roadmap` | Credit Optimization Roadmap | always |
+| `business_duplication_map` | `business_duplication_map` | Business Duplication Map | whenever the four are built (added 2026-10-02) |
 | `funding_summary` | `funding_summary` | Capital Readiness Summary | every funding tier |
 | `business_prep_summary` | `business_prep_summary` | Business Readiness Guide | thin-file or AU-dominant only |
 
-"Always" in the first four rows and "every funding tier" in the fifth both mean **inside the
-three funding tiers**. A `FRAUD_HOLD` or `MANUAL_REVIEW` client gets `hold_notice` and
+"Always" in the first four rows and "every funding tier" in the summary row both mean **inside the
+three funding tiers**.
+
+### The Business Duplication Map (2026-10-02)
+
+Built by `src/deliverables/business-duplication-map.mjs`, added to the pack by
+`uiqDeliverablePdfs` in `src/underwrite/letter-pack.mjs` right after the four analysis pages.
+It is a hosted HTML page in the same frame as the four. The data flow is drawn in
+`docs/journeys/business-duplication-map-flow.md`. What the code does:
+
+* **Same gate as the four.** No stored pull, no scores, or a repair pack → no map
+  (`duplicationMapSkip` = `no_engine` / `no_scores` / `not_funding`).
+* **Every company the client saved** is read from `businesses` (`readBusinessOnFile` now also
+  returns `companies`: name, state, start date and NAICS out of `entity_data`).
+* **Each stored Experian Business report** (`crs_results.result.businessReports`, bought by the
+  credit pull for saved companies with a name and a two-letter state, never on a simulated pull)
+  is scored by the same tier engine (`scoreCompanyReports`). A report the engine cannot score is
+  kept as an error and printed as "not read".
+* **A map failure never costs the four.** It is caught, the four still ship, and
+  `duplicationMapSkip` carries the message. Measured: `src/underwrite/letter-pack-duplication-map.test.mjs`.
+* **Saved** by `persistFundingLetterFiles` as its own row: subtype `business_duplication_map`,
+  title "Business Duplication Map", `text/html`. The portal's "What You Own" list shows every
+  `deliverable` row on file, so it appears there with no portal change.
+* **Not done:** no entitlement code grants it (it rides with the pack), and the funding delivery
+  email (`src/messaging/templates/u02-funding-delivery.html`) still lists five items and does not
+  name it. A `FRAUD_HOLD` or `MANUAL_REVIEW` client gets `hold_notice` and
 `operator_checklist` instead and no summary at all — see "Things this page does NOT claim" below.
 In practice C-06 never reaches the saver for those two, because `FUNDING_TIERS`
 (`src/config/product-path.mjs:6`) excludes them.

@@ -231,7 +231,12 @@ test("a stored pull WITH result.bureaus builds real letters through the tier eng
     assert.equal(buf.subarray(0, 4).toString(), "%PDF");
   }
   const html = out.files.filter((f) => f.contentType === "text/html");
-  assert.equal(html.length, 4, `expected four HTML pages, got ${html.map((f) => f.filename)}`);
+  // The four analysis pages plus the Business Duplication Map (2026-10-02).
+  assert.deepEqual(html.map((f) => f.filename), [
+    "credit_analysis_report.html", "funding_snapshot.html", "lender_match_list.html",
+    "optimization_roadmap.html", "business_duplication_map.html"
+  ], `expected four HTML pages and the map, got ${html.map((f) => f.filename)}`);
+  assert.equal(out.duplicationMapSkip, null);
   assert.equal(out.deliverableEngine, "html");
   assert.ok(html.every((f) => String(f.content).includes("<")));
 });
@@ -316,8 +321,8 @@ test("N9: with no home address on the identity record no letter is built, and th
   );
   assert.deepEqual(letterFilesOf(out).map((f) => f.filename), []);
   assert.equal(out.letterSkip, NO_HOME_ADDRESS);
-  assert.equal(out.files.filter((f) => f.contentType === "text/html").length, 4,
-    "the four analysis pages name no address and are still owed");
+  assert.equal(out.files.filter((f) => f.contentType === "text/html").length, 5,
+    "the four analysis pages and the Business Duplication Map name no address and are still owed");
 });
 
 test("N9: an identity row with no street line is no home address", async () => {

@@ -23,8 +23,26 @@ import { buildCreditAnalysis } from "./credit-analysis.mjs";
 import { buildFundingSnapshot } from "./funding-snapshot.mjs";
 import { buildLenderList } from "./lender-list.mjs";
 import { buildRoadmap } from "./roadmap.mjs";
+import {
+  BUSINESS_DUPLICATION_MAP_DOC,
+  buildBusinessDuplicationMap,
+  duplicationMapFacts,
+  renderBusinessDuplicationMapHtml
+} from "./business-duplication-map.mjs";
 
 export { buildCreditAnalysis, buildFundingSnapshot, buildLenderList, buildRoadmap };
+
+/* The fifth hosted document, the Business Duplication Map (2026-10-02). It is
+   NOT in DELIVERABLE_DOCS: those four take the CLIENT dict alone and mirror
+   fundhub_gen.py one to one, while the map also needs the client's saved
+   companies and each company's Experian Business report scored by the engine.
+   The funding pack (src/underwrite/letter-pack.mjs) renders it next to the four. */
+export {
+  BUSINESS_DUPLICATION_MAP_DOC,
+  buildBusinessDuplicationMap,
+  duplicationMapFacts,
+  renderBusinessDuplicationMapHtml
+};
 
 /**
  * The four documents, in the order fundhub_gen.py:1580-1586 lists them and with

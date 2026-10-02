@@ -35,7 +35,7 @@ flowchart TD
   J --> L["C-00 CRS pull"]
   L --> M["analysis.completed"]
   M --> N["slo-pack-delivery if slo_ref"]
-  N --> O["Gold HTML pack saved + EMAIL-U02-ANALYZER-FUNDING-DELIVERY"]
+  N --> O["Gold HTML pack saved: 4 analysis pages + Business Duplication Map, + EMAIL-U02-ANALYZER-FUNDING-DELIVERY"]
 ```
 
 ## Traced paths
@@ -56,7 +56,7 @@ flowchart TD
   matched to that row, and `public/roadmap/pay.html` is the one door that still navigates to it.
 - `api/public/slo-pull.mjs` — POST only. Matching `ref` + `client_id` required. Server stores `soft-pull-v3` consent text (`ROADMAP_SOFT_PULL_VERSION`, "Fundhub LLC", since 2026-10-02; other consent screens still store v2). Then `diagnostic.paid`.
 - `src/slo/buyer.mjs` — client, portal account, `slo_ref` stamp.
-- `src/slo/deliver.mjs` — same UnderwriteIQ funding pack and email the closer deck uses. The four analysis docs are the gold HTML pages (`src/deliverables/`), not the short PDFs.
+- `src/slo/deliver.mjs` — same UnderwriteIQ funding pack and email the closer deck uses. The four analysis docs are the gold HTML pages (`src/deliverables/`), not the short PDFs. Since 2026-10-02 the pack also carries the free bonus, the Business Duplication Map (`src/deliverables/business-duplication-map.mjs`), saved as its own `business_duplication_map` document — see `docs/journeys/business-duplication-map-flow.md`.
 - `src/workflows/slo-pack-delivery.mjs` — on `analysis.completed`, only if `slo_ref` is on the client.
 - C-00 / C-06 / U-03 / U-04 are unchanged. ClickFunnels adapter is unchanged.
 - `public/roadmap/index.html` — sales copy verbatim from `clickfunnels-fragments/slo/slo-01-sales.html`. Every

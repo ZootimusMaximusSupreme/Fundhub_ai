@@ -50,9 +50,11 @@ import { memoryProvider, createStore } from "../documents/store.mjs";
 const HAVE_DB = !!process.env.DATABASE_URL;
 const EMAIL_TAG = "f46.fixture";
 
-/** What an ORDINARY funding client gets. Four was the first defect. */
+/** What an ORDINARY funding client gets. Four was the first defect. The
+    Business Duplication Map joined the pack on 2026-10-02. */
 const ORDINARY_SUBTYPES = [
   "bank_lender_match_list",
+  "business_duplication_map",
   "credit_analysis_report",
   "credit_optimization_roadmap",
   "funding_snapshot",
@@ -62,6 +64,7 @@ const ORDINARY_SUBTYPES = [
 /** What a THIN-FILE / AU-DOMINANT client gets. Five was the second defect. */
 const AU_DOMINANT_SUBTYPES = [
   "bank_lender_match_list",
+  "business_duplication_map",
   "business_prep_summary",
   "credit_analysis_report",
   "credit_optimization_roadmap",
@@ -156,9 +159,9 @@ describe("F46 end to end — an ORDINARY client gets five deliverables",
         "this client is neither thin-file nor AU-dominant — the sixth must not appear");
     });
 
-    test("the saver stores five, not four, and recognises every file", () => {
+    test("the saver stores six (five plus the Business Duplication Map), and recognises every file", () => {
       assert.equal(stored.skipped, null);
-      assert.equal(stored.stored.length, 5);
+      assert.equal(stored.stored.length, 6);
       assert.deepEqual(stored.unrecognised, [],
         `the saver did not recognise ${JSON.stringify(stored.unrecognised)}`);
       assert.equal(
@@ -166,7 +169,7 @@ describe("F46 end to end — an ORDINARY client gets five deliverables",
         stored.filesIn, "some file in the pack was not accounted for");
     });
 
-    test("five deliverable rows are in the table, one per subtype", async () => {
+    test("six deliverable rows are in the table, one per subtype", async () => {
       const rows = await subtypesFor(org, clientId);
       assert.deepEqual(rows.map((r) => r.subtype), ORDINARY_SUBTYPES);
       assert.equal(await allDeliverableCount(org, clientId), stored.stored.length,
@@ -174,6 +177,9 @@ describe("F46 end to end — an ORDINARY client gets five deliverables",
       const summary = rows.find((r) => r.subtype === "funding_summary");
       assert.equal(summary.title, "Capital Readiness Summary");
       assert.equal(summary.mime_type, "application/pdf");
+      const map = rows.find((r) => r.subtype === "business_duplication_map");
+      assert.equal(map.title, "Business Duplication Map");
+      assert.equal(map.mime_type, "text/html");
     });
 
     test("the stored summary has real bytes behind it", async () => {
@@ -216,9 +222,9 @@ describe("F46 end to end — an AUTHORIZED-USER-DOMINANT client gets six",
       assert.equal(guide.filename, "Business-Readiness-Guide.pdf");
     });
 
-    test("the saver stores six, not five, and recognises every file", () => {
+    test("the saver stores seven (six plus the Business Duplication Map), and recognises every file", () => {
       assert.equal(stored.skipped, null);
-      assert.equal(stored.stored.length, 6);
+      assert.equal(stored.stored.length, 7);
       assert.deepEqual(stored.unrecognised, [],
         `the saver did not recognise ${JSON.stringify(stored.unrecognised)}`);
       assert.equal(
@@ -226,7 +232,7 @@ describe("F46 end to end — an AUTHORIZED-USER-DOMINANT client gets six",
         stored.filesIn, "some file in the pack was not accounted for");
     });
 
-    test("six deliverable rows are in the table, one per subtype", async () => {
+    test("seven deliverable rows are in the table, one per subtype", async () => {
       const rows = await subtypesFor(org, clientId);
       assert.deepEqual(rows.map((r) => r.subtype), AU_DOMINANT_SUBTYPES);
       assert.equal(await allDeliverableCount(org, clientId), stored.stored.length,

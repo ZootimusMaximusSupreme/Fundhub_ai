@@ -9,7 +9,11 @@ import generateDeliverablesMod from "./vendor/generate-deliverables.cjs";
 import { runTierEngineFromCrsResult } from "../finance/crs-tier.mjs";
 import { hasFundingAnalysisPdfs, FUNDING_ANALYSIS_FILENAMES } from "./letter-pack-filter.mjs";
 import { buildBlackReportClient, hasBlackReportSource, mergeStoredUnderwrite } from "./black-report-client.mjs";
-import { renderAllDeliverables } from "../deliverables/index.mjs";
+import {
+  renderAllDeliverables,
+  duplicationMapFacts,
+  renderBusinessDuplicationMapHtml
+} from "../deliverables/index.mjs";
 import { violationsByBureauFromMergedCrs } from "../metro2/diy/from-crs.mjs";
 import { resolveBusinessAges } from "./business-funding.mjs";
 import { derogatoryClaimsByBureau, mergeDerogatoryClaims } from "../metro2/diy/derogatory.mjs";
@@ -283,12 +287,92 @@ function asFiles(list) {
     });
 }
 
-async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generateDeliverables, storedCrs = null, business = null) {
-  if (pack !== "funding") return { files: [], skip: "not_funding" };
-  if (!crsResult && !storedCrs) return { files: [], skip: "no_engine" };
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE BUSINESS DUPLICATION MAP (2026-10-02) — the fifth hosted document.
+
+   The credit pull buys one Experian Business report per saved company and
+   stores them on crs_results.result.businessReports (src/finance/crs-pull.mjs
+   orderSavedBusinessReports). The engine run above this pack is handed none of
+   them, so its businessSignals always read "not available". The map needs each
+   company's own check, so each stored report is scored here by the SAME tier
+   engine, the same way crs-pull's scoreBuyerTotal scores them: the stored pull
+   plus that one report. Nothing about the four documents changes.
+
+   A report the engine cannot score is kept as `error`, never dropped, so the
+   page can say "could not be read" instead of "not on the file".
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/**
+ * Score every stored Experian Business report with the tier engine.
+ *
+ * @param {object|null} storedCrs  crs_results.result
+ * @param {object} [opts]
+ * @param {string} [opts.submittedName]     the same name the pack's own engine run used
+ * @param {string} [opts.submittedAddress]  the same address the pack's own engine run used
+ * @param {Function} [opts.runEngine]       test seam
+ * @returns {Array<{name:string,state:string,signals:object|null,business:object|null,error:string|null}>}
+ */
+export function scoreCompanyReports(storedCrs, {
+  submittedName = "",
+  submittedAddress = "",
+  runEngine = runTierEngineFromCrsResult
+} = {}) {
+  const rows = Array.isArray(storedCrs?.businessReports) ? storedCrs.businessReports : [];
+  return rows.filter((row) => row && row.report).map((row) => {
+    const base = {
+      name: String(row.name || "").trim(),
+      state: String(row.state || "").trim().toUpperCase()
+    };
+    try {
+      const out = runEngine(storedCrs, {
+        submittedName: submittedName || "",
+        submittedAddress: submittedAddress || "",
+        businessReport: row.report
+      });
+      return {
+        ...base,
+        signals: out?.businessSignals || null,
+        business: out?.preapprovals?.business || null,
+        error: null
+      };
+    } catch (err) {
+      return { ...base, signals: null, business: null, error: String(err && err.message || err).slice(0, 240) };
+    }
+  });
+}
+
+/** The map's file, or the reason it could not be built. Never throws. */
+function duplicationMapFile({ client, source, storedCrs, personal, business, scoreReports }) {
+  try {
+    const who = personal && typeof personal === "object" ? personal : {};
+    const scoredReports = scoreReports(storedCrs, {
+      submittedName: who.name || "",
+      submittedAddress: who.address || ""
+    });
+    const map = duplicationMapFacts({
+      engine: source,
+      client,
+      companies: Array.isArray(business?.companies) ? business.companies : [],
+      scoredReports
+    });
+    const doc = renderBusinessDuplicationMapHtml({ client, map });
+    const content = Buffer.from(String(doc.html || ""), "utf8");
+    if (!content.length) return { file: null, skip: "render_empty" };
+    return {
+      file: { filename: doc.filename, contentType: "text/html", content, type: doc.key, engine: "html" },
+      skip: null
+    };
+  } catch (err) {
+    return { file: null, skip: String(err && err.message || err).slice(0, 240) };
+  }
+}
+
+async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generateDeliverables, storedCrs = null, business = null, scoreReports = scoreCompanyReports) {
+  if (pack !== "funding") return { files: [], skip: "not_funding", mapSkip: "not_funding" };
+  if (!crsResult && !storedCrs) return { files: [], skip: "no_engine", mapSkip: "no_engine" };
   const source = mergeStoredUnderwrite(crsResult, storedCrs);
-  if (!source) return { files: [], skip: "no_engine" };
-  if (!hasBlackReportSource(source)) return { files: [], skip: "no_scores" };
+  if (!source) return { files: [], skip: "no_engine", mapSkip: "no_engine" };
+  if (!hasBlackReportSource(source)) return { files: [], skip: "no_scores", mapSkip: "no_scores" };
   try {
     const client = buildBlackReportClient({ crsResult: source, personal, business });
     const rendered = renderAllDeliverables({ client });
@@ -301,10 +385,15 @@ async function uiqDeliverablePdfs(crsResult, personal, pack, _generate = generat
     })).filter((f) => f.content.length);
     const engine = "html";
     const engineReason = "html_pages";
-    if (!files.length) return { files: [], skip: "render_empty", engine, engineReason };
-    return { files, skip: null, engine, engineReason };
+    if (!files.length) return { files: [], skip: "render_empty", engine, engineReason, mapSkip: "render_empty" };
+    // The map rides with the four and never costs them: a failure here is
+    // reported on `mapSkip` and the four still ship.
+    const map = duplicationMapFile({ client, source, storedCrs, personal, business, scoreReports });
+    if (map.file) files.push(map.file);
+    return { files, skip: null, engine, engineReason, mapSkip: map.skip };
   } catch (err) {
-    return { files: [], skip: String(err && err.message || err).slice(0, 240), engine: null, engineReason: null };
+    const msg = String(err && err.message || err).slice(0, 240);
+    return { files: [], skip: msg, engine: null, engineReason: null, mapSkip: msg };
   }
 }
 
@@ -521,7 +610,9 @@ export async function buildLetterPack({
   /* F44. What this client has on file for a company: `{ hasEntity, ageMonths,
      name }`. Null is the old behaviour — no company, so the documents say what
      they always said. Display only; the funding estimate is untouched. */
-  business = null
+  business = null,
+  // Test seam for the Business Duplication Map's per-company engine scoring.
+  scoreCompanyReportsFn = scoreCompanyReports
 } = {}) {
   const who = personal || { name: null, address: "" };
   const path = pack === "repair" ? "repair" : "fundable";
@@ -609,7 +700,9 @@ export async function buildLetterPack({
       summarySkip = String(err && err.message || err).slice(0, 240);
     }
   }
-  const uiq = await uiqDeliverablePdfs(crsResult, who, pack, generateDeliverablesFn, storedCrs, business);
+  const uiq = await uiqDeliverablePdfs(
+    crsResult, who, pack, generateDeliverablesFn, storedCrs, business, scoreCompanyReportsFn
+  );
   const letterFiles = asFiles(letters);
   // The documents this pack produced on its own merits. Escalation is NOT in here.
   const earned = [...uiq.files, ...asFiles(summaries), ...letterFiles];
@@ -641,8 +734,12 @@ export async function buildLetterPack({
   return {
     files,
     reason,
+    // The four analysis pages plus the Business Duplication Map, all hosted HTML.
     deliverableCount: uiq.files.length,
     deliverableSkip: uiq.skip,
+    // Null when the Business Duplication Map is in `files`. Otherwise why it is
+    // not — the four analysis pages never wait on it.
+    duplicationMapSkip: uiq.mapSkip ?? null,
     // Which printer made the four analysis documents: "weasyprint" (local
     // Python), "weasyprint-remote" (render-service), or "pdf-lib" (the short
     // fallback set). "pdf-lib" on a real client means the render service was
@@ -702,22 +799,48 @@ function sharpenEmptyReason(reason, { engineSkip, engineFault }) {
 export async function readBusinessOnFile(db, { clientId, customFields } = {}) {
   try {
     const r = await db.query(
-      `SELECT name, age_months FROM businesses WHERE client_id = $1 ORDER BY created_at ASC`,
+      `SELECT name, age_months, entity_data FROM businesses WHERE client_id = $1 ORDER BY created_at ASC`,
       [clientId]
     );
     const rows = r.rows || [];
-    if (!rows.length) return { hasEntity: false, ageMonths: null, name: "" };
+    if (!rows.length) return { hasEntity: false, ageMonths: null, name: "", companies: [] };
     const cf = customFields && typeof customFields === "object" ? customFields : {};
     const ages = resolveBusinessAges({ businesses: rows, fallbackAgeMonths: cf.business_age_months });
     const oldest = ages.reduce((best, age) => (age != null && (best == null || age > best) ? age : best), null);
     return {
       hasEntity: true,
       ageMonths: oldest,
-      name: String(rows[0]?.name || "").trim()
+      name: String(rows[0]?.name || "").trim(),
+      companies: companiesFromRows(rows, ages)
     };
   } catch {
-    return { hasEntity: false, ageMonths: null, name: "" };
+    return { hasEntity: false, ageMonths: null, name: "", companies: [] };
   }
+}
+
+/**
+ * Every saved company, in the shape the Business Duplication Map reads. Only
+ * what the row holds: the state, start date and NAICS code live in entity_data
+ * (src/slo/businesses.mjs writes the first two; nothing writes NAICS yet, so it
+ * is null until something does). `ages` is resolveBusinessAges() over the same
+ * rows, so a blank age is filled exactly the way the funding screens fill it.
+ */
+export function companiesFromRows(rows = [], ages = []) {
+  return (Array.isArray(rows) ? rows : []).map((row, i) => {
+    let entity = row?.entity_data;
+    if (typeof entity === "string") {
+      try { entity = JSON.parse(entity); } catch { entity = {}; }
+    }
+    entity = entity && typeof entity === "object" ? entity : {};
+    const naics = entity.naics ?? entity.naics_code ?? null;
+    return {
+      name: String(row?.name || "").trim(),
+      state: String(entity.state || "").trim().toUpperCase(),
+      ageMonths: ages[i] ?? null,
+      incorporatedDate: entity.incorporated_date ? String(entity.incorporated_date) : null,
+      naics: naics === null || naics === "" ? null : String(naics)
+    };
+  });
 }
 
 export async function buildLetterPackForClient(

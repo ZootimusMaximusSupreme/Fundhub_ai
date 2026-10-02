@@ -126,3 +126,36 @@ No code changed. No tests run.
 - ClickFunnels API push slo-297-sales (page 25516164) ok. Live https://apply.fundhub.ai/roadmap (cache-busted): new samples (11 unlock cards, Sample Client), 26 bank logos all load, "Get approved for the most funding", no "no contract"/"One payment", guarantee back, roadmap plan-length line.
 - Live click test 390px: all six samples open with unlock card, 0 broken logos, checkout fields render, 0 page errors.
 - Next: Business Duplication Map as real UnderwriteIQ document (agent building) → ship after.
+
+## Business Duplication Map — build
+
+**Status: done (agent, 2026-10-02). Committed locally, not shipped. The main session ships.**
+
+What it is: the real document the /roadmap sample shows. It is the fifth hosted page of the UnderwriteIQ funding pack, next to the four analysis pages, and it is saved as its own document, so the client portal lists it with the others. Every number comes from the client's file and the engine. Anything missing prints as "not on the file".
+
+Sections (same as the sample): 01 both files (personal decision, personal funding, card funding, business funding), 02 the Experian Business check per saved company (score, blemishes, balances, NAICS, name, each with its fix, and the engine's own business dollars for that company), 03 what a company gets by age, 04 an eight-quarter plan (one new company a quarter, plus each company's 12- and 24-month marks), 05 set up every company the same way (owner-set rules from company-audit.mjs). Experian Business only. No DUNS, no net-30, no vendor accounts.
+
+Reused from the 2026-09-27 stash (187c17f0): company-audit.mjs (name and NAICS checks, website/LinkedIn/shell-LLC rules) and funding-sequence.mjs (the order). Its roadmap Step 5, black-report-client and read-endpoint edits were not applied: they change other documents.
+
+**Change manifest**
+- New `src/deliverables/business-duplication-map.mjs` — `duplicationMapFacts`, `buildBusinessDuplicationMap`, `renderBusinessDuplicationMapHtml`, `BUSINESS_DUPLICATION_MAP_DOC`, `AGE_BANDS`, `PLAN_QUARTERS`, helpers. Pure: no database, no engine call.
+- `src/deliverables/index.mjs` — exports the map. `DELIVERABLE_DOCS` stays the four.
+- `src/underwrite/letter-pack.mjs` — new exports `scoreCompanyReports` (the tier engine scores each stored Experian Business report, `crs_results.result.businessReports`) and `companiesFromRows`. `readBusinessOnFile` also returns `companies` (name, state, start date, NAICS from `entity_data`). `uiqDeliverablePdfs` adds the map after the four. A map failure never costs the four. New return field `duplicationMapSkip`. New `buildLetterPack` option `scoreCompanyReportsFn` (test seam). `deliverableCount` is now 5 on a full funding pack.
+- `src/underwrite/funding-letter-pdf.mjs` — the saver knows `business_duplication_map` (subtype `business_duplication_map`, title "Business Duplication Map", text/html).
+- `src/documents/kinds.mjs` — `business_duplication_map` added to the deliverable subtype list and titles.
+- Wired for every caller of `buildLetterPackForClient(pack: "funding")`: the $297 SLO pack (`src/slo/deliver.mjs`), C-06, the closer deck, the Blueprint monthly pull. The portal's What You Own lists every deliverable row on file, so it shows with no portal change. No route, no migration, no env var.
+- Tests: new `src/deliverables/business-duplication-map.test.mjs` (45: clean file with no business, clean file with two companies including blemishes and flagged name and NAICS, damaged REPAIR_ONLY file, missing data, plan, escaping) and `src/underwrite/letter-pack-duplication-map.test.mjs` (10: the pack carries it, the saver stores it, no-company and no-report cases, map failure keeps the four, repair pack has none). Updated counts in `letter-pack.test.mjs`, `funding-letter-pdf.test.mjs`, `output-baseline.test.mjs` (the map row is recorded) and `funding-letter-pdf.pg.test.mjs`.
+- Proof run on this Mac, no database: lint clean, `npx tsc --noEmit` 0, new tests 55/55, `npm test` 11865 tests with the same 26 failures as clean HEAD ea65870f (failure names diffed: identical, none new). Chromium render at 390px and 1280px: no sideways scroll, no page errors.
+- Journeys: `docs/journeys/business-duplication-map-flow.md` (new), `deliverables-actual.md`, `slo-offer-actual.md`, `CHANGELOG.md`. `client-actual.md` is generated from the route table; this adds no route, so it does not change.
+
+## Business Duplication Map — open questions
+
+1. **NAICS code on the pull form.** Nothing saves a NAICS code today (the $297 pull form saves name, address, state, EIN, start date). So every company's NAICS row prints "NOT ON FILE" with the low-risk list. Should the pull form ask for the NAICS code? Yes or no.
+2. **Capital Blueprint contents.** The same funding pack goes to $5,000 Capital Blueprint buyers, so they get the map too. The closer deck's contents list (`UWIQ_DELIVERABLES_CONTENTS` in `src/config/offers.mjs`) does not name it. Should it? Yes or no.
+
+## Business Duplication Map — leftovers (not fixed, not verified)
+
+- `src/underwrite/output-baseline.test.mjs` "funding pack: same documents, same order" was already red on HEAD ea65870f: it records `.pdf` names and the pack makes `.html` pages. The map row is recorded; the old names are not touched.
+- `src/underwrite/funding-letter-pdf.pg.test.mjs` was updated for the map but never run here: this Mac has no Postgres (no psql, no brew, no docker) and the agent cannot read `.env`. Run it against a scratch database before trusting it.
+- `docs/journeys/` generated pages (client-actual and 8 more) were already stale on HEAD from other route changes. Not regenerated here.
+- The funding delivery email (`src/messaging/templates/u02-funding-delivery.html`) lists five items and does not name the map.

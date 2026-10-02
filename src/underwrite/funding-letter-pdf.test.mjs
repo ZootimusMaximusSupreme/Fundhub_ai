@@ -85,13 +85,15 @@ async function saveAll(files, opts = {}) {
 }
 
 describe("F46 — the Capital Readiness Summary reaches the documents table", () => {
-  test("the analysis subtype map carries six types, not four", () => {
+  // Seven since 2026-10-02: the Business Duplication Map joined the funding pack.
+  test("the analysis subtype map carries seven types, not four", () => {
     assert.deepEqual(Object.keys(FUNDING_ANALYSIS_SUBTYPE).sort(), [
-      "business_prep_summary", "credit_analysis", "funding_snapshot",
+      "business_duplication_map", "business_prep_summary", "credit_analysis", "funding_snapshot",
       "funding_summary", "lender_match", "roadmap"
     ]);
     assert.equal(FUNDING_ANALYSIS_SUBTYPE.funding_summary, "funding_summary");
     assert.equal(FUNDING_ANALYSIS_SUBTYPE.business_prep_summary, "business_prep_summary");
+    assert.equal(FUNDING_ANALYSIS_SUBTYPE.business_duplication_map, "business_duplication_map");
   });
 
   test("all five pack files are stored — four was the bug", async () => {

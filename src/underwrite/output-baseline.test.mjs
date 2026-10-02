@@ -298,6 +298,9 @@ const BASELINE_FUNDING_PACK = Object.freeze([
   ["Funding-Snapshot.pdf",           "funding_snapshot", null],
   ["Bank-Lender-Match-List.pdf",     "lender_match",     null],
   ["Credit-Optimization-Roadmap.pdf", "roadmap",         null],
+  // Recorded 2026-10-02 with the change that added it: the Business Duplication
+  // Map rides right after the four analysis pages (src/underwrite/letter-pack.mjs).
+  ["business_duplication_map.html",  "business_duplication_map", null],
   ["Capital-Readiness-Summary.pdf",  "funding_summary",  null],
   ["inquiry_ex.pdf",                 "inquiry_removal",  "experian"],
   ["ex_round1.pdf",                  "dispute",          "experian"]
@@ -534,7 +537,7 @@ describe("baseline — the document pack a client receives", () => {
       "UNDERWRITEIQ OUTPUT CHANGED — the funding pack a client receives is not the same " +
       "set of documents, or not in the same order, as when this baseline was recorded.");
     pinned(pack.reason, null, "the funding pack's reason code");
-    pinned(pack.deliverableCount, 4, "the number of funding analysis documents");
+    pinned(pack.deliverableCount, 5, "the four funding analysis documents plus the Business Duplication Map");
     pinned(pack.deliverableSkip, null, "the funding analysis skip reason");
     pinned(pack.summarySkip, null, "the summary document skip reason");
     for (const file of pack.files) {
