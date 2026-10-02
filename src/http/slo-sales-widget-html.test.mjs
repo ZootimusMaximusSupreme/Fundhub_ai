@@ -1,6 +1,6 @@
 // The /roadmap sales page carries its own three-step checkout widget
 // (owner-set 2026-09-27 — 1 info, 2 card, 3 soft pull):
-// clickfunnels-fragments/slo/slo-01-sales.html.
+// marketing/landing-pages/slo/slo-01-sales.html.
 // These checks read the page source. They pin the owner decisions and the API
 // contract in docs/journeys/slo-roadmap-widget-flow.md so a later edit cannot
 // quietly undo them. The browser walk is a separate proof.
@@ -12,7 +12,7 @@ import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
-const PAGE = path.resolve(HERE, "../../clickfunnels-fragments/slo/slo-01-sales.html");
+const PAGE = path.resolve(HERE, "../../marketing/landing-pages/slo/slo-01-sales.html");
 const html = fs.readFileSync(PAGE, "utf8");
 
 const inlineScripts = [...html.matchAll(/<script(?![^>]*\bsrc=)[^>]*>([\s\S]*?)<\/script>/gi)].map((m) => m[1]);
@@ -285,8 +285,8 @@ test("item 6: no 18+ rule in the widget", () => {
   assert.equal(ctx.vDob("01/01/2999"), "That date is in the future. Please check it.");
 });
 
-test("item 9: 'We couldn't find that address' goes under the street box; Pay again confirms it", () => {
-  assert.match(widgetScript, /var ADDR_MSG="We couldn't find that address\. Check the street and ZIP, or tap Pay again to use it as typed\.";/);
+test("item 9: 'We couldn't find that address' goes under the street box; Start My Soft Pull again confirms it", () => {
+  assert.match(widgetScript, /var ADDR_MSG="We couldn't find that address\. Check the street and ZIP, or tap Start My Soft Pull again to use it as typed\.";/);
   assert.match(widgetScript, /if\(b\.error==='address_unverified'\)\{\s*addrWarned=addrSig\(\);/);
   assert.match(widgetScript, /if\(addrWarned&&addrWarned===addrSig\(\)\)body\.address_confirmed=true;/);
   assert.match(widgetScript, /setErr\(st,ADDR_MSG,true\)/, "shown as a warning, not an error");

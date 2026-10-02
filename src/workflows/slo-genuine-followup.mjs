@@ -128,6 +128,29 @@ export function eligibleForGenuineM1(payload = {}) {
   return { ok: true, email, phone };
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * The page saves the email first and merges the phone into the same
+ * slo.contact_started row a moment later (api/public/slo-interest.mjs). This
+ * run carries the row as it was at the email, so read it again after the wait.
+ */
+async function loadContactRow(db, eventId) {
+  if (!UUID.test(String(eventId || ""))) return {};
+  const r = await db.query(
+    `SELECT payload->>'phone' AS phone, payload->>'name' AS contact_name
+       FROM events
+      WHERE id = $1::uuid AND name = 'slo.contact_started'
+      LIMIT 1`,
+    [eventId]
+  );
+  const row = r.rows[0] || {};
+  return {
+    phone: String(row.phone || "").trim() || null,
+    name: String(row.contact_name || "").trim() || null
+  };
+}
+
 async function loadClientPhone(db, clientId) {
   if (!clientId) return null;
   const r = await db.query(`SELECT phone FROM clients WHERE id = $1 LIMIT 1`, [clientId]);
@@ -161,13 +184,21 @@ export async function handleM1({ event, db, step }) {
     hasPaidDiagnostic(db, { orgId, email: gate.email }));
   if (paid) return { done: true, sent: false, reason: "already_paid" };
 
+  // Email-first opt-in: the phone may have merged into the row during the wait.
+  // Without this the email-only run claims message 1 with no number, and the
+  // run the phone started finds message 1 already claimed — no text at all.
+  const row = gate.phone
+    ? {}
+    : await step.run("reload-contact", () => loadContactRow(db, event.id));
+  const contactPhone = gate.phone || row.phone || null;
+
   const clientId = await step.run("resolve-client", () =>
     resolveClient(db, {
       orgId,
       payload: {
         email: gate.email,
-        name: payload.name || null,
-        phone: gate.phone,
+        name: payload.name || row.name || null,
+        phone: contactPhone,
         source: SLO_SOURCE
       }
     }));
@@ -182,8 +213,9 @@ export async function handleM1({ event, db, step }) {
   if (!claimed) return { done: false, reason: "already_sent_m1" };
 
   const eventId = event.id;
-  // Phone may land after opt-in (checkout during the wait). Prefer event, else row.
-  const phone = gate.phone
+  // Phone may land after opt-in (merged on the contact row, or checkout during
+  // the wait). Prefer event, then contact row, else client row.
+  const phone = contactPhone
     || (await step.run("load-phone", () => loadClientPhone(db, clientId)));
   const email = await step.run("send-email-m1", () =>
     sendTemplated(db, {

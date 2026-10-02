@@ -459,3 +459,70 @@ test("handleReply: the first five who say no do not get the free roadmap", async
   assert.equal(db.messages.length, 0);
   assert.equal(db.tasks.length, 0);
 });
+
+test("handleM1: email first, phone merged during the wait — one email and one text, not zero texts", async () => {
+  // api/public/slo-interest.mjs saves the email alone (run A starts with no
+  // phone), then merges the phone into the same row and starts run B.
+  const ROW_ID = "00000000-0000-4000-8000-000000000001";
+  const contactRow = { phone: null, name: null };
+  const base = genuineDb({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "pat@gmail.com", phone: null, custom_fields: {} }],
+    templates: templates()
+  });
+  const reads = [];
+  const db = {
+    ...base,
+    async query(sql, params = []) {
+      if (/FROM events/.test(sql) && /payload->>'phone'/.test(sql)) {
+        reads.push(params[0]);
+        return { rows: params[0] === ROW_ID ? [{ phone: contactRow.phone, contact_name: contactRow.name }] : [] };
+      }
+      return base.query(sql, params);
+    }
+  };
+  const runA = { ...personPayload, phone: null, name: null };
+  const step = {
+    run: (_id, fn) => fn(),
+    // The phone lands on the row while run A sleeps.
+    sleep: async () => { contactRow.phone = "+14155550134"; contactRow.name = "Pat Lee"; }
+  };
+
+  const a = await handleM1({ event: ev("slo.contact_started", runA, { id: ROW_ID }), db, step });
+  assert.equal(a.sent, true);
+  assert.deepEqual(reads, [ROW_ID]);
+  assert.deepEqual(db.messages.map((m) => m.template_key).sort(), [EMAIL_M1_KEY, SMS_M1_KEY].sort());
+  assert.equal(db.clients[0].phone, "+14155550134", "the client row gets the phone too");
+
+  const b = await handleM1({
+    event: ev("slo.contact_started", { ...personPayload, phone: "+14155550134" }, { id: ROW_ID }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(b.reason, "already_sent_m1");
+  assert.equal(db.messages.length, 2, "no second email or text");
+});
+
+test("handleM1: email only and still no phone after the wait — email, no text, no crash", async () => {
+  const ROW_ID = "00000000-0000-4000-8000-000000000002";
+  const base = genuineDb({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "pat@gmail.com", phone: null, custom_fields: {} }],
+    templates: templates()
+  });
+  const db = {
+    ...base,
+    async query(sql, params = []) {
+      if (/FROM events/.test(sql) && /payload->>'phone'/.test(sql)) {
+        return { rows: [{ phone: null, contact_name: null }] };
+      }
+      return base.query(sql, params);
+    }
+  };
+  const res = await handleM1({
+    event: ev("slo.contact_started", { ...personPayload, phone: null, name: null }, { id: ROW_ID }),
+    db,
+    step: fakeStep()
+  });
+  assert.equal(res.sent, true);
+  assert.equal(res.sms, null);
+  assert.deepEqual(db.messages.map((m) => m.template_key), [EMAIL_M1_KEY]);
+});

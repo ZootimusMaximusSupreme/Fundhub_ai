@@ -1,5 +1,8 @@
-// After the roadmap identity step, copy the buyer onto the ClickFunnels
-// contact Paul already uses. Match is email (ClickFunnels upsert).
+// Copy the /roadmap buyer onto the ClickFunnels contact Paul already uses.
+// Called twice on one person: at step 1 as soon as a valid email is typed
+// (api/public/slo-interest.mjs, phone and name merged in when typed), and
+// again after the identity step (src/slo/pull.mjs). Match is email
+// (ClickFunnels upsert), so both calls land on the same contact.
 // Social Security number, date of birth, and EIN never leave Fundhub.
 
 import { upsertContact } from "../analytics/clickfunnels.mjs";
@@ -57,13 +60,15 @@ export function buildSloCfContact(input = {}) {
 
 /**
  * Upsert the ClickFunnels contact. No API key → skip. A ClickFunnels error
- * is logged and swallowed so the credit pull still finishes.
+ * is logged and swallowed so the caller (credit pull, step-1 save) still
+ * finishes. The result says why, so a caller can record it.
  */
 export async function syncSloClickfunnelsContact(input, { env = process.env, fetchImpl } = {}) {
   const contact = buildSloCfContact(input);
   const apiKey = clean(env?.CLICKFUNNELS_API_KEY);
   const subdomain = clean(env?.CLICKFUNNELS_SUBDOMAIN);
-  if (!contact || !apiKey || !subdomain) return { ok: false, skipped: true };
+  if (!contact) return { ok: false, skipped: true, reason: "no_email" };
+  if (!apiKey || !subdomain) return { ok: false, skipped: true, reason: "no_credentials" };
   const ctx = {};
   if (typeof fetchImpl === "function") ctx.fetch = fetchImpl;
   const workspaceId = clean(env?.CLICKFUNNELS_WORKSPACE_ID);
@@ -73,6 +78,11 @@ export async function syncSloClickfunnelsContact(input, { env = process.env, fet
     return { ok: true, id: body?.id ?? null };
   } catch (err) {
     console.error("slo: clickfunnels contact —", err?.message || err);
-    return { ok: false, error: "clickfunnels_refused" };
+    // platformMessage is ClickFunnels' own words with the key already scrubbed
+    // (src/analytics/clickfunnels.mjs cfFetch).
+    const out = { ok: false, error: "clickfunnels_refused" };
+    if (Number.isInteger(err?.status)) out.status = err.status;
+    if (err?.platformMessage) out.message = String(err.platformMessage).slice(0, 200);
+    return out;
   }
 }

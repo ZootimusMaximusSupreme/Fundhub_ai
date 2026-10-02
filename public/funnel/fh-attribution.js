@@ -92,7 +92,10 @@
     var el = form.querySelector('[name="' + name + '"]');
     return el ? String(el.value || "").trim() : "";
   }
-  function emailOk(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v); }
+  /* Same check as CONTACT_EMAIL in api/public/slo-interest.mjs. */
+  function emailOk(v) {
+    return v.length <= 160 && /^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]{1,64}@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})$/.test(v);
+  }
   function isAgent(email) {
     if (navigator.webdriver === true) return true;
     var ua = navigator.userAgent || "";
@@ -139,28 +142,41 @@
     if (d.length === 11 && d.charAt(0) === "1") d = d.slice(1);
     return d.length === 10 ? d : "";
   }
+  /* Short fingerprint of what was last posted, so the phone and name are not
+     kept in storage as typed. */
+  function sig(s) {
+    var h = 5381;
+    for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+    return String(h >>> 0);
+  }
   function sendContact(beacon) {
     var form = step1();
     if (!form) return;
     var email = field(form, "email").toLowerCase();
     if (!emailOk(email)) return;
-    // Wait for a real phone. Posting on email alone used to lock the day with
-    // no phone, so the unpaid follow-up text never had a number to send to.
+    // Save on a valid email alone. A phone (only once all 10 digits are in)
+    // or a name typed later posts again and merges into the same day's row
+    // and the same ClickFunnels contact on the server.
+    // Digits only — server turns this into +1XXXXXXXXXX.
     var phone = phone10(field(form, "phone"));
-    if (!phone) return;
+    var first = field(form, "c_first");
+    var last = field(form, "c_last");
+    var now = sig([email, phone, first, last].join("|"));
     var sent = "";
-    // New key so an old email-only lock in this tab does not block the phone post.
-    try { sent = sessionStorage.getItem("fh_contact_with_phone") || ""; } catch (e) {}
-    if (sent === email) return;
-    try { sessionStorage.setItem("fh_contact_with_phone", email); } catch (e2) {}
+    try { sent = sessionStorage.getItem("fh_contact_sig") || ""; } catch (e) {}
+    if (sent === now) return;
+    try { sessionStorage.setItem("fh_contact_sig", now); } catch (e2) {}
     postInterest("contact", {
       email: email,
-      first_name: field(form, "c_first"),
-      last_name: field(form, "c_last"),
-      // Digits only — server turns this into +1XXXXXXXXXX. Raw formatting used
-      // to survive the post and then get nulled if parse failed mid-type.
+      first_name: first,
+      last_name: last,
       phone: phone
     }, beacon);
+  }
+  function stillTypingEmail() {
+    var form = step1();
+    var box = form ? form.querySelector('[name="email"]') : null;
+    return !!box && document.activeElement === box;
   }
   function postRaw(body, beacon) {
     if (typeof nativeFetch !== "function" && !(beacon && navigator.sendBeacon)) return;
@@ -191,7 +207,16 @@
       var form = step1();
       if (!form || !form.contains(ev.target)) return;
       clearTimeout(contactTimer);
-      contactTimer = setTimeout(function () { sendContact(false); }, 1500);
+      contactTimer = setTimeout(function () {
+        // Still in the email box: wait until they leave it (change below), so
+        // a half-typed "pat@gmail.co" is never saved as a contact.
+        if (stillTypingEmail()) return;
+        sendContact(false);
+      }, 1500);
+    });
+    document.addEventListener("change", function (ev) {
+      var form = step1();
+      if (form && form.contains(ev.target)) sendContact(false);
     });
     document.addEventListener("submit", function (ev) {
       var form = step1();
