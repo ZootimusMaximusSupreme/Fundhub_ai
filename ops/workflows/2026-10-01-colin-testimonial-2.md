@@ -55,3 +55,11 @@ none
 - Video: 2:02, 4K tall (2160x3840 after rotation), 60fps, HDR (HLG, 10-bit). Raw: no burned-in captions.
 - HDR means the encode must tone-map to normal color, or the web copy looks washed out.
 - Waiting on Chris to sign off on the hook (skill step 3) before rendering.
+
+## B — status 2026-10-01 (blocked)
+
+- Cover rendered: `public/testimonials/thumbnails/colin2.png` (hook "Around $225,000 in funding"), frame 0:30, record `colin2` in testimonials.json as `draft`.
+- Chris: the video needs eye contact correction and captions. The raw MOV has neither.
+- Blocked 1: Submagic API (docs.submagic.co upload-project) has no eye-contact field. No eye-contact tool exists in the repo.
+- Blocked 2: tool permission check refused the edit to `marketing/landing-pages/slo/slo-01-sales.html` and refused reading `.env` key names.
+- Uncaptioned web encode at `public/funnel/slo-testimonial-colin2.mp4` is NOT committed; it is the wrong video.
