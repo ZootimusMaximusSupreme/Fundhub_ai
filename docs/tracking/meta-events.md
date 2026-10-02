@@ -1,26 +1,18 @@
-# Meta events — what fires today (2026-10-02)
+# Meta events — LIVE 2026-10-02 (browser pixel + Conversions API)
 
-Pixel `2403674420141513` on every funnel page (`marketing/landing-pages/tracking-manifest.mjs:22`). Test Events: https://business.facebook.com/events_manager2/list/pixel/2403674420141513/test_events
+Shipped `10a7b8ca` (Netlify) + ClickFunnels pushes (funnel 968281 head pixel, /roadmap, /roadmap-book, /roadmap-thank-you, /apply). Switches on Netlify: `META_CAPI_ENABLED=1`, `META_PIXEL_ID=2403674420141513`. Token: the stored Meta connection ("Conversions API System User"), read by `src/meta/token.mjs`. Every server send's result (Meta's own reply) is stored on the event row as `payload.meta`.
 
-**Phase 4 (Conversions API on every page) is stopped.** No Conversions API access token exists in `.env`, Netlify production env (108 names checked) or the database (only the ad-sync login in `ad_platform_connections`). Owner instruction: stop and say so. Token page: https://business.facebook.com/events_manager2/list/pixel/2403674420141513/settings. Note: Meta's own pixel config lists a Conversions API Gateway ("openbridge", AWS us-east-1) — server events may already flow through it; check before building a second sender.
+| Page | Meta events (browser + server, same event id → Meta counts once) |
+|---|---|
+| Every funnel page + fundhub.ai homepage | PageView (`pv.<sid>.<rand>`) |
+| /roadmap, /watch, /apply, fundhub.ai homepage | ViewContent (`<pv>.vc`) |
+| /roadmap | Lead (step-1 button, checks passed), InitiateCheckout (card step, once per session, $297), Purchase (`purchase.<order ref>`, $297, once — also sent by the server when the payment lands), ReachedBuyBox, SoftPullSubmitted, VideoProgress |
+| /apply, homepage survey | SurveyStep per question, Lead on the last question |
+| /apply, /roadmap-book, /funding-book-call | Schedule on a real booking |
+| /thank-you | SurveyRouted |
+| Six sorting-hat offers | Purchase at the offer price, server only, when Commas reports the payment |
 
-So every event below is **browser only** today. No server copy, so no deduplication yet.
-
-| Page | Event | When | event_id | Source |
-|---|---|---|---|---|
-| Every funnel page | PageView | Page load | none | funnel head pixel |
-| /roadmap | InitiateCheckout (297 USD, once per session) | Pay pressed | none | `public/funnel/fh-attribution.js` |
-| /roadmap | PreviewOpened (custom) | "See a sample" opened | — | another session's work, `b26df927` |
-| /roadmap | Lead | — | — | **Missing** (Phase 4) |
-| /roadmap | Purchase 297 USD | — | — | **Missing** (Phase 4) |
-| /apply | Lead | Survey complete (available capital answered) | `lead:<email>` | `marketing/landing-pages/apply-survey.html` |
-| /apply | Schedule | Booking accepted in the framed calendar (now fires — 2026-10-02 booking block) | `schedule:<email>:<time>` | `apply-survey.html` + `04e-book-confirm.html` |
-| /roadmap-book | Schedule | — | — | **Missing** (Phase 4) |
-| /funding-book-call opened directly | Schedule | — | — | **Missing** (Phase 4) |
-| /thank-you, /roadmap-thank-you | AddToCalendar, OpenInboxConfirm (custom) | Button taps | none | `05-thank-you.html`, `slo-03-thank-you.html` |
-| Sorting-hat offers (6) | Purchase at offer price | — | — | **Missing** (Phase 4) |
-
-Never sent to Meta: card numbers, Social Security number, date of birth, survey answers about income or credit, soft-pull field values.
+Not sent server-side: automated browsers and sessions with a company/test email (`actor = agent`). Still browser-only: AddToCalendar, OpenInboxConfirm, PreviewOpened (not in the map). Never sent to Meta: card numbers, SSN, date of birth, survey answers about income or credit, soft-pull values, raw email or phone (hashed only).
 
 
 ---

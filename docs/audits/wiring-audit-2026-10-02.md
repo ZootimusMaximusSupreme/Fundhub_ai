@@ -218,3 +218,11 @@ All rows in the table above are now live. The /roadmap page went out with anothe
 - Another session replaced the "Step n of 3" words with a blue progress bar (`92042164`); that is the live version.
 - Buy box version marker: row `funnel.buybox_version` id `83ea0f34-…` written 2026-10-02 17:06 UTC. The **real go-live** is the first `bbv:2` event: 2026-10-02 14:52:28 UTC (07:52 Phoenix). Compare before/after on `payload.props.bbv = 2` or on that time, not on the marker's time.
 - Real visitors, last 12 h: /roadmap 123 section views, 90 video events, 58 time-on-page marks, 57 scroll marks, 48 clicks, 32 sample previews, 26 FAQ opens, 18 buy-box step views (people, not agents).
+
+## Phase 4 — Meta browser + Conversions API: LIVE (2026-10-02)
+
+- Shipped `10a7b8ca`; ClickFunnels pushes for funnel 968281's head pixel and the /roadmap, /roadmap-book, /roadmap-thank-you and /apply pages. Switches `META_CAPI_ENABLED=1`, `META_PIXEL_ID` set on Netlify.
+- Token: a Conversions API token existed all along — encrypted in `ad_platform_connections` (system user "Conversions API System User", `ads_management`). The earlier "no token" finding only checked env.
+- Every mapped event goes from the browser pixel AND our server with the same event id; Meta dedupes. Server-only Purchase for the $297 order on payment (same id as the browser) and for the six sorting-hat offers at their price.
+- fbclid kept, fbc/fbp sent with every event and stored for later server Purchases; client IP and user agent on every server event; hashed email/phone when the session typed them.
+- Full map: `docs/tracking/meta-events.md`.
