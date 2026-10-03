@@ -449,68 +449,46 @@ Every day you don't know your number is another day you're just guessing. And an
 
 Let's go find out what you actually qualify for.
 
----
-
 ### Portal welcome video
 
 Status: Live in the client portal since 9/25  
 Source: `main: marketing/vsl/portal-welcome-video.md`
 
-**Target: 90–120 seconds.** Spoken, not read. Chris to camera.
+Target: 90–120 seconds. Spoken, not read. Chris to camera.
 
-> **[0:00 — Thank you]**
->
-> Hey — it's Chris. Welcome in, and thank you. I mean that.
->
-> I don't know exactly which door you came through to get here, and honestly it doesn't
-> matter. You're in. This is your portal now. Let me take sixty seconds and show you
-> where everything lives so you're not clicking around guessing.
->
-> **[0:15 — The run-down]**
->
-> Right under this video is your tracker. That's the whole road — from where you are
-> right now, all the way to funded. Whatever step you're on, it's lit up. You never have
-> to email somebody and ask "hey, where am I." It's right there.
->
-> Under that is **Send a file**. Three doors. ID and personal stuff in one. Inquiry
-> paperwork in another. Anything the bureaus mail you goes in the third. Pick the door,
-> pick what it is, send it. That's it. Every time you're fast with a document, your file
-> moves faster. That's the one thing on this page that's genuinely in your hands.
->
-> Then there's **What You Own**. Everything we build for you drops in there the second
-> it's ready, and it's yours. It doesn't expire. Download it whenever.
->
-> Under that is **Unlock More** — that's the stuff you don't have yet. Take a look or
-> don't. No pressure. It's there when you want it.
->
-> And down at the bottom is your advisor. Real person. Their name is on the card.
-> Hit the chat bubble in the corner and it goes straight to them. Question about your
-> round, a document, a payment, anything — that's who you want. It doesn't cost you
-> anything and they're not going to pitch you.
->
-> **[1:00 — The ask]**
->
-> Last thing, and this is the part I actually want you to hear.
->
-> You know somebody. You do. Somebody who's stuck on the exact thing you were stuck on
-> last week. Maybe they've told you about it. Maybe they haven't and you can just tell.
->
-> There's a **Refer a friend** button on this page. Press it, you get your own link,
-> and it's done. No application. No waiting on me to approve you.
->
-> Then anybody who comes through that link — you get paid on it. Twenty percent. And
-> if one of *them* sends somebody, you get five percent off that too. That's not a
-> thank-you gift card. That's real money, and it keeps paying.
->
-> But forget the money for a second. If any of this has been worth it to you so far —
-> send it to two people. Just two. Worst case they say no. Best case you're the reason
-> somebody stops being stuck.
->
-> That's it. Welcome in. Go look around.
->
-> **[END]**
+[0:00 — Thank you]
 
----
+Hey — it's Chris. Welcome in, and thank you. I mean that.
+
+I don't know exactly which door you came through to get here, and honestly it doesn't matter. You're in. This is your portal now. Let me take sixty seconds and show you where everything lives so you're not clicking around guessing.
+
+[0:15 — The run-down]
+
+Right under this video is your tracker. That's the whole road — from where you are right now, all the way to funded. Whatever step you're on, it's lit up. You never have to email somebody and ask "hey, where am I." It's right there.
+
+Under that is Send a file. Three doors. ID and personal stuff in one. Inquiry paperwork in another. Anything the bureaus mail you goes in the third. Pick the door, pick what it is, send it. That's it. Every time you're fast with a document, your file moves faster. That's the one thing on this page that's genuinely in your hands.
+
+Then there's What You Own. Everything we build for you drops in there the second it's ready, and it's yours. It doesn't expire. Download it whenever.
+
+Under that is Unlock More — that's the stuff you don't have yet. Take a look or don't. No pressure. It's there when you want it.
+
+And down at the bottom is your advisor. Real person. Their name is on the card. Hit the chat bubble in the corner and it goes straight to them. Question about your round, a document, a payment, anything — that's who you want. It doesn't cost you anything and they're not going to pitch you.
+
+[1:00 — The ask]
+
+Last thing, and this is the part I actually want you to hear.
+
+You know somebody. You do. Somebody who's stuck on the exact thing you were stuck on last week. Maybe they've told you about it. Maybe they haven't and you can just tell.
+
+There's a Refer a friend button on this page. Press it, you get your own link, and it's done. No application. No waiting on me to approve you.
+
+Then anybody who comes through that link — you get paid on it. Twenty percent. And if one of them sends somebody, you get five percent off that too. That's not a thank-you gift card. That's real money, and it keeps paying.
+
+But forget the money for a second. If any of this has been worth it to you so far — send it to two people. Just two. Worst case they say no. Best case you're the reason somebody stops being stuck.
+
+That's it. Welcome in. Go look around.
+
+[END]
 
 ## 6. Videos written, not filmed
 
