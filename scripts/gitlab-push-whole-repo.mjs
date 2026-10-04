@@ -178,14 +178,37 @@ try {
     );
   }
 
+  const fetched = spawnSync(
+    "git",
+    ["fetch", remoteUrl, "+refs/heads/*:refs/remotes/gitlab/*"],
+    { encoding: "utf8" }
+  );
+  if (fetched.status !== 0) {
+    const fetchErr = `${fetched.stderr || ""}${fetched.stdout || ""}`;
+    if (!/couldn't find remote ref|no such ref/i.test(fetchErr)) {
+      throw new Error(
+        `git fetch failed (${fetched.status}): ${fetchErr.replaceAll(token, "[token]").slice(0, 300)}`
+      );
+    }
+  }
+
   const branches = run("git", ["for-each-ref", "--format=%(refname:short)", "refs/heads/"])
     .split("\n")
     .map((b) => b.trim())
     .filter(Boolean);
   const branchCount = branches.length;
 
-  /** Never `git push -u <auth-url>` — Git stores that URL in branch.*.remote. */
-  run("git", ["push", remoteUrl, "main", "--force-with-lease"], { stdio: "inherit" });
+  /** Never `git push -u <auth-url>` — Git stores that URL in branch.*.remote.
+   *  A bare --force-with-lease against a URL has no lease ref and dies as "stale info". */
+  let expectedMain = "";
+  const expectedRes = spawnSync("git", ["rev-parse", "--verify", "refs/remotes/gitlab/main"], {
+    encoding: "utf8",
+  });
+  if (expectedRes.status === 0) expectedMain = (expectedRes.stdout || "").trim();
+  const mainArgs = ["push", remoteUrl];
+  if (expectedMain) mainArgs.push(`--force-with-lease=refs/heads/main:${expectedMain}`);
+  mainArgs.push("main");
+  run("git", mainArgs, { stdio: "inherit" });
   run("git", ["push", remoteUrl, "--tags"], { stdio: "inherit" });
 
   for (const branch of branches) {
