@@ -61,6 +61,14 @@
   - [ ] Film it
   - [ ] Use the same build steps (marketing/ads/reference/ad-scale-without-your-own-cash-2026-10-04.md) for the next long ads
 
+- [ ] Visuals for the reference ad (Scale without your own cash): Chris on the bottom of the frame, animations on top. Film, edit and lock first, animations last.
+  - [ ] Film it on the phone in BigVU, framed so you sit in the bottom 40% of the frame
+  - [ ] Edit and lock the cut
+  - [ ] Reuse the Remotion templates in marketing/broll (branch ad-scripts-2026-10-02): FileItems or HiddenDataPoints for step 1, CompanyLine or BankPockets for step 2, LenderMatchScroll or LenderSlots for step 3, BookCall for the CTA
+  - [ ] Build 3 new ones: spend up → more data → better ads; $10K / $20K / $50K a month climbing to $100K; rates going up while banks lend less
+  - [ ] Leave the family beat as just Chris on camera, no animation
+  - [ ] Drop the animations onto the locked cut at each beat and export
+
 ### Next 30 days (launch by about 2026-11-03)
 - [ ] Alt finance offer: SBA, hard money and real estate lending
   - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads
