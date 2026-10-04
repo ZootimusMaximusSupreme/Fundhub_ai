@@ -1,60 +1,75 @@
 #!/usr/bin/env node
 /**
- * Replace masked placeholders in .env with real values from Netlify.
- * Production context first; if Netlify returns a mask (****), try dev context.
+ * Refresh .env from Netlify API and rebuild cloud-env paste file.
  *
- * Never prints secret values. Writes credentials/env.full.snapshot (gitignored).
+ * Netlify stores real secrets but returns MASKS via CLI and API for --secret vars.
+ * If .env already contains those masks, this script CANNOT recover them — use
+ * Netlify UI (reveal) or vendor dashboards, then re-run.
  *
- * Usage: node scripts/env-refresh-local-from-netlify.mjs [--dry-run]
+ * Usage:
+ *   node scripts/env-refresh-local-from-netlify.mjs
+ *   node scripts/env-refresh-local-from-netlify.mjs --merge-revealed credentials/env.revealed
  */
 import fs from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { isMaskPlaceholder } from "./env-audit-masks.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const ENV_PATH = path.join(ROOT, ".env");
 const SNAPSHOT_PATH = path.join(ROOT, "credentials", "env.full.snapshot");
 const CLOUD_PATH = path.join(ROOT, "credentials", "cloud-env-for-claude.txt");
-const dryRun = process.argv.includes("--dry-run");
 
-function isMasked(value) {
-  const v = String(value ?? "").trim();
-  if (!v) return true;
-  return v.replace(/\*/g, "").length === 0 || (v.includes("*") && v.replace(/\*/g, "").length <= 8);
+const mergePath = (() => {
+  const i = process.argv.indexOf("--merge-revealed");
+  return i >= 0 ? process.argv[i + 1] : null;
+})();
+
+function loadNetlifyToken() {
+  const home = process.env.HOME || "";
+  for (const cfg of [
+    path.join(home, "Library/Preferences/netlify/config.json"),
+    path.join(home, ".config/netlify/config.json"),
+  ]) {
+    if (!fs.existsSync(cfg)) continue;
+    const users = JSON.parse(fs.readFileSync(cfg, "utf8")).users || {};
+    for (const u of Object.values(users)) {
+      const t = (u.auth && u.auth.token) || u.token;
+      if (t) return t;
+    }
+  }
+  throw new Error("Netlify CLI not logged in — run netlify login on the Mac");
 }
 
-function netlifyGet(key, context) {
-  const res = spawnSync("netlify", ["env:get", key, "--context", context], {
-    encoding: "utf8",
-    cwd: ROOT,
+async function fetchSiteEnv(siteId, token) {
+  const res = await fetch(`https://api.netlify.com/api/v1/sites/${siteId}/env`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
-  const out = (res.stdout || "").trim();
-  if (res.status !== 0 || !out || out.startsWith("No value")) return null;
-  return out;
+  if (!res.ok) throw new Error(`Netlify env API ${res.status}`);
+  return res.json();
 }
 
-function resolveValue(key) {
-  const prod = netlifyGet(key, "production");
-  if (prod && !isMasked(prod)) return { value: prod, source: "production" };
-  const dev = netlifyGet(key, "dev");
-  if (dev && !isMasked(dev)) return { value: dev, source: "dev" };
-  return { value: null, source: null };
+function pickProductionValue(entry) {
+  const values = entry?.values || [];
+  const prod = values.find((v) => v.context === "production");
+  return (prod || values[0])?.value ?? null;
 }
 
-function parseEnvLines(text) {
-  return text.split(/\n/);
+function parseKeyValues(text) {
+  const map = new Map();
+  for (const line of text.split(/\n/)) {
+    const s = line.trim();
+    if (!s || s.startsWith("#") || !s.includes("=")) continue;
+    const eq = s.indexOf("=");
+    map.set(s.slice(0, eq).trim(), s.slice(eq + 1).trim());
+  }
+  return map;
 }
 
 function rebuildCloudBlock(envText) {
   const lines = [];
-  for (const raw of envText.split(/\n/)) {
-    const s = raw.trim();
-    if (!s || s.startsWith("#") || !s.includes("=")) continue;
-    const eq = s.indexOf("=");
-    const k = s.slice(0, eq).trim();
-    let v = s.slice(eq + 1).trim();
-    if (v && !isMasked(v)) lines.push(`${k}=${v}`);
+  for (const [k, v] of parseKeyValues(envText)) {
+    if (!isMaskPlaceholder(v)) lines.push(`${k}=${v}`);
   }
   const slPath = path.join(ROOT, ".claude", "settings.local.json");
   if (fs.existsSync(slPath)) {
@@ -62,9 +77,7 @@ function rebuildCloudBlock(envText) {
     const tok =
       data.SUPABASE_ACCESS_TOKEN ||
       (data.env && data.env.SUPABASE_ACCESS_TOKEN);
-    if (tok && !isMasked(tok)) {
-      lines.push(`SUPABASE_ACCESS_TOKEN=${tok}`);
-    }
+    if (tok && !isMaskPlaceholder(tok)) lines.push(`SUPABASE_ACCESS_TOKEN=${tok}`);
   }
   const statePath = path.join(ROOT, ".netlify", "state.json");
   if (fs.existsSync(statePath)) {
@@ -73,14 +86,13 @@ function rebuildCloudBlock(envText) {
   }
   const home = process.env.HOME || "";
   for (const cfg of [
-    path.join(home, ".config/netlify/config.json"),
     path.join(home, "Library/Preferences/netlify/config.json"),
+    path.join(home, ".config/netlify/config.json"),
   ]) {
     if (!fs.existsSync(cfg)) continue;
-    const users = JSON.parse(fs.readFileSync(cfg, "utf8")).users || {};
-    for (const u of Object.values(users)) {
+    for (const u of Object.values(JSON.parse(fs.readFileSync(cfg, "utf8")).users || {})) {
       const t = (u.auth && u.auth.token) || u.token;
-      if (t && !isMasked(t)) {
+      if (t && !isMaskPlaceholder(t)) {
         lines.push(`NETLIFY_AUTH_TOKEN=${t}`);
         break;
       }
@@ -90,18 +102,24 @@ function rebuildCloudBlock(envText) {
   return `${lines.join("\n")}\n`;
 }
 
-if (!fs.existsSync(ENV_PATH)) {
-  console.error(".env missing");
-  process.exit(1);
-}
+const siteId =
+  JSON.parse(fs.readFileSync(path.join(ROOT, ".netlify", "state.json"), "utf8"))
+    .siteId || "5905dba4-9942-480c-a510-813a3fe2b073";
 
-const original = fs.readFileSync(ENV_PATH, "utf8");
+const token = loadNetlifyToken();
+const remote = await fetchSiteEnv(siteId, token);
+const remoteByKey = new Map(remote.map((e) => [e.key, pickProductionValue(e)]));
+
+const revealed = mergePath
+  ? parseKeyValues(fs.readFileSync(path.join(ROOT, mergePath), "utf8"))
+  : new Map();
+
 const outLines = [];
-let refreshed = 0;
+let fixedFromRemote = 0;
+let fixedFromRevealed = 0;
 let stillMasked = 0;
-const devFallback = [];
 
-for (const line of parseEnvLines(original)) {
+for (const line of fs.readFileSync(ENV_PATH, "utf8").split(/\n/)) {
   const trimmed = line.trim();
   if (!trimmed || trimmed.startsWith("#") || !trimmed.includes("=")) {
     outLines.push(line);
@@ -110,23 +128,34 @@ for (const line of parseEnvLines(original)) {
   const eq = trimmed.indexOf("=");
   const key = trimmed.slice(0, eq).trim();
   let val = trimmed.slice(eq + 1).trim();
-  if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
-  if (val.startsWith("'") && val.endsWith("'")) val = val.slice(1, -1);
+  if (
+    (val.startsWith('"') && val.endsWith('"')) ||
+    (val.startsWith("'") && val.endsWith("'"))
+  ) {
+    val = val.slice(1, -1);
+  }
 
-  if (!isMasked(val)) {
+  if (!isMaskPlaceholder(val)) {
     outLines.push(line);
     continue;
   }
 
-  const { value, source } = resolveValue(key);
-  if (value) {
-    outLines.push(`${key}=${value}`);
-    refreshed += 1;
-    if (source === "dev") devFallback.push(key);
-  } else {
-    outLines.push(line);
-    stillMasked += 1;
+  const fromReveal = revealed.get(key);
+  if (fromReveal && !isMaskPlaceholder(fromReveal)) {
+    outLines.push(`${key}=${fromReveal}`);
+    fixedFromRevealed += 1;
+    continue;
   }
+
+  const fromRemote = remoteByKey.get(key);
+  if (fromRemote && !isMaskPlaceholder(fromRemote)) {
+    outLines.push(`${key}=${fromRemote}`);
+    fixedFromRemote += 1;
+    continue;
+  }
+
+  outLines.push(line);
+  stillMasked += 1;
 }
 
 const nextEnv = `${outLines.join("\n").replace(/\n?$/, "\n")}`;
@@ -134,29 +163,23 @@ const nextEnv = `${outLines.join("\n").replace(/\n?$/, "\n")}`;
 console.log(
   JSON.stringify(
     {
-      dryRun,
-      refreshed,
+      fixedFromRemote,
+      fixedFromRevealed,
       stillMasked,
-      devFallbackCount: devFallback.length,
-      devFallbackKeys: devFallback.slice(0, 15),
+      netlifyEnvUrl:
+        "https://app.netlify.com/projects/transcendent-wisp-888771/configuration/env#environment-variables",
+      hint:
+        stillMasked > 0
+          ? "Netlify cannot unmask --secret vars via API. Reveal in UI → paste into credentials/env.revealed → re-run with --merge-revealed."
+          : "ok",
     },
     null,
     2
   )
 );
 
-if (stillMasked > 0) {
-  console.error(
-    "Some keys stayed masked — set them in Netlify UI, then re-run."
-  );
-  process.exit(1);
-}
+fs.mkdirSync(path.dirname(SNAPSHOT_PATH), { recursive: true });
+fs.writeFileSync(SNAPSHOT_PATH, nextEnv);
+fs.writeFileSync(CLOUD_PATH, rebuildCloudBlock(nextEnv));
 
-if (!dryRun) {
-  fs.mkdirSync(path.dirname(SNAPSHOT_PATH), { recursive: true });
-  fs.writeFileSync(SNAPSHOT_PATH, nextEnv);
-  fs.writeFileSync(ENV_PATH, nextEnv);
-  fs.writeFileSync(CLOUD_PATH, rebuildCloudBlock(nextEnv));
-  console.log(`wrote ${SNAPSHOT_PATH}`);
-  console.log(`wrote ${CLOUD_PATH}`);
-}
+if (stillMasked > 0) process.exit(1);

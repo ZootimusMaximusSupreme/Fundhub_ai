@@ -10,7 +10,8 @@ alwaysApply: true
 ## Always
 
 - Keep **full** values in gitignored `.env` and refresh from Netlify when a line looks masked.
-- Run **`node scripts/env-refresh-local-from-netlify.mjs`** after any mask is found (needs `netlify` logged in on the Mac).
+- Run **`node scripts/env-audit-masks.mjs`** to count mask placeholders.
+- Run **`node scripts/env-refresh-local-from-netlify.mjs`** after pasting reveals into **`credentials/env.revealed`** (Netlify API/CLI **cannot** unmask `--secret` vars — masks in `.env` are usually copy-paste from `netlify env:list`, not real keys).
 - Regenerate **`credentials/cloud-env-for-claude.txt`** with that script before Chris pastes cloud env vars.
 - Read **`credentials/README.md`** for file names.
 

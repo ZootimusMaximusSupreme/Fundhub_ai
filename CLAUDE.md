@@ -205,6 +205,10 @@ Chris never logs into Submagic, ClickFunnels, or any other tool an agent can run
 
 If the answer needs a fact you can look up, look it up and put it in the same answer. Do not stop and make Chris ask the next fact. Ask only when you are blocked on a decision only he can make. Same law: `.cursor/rules/finish-the-answer.mdc` and `.claude/rules/finish-the-answer.md`.
 
+### Env full copies — never masked (owner-set 2026-10-04)
+
+`.env` and `credentials/` hold **full** secrets for local and Claude cloud paste. Never `****************` placeholders (Netlify list masks). Audit with `node scripts/env-audit-masks.mjs`; merge reveals via `credentials/env.revealed` and `node scripts/env-refresh-local-from-netlify.mjs --merge-revealed credentials/env.revealed`. Same law: `.cursor/rules/env-full-copies-never-masked.mdc` and `.claude/rules/env-full-copies-never-masked.md`.
+
 ### Ad watch curve (owner-set 2026-09-27)
 
 Video ad drop-off uses Meta's own definitions. Most plays never reach 25% → fix the opening first. Dying ads buzz Chris on the ad-video notify path. Same law: `.cursor/rules/ad-watch-curve.mdc` and `.claude/rules/ad-watch-curve.md`. Book: `marketing/ads/watch-curve.md`.
