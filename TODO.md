@@ -34,6 +34,15 @@
   - [ ] Decide whether business is ≈ 2× or stays tied to business age
   - [ ] Run one real client file through it and compare to the math by hand
 
+- [ ] Move ads from full scripts to bullet points. The 2026-10-04 batch is the last fully scripted set.
+  - [ ] Bullet format to stop rambling: hook and line 2 written word for word, then one short cue per point, then the reveal, then the CTA word for word
+- [ ] Fix monotone delivery with a simple inflection system (path of least resistance, no new app)
+  - [ ] Pick 4 marks to use inside BigVU scripts: CAPS = punch the word, / = short pause, // = long pause, ↑ = pitch up at the end
+  - [ ] Mark up one script with them and film it
+  - [ ] Watch it back next to an unmarked take and compare
+  - [ ] Once the marks feel natural, have every new script delivered with them
+  - [ ] Later, if it helps: one short course or app on vocal tonality
+
 ### Next 30 days (launch by about 2026-11-03)
 - [ ] Alt finance offer: SBA, hard money and real estate lending
   - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads
