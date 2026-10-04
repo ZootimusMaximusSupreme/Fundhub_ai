@@ -194,6 +194,14 @@ Source: `docs/ads/ANGLE-GENERATOR.md`, last section. Run all seven before a conc
 ---
 ---
 
+## 1.7 Dollar amounts are always numerals (owner-set 2026-10-04)
+
+Write every dollar amount as numerals, never spelled out in words. "$300,000", not "three hundred
+thousand dollars". "$100K" is fine in bullet cues. This applies to every script, including
+teleprompter scripts.
+
+---
+
 # PART 2 — THE TWO MEASUREMENTS
 
 These two rules did not exist anywhere in the repo before this file. Chris named both on
