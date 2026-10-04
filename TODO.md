@@ -19,6 +19,14 @@
 - [ ] Decide on the follow-up texts: they offer $197 as a discount, which now equals the price. Lower it (e.g. $97) or turn that text off
 - [ ] Compare conversion for one week at the same daily spend against the last week at $297
 
+### Remove the blocks that stop Claude from shipping on its own (owner ask 2026-10-04)
+- [ ] Network: claude.ai → Admin settings → Capabilities → network access → allow all domains (or at least myclickfunnels.com, api.netlify.com, api.supabase.com, api.inngest.com)
+- [ ] File deletes: approve Claude deleting files in the fundhub-platform folder (git can't merge from the cloud while deletes are blocked)
+- [ ] Give the cloud permanent access to the repo on GitLab, so work keeps going while the Mac is off
+- [ ] Add the deploy keys to the cloud environment's secrets, so `npm run ship` runs from the cloud
+- [ ] Test: ship one small change end to end from the cloud
+- Keep: the "type yes" check before a deploy, and the funnel safety rules in the repo. Those don't slow anything down; the network block does
+
 ### This week
 - [ ] Lift 2–3x
 - [ ] Animation overlays for the new ads. Owner-set order: edit the video first and lock it, then add the animations on top. Animations go in last so no cut ever chops one.
