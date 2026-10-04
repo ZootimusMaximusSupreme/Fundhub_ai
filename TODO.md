@@ -43,7 +43,7 @@
   - [ ] Once the marks feel natural, have every new script delivered with them
   - [ ] Later, if it helps: one short course or app on vocal tonality
 
-- [ ] Curiosity-gap thumbnails and first frames (red circle on something that doesn't fully make sense, e.g. a spot near the penthouse)
+- [ ] Curiosity-gap thumbnails and first frames, only for certain ads, not every ad (red circle on something that doesn't fully make sense, e.g. a spot near the penthouse)
   - [ ] Pull 5 examples of red-circle thumbnails you like
   - [ ] Make one for the penthouse ad
   - [ ] Use the same image as the ad's first frame / cover on Meta
