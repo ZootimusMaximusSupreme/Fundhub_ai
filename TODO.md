@@ -43,11 +43,12 @@
   - [ ] Once the marks feel natural, have every new script delivered with them
   - [ ] Later, if it helps: one short course or app on vocal tonality
 
-- [ ] Curiosity-gap thumbnails and first frames, only for certain ads, not every ad (red circle on something that doesn't fully make sense, e.g. a spot near the penthouse)
+- [ ] Curiosity-gap thumbnails, only for certain ads, not every ad. Owner-set: it's a separate thumbnail image (red circle on something that doesn't fully make sense, e.g. a spot near the penthouse) PLUS a strong opening, two separate pieces.
   - [ ] Pull 5 examples of red-circle thumbnails you like
-  - [ ] Make one for the penthouse ad
-  - [ ] Use the same image as the ad's first frame / cover on Meta
-  - [ ] Compare its hook rate to an ad without one
+  - [ ] Make the thumbnail for the penthouse ad
+  - [ ] Set it as the ad's thumbnail / cover in Meta
+  - [ ] Keep the strong spoken opening as is
+  - [ ] Compare hook rate against the same ad with the default thumbnail
 
 ### Next 30 days (launch by about 2026-11-03)
 - [ ] Alt finance offer: SBA, hard money and real estate lending
