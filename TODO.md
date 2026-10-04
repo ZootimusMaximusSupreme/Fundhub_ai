@@ -12,6 +12,14 @@
 - [ ] Mastermind the offer
 - [ ] Scrape courses
 
+### Ship the SLO price drop to $197 ($297 crossed out), built on branch slo-197
+- [ ] At your computer, on main: `git merge slo-197`
+- [ ] `npm run ship` (the charge becomes $197 and Meta gets value 197)
+- [ ] `node scripts/cf-push-custom-html.mjs push --dry-run`, then `push` (the page shows $297 crossed out and $197)
+- [ ] Open apply.fundhub.ai/roadmap and check that every price says $197 (look only, don't pay)
+- [ ] Decide on the follow-up texts: they offer $197 as a discount, which now equals the price. Lower it (e.g. $97) or turn that text off
+- [ ] Compare conversion for one week at the same daily spend against the last week at $297
+
 ### This week
 - [ ] Lift 2–3x
 - [ ] Animation overlays for the new ads. Owner-set order: edit the video first and lock it, then add the animations on top. Animations go in last so no cut ever chops one.
