@@ -85,12 +85,13 @@
   - [ ] On filming day, film only. Any new idea goes on the list for the next batch
 
 - [ ] Build a private FundHub teleprompter this week (owner decision 2026-10-04: BigVU drifts speed, needs a restart every take, can't pause and resume, and can't start anywhere in the script)
-  - [ ] Decide: words only (record with the phone camera or a mirror rig), or record the video inside the app too. This decides how big the build is
+  - [x] Decided: words only (owner, 2026-10-04)
   - [ ] Must-haves: a words-per-minute setting that holds steady and never drifts, a mirror toggle, no filters
   - [ ] Must-haves: pause and resume in place, tap any line to start from there, restart a take with one tap without closing the app
   - [ ] Extras: a blank line becomes a real pause, CAPS words show bold, ↑ shows where the pitch goes up
   - [ ] Scripts load straight from the repo, no copy and paste
-  - [ ] First version: a private web page behind your login that works on iPhone and saves to the Home Screen
+  - [x] First version built 2026-10-04 and published as a private Claude artifact (Fundhub Teleprompter), code in tools/teleprompter/
+  - [ ] Move it behind your login on fundhub.ai so it saves to the Home Screen
   - [ ] Test it at home on one ad
   - [ ] Fix what feels off, then film a full batch with it
   - [ ] Later: recordings go straight into the editing pipeline
