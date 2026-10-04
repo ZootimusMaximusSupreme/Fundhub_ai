@@ -77,6 +77,13 @@
   - [ ] Leave the family beat as just Chris on camera, no animation
   - [ ] Drop the animations onto the locked cut at each beat and export
 
+- [ ] Lock scripts the night before every filming day (2026-10-04: 3 hours went to rewriting one ad on location)
+  - [ ] Pick the ads for tomorrow
+  - [ ] Read each one out loud once at home and flag any line that doesn't roll off the tongue
+  - [ ] Fix the flagged lines with Claude that night
+  - [ ] Load only locked scripts into BigVU
+  - [ ] On filming day, film only. Any new idea goes on the list for the next batch
+
 ### Next 30 days (launch by about 2026-11-03)
 - [ ] Alt finance offer: SBA, hard money and real estate lending
   - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads
