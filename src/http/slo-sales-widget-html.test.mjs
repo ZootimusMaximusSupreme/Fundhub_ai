@@ -130,7 +130,7 @@ test("the guarantee is back in its old place, right before the FAQ, word for wor
   const faq = html.indexOf('<section class="sect" data-fh-section="faq">');
   assert.ok(g > 0 && faq > g, "guarantee section sits before the FAQ");
   assert.equal(html.slice(g, faq).split("<section").length - 1, 1, "nothing but the guarantee between them");
-  assert.match(html.slice(g, faq), /<section class="sect" data-fh-section="guarantee"><div class="cardw">\s*<span class="kicker">The Guarantee<\/span>\s*<p>If you're not happy with what you get, email support@fundhub\.ai within 7 days and <b>you get the full \$297 back\.<\/b><\/p>\s*<\/div><a class="btn fh-go-pay" href="#fh-order">Get My Roadmap<\/a><\/section>/);
+  assert.match(html.slice(g, faq), /<section class="sect" data-fh-section="guarantee"><div class="cardw">\s*<span class="kicker">The Guarantee<\/span>\s*<p>If you're not happy with what you get, email support@fundhub\.ai within 7 days and <b>you get the full \$197 back\.<\/b><\/p>\s*<\/div><a class="btn fh-go-pay" href="#fh-order">Get My Roadmap<\/a><\/section>/);
   /* The CTA is caught by the scroll-to-the-buy-box handler. */
   assert.match(html, /closest\('a\[href="#fh-order"\]'\)/);
   assert.match(html, /\.fh-root \.cardw\{/);
@@ -286,7 +286,7 @@ test("the consent box uses the pull form's words, and covers texts too", () => {
 });
 
 test("prices: first business free, each extra from the server (default 1500 cents)", () => {
-  assert.match(widgetScript, /var price=\{base:29700,each:1500,max:20\};/);
+  assert.match(widgetScript, /var price=\{base:19700,each:1500,max:20\};/);
   assert.match(widgetScript, /extra=price\.each\*\(n-1\)/);
   assert.match(html, /\+ Add a business \(\$15\)/);
 });
