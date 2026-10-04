@@ -215,11 +215,11 @@ every sentence.
 
 ---
 
-## 1.9 Casual, face-to-face voice (owner-set 2026-10-04)
+## 1.9 Conversational voice (owner-set 2026-10-04)
 
-Scripts sound like Chris talking to a friend face to face: contractions, "gotta", "wanna", and a few
-"dude", "bro", "man" spread through the ad (not every line). Formal or preachy lines ("I used to
-ride to every single bank") get rewritten the way he'd actually say them. 5th grade reading level.
+Scripts are a plain conversation with the viewer: Chris telling them what it is, the way he'd say it
+face to face. Contractions, simple words, 5th grade reading level. No hype, no preachy lines, and no
+filler like "dude", "bro" or "man" (he tried it and cut it).
 
 ---
 
