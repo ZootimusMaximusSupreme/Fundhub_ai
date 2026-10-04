@@ -223,13 +223,14 @@ try {
   }
 
   const localMain = run("git", ["rev-parse", "main"]);
-  const mainCheck = gitlabFetch(
-    `/projects/${encodeURIComponent(project)}/repository/branches/main`
-  );
-  if (mainCheck.code !== 200) {
-    throw new Error(`GitLab main check failed (HTTP ${mainCheck.code})`);
+  const listed = spawnSync("git", ["ls-remote", remoteUrl, "refs/heads/main"], {
+    encoding: "utf8",
+  });
+  if (listed.status !== 0) {
+    const listErr = `${listed.stderr || ""}${listed.stdout || ""}`.replaceAll(token, "[token]");
+    throw new Error(`GitLab main check failed: ${listErr.slice(0, 300)}`);
   }
-  const remoteMain = JSON.parse(mainCheck.body)?.commit?.id;
+  const remoteMain = (listed.stdout || "").split(/\s+/)[0];
   if (remoteMain !== localMain) {
     throw new Error("GitLab main does not match this machine after push");
   }
