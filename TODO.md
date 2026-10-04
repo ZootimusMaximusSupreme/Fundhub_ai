@@ -1,5 +1,51 @@
 # TODO
 
+## Now — 2026-10-04 (Sunday)
+
+### Today
+- [ ] Sauna, then shower at 6:00
+- [ ] Canal Club: prep and load all the ads into BigVU
+- [ ] Film the 2 VSLs at sunrise (6:23)
+- [ ] Film 3 canal ads, then the bank ad, then 2 ads at home
+- [ ] Green screen ads: talking points are in `marketing/ads/scripts/book-a-call-final-2026-10-03.md` sections 7 and 8 (branch `all-scripts-2026-10-03`)
+- [ ] Edit
+- [ ] Mastermind the offer
+- [ ] Scrape courses
+
+### This week
+- [ ] Lift 2–3x
+- [ ] Animation overlays for the new ads. Owner-set order: edit the video first and lock it, then add the animations on top. Animations go in last so no cut ever chops one.
+  - [ ] Find the animation templates already built in the repo
+  - [ ] Lock the final cut of one ad
+  - [ ] Mark the timestamps where each animation lands
+  - [ ] Drop the animations in and export
+  - [ ] Repeat for the rest of the batch
+- [ ] Figure out the low-ticket session funnel
+- [ ] Block AI crawlers on every live funnel page
+  - [ ] List every live funnel in ClickFunnels
+  - [ ] Find where ClickFunnels lets you add head code or SEO settings per page
+  - [ ] Add the crawler block to each page
+  - [ ] Spot-check one page to confirm it's live
+- [ ] Check UnderwriteIQ's math against Chris's (see UI item 9 below)
+  - [ ] Chris's math: highest card limit × 5.5 = personal; business ≈ 2× personal; personal loans on top. A $20K card ≈ $110K personal, ≈ $220K business.
+  - [ ] `src/underwrite/vendor/underwriter.cjs` lines 196–286 applies 5.5× on each clean bureau and adds all three, so a $20K card shows $330K personal (3× Chris's number)
+  - [ ] The same code doubles business only at 2+ years old (1× at 1–2 years, 0.5× under 1 year); Chris's rule is ≈ 2×
+  - [ ] Decide whether 5.5× applies once or per bureau
+  - [ ] Decide whether business is ≈ 2× or stays tied to business age
+  - [ ] Run one real client file through it and compare to the math by hand
+
+### Next 30 days (launch by about 2026-11-03)
+- [ ] Alt finance offer: SBA, hard money and real estate lending
+  - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads
+  - [ ] Find the avatar work already in the Drive or the repo
+  - [ ] Pick the lending partners for each product
+  - [ ] Define the offer and how it routes on the sorting-hat call
+  - [ ] Write and film the first batch of ads
+  - [ ] Build the funnel and launch
+
+### This file
+- [ ] Triage: walk each dated section below with Claude (done / keep / kill), move what's left into Today / This week / Next 30 days, and archive the rest
+
 ## Now — 2026-09-25
 
 - [ ] **Arizona MLO refinance funnel.** White label is E Mortgage Capital (`https://www.emortgagecapital.com/`). Use the Arizona mortgage-loan-officer license. Pull Arizona leads. Target homes that need a refinance. Then run that funnel. Company NMLS 1416824. Their refi door is `/refinance` (also `/e-refi`).
@@ -830,6 +876,8 @@ Dashboard.
 Note this is the F15 defect returning in a new place — a client with no business was
 quoted ~$740,000 on 2026-09-03. `src/underwrite/business-funding.mjs` fixed the business
 half correctly; the personal half is now the one that is wrong.
+
+2026-10-04: a second likely source of the 3x. `src/underwrite/vendor/underwriter.cjs` applies the 5.5x card multiplier on each clean bureau and adds all three bureaus together. The "Conservative $110,000" above is exactly one bureau ($20K x 5.5), which is Chris's own math. See the UnderwriteIQ check under Now — 2026-10-04.
 
 ### 10. No business means no business credit cards — OWNER-SET 2026-09-06
 
