@@ -50,6 +50,12 @@
   - [ ] Keep the strong spoken opening as is
   - [ ] Compare hook rate against the same ad with the default thumbnail
 
+- [ ] Build a voice file from Chris's own words so scripts sound like him
+  - [ ] Pull his voice-dictated messages from the Claude chats
+  - [ ] List his go-to phrases and how he builds a sentence
+  - [ ] Save it as marketing/ads/VOICE-CHRIS.md
+  - [ ] Write every new script against it
+
 ### Next 30 days (launch by about 2026-11-03)
 - [ ] Alt finance offer: SBA, hard money and real estate lending
   - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads

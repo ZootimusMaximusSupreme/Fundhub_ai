@@ -215,6 +215,14 @@ every sentence.
 
 ---
 
+## 1.9 Casual, face-to-face voice (owner-set 2026-10-04)
+
+Scripts sound like Chris talking to a friend face to face: contractions, "gotta", "wanna", and a few
+"dude", "bro", "man" spread through the ad (not every line). Formal or preachy lines ("I used to
+ride to every single bank") get rewritten the way he'd actually say them. 5th grade reading level.
+
+---
+
 # PART 2 — THE TWO MEASUREMENTS
 
 These two rules did not exist anywhere in the repo before this file. Chris named both on
