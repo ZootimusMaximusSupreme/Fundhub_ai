@@ -84,6 +84,17 @@
   - [ ] Load only locked scripts into BigVU
   - [ ] On filming day, film only. Any new idea goes on the list for the next batch
 
+- [ ] Build a private FundHub teleprompter this week (owner decision 2026-10-04: BigVU drifts speed, needs a restart every take, can't pause and resume, and can't start anywhere in the script)
+  - [ ] Decide: words only (record with the phone camera or a mirror rig), or record the video inside the app too. This decides how big the build is
+  - [ ] Must-haves: a words-per-minute setting that holds steady and never drifts, a mirror toggle, no filters
+  - [ ] Must-haves: pause and resume in place, tap any line to start from there, restart a take with one tap without closing the app
+  - [ ] Extras: a blank line becomes a real pause, CAPS words show bold, ↑ shows where the pitch goes up
+  - [ ] Scripts load straight from the repo, no copy and paste
+  - [ ] First version: a private web page behind your login that works on iPhone and saves to the Home Screen
+  - [ ] Test it at home on one ad
+  - [ ] Fix what feels off, then film a full batch with it
+  - [ ] Later: recordings go straight into the editing pipeline
+
 ### Next 30 days (launch by about 2026-11-03)
 - [ ] Alt finance offer: SBA, hard money and real estate lending
   - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads
