@@ -110,28 +110,22 @@ A laptop died on 2026-09-07 holding uncommitted work. Four marketing skills and 
 
 So: commit to the local repository in the same session the work is done, every time, whether or not a push is possible. An unpushed commit survives. An uncommitted file does not. If you cannot push, commit anyway and say so.
 
-### We do not use GitHub (owner-set 2026-09-09)
+### GitHub is banned. GitLab is the remote (owner-set 2026-09-09, banned 2026-10-04)
 
-Chris does not use GitHub. This is a choice, not a lockout, and it is settled.
+GitHub is banned. Do not add a GitHub remote. Do not push, fetch, or open a pull request on github.com. If a remote points at github.com, remove it.
 
-So: **never push, never try to push, and never treat an unpushed commit as a problem.**
-`origin/main` is stale by design and will only fall further behind. Do not compare
-against it, do not report the gap, and do not propose a backup, a mirror, a bundle or
-any other way to get the work off this machine. It has been raised and answered.
+The full repo is on GitLab: group `fundhub-llc-group`, project `fundhub-llc-project`.
+https://gitlab.com/fundhub-llc-group/fundhub-llc-project
+
+Push with `node scripts/gitlab-push-whole-repo.mjs` (remote name `gitlab`). That script pushes every local branch and every tag, then removes any GitHub remote. An unpushed commit is a problem. Law: `.cursor/rules/gitlab-push.mdc` and `.claude/rules/gitlab-push.md`.
 
 What this changes about the rules around it:
 
 * §8's "open a pull request now" and "delete your branch when it lands" describe a
   GitHub workflow that is not in use. Local branches and local merges still matter;
   the pull-request half does not apply.
-* §8's check `git branch -r --no-merged origin/main` is misleading here, because
-  `origin/main` is frozen. Use `git branch -r --no-merged main` — the local one — if
-  you need to find stranded work.
-* The "commit locally, every session" rule above is now the WHOLE safety net rather
-  than half of it. That makes it more important, not less. Commit every session.
-
-Earlier notes in this repo describe GitHub as "locked out" with 2FA lost. That framing
-is wrong and it made agents treat a settled decision as a fault to route around.
+* Do not compare against `origin/main`. Compare against `gitlab/main`.
+* Still commit locally every session. Then push that commit to GitLab.
 
 ### Never ask permission to run a tool (owner-set 2026-09-08)
 
