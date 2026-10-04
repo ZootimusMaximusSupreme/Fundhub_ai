@@ -223,6 +223,15 @@ filler like "dude", "bro" or "man" (he tried it and cut it).
 
 ---
 
+## 1.10 Build long ads from all of Chris's own points (owner-approved 2026-10-04)
+
+When Chris dictates an ad, pull every point he made across all his messages in the thread, in his
+order, with his own phrases and stories, and do not trim points to shorten it. Then clean it into
+plain spoken sentences and apply the rules above. The model is
+`marketing/ads/reference/ad-scale-without-your-own-cash-2026-10-04.md`, which he called a work of art.
+
+---
+
 # PART 2 — THE TWO MEASUREMENTS
 
 These two rules did not exist anywhere in the repo before this file. Chris named both on

@@ -56,6 +56,11 @@
   - [ ] Save it as marketing/ads/VOICE-CHRIS.md
   - [ ] Write every new script against it
 
+- [ ] Examine the reference ad (Scale without your own cash) and reuse how it was built
+  - [ ] Read it through once more and mark anything to change
+  - [ ] Film it
+  - [ ] Use the same build steps (marketing/ads/reference/ad-scale-without-your-own-cash-2026-10-04.md) for the next long ads
+
 ### Next 30 days (launch by about 2026-11-03)
 - [ ] Alt finance offer: SBA, hard money and real estate lending
   - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads
