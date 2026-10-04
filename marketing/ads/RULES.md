@@ -202,6 +202,19 @@ teleprompter scripts.
 
 ---
 
+## 1.8 Delivery marks on every teleprompter script (owner-set 2026-10-04)
+
+Every script handed over for filming carries delivery marks:
+
+- CAPS on the word to punch
+- A blank line where he pauses. BigVU only pauses on a space, so a pause is a new paragraph.
+- ↑ at the end of a line where his pitch goes up (questions, setups before a reveal)
+
+Use pauses at the beats that matter (after the hook, before the reveal, before the CTA), not after
+every sentence.
+
+---
+
 # PART 2 — THE TWO MEASUREMENTS
 
 These two rules did not exist anywhere in the repo before this file. Chris named both on

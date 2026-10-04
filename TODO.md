@@ -37,7 +37,7 @@
 - [ ] Move ads from full scripts to bullet points. The 2026-10-04 batch is the last fully scripted set.
   - [ ] Bullet format to stop rambling: hook and line 2 written word for word, then one short cue per point, then the reveal, then the CTA word for word
 - [ ] Fix monotone delivery with a simple inflection system (path of least resistance, no new app)
-  - [ ] Pick 4 marks to use inside BigVU scripts: CAPS = punch the word, / = short pause, // = long pause, ↑ = pitch up at the end
+  - [x] Marks in use from 2026-10-04: CAPS = punch the word, blank line = pause (BigVU only pauses on a space), ↑ = pitch up at the end
   - [ ] Mark up one script with them and film it
   - [ ] Watch it back next to an unmarked take and compare
   - [ ] Once the marks feel natural, have every new script delivered with them
