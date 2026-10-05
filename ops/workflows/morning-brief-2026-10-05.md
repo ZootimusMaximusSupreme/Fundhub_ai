@@ -58,7 +58,7 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 ## Questions for Chris (one at a time, in this order)
 
 1. ~~What number should the morning text go to?~~ Answered 2026-10-05 (ends in 6457).
-2. What time? (Today: 6:00 a.m. Arizona)
+2. ~~What time?~~ Answered 2026-10-05: 6:00 a.m. and 9:00 p.m. Arizona.
 3. Text only, or text plus an email with the full report? Which email?
 4. ~~Cadence rules~~ Answered 2026-10-05: yes, as a starting point. Light guardrails; no automatic changes; Chris sets the numbers later from proven data (for example, when CRO suggestions start, by spend over time).
 5. Team section: which numbers per person?
@@ -68,7 +68,7 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 
 **Owner decisions 2026-10-05 (Chris):**
 - When the brief goes live, it **replaces** the old "Fundhub morning check" text. ("The text sucks.")
-- Add an **end-of-day brief** too. Overnight is when ads break and deals come in, so Chris should know what is going on before bed and when he wakes up. Evening time default: 9:00 p.m. Arizona (orchestrator default until Chris names a time).
+- Add an **end-of-day brief** too. Overnight is when ads break and deals come in, so Chris should know what is going on before bed and when he wakes up. Times (owner-set): 6:00 a.m. Arizona morning, 9:00 p.m. Arizona evening.
 
 **Migration numbers:** 430 = MB2 (scorecard, job heartbeats). 431 = MB3 (`morning_briefs`). 406–429 are held by the marketing machine.
 
