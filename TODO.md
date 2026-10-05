@@ -1,109 +1,122 @@
 # TODO
 
-## Now — 2026-10-04 (Sunday)
+## Now — 2026-10-05 (Monday)
 
-### Today
-- [ ] Sauna, then shower at 6:00
-- [ ] Canal Club: prep and load all the ads into BigVU
-- [ ] Film the 2 VSLs at sunrise (6:23)
-- [ ] Film 3 canal ads, then the bank ad, then 2 ads at home
-- [ ] Green screen ads: talking points are in `marketing/ads/scripts/book-a-call-final-2026-10-03.md` sections 7 and 8 (branch `all-scripts-2026-10-03`)
+Updated from the 10/4 list. Checked against the repo and the live site on 10/5. Everything agents finished today is merged to `main` on GitHub and goes live on the next ship. Business only.
+
+### You only (no agent can do these)
+
+- [ ] Financing approval
+- [ ] Delete GitLab: https://gitlab.com/fundhub-llc-group/fundhub-llc-project/edit
+- [ ] Launch book-a-call at $250/day. Server events are on; Lead and Schedule prove themselves on the first real booking.
+- [ ] Compare /roadmap conversion for one week at $147 against the last week at $297, at the same daily spend
+- [ ] Film 3 canal ads and 2 ads at home
+- [ ] Green screen ads: talking points are in `marketing/ads/scripts/book-a-call-final-2026-10-03.md` sections 7 and 8 (now on main)
 - [ ] Edit
 - [ ] Mastermind the offer
 - [ ] Scrape courses
+- [ ] Send your sales manager the new offers and pricing ($2,500 / $5,000 / $10,000), and confirm the closer is trained on them
+- [ ] Send the proposal to your sales manager
+- [ ] Run free roadmaps for your shortlist, then pitch the first two cohort people
+- [ ] Text your old-client list (40–50 people), target 10 sales
+- [ ] ClarityPay: call the rep with the questions in section 07 of the proposal, and sign up directly so you get your own checkout
+- [ ] Book the Plaid call and get the Plaid production API keys
+- [ ] Apply for the Meta Marketing API, Google Ads API and Partner API
+- [ ] Submagic: get the Business + API plan (repo law is API only, and there is no key yet)
+- [ ] Apple developer account ($99/year) so the teleprompter goes on your phone through TestFlight
+- [ ] Find the app someone sent you that breaks down Hormozi's ad creatives and storytelling (texts, Instagram, Facebook, or the 99ads Skool group)
+- [ ] Figure out the low-ticket session funnel
+- [ ] Parked: a new Netlify token so the cloud can ship on its own (ship later is fine)
 
-### Ship the SLO price drop to $197 ($297 crossed out), built on branch slo-197
-- [ ] On your Mac, in Terminal: `bash ~/Developer/fundhub-platform/scripts/ship-slo-197.sh` (merges, shows the dry run, waits for "yes", deploys, pushes only the /roadmap page)
-- [ ] Open apply.fundhub.ai/roadmap and check that every price says $197 (look only, don't pay)
-- [ ] Check whether apply.fundhub.ai/order (native ClickFunnels checkout, $297 product) still gets traffic. If it does, change that product's price in ClickFunnels too
-- [ ] Decide on the follow-up texts: they offer $197 as a discount, which now equals the price. Lower it (e.g. $97) or turn that text off
-- [ ] Compare conversion for one week at the same daily spend against the last week at $297
+### Agents working on these now
 
-### Remove the blocks that stop Claude from shipping on its own (owner ask 2026-10-04)
-- [ ] Network: claude.ai → Admin settings → Capabilities → network access → allow all domains (or at least myclickfunnels.com, api.netlify.com, api.supabase.com, api.inngest.com)
-- [ ] File deletes: approve Claude deleting files in the fundhub-platform folder (git can't merge from the cloud while deletes are blocked)
-- [ ] Give the cloud permanent access to the repo on GitLab, so work keeps going while the Mac is off
-- [ ] Add the deploy keys to the cloud environment's secrets, so `npm run ship` runs from the cloud
-- [ ] Test: ship one small change end to end from the cloud
-- Keep: the "type yes" check before a deploy, and the funnel safety rules in the repo. Those don't slow anything down; the network block does
+- [ ] W2 — Clean up the rules that contradict each other across CLAUDE.md, `.claude/rules` and `.cursor/rules`, and add the 26 missing Claude copies
+- [ ] W5 — UnderwriteIQ math vs yours on one sample file, then your 2 answers: does 5.5× apply once or per bureau, and is business ≈ 2× personal or tied to business age
+- [ ] W6 — Page drafts, marked draft first: How It Works on /roadmap follows the 7-step note; "Up to 12 funding rounds" becomes 3–6 on /watch, /thank-you, /funding-book-call, /roadmap-book, /roadmap-thank-you
+- [ ] W7 — Tracking: the ShowedCall event, and Lead and Schedule fire only on qualified survey answers (you confirm what "qualified" means)
+- [ ] W8 — Credit optimization clients: reminder texts on day 1, 3 and 5 until their documents are uploaded (you approve the 3 texts)
 
-### This week
-- [ ] Lift 2–3x
-- [ ] Animation overlays for the new ads. Owner-set order: edit the video first and lock it, then add the animations on top. Animations go in last so no cut ever chops one.
-  - [ ] Find the animation templates already built in the repo
+### Next for agents (as soon as a slot frees)
+
+- [ ] Block AI crawlers on every live funnel page (robots.txt on apply.fundhub.ai allows every crawler today)
+- [ ] Capital Blueprint: promo alerts at 60, 30 and 7 days; payment reserve tracking; payment timing guidance
+- [ ] Capital Blueprint: run one real client through it end to end
+- [ ] Teleprompter: scripts load straight from the repo, and it moves behind your login on fundhub.ai so it saves to the Home Screen
+- [ ] Full walkthrough of the book-a-call funnel: VSL, survey, thank-you page
+- [ ] Re-check the 23 fixes in the "Roadmap Page Audit & Game Plan" doc against the live page, and finish what's left
+- [ ] Reference ad (Scale without your own cash) visuals: build the 3 new animations (spend up → more data → better ads; $10K / $20K / $50K a month climbing to $100K; rates going up while banks lend less). The existing templates are on main in `marketing/broll`.
+- [ ] CI: the real-database test job can't log in (`fundhub_app` has no password in `.github/workflows/tests.yml`), so it is red on every pull request
+
+### Needs something from you first
+
+- [ ] Lead magnet: where is the 7-lesson outline ("How to get $100K–$300K in 0% funding off your credit file")? Then agents save it and host it in the client portal.
+- [ ] /thank-you video: the video file. Then agents put it at the top of /thank-you.
+- [ ] VSL: where should it live instead of Netlify? /watch still plays `fundhub.ai/funnel/vsl.mp4`, which is what got the site paused for bandwidth.
+- [ ] Capital Blueprint: the monthly member fee that starts after the 12 included months, and the product for the per-letter mailing upsell
+- [ ] Climate front door: flat Darwin map or the globe
+- [ ] Export the Portal Welcome video from Submagic: needs the Submagic API key (above)
+- [ ] 1% value-based lookalike from about 2,000 leads (760+ credit, $100K–$200K revenue): needs Meta Marketing API access (above)
+- [ ] Bank list: 237 banks still have no bureau on file. Needs each funded client's report so the inquiries can be logged.
+
+### This week — ads and content (yours; agents help with scripts and edits)
+
+- [ ] Animation overlays for the new ads. Owner-set order: edit and lock the video first, then add the animations on top.
   - [ ] Lock the final cut of one ad
   - [ ] Mark the timestamps where each animation lands
   - [ ] Drop the animations in and export
   - [ ] Repeat for the rest of the batch
-- [ ] Figure out the low-ticket session funnel
-- [ ] Block AI crawlers on every live funnel page
-  - [ ] List every live funnel in ClickFunnels
-  - [ ] Find where ClickFunnels lets you add head code or SEO settings per page
-  - [ ] Add the crawler block to each page
-  - [ ] Spot-check one page to confirm it's live
-- [ ] Check UnderwriteIQ's math against Chris's (see UI item 9 below)
-  - [ ] Chris's math: highest card limit × 5.5 = personal; business ≈ 2× personal; personal loans on top. A $20K card ≈ $110K personal, ≈ $220K business.
-  - [ ] `src/underwrite/vendor/underwriter.cjs` lines 196–286 applies 5.5× on each clean bureau and adds all three, so a $20K card shows $330K personal (3× Chris's number)
-  - [ ] The same code doubles business only at 2+ years old (1× at 1–2 years, 0.5× under 1 year); Chris's rule is ≈ 2×
-  - [ ] Decide whether 5.5× applies once or per bureau
-  - [ ] Decide whether business is ≈ 2× or stays tied to business age
-  - [ ] Run one real client file through it and compare to the math by hand
-
 - [ ] Move ads from full scripts to bullet points. The 2026-10-04 batch is the last fully scripted set.
-  - [ ] Bullet format to stop rambling: hook and line 2 written word for word, then one short cue per point, then the reveal, then the CTA word for word
-- [ ] Fix monotone delivery with a simple inflection system (path of least resistance, no new app)
-  - [x] Marks in use from 2026-10-04: CAPS = punch the word, blank line = pause (BigVU only pauses on a space), ↑ = pitch up at the end
-  - [ ] Mark up one script with them and film it
-  - [ ] Watch it back next to an unmarked take and compare
-  - [ ] Once the marks feel natural, have every new script delivered with them
-  - [ ] Later, if it helps: one short course or app on vocal tonality
-
-- [ ] Curiosity-gap thumbnails, only for certain ads, not every ad. Owner-set: it's a separate thumbnail image (red circle on something that doesn't fully make sense, e.g. a spot near the penthouse) PLUS a strong opening, two separate pieces.
-  - [ ] Pull 5 examples of red-circle thumbnails you like
+  - [ ] Bullet format: hook and line 2 word for word, one short cue per point, then the reveal, then the CTA word for word
+- [ ] Fix monotone delivery with the inflection marks (CAPS = punch, blank line = pause, ↑ = pitch up)
+  - [ ] Mark up one script and film it
+  - [ ] Watch it back next to an unmarked take
+  - [ ] Once the marks feel natural, deliver every new script with them
+- [ ] Curiosity-gap thumbnails, only for certain ads: a separate red-circle thumbnail plus a strong opening
+  - [ ] Pull 5 examples you like
   - [ ] Make the thumbnail for the penthouse ad
-  - [ ] Set it as the ad's thumbnail / cover in Meta
-  - [ ] Keep the strong spoken opening as is
+  - [ ] Set it as the ad's cover in Meta
   - [ ] Compare hook rate against the same ad with the default thumbnail
-
-- [ ] Build a voice file from Chris's own words so scripts sound like him
-  - [ ] Pull his voice-dictated messages from the Claude chats
-  - [ ] List his go-to phrases and how he builds a sentence
-  - [ ] Save it as marketing/ads/VOICE-CHRIS.md
-  - [ ] Write every new script against it
-
-- [ ] Examine the reference ad (Scale without your own cash) and reuse how it was built
+- [ ] Voice file: fold your go-to phrases into `marketing/ads/VOICE.md` (needs your voice-dictated messages exported from the Claude chats)
+- [ ] Reference ad (Scale without your own cash)
   - [ ] Read it through once more and mark anything to change
-  - [ ] Film it
-  - [ ] Use the same build steps (marketing/ads/reference/ad-scale-without-your-own-cash-2026-10-04.md) for the next long ads
-
-- [ ] Visuals for the reference ad (Scale without your own cash): Chris on the bottom of the frame, animations on top. Film, edit and lock first, animations last.
-  - [ ] Film it on the phone in BigVU, framed so you sit in the bottom 40% of the frame
-  - [ ] Edit and lock the cut
-  - [ ] Reuse the Remotion templates in marketing/broll (branch ad-scripts-2026-10-02): FileItems or HiddenDataPoints for step 1, CompanyLine or BankPockets for step 2, LenderMatchScroll or LenderSlots for step 3, BookCall for the CTA
-  - [ ] Build 3 new ones: spend up → more data → better ads; $10K / $20K / $50K a month climbing to $100K; rates going up while banks lend less
-  - [ ] Leave the family beat as just Chris on camera, no animation
-  - [ ] Drop the animations onto the locked cut at each beat and export
-
-- [ ] Lock scripts the night before every filming day (2026-10-04: 3 hours went to rewriting one ad on location)
+  - [ ] Film it in BigVU, framed in the bottom 40% of the frame
+  - [ ] Edit and lock the cut; leave the family beat as just you on camera
+  - [ ] Use the same build steps (`marketing/ads/reference/ad-scale-without-your-own-cash-2026-10-04.md`) for the next long ads
+- [ ] Lock scripts the night before every filming day
   - [ ] Pick the ads for tomorrow
-  - [ ] Read each one out loud once at home and flag any line that doesn't roll off the tongue
+  - [ ] Read each one out loud once and flag any line that doesn't roll off the tongue
   - [ ] Fix the flagged lines with Claude that night
-  - [ ] Load only locked scripts into BigVU
-  - [ ] On filming day, film only. Any new idea goes on the list for the next batch
+  - [ ] Load only locked scripts; on filming day, film only
+- [ ] Teleprompter: test it at home on one ad, fix what feels off, then film a full batch with it
+- [ ] 20 full ads, plus the short sorting-hat ads
+- [ ] Notes green screen ads from `marketing/ads/notes-green-screen.md`
+  - [ ] Film the 7-step note and the sorting-hat note
+  - [ ] Film the cliffhanger version next to the full version
+  - [ ] Test line 2 ("Banks will fund you again for every business you open") as the hook in one version
+  - [ ] Storytelling notes: your timeline, Gene's timeline, and the funding mistakes that cost you money
+- [ ] Testimonials: grow from the 3 on /roadmap to 6–9, filmed with B-roll
+- [ ] Film 3 long-form B-roll interviews
+- [ ] Film the Credit Mastery System course in Loom, one video per module (93 slides)
 
-- [ ] Build a private FundHub teleprompter this week (owner decision 2026-10-04: BigVU drifts speed, needs a restart every take, can't pause and resume, and can't start anywhere in the script)
-  - [x] Decided: words only (owner, 2026-10-04)
-  - [ ] Must-haves: a words-per-minute setting that holds steady and never drifts, a mirror toggle, no filters
-  - [ ] Must-haves: pause and resume in place, tap any line to start from there, restart a take with one tap without closing the app
-  - [ ] Extras: a blank line becomes a real pause, CAPS words show bold, ↑ shows where the pitch goes up
-  - [ ] Scripts load straight from the repo, no copy and paste
-  - [x] First version built 2026-10-04 and published as a private Claude artifact (Fundhub Teleprompter), code in tools/teleprompter/
-  - [ ] Move it behind your login on fundhub.ai so it saves to the Home Screen
-  - [ ] Test it at home on one ad
-  - [ ] Fix what feels off, then film a full batch with it
-  - [ ] Later: recordings go straight into the editing pipeline
+### Later
+
+- [ ] Website migration off ClickFunnels: restore the shuffle and the light-up course section, put the Canva approval screenshots into the asset stack, then Cal.com and the CRM custom fields
+- [ ] Capital Strategy course: only a wireframe exists, so build the deck before filming
+- [ ] Authorized contact access in the credit optimization portal: one person manages several clients' files, with consent and permission levels
+- [ ] Finalize the doc-collection agent prompts
+- [ ] Save the interview research as an SOP
+- [ ] Background marketing agents: scheduled ad-script drafts you review in one batch
+- [ ] Company brain (already built): load ACQ, your course and the Hormozi content, then add an open-source visualization
+- [ ] CXL Conversion Optimization minidegree (start with Landing Page Optimization), then Digital Psychology & Persuasion. Check your friend's access first.
+- [ ] Jeremy Haynes back-end ads once book-a-call has data
+- [ ] Focus group: entrepreneurial women in AZ go through the program free and become spokespeople
+- [ ] Get the Telegram contact for the Maria Wendt course
+- [ ] White label: set the build clock and the guarantee terms
+- [ ] Contracts: finish your additions to the 3 agreements (Business Funding Consultation, Credit Optimization Services, Credit Optimization Starter)
+- [ ] Whop KYB ticket for FH Consulting LLC, only if you still use Whop once ClarityPay is direct
 
 ### Next 30 days (launch by about 2026-11-03)
+
 - [ ] Alt finance offer: SBA, hard money and real estate lending
   - [ ] Search the Meta Ad Library for SBA, hard money and fix-and-flip ads
   - [ ] Find the avatar work already in the Drive or the repo
@@ -112,95 +125,26 @@
   - [ ] Write and film the first batch of ads
   - [ ] Build the funnel and launch
 
-### From Claude chats, Sep 6 – Oct 4 (swept 2026-10-04)
-Open items from Claude chats that were not in this file yet. Personal errands went to `TODO-personal.md` (local only, gitignored, never pushed).
+### Already done (kept so nobody re-does them)
 
-#### Filming gear
-- [ ] Buy a spare Rode Wireless ME transmitter (about $80)
-- [ ] Buy a USB-C power bank for the shoot kit
-- [ ] Buy the ZGCINE PS-R30 PRO case
-
-#### Funnel and site
-- [ ] Roadmap page audit: finish the 23 remaining fixes (Claude Doc project 0f85c4cd-e73a-4ef5-9a6a-ad5c3dad0f6a)
-- [ ] Thank-you page: add the video slot
-- [ ] Netlify bandwidth: move the VSL mp4 off Netlify
-- [ ] Remove the placeholder testimonial boxes
-- [ ] Edit the funnel testimonials, then add the real ones
-- [ ] Check the mobile layout
-- [ ] Prep the sorting-hat funnel
-- [ ] Turn off the free-access system
-- [ ] Save the free lead-magnet course outline into the repo (7 lessons, "How to get $100K–$300K in 0% funding off your credit file")
-- [ ] Proof cards
-- [ ] ClickFunnels API slot with Paul
-- [ ] Website migration off ClickFunnels
-  - [ ] Merge the open branches first
-  - [ ] Restore the shuffle and light-up course section
-  - [ ] Put the Canva approval screenshots into the asset stack
-  - [ ] Set up Cal.com and the CRM custom fields
-
-#### Ads and video
-- [ ] Refine the 11 scripts
-- [ ] 20 full ads, plus the short sorting-hat ads
-- [ ] Smooth out the VSL with Carly
-- [ ] Film 3 long-form B-roll interviews
-- [ ] Film 3 testimonials with B-roll
-- [ ] Send the B-roll asset request list to the marketing team
-- [ ] Gather the ad library materials
-- [ ] Build the testimonial thumbnail pipeline
-- [ ] Export the 3 Submagic videos: Portal Welcome, SLO Main Page VSL, VSL 2 Booking
-- [ ] Film the portal welcome video
-- [ ] Film the Credit Mastery System course in Loom (93 slides, one video per module)
-- [ ] Background marketing agents: scheduled ad-script drafts you review in one batch (designed 2026-09-06, build not started)
-
-#### Tracking, data and APIs
-- [ ] Pixel conditioning on the survey
-- [ ] 1% value-based lookalike from about 2,000 leads (760+ credit, $100K–$200K revenue)
-- [ ] Clarity tracking check
-- [ ] Submagic: check the Business + API plan
-- [ ] Video pipeline: Drive Raw → R2 → Submagic / Deepgram
-- [ ] Phone alerts through ntfy or Pushover
-
-#### Payments and financing
-- [ ] Finish the financing approval
-- [ ] Zoom with Justice on financing
-- [ ] Sign up with ClarityPay directly for a custom checkout
-- [ ] Create the Whop account
-- [ ] Whop KYB support issue for FH Consulting LLC
-- [ ] FH Consulting BNPL plan: own domain, bank account and checkout (fh-consulting-bnpl-plan.md)
-
-#### Capital Blueprint and portal
-- [ ] Monthly soft pull that updates the plan and the letters
-- [ ] Accountability agent with a proof-gated checklist
-- [ ] Dispute-round waypoints
-- [ ] Ready-for-funding trigger that alerts the closer
-- [ ] Payment timing guidance
-- [ ] Promo alerts at 60, 30 and 7 days
-- [ ] Payment reserve tracking
-- [ ] Welcome kit
-- [ ] Per-letter mailing upsell
-- [ ] Credit partner file
-- [ ] Bank relationship tracker
-- [ ] Next-funding-sequence planner
-- [ ] Finance OS: 12 months included, then monthly
-- [ ] Optimize the roadmaps
-- [ ] Authorized contact access in the credit optimization portal
-- [ ] UnderwriteIQ: post-funding inquiry log, with a backfill
-- [ ] Repair the partner sample export
-- [ ] Finalize the doc-collection agent prompts
-
-#### Sales and outreach
-- [ ] Text the 40 old clients (target: 10 sales)
-- [ ] Focus group outreach to entrepreneurial women in AZ
-- [ ] Get the Telegram contact for the Maria Wendt course
-
-#### Ops and systems
-- [ ] Consolidate the conflicting rules across CLAUDE.md and the notes
-- [ ] Save the interview research as an SOP
-- [ ] Delete the 4 DUPLICATE files in the Drive
-- [ ] Company brain: transcribe ACQ, the course and the Hormozi content into it, then add an open-source visualization (low priority; CXL minidegrees after)
-
-### This file
-- [ ] Triage: walk each dated section below with Claude (done / keep / kill), move what's left into Today / This week / Next 30 days, and archive the rest
+- Every follow-up says $147: the no-reply text, the after-reply coupon, and all 21 drip emails
+- The browser tells Meta $147 on checkout and purchase, same as the server
+- Server events checked on both funnels: every event a real person triggered reached Meta (229 since 10/2, 0 errors)
+- GitHub is the repo's home. Every GitLab branch moved over, and the rules and scripts say GitHub.
+- The green-screen scripts and the whole animation kit (both versions, merged) are on main
+- The $147 price is live on /roadmap and in checkout
+- Proof cards are on /roadmap
+- Three testimonials with thumbnails and captions are on /roadmap, and the thumbnail skill exists
+- The custom /apply survey and the /watch funding-paths panel are live
+- The empty testimonial boxes are gone from /watch
+- The lenders list is merged into the audited CSV books
+- Brand favicon and the message blaster shipped
+- The ClickFunnels API key works
+- Clarity is recording
+- The 4 DUPLICATE files are gone from the Drive
+- The ClimateFrontDoor pack is committed
+- Teleprompter first version built (`tools/teleprompter/`), words only
+- Inflection marks in use: CAPS = punch, blank line = pause, ↑ = pitch up
 
 ## Now — 2026-09-25
 
