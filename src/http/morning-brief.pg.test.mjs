@@ -1,4 +1,4 @@
-/* Postgres-backed tests for the morning brief (MB3):
+/* Postgres-backed tests for the morning brief (MB3) and the evening brief (MB6):
  * runMorningBrief writes one morning_briefs row per Arizona day, and
  * GET /api/read/morning-brief serves it to owner/admin only, scoped to the
  * session's org. Skipped without DATABASE_URL, like every *.pg.test.mjs —
@@ -10,6 +10,7 @@ import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createSession } from "../auth/session.mjs";
 import handler from "../../api/read/morning-brief.mjs";
 import { runMorningBrief } from "../ops/morning-brief.mjs";
+import { buildScorecard, saveScorecard } from "../pulse/scorecard.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const STAFF_EMAIL_LIKE = "mb_http_test_%@example.com";
@@ -28,13 +29,15 @@ const res = () => {
   return r;
 };
 
-const PULSE = {
-  checks: [
-    { id: "health", status: "PASS", detail: "pending 0" },
-    { id: "login", status: "FAIL", detail: "HTTP 500", suggestedFix: "check the deploy" },
-    { id: "gate-relay", status: "skip", detail: "server" }
-  ]
-};
+/* A runDailyPulse() result as MB2 returns it: the raw checks plus the
+   scorecard (src/pulse/scorecard.mjs) the brief's systems section reads. */
+const pulseOf = (checks, now) => ({ checks, scorecard: buildScorecard({ checks, now }) });
+const PULSE_CHECKS = [
+  { id: "health", status: "PASS", detail: "pending 0" },
+  { id: "login", status: "FAIL", detail: "HTTP 500", suggestedFix: "check the deploy" },
+  { id: "gate-relay", status: "skip", detail: "server" }
+];
+const PULSE = pulseOf(PULSE_CHECKS, DAY1);
 
 describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
   let orgId, otherOrgId, owner, admin, closer, otherOwner;
@@ -96,11 +99,18 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
     assert.equal(row.money.status, "not_connected");
     assert.equal(row.systems.scorecard.checks.find((c) => c.id === "gate-relay").status, "not_checked");
     assert.deepEqual(row.suggestions, []);
-    assert.equal(row.report_url, null);
+    assert.equal(row.report_url, "https://fundhub.ai/app/morning-brief.html?date=2001-03-05");
+    assert.ok(row.text_body.endsWith("\n\nFull report: https://fundhub.ai/app/morning-brief.html?date=2001-03-05"));
+    const login = row.systems.reds.find((c) => c.id === "login");
+    assert.equal(login.fix, "check the deploy");
+    assert.equal(login.day_count, 1);
+    assert.equal(login.since, "2001-03-05");
+    assert.ok(Array.isArray(row.marketing.offers));
+    assert.ok(row.marketing.all_offers && Array.isArray(row.marketing.all_offers.not_split));
   });
 
   test("a rerun the same morning updates the one row, never a second", async () => {
-    await runMorningBrief({ db, orgId, now: DAY1, pulse: { checks: [{ id: "health", status: "PASS", detail: "ok" }] }, env: {} });
+    await runMorningBrief({ db, orgId, now: DAY1, pulse: pulseOf([{ id: "health", status: "PASS", detail: "ok" }], DAY1), env: {} });
     const { rows } = await db.query(
       `SELECT delivery_status, text_body FROM morning_briefs WHERE org_id = $1 AND brief_date = '2001-03-05'`, [orgId]
     );
@@ -113,7 +123,7 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
     const sends = [];
     const sendImpl = async (m) => { sends.push(m); return { status: "sent", providerMessageId: "SM1" }; };
     const env = { PULSE_SMS_TO: "+14805550199" };
-    const first = await runMorningBrief({ db, orgId, now: DAY2, pulse: PULSE, env, live: true, sendImpl });
+    const first = await runMorningBrief({ db, orgId, now: DAY2, pulse: pulseOf(PULSE_CHECKS, DAY2), env, live: true, sendImpl });
     assert.equal(first.saved.row.delivery_status, "sent");
     assert.ok(first.saved.row.sent_at);
     assert.equal(first.saved.row.provider_message_id, "SM1");
@@ -159,6 +169,9 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
   const EVE_NO_MORNING = new Date("2001-03-09T04:00:00Z"); // evening of 2001-03-08
 
   test("the evening saves its own row beside the morning, reading the morning's stored check", async () => {
+    // The pulse stores its scorecard in pulse_scorecards (MB2, migration 430).
+    // A re-save the same day replaces the row, so this is safe to re-run.
+    await saveScorecard(db, orgId, buildScorecard({ checks: [{ id: "health", status: "PASS", detail: "ok" }], now: DAY1 }));
     const sends = [];
     const out = await runMorningBrief({
       db, orgId, kind: "evening", now: EVE1,
@@ -175,6 +188,8 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
     assert.match(row.text_body.replace(/\s/g, " "), /Systems, from this morning's check at 6:00 AM: 1 of 1 checks green\./);
     assert.equal(row.systems.source, "stored_morning_check");
     assert.match(row.text_body, /Team, today so far:/);
+    assert.equal(row.report_url, "https://fundhub.ai/app/morning-brief.html?date=2001-03-05&kind=evening");
+    assert.ok(row.text_body.endsWith("\n\nFull report: https://fundhub.ai/app/morning-brief.html?date=2001-03-05&kind=evening"));
 
     const { rows } = await db.query(
       `SELECT kind FROM morning_briefs WHERE org_id = $1 AND brief_date = '2001-03-05' ORDER BY kind`, [orgId]

@@ -44,7 +44,7 @@ flowchart TD
     CAN --> A_privacy[privacy — 1 route]
     CAN --> A_proxy[proxy — 2 routes]
     CAN --> A_public[public — 18 routes]
-    CAN --> A_read[Reading data — 68 routes]
+    CAN --> A_read[Reading data — 69 routes]
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_scripts[scripts — 2 routes]
     CAN --> A_social[social — 7 routes]
@@ -63,7 +63,7 @@ flowchart TD
 
 ## What they can reach
 
-**250 of 258 routes.**
+**251 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -284,6 +284,7 @@ flowchart TD
 | `/api/read/search` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/slo-connections` | GET | owner, admin |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
+| `/api/read/systems-check` | GET | owner, admin |
 | `/api/read/tradelines` | — | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/transactions` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/read/underwrite` | GET | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
@@ -327,7 +328,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**8 of 258 routes.**
+**8 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|

@@ -10,7 +10,7 @@
 // WHAT IT IS. Step 2 of the 6:00 a.m. Arizona pulse job
 // (src/workflows/daily-pulse.mjs). Step 1 is Recon's audit (AG-07). This step
 // reads the audit's result plus plain database reads, writes one text, and
-// saves one morning_briefs row (db/migrations/431_morning_briefs.sql).
+// saves one morning_briefs row (431, made per-kind by 433_morning_briefs_kind.sql).
 //
 // NO MODEL. Every number is a plain SQL read, the src/ops/weekly-brief.mjs
 // numbers-section pattern. A section with no source today prints one plain
@@ -30,8 +30,8 @@
 //
 // WINDOWS. Morning: yesterday, Arizona midnight to midnight. Evening: "today
 // so far", Arizona midnight to now. The evening's systems line reads the check
-// stored this morning; it never runs the full pulse a second time (MB2 owns
-// the checks).
+// stored this morning in pulse_scorecards (MB2, migration 430); it never runs
+// the pulse a second time.
 //
 // AUDIT ONLY. It never fixes, sends money, pulls credit, or changes an ad.
 
@@ -42,7 +42,7 @@ import { loadCashflowByDay } from "../finance/cashflow.mjs";
 import { fromCents } from "../commissions/money.mjs";
 import { textMorningBrief } from "../pulse/notify.mjs";
 import { buildSuggestions } from "./suggestions.mjs";
-import { groupByOfferFunnel, groupClosers, loadOfferNumbers, readClosersByOffer, OFFER_NOTES, NO_OFFER } from "./brief-offers.mjs";
+import { groupByOfferFunnel, groupClosers, loadOfferNumbers, readClosersByOffer, OFFER_NOTES } from "./brief-offers.mjs";
 
 export const MORNING_BRIEF_LIVE = false;
 export const BRIEF_TZ = "America/Phoenix";
@@ -57,7 +57,6 @@ export const EVENING_BRIEF_CRON = "0 4 * * *";
 export const LINES = {
   adsUnread: "Ads and sales: could not be read.",
   dashboardWaiting: "Marketing dashboard: not built yet.",
-  reportPointer: "Full detail by offer, funnel and closer is in the report.",
   moneyNotConnected: "Money: not connected yet.",
   accountsWaiting: "Per account (Fundhub LLC, Fundhub Credit Solutions, FH Consulting): no record yet of which bank account is which company.",
   creditLineWaiting: "Ad money left on the credit line: no source yet.",
@@ -149,57 +148,13 @@ function errLine(label, err) {
   return { status: "error", line: `${label}: could not be read (${String((err && err.message) || err).slice(0, 120)}).` };
 }
 
-/* ---------- systems (MB2 scorecard contract) ---------- */
+/* ---------- systems (MB2 scorecard, src/pulse/scorecard.mjs) ---------- */
 
-// Today's pulse check ids → the board contract's groups. MB2 replaces this
-// mapping with its stored scorecard; until then step 1's result is mapped here.
-const GROUP_BY_ID = {
-  health: "backend",
-  login: "front_doors",
-  apply: "front_doors",
-  suggestions: "backend",
-  "gate-relay": "mac",
-  recon: "jobs",
-  unrecorded: "backend",
-  gmail: "outside"
-};
-
-function groupFor(c) {
-  if (GROUP_BY_ID[c.id]) return GROUP_BY_ID[c.id];
-  if (c.kind === "registry") return String(c.path || "").startsWith("/api/") ? "backend" : "front_doors";
-  return "backend";
-}
-
-function statusFor(raw) {
-  if (raw === "PASS" || raw === "up") return "green";
-  if (raw === "FAIL" || raw === "down") return "red";
-  return "not_checked";
-}
-
-/** runDailyPulse() result → the scorecard contract on the board. */
-export function scorecardFromPulse(pulse, { now = new Date() } = {}) {
-  if (!pulse || !Array.isArray(pulse.checks)) return null;
-  return {
-    date: phoenixDateStamp(now),
-    ran_at: now.toISOString(),
-    source: "runDailyPulse",
-    checks: pulse.checks.map((c) => {
-      let status = statusFor(c.status);
-      const proof = c.detail ? String(c.detail).slice(0, 300) : null;
-      // Green means it ran and passed WITH proof. No proof is not green.
-      if (status === "green" && !proof) status = "not_checked";
-      const row = { id: c.id, group: groupFor(c), status, proof };
-      if (status === "red") {
-        row.customer_sees = null; // MB2 fills this; no source today
-        row.since = null;         // MB2 fills this; no source today
-        row.day_count = null;     // MB2 fills this; no source today
-        row.fix = c.suggestedFix || null;
-      }
-      return row;
-    })
-  };
-}
-
+/* The systems section reads MB2's scorecard — the board contract: every check
+   green / red / not_checked, and each red with customer_sees, since, day_count
+   and fix. The morning takes the one runDailyPulse just built (pulse.scorecard,
+   the same object it saves to pulse_scorecards). Anything else reads the row
+   stored for that Arizona day. Nothing here re-runs or re-maps a check. */
 export function summarizeSystems(scorecard, { prefix = "Systems:", missingLine = LINES.systemsMissing } = {}) {
   if (!scorecard || !Array.isArray(scorecard.checks)) {
     return { status: "missing", total: 0, green: 0, red: 0, not_checked: 0, reds: [], line: missingLine };
@@ -211,7 +166,7 @@ export function summarizeSystems(scorecard, { prefix = "Systems:", missingLine =
   let line = `${prefix} ${green} of ${checks.length} checks green.`;
   if (reds.length) {
     line += ` ${reds.length} red: ` + reds.slice(0, 3).map((c) => {
-      const day = c.day_count ? ` (day ${c.day_count})` : "";
+      const day = c.day_count > 1 ? ` (day ${c.day_count})` : "";
       return `${c.id}${day}`;
     }).join(", ") + (reds.length > 3 ? `, and ${reds.length - 3} more in the report.` : ".");
   }
@@ -230,18 +185,23 @@ export function summarizeSystems(scorecard, { prefix = "Systems:", missingLine =
   };
 }
 
-/* The evening reads the check that already ran this morning. Today the stored
-   copy is the morning_briefs row's systems.scorecard (the pulse result in the
-   board's scorecard contract). When MB2's own stored scorecard lands, point
-   this one read at it. Never runs the pulse again. */
+/* The stored scorecard for one Arizona day (pulse_scorecards, migration 430,
+   one row per company per day — a re-run the same morning replaces it, so
+   this is the latest check for that day). The evening reads this; it never
+   runs the pulse again. None stored → null. */
 export async function loadStoredScorecard(db, { orgId, briefDate }) {
   const r = await db.query(
-    `SELECT systems FROM morning_briefs
-      WHERE org_id = $1 AND brief_date = $2::date AND kind = 'morning'`,
+    `SELECT to_char(scorecard_date, 'YYYY-MM-DD') AS date, ran_at, checks
+       FROM pulse_scorecards
+      WHERE org_id = $1::uuid AND scorecard_date = $2::date
+      ORDER BY ran_at DESC
+      LIMIT 1`,
     [orgId, briefDate]
   );
-  const card = r.rows[0]?.systems?.scorecard;
-  return card && Array.isArray(card.checks) ? card : null;
+  const row = r.rows[0];
+  if (!row || !Array.isArray(row.checks)) return null;
+  const ranAt = row.ran_at instanceof Date ? row.ran_at.toISOString() : row.ran_at;
+  return { date: row.date, ran_at: ranAt, checks: row.checks, source: "pulse_scorecards" };
 }
 
 function phoenixClock(iso) {
@@ -267,12 +227,12 @@ export function summarizeStoredSystems(scorecard) {
    itself is not rebuilt here. */
 export function marketingFromOfferNumbers(nums, { window }) {
   const grouped = groupByOfferFunnel(nums?.spend || [], nums?.activity || []);
-  const t = grouped.totals;
+  const t = grouped.all_offers.totals;
   const dying = Array.isArray(nums?.dying) ? nums.dying : [];
   const roasText = t.roas == null ? "return on ad spend unknown" : `return on ad spend ${t.roas}`;
   const cpb = t.cost_per_booked?.cost_cents == null ? "cost per booked person: too few to say" : `${money(t.cost_per_booked.cost_cents)} per booked person`;
-  const top = grouped.by_offer.find((o) => o.spend_cents);
-  const topText = top ? ` Most spend: ${offerName(top.offer)} (${money(top.spend_cents)}).` : "";
+  const top = grouped.offers.find((o) => o.totals.spend_cents);
+  const topText = top ? ` Most spend: ${top.name} (${money(top.totals.spend_cents)}).` : "";
   return {
     status: "ok",
     window: window.label,
@@ -281,27 +241,26 @@ export function marketingFromOfferNumbers(nums, { window }) {
     spend_day: window.day,
     spend_cents: t.spend_cents,
     spend_source: "ad_metrics_daily",
-    totals: t,
-    by_offer: grouped.by_offer,
+    offers: grouped.offers,
+    all_offers: grouped.all_offers,
     dying_ads: dying,
     notes: OFFER_NOTES,
     spend_line: t.spend_cents == null
       ? `Ad spend ${window.day_label}: no spend rows synced.`
       : `Ad spend ${window.day_label}: ${money(t.spend_cents)}.`,
     ads_line:
-      `Ads and sales ${window.day_label}, all offers: ${money(t.spend_cents ?? 0)} spend, ${t.leads} new people, ` +
+      `Ads and sales ${window.day_label}, all offers: ${t.spend_cents == null ? "no ad spend synced" : `${money(t.spend_cents)} spend`}, ${t.leads} new people, ` +
       `${t.booked} booked, ${t.showed} showed, ${t.sales} sales, ${money(t.cash_cents)} cash; ${cpb}; ${roasText}.${topText}`,
     dying_line: dying.length
-      ? `Dying ads: ${dying.length} — ${dying.slice(0, 2).map((d) => `${d.ad_name} (${offerName(d.offer)})`).join(", ")}${dying.length > 2 ? ", and more in the report" : ""}. Change the opening line.`
+      ? `Dying ads: ${dying.length} — ${dying.slice(0, 2).map((d) => `${d.ad_name} (${d.offer_name})`).join(", ")}${dying.length > 2 ? ", and more in the report" : ""}. Change the opening line.`
       : "Dying ads: none flagged.",
     dashboard_url: null,
     dashboard_line: LINES.dashboardWaiting
   };
 }
 
-export function offerName(offer) {
-  if (offer === NO_OFFER) return "no offer label";
-  return offer;
+function marketingError(err) {
+  return { ...errLine("Ads and sales", err), offers: [], all_offers: null, dying_ads: [], notes: OFFER_NOTES, dashboard_url: null };
 }
 
 export async function loadMarketing(db, { orgId, window, briefDate, staffScope, nums = null }) {
@@ -311,7 +270,7 @@ export async function loadMarketing(db, { orgId, window, briefDate, staffScope, 
     });
     return marketingFromOfferNumbers(data, { window });
   } catch (err) {
-    return { ...errLine("Ads and sales", err), by_offer: [], dying_ads: [], notes: OFFER_NOTES, dashboard_url: null };
+    return marketingError(err);
   }
 }
 
@@ -448,6 +407,17 @@ export async function loadTeam(db, { orgId, now, window = briefWindow("morning",
     out.csm_overdue == null ? "CSM overdue unknown" : `${out.csm_overdue} CSM tasks overdue`,
     out.unrecorded_calls == null ? "unrecorded calls unknown" : `${out.unrecorded_calls} calls not recorded`
   ].join(", ");
+  // Numbers that are not split by offer or funnel: shown once, with why.
+  out.all_offers = {
+    not_split: [
+      { key: "csm_overdue", what: "CSM tasks overdue", value: out.csm_overdue, unit: "count",
+        reason: "Counted for the whole company right now; tasks are not split by offer or funnel." },
+      { key: "unrecorded_calls", what: "Calls not recorded", value: out.unrecorded_calls, unit: "count",
+        reason: "Counted for the whole company right now (src/sales/unrecorded.mjs); not split by offer or funnel." },
+      { key: "company_8", what: "Company numbers, last 24 hours", value: null, unit: null,
+        reason: "The company pulse (src/ops/pulse.mjs) counts the whole company; it is not split by offer or funnel." }
+    ]
+  };
   out.line =
     `Team, ${window.label}: ${part(held, "calls held")}, ${part(noShows, "no-shows")}, ${part(deposits, "sales")}, ${closeRate}. ` +
     `Now: ${extras}. Last 24 hours: ${part(funded, "files funded")}.`;
@@ -489,7 +459,7 @@ export async function loadSuggestions(db, { orgId, briefDate, env = process.env,
 
 /* ---------- the text ---------- */
 
-export function formatMorningText({ kind = "morning", now = new Date(), systems, marketing, money: m, team, suggestions } = {}) {
+export function formatMorningText({ kind = "morning", now = new Date(), systems, marketing, money: m, team, suggestions, reportUrl: url = null } = {}) {
   assertKind(kind);
   const lines = [`${GREETINGS[kind]} ${phoenixLongDate(now)}.`, ""];
   // The text is the short summary: systems first, headline numbers, the dying
@@ -503,31 +473,41 @@ export function formatMorningText({ kind = "morning", now = new Date(), systems,
   lines.push(marketing?.ads_line || marketing?.line || LINES.adsUnread);
   if (marketing?.dying_line) lines.push(marketing.dying_line);
   lines.push(suggestions?.line || LINES.suggestionsNone);
-  lines.push(LINES.reportPointer);
+  // The last line is always the link to the full report (per offer, funnel
+  // and closer). Owner-set 2026-10-05: the text is the summary, the stored
+  // report is the detail.
+  lines.push("", `Full report: ${url || "not saved"}`);
   return lines.join("\n");
 }
 
 /* ---------- build, save, send ---------- */
+
+/** The report page the text links to (MB5): public/app/morning-brief.html.
+    Evening rows carry &kind=evening so the page opens the evening brief. */
+export function reportUrl(briefDate, env = process.env, kind = "morning") {
+  const base = String(env?.APP_BASE_URL || env?.URL || "https://fundhub.ai").replace(/\/+$/, "");
+  const tail = kind === "evening" ? "&kind=evening" : "";
+  return `${base}/app/morning-brief.html?date=${briefDate}${tail}`;
+}
 
 export async function buildMorningBrief(db, { orgId, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null, suggest = buildSuggestions, staffScope = null } = {}) {
   if (!orgId) throw new TypeError("buildMorningBrief: orgId required");
   assertKind(kind);
   const window = briefWindow(kind, now);
   const briefDate = window.brief_date;
-  let systems;
-  if (kind === "evening") {
-    let card = scorecard;
-    if (!card) {
-      try {
-        card = await loadStoredScorecard(db, { orgId, briefDate });
-      } catch (err) {
-        systems = { ...summarizeStoredSystems(null), status: "error", line: errLine("Systems", err).line };
-      }
+  // Systems first. Morning: the scorecard the pulse just built. Otherwise (and
+  // always for the evening): the scorecard stored for today. None → said plainly.
+  let card = scorecard || (kind === "morning" && pulse?.scorecard) || null;
+  let systemsError = null;
+  if (!card) {
+    try {
+      card = await loadStoredScorecard(db, { orgId, briefDate });
+    } catch (err) {
+      systemsError = err;
     }
-    systems = systems || summarizeStoredSystems(card);
-  } else {
-    systems = summarizeSystems(scorecard || scorecardFromPulse(pulse, { now }));
   }
+  let systems = kind === "evening" ? summarizeStoredSystems(card) : summarizeSystems(card);
+  if (systemsError) systems = { ...systems, status: "error", line: errLine("Systems", systemsError).line };
   // One staff-scoped read for ads, sales, closers and dying ads, shared by the
   // marketing and team sections so both split by the same offer and funnel.
   let nums = null;
@@ -542,13 +522,14 @@ export async function buildMorningBrief(db, { orgId, kind = "morning", env = pro
   }
   const [marketing, moneySection, team, suggestions] = await Promise.all([
     numsError
-      ? Promise.resolve({ ...errLine("Ads and sales", numsError), by_offer: [], dying_ads: [], notes: OFFER_NOTES, dashboard_url: null })
+      ? Promise.resolve(marketingError(numsError))
       : loadMarketing(db, { orgId, window, briefDate, nums }),
     loadMoney(db, { orgId, briefDate, env, day: window.day, dayLabel: window.day_label }),
     loadTeam(db, { orgId, now, window, closerRows: nums ? nums.closers : null }),
     loadSuggestions(db, { orgId, briefDate, env, suggest })
   ]);
-  const text = formatMorningText({ kind, now, systems, marketing, money: moneySection, team, suggestions });
+  const url = reportUrl(briefDate, env, kind);
+  const text = formatMorningText({ kind, now, systems, marketing, money: moneySection, team, suggestions, reportUrl: url });
   return {
     org_id: orgId,
     kind,
@@ -563,7 +544,7 @@ export async function buildMorningBrief(db, { orgId, kind = "morning", env = pro
     suggestions_status: suggestions.status,
     today: { status: "waiting", line: LINES.todayWaiting },
     text_body: text,
-    report_url: null
+    report_url: url
   };
 }
 

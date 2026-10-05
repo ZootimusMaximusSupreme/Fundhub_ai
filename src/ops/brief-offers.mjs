@@ -1,5 +1,5 @@
 // Ad and sales numbers for the morning and evening brief, PER OFFER and PER
-// FUNNEL (owner-set 2026-10-05, MB6: "every hole of the company").
+// FUNNEL (owner-set 2026-10-05, MB6).
 //
 // WHERE THE GROUPING COMES FROM — read from the repo, never invented:
 //   * OFFER = the ad's script label, ad_scripts.offer_key, carried to the ad by
@@ -12,11 +12,15 @@
 //     main yet, so they are not guessed here.
 //   * FUNNEL = the person's first landing page, client_ad_attribution.landing_path,
 //     looked up in src/funnel/pages.mjs (watch / roadmap / homepage).
-//   * NULL stays unknown: no label → "no offer label", no landing page →
-//     "no landing page", a page not on the map → "other page".
+//   * NULL stays unknown: no label → "No offer label", no landing page →
+//     "No landing page", a page not on the map → "Other page". An ad number that
+//     two ads with DIFFERENT labels share is not guessed: it is "No offer label".
 //
-// Spend belongs to an ad, and an ad has no funnel, so spend, cost per booked
-// person and return on ad spend are per offer only. Said once in `notes`.
+// SHAPE (what the stored report and the MB5 page read):
+//   { offers: [{ key, name, totals, funnels: [{ key, name, totals }] }],
+//     all_offers: { totals, not_split: [{ key, what, value, reason }] } }
+// A number that cannot be split by offer or funnel is shown ONCE, in
+// all_offers.not_split, with a one-line reason. Never spread across offers.
 //
 // Read only. Money is integer cents. Every number is a plain SQL read.
 
@@ -25,16 +29,31 @@ import { costPerBooked } from "./meta-marketing.mjs";
 import { readDyingAds, pageChangeCandidates } from "./suggestions.mjs";
 import { asStaff } from "../partners/rls.mjs";
 
-export const NO_OFFER = "no_offer_label";
-export const NO_PAGE = "no_landing_page";
-export const OTHER_PAGE = "other_page";
+// Sentinel keys start with "_": ad_scripts.offer_key must match
+// ^[a-z][a-z0-9_]{1,48}$ (377), so no real offer can collide with them.
+export const NO_OFFER = "_no_offer_label";
+export const NO_PAGE = "_no_landing_page";
+export const OTHER_PAGE = "_other_page";
+
+// The same "money came in" rule as the company cash number
+// (src/dashboard/kpis.mjs, computeKpis), so the offer split adds up to it.
+export const CASH_STATUSES = Object.freeze(["paid", "succeeded", "complete", "completed"]);
 
 export const OFFER_NOTES = Object.freeze([
-  "Offer comes from each ad's script label (ad_scripts.offer_key). Ads and people with no label show as \"no offer label\".",
-  "Funnel comes from the person's first landing page (src/funnel/pages.mjs).",
-  "Spend is per ad and an ad has no funnel, so spend, cost per booked person and return on ad spend are per offer only.",
-  "Cash and sales with no person on them are left out of the offer split; the company total is in the team section."
+  "Offer comes from each ad's script label (ad_scripts.offer_key). Ads and people with no label show as \"No offer label\".",
+  "Funnel comes from the person's first landing page (src/funnel/pages.mjs)."
 ]);
+
+export const NOT_SPLIT_REASONS = Object.freeze({
+  spend_by_funnel: "Spend belongs to an ad, and an ad has no funnel, so spend, cost per booked person and return on ad spend are split by offer only.",
+  cash_no_person: "These payments have no person on them, so they have no offer or funnel.",
+  booked_no_person: "These bookings have no person on them, so they have no offer or funnel."
+});
+
+const NAMES = { [NO_OFFER]: "No offer label", [NO_PAGE]: "No landing page", [OTHER_PAGE]: "Other page" };
+export function displayName(key) {
+  return NAMES[key] || key;
+}
 
 export function offerOf(offerKey) {
   const k = offerKey == null ? "" : String(offerKey).trim();
@@ -43,44 +62,54 @@ export function offerOf(offerKey) {
 
 export function funnelOf(landingPath) {
   if (landingPath == null || String(landingPath).trim() === "") return NO_PAGE;
-  // Attribution stores the full path; the map is keyed by the first segment form.
   const path = String(landingPath).split(/[?#]/)[0];
   const hit = funnelFor(path);
   return hit ? hit.funnel : OTHER_PAGE;
 }
 
-const METRICS = ["leads", "booked", "showed", "no_shows", "sales"];
+const METRICS = ["leads", "booked", "showed", "no_shows", "sales", "cash_cents"];
 const blank = () => ({ leads: 0, booked: 0, showed: 0, no_shows: 0, sales: 0, cash_cents: 0 });
-const METRIC_FIELD = { lead: "leads", booked: "booked", showed: "showed", no_show: "no_shows", sale: "sales" };
+const METRIC_FIELD = { lead: "leads", booked: "booked", showed: "showed", no_show: "no_shows", sale: "sales", cash: "cash_cents" };
 
 function roas(cashCents, spendCents) {
-  if (!spendCents || spendCents <= 0) return null;
+  if (spendCents == null || spendCents <= 0) return null;
   return Math.round((cashCents / spendCents) * 100) / 100;
+}
+function closeRate(sales, showed) {
+  return showed ? Math.round((sales / showed) * 1000) / 1000 : null;
+}
+function byName(a, b) {
+  return String(a.name).localeCompare(String(b.name));
 }
 
 /**
  * Pure. spendRows: [{ offer_key, spend_cents, rows }]
  * activityRows: [{ offer_key, landing_path, metric, n, cents }]
- * → { totals, by_offer: [{ offer, spend_cents, ..., funnels: [{ funnel, ... }] }] }
- * Offers sorted by spend, then cash; funnels by leads.
+ *   metric: lead | booked | showed | no_show | sale | cash | cash_no_person | booked_no_person
+ * → { offers, all_offers }. Offers by spend, then cash; funnels by new people.
  */
 export function groupByOfferFunnel(spendRows = [], activityRows = []) {
   const offers = new Map();
-  const get = (offer) => {
-    if (!offers.has(offer)) offers.set(offer, { offer, spend_cents: null, ...blank(), funnels: new Map() });
-    return offers.get(offer);
+  const get = (key) => {
+    if (!offers.has(key)) offers.set(key, { key, spend_cents: null, ...blank(), funnels: new Map() });
+    return offers.get(key);
   };
   for (const r of spendRows) {
     if (!Number(r.rows || 0)) continue;
     const o = get(offerOf(r.offer_key));
     o.spend_cents = (o.spend_cents || 0) + Number(r.spend_cents || 0);
   }
+  const unlinked = { cash_no_person: 0, booked_no_person: 0 };
   for (const r of activityRows) {
-    const field = r.metric === "cash" ? "cash_cents" : METRIC_FIELD[r.metric];
+    if (r.metric in unlinked) {
+      unlinked[r.metric] += r.metric === "cash_no_person" ? Number(r.cents || 0) : Number(r.n || 0);
+      continue;
+    }
+    const field = METRIC_FIELD[r.metric];
     if (!field) continue;
     const o = get(offerOf(r.offer_key));
     const fk = funnelOf(r.landing_path);
-    if (!o.funnels.has(fk)) o.funnels.set(fk, { funnel: fk, ...blank() });
+    if (!o.funnels.has(fk)) o.funnels.set(fk, { key: fk, ...blank() });
     const f = o.funnels.get(fk);
     const v = field === "cash_cents" ? Number(r.cents || 0) : Number(r.n || 0);
     o[field] += v;
@@ -88,38 +117,58 @@ export function groupByOfferFunnel(spendRows = [], activityRows = []) {
   }
 
   const totals = { spend_cents: null, ...blank() };
-  const by_offer = [...offers.values()].map((o) => {
+  const list = [...offers.values()].map((o) => {
     if (o.spend_cents != null) totals.spend_cents = (totals.spend_cents || 0) + o.spend_cents;
-    for (const m of [...METRICS, "cash_cents"]) totals[m] += o[m];
-    const funnels = [...o.funnels.values()].map((f) => ({ ...f, close_rate: f.showed ? f.sales / f.showed : null }));
-    funnels.sort((a, b) => b.leads - a.leads || b.booked - a.booked || a.funnel.localeCompare(b.funnel));
+    for (const m of METRICS) totals[m] += o[m];
+    const funnels = [...o.funnels.values()].map((f) => ({
+      key: f.key,
+      name: displayName(f.key),
+      totals: { ...Object.fromEntries(METRICS.map((m) => [m, f[m]])), close_rate: closeRate(f.sales, f.showed) }
+    }));
+    funnels.sort((a, b) => b.totals.leads - a.totals.leads || b.totals.booked - a.totals.booked || byName(a, b));
     return {
-      offer: o.offer,
-      spend_cents: o.spend_cents,
-      ...Object.fromEntries([...METRICS, "cash_cents"].map((m) => [m, o[m]])),
-      close_rate: o.showed ? o.sales / o.showed : null,
-      cost_per_booked: costPerBooked({ spendCents: o.spend_cents, bookedN: o.booked }),
-      roas: roas(o.cash_cents, o.spend_cents),
+      key: o.key,
+      name: displayName(o.key),
+      totals: {
+        spend_cents: o.spend_cents,
+        ...Object.fromEntries(METRICS.map((m) => [m, o[m]])),
+        close_rate: closeRate(o.sales, o.showed),
+        cost_per_booked: costPerBooked({ spendCents: o.spend_cents, bookedN: o.booked }),
+        roas: roas(o.cash_cents, o.spend_cents)
+      },
       funnels
     };
   });
-  by_offer.sort((a, b) => (b.spend_cents || 0) - (a.spend_cents || 0) || b.cash_cents - a.cash_cents || a.offer.localeCompare(b.offer));
-  totals.close_rate = totals.showed ? totals.sales / totals.showed : null;
+  list.sort((a, b) => (b.totals.spend_cents || 0) - (a.totals.spend_cents || 0) ||
+    b.totals.cash_cents - a.totals.cash_cents || byName(a, b));
+
+  // All offers: the split numbers added up, plus the numbers that cannot be
+  // split, each once, with its reason. The company totals include them.
+  const not_split = [{ key: "spend_by_funnel", what: "Spend per funnel", value: null, reason: NOT_SPLIT_REASONS.spend_by_funnel }];
+  if (unlinked.cash_no_person) {
+    not_split.push({ key: "cash_no_person", what: "Cash with no person on it", value: unlinked.cash_no_person, unit: "cents", reason: NOT_SPLIT_REASONS.cash_no_person });
+  }
+  if (unlinked.booked_no_person) {
+    not_split.push({ key: "booked_no_person", what: "Bookings with no person on them", value: unlinked.booked_no_person, unit: "count", reason: NOT_SPLIT_REASONS.booked_no_person });
+  }
+  totals.cash_cents += unlinked.cash_no_person;
+  totals.booked += unlinked.booked_no_person;
+  totals.close_rate = closeRate(totals.sales, totals.showed);
   totals.cost_per_booked = costPerBooked({ spendCents: totals.spend_cents, bookedN: totals.booked });
   totals.roas = roas(totals.cash_cents, totals.spend_cents);
-  return { totals, by_offer };
+  return { offers: list, all_offers: { totals, not_split } };
 }
 
 /* First touch wins: client_ad_attribution is one row per client (its primary
-   key), so the join below cannot double a person. An ad number shared by two
-   ad rows is collapsed to one label. */
+   key), so the join below cannot double a person. An ad number shared by ads
+   with different labels is left unlabelled rather than guessed. */
 const ATTR_CTE = `
   attr AS (
     SELECT caa.client_id, caa.landing_path,
-           (SELECT v.offer_key FROM v_ad_label_spine v
+           (SELECT CASE WHEN count(DISTINCT v.offer_key) = 1 THEN min(v.offer_key) END
+              FROM v_ad_label_spine v
              WHERE v.org_id = caa.org_id AND v.fundhub_ad_number = caa.ad_id
-               AND v.offer_key IS NOT NULL
-             ORDER BY v.offer_key LIMIT 1) AS offer_key
+               AND v.offer_key IS NOT NULL) AS offer_key
       FROM client_ad_attribution caa
      WHERE caa.org_id = $1
   )`;
@@ -138,44 +187,47 @@ export async function readSpendByOffer(tx, { orgId, day }) {
 
 /* What happened in [from, to): new people, bookings made, calls held and
    no-shows, sales, cash — each tagged with the person's offer and funnel.
-   Leads, booked, showed and no-shows count PEOPLE; sales count sales rows. */
+   Leads, booked, showed and no-shows count PEOPLE; sales count sales rows;
+   cash is transactions.amount_paid (DOLLARS, numeric) turned into cents. */
 export async function readActivityByOffer(tx, { orgId, from, to }) {
   const r = await tx.query(
     `WITH ${ATTR_CTE},
      ev AS (
-       SELECT 'lead' AS metric, c.id AS client_id, NULL::uuid AS row_id, 0::bigint AS cents
+       SELECT 'lead' AS metric, c.id AS client_id, 0::bigint AS cents
          FROM clients c
         WHERE c.org_id = $1 AND COALESCE(c.is_demo, false) = false
           AND c.created_at >= $2::timestamptz AND c.created_at < $3::timestamptz
        UNION ALL
-       SELECT 'booked', b.client_id, NULL, 0
+       SELECT CASE WHEN b.client_id IS NULL THEN 'booked_no_person' ELSE 'booked' END, b.client_id, 0
          FROM bookings b
-        WHERE b.org_id = $1 AND b.client_id IS NOT NULL
+        WHERE b.org_id = $1
           AND b.created_at >= $2::timestamptz AND b.created_at < $3::timestamptz
        UNION ALL
-       SELECT CASE WHEN o.outcome = 'no_show' THEN 'no_show' ELSE 'showed' END, o.client_id, NULL, 0
+       SELECT CASE WHEN o.outcome = 'no_show' THEN 'no_show' ELSE 'showed' END, o.client_id, 0
          FROM call_outcomes o
         WHERE o.org_id = $1 AND COALESCE(o.is_demo, false) = false
           AND o.logged_at >= $2::timestamptz AND o.logged_at < $3::timestamptz
        UNION ALL
-       SELECT 'sale', s.client_id, s.id, 0
+       SELECT 'sale', s.client_id, 0
          FROM sales s
         WHERE s.org_id = $1 AND s.status = 'active' AND COALESCE(s.is_demo, false) = false
           AND s.sold_at >= $2::timestamptz AND s.sold_at < $3::timestamptz
        UNION ALL
-       SELECT 'cash', t.client_id, t.id, round(t.amount_paid * 100)::bigint
+       SELECT CASE WHEN t.client_id IS NULL THEN 'cash_no_person' ELSE 'cash' END, t.client_id,
+              round(t.amount_paid * 100)::bigint
          FROM transactions t
-        WHERE t.org_id = $1 AND t.status = 'succeeded' AND t.client_id IS NOT NULL
+        WHERE t.org_id = $1 AND t.status = ANY($4::text[])
           AND COALESCE(t.is_demo, false) = false AND t.amount_paid IS NOT NULL
           AND t.created_at >= $2::timestamptz AND t.created_at < $3::timestamptz
      )
      SELECT a.offer_key, a.landing_path, ev.metric,
-            CASE WHEN ev.metric = 'sale' THEN count(*) ELSE count(DISTINCT ev.client_id) END::int AS n,
+            CASE WHEN ev.metric IN ('sale', 'booked_no_person') THEN count(*)
+                 ELSE count(DISTINCT ev.client_id) END::int AS n,
             COALESCE(sum(ev.cents), 0)::bigint AS cents
        FROM ev
        LEFT JOIN attr a ON a.client_id = ev.client_id
       GROUP BY a.offer_key, a.landing_path, ev.metric`,
-    [orgId, from, to]
+    [orgId, from, to, CASH_STATUSES]
   );
   return r.rows;
 }
@@ -203,43 +255,43 @@ export async function readClosersByOffer(tx, { orgId, from, to }) {
   return r.rows;
 }
 
-/** Pure. Rows from readClosersByOffer → one entry per closer with by_offer → funnels. */
+const CALL_KEYS = ["calls_held", "no_shows", "deposits", "downsells"];
+const callBlank = () => ({ calls_held: 0, no_shows: 0, deposits: 0, downsells: 0 });
+const callRate = (x) => (x.calls_held ? Math.round((x.deposits / x.calls_held) * 1000) / 1000 : null);
+const callTotals = (x) => ({ ...Object.fromEntries(CALL_KEYS.map((k) => [k, x[k]])), close_rate: callRate(x) });
+
+/** Pure. Rows from readClosersByOffer → one entry per closer, each with offers → funnels. */
 export function groupClosers(rows = []) {
   const people = new Map();
   for (const r of rows) {
-    if (!people.has(r.staff_id)) {
-      people.set(r.staff_id, { staff_id: r.staff_id, name: r.name, calls_held: 0, no_shows: 0, deposits: 0, downsells: 0, offers: new Map() });
-    }
+    if (!people.has(r.staff_id)) people.set(r.staff_id, { staff_id: r.staff_id, name: r.name, ...callBlank(), offers: new Map() });
     const p = people.get(r.staff_id);
-    const offer = offerOf(r.offer_key);
-    const funnel = funnelOf(r.landing_path);
-    if (!p.offers.has(offer)) p.offers.set(offer, { offer, calls_held: 0, no_shows: 0, deposits: 0, downsells: 0, funnels: new Map() });
-    const o = p.offers.get(offer);
-    if (!o.funnels.has(funnel)) o.funnels.set(funnel, { funnel, calls_held: 0, no_shows: 0, deposits: 0, downsells: 0 });
-    const f = o.funnels.get(funnel);
-    for (const k of ["calls_held", "no_shows", "deposits", "downsells"]) {
+    const ok = offerOf(r.offer_key);
+    const fk = funnelOf(r.landing_path);
+    if (!p.offers.has(ok)) p.offers.set(ok, { key: ok, ...callBlank(), funnels: new Map() });
+    const o = p.offers.get(ok);
+    if (!o.funnels.has(fk)) o.funnels.set(fk, { key: fk, ...callBlank() });
+    const f = o.funnels.get(fk);
+    for (const k of CALL_KEYS) {
       const v = Number(r[k] || 0);
       p[k] += v; o[k] += v; f[k] += v;
     }
   }
-  const rate = (x) => (x.calls_held ? x.deposits / x.calls_held : null);
   return [...people.values()]
     .map((p) => ({
       staff_id: p.staff_id,
       name: p.name,
-      calls_held: p.calls_held,
-      no_shows: p.no_shows,
-      deposits: p.deposits,
-      downsells: p.downsells,
-      close_rate: rate(p),
-      by_offer: [...p.offers.values()].map((o) => ({
-        offer: o.offer,
-        calls_held: o.calls_held, no_shows: o.no_shows, deposits: o.deposits, downsells: o.downsells,
-        close_rate: rate(o),
-        funnels: [...o.funnels.values()].map((f) => ({ ...f, close_rate: rate(f) }))
-      }))
+      ...callTotals(p),
+      offers: [...p.offers.values()]
+        .map((o) => ({
+          key: o.key,
+          name: displayName(o.key),
+          totals: callTotals(o),
+          funnels: [...o.funnels.values()].map((f) => ({ key: f.key, name: displayName(f.key), totals: callTotals(f) })).sort(byName)
+        }))
+        .sort(byName)
     }))
-    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+    .sort(byName);
 }
 
 /** Dying ads (the watch-curve rule MB4 uses), each with its offer. */
@@ -252,14 +304,18 @@ export async function readDyingByOffer(tx, { orgId, date }) {
     [ids]
   );
   const offerById = new Map(r.rows.map((x) => [String(x.ad_row_id), x.offer_key]));
-  return dying.map((d) => ({
-    ad_id: d.numbers.ad_id,
-    ad_name: d.numbers.ad_name,
-    offer: offerOf(offerById.get(String(d.numbers.ad_id))),
-    plays: d.numbers.plays,
-    reached_25_rate: d.numbers.reached_25_rate,
-    spend_7d_cents: d.numbers.spend_7d_cents
-  }));
+  return dying.map((d) => {
+    const key = offerOf(offerById.get(String(d.numbers.ad_id)));
+    return {
+      ad_id: d.numbers.ad_id,
+      ad_name: d.numbers.ad_name,
+      offer: key,
+      offer_name: displayName(key),
+      plays: d.numbers.plays,
+      reached_25_rate: d.numbers.reached_25_rate,
+      spend_7d_cents: d.numbers.spend_7d_cents
+    };
+  });
 }
 
 /**
@@ -277,4 +333,4 @@ export async function loadOfferNumbers(db, { orgId, day, from, to, briefDate, st
   });
 }
 
-export default { groupByOfferFunnel, groupClosers, loadOfferNumbers, offerOf, funnelOf, OFFER_NOTES };
+export default { groupByOfferFunnel, groupClosers, loadOfferNumbers, offerOf, funnelOf, displayName, OFFER_NOTES };

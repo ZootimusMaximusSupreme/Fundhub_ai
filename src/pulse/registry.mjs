@@ -298,6 +298,9 @@ const API_KEYS = [
   "read/search",
   "read/slo-connections",
   "read/staff",
+  /* The stored morning scorecard (MB2, 430). Owner/admin; an unsigned ping
+     answers the app's 401. */
+  "read/systems-check",
   "read/tradelines",
   "read/transactions",
   "read/underwrite",
@@ -357,6 +360,7 @@ const DESK_FILES = [
   "journeys.html",
   "lenders.html",
   "messaging.html",
+  "morning-brief.html",
   "my-numbers.html",
   "ops-admin.html",
   "partner-galaxy.html",
@@ -431,15 +435,32 @@ function checkRow(row, status, detail, suggestedFix = null) {
   };
 }
 
-function isUp(row, httpStatus) {
-  if (row.kind === "desk" || row.kind === "public_static") return httpStatus >= 200 && httpStatus < 300;
-  return (
-    (httpStatus >= 200 && httpStatus < 300) ||
-    httpStatus === 400 ||
-    httpStatus === 401 ||
-    httpStatus === 403 ||
-    httpStatus === 405
-  );
+/* The refusals a GET ping may get from a route that is working: bad
+   parameters (400), not signed in (401), wrong role (403), POST-only (405). */
+export const EXPECTED_REFUSALS = Object.freeze([400, 401, 403, 405]);
+
+/* isAppRefusal — the refusal came from OUR handler, not from a gateway, a
+   Netlify 404 page or a crash page. Every handler in api/ refuses with JSON
+   carrying `ok: false` and/or an `error` string (requireAuth, requireRole,
+   readHandler, the 405 guard). Tightened 2026-10-05 (MB2, spec gap 1): before
+   this, a bare 401 from anywhere counted as up, so most API pings proved only
+   that something answered. */
+export function isAppRefusal(bodyText) {
+  let parsed = null;
+  try { parsed = JSON.parse(String(bodyText || "")); } catch { return false; }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+  return parsed.ok === false || typeof parsed.error === "string";
+}
+
+export function isUp(row, httpStatus, bodyText = "") {
+  if (httpStatus >= 200 && httpStatus < 300) return true;
+  if (row.kind === "desk" || row.kind === "public_static") return false;
+  const expected = Array.isArray(row.expect) ? row.expect : EXPECTED_REFUSALS;
+  return expected.includes(httpStatus) && isAppRefusal(bodyText);
+}
+
+async function readBody(res) {
+  try { return typeof res.text === "function" ? await res.text() : ""; } catch { return ""; }
 }
 
 async function pingRow(row, fetchImpl, baseUrl) {
@@ -451,13 +472,17 @@ async function pingRow(row, fetchImpl, baseUrl) {
       signal: AbortSignal.timeout(15000)
     });
     const status = res.status;
-    if (isUp(row, status)) {
+    const body = status >= 200 && status < 300 ? "" : await readBody(res);
+    if (isUp(row, status, body)) {
       return checkRow(row, "up", `${row.path} ${status}`);
     }
+    const why = EXPECTED_REFUSALS.includes(status)
+      ? `${row.path} answered ${status} but not with the app's own refusal (not our handler)`
+      : `${row.path} answered ${status}`;
     return checkRow(
       row,
       "down",
-      `${row.path} answered ${status}`,
+      why,
       `Restore ${row.path}. Do not auto-fix from this pulse.`
     );
   } catch (err) {

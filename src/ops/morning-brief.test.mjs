@@ -4,7 +4,6 @@ import {
   MORNING_BRIEF_LIVE,
   LINES,
   phoenixDateStamp,
-  scorecardFromPulse,
   summarizeSystems,
   formatMorningText,
   loadMoney,
@@ -15,9 +14,11 @@ import {
   briefWindow,
   summarizeStoredSystems,
   buildMorningBrief,
-  loadSuggestions
+  loadSuggestions,
+  reportUrl
 } from "./morning-brief.mjs";
 import { textMorningBrief, last4 } from "../pulse/notify.mjs";
+import { buildScorecard } from "../pulse/scorecard.mjs";
 import { parseBriefDate, parseBriefKind } from "../../api/read/morning-brief.mjs";
 
 // 13:00 UTC on 2026-10-05 is 6:00 a.m. Arizona.
@@ -33,31 +34,45 @@ test("Arizona date: 6:00 a.m. and just before midnight stay on the right day", (
   assert.equal(phoenixDateStamp(new Date("2026-10-06T06:30:00Z")), "2026-10-05");
 });
 
-test("pulse result maps to the scorecard contract; skip is not_checked, never green", () => {
-  const card = scorecardFromPulse({
+test("morning systems reads MB2's scorecard as built: red with day count, customer_sees and fix; skip is not_checked", async () => {
+  const card = buildScorecard({
+    now: SIX_AM_AZ,
     checks: [
       { id: "health", status: "PASS", detail: "pending 0" },
       { id: "gate-relay", status: "skip", detail: "server" },
-      { id: "login", status: "FAIL", detail: "HTTP 500", suggestedFix: "check the deploy" },
-      { id: "reg:read/inbox", kind: "registry", path: "/api/read/inbox", status: "up", detail: "HTTP 401" },
-      { id: "reg:app/x.html", kind: "registry", path: "/app/x.html", status: "down", detail: "HTTP 404" },
-      { id: "recon", status: "PASS", detail: "" }
-    ]
-  }, { now: SIX_AM_AZ });
-  assert.equal(card.date, "2026-10-05");
-  const by = Object.fromEntries(card.checks.map((c) => [c.id, c]));
-  assert.equal(by.health.status, "green");
-  assert.equal(by.health.group, "backend");
-  assert.equal(by["gate-relay"].status, "not_checked");
-  assert.equal(by["gate-relay"].group, "mac");
-  assert.equal(by.login.status, "red");
-  assert.equal(by.login.fix, "check the deploy");
-  assert.equal(by.login.customer_sees, null);
-  assert.equal(by["reg:read/inbox"].group, "backend");
-  assert.equal(by["reg:app/x.html"].group, "front_doors");
-  assert.equal(by["reg:app/x.html"].status, "red");
-  // A pass with no proof is not green.
-  assert.equal(by.recon.status, "not_checked");
+      { id: "login", status: "FAIL", detail: "HTTP 500", suggestedFix: "check the deploy", customerSees: "Staff cannot log in." }
+    ],
+    previous: { checks: [{ id: "login", status: "red", since: "2026-10-04" }] }
+  });
+  const db = { query: async (sql) => { if (/pulse_scorecards/.test(sql)) throw new Error("must not read the stored row"); return { rows: [] }; } };
+  const brief = await buildMorningBrief(db, {
+    orgId: "00000000-0000-0000-0000-000000000001", now: SIX_AM_AZ, env: { PLAID_ENV: "sandbox" },
+    pulse: { checks: [], scorecard: card }, suggest: async () => ({ ok: true, suggestions: [] }), staffScope: (fn) => fn(db)
+  });
+  assert.equal(brief.systems.green, 1);
+  assert.equal(brief.systems.not_checked, 1);
+  assert.equal(brief.systems.red, 1);
+  const red = brief.systems.reds[0];
+  assert.equal(red.id, "login");
+  assert.equal(red.day_count, 2);
+  assert.equal(red.since, "2026-10-04");
+  assert.equal(red.customer_sees, "Staff cannot log in.");
+  assert.equal(red.fix, "check the deploy");
+  assert.match(brief.text_body, /1 red: login \(day 2\)\./);
+  assert.doesNotMatch(brief.text_body, /Nothing needs you/);
+});
+
+test("morning with no scorecard from the pulse reads today's stored one; none stored says so plainly", async () => {
+  const seen = [];
+  const db = { query: async (sql, params) => { seen.push({ sql, params }); return { rows: [] }; } };
+  const brief = await buildMorningBrief(db, {
+    orgId: "00000000-0000-0000-0000-000000000001", now: SIX_AM_AZ, env: { PLAID_ENV: "sandbox" },
+    pulse: null, suggest: async () => ({ ok: true, suggestions: [] }), staffScope: (fn) => fn(db)
+  });
+  const stored = seen.find((q) => /FROM pulse_scorecards/.test(q.sql));
+  assert.deepEqual(stored.params, ["00000000-0000-0000-0000-000000000001", "2026-10-05"]);
+  assert.equal(brief.systems.status, "missing");
+  assert.equal(brief.systems.line, LINES.systemsMissing);
 });
 
 test("systems headline never says nothing needs you while something is not checked", () => {
@@ -92,7 +107,7 @@ test("the text starts Good morning, Chris. and prints waiting lines, not numbers
   assert.match(text, /Money: not connected yet\./);
   assert.match(text, /cash collected unknown/);
   assert.match(text, /Ads and sales: could not be read\./);
-  assert.match(text, /Full detail by offer, funnel and closer is in the report\./);
+  assert.match(text, /\n\nFull report: not saved$/);
 });
 
 test("money is whole cents in, dollars out", () => {
@@ -202,8 +217,8 @@ test("evening build reads this morning's stored check, never a pulse, and counts
   const db = {
     query: async (sql, params) => {
       seen.push({ sql, params });
-      if (/FROM morning_briefs/.test(sql)) {
-        return { rows: [{ systems: { scorecard: { ran_at: "2026-10-05T13:00:00Z", checks: [{ id: "health", status: "green", proof: "ok" }] } } }] };
+      if (/FROM pulse_scorecards/.test(sql)) {
+        return { rows: [{ date: "2026-10-05", ran_at: new Date("2026-10-05T13:00:00Z"), checks: [{ id: "health", group: "backend", status: "green", proof: "ok" }] }] };
       }
       return { rows: [] };
     }
@@ -222,9 +237,12 @@ test("evening build reads this morning's stored check, never a pulse, and counts
   assert.ok(brief.text_body.startsWith("Good evening, Chris. Monday, October 5."));
   assert.match(brief.text_body.replace(/\s/g, " "), /Systems, from this morning's check at 6:00 AM: 1 of 1 checks green\. Nothing needs you\./);
   assert.doesNotMatch(brief.text_body, /login/);
-  const stored = seen.find((q) => /FROM morning_briefs/.test(q.sql));
-  assert.match(stored.sql, /kind = 'morning'/);
+  const stored = seen.find((q) => /FROM pulse_scorecards/.test(q.sql));
+  assert.match(stored.sql, /scorecard_date = \$2::date/);
   assert.deepEqual(stored.params.slice(1), ["2026-10-05"]);
+  assert.equal(brief.systems.source, "stored_morning_check");
+  assert.equal(brief.report_url, "https://fundhub.ai/app/morning-brief.html?date=2026-10-05&kind=evening");
+  assert.ok(brief.text_body.endsWith("\n\nFull report: https://fundhub.ai/app/morning-brief.html?date=2026-10-05&kind=evening"));
   const closers = seen.find((q) => /GROUP BY o.staff_id, s.name/.test(q.sql));
   assert.equal(closers.params[1], "2026-10-05T07:00:00.000Z");
   assert.equal(closers.params[2], "2026-10-06T04:00:00.000Z");
@@ -291,4 +309,23 @@ test("read endpoint kind: default morning, evening allowed, anything else refuse
   assert.equal(parseBriefKind("night"), null);
   assert.equal(parseBriefKind("evening'; drop"), null);
   assert.deepEqual([...BRIEF_KINDS], ["morning", "evening"]);
+});
+
+test("the report link points at the MB5 page for that Arizona day; evening carries kind=evening", () => {
+  assert.equal(reportUrl("2026-10-05", {}), "https://fundhub.ai/app/morning-brief.html?date=2026-10-05");
+  assert.equal(reportUrl("2026-10-05", { APP_BASE_URL: "https://example.test/" }),
+    "https://example.test/app/morning-brief.html?date=2026-10-05");
+  assert.equal(reportUrl("2026-10-05", {}, "evening"), "https://fundhub.ai/app/morning-brief.html?date=2026-10-05&kind=evening");
+});
+
+test("both texts end with the Full report link", async () => {
+  const db = { query: async () => ({ rows: [] }) };
+  for (const [kind, now] of [["morning", SIX_AM_AZ], ["evening", NINE_PM_AZ]]) {
+    const b = await buildMorningBrief(db, {
+      orgId: "00000000-0000-0000-0000-000000000001", kind, now, env: { PLAID_ENV: "sandbox" },
+      suggest: async () => ({ ok: true, suggestions: [] }), staffScope: (fn) => fn(db)
+    });
+    const last = b.text_body.split("\n").pop();
+    assert.equal(last, `Full report: ${b.report_url}`);
+  }
 });
