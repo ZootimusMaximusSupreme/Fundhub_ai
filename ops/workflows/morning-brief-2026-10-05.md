@@ -15,6 +15,8 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | done — PR #22 merged 2026-10-05 |
 | MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | claimed — Kickoff A agent, 2026-10-05 |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | claimed — Kickoff A agent, 2026-10-05 |
+| MB6 | Evening brief (end-of-day text) + the brief replaces the old pulse text when live | MB3 (merged) | claimed — Kickoff A agent, 2026-10-05 |
+
 
 **Runs at the same time:** MB1, MB2 and MB3 now. MB4 after his yes. MB5 after MB3.
 
@@ -63,6 +65,10 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 6. Financed deposits for 30 days: what counts as a "really good file"? (Projection doc)
 
 ### Plans approved 2026-10-05 (Chris: "run it, run the whole thing")
+
+**Owner decisions 2026-10-05 (Chris):**
+- When the brief goes live, it **replaces** the old "Fundhub morning check" text. ("The text sucks.")
+- Add an **end-of-day brief** too. Overnight is when ads break and deals come in, so Chris should know what is going on before bed and when he wakes up. Evening time default: 9:00 p.m. Arizona (orchestrator default until Chris names a time).
 
 **Migration numbers:** 430 = MB2 (scorecard, job heartbeats). 431 = MB3 (`morning_briefs`). 406–429 are held by the marketing machine.
 
