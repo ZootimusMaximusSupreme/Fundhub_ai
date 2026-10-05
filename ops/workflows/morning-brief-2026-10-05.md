@@ -13,7 +13,7 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | blocked — Kickoff A ran in a cloud session 2026-10-05, not the Mac; the cloud was refused Netlify env access. Needs the Mac. |
 | MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
 | MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
-| MB4 | Cadence rules and AI ops suggestions | **Chris: yes on the cadence draft** | blocked |
+| MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | claimed — Kickoff A agent, 2026-10-05 |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | pending |
 
 **Runs at the same time:** MB1, MB2 and MB3 now. MB4 after his yes. MB5 after MB3.
@@ -58,7 +58,7 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 1. ~~What number should the morning text go to?~~ Answered 2026-10-05 (ends in 6457).
 2. What time? (Today: 6:00 a.m. Arizona)
 3. Text only, or text plus an email with the full report? Which email?
-4. Cadence rules: yes to the draft in the spec, or which numbers change?
+4. ~~Cadence rules~~ Answered 2026-10-05: yes, as a starting point. Light guardrails; no automatic changes; Chris sets the numbers later from proven data (for example, when CRO suggestions start, by spend over time).
 5. Team section: which numbers per person?
 6. Financed deposits for 30 days: what counts as a "really good file"? (Projection doc)
 
