@@ -13,7 +13,7 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | blocked — Kickoff A ran in a cloud session 2026-10-05, not the Mac; the cloud was refused Netlify env access. Needs the Mac. |
 | MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
 | MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | done — PR #22 merged 2026-10-05 |
-| MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | claimed — Kickoff A agent, 2026-10-05 |
+| MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | done — PR #29 merged 2026-10-05 |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | claimed — Kickoff A agent, 2026-10-05 |
 | MB6 | Evening brief (end-of-day text) + the brief replaces the old pulse text when live | MB3 (merged) | claimed — Kickoff A agent, 2026-10-05 |
 
@@ -272,3 +272,16 @@ Agents for Kickoff B are in `.claude/agents/` (mm-architect, mm-builder, mm-chor
 - Tests: lint clean, tsc 0. With no database, the suite fails the same 33 tests that already fail on `main`. On a scratch Postgres as `fundhub_app`: `morning-brief.pg` 7/7, `finance-command.pg` 3/3, `guard:db` 3/3, `guard:rls` 4/4.
 - Waiting on: MB2 (day counts), the marketing numbers (M5), MB4 (suggestions), MB5 (report link), MB1 (going live).
 - Leftovers, not fixed: migration 114 fails on an empty database ("VALUES lists must all be the same length"), and some generated journey files are stale on `main`.
+
+### MB4 — Kickoff A agent, 2026-10-05 (PR #29, merged)
+
+- Law: `.claude/rules/change-cadence.md` and `.cursor/rules/change-cadence.mdc` (same words), plus one owner-set "Change cadence" section in `CLAUDE.md` (no renumbering). The 8 rules are starting defaults with light guardrails. Chris tunes the numbers later from proven data.
+- Migration 432 `ops_suggestions`. `src/ops/suggestions.mjs` (`buildSuggestions`, `setSuggestionStatus`). `GET /api/read/ops-suggestions?date=`, owner and admin only. Diagram: `docs/journeys/ops-suggestions-flow.md`.
+- Rules built: 2 (failed events), 6 (dying ads get a new opening; one page change a week), 4 limited by 5 (raise spend at most 20%, only when the numbers allow). Skipped, no source: rule 3 (no stored target cost per booked call), rule 7 (no offer or price version record).
+- Tests: units 29/29. On a scratch Postgres as `fundhub_app`, the pg tests passed 19/19. With no database: 32 failures, against 33 on `main`. No new failures.
+- Wiring the suggestions into the brief is handed to MB6.
+- Leftovers, not fixed:
+  - Ad tables read as empty under the app role unless a staff scope is used. This likely affects KPI spend and the dying-ad buzz.
+  - The dying-ad SQL in `src/ops/watch-curve.mjs` never selects `clicks`.
+  - Migration 114 is broken on a fresh database.
+- Safety note: about 18:51 UTC, MB4 ran the unit stage of `npm test` with the inherited live `DATABASE_URL`. The live database refuses connections from this cloud machine (measured: connection timeout), so nothing reached it.
