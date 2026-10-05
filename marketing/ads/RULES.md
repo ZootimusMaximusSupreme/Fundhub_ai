@@ -126,7 +126,7 @@ the ones that are.
 | "No denials." | A guarantee. See the compliance rules below. |
 | "We won't touch personal credit." | False for the funding path. |
 | "You need an LLC / aged corp / DUNS first." | Not our rule. Concept 7 says the opposite on purpose. |
-| A made-up win, client count, or story | A lie, and it is also a compliance block. Never invent wins. See Part 0 rule 35 for what proof is allowed. |
+| A made-up win, client count, or story | A lie, and it is also a compliance block. Use only wins Chris has given in writing — today that is **$25 million secured** and **Koi Poke**. |
 
 **The one that trips writers up.** "This will not affect you at all" is banned as a blanket promise
 about the whole engagement. It is **not** banned to say the soft pull does not touch the score —
@@ -525,7 +525,15 @@ shape exactly.
 
 ### 3.7 Proof, and the limit on it
 
-See Part 0 rule 35 for what proof is allowed. Never use made-up wins, which are both a never-say and a compliance block.
+We have two proof assets and they must not be embroidered:
+
+- **Close to a decade in business funding.**
+- **Over $25 million secured for our clients.**
+- **Koi Poke** — one restaurant, already turned away once, now a franchise with multiple locations.
+
+That is the list. Anything else is a made-up win, which is both a never-say and a compliance block.
+**Koi Poke carries all five running ads**, which is a known weakness — if a second real case study
+ever exists in writing, it goes here first.
 
 ---
 
@@ -556,7 +564,7 @@ Read straight off the Founder VSL. Keep the order. Beats can be short; none can 
 8. **What it really cost** — the plan behind the money. Ads, team, the trip, the debt, the family.
 9. **The near-miss** — "you feel like you're right there. Like it's literally one thing away."
 10. **"That's not on you."** Then name where it is on.
-11. **Proof** — see Part 0 rule 35 for allowed proof.
+11. **Proof** — decade, $25 million, Koi Poke.
 12. **The mechanism, in full, step by step** — soft pull, zero impact, the read, the lender fit, the
     order. This is the only place the mechanism gets explained at length.
 13. **What happens when you click** — application, analysis, the call, what he will say on it.
@@ -578,7 +586,7 @@ Read straight off the Founder VSL. Keep the order. Beats can be short; none can 
   so the attribution is cut. The rule itself stands; only the source line is real.)
 - **Never promise the call outcome.** Beat 13 says what he will *show* them, never what they will
   *get*.
-- **Proof.** See Part 0 rule 35 for allowed proof.
+- **One case study minimum, real.** Today that is Koi Poke.
 
 ---
 
