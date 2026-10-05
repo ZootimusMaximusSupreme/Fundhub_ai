@@ -40,6 +40,8 @@ export const MAX_PIECE_TRUE_PEAK = -1;
 export const PIECE_LOUDNESS_TOLERANCE_LU = 1;
 /** Below this, ffmpeg's integrated loudness is a gate floor, not a measurement. */
 export const UNMEASURABLE_LUFS = -60;
+/** Author-set: how far a take may sit from exactly 9:16 (width/height) and still be scaled. */
+export const ASPECT_TOLERANCE = 0.01;
 /** A silence this close to a join means the join should have snapped to it (spec 9.2 step 5). */
 export const SNAP_WINDOW_SECONDS = 0.25;
 
@@ -278,6 +280,7 @@ export function parseSilences(stderr, { durationSeconds } = {}) {
 /**
  * The video filter for one piece, in the spec's order:
  * tonemap if needed, scale=1080:1920:flags=lanczos, fps=30, then hflip if on.
+ * setpts=N/30/TB sits right after fps so every piece's frames start at 0.
  * setsar=1 goes last so every piece concatenates with the same shape.
  */
 export function pieceVideoFilter({ facts, flipHorizontal = false }) {
@@ -285,6 +288,10 @@ export function pieceVideoFilter({ facts, flipHorizontal = false }) {
   if (facts?.isHdr) parts.push(HDR_TONEMAP_CHAIN);
   parts.push(`scale=${OUT_WIDTH}:${OUT_HEIGHT}:flags=lanczos`);
   parts.push(`fps=${FPS}`);
+  // Restamp frames from zero, like asetpts on the audio. Without it, fps=30
+  // after -ss on a 29.97 source starts ~40% of pieces at 0.033 s, the concat
+  // shifts them, and the final cfr encode inserts repeated (freeze) frames.
+  parts.push(`setpts=N/${FPS}/TB`);
   if (flipHorizontal) parts.push("hflip");
   parts.push("setsar=1");
   return parts.join(",");
@@ -418,6 +425,9 @@ export function concatListText(piecePaths) {
   return piecePaths
     .map((p) => {
       requirePath(p, "piece path");
+      if (/[\r\n]/.test(p)) {
+        throw new FfmpegPlanError("bad_path", "a piece path holds a line break, which would forge a concat entry");
+      }
       return `file '${String(p).replace(/'/g, "'\\''")}'`;
     })
     .join("\n") + "\n";
@@ -443,7 +453,8 @@ export function loudnormPass1Args({ concatListPath }) {
 /**
  * Read loudnorm's JSON block from ffmpeg stderr (the last one when there are
  * several). Returns numbers: input_i, input_tp, input_lra, input_thresh,
- * target_offset. Throws when the block is missing or not numeric.
+ * target_offset, plus normalization_type ("linear" or "dynamic", lowercased).
+ * Throws when the block is missing or not numeric.
  */
 export function parseLoudnorm(stderr) {
   const text = String(stderr ?? "");
@@ -455,6 +466,7 @@ export function parseLoudnorm(stderr) {
     const v = Number(raw[k]);
     out[k] = Number.isFinite(v) ? v : raw[k] === "-inf" ? -Infinity : NaN;
   }
+  out.normalization_type = typeof raw.normalization_type === "string" ? raw.normalization_type.toLowerCase() : null;
   if (!Number.isFinite(out.input_i) && out.input_i !== -Infinity) {
     throw new FfmpegPlanError("loudnorm_unreadable", "loudnorm measurement is not a number");
   }
@@ -482,7 +494,7 @@ export function finalEncodeArgs({ concatListPath, outputPath, measured }) {
     `:measured_LRA=${numText(Number(m.input_lra))}` +
     `:measured_thresh=${numText(Number(m.input_thresh))}` +
     `:offset=${numText(Number(m.target_offset))}` +
-    `:linear=true:print_format=summary,aresample=${SAMPLE_RATE}`;
+    `:linear=true:print_format=json,aresample=${SAMPLE_RATE}`;
   return [
     "-hide_banner", "-nostdin", "-y",
     "-f", "concat", "-safe", "0", "-i", concatListPath,
@@ -536,10 +548,10 @@ export function planMaster({ videoKind, pieces, takes, flipHorizontal = false, w
     if (!facts.hasAudio) {
       throw new FfmpegPlanError("take_without_audio", `take ${p.take} has no audio`);
     }
-    if (facts.displayWidth > facts.displayHeight) {
+    if (!isNineBySixteen(facts)) {
       throw new FfmpegPlanError(
-        "take_not_portrait",
-        `take ${p.take} is ${facts.displayWidth}x${facts.displayHeight}; a 1080x1920 scale would squash it`,
+        "take_not_9x16",
+        `take ${p.take} is ${facts.displayWidth}x${facts.displayHeight}; only 9:16 scales to 1080x1920 without stretching`,
       );
     }
     if (p.frames <= 0) {
@@ -570,10 +582,13 @@ export function planMaster({ videoKind, pieces, takes, flipHorizontal = false, w
   return {
     pieces: planned,
     concatListPath,
-    concatList: concatListText(planned.map((p) => p.file)),
+    // The concat demuxer reads entries relative to the list's own folder, and
+    // the pieces sit beside the list, so the entries are bare file names.
+    concatList: concatListText(planned.map((p) => p.file.slice(dir.length + 1))),
     pass1Args: loudnormPass1Args({ concatListPath }),
     pass2Args: (measured) => finalEncodeArgs({ concatListPath, outputPath, measured }),
     blackdetectArgs: blackdetectArgs({ inputPath: outputPath }),
+    frameCountArgs: frameCountArgs({ inputPath: outputPath }),
     outputPath,
     frames,
     durationSeconds: frames / FPS,
@@ -583,6 +598,25 @@ export function planMaster({ videoKind, pieces, takes, flipHorizontal = false, w
 // ---------------------------------------------------------------------------
 // Cut checks (best-of-clips law). Any failure blocks the master.
 // ---------------------------------------------------------------------------
+
+/** ffprobe that decodes and counts the master's real video frames (stdout). */
+export function frameCountArgs({ inputPath }) {
+  requirePath(inputPath, "inputPath");
+  return [
+    "-v", "error",
+    "-select_streams", "v:0",
+    "-count_frames",
+    "-show_entries", "stream=nb_read_frames",
+    "-of", "default=noprint_wrappers=1:nokey=1",
+    inputPath,
+  ];
+}
+
+/** Read frameCountArgs' stdout into a whole number; null when unreadable. */
+export function parseFrameCount(stdout) {
+  const m = String(stdout ?? "").match(/^\s*(\d+)\s*$/m);
+  return m ? Number(m[1]) : null;
+}
 
 /** blackdetect over the master. Output goes to stderr. */
 export function blackdetectArgs({ inputPath }) {
@@ -635,8 +669,11 @@ export function edgeSnapped(edgeSeconds, silences) {
  * @param {Array}  args.pieceMeasures parseLoudnorm() of each ENCODED piece, in order
  * @param {Array}  args.black         parseBlackdetect() of the master
  * @param {object} args.silences      { [takeId]: [{start, end}] } from prepare
+ * @param {number} args.masterFrames  parseFrameCount() of the master (required; missing fails)
+ * @param {number} [args.plannedFrames] planMaster().frames; defaults to the pieces' sum
+ * @param {object} args.pass2         parseLoudnorm() of the pass-2 (final encode) stderr; must be linear
  */
-export function cutChecks({ pieces, pieceMeasures, black, silences }) {
+export function cutChecks({ pieces, pieceMeasures, black, silences, masterFrames, plannedFrames, pass2 }) {
   const failures = [];
   const list = Array.isArray(pieces) ? pieces : [];
 
@@ -662,7 +699,12 @@ export function cutChecks({ pieces, pieceMeasures, black, silences }) {
         failures.push({ check: "peak_too_hot", piece: i + 1, detail: `true peak ${tp} dBTP; the ceiling is ${MAX_PIECE_TRUE_PEAK}` });
       }
       const li = Number(m?.input_i);
-      if (Number.isFinite(li) && li > UNMEASURABLE_LUFS) levels.push({ i: li, piece: i + 1 });
+      if (!Number.isFinite(tp) || !Number.isFinite(li) || li <= UNMEASURABLE_LUFS) {
+        // Dead air or a missing reading: a silent piece is a defect, not a skip.
+        failures.push({ check: "piece_silent", piece: i + 1, detail: `loudness ${m?.input_i} LUFS, peak ${m?.input_tp} dBTP; the floor is above ${UNMEASURABLE_LUFS} LUFS` });
+      } else {
+        levels.push({ i: li, piece: i + 1 });
+      }
     });
     if (levels.length > 1) {
       const lo = levels.reduce((a, b) => (b.i < a.i ? b : a));
@@ -675,6 +717,26 @@ export function cutChecks({ pieces, pieceMeasures, black, silences }) {
         });
       }
     }
+  }
+
+  // The master holds exactly the planned frames. A difference means frames
+  // were dropped or repeated (freeze frames), so lips drift from the voice.
+  const planned = Number.isInteger(plannedFrames)
+    ? plannedFrames
+    : list.reduce((n, p) => n + (Number(p.frames) || 0), 0);
+  if (!Number.isInteger(masterFrames)) {
+    failures.push({ check: "frames_uncounted", detail: `the master's frames were not counted (got ${masterFrames})` });
+  } else if (masterFrames !== planned) {
+    failures.push({
+      check: "frame_count_mismatch",
+      detail: `the master has ${masterFrames} frames; the plan has ${planned} (${masterFrames - planned > 0 ? "+" : ""}${masterFrames - planned})`,
+    });
+  }
+
+  // Pass 2 must stay linear. loudnorm falls back to dynamic (it rides the
+  // gain inside the ad) when the linear target cannot be met.
+  if (pass2?.normalization_type !== "linear") {
+    failures.push({ check: "loudnorm_not_linear", detail: `pass 2 normalization was ${pass2?.normalization_type ?? "not read"}` });
   }
 
   // blackdetect finds nothing.
@@ -720,6 +782,14 @@ export function checkFfmpegBuild(versionText) {
 }
 
 // ---------------------------------------------------------------------------
+
+/** True when the take, the right way up, is 9:16 within ASPECT_TOLERANCE. Never stretch. */
+export function isNineBySixteen(facts) {
+  const w = Number(facts?.displayWidth);
+  const h = Number(facts?.displayHeight);
+  if (!(w > 0) || !(h > 0)) return false;
+  return Math.abs(w / h / (OUT_WIDTH / OUT_HEIGHT) - 1) <= ASPECT_TOLERANCE;
+}
 
 function requirePath(p, name) {
   if (typeof p !== "string" || p.trim() === "") {

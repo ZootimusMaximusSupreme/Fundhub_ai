@@ -293,17 +293,17 @@ it is **UNVERIFIED** until the worker calls it.
 flowchart TD
     A["Aligner's cut plan<br/>pieces: take, start, end, line"] --> K{"video_kind = ad?"}
     K -->|"no (VSL, welcome)"| R0["Refused: not_an_ad<br/>non-ads keep 4K"]
-    K -->|yes| P["planMaster: snap each piece to 1/30 s<br/>refuse a landscape, silent or unknown take"]
+    K -->|yes| P["planMaster: snap each piece to 1/30 s<br/>refuse a take that is not 9:16 (never stretch), has no audio, or is unknown"]
     P --> M1["Measure each source span's loudness"]
     M1 --> G["matchPieceGains: gain to the median,<br/>never past -1 dBTP"]
-    G --> E["Encode each piece on its own:<br/>-ss S -t D -i take<br/>tonemap if HDR, scale 1080x1920, fps 30, hflip if set<br/>-frames:v N, audio exactly N x 1600 samples, 15 ms fades"]
+    G --> E["Encode each piece on its own:<br/>-ss S -t D -i take<br/>tonemap if HDR, scale 1080x1920, fps 30, frames restamped from 0, hflip if set<br/>-frames:v N, audio exactly N x 1600 samples, 15 ms fades"]
     E --> M2["Measure each encoded piece"]
     M2 --> J["Join the pieces<br/>loudnorm pass 1 (measure)"]
     J --> F["Encode once: loudnorm pass 2 linear<br/>H.264 High crf 18, bt709, 30 fps CFR<br/>AAC 192k 48 kHz stereo, +faststart"]
-    F --> B["blackdetect on the master"]
+    F --> B["blackdetect and a real frame count on the master"]
     B --> C{"cutChecks"}
     C -->|"all pass"| OK["Master ready for R2 and Submagic"]
-    C -->|"any fail: piece under 8 frames,<br/>pieces more than 1 LU apart, peak above -1 dBTP,<br/>black frames, a join that missed a silence"| H["Blocks the master<br/>(UNVERIFIED: hold_reason is the 9.1 step's job)"]
+    C -->|"any fail: piece under 8 frames, a silent piece,<br/>pieces more than 1 LU apart, peak above -1 dBTP,<br/>pass 2 not linear, master frames not equal to the plan,<br/>black frames, a join that missed a silence"| H["Blocks the master<br/>(UNVERIFIED: hold_reason is the 9.1 step's job)"]
 ```
 
 The 1080x1920 master is for ads only (law: `video-4k-unless-ad.md`). The plan

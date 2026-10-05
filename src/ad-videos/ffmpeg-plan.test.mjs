@@ -38,6 +38,9 @@ import {
   planMaster,
   blackdetectArgs,
   parseBlackdetect,
+  isNineBySixteen,
+  frameCountArgs,
+  parseFrameCount,
   edgeSnapped,
   cutChecks,
   checkFfmpegBuild,
@@ -213,7 +216,12 @@ describe("one piece", () => {
     assert.ok(!vf.includes("zscale"));
     assert.ok(!vf.includes("tonemap"));
     assert.ok(!vf.includes("hflip"));
-    assert.ok(vf.startsWith("scale=1080:1920:flags=lanczos,fps=30"));
+    assert.equal(vf, "scale=1080:1920:flags=lanczos,fps=30,setpts=N/30/TB,setsar=1");
+  });
+
+  test("every piece's frames are restamped from 0 right after fps=30, before hflip", () => {
+    const vf = pieceVideoFilter({ facts: { isHdr: true }, flipHorizontal: true });
+    assert.ok(vf.endsWith("scale=1080:1920:flags=lanczos,fps=30,setpts=N/30/TB,hflip,setsar=1"));
   });
 
   test("snapPiece puts S, D and N on whole frames", () => {
@@ -322,6 +330,8 @@ describe("join, then encode once", () => {
   test("the concat list escapes single quotes", () => {
     assert.equal(concatListText(["/w/a.mkv", "/w/it's.mkv"]), "file '/w/a.mkv'\nfile '/w/it'\\''s.mkv'\n");
     assert.throws(() => concatListText([]), (e) => e.code === "no_pieces");
+    assert.throws(() => concatListText(["/w/a.mkv\nfile '/etc/passwd'"]), (e) => e.code === "bad_path");
+    assert.throws(() => concatListText(["/w/a.mkv\r"]), (e) => e.code === "bad_path");
   });
 
   test("pass 1 measures the joined audio only", () => {
@@ -334,7 +344,8 @@ describe("join, then encode once", () => {
 
   test("parseLoudnorm reads the numbers, last block wins", () => {
     const m = parseLoudnorm(LOUDNORM_STDERR);
-    assert.deepEqual(m, { input_i: -23.54, input_tp: -7.12, input_lra: 5.6, input_thresh: -33.91, target_offset: 0.02 });
+    assert.deepEqual(m, { input_i: -23.54, input_tp: -7.12, input_lra: 5.6, input_thresh: -33.91, target_offset: 0.02, normalization_type: "dynamic" });
+    assert.equal(parseLoudnorm(LOUDNORM_STDERR.replace('"dynamic"', '"Linear"')).normalization_type, "linear");
     const two = LOUDNORM_STDERR + LOUDNORM_STDERR.replace('"-23.54"', '"-19.00"');
     assert.equal(parseLoudnorm(two).input_i, -19);
     assert.equal(parseLoudnorm(LOUDNORM_STDERR.replace('"-7.12"', '"-inf"')).input_tp, -Infinity);
@@ -355,6 +366,7 @@ describe("join, then encode once", () => {
     assert.ok(af.includes("measured_thresh=-33.91"));
     assert.ok(af.includes("offset=0.02"));
     assert.ok(af.includes("linear=true"));
+    assert.ok(af.includes("print_format=json"), "pass 2 prints JSON so its normalization type can be read");
     assert.ok(af.endsWith(",aresample=48000"));
 
     assert.equal(after(a, "-c:v"), "libx264");
@@ -418,7 +430,8 @@ describe("planMaster", () => {
     assert.equal(plan.frames, 201);
     assert.equal(plan.durationSeconds, 201 / FPS);
     assert.equal(plan.concatListPath, "/w/pieces.txt");
-    assert.equal(plan.concatList, "file '/w/piece-001.mkv'\nfile '/w/piece-002.mkv'\nfile '/w/piece-003.mkv'\n");
+    // entries are relative to the list's own folder, where the pieces sit
+    assert.equal(plan.concatList, "file 'piece-001.mkv'\nfile 'piece-002.mkv'\nfile 'piece-003.mkv'\n");
 
     const enc2 = plan.pieces[1].encodeArgs(1.5);
     assert.equal(after(enc2, "-i"), "/w/b.mov");
@@ -434,12 +447,23 @@ describe("planMaster", () => {
     assert.equal(after(plan.pieces[2].checkArgs, "-i"), "/w/piece-003.mkv");
   });
 
-  test("a landscape take is refused instead of squashed", () => {
-    const wide = { ...SDR_PORTRAIT, width: 1920, height: 1080, displayWidth: 1920, displayHeight: 1080 };
-    assert.throws(
-      () => planMaster({ videoKind: "ad", pieces: [{ take: "w", start: 0, end: 1 }], takes: { w: { path: "/w/w.mov", facts: wide } }, workDir: "/w", outputPath: "/w/m.mp4" }),
-      (e) => e.code === "take_not_portrait",
-    );
+  test("any take that is not 9:16 is refused instead of stretched", () => {
+    const shapes = [[1920, 1080], [1080, 2400], [1080, 1350], [1080, 1080], [0, 0]];
+    for (const [w, h] of shapes) {
+      const facts = { ...SDR_PORTRAIT, width: w, height: h, displayWidth: w, displayHeight: h };
+      assert.throws(
+        () => planMaster({ videoKind: "ad", pieces: [{ take: "w", start: 0, end: 1 }], takes: { w: { path: "/w/w.mov", facts } }, workDir: "/w", outputPath: "/w/m.mp4" }),
+        (e) => e.code === "take_not_9x16",
+        `${w}x${h}`,
+      );
+    }
+  });
+
+  test("9:16 within 1% passes: 1080x1920, 2160x3840, 720x1280, 1088x1920", () => {
+    for (const [w, h] of [[1080, 1920], [2160, 3840], [720, 1280], [1088, 1920]]) {
+      assert.equal(isNineBySixteen({ displayWidth: w, displayHeight: h }), true, `${w}x${h}`);
+    }
+    assert.equal(isNineBySixteen({ displayWidth: 1080, displayHeight: 2340 }), false);
   });
 
   test("unknown takes, silent takes, empty pieces and pieces past the end are refused", () => {
@@ -470,46 +494,47 @@ describe("cut checks (best-of-clips law)", () => {
     outputPath: "/w/m.mp4",
   });
   const silences = { a: [{ start: 1.95, end: 2.4 }], b: [{ start: 3.6, end: 4.05 }] };
+  const LINEAR = { normalization_type: "linear" };
   const good = [
     { input_i: -18.2, input_tp: -4 },
     { input_i: -18.6, input_tp: -3.5 },
   ];
 
   test("a clean cut passes", () => {
-    assert.deepEqual(cutChecks({ pieces: plan.pieces, pieceMeasures: good, black: [], silences }), { ok: true, failures: [] });
+    assert.deepEqual(cutChecks({ pass2: LINEAR, masterFrames: plan.frames, pieces: plan.pieces, pieceMeasures: good, black: [], silences }), { ok: true, failures: [] });
   });
 
   test("a piece under 8 frames fails", () => {
     const short = [{ ...plan.pieces[0], frames: 7 }, plan.pieces[1]];
-    const r = cutChecks({ pieces: short, pieceMeasures: good, black: [], silences: { a: [{ start: 0.7, end: 1 }], b: silences.b } });
+    const r = cutChecks({ pass2: LINEAR, masterFrames: 7 + plan.pieces[1].frames, pieces: short, pieceMeasures: good, black: [], silences: { a: [{ start: 0.7, end: 1 }], b: silences.b } });
     assert.equal(r.ok, false);
     assert.deepEqual(r.failures.map((f) => f.check), ["piece_too_short"]);
   });
 
   test("pieces more than 1 LU apart fail", () => {
-    const r = cutChecks({ pieces: plan.pieces, pieceMeasures: [{ input_i: -16, input_tp: -4 }, { input_i: -17.5, input_tp: -4 }], black: [], silences });
+    const r = cutChecks({ pass2: LINEAR, masterFrames: plan.frames, pieces: plan.pieces, pieceMeasures: [{ input_i: -16, input_tp: -4 }, { input_i: -17.5, input_tp: -4 }], black: [], silences });
     assert.deepEqual(r.failures.map((f) => f.check), ["loudness_unmatched"]);
   });
 
   test("a peak above -1 dBTP fails", () => {
-    const r = cutChecks({ pieces: plan.pieces, pieceMeasures: [{ input_i: -18, input_tp: -0.4 }, good[1]], black: [], silences });
+    const r = cutChecks({ pass2: LINEAR, masterFrames: plan.frames, pieces: plan.pieces, pieceMeasures: [{ input_i: -18, input_tp: -0.4 }, good[1]], black: [], silences });
     assert.deepEqual(r.failures.map((f) => f.check), ["peak_too_hot"]);
   });
 
   test("missing loudness readings fail instead of passing quietly", () => {
-    const r = cutChecks({ pieces: plan.pieces, pieceMeasures: [good[0]], black: [], silences });
+    const r = cutChecks({ pass2: LINEAR, masterFrames: plan.frames, pieces: plan.pieces, pieceMeasures: [good[0]], black: [], silences });
     assert.deepEqual(r.failures.map((f) => f.check), ["loudness_unmeasured"]);
   });
 
   test("any black frame fails", () => {
     const black = parseBlackdetect("[blackdetect @ 0x1] black_start:3.2 black_end:3.233333 black_duration:0.033333");
     assert.deepEqual(black, [{ start: 3.2, end: 3.233333, duration: 0.033333 }]);
-    const r = cutChecks({ pieces: plan.pieces, pieceMeasures: good, black, silences });
+    const r = cutChecks({ pass2: LINEAR, masterFrames: plan.frames, pieces: plan.pieces, pieceMeasures: good, black, silences });
     assert.deepEqual(r.failures.map((f) => f.check), ["black_frames"]);
   });
 
   test("a join that missed a silence in reach fails (a breath was left in)", () => {
-    const r = cutChecks({ pieces: plan.pieces, pieceMeasures: good, black: [], silences: { a: [{ start: 2.1, end: 2.4 }], b: silences.b } });
+    const r = cutChecks({ pass2: LINEAR, masterFrames: plan.frames, pieces: plan.pieces, pieceMeasures: good, black: [], silences: { a: [{ start: 2.1, end: 2.4 }], b: silences.b } });
     assert.equal(r.ok, false);
     assert.equal(r.failures[0].check, "join_not_snapped");
     assert.equal(r.failures[0].piece, 1);
@@ -523,6 +548,45 @@ describe("cut checks (best-of-clips law)", () => {
     assert.equal(edgeSnapped(2.0, undefined), true);
     assert.equal(edgeSnapped(2.0, [{ start: 2.2, end: 2.6 }]), false);
     assert.equal(edgeSnapped(2.0, [{ start: 1.5, end: 1.8 }]), false);
+  });
+
+  test("a silent piece (dead air) or one with no peak reading fails instead of being skipped", () => {
+    const base = { pass2: LINEAR, masterFrames: plan.frames, pieces: plan.pieces, black: [], silences };
+    for (const dead of [{ input_i: -70, input_tp: -50 }, { input_i: -60, input_tp: -40 }, { input_i: -Infinity, input_tp: -Infinity }, { input_i: -18 }]) {
+      const r = cutChecks({ ...base, pieceMeasures: [good[0], dead] });
+      assert.deepEqual(r.failures.map((f) => f.check), ["piece_silent"], JSON.stringify(dead));
+      assert.equal(r.failures[0].piece, 2);
+    }
+  });
+
+  test("pass 2 that fell back to dynamic loudness, or was not read, fails", () => {
+    const base = { masterFrames: plan.frames, pieces: plan.pieces, pieceMeasures: good, black: [], silences };
+    assert.deepEqual(cutChecks({ ...base, pass2: { normalization_type: "dynamic" } }).failures.map((f) => f.check), ["loudnorm_not_linear"]);
+    assert.deepEqual(cutChecks(base).failures.map((f) => f.check), ["loudnorm_not_linear"]);
+    assert.equal(cutChecks({ ...base, pass2: parseLoudnorm(LOUDNORM_STDERR.replace('"dynamic"', '"linear"')) }).ok, true);
+  });
+
+  test("a master with more or fewer frames than planned fails (freeze or dropped frames)", () => {
+    const base = { pass2: LINEAR, pieces: plan.pieces, pieceMeasures: good, black: [], silences };
+    assert.equal(cutChecks({ ...base, masterFrames: plan.frames }).ok, true);
+    const more = cutChecks({ ...base, masterFrames: plan.frames + 24 });
+    assert.deepEqual(more.failures.map((f) => f.check), ["frame_count_mismatch"]);
+    assert.ok(more.failures[0].detail.includes("+24"));
+    assert.deepEqual(cutChecks({ ...base, masterFrames: plan.frames - 1 }).failures.map((f) => f.check), ["frame_count_mismatch"]);
+    assert.deepEqual(cutChecks({ ...base, masterFrames: 141, plannedFrames: 141 }).failures, []);
+    assert.deepEqual(cutChecks(base).failures.map((f) => f.check), ["frames_uncounted"], "an uncounted master never passes");
+  });
+
+  test("the frame count comes from ffprobe decoding every frame", () => {
+    const a = frameCountArgs({ inputPath: "/w/m.mp4" });
+    assert.ok(a.includes("-count_frames"));
+    assert.equal(after(a, "-select_streams"), "v:0");
+    assert.equal(after(a, "-show_entries"), "stream=nb_read_frames");
+    assert.equal(a.at(-1), "/w/m.mp4");
+    assert.equal(parseFrameCount("1020\n"), 1020);
+    assert.equal(parseFrameCount("N/A"), null);
+    assert.equal(parseFrameCount(""), null);
+    assert.equal(after(plan.frameCountArgs, "-show_entries"), "stream=nb_read_frames");
   });
 
   test("blackdetect looks for a single frame of black", () => {
