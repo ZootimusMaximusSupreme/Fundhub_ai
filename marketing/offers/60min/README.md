@@ -75,6 +75,8 @@ None of these are code and none go faster with a better model. They are the pre-
 - Merchant account created and live
 - Ad account warm, creative uploaded and paused
 - **The offer decided.** This one is Chris, not an agent.
+- When the offer is a rebuild of a competitor's: competitor recon and review research with the
+  Replica skill (`replica-recon`, `replica-entrepreneur`). See [replica.md](replica.md).
 
 ## What this repo already gives it
 
@@ -89,6 +91,15 @@ Commas is already integrated end to end — checkout links, webhooks, inbox, rec
 is logged and dropped on their side, so that payment is invisible until a human notices. Build the
 daily reconciliation check on day one.
 
+## The Replica skill (added 2026-10-05)
+
+Chris: "Add this to the 60 minute offer." Eleven free MIT-licensed Claude skills that map a
+competitor's app or offer, read its real reviews to find what buyers hate, and score a rebuild
+against it. It lets the hour start from a competitor's offer and build the version that fixes
+those complaints. It adds research to the pre-warm list and three seconds-long checks to the
+launch gate (`parity.py`, `sweep.py`, `contrast.py`), so the 27-minute clock stays the same.
+The 60 Minute proof stack stays in charge of testing. Full placement: [replica.md](replica.md).
+
 ## Economics, measured
 
 Regenerating this repo from scratch (558k lines: 207k app, 226k tests, 46k SQL, 78k front end) at
@@ -102,6 +113,8 @@ checks did not get faster. Do not quote 16× for delivery.
 ## Files
 
 - [integration-agent.md](integration-agent.md) — the agent that wires accounts by API
+- [replica.md](replica.md) — where each Replica skill fits the hour
+- [replica-skill/](replica-skill/) — the Replica skill pack, copied unchanged from upstream
 - [site/the60minuteoffer.dc.html](site/the60minuteoffer.dc.html) — the sales page
 - [site/canvas.json](site/canvas.json) — canvas index for both boards
 - Live canvas: https://claude.ai/artifact/RKPFVnkZt211zhaiBK1KBM
