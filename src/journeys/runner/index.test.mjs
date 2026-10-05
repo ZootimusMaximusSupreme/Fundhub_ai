@@ -142,8 +142,12 @@ import { isSyntheticRow } from "./synthetic.mjs";
 
    Moved 90 -> 91 when this branch took main's evening brief (evening-brief,
    cron 0 4 * * * UTC — 9 p.m. Arizona). A cron like the rest, so it also
-   always appears in neverFired. */
-const REGISTERED = 91;
+   always appears in neverFired.
+
+   Moved 91 -> 90 when PR #39 (marketing machine M0 step 5) took the Meta pull
+   off Inngest (meta-campaign-sync-sweeper) and onto a Netlify scheduled
+   function, meta-sync-sweeper. */
+const REGISTERED = 90;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

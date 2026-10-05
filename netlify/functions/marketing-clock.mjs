@@ -12,6 +12,7 @@
 import { db } from "../../src/db.mjs";
 import { clockTick } from "../../src/marketing/clock.mjs";
 import { wakeWorker } from "../../src/marketing/wake.mjs";
+import { recordHeartbeat } from "../../src/pulse/heartbeats.mjs";
 
 export const SWEEP_CRON = "*/15 * * * *";
 
@@ -20,6 +21,7 @@ const json = (body) => new Response(JSON.stringify(body), {
 });
 
 export async function handler() {
+  const startedAt = new Date();
   try {
     const tick = await clockTick(db);
     let woke = null;
@@ -27,10 +29,13 @@ export async function handler() {
       woke = await wakeWorker();
       if (woke.error) console.error(`[marketing-clock] did not wake the worker: ${woke.error}`);
     }
+    const wakeError = woke && woke.error ? String(woke.error).slice(0, 300) : null;
+    await recordHeartbeat(db, { job: "marketing-clock", runner: "netlify", startedAt, outcome: wakeError ? "error" : "ok", error: wakeError });
     return json({ ok: true, disabled: tick.disabled, queued: tick.queued, woke: woke ? woke.started : false });
   } catch (err) {
     const error = String((err && err.message) || err).slice(0, 300);
     console.error(`[marketing-clock] ${error}`);
+    await recordHeartbeat(db, { job: "marketing-clock", runner: "netlify", startedAt, outcome: "error", error });
     return json({ ok: false, error });
   }
 }
