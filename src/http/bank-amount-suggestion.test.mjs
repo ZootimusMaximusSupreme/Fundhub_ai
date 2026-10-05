@@ -74,7 +74,13 @@ test("the panel has a place for the suggestion beside every Approved $ box", () 
 test("the suggestion fills the box and saves NOTHING", () => {
   // The click handler's whole body. If a fetch, a POST or an approved_amount
   // ever appears inside it, the suggestion has become an automatic write.
-  const at = PANEL.indexOf('b.addEventListener("click", function () {');
+  //
+  // Anchored on the suggestion button's own class first: a bank to-do button
+  // added earlier in the file uses the same `b.addEventListener("click", …`
+  // line, so a bare indexOf landed on that handler instead of this one.
+  const button = PANEL.indexOf('b.className = "fh-bank-amount-suggestion";');
+  assert.notEqual(button, -1, "the suggestion button is still built here");
+  const at = PANEL.indexOf('b.addEventListener("click", function () {', button);
   assert.notEqual(at, -1, "the suggestion button's click handler is still here");
   const handler = PANEL.slice(at, at + 220);
   assert.ok(/box\.value = dollars;/.test(handler), "it puts the figure in the box");

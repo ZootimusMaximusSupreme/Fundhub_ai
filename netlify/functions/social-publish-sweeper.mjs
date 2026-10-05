@@ -6,6 +6,7 @@
 // otherwise SOCIAL_PUBLISH_DRY_RUN=1 marks posted with a dryrun: id for tests.
 
 import { db } from "../../src/db.mjs";
+import { recordHeartbeat, itemCountOf } from "../../src/pulse/heartbeats.mjs";
 import { publishDueAll } from "../../src/social/publish-all.mjs";
 
 export const SWEEP_CRON = "*/5 * * * *";
@@ -34,7 +35,12 @@ export async function sweepSocialPublish(dbConn, options = {}) {
 // function style, which rejects a { statusCode, body } object and re-runs the
 // pass. See src/http/scheduled-functions-return.test.mjs.
 export async function handler() {
+  const startedAt = new Date();
   const result = await sweepSocialPublish(db);
+  await recordHeartbeat(db, {
+    job: "social-publish-sweeper", runner: "netlify", startedAt,
+    outcome: result.ok ? "ok" : "error", itemCount: itemCountOf(result), error: result.error || null
+  });
   if (!result.ok) {
     console.error(`[social-publish-sweeper] pass failed: ${result.error}`);
   } else if (result.posted > 0 || result.failed > 0) {

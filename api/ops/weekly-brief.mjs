@@ -9,12 +9,13 @@
 // would ask any other question. There is nothing else to build for "where
 // does he read it" — the screen already exists.
 //
-// MANUAL TRIGGER FOR NOW, ON PURPOSE. CLAUDE.md 3c: marketing/ops tooling
-// this session builds runs from a person asking, not a schedule this
-// session invents blind. Chris said "briefs every week" — the cadence is
-// his call, not a cron this file should assume. Wiring this to a weekly
-// Inngest job (src/workflows/index.mjs already has the pattern) is a
-// five-minute follow-up once he says when he wants it to fire.
+// MANUAL TRIGGER FOR NOW. This endpoint runs when a person asks. The old
+// CLAUDE.md 3c chat-only rule that kept it off a schedule was replaced on
+// 2026-10-04 (owner-set): the marketing machine now runs on a schedule and
+// on command (CLAUDE.md 3c, docs/specs/marketing-machine-2026-10-04.md).
+// Chris said "briefs every week" — the cadence is his call. Wiring this to
+// a weekly Inngest job (src/workflows/index.mjs already has the pattern) is
+// a follow-up once he says when he wants it to fire.
 
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";

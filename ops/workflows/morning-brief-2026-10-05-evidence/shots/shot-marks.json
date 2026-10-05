@@ -1,0 +1,197 @@
+{
+  "01-systems-red-first.png": {
+    "legend": "Morning brief: Systems, red first",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Morning / Evening switch, and the day picker",
+        "box": {
+          "x": 998,
+          "y": 16,
+          "w": 418,
+          "h": 42
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Not texted yet: the brief is still a dry run",
+        "box": {
+          "x": 422,
+          "y": 22,
+          "w": 220,
+          "h": 30
+        }
+      },
+      {
+        "n": 3,
+        "caption": "Headline: 2 of 4 green, 1 red, 1 not checked",
+        "box": {
+          "x": 252,
+          "y": 240,
+          "w": 1164,
+          "h": 137
+        }
+      },
+      {
+        "n": 4,
+        "caption": "The red check is the first row",
+        "box": {
+          "x": 277,
+          "y": 446,
+          "w": 1114,
+          "h": 89
+        }
+      }
+    ]
+  },
+  "02-marketing-money.png": {
+    "legend": "Morning brief: Marketing and Money",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Ad spend, with where it came from",
+        "box": {
+          "x": 252,
+          "y": 137,
+          "w": 1164,
+          "h": 110
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Waiting lines print as-is, no made-up numbers",
+        "box": {
+          "x": 252,
+          "y": 295,
+          "w": 1164,
+          "h": 170
+        }
+      },
+      {
+        "n": 3,
+        "caption": "Money: not connected yet, and why",
+        "box": {
+          "x": 252,
+          "y": 559,
+          "w": 1164,
+          "h": 94
+        }
+      }
+    ]
+  },
+  "03-team.png": {
+    "legend": "Morning brief: Team",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Company numbers, source named under them",
+        "box": {
+          "x": 252,
+          "y": 185,
+          "w": 1164,
+          "h": 235
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Per closer, from the call log, last 24 hours",
+        "box": {
+          "x": 277,
+          "y": 485,
+          "w": 1114,
+          "h": 77
+        }
+      }
+    ]
+  },
+  "04-suggestions-today.png": {
+    "legend": "Morning brief: Suggestions and Today",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Suggestions: waiting line until MB4",
+        "box": {
+          "x": 252,
+          "y": 534,
+          "w": 1164,
+          "h": 74
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Today: waiting line until MB4",
+        "box": {
+          "x": 252,
+          "y": 702,
+          "w": 1164,
+          "h": 74
+        }
+      }
+    ]
+  },
+  "05-evening-not-yet.png": {
+    "legend": "Evening switch (MB6 not merged yet)",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Evening picked; the ask carries kind=evening",
+        "box": {
+          "x": 998,
+          "y": 16,
+          "w": 196,
+          "h": 42
+        }
+      },
+      {
+        "n": 2,
+        "caption": "Honest answer: no evening brief yet",
+        "box": {
+          "x": 252,
+          "y": 194,
+          "w": 1164,
+          "h": 94
+        }
+      }
+    ]
+  },
+  "06-no-brief-that-day.png": {
+    "legend": "A day with no saved brief",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Plain answer, not a blank page",
+        "box": {
+          "x": 252,
+          "y": 194,
+          "w": 1164,
+          "h": 94
+        }
+      },
+      {
+        "n": 2,
+        "caption": "One click back to today (Arizona)",
+        "box": {
+          "x": 1288,
+          "y": 17,
+          "w": 128,
+          "h": 40
+        }
+      }
+    ]
+  },
+  "07-phone.png": {
+    "legend": "Phone, 390 wide",
+    "marks": [
+      {
+        "n": 1,
+        "caption": "Tiles stack, one per row",
+        "box": {
+          "x": 16,
+          "y": 82,
+          "w": 358,
+          "h": 157
+        }
+      }
+    ]
+  }
+}

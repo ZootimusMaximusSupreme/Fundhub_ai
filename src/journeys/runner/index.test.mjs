@@ -124,8 +124,26 @@ import { isSyntheticRow } from "./synthetic.mjs";
    Submagic to his phone for approval. It is a cron with no event trigger, so
    like every sweeper here it will always appear in neverFired, which is the
    correct outcome for a scheduled job rather than a coverage hole. It is
-   exercised directly by src/workflows/ad-video-sweeper.test.mjs. */
-const REGISTERED = 79;
+   exercised directly by src/workflows/ad-video-sweeper.test.mjs.
+
+   Moved 79 -> 89 on 2026-10-05 (marketing machine M0 step 6, the CI fix). Ten
+   functions were registered after 2026-09-22 without this pin moving, so it
+   had been red on main since. src/workflows/index.test.mjs already lists
+   every one of them by id (EXPECTED_WORKFLOW_IDS), so nothing here is new
+   registration — this line only catches up. Five of them (slo-genuine-followup,
+   slo-genuine-reply, slo-genuine-checkout-sms, slo-infinite-drip, slo-no-reply-197) were also
+   unreachable by the runner because their module exported no handle(); they
+   now export one (or `handlers` for the three-function module).
+
+   Moved 89 -> 90 the same day with the Microsoft Clarity daily pull
+   (clarity-insights-sweeper, PR #19, marketing machine 11.4). It is a cron with
+   no event trigger, so like every sweeper here it will always appear in
+   neverFired.
+
+   Moved 90 -> 91 when this branch took main's evening brief (evening-brief,
+   cron 0 4 * * * UTC — 9 p.m. Arizona). A cron like the rest, so it also
+   always appears in neverFired. */
+const REGISTERED = 91;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
