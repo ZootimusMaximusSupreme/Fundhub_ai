@@ -3,6 +3,7 @@
 // Files stay in Drive — we only store the link.
 
 import { driveConfigFromEnv } from "../company-brain/config.mjs";
+import { meetKindFromName, meetStartFromName } from "../company-brain/meet-title.mjs";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const LOOKBACK_DAYS = 7;
@@ -70,11 +71,30 @@ export async function stampRecordingUrl(db, { orgId, clientId, url } = {}) {
   };
 }
 
+/* How far from the meeting start a closer's logged outcome may sit and still be
+   that meeting's call: logged up to an hour early (logged ahead, clock skew) and
+   up to six hours after the start. */
+const CALL_MATCH_BEFORE_MS = 60 * 60 * 1000;
+const CALL_MATCH_AFTER_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * stampCallTranscript — put a recording's words on the sales call it belongs to.
+ *
+ * 1. The call row that already holds this recording's link wins.
+ * 2. Otherwise match by meeting time and type: the meeting must be a sales
+ *    meeting (meetKindFromName) with a known start (meetingAt, or the time in
+ *    meetingName), and the call's logged_at must sit near that start.
+ * 3. Anything else stamps nothing. The words stay on the brain file, where the
+ *    client dossier reads them. It used to fall back to the client's latest
+ *    empty call, so a CSM check-in could land on a sales call (spec M0 step 9).
+ */
 export async function stampCallTranscript(db, {
   orgId,
   clientId,
   url = null,
-  transcript
+  transcript,
+  meetingAt = null,
+  meetingName = null
 } = {}) {
   const words = String(transcript || "").trim();
   if (!orgId || !clientId || !words) return { stamped: 0 };
@@ -94,20 +114,34 @@ export async function stampCallTranscript(db, {
       [orgId, clientId, words, link]
     )
     : { rows: [] };
-  if (byUrl.rows?.length) return { stamped: 1 };
-  const byClient = await db.query(
+  if (byUrl.rows?.length) return { stamped: 1, matched: "recording_url" };
+
+  const kind = meetKindFromName(meetingName);
+  if (kind !== "sales") {
+    return { stamped: 0, reason: kind === "csm" ? "not_a_sales_meeting" : "meeting_type_unknown" };
+  }
+  const startIso = meetingAt ? new Date(meetingAt).toISOString() : meetStartFromName(meetingName);
+  if (!startIso) return { stamped: 0, reason: "meeting_time_unknown" };
+  const start = new Date(startIso).getTime();
+  const byTime = await db.query(
     `UPDATE call_outcomes SET transcript = $3
       WHERE id = (
         SELECT id FROM call_outcomes
          WHERE org_id = $1 AND client_id = $2
            AND (transcript IS NULL OR btrim(transcript) = '')
-         ORDER BY logged_at DESC NULLS LAST
+           AND logged_at BETWEEN $5::timestamptz AND $6::timestamptz
+         ORDER BY abs(extract(epoch FROM (logged_at - $4::timestamptz)))
          LIMIT 1
       )
       RETURNING id`,
-    [orgId, clientId, words]
+    [
+      orgId, clientId, words, startIso,
+      new Date(start - CALL_MATCH_BEFORE_MS).toISOString(),
+      new Date(start + CALL_MATCH_AFTER_MS).toISOString()
+    ]
   );
-  return { stamped: byClient.rows?.length || 0 };
+  if (byTime.rows?.length) return { stamped: 1, matched: "meeting_time" };
+  return { stamped: 0, reason: "no_call_at_meeting_time" };
 }
 
 async function recentCallClients(db, { orgId, sinceIso }) {

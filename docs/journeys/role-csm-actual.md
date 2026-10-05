@@ -45,9 +45,26 @@ flowchart TD
     J --> L["csm-queue.html → the answer form<br/>POST /api/customer-insights<br/>stage = post, channel = google_meet"]
     K --> M[(customer_insights row)]
     L --> M
-    M --> N[src/agents/context.mjs<br/>answers feed the AI]
+    M --> N[src/clients/dossier.mjs → src/agents/context.mjs<br/>every answer, in full, feeds the AI]
     J --> O[meet-transcript-sweeper<br/>cron */10, pulls words off the recording]
+    O --> P[(brain_files + brain_chunks<br/>for the client)]
+    O --> Q{stampCallTranscript:<br/>same recording link on a call,<br/>or a sales meeting whose time<br/>matches a logged call?}
+    Q -->|yes| R[(call_outcomes.transcript)]
+    Q -->|"no — CSM meeting, unknown type<br/>or no call at that time"| P
+    P --> N
 ```
+
+**A CSM meeting's words never land on a sales call (2026-10-05, M0 step 9).**
+`stampCallTranscript` (`src/sales/recordings.mjs`) used to fall back to the
+client's latest call with no transcript, so a check-in recording could be written
+onto a closer's call. Now it stamps a call only when that call already holds the
+recording's link, or when the file name says it was a sales meeting
+(`meetKindFromName`) and gives its start time (`meetStartFromName`) and a call
+was logged from one hour before to six hours after that start. Otherwise the
+words stay on the brain file, and the client dossier (`src/clients/dossier.mjs`)
+reads them from `brain_chunks`. `UNVERIFIED` against real Drive names: the
+type and time come from the file name only, so a Meet file named without
+"(YYYY-MM-DD HH:MM GMT±H)" never stamps a call.
 
 **All three money-in events make the halfway call.** `register()` in
 `src/handlers/customer-insights.mjs` subscribes `onPaidMidCheckin` to

@@ -100,7 +100,25 @@ test("formatPromptBlock omits empty interview blocks", () => {
 });
 
 test("closer context reads spoken words from call_outcomes.transcript", () => {
+  // The call query moved into the dossier (M0 step 9); fetchContext reads it from there.
+  const dossierSrc = readFileSync(fileURLToPath(new URL("../clients/dossier.mjs", import.meta.url)), "utf8");
+  assert.match(dossierSrc, /SELECT id, outcome, belief_failed, notes, cash_collected_cents, transaction_id,\s+recording_url, transcript,[^`]*FROM call_outcomes/);
+  assert.match(dossierSrc, /said: /);
   const src = readFileSync(fileURLToPath(new URL("./context.mjs", import.meta.url)), "utf8");
-  assert.match(src, /SELECT outcome, notes, recording_url, transcript, logged_at/);
+  assert.match(src, /buildDossier\(db, \{ orgId, clientId \}\)/);
   assert.match(src, /said: /);
+});
+
+test("fetchContext puts every call transcript in the prompt in full (no cut)", async () => {
+  const long = "word ".repeat(2000).trim(); // 9,999 chars; the old cut was 1,200
+  const ctx = await fetchContext(mockDb({
+    calls: Array.from({ length: 5 }, (_, i) => ({
+      id: `co-${i}`, outcome: "callback", notes: `call ${i}`, recording_url: null,
+      transcript: `${long} END-${i}`, logged_at: `2026-08-1${i}T16:00:00Z`
+    }))
+  }), { orgId: ORG, clientId: CLIENT });
+  assert.equal(ctx.recent_calls.length, 5);
+  for (let i = 0; i < 5; i++) assert.match(ctx.as_prompt_block, new RegExp(`END-${i}`));
+  assert.ok(ctx.as_prompt_block.includes(long));
+  assert.equal(ctx.dossier_render.mode, "full");
 });
