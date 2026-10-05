@@ -84,7 +84,8 @@ export async function applyMeetWords(db, {
       orgId,
       clientId: extracted.clientId,
       url: extracted.webViewLink || null,
-      transcript: words
+      transcript: words,
+      meetingName: extracted.name || null
     });
   }
   return { ok: !!up.ok, reason: up.reason || null, fileId: up.fileId || null };

@@ -1,7 +1,7 @@
 // Job heartbeats — did every scheduled job actually run? (MB2, gap 2)
 //
 // Writers: the Inngest heartbeat add-on in src/workflows/client.mjs (every cron
-// run, one place, so no job file can forget) and the six Netlify scheduled
+// run, one place, so no job file can forget) and the seven Netlify scheduled
 // functions in netlify/functions/ (one line each). Table: db/migrations/430.
 //
 // Reader: checkJobHeartbeats(), called by the daily pulse (Recon AG-07).
@@ -29,7 +29,6 @@ export const INNGEST_JOBS = Object.freeze([
   ["paid-checkout-expiry-sweeper", "0 * * * *"],
   ["affiliate-payout-run", "0 3 1 * *"],
   ["meet-transcript-sweeper", "*/10 * * * *"],
-  ["meta-campaign-sync-sweeper", "0 7 * * *"],
   ["clickfunnels-analytics-sweeper", "15 7 * * *"],
   // Microsoft Clarity daily pull, registered by PR #19 (marketing machine 11.4).
   ["clarity-insights-sweeper", "30 7 * * *"],
@@ -47,7 +46,11 @@ export const NETLIFY_JOBS = Object.freeze([
   ["creative-job-runner", "*/2 * * * *"],
   ["hubstaff-poll-sweeper", "*/10 * * * *"],
   ["ad-video-sweeper", "*/5 * * * *"],
-  ["commas-inbox-sweeper", "* * * * *"]
+  ["commas-inbox-sweeper", "* * * * *"],
+  /* The Meta pull (spec M0 step 5). The clock and its background worker both
+     write under this one name, so a missing MARKETING_WORKER_SECRET or a failed
+     pull is the newest heartbeat and the job shows red. */
+  ["meta-sync-sweeper", "17 * * * *"]
 ]);
 
 export const JOBS = Object.freeze([
