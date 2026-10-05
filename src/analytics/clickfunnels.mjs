@@ -69,6 +69,7 @@
 // src/adplatforms/meta.mjs's tokenFor().
 
 import { decryptToken } from "../adplatforms/tokens.mjs";
+import { transmit, ADAPTERS } from "../lib/outbound-fetch.mjs";
 
 export const PLATFORM = "clickfunnels";
 
@@ -215,14 +216,54 @@ export async function upsertContact(creds, contact, ctx = {}) {
   if (!contact?.email_address) throw new Error("contact email is required");
   const workspaceId = await resolveWorkspaceId(creds, ctx);
   const url = `${baseUrl(creds.subdomain)}/workspaces/${workspaceId}/contacts/upsert`;
-  const { body } = await cfFetch({
-    url,
-    apiKey: creds.api_key,
-    ctx,
+
+  /* This is the one call in this file that WRITES — it changes a client's
+     record at a vendor — so it goes through the outbound chokepoint behind the
+     ADAPTERS fence (src/lib/no-unfenced-transmit.test.mjs), not through the
+     raw cfFetch() the read-only calls above use. The fence reads ctx.env (the
+     caller's env, default process.env): nothing is sent unless
+     ADAPTERS_DRY_RUN is set to an explicit off value. The thrown error keeps
+     cfFetch()'s shape (status, platformMessage, retryable) for the callers. */
+  const res = await transmit(url, {
     method: "POST",
-    body: { contact }
+    headers: {
+      "content-type": "application/json",
+      "authorization": `Bearer ${creds.api_key}`,
+      "user-agent": "FundHub-Analytics/1.0 (+https://fundhub.ai)"
+    },
+    body: JSON.stringify({ contact })
+  }, {
+    fence: ADAPTERS,
+    what: "ClickFunnels contact upsert",
+    env: ctx.env,
+    fetchImpl: ctx.fetch
   });
-  return body;
+
+  if (res.blocked) {
+    const e = new Error(`ClickFunnels contact upsert held: ${res.error}`);
+    e.platformMessage = "Held by the ADAPTERS_DRY_RUN fence; nothing was sent.";
+    e.blocked = true;
+    e.retryable = false;
+    throw e;
+  }
+  if (!res.ok) {
+    const parsed = res.body;
+    const message = (parsed && typeof parsed.error === "string")
+      ? parsed.error
+      : String(res.error || `ClickFunnels ${res.status}`).slice(0, 500);
+    if (res.status === 0) {
+      const e = new Error(`ClickFunnels unreachable: ${scrubKey(message, creds.api_key)}`);
+      e.platformMessage = "ClickFunnels could not be reached.";
+      e.retryable = true;
+      throw e;
+    }
+    const e = new Error(scrubKey(`ClickFunnels ${res.status}: ${message}`, creds.api_key));
+    e.platformMessage = scrubKey(message, creds.api_key);
+    e.status = res.status;
+    e.retryable = res.status === 429 || res.status >= 500;
+    throw e;
+  }
+  return res.body;
 }
 
 export async function listFunnels(connection, ctx = {}) {

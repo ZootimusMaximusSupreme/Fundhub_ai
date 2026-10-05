@@ -452,6 +452,9 @@ export async function runDailyPulse({
   sendSms = undefined,
   sendWhatsApp = undefined,
   recordRun = true,
+  // false once the morning brief is live: the brief replaces this text
+  // (owner-set 2026-10-05, one text not two). The audit still runs and stores.
+  sendPulseText = true,
   applyBaseUrl = APPLY_BASE_URL,
   probesImpl = null,
   probeFetchImpl = undefined
@@ -514,7 +517,9 @@ export async function runDailyPulse({
   const scorecard = buildScorecard({ checks, now, previous });
   const counts = countChecks(scorecard.checks);
 
-  const sms = await textChris({
+  const sms = !sendPulseText
+    ? { sent: false, reason: "replaced_by_morning_brief", body: null, to: null }
+    : await textChris({
     date,
     pass,
     fail,

@@ -58,7 +58,13 @@
 // 377's own header (Part 4d, :608-617) names them, and both are now written:
 //
 //   ad_metrics_daily      ON m.ad_id = v.ad_row_id            (046:432)
-//   client_ad_attribution ON our ad number = their ad id      (286:95)
+//   v_client_ad_number    ON our ad number = their ad number  (411)
+//
+// v_client_ad_number (411, spec M0 step 5) is client_ad_attribution with each
+// lead's ad number RESOLVED: utm_content's digits, else Meta's ad id in
+// utm_term matched to ads.external_id, else utm_content matched to ads.name.
+// The bare client_ad_attribution.ad_id is empty for every lead from the
+// hand-loaded live ads, so joining on it counted none of them.
 //
 // THEY ARE COUNTED IN TWO SEPARATE PASSES, ON PURPOSE. ad_metrics_daily holds
 // one row per ad PER DAY and client_ad_attribution one row per PERSON, so
@@ -82,10 +88,10 @@
 // columns carry the same CHECK, one to nine digits and nothing else
 // (377:569, 286:116-117), and nine digits always fits a bigint.
 //
-// WHAT THAT COSTS, SAID OUT LOUD: two ads in the same company could hold '042'
-// and '42' — the unique index is on the text, so it allows that — and they
-// would now be treated as one number. The people count stays right anyway,
-// because it counts DISTINCT people and not per-ad rows.
+// ONE NUMBER, SEVERAL META ADS. Since 411 the number is not unique: one number
+// can run in several ad sets, and '042' and '42' are one number. Every ads row
+// carrying it is that ad. The people count stays right, because it counts
+// DISTINCT people and not per-ad rows.
 //
 // ─── NO INVENTED METRIC, AND NO SECOND RULE ABOUT SMALL NUMBERS ────────────
 //
@@ -199,14 +205,17 @@ export function windowFor(days, now = new Date()) {
    '042' and '42' are one ad. Both columns are CHECKed to one-to-nine digits
    (377:569, 286:116-117), so neither cast can raise.
 
-   KNOWN COST, WRITTEN DOWN RATHER THAN DISCOVERED LATER: casting both sides
-   means neither supporting index can be used — idx_caa_org_ad (286:123) and
-   ads_fundhub_number_uq (377:575) are both on the TEXT — so the people pass
-   scans client_ad_attribution. That is fine at today's row counts and it is not
+   `a` is v_client_ad_number (411): ad_number there is already an integer,
+   resolved through all three steps, so the lead side needs no cast; the bigint
+   cast stays so the comparison reads the same on both sides.
+
+   KNOWN COST, WRITTEN DOWN RATHER THAN DISCOVERED LATER: the ads side is cast,
+   so ads_fundhub_number_idx (411, on the TEXT) cannot be used, and the people
+   pass resolves every client_ad_attribution row. That is fine at today's row counts and it is not
    worth an expression index now. The durable fix is to normalise the number
    where it is WRITTEN (campaigns/link-asset), not to cast where it is read, and
    that belongs to whoever puts this on a screen people refresh. */
-export const AD_NUMBER_MATCH = "a.ad_id::bigint = v.fundhub_ad_number::bigint";
+export const AD_NUMBER_MATCH = "a.ad_number::bigint = v.fundhub_ad_number::bigint";
 
 /* The five labels, and the one place their names are written down.
 
@@ -417,9 +426,9 @@ export function buildQuery({ orgId, groupBy = null, limit, offset, query = {}, w
                 count(DISTINCT a.client_id)::int AS people,
                 (count(DISTINCT a.client_id) FILTER (WHERE b.id IS NOT NULL))::int AS people_booked
            FROM v_ad_label_spine v
-           JOIN client_ad_attribution a
+           JOIN v_client_ad_number a
              ON a.org_id = v.org_id
-            AND a.ad_id IS NOT NULL
+            AND a.ad_number IS NOT NULL
             AND v.fundhub_ad_number IS NOT NULL
             AND ${AD_NUMBER_MATCH}
            LEFT JOIN bookings b

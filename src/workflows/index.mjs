@@ -13,6 +13,7 @@ import { blakeLeadWatch } from './blake-lead-watch.mjs';
 import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
+import { eveningBrief } from './evening-brief.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { commasInboxDrain } from './commas-inbox-drain.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
@@ -25,8 +26,8 @@ import { blueprintFinanceOsAlerts } from './blueprint-finance-os-alerts.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { affiliatePayoutRun } from './affiliate-payout-run.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
-import { metaCampaignSyncSweeper } from './meta-campaign-sync-sweeper.mjs';
 import { clickfunnelsAnalyticsSweeper } from './clickfunnels-analytics-sweeper.mjs';
+import { clarityInsightsSweeper } from './clarity-insights-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
 import { partnerProductionFloorReview } from './partner-production-floor.mjs';
 import { c00CrsSoftPullRequest } from './c-00-crs-soft-pull-request.mjs';
@@ -114,6 +115,11 @@ export const functions = [
   /* Daily pulse — 7:00 a.m. America/Denver (cron 0 13 * * * during MDT).
      Audit only. Recon AG-07 runtime. Does not auto-fix. */
   dailyPulse,
+  /* Evening brief — "Good evening, Chris." 9:00 p.m. Arizona (cron 0 4 * * *
+     UTC, EVENING_BRIEF_CRON). Same builder as the morning brief, "today so
+     far". Dry-run under MORNING_BRIEF_LIVE; texts nothing while it is false.
+     Never runs the pulse again — reads this morning's stored check. */
+  eveningBrief,
 
   /* THE OUTBOUND DRAIN. Registered 2026-08-02, and it is the reason any client
      email leaves this platform at all — twenty-six workflows queue mail and
@@ -312,9 +318,21 @@ export const functions = [
 
      One partner's broken connection never stops the pass: each is caught on its
      own and recorded against that connection's last_error, which is what the
-     screen already shows. */
-  metaCampaignSyncSweeper,
+     screen already shows.
+
+     metaCampaignSyncSweeper is NOT registered here any more (2026-10-05, spec
+     M0 step 5). The pull now runs hourly (3 days) plus nightly (28 days), and an
+     Inngest pass is killed at 26 seconds inside /api/inngest (spec §4 trap 5),
+     which a full ad-account walk is not bounded by. It runs as
+     netlify/functions/meta-sync-sweeper.mjs (the clock) →
+     meta-sync-background.mjs (15 minutes), calling the same sweep(). Registering
+     it here again would run every pass twice. */
   clickfunnelsAnalyticsSweeper,
+
+  /* Microsoft Clarity daily pull. Registered 2026-10-05 (marketing machine 11.4).
+     READS from Clarity, writes clarity_insights_snapshots. Two calls a day at
+     most, retries 0, counter in clarity_export_calls. Sends nothing to anyone. */
+  clarityInsightsSweeper,
 
   /* THE RECURRING BILLING RAIL. Registered 2026-08-31. Until it, nothing in
      this platform charged a card on a cycle: 075_subscriptions.sql recorded the

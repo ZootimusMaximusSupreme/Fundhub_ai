@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === "GET") {
-    const files = await listRepFiles(db, principal.accountId);
+    const files = await listRepFiles(db, principal.accountId, { orgId: principal.orgId });
     return res.status(200).json({
       ok: true,
       active_client_id: principal.clientId,
@@ -37,7 +37,11 @@ export default async function handler(req, res) {
   if (!isUuid(clientId)) {
     return res.status(400).json({ ok: false, error: "client_id must be a uuid" });
   }
-  const out = await setActiveFile(db, { accountId: principal.accountId, clientId });
+  const out = await setActiveFile(db, {
+    accountId: principal.accountId,
+    clientId,
+    orgId: principal.orgId
+  });
   if (!out.ok) {
     return res.status(403).json({
       ok: false,

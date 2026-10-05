@@ -5,11 +5,15 @@
  * what shows, and a section the brief left as a "waiting" line shows that line.
  *
  * kind = morning | evening. Chris added an end-of-day brief ("Good evening,
- * Chris.") on 2026-10-05; MB6 adds kind to the endpoint. Until MB6 lands the
- * endpoint ignores kind and always answers with the morning row — so an
- * evening ask is only painted when the row itself says it is the evening one.
- * Otherwise the page says there is no evening brief, rather than showing the
- * morning brief under an Evening label.
+ * Chris.") on 2026-10-05 (MB6); the endpoint answers with `kind`. An evening
+ * ask is only painted when the row itself says it is the evening one, so the
+ * morning brief never shows under an Evening label.
+ *
+ * Marketing and closers come grouped per offer and per funnel
+ * (src/ops/brief-offers.mjs): { offers: [{ name, totals, funnels }],
+ * all_offers: { totals, not_split } }. A number that cannot be split shows
+ * once, under "All offers", with its reason. Rows saved before MB6 have no
+ * offers and paint the older spend-only view.
  *
  * Every time is shown in Arizona (America/Phoenix). The default day is today
  * in Arizona, not in the browser's own zone.
@@ -178,20 +182,91 @@
     return "";
   }
 
+  function dash(v) { return v == null ? "—" : v; }
+  function cpbText(c) {
+    if (!c) return null;
+    return c.cost_cents == null ? null : money(c.cost_cents);
+  }
+  function roasText(r) { return r == null ? null : String(r) + "x"; }
+
+  /* One table: each offer as a bold row, its funnels indented under it. Spend,
+     cost per booked person and return on ad spend are per offer only (an ad
+     has no funnel), so funnel rows show a dash there. */
+  function offerTable(offers) {
+    var head = "<thead><tr><th>Offer / funnel</th><th class=\"num\">Spend</th><th class=\"num\">New people</th>" +
+      "<th class=\"num\">Booked</th><th class=\"num\">Cost per booked</th><th class=\"num\">Showed</th>" +
+      "<th class=\"num\">No-shows</th><th class=\"num\">Sales</th><th class=\"num\">Close rate</th>" +
+      "<th class=\"num\">Cash</th><th class=\"num\">Return on ad spend</th></tr></thead>";
+    var rows = offers.map(function (o) {
+      var t = o.totals || {};
+      var top = '<tr class="offer" data-offer="' + esc(o.key || o.name) + '"><td><b>' + esc(o.name) + "</b></td>" +
+        '<td class="num">' + esc(dash(money(t.spend_cents))) + '</td><td class="num">' + esc(dash(count(t.leads))) +
+        '</td><td class="num">' + esc(dash(count(t.booked))) + '</td><td class="num">' + esc(dash(cpbText(t.cost_per_booked))) +
+        '</td><td class="num">' + esc(dash(count(t.showed))) + '</td><td class="num">' + esc(dash(count(t.no_shows))) +
+        '</td><td class="num">' + esc(dash(count(t.sales))) + '</td><td class="num">' + esc(dash(pct(t.close_rate))) +
+        '</td><td class="num">' + esc(dash(money(t.cash_cents))) + '</td><td class="num">' + esc(dash(roasText(t.roas))) + "</td></tr>";
+      var subs = (o.funnels || []).map(function (f) {
+        var ft = f.totals || {};
+        return '<tr class="funnel"><td class="ind">' + esc(f.name) + '</td><td class="num">—</td><td class="num">' +
+          esc(dash(count(ft.leads))) + '</td><td class="num">' + esc(dash(count(ft.booked))) + '</td><td class="num">—</td><td class="num">' +
+          esc(dash(count(ft.showed))) + '</td><td class="num">' + esc(dash(count(ft.no_shows))) + '</td><td class="num">' +
+          esc(dash(count(ft.sales))) + '</td><td class="num">' + esc(dash(pct(ft.close_rate))) + '</td><td class="num">' +
+          esc(dash(money(ft.cash_cents))) + '</td><td class="num">—</td></tr>';
+      }).join("");
+      return top + subs;
+    }).join("");
+    return '<div class="scroll"><table class="tbl" id="mb-offers">' + head + "<tbody>" + rows + "</tbody></table></div>";
+  }
+
+  function notSplit(list, title) {
+    if (!Array.isArray(list) || !list.length) return "";
+    return '<div class="card" style="margin-top:16px" id="' + title.id + '"><p class="line"><b>' + esc(title.text) + "</b></p>" +
+      list.map(function (n) {
+        var v = n.value == null ? "" : ": " + (n.unit === "cents" ? money(n.value) : count(n.value));
+        return '<p class="line">' + esc(n.what + v) + '<br><span class="note">Why not split: ' + esc(n.reason) + "</span></p>";
+      }).join("") + "</div>";
+  }
+
   function paintMarketing(m) {
     if (!m) { body("sec-marketing", line("Marketing: nothing was saved for this part.")); return; }
     if (m.status === "error") { body("sec-marketing", line(m.line)); return; }
     var html = "";
-    if (m.spend_line) {
+    if (Array.isArray(m.offers) && m.all_offers) {
+      var t = m.all_offers.totals || {};
+      var when = m.window ? ", " + m.window : "";
+      html += '<div class="grid">' +
+        kpi("Ad spend" + when, money(t.spend_cents), t.spend_cents == null ? m.spend_line : "All offers") +
+        kpi("Booked", count(t.booked), "All offers") +
+        kpi("Cost per booked person", cpbText(t.cost_per_booked), t.cost_per_booked && t.cost_per_booked.cost_cents == null ? (t.cost_per_booked.note || "Too few to say") : "All offers") +
+        kpi("Showed", count(t.showed), "All offers") +
+        kpi("Sales", count(t.sales), "All offers") +
+        kpi("Cash", money(t.cash_cents), "All offers") +
+        kpi("Return on ad spend", roasText(t.roas), t.roas == null ? "No spend to divide by" : "All offers") +
+        kpi("New people", count(t.leads), "All offers") +
+        "</div>" + src("ad spend from Meta (ad_metrics_daily); people, bookings, calls, sales and cash from the CRM");
+      html += '<div class="card" style="margin-top:16px">' +
+        (m.offers.length ? offerTable(m.offers) : '<p class="line">No ad spend and no activity in this window.</p>') +
+        (Array.isArray(m.notes) ? m.notes.map(function (n) { return '<p class="note">' + esc(n) + "</p>"; }).join("") : "") +
+        "</div>";
+      html += notSplit(m.all_offers.not_split, { id: "mb-mkt-not-split", text: "All offers — not split by offer or funnel" });
+      var dying = Array.isArray(m.dying_ads) ? m.dying_ads : [];
+      html += '<div class="card" style="margin-top:16px" id="mb-dying"><p class="line"><b>Dying ads</b></p>' +
+        (dying.length
+          ? dying.map(function (d) {
+            return '<p class="line">' + esc(d.ad_name) + " (" + esc(d.offer_name || d.offer) + "): " +
+              esc(pct(d.reached_25_rate) || "—") + " of " + esc(count(d.plays) || "0") + " plays reached the quarter mark. Change the opening line.</p>";
+          }).join("")
+          : '<p class="line">None flagged.</p>') + "</div>";
+    } else if (m.spend_line) {
       var spend = money(m.spend_cents);
       html += '<div class="grid">' +
         kpi("Ad spend" + (m.spend_day ? ", " + m.spend_day : ""), spend, spend == null ? m.spend_line : null) +
         "</div>" + src(m.spend_source ? "ad spend synced from Meta (" + m.spend_source + ")" : "ad spend rows");
     }
     html += '<div class="card" style="margin-top:16px">' + waitLines(m.waiting);
-    var dash = safeLink(m.dashboard_url);
-    html += dash
-      ? '<p class="line"><a class="out" href="' + esc(dash) + '">Open the marketing dashboard</a></p>'
+    var dashUrl = safeLink(m.dashboard_url);
+    html += dashUrl
+      ? '<p class="line"><a class="out" href="' + esc(dashUrl) + '">Open the marketing dashboard</a></p>'
       : (m.dashboard_line ? '<p class="wait">' + esc(m.dashboard_line) + "</p>" : "");
     html += "</div>";
     body("sec-marketing", html);
@@ -246,12 +321,22 @@
     html += '<div class="card" style="margin-top:16px">';
     if (Array.isArray(t.closers)) {
       if (t.closers.length) {
-        html += '<div class="scroll"><table class="tbl" id="mb-closers"><thead><tr><th>Closer</th>' +
-          '<th class="num">Calls held</th><th class="num">No-shows</th><th class="num">Deposits</th><th class="num">Downsells</th></tr></thead><tbody>' +
+        html += '<div class="scroll"><table class="tbl" id="mb-closers"><thead><tr><th>Closer / offer / funnel</th>' +
+          '<th class="num">Calls held</th><th class="num">No-shows</th><th class="num">Sales (deposits)</th><th class="num">Downsells</th><th class="num">Close rate</th></tr></thead><tbody>' +
           t.closers.map(function (r) {
-            return "<tr><td>" + esc(r.name || "—") + '</td><td class="num">' + esc(count(r.calls_held) || "0") +
-              '</td><td class="num">' + esc(count(r.no_shows) || "0") + '</td><td class="num">' + esc(count(r.deposits) || "0") +
-              '</td><td class="num">' + esc(count(r.downsells) || "0") + "</td></tr>";
+            function cells(x) {
+              return '<td class="num">' + esc(count(x.calls_held) || "0") + '</td><td class="num">' + esc(count(x.no_shows) || "0") +
+                '</td><td class="num">' + esc(count(x.deposits) || "0") + '</td><td class="num">' + esc(count(x.downsells) || "0") +
+                '</td><td class="num">' + esc(pct(x.close_rate) || "—") + "</td>";
+            }
+            var out = '<tr class="offer"><td><b>' + esc(r.name || "—") + "</b></td>" + cells(r) + "</tr>";
+            (r.offers || []).forEach(function (o) {
+              out += '<tr class="funnel"><td class="ind">' + esc(o.name) + "</td>" + cells(o.totals || {}) + "</tr>";
+              (o.funnels || []).forEach(function (f) {
+                out += '<tr class="funnel"><td class="ind2">' + esc(f.name) + "</td>" + cells(f.totals || {}) + "</tr>";
+              });
+            });
+            return out;
           }).join("") + "</tbody></table></div>";
       } else {
         html += '<p class="line">No calls logged by any closer in this window.</p>';
@@ -271,6 +356,7 @@
       : kpi("Unrecorded calls", null, t.unrecorded_error || "Could not be read");
     html += "</div>";
 
+    if (t.all_offers) html += notSplit(t.all_offers.not_split, { id: "mb-team-not-split", text: "All offers — not split by offer or funnel" });
     if (t.waiting && t.waiting.length) html += '<div class="card" style="margin-top:16px">' + waitLines(t.waiting) + "</div>";
     body("sec-team", html);
   }
@@ -283,7 +369,7 @@
       return;
     }
     body("sec-suggestions", '<div class="card">' + list.slice(0, 3).map(function (s, i) {
-      var text = s.text || s.line || s.title || s.summary || "";
+      var text = s.write_up || s.headline || s.text || s.line || s.title || s.summary || "";
       var rule = s.rule ? '<p class="note">Rule: ' + esc(s.rule) + "</p>" : "";
       var nums = s.numbers ? '<p class="note">Numbers: ' + esc(typeof s.numbers === "string" ? s.numbers : JSON.stringify(s.numbers)) + "</p>" : "";
       return '<div class="line"><b>' + (i + 1) + ".</b> " + esc(text) + rule + nums + "</div>";
@@ -400,8 +486,7 @@
         showState("<b>The report came back empty.</b><p class=\"note\">Try again in a moment.</p>");
         return;
       }
-      /* Until MB6 lands the endpoint does not know kind and answers with the
-         morning row. Never show that under an Evening label. */
+      /* Never show one kind's row under the other kind's label. */
       var gotKind = b.kind || (res.data && res.data.kind) || "morning";
       if (gotKind !== current.kind) {
         paintDelivery(null);
