@@ -276,3 +276,60 @@ which is the only kind of proof available on a machine with no Postgres.
 local Postgres on this Mac. Nothing about migration 389, migration 390, the
 constraints, the row-level security policies, or any SQL statement in
 `store.mjs` or `token.mjs` has been executed even once.
+
+---
+
+## The aligner (spec §9.2) — built, not yet called by the pipeline
+
+Generated from `src/ad-videos/align.mjs` on 2026-10-05. It is pure code: no AI,
+no database, no network. Nothing in `pipeline.mjs` calls it yet. The `planCut`
+step on the `matched → cut` move (spec §9.1, PR #26) is a wait today; when it
+is wired, it calls `alignTakes()` and then `judgeCut()`, and the arrows below
+become real. Until then this section is the aligner's own flow, and the
+picture above is unchanged.
+
+```mermaid
+flowchart TD
+    IN["the script (body, parts, style)<br/>+ every matched take of the ad<br/>(transcript_words, silences, recorded_at)"] --> N["normalize both sides to spoken words<br/>$300,000 = 300K = 300 grand; % = percent;<br/>contractions expanded; marks and CAPS dropped"]
+    N --> L["split the script into lines from parts<br/>a blank line after a line = a planned pause"]
+    L --> A["find every try at every line in every take<br/>(takes in recorded_at order)"]
+    A --> S["stitch restarts: a later try that picks up at word j<br/>within 8 s joins the earlier try at j"]
+    S --> P["pick one try per line: 90%+ words and no stall over 1.0 s,<br/>else the best one; the latest wins a tie;<br/>a switch between takes costs 0.15"]
+    P --> D{"line under 85%?"}
+    D -->|"its neighbours are kept in one take and the speech<br/>between them is under 2x the line's length"| SD["said differently — kept, marked"]
+    D -->|"its try heard under 50% of the words"| M["missing"]
+    D -->|"no"| K["kept"]
+    SD --> E
+    K --> E["pieces in script order<br/>40 ms before speech, 80 ms after, snapped to silence within 250 ms;<br/>gaps keep 250 ms of the take's own pause (450 ms at a planned pause);<br/>um/uh cut with 150 ms of air both sides, like/you know with 250 ms;<br/>dead air over 0.6 s inside a piece is cut down"]
+    M --> J
+    E --> J{"judgeCut"}
+    J -->|"under 50% of the script's words heard"| RM["rematch: back to transcribed,<br/>match again without this script"]
+    J -->|"hook, line 2 or CTA missing, or under 70%"| H["hold at cut before any Submagic spend<br/>Chris: Use this cut / Re-film"]
+    J -->|"otherwise"| B["build the master (spec §9.3)"]
+```
+
+**Bullets style.** The hook, line 2, reveal and CTA go through the same steps.
+The cues between them are freestyled, so the aligner takes the stretch of one
+take between line 2 and the reveal (the take that hears the most cues; on a tie,
+the latest), drops a run of 4+ words that repeats within 6 s after 400 ms of
+silence (keeping the last copy), and finds each cue by a keyword. A cue whose
+keyword is not heard is marked said differently, and its start is placed
+evenly between its neighbours.
+
+**What it hands back.** The pieces (take, start, end, line), every line's status
+(kept, missing, said differently, struck), the missing lines, the lines said
+differently, the coverage, and every kept word with its time in the cut.
+`anchorTime()` turns an animation anchor (a phrase, or a cue index plus a
+keyword) into a time in the cut, or null when the anchor's line was cut.
+
+**Struck lines.** `alignTakes({ struck: [...] })` leaves those lines out of the
+cut and out of the coverage. That is the input the §9.6 "strike a line" edit
+needs.
+
+**Gaps, reported, not reconciled.**
+- Nothing calls the aligner yet (UNVERIFIED in the flow until the §9.1 hookup lands).
+- The silences come from the video worker's silencedetect (§9.5), which is not
+  built. Without them the edges are not snapped; everything else still runs.
+- "Dead air over 0.6 s inside a piece is cut down" comes from the best-of-clips
+  law's dead-air rule. The spec's §9.2 does not give a number for it; 0.6 s is
+  the aligner's setting (`maxInnerGapSeconds`).
