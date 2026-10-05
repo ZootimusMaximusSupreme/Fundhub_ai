@@ -85,6 +85,11 @@ const NO_ORG_COLUMN = new Map([
   ["deal-math.mjs", "no SQL — dealMath() computes from query params and throws without orgId; handler passes orgId: staff.org_id"],
   ["my-numbers.mjs", "scoped in src/sales/metrics.mjs closerMyNumbers() — every query binds org_id from the session"],
   ["sales-floor.mjs", "scoped in src/sales/metrics.mjs salesFloor() — every query binds org_id from the session"],
+  /* Platform-wide by design: pulse_scorecards (db/migrations/430) has no
+     org_id column. It is the daily systems check of the whole platform — jobs,
+     queues, outside keys, the site — and holds no client, partner or company
+     data. Owner/admin only (ROLE_SETS.OPS). Added 2026-10-05 (MB2). */
+  ["systems-check.mjs", "pulse_scorecards is platform-wide (no org_id column) and holds no company data; owner/admin only"],
   ["unrecorded-calls.mjs", "scoped in src/sales/unrecorded.mjs listUnrecordedCalls(), which binds o.org_id = $1 and returns [] without an org"],
   ["ops-pulse.mjs", "scoped in src/ops/pulse.mjs computePulse() — every query binds org_id from the session"],
   ["closer-deck.mjs", "scoped in src/sales/closer-deck.mjs buildCloserDeck() — every query binds org_id from the session"],

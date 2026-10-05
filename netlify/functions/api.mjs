@@ -79,6 +79,7 @@ import readPartnerHomeTiles from "../../api/read/partner-home-tiles.mjs";
 import readPartnerTraining from "../../api/read/partner-training.mjs";
 import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
+import readSystemsCheck from "../../api/read/systems-check.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
 import staffMonitoringConsent from "../../api/staff/monitoring-consent.mjs";
 import staffAvatar from "../../api/staff/avatar.mjs";
@@ -454,6 +455,7 @@ export const ROUTES = {
   "read/partner-training": readPartnerTraining,
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
+  "read/systems-check": readSystemsCheck,
   "staff/telemetry": staffTelemetry,
   "staff/monitoring-consent": staffMonitoringConsent,
   "staff/avatar": staffAvatar,

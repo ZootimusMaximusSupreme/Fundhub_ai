@@ -16,12 +16,17 @@ import { gmailConfigFromEnv, createGmailClientFromConfig } from "../gmail/index.
 import { textChris, ticketDarwin } from "./notify.mjs";
 import { checkRegistry } from "./registry.mjs";
 import { listUnrecordedCalls } from "../sales/unrecorded.mjs";
+import { checkJobHeartbeats } from "./heartbeats.mjs";
+import { checkMessageQueue, checkFailedEvents, checkMoneyIn, checkMetaTracking } from "./system-checks.mjs";
+import { buildScorecard, countChecks, loadPreviousScorecard, saveScorecard } from "./scorecard.mjs";
+import { runProbes } from "../messaging/providers/pulse-probes.mjs";
 
 export const PULSE_CRON = "0 13 * * *";
 export const PULSE_TZ = "America/Denver";
 export const AGENT_CODE = "AG-07";
 export const SOURCE_WORKFLOW = "daily-pulse";
 export const DEFAULT_BASE_URL = "https://fundhub.ai";
+export const APPLY_BASE_URL = "https://apply.fundhub.ai";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(HERE, "../..");
@@ -231,6 +236,123 @@ export async function checkGmail({ env = process.env, fetchImpl, gmailClient } =
   }
 }
 
+/* ── Customer pages (spec gap 5) ─────────────────────────────────────────────
+   The ClickFunnels pages on apply.fundhub.ai, each with words that only that
+   page says (read off the live pages 2026-10-05). A 200 with the wrong words is
+   a page that loads and shows the wrong thing, so it is red. The page list is
+   src/funnel/pages.mjs; /order is left out (it is the Commas checkout hand-off,
+   not a page of ours to read). */
+export const FUNNEL_PAGES = Object.freeze([
+  { path: "/roadmap", words: /Get Funding Forever/i },
+  { path: "/roadmap-book", words: /Want to Get There Faster/i },
+  { path: "/roadmap-thank-you", words: /Got Your Request/i },
+  { path: "/watch", words: /in Funding in 14 Days/i },
+  { path: "/apply", words: /What You Qualify For/i },
+  { path: "/funding-book-call", words: /Book Your Funding Call/i },
+  { path: "/thank-you", words: /Your Call Is Booked/i }
+]);
+
+/* The sales videos, served from public/funnel/ on fundhub.ai. */
+export const VSL_FILES = Object.freeze([
+  "/funnel/vsl.mp4",
+  "/funnel/slo-vsl.mp4",
+  "/funnel/slo-vsl2-funding.mp4",
+  "/funnel/slo-vsl3-repair.mp4"
+]);
+
+export function pageText(html) {
+  return String(html || "")
+    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&(#39|#x27|rsquo|lsquo|apos);/gi, "'")
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/\s+/g, " ");
+}
+
+export async function checkFunnelPages({ fetchImpl, applyBaseUrl = APPLY_BASE_URL, pages = FUNNEL_PAGES } = {}) {
+  const out = [];
+  for (const page of pages) {
+    const id = `page:${page.path}`;
+    const url = `${applyBaseUrl}${page.path}`;
+    const fix = `Open ${url} and restore the page (marketing/landing-pages, pushed by API). Do not edit ClickFunnels by hand.`;
+    try {
+      const { status, text } = await readUrl(fetchImpl, url);
+      const hasWords = page.words.test(pageText(text));
+      if (status >= 200 && status < 300 && hasWords) {
+        out.push({ ...check(id, "PASS", `${url} ${status}, expected words present`), group: "front_doors" });
+      } else {
+        out.push({
+          ...check(id, "FAIL", `${url} ${status}, expected words ${hasWords ? "present" : "missing"}`, fix),
+          group: "front_doors",
+          customerSees: `A visitor on ${page.path} gets a broken or wrong page.`
+        });
+      }
+    } catch (err) {
+      out.push({
+        ...check(id, "FAIL", `${url} unreachable: ${String((err && err.message) || err).slice(0, 120)}`, fix),
+        group: "front_doors",
+        customerSees: `A visitor on ${page.path} gets no page at all.`
+      });
+    }
+  }
+  return out;
+}
+
+/* A two-byte range read: proves the file answers as a video without pulling it. */
+export async function checkVslFiles({ fetchImpl, baseUrl = DEFAULT_BASE_URL, files = VSL_FILES } = {}) {
+  const out = [];
+  for (const file of files) {
+    const id = `vsl:${file.replace(/^\/funnel\//, "")}`;
+    const url = `${baseUrl}${file}`;
+    try {
+      const res = await fetchImpl(url, { headers: { range: "bytes=0-1" } });
+      const type = String((res.headers && typeof res.headers.get === "function" && res.headers.get("content-type")) || "");
+      try { await res.body?.cancel?.(); } catch { /* nothing left to read */ }
+      if ((res.status === 200 || res.status === 206) && /^video\//i.test(type)) {
+        out.push({ ...check(id, "PASS", `${url} ${res.status} ${type}`), group: "front_doors" });
+      } else {
+        out.push({
+          ...check(id, "FAIL", `${url} ${res.status} ${type || "no content-type"}`,
+            `Restore ${file} under public/funnel/ and ship.`),
+          group: "front_doors",
+          customerSees: "The sales video does not play."
+        });
+      }
+    } catch (err) {
+      out.push({
+        ...check(id, "FAIL", `${url} unreachable: ${String((err && err.message) || err).slice(0, 120)}`,
+          `Restore ${file} under public/funnel/ and ship.`),
+        group: "front_doors",
+        customerSees: "The sales video does not play."
+      });
+    }
+  }
+  return out;
+}
+
+/* The Mac's copy of the repo (spec gap 12). Plan only: needs a small reporter
+   on the Mac next to the gate relay, and that is not built until Chris says
+   yes. Shown as not checked so it is never mistaken for a pass. */
+export function checkMacRepo() {
+  return {
+    ...check("mac-repo", "skip", "Mac reporter not built yet (plan only) — unpushed commits and unsaved files on the Mac are not checked"),
+    group: "mac"
+  };
+}
+
+/* Groups for the original nine checks (board contract). */
+const NAMED_GROUPS = {
+  health: "backend",
+  login: "front_doors",
+  apply: "front_doors",
+  suggestions: "backend",
+  "gate-relay": "mac",
+  recon: "backend",
+  unrecorded: "backend",
+  gmail: "outside"
+};
+
 export function formatScorecard({ date, dryRun, checks = [], sms, darwin } = {}) {
   const named = checks.filter((c) => c.kind !== "registry");
   const uptime = checks.filter((c) => c.kind === "registry");
@@ -329,7 +451,10 @@ export async function runDailyPulse({
   gmailClient = null,
   sendSms = undefined,
   sendWhatsApp = undefined,
-  recordRun = true
+  recordRun = true,
+  applyBaseUrl = APPLY_BASE_URL,
+  probesImpl = null,
+  probeFetchImpl = undefined
 } = {}) {
   const date = denverDateStamp(now);
   const origin = String(baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
@@ -345,6 +470,33 @@ export async function runDailyPulse({
   checks.push(await checkUnrecorded({ db, orgId: resolvedOrg, now }));
   checks.push(await checkGmail({ env, fetchImpl, gmailClient }));
   checks.push(...await checkRegistry({ fetchImpl, baseUrl: origin }));
+  for (const c of checks) {
+    if (!c.group && NAMED_GROUPS[c.id]) c.group = NAMED_GROUPS[c.id];
+  }
+
+  // MB2 (2026-10-05): the rest of the system. Each block is caught on its own,
+  // so one broken read becomes one red row instead of no morning text.
+  const guarded = async (id, group, fn) => {
+    try {
+      const r = await fn();
+      return Array.isArray(r) ? r : [r];
+    } catch (err) {
+      return [{
+        ...check(id, "FAIL", `check threw: ${String((err && err.message) || err).slice(0, 160)}`,
+          "Read the pulse log for this check."),
+        group
+      }];
+    }
+  };
+  checks.push(...await guarded("page", "front_doors", () => checkFunnelPages({ fetchImpl, applyBaseUrl })));
+  checks.push(...await guarded("vsl", "front_doors", () => checkVslFiles({ fetchImpl, baseUrl: origin })));
+  checks.push(...await guarded("jobs", "jobs", () => checkJobHeartbeats({ db, now })));
+  checks.push(...await guarded("msg-queue", "messages", () => checkMessageQueue({ db, orgId: resolvedOrg, now })));
+  checks.push(...await guarded("failed-events", "backend", () => checkFailedEvents({ db, orgId: resolvedOrg, now })));
+  checks.push(...await guarded("money-in", "money_in", () => checkMoneyIn({ db, orgId: resolvedOrg, now })));
+  checks.push(...await guarded("meta-capi", "tracking", () => checkMetaTracking({ db, orgId: resolvedOrg, now, env })));
+  checks.push(...await guarded("outside", "outside", () => (probesImpl || runProbes)({ env, fetchImpl: probeFetchImpl, db })));
+  checks.push(checkMacRepo());
 
   const failRows = checks.filter((c) => c.status === "FAIL" || c.status === "down");
   const findings = failRows.map((c) => `${c.id}: ${c.detail}`);
@@ -353,12 +505,22 @@ export async function runDailyPulse({
   const fail = failRows.length;
   const skip = checks.filter((c) => c.status === "skip").length;
 
+  // The stored scorecard (board contract). Day counts come from the last
+  // stored morning; a read failure there only loses the day count.
+  let previous = null;
+  if (db) {
+    try { previous = await loadPreviousScorecard(db, buildScorecard({ now }).date); } catch { previous = null; }
+  }
+  const scorecard = buildScorecard({ checks, now, previous });
+  const counts = countChecks(scorecard.checks);
+
   const sms = await textChris({
     date,
     pass,
     fail,
     skip,
     topFails: findings,
+    counts,
     env,
     dryRun,
     sendImpl: sendSms
@@ -379,6 +541,17 @@ export async function runDailyPulse({
     wrote = writeScorecard(dest, date, markdown);
   } catch (err) {
     wrote = { ok: false, error: String((err && err.message) || err).slice(0, 160) };
+  }
+
+  /* Saved on a live run only, like the agent_runs row below: a dry run from a
+     laptop must not overwrite the morning's real record. */
+  let stored = { saved: false, reason: "dry_run_or_no_db" };
+  if (!dryRun && db) {
+    try {
+      stored = await saveScorecard(db, scorecard);
+    } catch (err) {
+      stored = { saved: false, reason: String((err && err.message) || err).slice(0, 160) };
+    }
   }
 
   let agentRun = { recorded: false, reason: "dry_run_or_skipped" };
@@ -406,7 +579,10 @@ export async function runDailyPulse({
     darwin,
     wrote,
     agentRun,
-    markdown
+    markdown,
+    scorecard,
+    counts,
+    stored
   };
 }
 
