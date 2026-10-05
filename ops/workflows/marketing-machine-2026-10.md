@@ -17,7 +17,7 @@ change manifest and blockers in their final message; the orchestrator copies the
 | Lane | Now | Next |
 |---|---|---|
 | A | M0.1 **blocked** — Chris said yes; Auto mode still blocks saving rule files (needs mode switched to Accept edits). M0.2 running. M0.3 → PR #21 in review | M0.4 after M0.3 merges |
-| B | **running** — 9.1 state machine; merges after the CI fix | 9.2 aligner |
+| B | 9.1 → PR #26 in review; 9.2 aligner **running** | 9.3 encodes |
 | C | **running** — M0 step 6 (CI fix) | M6a, Appendix C lists, M6b |
 | D | 11.4 done → PR #19 reviewed, no blockers; merges after the CI fix | waiting — 11.1 needs M0 step 5 merged; 7.10 brain parts need M0 step 3 |
 | E | waiting — needs `docs/specs/marketing-machine-api.md` (first M1 PR, lane A) | 8.1 teleprompter |
@@ -34,13 +34,13 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 | Step | What | Lane | Agent | Status | PR |
 |---|---|---|---|---|---|
 | M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | blocked | |
-| M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | done (in review) | #25 | |
+| M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | fixing review blocker (ETag reads + bundled fallback) | #25 | |
 | M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | done (in review) | #21 | |
 | M0.4 | Clock, worker, buzz, model client | A | mm-builder | pending | |
 | M0.5 | Meta v26.0, sync, ad-number resolver, tag views | A | mm-architect | pending | |
 | M0.6 | CI that actually checks work | C | mm-architect | blocked (migration 114 call) | #23 | |
 | M0.7 | Journey docs (`marketing-machine-flow.md`) | A | mm-chore | pending | |
-| M0.8 | Ship stays in step with GitHub | A | mm-builder | fixing review blocker (rename detection) | #24 | |
+| M0.8 | Ship stays in step with GitHub | A | mm-builder | done (review blocker fixed: `--no-renames`) | #24 | |
 | M0.9 | Full client dossier (migration 409) | A | mm-architect | claimed | |
 
 ### M1 Script machine (lane A)
@@ -70,8 +70,8 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ### M3 Video pipeline (lane B; screens in E)
 | Step | What | Agent | Status | PR |
 |---|---|---|---|---|
-| 9.1 | Flow and state machine | mm-architect | claimed | |
-| 9.2 | Aligner | mm-architect | pending | |
+| 9.1 | Flow and state machine (migration 416) | mm-architect | done (in review); **ships together with 9.2–9.5** — alone it pauses new takes at raw_landed | #26 | |
+| 9.2 | Aligner | mm-architect | claimed | |
 | 9.3 | Encodes | mm-architect | pending | |
 | 9.4 | Animations, always last | mm-builder | pending | |
 | 9.5 | Video worker (`video-worker/`) | mm-builder | pending | |
@@ -133,6 +133,10 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 - Found on main (handed to lane C): fresh `db/migrate.mjs` fails at `114_crm_agent_seed.sql` ("VALUES lists must all be the same length").
 
 ## Blockers and open questions
+
+- **9.1 leftovers (orchestrator decision):** the §9.1 flow pieces outside the state machine (whisperWords, Submagic create from the master link, captions job, candidate ranking/late parking, one buzz per shoot, signed links, queue-next-step, `video_kind='vsl'`, edit/recut/hold/assign/retry routes) go to lane B mm-builder as step "9.1b", after 9.2 and 9.3.
+- **9.1 at ship (Mac):** after 416 applies, run `node --env-file=.env scripts/ad-videos-move-in-flight-9-1.mjs` (dry run), then `--apply`. If it reports an ad with two master takes, Chris picks.
+- **Lane B's agent ran one read-only production query** (ad_videos status counts) before the database warning reached it. It wrote nothing.
 
 - **CI (M0.6, PR #23) blocked on migrations 114/168/255.** The 2026-10-04 text cleanup copied `114_ghl_agent_seed`, `168_retire_ghl_agents`, `255_ghl_doc_docs_received` to new names (`114_crm_agent_seed`, `168_retire_legacy_crm_agents`, `255_doc_agent_docs_received`) and cut SQL out of the copies; migration 372 renamed the live records to the new names. Both old and new files are on disk. A fresh database fails at `114_crm_agent_seed.sql`, and `372` then hits a duplicate key. Fixing it means editing applied migration files (normally forbidden) — Chris's call. Open risk: the live database may now treat the old `ghl` files as not yet applied and re-run them on the next ship. Unconfirmed: a read-only check of live `schema_migrations` was refused by the session's permission check. PR #23 otherwise cuts no-db failures 25 → 6.
 - **Four tests disagree with owner decisions** (left unchanged by lane C): `crm-html.test.mjs` (Play name box, removed 2026-09-06), `output-baseline.test.mjs` (PDF pack, stopped 2026-09-05), `slo-sales-widget-html.test.mjs` item 8 (old FAQ wording), `climate-match.test.mjs` (`public/climate/` replaced).
