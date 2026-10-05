@@ -11,8 +11,8 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 |---|---|---|---|
 | MB0 | Projection, spec, this board, to-do lines (cloud session, 2026-10-05) | — | done |
 | MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | blocked — Kickoff A ran in a cloud session 2026-10-05, not the Mac; the cloud was refused Netlify env access. Needs the Mac. |
-| MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | claimed — Kickoff A agent, 2026-10-05 (plan stage) |
-| MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | claimed — Kickoff A agent, 2026-10-05 (plan stage) |
+| MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
+| MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
 | MB4 | Cadence rules and AI ops suggestions | **Chris: yes on the cadence draft** | blocked |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | pending |
 
@@ -61,6 +61,25 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 4. Cadence rules: yes to the draft in the spec, or which numbers change?
 5. Team section: which numbers per person?
 6. Financed deposits for 30 days: what counts as a "really good file"? (Projection doc)
+
+### Plans approved 2026-10-05 (Chris: "run it, run the whole thing")
+
+**Migration numbers:** 430 = MB2 (scorecard, job heartbeats). 431 = MB3 (`morning_briefs`). 406–429 are held by the marketing machine.
+
+**MB3 plan (summary).** The brief runs as step 2 of the 6:00 a.m. pulse job (`src/workflows/daily-pulse.mjs`), so it always runs after the pulse. Dry-run: built and saved, nothing new sent. One row per morning in `morning_briefs` (only the last 4 digits of the number are stored). Read page `GET /api/read/morning-brief?date=`, owner and admin only. Numbers are plain database reads, with no model.
+- Systems: MB2 scorecard; until then the pulse result in the same shape.
+- Marketing: spend from `ad_metrics_daily`; the rest says "waiting on the marketing numbers" until the marketing machine's numbers (M5) merge.
+- Team: `computePulse()`, `call_outcomes` per closer, CSM overdue `tasks`, `listUnrecordedCalls`. Advisor files per person: no source today.
+- Money: "Money: not connected yet." until Plaid is live in production. Per-company split and ad credit line: no source today.
+- Suggestions and "Today": empty until MB4.
+
+**Defaults used until Chris says otherwise (orchestrator, 2026-10-05):** the old pulse text keeps going (the brief does not replace it yet); numbers cover the last 24 hours; the text has no link until MB5; the Mac reporter (gap 12) is plan only.
+
+**Open questions for Chris (MB3):**
+1. When the brief goes live, should it replace the old "Fundhub morning check" text?
+2. "Last 24 hours" or "yesterday, midnight to midnight Arizona"?
+3. Which bank accounts belong to Fundhub LLC, Fundhub Credit Solutions and FH Consulting?
+4. Where is the ad credit line recorded?
 
 ---
 
