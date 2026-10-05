@@ -282,6 +282,7 @@ const API_KEYS = [
   "read/morning-brief",
   "read/my-numbers",
   "read/ops-pulse",
+  "read/ops-suggestions",
   "read/partners",
   "read/partner-home-tiles",
   "read/partner-production",
