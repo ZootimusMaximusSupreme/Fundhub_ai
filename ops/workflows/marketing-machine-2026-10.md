@@ -34,14 +34,14 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 | Step | What | Lane | Agent | Status | PR |
 |---|---|---|---|---|---|
 | M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | blocked | |
-| M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | claimed | |
+| M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | done (in review) | #25 | |
 | M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | done (in review) | #21 | |
 | M0.4 | Clock, worker, buzz, model client | A | mm-builder | pending | |
 | M0.5 | Meta v26.0, sync, ad-number resolver, tag views | A | mm-architect | pending | |
-| M0.6 | CI that actually checks work | C | mm-architect | claimed | |
+| M0.6 | CI that actually checks work | C | mm-architect | blocked (migration 114 call) | #23 | |
 | M0.7 | Journey docs (`marketing-machine-flow.md`) | A | mm-chore | pending | |
-| M0.8 | Ship stays in step with GitHub | A | mm-builder | pending | |
-| M0.9 | Full client dossier | A | mm-architect | pending | |
+| M0.8 | Ship stays in step with GitHub | A | mm-builder | fixing review blocker (rename detection) | #24 | |
+| M0.9 | Full client dossier (migration 409) | A | mm-architect | claimed | |
 
 ### M1 Script machine (lane A)
 | Step | What | Agent | Status | PR |
@@ -133,6 +133,11 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 - Found on main (handed to lane C): fresh `db/migrate.mjs` fails at `114_crm_agent_seed.sql` ("VALUES lists must all be the same length").
 
 ## Blockers and open questions
+
+- **CI (M0.6, PR #23) blocked on migrations 114/168/255.** The 2026-10-04 text cleanup copied `114_ghl_agent_seed`, `168_retire_ghl_agents`, `255_ghl_doc_docs_received` to new names (`114_crm_agent_seed`, `168_retire_legacy_crm_agents`, `255_doc_agent_docs_received`) and cut SQL out of the copies; migration 372 renamed the live records to the new names. Both old and new files are on disk. A fresh database fails at `114_crm_agent_seed.sql`, and `372` then hits a duplicate key. Fixing it means editing applied migration files (normally forbidden) — Chris's call. Open risk: the live database may now treat the old `ghl` files as not yet applied and re-run them on the next ship. Unconfirmed: a read-only check of live `schema_migrations` was refused by the session's permission check. PR #23 otherwise cuts no-db failures 25 → 6.
+- **Four tests disagree with owner decisions** (left unchanged by lane C): `crm-html.test.mjs` (Play name box, removed 2026-09-06), `output-baseline.test.mjs` (PDF pack, stopped 2026-09-05), `slo-sales-widget-html.test.mjs` item 8 (old FAQ wording), `climate-match.test.mjs` (`public/climate/` replaced).
+- **PR #23 risk:** ClickFunnels contact sync now goes through the fence, so it holds unless `ADAPTERS_DRY_RUN` is off on production (boards say it is 0; unconfirmed).
+- **M0.2 env:** `GITHUB_REPO`, `GITHUB_REPO_TOKEN`, `GITHUB_BRANCH` to set on Netlify from the Mac; the drain also needs `ADAPTERS_DRY_RUN` off.
 
 - **M0.1 (update 2026-10-05):** Chris said yes in chat. The session's Auto-mode check still blocked the commit and the `.claude/rules/chris-word-wins.md` file ("Self-Modification"). Edits sit uncommitted in the M0.1 worktree, plus `.cursor/rules/chris-word-wins.mdc` and the CLAUDE.md "Chris's word wins" line. Waiting on Chris to switch the mode to Accept edits.
 - **M0.3 agent once started a bare `npm test` with the live `DATABASE_URL`;** it says it killed it within seconds, in the unit phase, with no database connection.
