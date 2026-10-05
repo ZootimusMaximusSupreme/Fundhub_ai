@@ -8,13 +8,13 @@ import {
 
 const drive = { file_id: "1AbC_dEf", access_token: "tok" };
 const GOOD = {
-  prepare: { take_id: "t1", audio_key: "k.ogg", drive },
+  prepare: { take_id: "t1", audio_key: "partners/p1/ad-video/audio/t1.ogg", drive },
   build_cut: {
     video_kind: "ad", pieces: [{ take: "t1", start: 0, end: 1 }], takes: { t1: { drive_file_id: "f1" } },
-    drive: { access_token: "tok" }, silences: {}, cut_key: "cut.mp4",
+    drive: { access_token: "tok" }, silences: {}, cut_key: "partners/p1/ad-video/cut/v1-v1.mp4",
   },
-  copy_export: { export_url: "https://x.test/e.mp4", submagic_key: "s.mp4" },
-  render_and_overlay: { submagic_key: "s.mp4", final_key: "f.mp4", master_duration_seconds: 30, animation_mode: "fullframe", animations: [] },
+  copy_export: { export_url: "https://cdn.submagic.co/e.mp4", submagic_key: "partners/p1/ad-video/submagic/v1-v1.mp4" },
+  render_and_overlay: { submagic_key: "partners/p1/ad-video/submagic/v1-v1.mp4", final_key: "partners/p1/ad-video/final/91-r1.mp4", master_duration_seconds: 30, animation_mode: "fullframe", animations: [] },
 };
 const req = (type, over = {}) => ({ type, ad_video_id: "v1", org_id: "o1", cut_version: 2, payload: GOOD[type], ...over });
 
@@ -108,6 +108,42 @@ test("copy_export only fetches https links (a file:// or http:// URL is refused 
   for (const bad of ["file:///etc/passwd", "http://x.test/e.mp4", "ftp://x.test/e"]) {
     assert.throws(() => validateJobRequest(req("copy_export", { payload: { ...GOOD.copy_export, export_url: bad } })), /https link/);
   }
+});
+
+test("copy_export only fetches Submagic's export hosts; the env can add one", () => {
+  const ok = (url, extra) => validateJobRequest(req("copy_export", { payload: { ...GOOD.copy_export, export_url: url } }), { exportHosts: extra });
+  assert.doesNotThrow(() => ok("https://cdn.submagic.co/a.mp4"));
+  assert.doesNotThrow(() => ok("https://d111.cloudfront.net/a.mp4"));
+  for (const bad of ["https://evil.test/a.mp4", "https://submagic.co.evil.test/a.mp4", "https://notsubmagic.co/a.mp4", "https://u:p@cdn.submagic.co/a.mp4", "https://169.254.169.254/latest"]) {
+    assert.throws(() => ok(bad), /Submagic export host/, bad);
+  }
+  assert.throws(() => ok("https://files.example.org/a.mp4"), /export host/);
+  assert.doesNotThrow(() => ok("https://files.example.org/a.mp4", ["example.org"]));
+});
+
+test("R2 keys in a payload must match the key builders, nothing else", () => {
+  const cut = (k) => () => validateJobRequest(req("build_cut", { payload: { ...GOOD.build_cut, cut_key: k } }));
+  assert.doesNotThrow(cut(cutKey({ partnerId: "p1", adVideoId: "v1", cutVersion: 4 })));
+  for (const bad of ["../../etc/x", "partners/p1/ad-video/cut/../../x-v1.mp4", "partners/p1/ad-video/final/91-r1.mp4", "cache/animations/x.mp4", "partners/p1/ad-video/cut/v1-v1.mp4/extra", "cut.mp4"]) {
+    assert.throws(cut(bad), /cut_key/, bad);
+  }
+  assert.throws(() => validateJobRequest(req("prepare", { payload: { ...GOOD.prepare, audio_key: "partners/p1/ad-video/cut/v1-v1.mp4" } })), /audio_key/);
+  assert.throws(() => validateJobRequest(req("render_and_overlay", { payload: { ...GOOD.render_and_overlay, final_key: "f.mp4" } })), /final_key/);
+  assert.throws(() => validateJobRequest(req("copy_export", { payload: { ...GOOD.copy_export, submagic_key: "x" } })), /submagic_key/);
+});
+
+test("ids that become file names must be [A-Za-z0-9_-]{1,64}", () => {
+  const cutWith = (over) => () => validateJobRequest(req("build_cut", { payload: { ...GOOD.build_cut, ...over } }));
+  for (const bad of ["../x", "a/b", "a.b", "", "x".repeat(65), "a b"]) {
+    assert.throws(cutWith({ takes: { [bad]: { drive_file_id: "f" } }, pieces: [{ take: bad }] }), /take/, JSON.stringify(bad));
+  }
+  assert.throws(cutWith({ pieces: [{ take: "ghost" }] }), /not in payload.takes/);
+  assert.throws(() => validateJobRequest(req("prepare", { payload: { ...GOOD.prepare, take_id: "../../x" } })), /take_id/);
+  const anim = (a) => () => validateJobRequest(req("render_and_overlay", { payload: { ...GOOD.render_and_overlay, animations: [a] } }));
+  assert.throws(anim({ id: "../../etc/passwd", template: "T", frames: 60 }), /id must match/);
+  assert.throws(anim({ id: "a1", template: "../T", frames: 60 }), /template must match/);
+  assert.doesNotThrow(anim({ id: "a1", template: "QualifyToday", frames: 60 }));
+  assert.throws(() => validateJobRequest(req("prepare", { ad_video_id: "../v" })), /ad_video_id/);
 });
 
 test("the Drive request uses the job's bearer token and refuses odd ids", () => {

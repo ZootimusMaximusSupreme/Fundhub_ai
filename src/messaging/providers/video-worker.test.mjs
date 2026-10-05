@@ -6,7 +6,7 @@ import { VIDEO_KEY_HEADER } from "../../ad-videos/worker-protocol.mjs";
 const ENV = { VIDEO_WORKER_URL: "https://worker.test/", VIDEO_WORKER_KEY: "k-123", ADAPTERS_DRY_RUN: "0" };
 const JOB = {
   type: "copy_export", adVideoId: "v1", orgId: "o1", cutVersion: 3,
-  payload: { export_url: "https://x.test/e.mp4", submagic_key: "s.mp4" },
+  payload: { export_url: "https://cdn.submagic.co/e.mp4", submagic_key: "partners/p/ad-video/submagic/v1-v1.mp4" },
 };
 
 function fakeFetch(status, body = {}) {

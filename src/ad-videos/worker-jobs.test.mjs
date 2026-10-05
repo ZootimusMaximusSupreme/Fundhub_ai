@@ -4,7 +4,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { runJob, runPrepare, runBuildCut, runCopyExport, runRenderAndOverlay, JobFailure } from "./worker-jobs.mjs";
+import { runJob, runPrepare, runBuildCut, runCopyExport, runRenderAndOverlay, JobFailure, workPath } from "./worker-jobs.mjs";
 import { clipKey, validateJobRequest } from "./worker-protocol.mjs";
 
 const FACTS = { hasAudio: true, durationSeconds: 30, width: 1080, height: 1920, displayWidth: 1080, displayHeight: 1920, rotation: 0, colorTransfer: "bt709", isHdr: false, fps: 30, recordedAt: "2026-10-05T10:00:00Z" };
@@ -33,7 +33,20 @@ function fakePlan(over = {}) {
     matchPieceGains: (ms) => ms.map((m) => -1 - m.input_i - 0),
     parseLoudnorm: (stderr) => JSON.parse(stderr),
     parseBlackdetect: (stderr) => JSON.parse(stderr || "[]"),
-    cutChecks: () => ({ ok: true, failures: [] }),
+    frameCountArgs: ({ inputPath }) => ["frames", inputPath],
+    parseFrameCount: (stdout) => { const m = String(stdout ?? "").match(/^\s*(\d+)\s*$/m); return m ? Number(m[1]) : null; },
+    // Mirrors the REAL cutChecks from ffmpeg-plan.mjs (#34, a22198d): it needs the master's counted
+    // frames, the planned frames, and pass 2's own loudnorm reading with normalization_type 'linear'.
+    // A job that leaves any of them out fails here the way it fails there.
+    cutChecks: (a) => {
+      const failures = [];
+      const planned = Number.isInteger(a.plannedFrames) ? a.plannedFrames : a.pieces.reduce((n, p) => n + p.frames, 0);
+      if (!Number.isInteger(a.masterFrames)) failures.push({ check: "frames_uncounted" });
+      else if (a.masterFrames !== planned) failures.push({ check: "frame_count_mismatch" });
+      if (a.pass2?.normalization_type !== "linear") failures.push({ check: "loudnorm_not_linear" });
+      if (!Array.isArray(a.pieceMeasures) || a.pieceMeasures.length !== a.pieces.length) failures.push({ check: "loudness_unmeasured" });
+      return { ok: failures.length === 0, failures };
+    },
     pieceLoudnessArgs: ({ piecePath }) => ["loud", piecePath],
     loudnormFilter: () => "loudnorm=I=-14",
     FINAL_VIDEO_ARGS: ["-c:v", "libx264"],
@@ -44,7 +57,7 @@ function fakePlan(over = {}) {
 }
 
 /** An io with a script: `outputs` maps "<tag>" to a run result; `probes` maps path-suffix to facts. */
-function fakeIo({ probes = {}, outputs = {}, failDownload = null, existing = [] } = {}) {
+function fakeIo({ probes = {}, outputs = {}, failDownload = null, existing = [], frames = 120 } = {}) {
   const log = { runs: [], downloads: [], puts: [], gets: [], renders: [], texts: [] };
   const stored = new Set(existing);
   const io = {
@@ -53,6 +66,7 @@ function fakeIo({ probes = {}, outputs = {}, failDownload = null, existing = [] 
     writeText: async (p, t) => { log.texts.push([p, t]); },
     run: async (bin, args) => {
       log.runs.push([bin, ...args]);
+      if (bin === "ffprobe" && args[0] === "frames") return { code: 0, stdout: `${frames}\n`, stderr: "" };
       if (bin === "ffprobe") {
         const path = args[1];
         const key = Object.keys(probes).find((k) => path.endsWith(k));
@@ -63,6 +77,7 @@ function fakeIo({ probes = {}, outputs = {}, failDownload = null, existing = [] 
       if (typeof out === "function") return out(args);
       if (out) return out;
       if (tag === "loud" || tag === "check") return { code: 0, stdout: "", stderr: JSON.stringify({ input_i: -14, input_tp: -2, input_lra: 5, input_thresh: -24, target_offset: 0 }) };
+      if (tag === "pass2") return { code: 0, stdout: "", stderr: JSON.stringify({ input_i: -16, input_tp: -3, input_lra: 5, input_thresh: -26, target_offset: 0, normalization_type: "linear" }) };
       if (tag === "measure" || tag === "pass1") return { code: 0, stdout: "", stderr: JSON.stringify({ input_i: -16, input_tp: -3, input_lra: 5, input_thresh: -26, target_offset: 0 }) };
       return { code: 0, stdout: "", stderr: "" };
     },
@@ -158,6 +173,80 @@ test("build_cut: an ffmpeg that exits non-zero fails the job with its last lines
   assert.equal(log.puts.length, 0);
 });
 
+test("build_cut hands cutChecks everything #34 requires: counted frames, planned frames, pass 2's reading", async () => {
+  let seen;
+  const base = fakePlan();
+  const plan = fakePlan({ cutChecks: (a) => { seen = a; return base.cutChecks(a); } });
+  const { io, log } = fakeIo({ frames: 120 });
+  const r = await runJob({ job: job("build_cut", cutPayload()), io, plan });
+  assert.equal(r.status, "done");
+  assert.equal(seen.masterFrames, 120, "parseFrameCount of the ffprobe count over the master");
+  assert.equal(seen.plannedFrames, 120, "plan.frames");
+  assert.equal(seen.pass2.normalization_type, "linear", "parseLoudnorm of pass 2's stderr, not pass 1's");
+  assert.equal(seen.pieceMeasures.length, 2);
+  assert.ok(log.runs.some((x) => x[0] === "ffprobe" && x[1] === "frames" && x[2] === "/w/master.mp4"));
+});
+
+test("build_cut: dropped or repeated frames block the master", async () => {
+  const { io, log } = fakeIo({ frames: 121 });
+  const r = await runJob({ job: job("build_cut", cutPayload()), io, plan: fakePlan() });
+  assert.equal(r.error.code, "cut_checks");
+  assert.equal(r.error.detail.failures[0].check, "frame_count_mismatch");
+  assert.equal(log.puts.length, 0);
+});
+
+test("build_cut: a loudnorm that fell back to dynamic blocks the master", async () => {
+  const dyn = { code: 0, stdout: "", stderr: JSON.stringify({ input_i: -16, input_tp: -3, input_lra: 5, input_thresh: -26, target_offset: 0, normalization_type: "dynamic" }) };
+  const { io, log } = fakeIo({ outputs: { pass2: dyn } });
+  const r = await runJob({ job: job("build_cut", cutPayload()), io, plan: fakePlan() });
+  assert.equal(r.error.detail.failures[0].check, "loudnorm_not_linear");
+  assert.equal(log.puts.length, 0);
+});
+
+test("build_cut: a job that forgets pass 2 or the frame count cannot pass the (real-shaped) fake", async () => {
+  const strict = fakePlan();
+  const out = strict.cutChecks({ pieces: [{ frames: 60 }], pieceMeasures: [{}], black: [], silences: {} });
+  assert.deepEqual(out.failures.map((f) => f.check).sort(), ["frames_uncounted", "loudnorm_not_linear"]);
+});
+
+// -- ids and paths ----------------------------------------------------------
+
+test("a take id that could climb out of the work dir is refused before any download", async () => {
+  const { io, log } = fakeIo();
+  const r = await runJob({ job: job("build_cut", cutPayload({ takes: { "../../etc/x": { drive_file_id: "F" } }, pieces: [{ take: "../../etc/x" }] })), io, plan: fakePlan() });
+  assert.deepEqual([r.status, r.error.code], ["failed", "bad_id"]);
+  assert.equal(log.downloads.length, 0);
+});
+
+test("an animation id that could climb out of the work dir is refused before any render", async () => {
+  const { io, log } = fakeIo();
+  const p = ovPayload();
+  p.animations[0].id = "../../../tmp/x";
+  const r = await runJob({ job: job("render_and_overlay", p), io, plan: fakePlan() });
+  assert.deepEqual([r.status, r.error.code], ["failed", "bad_id"]);
+  assert.equal(log.renders.length, 0);
+});
+
+test("a template that is not a plain id never reaches Remotion", async () => {
+  const { io, log } = fakeIo();
+  const p = ovPayload();
+  p.animations[0].template = "../x";
+  const r = await runJob({ job: job("render_and_overlay", p), io, plan: fakePlan() });
+  assert.equal(r.error.code, "bad_id");
+  assert.equal(log.renders.length, 0);
+});
+
+test("every path the jobs use stays inside the work dir", async () => {
+  const { io, log } = fakeIo({ probes: { "master.mp4": { ...FACTS, durationSeconds: 2 } } });
+  await runJob({ job: job("build_cut", cutPayload()), io, plan: fakePlan() });
+  await runJob({ job: job("render_and_overlay", ovPayload()), io, plan: fakePlan() });
+  const local = [...log.downloads.map((d) => d[1]), ...log.gets.map((g) => g[1]), ...log.renders.map((r) => r.outPath), ...log.puts.map((p) => p[1])];
+  assert.ok(local.length > 4);
+  for (const p of local) assert.ok(p.startsWith("/w/") && !p.includes(".."), p);
+  assert.throws(() => workPath({ dir: "/w", path: (n) => `/w/${n}` }, "../escape"), /outside the work directory/);
+  assert.equal(workPath({ dir: "/w", path: (n) => `/w/${n}` }, "ok.bin"), "/w/ok.bin");
+});
+
 // -- copy_export -----------------------------------------------------------
 
 test("copy_export: downloads Submagic's export and stores it in R2", async () => {
@@ -175,7 +264,7 @@ test("copy_export: downloads Submagic's export and stores it in R2", async () =>
 // -- render_and_overlay ----------------------------------------------------
 
 const ovPayload = (over = {}) => ({
-  submagic_key: "s.mp4", final_key: "partners/p/ad-video/final/91-r1.mp4", master_duration_seconds: 30, animation_mode: "fullframe",
+  submagic_key: "partners/p/ad-video/submagic/v1-v1.mp4", final_key: "partners/p/ad-video/final/91-r1.mp4", master_duration_seconds: 30, animation_mode: "fullframe",
   animations: [
     { id: "a1", template: "QualifyToday", props: { amount: 199000 }, time: 8, frames: 75 },
     { id: "a2", template: "SoftPull", props: {}, time: 20, frames: 75 },
@@ -279,7 +368,7 @@ test("runJob never throws: an unexpected error becomes a failed outcome", async 
 });
 
 test("a validated request feeds runJob without reshaping", async () => {
-  const j = validateJobRequest({ type: "copy_export", ad_video_id: "v9", org_id: "o", cut_version: 4, payload: { export_url: "https://x.test/e", submagic_key: "k" } });
+  const j = validateJobRequest({ type: "copy_export", ad_video_id: "v9", org_id: "o", cut_version: 4, payload: { export_url: "https://cdn.submagic.co/e", submagic_key: "partners/p/ad-video/submagic/v9-v4.mp4" } });
   const { io } = fakeIo();
   const r = await runJob({ job: j, io, plan: fakePlan() });
   assert.equal(r.status, "done");

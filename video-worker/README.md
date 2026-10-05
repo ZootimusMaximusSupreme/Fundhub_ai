@@ -27,9 +27,9 @@ Netlify's side: `src/messaging/providers/video-worker.mjs` (calls the worker),
 
 ## Endpoints
 
-Every call needs the header `X-Fundhub-Video-Key`.
+Every call except `/health` needs the header `X-Fundhub-Video-Key`.
 
-- `GET /health` the ffmpeg build check and the queue depth
+- `GET /health` open, answers `{ok}` only (the ffmpeg build check); nothing sensitive
 - `POST /jobs` with `{type, ad_video_id, org_id, cut_version, payload}`, answers 202
 - `GET /jobs/:id` the job's state, or 404 when this process does not know it
 
@@ -49,8 +49,9 @@ and the finished video to R2.
 
 ## Env names
 
-Set on the Render service by Chris (never in this repo). Names are also in
-`.env.example`.
+Set on the Render service by Chris (never in this repo). These names are NOT in
+`.env.example` yet: the session that built this could not edit that file, so the
+names are on the board's Mac list for someone to add.
 
 | Name | What for |
 |---|---|
@@ -58,6 +59,7 @@ Set on the Render service by Chris (never in this repo). Names are also in
 | `VIDEO_WORKER_CALLBACK_SECRET` | signs the callback (HMAC over timestamp + body) |
 | `VIDEO_WORKER_CALLBACK_URL` | where the callback goes: `https://fundhub.ai/api/webhooks/video-worker` |
 | `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_AD_VIDEO` | the private R2 bucket `fundhub-ad-video` |
+| `VIDEO_WORKER_EXPORT_HOSTS` | optional, comma-separated host suffixes added to the Submagic export allow-list (`submagic.co`, `cloudfront.net`). Submagic does not document its export host, so the first real run must confirm it. |
 | `PORT` | defaults to 8080 |
 
 ## Build (not run by CI)

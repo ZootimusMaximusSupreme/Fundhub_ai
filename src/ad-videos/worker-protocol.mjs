@@ -67,8 +67,8 @@ export class WorkerProtocolError extends Error {
 
 /** `<ad_video_id>:<type>:<cut_version>` (spec 9.5). */
 export function jobId({ adVideoId, type, cutVersion = 0 }) {
-  if (!adVideoId || /[:\s]/.test(String(adVideoId))) {
-    throw new WorkerProtocolError("bad_ad_video_id", "ad_video_id must be a non-empty id without ':'");
+  if (!/^[A-Za-z0-9_-]{1,64}$/.test(String(adVideoId ?? ""))) {
+    throw new WorkerProtocolError("bad_ad_video_id", "ad_video_id must match [A-Za-z0-9_-]{1,64}");
   }
   if (!JOB_TYPES.includes(type)) throw new WorkerProtocolError("bad_type", `unknown job type '${type}'`);
   const v = Number(cutVersion);
@@ -85,6 +85,42 @@ export function parseJobId(id) {
 const isObj = (v) => v && typeof v === "object" && !Array.isArray(v);
 const isText = (v) => typeof v === "string" && v.trim() !== "";
 
+/** Ids that become file names or Remotion composition ids: no dots, slashes or spaces. */
+export const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
+export const isSafeId = (v) => typeof v === "string" && SAFE_ID.test(v);
+
+/**
+ * The only R2 keys a job may name, one pattern per kind. They match the key
+ * builders below, so a payload cannot point the worker at another object.
+ */
+export const KEY_PATTERNS = Object.freeze({
+  audio: /^partners\/[A-Za-z0-9_-]+\/ad-video\/audio\/[A-Za-z0-9_-]+\.ogg$/,
+  cut: /^partners\/[A-Za-z0-9_-]+\/ad-video\/cut\/[A-Za-z0-9_-]+-v\d+\.mp4$/,
+  submagic: /^partners\/[A-Za-z0-9_-]+\/ad-video\/submagic\/[A-Za-z0-9_-]+-v\d+\.mp4$/,
+  final: /^partners\/[A-Za-z0-9_-]+\/ad-video\/final\/[A-Za-z0-9_-]+-r\d+\.mp4$/,
+});
+export const validKey = (kind, key) => typeof key === "string" && KEY_PATTERNS[kind].test(key);
+
+/**
+ * Submagic's export link must come from these hosts (suffix match). The real
+ * host is not documented (docs/specs/video-pipeline-api-verification-2026-09-22.md
+ * names a "direct .mp4" and a CloudFront playback URL), so this is a guess
+ * that the first real run must confirm; `extraHosts` (the worker's
+ * VIDEO_WORKER_EXPORT_HOSTS) widens it without a code change.
+ */
+export const EXPORT_HOST_SUFFIXES = Object.freeze(["submagic.co", "cloudfront.net"]);
+
+export function exportUrlOk(url, extraHosts = []) {
+  let u;
+  try { u = new URL(String(url)); } catch { return false; }
+  if (u.protocol !== "https:" || u.username || u.password) return false;
+  const host = u.hostname.toLowerCase();
+  return [...EXPORT_HOST_SUFFIXES, ...extraHosts].some((s) => {
+    const suf = String(s).trim().toLowerCase().replace(/^\./, "");
+    return suf && (host === suf || host.endsWith(`.${suf}`));
+  });
+}
+
 /**
  * What each job type must carry. A check here is a bounce at the door (400)
  * instead of a half-run job; nothing here guesses a default.
@@ -92,30 +128,39 @@ const isText = (v) => typeof v === "string" && v.trim() !== "";
 const PAYLOAD_RULES = {
   prepare(p) {
     need(isObj(p.drive) && isText(p.drive.file_id) && isText(p.drive.access_token), "payload.drive needs file_id and access_token");
-    need(isText(p.take_id), "payload.take_id is required");
-    need(isText(p.audio_key), "payload.audio_key (the R2 key for the .ogg) is required");
+    need(isSafeId(p.take_id), "payload.take_id must match [A-Za-z0-9_-]{1,64}");
+    need(validKey("audio", p.audio_key), "payload.audio_key must be a partners/<id>/ad-video/audio/<id>.ogg key");
   },
   build_cut(p) {
     need(p.video_kind === "ad", "payload.video_kind must be 'ad' (the 1080x1920 master is for ads only)");
     need(Array.isArray(p.pieces) && p.pieces.length > 0, "payload.pieces is the aligner's piece list");
     need(isObj(p.takes) && Object.keys(p.takes).length > 0, "payload.takes maps take id to its Drive file");
     for (const [id, t] of Object.entries(p.takes)) {
+      need(isSafeId(id), `payload.takes id '${String(id).slice(0, 20)}' must match [A-Za-z0-9_-]{1,64}`);
       need(isObj(t) && isText(t.drive_file_id), `payload.takes.${id}.drive_file_id is required`);
+    }
+    for (const [i, piece] of p.pieces.entries()) {
+      const id = piece?.take_id ?? piece?.take;
+      need(isSafeId(id) && Object.hasOwn(p.takes, id), `piece ${i + 1} names a take that is not in payload.takes`);
     }
     need(isObj(p.drive) && isText(p.drive.access_token), "payload.drive.access_token is required");
     need(isObj(p.silences ?? {}), "payload.silences must be { takeId: [{start,end}] }");
-    need(isText(p.cut_key), "payload.cut_key (the R2 key for the master) is required");
+    need(validKey("cut", p.cut_key), "payload.cut_key must be a partners/<id>/ad-video/cut/<id>-v<n>.mp4 key");
   },
-  copy_export(p) {
-    need(isText(p.export_url) && /^https:\/\//i.test(p.export_url), "payload.export_url (Submagic's export link) must be an https link");
-    need(isText(p.submagic_key), "payload.submagic_key (the R2 key to store it under) is required");
+  copy_export(p, opts) {
+    need(exportUrlOk(p.export_url, opts.exportHosts), "payload.export_url must be an https link on a Submagic export host");
+    need(validKey("submagic", p.submagic_key), "payload.submagic_key must be a partners/<id>/ad-video/submagic/<id>-v<n>.mp4 key");
   },
   render_and_overlay(p) {
-    need(isText(p.submagic_key), "payload.submagic_key is required");
-    need(isText(p.final_key), "payload.final_key is required");
+    need(validKey("submagic", p.submagic_key), "payload.submagic_key must be a submagic key");
+    need(validKey("final", p.final_key), "payload.final_key must be a partners/<id>/ad-video/final/<ad>-r<n>.mp4 key");
     need(Number(p.master_duration_seconds) > 0, "payload.master_duration_seconds is required");
     need(["fullframe", "overlay"].includes(p.animation_mode), "payload.animation_mode must be 'fullframe' or 'overlay'");
     need(Array.isArray(p.animations), "payload.animations must be a list (it may be empty)");
+    for (const [i, a] of p.animations.entries()) {
+      need(isObj(a) && isSafeId(a.id), `animation ${i + 1}: id must match [A-Za-z0-9_-]{1,64}`);
+      need(isSafeId(a.template), `animation ${a.id}: template must match [A-Za-z0-9_-]{1,64}`);
+    }
   },
 };
 
@@ -126,9 +171,9 @@ function need(ok, message) {
 /**
  * Validate `POST /jobs` (spec 9.5): `{type, ad_video_id, payload}` plus the
  * `job_id` and `org_id` Netlify minted. Returns the normalised job or throws
- * WorkerProtocolError.
+ * WorkerProtocolError. `opts.exportHosts` widens the Submagic host allow-list.
  */
-export function validateJobRequest(body) {
+export function validateJobRequest(body, opts = {}) {
   if (!isObj(body)) throw new WorkerProtocolError("bad_body", "body must be a JSON object");
   const { type, ad_video_id: adVideoId, payload } = body;
   if (!JOB_TYPES.includes(type)) throw new WorkerProtocolError("bad_type", `type must be one of ${JOB_TYPES.join(", ")}`);
@@ -140,7 +185,7 @@ export function validateJobRequest(body) {
   if (body.job_id !== undefined && body.job_id !== id) {
     throw new WorkerProtocolError("bad_job_id", `job_id ${body.job_id} does not match ${id}`);
   }
-  PAYLOAD_RULES[type](payload);
+  PAYLOAD_RULES[type](payload, { exportHosts: opts.exportHosts ?? [] });
   return { id, type, adVideoId, orgId: body.org_id, cutVersion: Number(cutVersion), payload };
 }
 

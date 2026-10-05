@@ -23,7 +23,8 @@
 // `plan` is the module `ffmpeg-plan.mjs`. It is passed in (not imported) so
 // this file stands on its own until that module is on the branch it runs on.
 
-import { clipKey, driveDownloadRequest } from "./worker-protocol.mjs";
+import { resolve, sep } from "node:path";
+import { clipKey, driveDownloadRequest, isSafeId } from "./worker-protocol.mjs";
 import { planAnimations, overlayArgs, loudnessFixArgs, remuxArgs, finalizeVerdict } from "./overlay-plan.mjs";
 
 /** A job that cannot finish. `code` is stable text a screen can show; `detail` is data. */
@@ -34,6 +35,23 @@ export class JobFailure extends Error {
     this.code = code;
     this.detail = detail;
   }
+}
+
+/**
+ * A path inside this job's work dir. Ids that reach a file name must match
+ * [A-Za-z0-9_-]{1,64} (checked again here, not only at the door), and the
+ * resolved path must stay under `io.dir`.
+ */
+export function workPath(io, name) {
+  const p = io.path(name);
+  const root = resolve(io.dir) + sep;
+  if (!resolve(p).startsWith(root)) throw new JobFailure("path_escape", `'${String(name).slice(0, 40)}' resolves outside the work directory`);
+  return p;
+}
+
+function safeId(id, what) {
+  if (!isSafeId(id)) throw new JobFailure("bad_id", `${what} id '${String(id).slice(0, 20)}' is not [A-Za-z0-9_-]{1,64}`);
+  return id;
 }
 
 async function ffmpeg(io, args, what) {
@@ -105,7 +123,7 @@ export async function runBuildCut({ job, io, plan }) {
   const p = job.payload;
   const takes = {};
   for (const [id, t] of Object.entries(p.takes)) {
-    const path = io.path(`take-${id}.bin`);
+    const path = workPath(io, `take-${safeId(id, "take")}.bin`);
     await fetchTo(io, driveDownloadRequest({ fileId: t.drive_file_id, accessToken: p.drive.access_token }), path, `download take ${id}`);
     takes[id] = { path, facts: await probe(io, plan, path, `probe take ${id}`) };
   }
@@ -142,14 +160,20 @@ export async function runBuildCut({ job, io, plan }) {
 
   await io.writeText(master.concatListPath, master.concatList);
   const pass1 = await ffmpeg(io, master.pass1Args, "loudnorm pass 1");
-  await ffmpeg(io, master.pass2Args(plan.parseLoudnorm(pass1.stderr)), "the final encode");
+  // Pass 2's stderr is kept: cutChecks needs it to prove the pass stayed linear.
+  const pass2 = await ffmpeg(io, master.pass2Args(plan.parseLoudnorm(pass1.stderr)), "the final encode");
 
   const bd = await ffmpeg(io, master.blackdetectArgs, "blackdetect");
+  const fc = await io.run("ffprobe", plan.frameCountArgs({ inputPath: masterPath }));
+  if (fc.code !== 0) throw new JobFailure("ffprobe_failed", `count the master's frames: ffprobe failed (exit ${fc.code})`, { tail: tail(fc.stderr) });
   const checks = plan.cutChecks({
     pieces: master.pieces,
     pieceMeasures,
     black: plan.parseBlackdetect(bd.stderr),
     silences: p.silences ?? {},
+    masterFrames: plan.parseFrameCount(fc.stdout),
+    plannedFrames: master.frames,
+    pass2: plan.parseLoudnorm(pass2.stderr),
   });
   if (!checks.ok) {
     // The master is never uploaded and Submagic is never paid for.
@@ -212,7 +236,8 @@ export async function runRenderAndOverlay({ job, io, plan }) {
   for (const a of accepted) {
     const args = { template: a.template, props: a.props ?? {}, frames: a.frames, mode: p.animation_mode };
     const key = clipKey(args);
-    const local = io.path(`clip-${a.id}.${p.animation_mode === "overlay" ? "mov" : "mp4"}`);
+    safeId(a.template, "template");
+    const local = workPath(io, `clip-${safeId(a.id, "animation")}.${p.animation_mode === "overlay" ? "mov" : "mp4"}`);
     if (await io.has(key)) {
       await io.getFile(key, local);
       reused.push(a.id);

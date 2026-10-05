@@ -326,7 +326,16 @@ overlays, then finalize. `build_cut` never draws an animation.
   folder in place of Drive and R2.
 - UNVERIFIED: any SQL (`CLAIM_SQL`, `RECLAIM_SQL`, `RELEASE_SQL`, the store calls
   in the callback). The states `prepared`, `cut` and `animated` exist only after
-  9.1 merges, so until then a callback that needs one answers 200 `ignored`.
+  9.1 merges, so until then a callback that needs one is logged and answers 500
+  and the worker retries (a stale or duplicate callback still answers 200
+  `ignored`; a mis-shaped result answers 400). The callback reads
+  `worker_job_id` with its own query and releases the claim itself.
+- Doors hardened after review: take and animation ids must be
+  `[A-Za-z0-9_-]{1,64}` and every work path is checked to stay in the work dir;
+  R2 keys in a job must match the key builders; the Submagic export link must be
+  https on `submagic.co` or `cloudfront.net` (UNVERIFIED guess: Submagic does not
+  document the host; `VIDEO_WORKER_EXPORT_HOSTS` adds more); `GET /health` is open
+  and says only `{ok}`.
 - UNVERIFIED: the Docker image has not been built; Remotion has not rendered a
   real template here; no R2 call has been made; Drive and Submagic links have
   not been fetched. Render is not set up (section 16 item 4, Chris, on the Mac).

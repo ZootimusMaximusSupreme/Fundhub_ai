@@ -1,10 +1,10 @@
 // Fundhub video worker (spec 9.5). A thin HTTP shell.
 //
-//   GET  /health          ffmpeg build + queue depth (needs the key header)
+//   GET  /health          {ok} only; open, no key (nothing sensitive in it)
 //   POST /jobs            {type, ad_video_id, org_id, payload, cut_version, job_id} -> 202
 //   GET  /jobs/:id        the job's state; 404 when this process does not know it
 //
-// Every call needs X-Fundhub-Video-Key. One job runs at a time (Render Standard
+// Every call except /health needs X-Fundhub-Video-Key. One job runs at a time (Render Standard
 // is 1 CPU, 2 GB). Jobs live in memory only: after a restart, GET /jobs/:id is
 // 404 and Netlify reclaims the row and resends (spec 9.5 "Claims").
 //
@@ -121,18 +121,18 @@ async function pump() {
 
 async function handle(req, res) {
   const url = new URL(req.url, "http://worker");
-  if (!keyOk(req.headers, process.env.VIDEO_WORKER_KEY)) return json(res, 401, { ok: false, error: "bad or missing X-Fundhub-Video-Key" });
-
+  // /health is open (Render's health check cannot send a key) and says nothing sensitive:
+  // no job ids, no queue depth, no versions.
   if (req.method === "GET" && url.pathname === "/health") {
-    return json(res, ffmpegBuild.ok ? 200 : 503, {
-      ok: ffmpegBuild.ok, ffmpeg: ffmpegBuild, running: running?.j.id ?? null, queued: queue.length,
-    });
+    return json(res, ffmpegBuild.ok ? 200 : 503, { ok: ffmpegBuild.ok });
   }
+  if (!keyOk(req.headers, process.env.VIDEO_WORKER_KEY)) return json(res, 401, { ok: false, error: "bad or missing X-Fundhub-Video-Key" });
 
   if (req.method === "POST" && url.pathname === "/jobs") {
     let job;
     try {
-      job = validateJobRequest(JSON.parse(await readBody(req)));
+      const exportHosts = String(process.env.VIDEO_WORKER_EXPORT_HOSTS || "").split(",").map((s) => s.trim()).filter(Boolean);
+      job = validateJobRequest(JSON.parse(await readBody(req)), { exportHosts });
     } catch (err) {
       const code = err instanceof WorkerProtocolError ? err.code : "bad_json";
       return json(res, 400, { ok: false, error: code, message: err instanceof WorkerProtocolError ? err.message : "body is not JSON" });
