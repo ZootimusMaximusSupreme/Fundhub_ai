@@ -135,7 +135,7 @@ flowchart LR
 | `booking.noshow` | journey spine | `onBookingNoshow` | 1 |
 | `call.completed` | journey spine | `onCallCompleted` | 4 |
 | `decision.rendered` | journey spine | `onDecisionRendered` | 0 |
-| `deposit.paid` | journey spine | `onDepositPaid`, `onPaidMidCheckin`, `onDepositPaidGate`, `onMoneyEventForMeta`, `onDepositPaidMoney`, `onDealCloseWinAlert` | 3 |
+| `deposit.paid` | journey spine | `onDepositPaid`, `onPaidMidCheckin`, `onDepositPaidGate`, `onMoneyEventForMeta`, `onDepositPaidMoney`, `onDealCloseWinAlert` | 4 |
 | `sale.closed` | journey spine | `onSaleClosed`, `onPaidMidCheckin`, `onMoneyEventForMeta`, `onSaleClosedMoney`, `onDealCloseWinAlert` | 0 |
 | `round.started` | journey spine | `onRoundStartedMoney` | 7 |
 | `round.submitted` | journey spine | — | 1 |
