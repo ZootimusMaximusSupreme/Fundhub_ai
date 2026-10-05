@@ -247,22 +247,48 @@ function tokensOf(text) {
   return String(text || "").toLowerCase().split(/[^a-z0-9]+/).filter(Boolean);
 }
 
-/** Submagic words[] as a stream of { token, start }, one entry per spoken token.
-    Accepts start/end or startTime/endTime and word/text, like broll.mjs. */
-export function tokenStream(words) {
-  const out = [];
-  for (const w of Array.isArray(words) ? words : []) {
-    const text = typeof w === "string" ? w : (w?.word ?? w?.text ?? "");
-    const start = Number(w?.startTime ?? w?.start);
-    if (!Number.isFinite(start)) continue;
-    for (const token of tokensOf(text)) out.push({ token, start });
+function wordText(w) {
+  return typeof w === "string" ? w : String(w?.word ?? w?.text ?? "");
+}
+
+/**
+ * Submagic words[] as a stream of { token, start }, one entry per spoken token.
+ * Accepts start/end or startTime/endTime and word/text, like broll.mjs.
+ *
+ * `normalize` is optional: (text) => string[] of spoken-word tokens. The worker
+ * passes `normalizeText` from align.mjs (9.2) so "$300,000", "300 grand" and
+ * "three hundred thousand" all read the same. It is applied to the whole
+ * transcript as one stream (numbers span words), and each token takes the time
+ * of the first word whose prefix produces it. Without it, tokens are plain
+ * lowercase letters and digits.
+ */
+export function tokenStream(words, normalize = null) {
+  const list = (Array.isArray(words) ? words : [])
+    .map((w) => ({ text: wordText(w), start: Number(w?.startTime ?? w?.start) }))
+    .filter((w) => Number.isFinite(w.start))
+    .sort((a, b) => a.start - b.start);
+  if (typeof normalize !== "function") {
+    return list.flatMap((w) => tokensOf(w.text).map((token) => ({ token, start: w.start })));
   }
-  return out.sort((a, b) => a.start - b.start);
+  const texts = list.map((w) => w.text);
+  const all = normalize(texts.join(" "));
+  if (!all.length) return [];
+  const reach = [];
+  let seen = 0;
+  for (let i = 0; i < texts.length; i += 1) {
+    seen = Math.max(seen, normalize(texts.slice(0, i + 1).join(" ")).length);
+    reach.push(seen);
+  }
+  return all.map((token, k) => {
+    let i = reach.findIndex((n) => n > k);
+    if (i < 0) i = list.length - 1;
+    return { token, start: list[i].start };
+  });
 }
 
 /** Every start time where `phrase` is heard in the stream. */
-function occurrences(stream, phrase) {
-  const want = tokensOf(phrase);
+function occurrences(stream, phrase, normalize = null) {
+  const want = typeof normalize === "function" ? normalize(String(phrase || "")) : tokensOf(phrase);
   if (!want.length) return [];
   const hits = [];
   for (let i = 0; i + want.length <= stream.length; i += 1) {
@@ -275,43 +301,63 @@ function occurrences(stream, phrase) {
   return hits;
 }
 
+const nearest = (hits, to) => hits.reduce((best, h) => (Math.abs(h - to) < Math.abs(best - to) ? h : best), hits[0]);
+
 /**
  * retimeAnimations — spec 9.4 "Timing". Submagic leaves the timing alone, so the
  * anchors from the cut plan normally hold. If the export's length differs from
  * the master's by more than 0.1 s, find each anchor's words in Submagic's words
  * and place again on the export's timeline.
  *
- * Each item looks for its `match_text` and takes the occurrence closest to its
- * old time. An item whose words are not found keeps its old time and is flagged
- * 'retime_unmatched' (numbers spoken as words can differ from the script's
- * digits; this function does not translate them).
+ *   mode            REQUIRED, 'fullframe' | 'overlay'. There is no default: the
+ *                   limits differ, and guessing wrong places clips wrongly.
+ *   normalize       optional, `normalizeText` from align.mjs (see tokenStream)
+ *   ctaStartSeconds the CTA start on the MASTER's timeline, or null
+ *   ctaPhrase       the CTA line's opening words. The CTA start is re-found in
+ *                   Submagic's words, nearest its old time. Not found (or no
+ *                   phrase): the CTA is treated as unknown, flag 'cta_unknown',
+ *                   never the master's stale value.
  *
- * Returns { items, skipped, flags, remapped }.
+ * Each item looks for its `match_text` and takes the occurrence closest to its
+ * old time. An item whose words are not found is DROPPED and flagged
+ * (skipped reason 'retime_unmatched', flag 'retime_unmatched'): spec 9.4, drop,
+ * never misplace.
+ *
+ * Within 0.1 s nothing changes and ctaStartSeconds is used as given.
+ * Returns { items, skipped, flags, remapped, ctaStartSeconds }.
  */
-export function retimeAnimations({ items, words, masterSeconds, exportSeconds, catalog, ctaStartSeconds = null, mode = "fullframe" }) {
+export function retimeAnimations({ items, words, masterSeconds, exportSeconds, catalog, ctaStartSeconds = null, ctaPhrase = "", mode, normalize = null }) {
+  if (!MODES.includes(mode)) throw new TypeError(`retimeAnimations needs mode: one of ${MODES.join(", ")}`);
   const master = Number(masterSeconds);
   const exported = Number(exportSeconds);
   if (!Number.isFinite(master) || !Number.isFinite(exported) || exported <= 0) {
     throw new RangeError("masterSeconds and exportSeconds must be positive numbers");
   }
   if (Math.abs(exported - master) <= RETIME_THRESHOLD_SECONDS + EPS) {
-    return { items: [...(items || [])], skipped: [], flags: [], remapped: false };
+    return { items: [...(items || [])], skipped: [], flags: [], remapped: false, ctaStartSeconds };
   }
-  const stream = tokenStream(words);
+  const stream = tokenStream(words, normalize);
   const flags = ["retimed"];
-  const candidates = (items || []).map((it) => {
-    const hits = it.match_text ? occurrences(stream, it.match_text) : [];
-    let time = it.cut_time;
-    if (hits.length) {
-      time = hits.reduce((best, h) => (Math.abs(h - it.cut_time) < Math.abs(best - it.cut_time) ? h : best), hits[0]);
-    } else if (!flags.includes("retime_unmatched")) {
-      flags.push("retime_unmatched");
+  const dropped = [];
+  const candidates = [];
+  for (const it of items || []) {
+    const hits = it.match_text ? occurrences(stream, it.match_text, normalize) : [];
+    if (!hits.length) {
+      dropped.push({ index: it.index, template: it.template, reason: "retime_unmatched" });
+      if (!flags.includes("retime_unmatched")) flags.push("retime_unmatched");
+      continue;
     }
     const { start, end, frames, ...rest } = it;
-    return { ...rest, cut_time: time };
-  });
-  const placed = placeCandidates({ candidates, catalog, masterSeconds: exported, ctaStartSeconds, mode });
-  return { items: placed.items, skipped: placed.skipped, flags: [...flags, ...placed.flags], remapped: true };
+    candidates.push({ ...rest, cut_time: nearest(hits, it.cut_time) });
+  }
+  let cta = null;
+  if (ctaStartSeconds !== null && ctaStartSeconds !== undefined) {
+    const hits = ctaPhrase ? occurrences(stream, ctaPhrase, normalize) : [];
+    if (hits.length) cta = nearest(hits, Number(ctaStartSeconds));
+  }
+  const placed = placeCandidates({ candidates, catalog, masterSeconds: exported, ctaStartSeconds: cta, mode });
+  const skipped = [...dropped, ...placed.skipped].sort((a, b) => a.index - b.index);
+  return { items: placed.items, skipped, flags: [...flags, ...placed.flags], remapped: true, ctaStartSeconds: cta };
 }
 
 /** The largest gap between an item's start and its anchor, in seconds. The

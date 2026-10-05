@@ -299,7 +299,7 @@ flowchart TD
     R["rendered<br/>Submagic export copied to R2"] --> P["plan the animations<br/>animation-plan.mjs"]
     P -->|"anchor line was cut"| S1["skip that animation, flag it"]
     P -->|"export length within 0.1 s of master"| T["keep the cut-plan times"]
-    P -->|"export length off by more than 0.1 s"| M["re-map anchors using Submagic's words"]
+    P -->|"export length off by more than 0.1 s"| M["re-map anchors and the CTA start using Submagic's words<br/>words not found: drop that animation, flag it"]
     M --> T
     T --> L{"animation_mode"}
     L -->|"fullframe"| F["limits: none in first 3 s or on the CTA,<br/>4 s of face between clips, 3 s max per clip<br/>(ProofWall 4, ProofFlood 6), 35% of runtime max"]
@@ -355,7 +355,7 @@ not change its key, so a timing-only edit re-renders nothing (spec 9.6).
   "within 0.3 s"; it does not say which way to move a clip that collides. Moving
   later was chosen, because a clip that appears before its words is worse than
   one that lands a beat after.
-- Numbers spoken as words ("three hundred thousand") will not match digits in
-  Submagic's words when anchors are re-mapped; the item then keeps its old time
-  and is flagged `retime_unmatched`. The aligner's number normalizer is not
-  reused here.
+- Re-mapping against Submagic's words normalizes numbers only through a
+  `normalize` function the caller passes in (`normalizeText` from `align.mjs`,
+  PR #32). Without it, "300 grand" will not find "$300,000". UNVERIFIED against
+  the real aligner: the tests use a stand-in.

@@ -197,18 +197,26 @@ describe("re-mapping against Submagic's words", () => {
     animationPlan: plan(["approval email", "StepPath", 3], ["bank says no", "SoftPull", 3]),
     resolveAnchor: resolver({ "approval email": 10, "bank says no": 25 }), catalog: CATALOG, masterSeconds: 60, ctaStartSeconds: 55,
   }).items;
+  const base = { catalog: CATALOG, mode: "fullframe", masterSeconds: 60, exportSeconds: 61 };
+
+  // Stands in for normalizeText from align.mjs (9.2), which is passed in by the
+  // worker: every way of saying 300,000 becomes the same spoken words.
+  const spoken = (text) => String(text).toLowerCase()
+    .replace(/\$?300,000|300k|300 grand|three hundred thousand( dollars)?/g, " three hundred thousand dollars ")
+    .split(/[^a-z0-9]+/).filter(Boolean);
 
   test("within 0.1 s of the master the anchors are left alone", () => {
     const items = baseItems();
-    const r = retimeAnimations({ items, words: [], masterSeconds: 60, exportSeconds: 60.08, catalog: CATALOG, ctaStartSeconds: 55 });
+    const r = retimeAnimations({ ...base, items, words: [], exportSeconds: 60.08, ctaStartSeconds: 55 });
     assert.strictEqual(r.remapped, false);
+    assert.strictEqual(r.ctaStartSeconds, 55);
     assert.deepStrictEqual(r.items, items);
   });
 
   test("beyond 0.1 s each item moves to where Submagic hears its words", () => {
     const items = baseItems();
-    const w = [...words("filler filler the approval email lands", 11.5), ...words("and the bank says no again", 26.5)];
-    const r = retimeAnimations({ items, words: w, masterSeconds: 60, exportSeconds: 61, catalog: CATALOG, ctaStartSeconds: 56 });
+    const w = [...words("filler filler the approval email lands", 11.5), ...words("and the bank says no again", 26.5), ...words("book now", 50)];
+    const r = retimeAnimations({ ...base, items, words: w, ctaStartSeconds: 55, ctaPhrase: "book now" });
     assert.strictEqual(r.remapped, true);
     assert.deepStrictEqual(r.items.map((i) => i.cut_time), [13, 27.5]);
     assert.ok(r.flags.includes("retimed"));
@@ -217,21 +225,79 @@ describe("re-mapping against Submagic's words", () => {
   test("when a phrase is heard twice, the occurrence nearest the old time wins", () => {
     const items = baseItems().slice(0, 1);
     const w = [...words("approval email", 2), ...words("approval email", 10.4)];
-    const r = retimeAnimations({ items, words: w, masterSeconds: 60, exportSeconds: 61, catalog: CATALOG, ctaStartSeconds: 56 });
+    const r = retimeAnimations({ ...base, items, words: w });
     assert.strictEqual(r.items[0].cut_time, 10.4);
   });
 
-  test("a phrase Submagic did not hear keeps its old time and is flagged", () => {
+  test("an item whose words are not on the export is DROPPED and flagged, never kept at its old time", () => {
     const items = baseItems();
-    const r = retimeAnimations({ items, words: words("nothing useful here", 0), masterSeconds: 60, exportSeconds: 61, catalog: CATALOG, ctaStartSeconds: 56 });
-    assert.deepStrictEqual(r.items.map((i) => i.cut_time), [10, 25]);
-    assert.ok(r.flags.includes("retime_unmatched"));
+    const r = retimeAnimations({ ...base, items, words: words("nothing useful here", 0) });
+    assert.deepStrictEqual(r.items, []);
+    assert.deepStrictEqual(r.skipped.map((s) => [s.index, s.reason]), [[0, "retime_unmatched"], [1, "retime_unmatched"]]);
+    assert.ok(r.flags.includes("retime_unmatched") && r.flags.includes("no_animation"));
+  });
+
+  test("an item with nothing to listen for is dropped too", () => {
+    const items = baseItems().map((i) => ({ ...i, match_text: "" }));
+    const r = retimeAnimations({ ...base, items, words: words("approval email", 10) });
+    assert.strictEqual(r.items.length, 0);
+  });
+
+  test("numbers are normalized on both sides: '300 grand' on the export finds '$300,000' in the script", () => {
+    const items = planAnimations({
+      animationPlan: plan(["$300,000 today", "StepPath", 3]), resolveAnchor: resolver({ "$300,000 today": 10 }),
+      catalog: CATALOG, masterSeconds: 60, ctaStartSeconds: 55,
+    }).items;
+    const w = [{ word: "you", start: 11 }, { word: "can", start: 11.3 }, { word: "get", start: 11.6 }, { word: "300", start: 12 }, { word: "grand", start: 12.4 }, { word: "today", start: 12.8 }];
+    const withNormalizer = retimeAnimations({ ...base, items, words: w, normalize: spoken });
+    assert.deepStrictEqual(withNormalizer.items.map((i) => i.cut_time), [12]);
+    // Without a normalizer the same words are NOT found, and the item is dropped.
+    const without = retimeAnimations({ ...base, items, words: w });
+    assert.strictEqual(without.items.length, 0);
+    assert.strictEqual(without.skipped[0].reason, "retime_unmatched");
+  });
+
+  test("tokenStream: a number spanning two words takes the time of the word it starts on", () => {
+    const stream = tokenStream([{ word: "get", start: 1 }, { word: "300", start: 2 }, { word: "grand", start: 2.4 }], spoken);
+    assert.deepStrictEqual(stream.map((t) => [t.token, t.start]), [["get", 1], ["three", 2], ["hundred", 2.4], ["thousand", 2.4], ["dollars", 2.4]]);
+  });
+
+  test("the CTA start is re-found on the export's timeline, not reused from the master", () => {
+    // Master 60 s, CTA at 58. Export 62 s: Submagic hears the CTA at 55.
+    const items = planAnimations({
+      animationPlan: plan(["late word", "StepPath", 3]), resolveAnchor: resolver({ "late word": 54 }),
+      catalog: CATALOG, masterSeconds: 60, ctaStartSeconds: 58,
+    }).items;
+    assert.strictEqual(items[0].end, 57); // fits before the master's CTA
+    const w = [{ word: "late", start: 54 }, { word: "word", start: 54.3 }, { word: "book", start: 55 }, { word: "now", start: 55.3 }];
+    const r = retimeAnimations({ ...base, items, words: w, exportSeconds: 62, ctaStartSeconds: 58, ctaPhrase: "book now" });
+    assert.strictEqual(r.ctaStartSeconds, 55);
+    // Only 1 s is left before the real CTA, under the template's 2 s minimum, so it is skipped.
+    assert.deepStrictEqual(r.skipped.map((s) => s.reason), ["cta"]);
+    assert.deepStrictEqual(r.items, []);
+  });
+
+  test("a CTA that cannot be found is unknown and flagged, never the master's old value", () => {
+    const items = baseItems();
+    const w = [...words("approval email", 10), ...words("bank says no", 25)];
+    const r = retimeAnimations({ ...base, items, words: w, ctaStartSeconds: 55, ctaPhrase: "book now" });
+    assert.strictEqual(r.ctaStartSeconds, null);
+    assert.ok(r.flags.includes("cta_unknown"));
+    const noPhrase = retimeAnimations({ ...base, items, words: w, ctaStartSeconds: 55 });
+    assert.strictEqual(noPhrase.ctaStartSeconds, null);
+  });
+
+  test("mode is required: there is no default", () => {
+    const items = baseItems();
+    assert.throws(() => retimeAnimations({ items, words: [], masterSeconds: 60, exportSeconds: 61, catalog: CATALOG }), TypeError);
+    assert.throws(() => retimeAnimations({ items, words: [], masterSeconds: 60, exportSeconds: 60.05, catalog: CATALOG }), TypeError);
+    assert.throws(() => retimeAnimations({ items, words: [], masterSeconds: 60, exportSeconds: 61, catalog: CATALOG, mode: "x" }), TypeError);
   });
 
   test("the limits still apply on the new timeline", () => {
     const items = baseItems();
     const w = words("the approval email", 1); // heard at 1.5 s: inside the first 3 s, too far to nudge
-    const r = retimeAnimations({ items, words: w, masterSeconds: 60, exportSeconds: 61, catalog: CATALOG, ctaStartSeconds: 56 });
+    const r = retimeAnimations({ ...base, items, words: w });
     assert.ok(r.skipped.some((s) => s.template === "StepPath" && s.reason === "lead_in"));
   });
 
