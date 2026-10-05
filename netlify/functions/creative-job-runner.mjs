@@ -2,6 +2,7 @@
 // POST /api/creative/generate only enqueues; without this, jobs sit forever.
 
 import { db } from "../../src/db.mjs";
+import { recordHeartbeat, itemCountOf } from "../../src/pulse/heartbeats.mjs";
 import { runDue } from "../../src/creative/runner.mjs";
 
 export const SWEEP_CRON = "*/2 * * * *";
@@ -32,7 +33,12 @@ export async function sweepCreativeJobs(dbConn, options = {}) {
 // function style, which rejects a { statusCode, body } object and re-runs the
 // pass. See src/http/scheduled-functions-return.test.mjs.
 export async function handler() {
+  const startedAt = new Date();
   const result = await sweepCreativeJobs(db);
+  await recordHeartbeat(db, {
+    job: "creative-job-runner", runner: "netlify", startedAt,
+    outcome: result.ok ? "ok" : "error", itemCount: itemCountOf(result), error: result.error || null
+  });
   if (!result.ok) {
     console.error(`[creative-job-runner] pass failed: ${result.error}`);
   } else if (result.ran > 0) {

@@ -463,6 +463,8 @@ FROM webhook_captures GROUP BY 1,2 ORDER BY 2 DESC;  -- volume telemetry only; n
 
 **Not from a hosted agent session.** This environment's network policy blocks `api.netlify.com` and `api.supabase.com` at the proxy (403 at CONNECT), so a hosted session cannot fetch `DATABASE_URL` or reach the production database. A 403 there is an org policy denial — do not retry or route around it.
 
+**Update (owner-set 2026-10-04):** the marketing machine's real-words job runs this harvest in its worker, under rules 1–6 above, so it no longer depends on a hosted agent session reaching the database. See `docs/specs/marketing-machine-2026-10-04.md` §7.10. The hosted-session limit above still applies to an agent running the queries by hand.
+
 Run the harvest from a machine that already has database access:
 
 - **Chris's laptop**, or any session with local env access, where `.env` exists or `DATABASE_URL` can be fetched via `netlify env:get DATABASE_URL --context production`.
