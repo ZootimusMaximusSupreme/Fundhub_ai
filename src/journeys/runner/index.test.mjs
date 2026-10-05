@@ -133,8 +133,13 @@ import { isSyntheticRow } from "./synthetic.mjs";
    registration — this line only catches up. Five of them (slo-genuine-followup,
    slo-genuine-reply, slo-genuine-checkout-sms, slo-infinite-drip, slo-no-reply-197) were also
    unreachable by the runner because their module exported no handle(); they
-   now export one (or `handlers` for the three-function module). */
-const REGISTERED = 89;
+   now export one (or `handlers` for the three-function module).
+
+   Moved 89 -> 90 the same day with the Microsoft Clarity daily pull
+   (clarity-insights-sweeper, PR #19, marketing machine 11.4). It is a cron with
+   no event trigger, so like every sweeper here it will always appear in
+   neverFired. */
+const REGISTERED = 90;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
