@@ -94,7 +94,7 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
     assert.equal(row.money.status, "not_connected");
     assert.equal(row.systems.scorecard.checks.find((c) => c.id === "gate-relay").status, "not_checked");
     assert.deepEqual(row.suggestions, []);
-    assert.equal(row.report_url, null);
+    assert.equal(row.report_url, "https://fundhub.ai/app/morning-brief.html?date=2001-03-05");
   });
 
   test("a rerun the same morning updates the one row, never a second", async () => {
