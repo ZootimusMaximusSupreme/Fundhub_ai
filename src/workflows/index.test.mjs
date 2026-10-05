@@ -82,6 +82,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "dpc-05-no-progress-escalation",
   "ds-01-repair-referral",
   "ds-02-diy-letters",
+  "evening-brief",
   "f-01-funding-intake",
   "f-02-portal-id-missing",
   "f-03-round-submitted",
@@ -193,6 +194,14 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      added, in the words of the person who added it. The counts named in it are
      the historical record of what the pin said at the time; the pin itself is
      EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
+
+     Added the evening brief (2026-10-05, MB6) — Chris asked for a
+     "Good evening, Chris." text at 9:00 p.m. Arizona so he knows what came in
+     during the day before bed, not only at 6:00 a.m. Same builder as the
+     morning brief (src/ops/morning-brief.mjs, kind 'evening'). Registering it
+     TEXTS NOBODY: MORNING_BRIEF_LIVE is false, so it builds and saves one
+     morning_briefs row per evening with delivery_status 'dry_run'. It never
+     runs the pulse; it reads the check stored that morning.
 
      Added the affiliate payout run (2026-09-21) — the first thing in this
      repository that ever turned an affiliate's accrued commission into a payout
