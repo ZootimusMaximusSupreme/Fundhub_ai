@@ -18,9 +18,9 @@ Source: https://docs.whop.com/payments-and-billing/financing/apply
 
 ## Business description (paste)
 
-FH Consulting LLC sells self-paced online courses on business operations to small business owners. Customers pay once and get immediate online access to video lessons, written lessons, and templates. Programs are priced at $5,000 and $10,000.
+FH Consulting LLC provides marketing consulting that helps businesses in any industry launch new offers quickly. We work with clients online to plan the offer, set up the marketing, and get it in front of buyers.
 
-(Owner-set 2026-10-05: bare minimum, no website line.)
+(Owner-set 2026-10-05: bare minimum, no website line. Marketing consulting; preferred industries health, real estate, marketing, left out of the description because Whop's financing partners list real estate consultants as a declined category.)
 
 ## Categories Whop's financing partners decline
 
