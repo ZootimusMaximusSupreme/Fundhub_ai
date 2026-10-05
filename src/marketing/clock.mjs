@@ -3,7 +3,8 @@
 // and says whether the worker should be woken. It does no real work: a scheduled
 // function dies at 30 seconds (§4 trap 5).
 //
-// It does nothing at all while no org has `enabled` on, and logs "disabled".
+// While no org has `enabled` on it queues nothing and logs "disabled". It still
+// wakes the worker for waiting repo saves and due buzzes.
 //
 // A weekly batch is due when the zone's weekday is `batch_weekday` and its clock
 // has passed `batch_time`, for up to BATCH_WINDOW_HOURS after. The job's slot is
@@ -30,15 +31,17 @@ export function batchSlot(settings, now) {
 /**
  * clockTick(db, { now? }) -> { disabled, queued, wake }
  * `wake` is true when something is waiting for the worker.
+ *
+ * `enabled` gates ONLY the batch queuing. Waiting repo saves and due buzzes are
+ * woken for either way, so a saved offer card never sits uncommitted just because
+ * the writing machine is off.
  */
 export async function clockTick(db, { now = new Date() } = {}) {
   const orgs = (await db.query(
     `SELECT org_id, batch_weekday, batch_time, timezone FROM marketing_settings WHERE enabled = true`
   )).rows;
-  if (orgs.length === 0) {
-    console.log("[marketing-clock] disabled: no org has the marketing machine turned on");
-    return { disabled: true, queued: 0, wake: false };
-  }
+  const disabled = orgs.length === 0;
+  if (disabled) console.log("[marketing-clock] disabled: no org has the marketing machine turned on");
   let queued = 0;
   for (const s of orgs) {
     const slot = batchSlot(s, now);
@@ -57,5 +60,5 @@ export async function clockTick(db, { now = new Date() } = {}) {
     `SELECT count(*)::int AS n FROM repo_outbox WHERE committed_at IS NULL AND error IS NULL`
   );
   const wake = runnable + buzzes.rows[0].n + outbox.rows[0].n > 0;
-  return { disabled: false, queued, wake };
+  return { disabled, queued, wake };
 }

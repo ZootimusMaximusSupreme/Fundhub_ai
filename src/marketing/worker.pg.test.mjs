@@ -194,8 +194,10 @@ describe("marketing worker, clock, buzzes", { skip: !HAS_DB ? "no DATABASE_URL" 
 
   test("two due buzzes of one kind go out as one send; the same group_key collapses with it", async () => {
     await db.query(
-      `INSERT INTO marketing_buzzes (org_id, kind, body, group_key, send_after) VALUES
-        ($1,'stuck','first','batch-1', now()), ($1,'stuck','second','batch-1', now()), ($1,'stuck','other','batch-2', now())`,
+      `INSERT INTO marketing_buzzes (org_id, kind, body, group_key, send_after, created_at) VALUES
+        ($1,'stuck','first','batch-1', now(), now() - interval '3 seconds'),
+        ($1,'stuck','second','batch-1', now(), now() - interval '2 seconds'),
+        ($1,'stuck','other','batch-2', now(), now() - interval '1 second')`,
       [org.orgId]);
     const s = sends();
     await sendDueBuzzes(db, { send: s.send });
@@ -215,12 +217,40 @@ describe("marketing worker, clock, buzzes", { skip: !HAS_DB ? "no DATABASE_URL" 
 
   // ── the clock ─────────────────────────────────────────────────────────────
 
-  test("the clock does nothing while the machine is off, and says so", async () => {
+  test("while the machine is off the clock queues no batch, says so, and wakes only for waiting work", async () => {
     await db.query(`INSERT INTO marketing_settings (org_id, enabled) VALUES ($1, false)`, [org.orgId]);
-    const t = await clockTick(db, { now: new Date("2026-10-05T14:00:00Z") });
+    const t = await clockTick(db, { now: new Date("2026-10-05T14:00:00Z") }); // Monday 07:00 Phoenix
     assert.equal(t.disabled, true);
     assert.equal(t.queued, 0);
     assert.equal((await jobs()).length, 0);
+    // A saved offer card (a waiting outbox row) still gets the worker woken.
+    await db.query(
+      `INSERT INTO repo_outbox (org_id, op_id, path, mode, content)
+       VALUES ($1, 'pgt-clock-wake', 'marketing/offers/pgt_clock.md', 'replace', 'x')`, [org.orgId]);
+    const t2 = await clockTick(db, { now: new Date("2026-10-05T14:00:00Z") });
+    assert.equal(t2.disabled, true);
+    assert.equal(t2.queued, 0);
+    assert.equal(t2.wake, true);
+    assert.equal((await jobs()).length, 0);
+  });
+
+  test("while the machine is off, a due buzz also wakes the worker", async () => {
+    await db.query(`INSERT INTO marketing_settings (org_id, enabled) VALUES ($1, false)`, [org.orgId]);
+    await db.query(`INSERT INTO marketing_buzzes (org_id, kind, body, send_after) VALUES ($1,'stuck','x', now())`, [org.orgId]);
+    assert.equal((await clockTick(db, { now: new Date() })).wake, true);
+  });
+
+  test("two clock ticks racing for the same slot queue one job (the database decides)", async () => {
+    const results = await Promise.all(
+      Array.from({ length: 6 }, () => queueJob(db, { orgId: org.orgId, kind: BATCH_JOB_KIND, slot: "2026-10-05 07:00" }))
+    );
+    assert.equal(results.filter((r) => !r.duplicate).length, 1);
+    assert.equal(new Set(results.map((r) => r.id)).size, 1);
+    assert.equal((await jobs()).length, 1);
+    // Different slot and no slot are still allowed.
+    assert.equal((await queueJob(db, { orgId: org.orgId, kind: BATCH_JOB_KIND, slot: "2026-10-12 07:00" })).duplicate, false);
+    assert.equal((await queueJob(db, { orgId: org.orgId, kind: BATCH_JOB_KIND })).duplicate, false);
+    assert.equal((await queueJob(db, { orgId: org.orgId, kind: BATCH_JOB_KIND })).duplicate, false);
   });
 
   test("with the machine on, the clock queues the weekly batch once and asks for the worker", async () => {
@@ -244,25 +274,41 @@ describe("marketing worker, clock, buzzes", { skip: !HAS_DB ? "no DATABASE_URL" 
 
   test("a card save queues an outbox row and the worker's drain commits it to the (fake) repo", async () => {
     const gh = makeFakeGithub();
-    let woke = 0;
     const client = await pool().connect();
     let row;
     try {
       await client.query("BEGIN");
       row = await enqueueRepoWrite(client, {
         orgId: org.orgId, path: "marketing/offers/pgt_wired.md", content: "# wired\n"
-      }, { wake: async () => { woke++; } });
+      });
       await client.query("COMMIT");
     } finally {
       client.release();
     }
-    assert.equal(woke, 1);
     await runWorker({
       db, pool: pool(), env: FAKE_ENV, fetchImpl: gh.fetchImpl, sleep: tick, sendDueBuzzes: noBuzz, handlers: {}
     });
     const r = (await db.query(`SELECT committed_at, committed_sha FROM repo_outbox WHERE id = $1`, [row.id])).rows[0];
     assert.ok(r.committed_at, "the worker drained the row");
     assert.ok(r.committed_sha);
+  });
+
+  test("a save that rolls back leaves no repo_outbox row", async () => {
+    const client = await pool().connect();
+    let id;
+    try {
+      await client.query("BEGIN");
+      id = (await enqueueRepoWrite(client, {
+        orgId: org.orgId, path: "marketing/offers/pgt_rollback.md", content: "# never\n"
+      })).id;
+      assert.ok(id, "the row existed inside the transaction");
+      await client.query("ROLLBACK");
+    } finally {
+      client.release();
+    }
+    assert.equal((await db.query(`SELECT 1 FROM repo_outbox WHERE id = $1`, [id])).rows.length, 0);
+    assert.equal((await db.query(
+      `SELECT 1 FROM repo_outbox WHERE org_id = $1 AND path = 'marketing/offers/pgt_rollback.md'`, [org.orgId])).rows.length, 0);
   });
 
   test("model usage goes in marketing_model_usage with a cost", async () => {

@@ -6,23 +6,27 @@ export const MAX_ATTEMPTS = 3;
 export const STALE_CLAIM_MINUTES = 16;
 export const RETRY_BACKOFF_SECONDS = 60;
 
-/** Queue a job. `slot` makes it idempotent: the same (org, kind, slot) is queued once. */
+/**
+ * Queue a job. `slot` makes it idempotent: the same (org, kind, slot) is queued once.
+ * The database decides (unique index marketing_jobs_slot_uq, migration 410), so two
+ * clock ticks that race cannot both insert.
+ */
 export async function queueJob(db, { orgId, kind, payload = {}, slot = null, runAfter = null }) {
   if (!orgId || !kind) throw new Error("queueJob: orgId and kind are required");
-  const body = slot ? { ...payload, slot } : payload;
-  if (slot) {
-    const dup = await db.query(
-      `SELECT id FROM marketing_jobs WHERE org_id = $1 AND kind = $2 AND payload->>'slot' = $3 LIMIT 1`,
-      [orgId, kind, String(slot)]
-    );
-    if (dup.rows[0]) return { id: dup.rows[0].id, duplicate: true };
-  }
+  const body = slot ? { ...payload, slot: String(slot) } : payload;
   const r = await db.query(
     `INSERT INTO marketing_jobs (org_id, kind, payload, run_after)
-     VALUES ($1,$2,$3::jsonb, COALESCE($4::timestamptz, now())) RETURNING id`,
+     VALUES ($1,$2,$3::jsonb, COALESCE($4::timestamptz, now()))
+     ON CONFLICT (org_id, kind, (payload->>'slot')) WHERE payload->>'slot' IS NOT NULL DO NOTHING
+     RETURNING id`,
     [orgId, kind, JSON.stringify(body), runAfter]
   );
-  return { id: r.rows[0].id, duplicate: false };
+  if (r.rows[0]) return { id: r.rows[0].id, duplicate: false };
+  const dup = await db.query(
+    `SELECT id FROM marketing_jobs WHERE org_id = $1 AND kind = $2 AND payload->>'slot' = $3 LIMIT 1`,
+    [orgId, kind, String(slot)]
+  );
+  return { id: dup.rows[0]?.id ?? null, duplicate: true };
 }
 
 /** Claim up to `limit` runnable jobs. FOR UPDATE SKIP LOCKED, so two workers never take the same one. */

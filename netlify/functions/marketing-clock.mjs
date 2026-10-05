@@ -2,8 +2,9 @@
 //
 // A SCHEDULED function is killed at 30 seconds (spec §4 trap 5), so this only
 // reads the database, queues jobs and wakes the background worker, which gets
-// 15 minutes. While no org has the machine turned on it does nothing and logs
-// "disabled". It always returns a 200 Response: a non-2xx from a scheduled
+// 15 minutes. While no org has the machine turned on it queues nothing and logs
+// "disabled", but still wakes the worker for waiting repo saves and due buzzes.
+// It always returns a 200 Response: a non-2xx from a scheduled
 // function is a deploy-level alarm, and a missing variable is not one.
 //
 // THE SCHEDULE IS DECLARED IN netlify.toml, NOT HERE (CLAUDE.md §8, no new dependency).
@@ -21,13 +22,12 @@ const json = (body) => new Response(JSON.stringify(body), {
 export async function handler() {
   try {
     const tick = await clockTick(db);
-    if (tick.disabled) return json({ ok: true, disabled: true });
     let woke = null;
     if (tick.wake) {
       woke = await wakeWorker();
       if (woke.error) console.error(`[marketing-clock] did not wake the worker: ${woke.error}`);
     }
-    return json({ ok: true, queued: tick.queued, woke: woke ? woke.started : false });
+    return json({ ok: true, disabled: tick.disabled, queued: tick.queued, woke: woke ? woke.started : false });
   } catch (err) {
     const error = String((err && err.message) || err).slice(0, 300);
     console.error(`[marketing-clock] ${error}`);

@@ -3,7 +3,7 @@
 //
 // This is the real hookup of the outbox (src/repo/outbox.mjs, M0 step 2) to the
 // marketing handlers. Every marketing/* handler imports it from this file and takes
-// it as `deps.enqueueRepoWrite` in tests, so no handler changed when it went real.
+// it as `deps.enqueueRepoWrite` in tests.
 //
 //   enqueueRepoWrite(tx, { orgId, staffId, path, content, message })
 //     tx      the open transaction, so the outbox row commits or rolls back with the save
@@ -12,30 +12,34 @@
 //     content the whole file (mode 'replace': the machine owns it)
 //     staffId, message  kept in the signature; the outbox writes its own commit
 //             message and author ("Fundhub app", `app:` ... `[skip ci]`)
-//   -> { queued: true, id, duplicate, path }
+//   -> { queued: true, id, duplicate, path }   (the caller then calls wakeAfterCommit)
 //
-// THE WAKE. After the row is written the worker is woken so the commit does not
-// wait for the clock. The wake happens before the caller's transaction commits,
-// and it takes a network round trip first, so the worker starts after the commit
-// in practice. If it ever starts too soon the row is still there for the next
-// drain (the worker drains once a minute while it runs, the clock wakes it every
-// 15 minutes while the machine is on). A failed wake never fails the save.
+// THE WAKE. This function does NOT wake the worker: it runs inside the caller's
+// transaction, and a worker woken before the commit could look for a row that is
+// not there yet. The handler calls wakeAfterCommit() once the transaction has
+// committed. A failed wake never fails the save, and the clock still wakes the
+// worker when rows wait.
 
 import { randomUUID } from "node:crypto";
 import { enqueueRepoWrite as enqueueOutbox } from "../repo/outbox.mjs";
 import { wakeWorker } from "./wake.mjs";
 
+/** Call this AFTER the save's transaction has committed. Never throws. */
+export async function wakeAfterCommit(wake = wakeWorker) {
+  try {
+    const r = await wake();
+    if (r && r.error) console.error(`[marketing] could not wake the worker: ${r.error}`);
+  } catch (err) {
+    console.error(`[marketing] could not wake the worker: ${String((err && err.message) || err)}`);
+  }
+}
+
 // eslint-disable-next-line no-unused-vars
-export async function enqueueRepoWrite(tx, { orgId, staffId, path, content, message }, { wake = wakeWorker } = {}) {
+export async function enqueueRepoWrite(tx, { orgId, staffId, path, content, message }) {
   // A fresh op id per save: the outbox drops a repeated (org, op id), and two
   // different saves of the same file must both land. Retries of one request are
   // already stopped by marketing_requests.
   const row = await enqueueOutbox(tx, { orgId, opId: `save:${randomUUID()}`, path, mode: "replace", content });
-  try {
-    await wake();
-  } catch (err) {
-    console.error(`[marketing] could not wake the worker: ${String((err && err.message) || err)}`);
-  }
   return { queued: true, id: row.id, duplicate: row.duplicate, path };
 }
 

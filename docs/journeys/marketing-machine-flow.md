@@ -114,22 +114,23 @@ Notes:
 
 ## Clock, worker, buzzes, model client (M0 step 4)
 
-Code: `netlify/functions/marketing-clock.mjs` (scheduled `*/15 * * * *` in netlify.toml), `netlify/functions/marketing-worker-background.mjs`, `src/marketing/{clock,worker,jobs,notify,wake,time,health,model-usage,handlers}.mjs`, `src/agents/model.mjs` (`callModel`). Tables: `marketing_jobs`, `marketing_buzzes`, `marketing_model_usage`, `repo_outbox`.
+Code: `netlify/functions/marketing-clock.mjs` (scheduled `*/15 * * * *` in netlify.toml), `netlify/functions/marketing-worker-background.mjs`, `src/marketing/{clock,worker,jobs,notify,wake,time,health,model-usage,handlers}.mjs`, `src/agents/model.mjs` (`callModel`). Tables (migration 410 adds the slot index): `marketing_jobs`, `marketing_buzzes`, `marketing_model_usage`, `repo_outbox`.
 
 ```mermaid
 flowchart TD
     TICK[Clock ticks every 15 minutes] --> ON{Any org with enabled true?}
-    ON -->|No| IDLE[Log disabled, do nothing, answer 200]
+    ON -->|No| IDLE[Log disabled, queue no batch, still check for waiting work]
+    IDLE --> WORK
     ON -->|Yes| DUE{Local weekday is batch_weekday, and clock is within 3 hours after batch_time?}
     DUE -->|Yes| SLOT{Job for this local date and time already queued?}
-    SLOT -->|No| QJOB[Queue write_batch job]
+    SLOT -->|No| QJOB[Queue write_batch job, one per slot, enforced by unique index marketing_jobs_slot_uq]
     SLOT -->|Yes| SKIP[Nothing]
     DUE -->|No| SKIP
     QJOB --> WORK
     SKIP --> WORK{Runnable jobs, due buzzes or waiting outbox rows?}
     WORK -->|Yes| WAKE[POST to the worker with x-fundhub-worker secret]
     WORK -->|No| END[Done]
-    SAVE[A marketing save writes a repo_outbox row] --> WAKE
+    SAVE[A marketing save writes a repo_outbox row, then its transaction commits] --> WAKE
     WAKE --> AUTH{Secret matches MARKETING_WORKER_SECRET?}
     AUTH -->|No or not set| R404[404, nothing runs]
     AUTH -->|Yes| RUN[Worker run, up to 15 minutes]
@@ -157,5 +158,6 @@ Model client: `callModel` with `provider: 'anthropic'` sends only to api.anthrop
 
 - The job handler list is empty (`src/marketing/handlers.mjs`). A `write_batch` job queued by the clock fails with "no handler" until M1 adds the writer. The clock only queues while `enabled` is true, and `enabled` stays false until M1 is done.
 - If `MARKETING_WORKER_SECRET` or the site URL is not set, nothing wakes the worker. The save still succeeds and the row waits. The Netlify variable is set on the Mac with the rest of the batch; none was set by this step.
-- A save wakes the worker before its own transaction commits (the wake takes a network round trip first, so the worker normally starts after the commit). If it starts early the row waits for the next drain.
-- The clock does not wake the worker while `enabled` is false, so repo saves made while the machine is off wait for the next save's wake.
+- A save wakes the worker only after its transaction has committed: `enqueueRepoWrite` does not wake, and the handler calls `wakeAfterCommit` once the save has gone through (not on a rollback, not on a replayed request).
+- While `enabled` is false the clock queues no batch but still wakes the worker for waiting repo saves and due buzzes, so a saved offer card never sits uncommitted.
+- Two clock ticks cannot queue the same slot twice: migration 410 adds a unique index on (org, kind, slot) and `queueJob` inserts with ON CONFLICT DO NOTHING.

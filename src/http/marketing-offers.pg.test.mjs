@@ -16,8 +16,10 @@ const SLUG = "mm-offers-pg-test";
 describe("/api/marketing/offers", { skip: !HAS_DB ? "no DATABASE_URL" : false }, () => {
   let org;
   const repoWrites = [];
+  let wakes = 0;
   const deps = {
     db,
+    wakeWorker: async () => { wakes++; },
     // Most tests swap the real outbox call for a recorder. One test below uses the
     // real one against repo_outbox.
     enqueueRepoWrite: async (_tx, args) => { repoWrites.push(args); return { queued: true, path: args.path }; }
@@ -183,10 +185,12 @@ describe("/api/marketing/offers", { skip: !HAS_DB ? "no DATABASE_URL" : false },
   });
 
   test("with the real outbox a card save queues a repo_outbox row in the same transaction", async () => {
+    wakes = 0;
     const r = await call(org.tokens.owner, {
       method: "POST", body: { tag: "pgt_offer", card_md: "# card\n" }
-    }, { db });
+    }, { db, wakeWorker: deps.wakeWorker });
     assert.equal(r.code, 200);
+    assert.equal(wakes, 1, "the worker is woken once, after the commit");
     assert.equal(r.body.repo_write.queued, true);
     assert.equal(r.body.repo_write.path, "marketing/offers/pgt_offer.md");
     const row = (await db.query(
@@ -199,11 +203,13 @@ describe("/api/marketing/offers", { skip: !HAS_DB ? "no DATABASE_URL" : false },
   });
 
   test("a failing repo write rolls the whole save back", async () => {
-    const boom = { db, enqueueRepoWrite: async () => { throw new Error("outbox down"); } };
+    wakes = 0;
+    const boom = { db, wakeWorker: deps.wakeWorker, enqueueRepoWrite: async () => { throw new Error("outbox down"); } };
     const r = await call(org.tokens.owner, {
       method: "POST", body: { tag: "pgt_boom", name: "Boom", card_md: "# x\n" }
     }, boom);
     assert.equal(r.code, 500);
+    assert.equal(wakes, 0, "no wake when the save rolled back");
     assert.equal((await db.query(`SELECT 1 FROM marketing_offers WHERE org_id = $1 AND tag = 'pgt_boom'`, [org.orgId])).rows.length, 0);
   });
 

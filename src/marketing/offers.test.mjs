@@ -4,7 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateOfferBody, cardPathFor, TAG_RE, STEP_TYPES } from "./offers.mjs";
-import { enqueueRepoWrite } from "./repo-writes.mjs";
+import { enqueueRepoWrite, wakeAfterCommit } from "./repo-writes.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 
@@ -65,16 +65,11 @@ test("card_md alone is a valid update (a card save)", () => {
   assert.equal(validateOfferBody({ tag: "slo", card_md: "  " }, { creating: false }).error, "card_md_invalid");
 });
 
-test("the repo write goes through the real outbox, then wakes the worker", async () => {
+test("the repo write goes through the real outbox and does NOT wake the worker (the caller does, after commit)", async () => {
   const calls = [];
   const tx = { query: async (sql, params) => { calls.push({ sql, params }); return { rows: [{ id: "row-1" }] }; } };
-  let woke = 0;
-  const r = await enqueueRepoWrite(
-    tx, { orgId: "org-1", staffId: "s1", path: "marketing/offers/slo.md", content: "x", message: "m" },
-    { wake: async () => { woke++; return { ok: true }; } }
-  );
+  const r = await enqueueRepoWrite(tx, { orgId: "org-1", staffId: "s1", path: "marketing/offers/slo.md", content: "x", message: "m" });
   assert.deepEqual(r, { queued: true, id: "row-1", duplicate: false, path: "marketing/offers/slo.md" });
-  assert.equal(woke, 1);
   assert.match(calls[0].sql, /INSERT INTO repo_outbox/);
   assert.equal(calls[0].params[0], "org-1");
   assert.match(calls[0].params[1], /^save:/);
@@ -83,28 +78,28 @@ test("the repo write goes through the real outbox, then wakes the worker", async
   assert.equal(calls[0].params[4], "x");
 });
 
+test("wakeAfterCommit calls the wake once and never throws", async () => {
+  let n = 0;
+  await wakeAfterCommit(async () => { n++; return { ok: true }; });
+  assert.equal(n, 1);
+  await wakeAfterCommit(async () => { throw new Error("down"); });
+  await wakeAfterCommit(async () => ({ ok: false, error: "no secret" }));
+});
+
 test("two saves of the same file get different op ids, so both land", async () => {
   const ids = [];
   const tx = { query: async (_s, params) => { ids.push(params[1]); return { rows: [{ id: "r" }] }; } };
-  const wake = async () => ({ ok: true });
-  await enqueueRepoWrite(tx, { orgId: "o", path: "marketing/offers/slo.md", content: "a" }, { wake });
-  await enqueueRepoWrite(tx, { orgId: "o", path: "marketing/offers/slo.md", content: "b" }, { wake });
+  await enqueueRepoWrite(tx, { orgId: "o", path: "marketing/offers/slo.md", content: "a" });
+  await enqueueRepoWrite(tx, { orgId: "o", path: "marketing/offers/slo.md", content: "b" });
   assert.notEqual(ids[0], ids[1]);
 });
 
 test("a path outside the marketing folders is refused before anything is written", async () => {
   const tx = { query: async () => { throw new Error("must not be called"); } };
   await assert.rejects(
-    enqueueRepoWrite(tx, { orgId: "o", path: "src/db.mjs", content: "x" }, { wake: async () => ({}) }),
+    enqueueRepoWrite(tx, { orgId: "o", path: "src/db.mjs", content: "x" }),
     /not allowed|refus/i
   );
-});
-
-test("a wake that throws never fails the save", async () => {
-  const tx = { query: async () => ({ rows: [{ id: "r" }] }) };
-  const r = await enqueueRepoWrite(tx, { orgId: "o", path: "marketing/offers/slo.md", content: "a" },
-    { wake: async () => { throw new Error("down"); } });
-  assert.equal(r.queued, true);
 });
 
 test("migration 408's old-ad tags match marketing/ads/registry.json and decision 9", () => {
