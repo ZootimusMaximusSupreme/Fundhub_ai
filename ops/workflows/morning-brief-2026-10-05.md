@@ -10,9 +10,9 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | ID | Owns | Waits on | Status |
 |---|---|---|---|
 | MB0 | Projection, spec, this board, to-do lines (cloud session, 2026-10-05) | — | done |
-| MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | pending — number received 2026-10-05 |
-| MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | pending |
-| MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | pending |
+| MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | blocked — Kickoff A ran in a cloud session 2026-10-05, not the Mac; the cloud was refused Netlify env access. Needs the Mac. |
+| MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | claimed — Kickoff A agent, 2026-10-05 (plan stage) |
+| MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | claimed — Kickoff A agent, 2026-10-05 (plan stage) |
 | MB4 | Cadence rules and AI ops suggestions | **Chris: yes on the cadence draft** | blocked |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | pending |
 
