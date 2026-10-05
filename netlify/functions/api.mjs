@@ -79,6 +79,7 @@ import readPartnerHomeTiles from "../../api/read/partner-home-tiles.mjs";
 import readPartnerTraining from "../../api/read/partner-training.mjs";
 import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
+import readSystemsCheck from "../../api/read/systems-check.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
 import staffMonitoringConsent from "../../api/staff/monitoring-consent.mjs";
 import staffAvatar from "../../api/staff/avatar.mjs";
@@ -106,6 +107,7 @@ import readFinanceAsk from "../../api/read/finance-ask.mjs";
 import readCompanyBrain from "../../api/read/company-brain.mjs";
 import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mjs";
 import readOpsPulse from "../../api/read/ops-pulse.mjs";
+import readOpsSuggestions from "../../api/read/ops-suggestions.mjs";
 import opsHireCloser from "../../api/ops/hire-closer.mjs";
 import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import companyBrainSync from "../../api/company-brain/sync.mjs";
@@ -455,6 +457,7 @@ export const ROUTES = {
   "read/partner-training": readPartnerTraining,
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
+  "read/systems-check": readSystemsCheck,
   "staff/telemetry": staffTelemetry,
   "staff/monitoring-consent": staffMonitoringConsent,
   "staff/avatar": staffAvatar,
@@ -571,6 +574,8 @@ export const ROUTES = {
   // Ops / AI COO v1. GET is read-only pulse + briefs. POST creates the
   // hire-closer task and LinkedIn post when packed. ROLE_SETS.OPS.
   "read/ops-pulse": readOpsPulse,
+  // AI ops suggestions for one morning (MB4, 432). Read only. ROLE_SETS.OPS.
+  "read/ops-suggestions": readOpsSuggestions,
   "ops/hire-closer": opsHireCloser,
 
   // Owner-only classification review queue (H-3). Also carries staff uploads
