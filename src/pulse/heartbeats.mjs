@@ -16,6 +16,7 @@ export const INNGEST_JOBS = Object.freeze([
   ["blake-lead-watch", "*/5 * * * *"],
   ["contract-chaser", "0 10 * * *"],
   ["daily-pulse", "0 13 * * *"],
+  ["evening-brief", "0 4 * * *"],
   ["message-dispatch-sweeper", "*/5 * * * *"],
   ["commas-inbox-drain", "* * * * *"],
   ["hiring-bench-sweeper", "30 13 * * *"],

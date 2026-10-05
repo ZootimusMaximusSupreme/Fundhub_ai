@@ -9,7 +9,7 @@
 import { inngest } from "./client.mjs";
 import { db as defaultDb } from "../db.mjs";
 import { PULSE_CRON, runDailyPulse } from "../pulse/daily-pulse.mjs";
-import { runMorningBrief } from "../ops/morning-brief.mjs";
+import { MORNING_BRIEF_LIVE, runMorningBrief } from "../ops/morning-brief.mjs";
 
 export { PULSE_CRON };
 
@@ -23,8 +23,14 @@ export async function handle({
   gateRelayDirs,
   sendSms,
   sendWhatsApp,
-  morningBrief = runMorningBrief
+  morningBrief = runMorningBrief,
+  briefLive = MORNING_BRIEF_LIVE
 } = {}) {
+  // Owner-set 2026-10-05: when the brief is live it REPLACES the pulse's own
+  // "Fundhub morning check" text — one text, not two. The audit still runs,
+  // writes its scorecard and agent_runs row, and the brief carries systems.
+  // While MORNING_BRIEF_LIVE is false the pulse text goes exactly as before.
+  const replacePulseText = !!(briefLive && db);
   const pulse = await step.run("run-pulse", () => runDailyPulse({
     db,
     env,
@@ -34,15 +40,17 @@ export async function handle({
     gateRelayDirs,
     sendSms,
     sendWhatsApp,
-    recordRun: !dryRun
+    recordRun: !dryRun,
+    sendPulseText: !replacePulseText
   }));
 
   // Step 2 — the morning brief (MB3). Runs after the pulse, from its result.
   // Dry-run (MORNING_BRIEF_LIVE is false): builds and saves the morning_briefs
-  // row, texts nothing. A failure here never undoes or hides the pulse.
+  // row, texts nothing. Live: this is the one morning text. A failure here
+  // never undoes or hides the pulse.
   if (db) {
     try {
-      await step.run("morning-brief", () => morningBrief({ db, env, pulse }));
+      await step.run("morning-brief", () => morningBrief({ db, env, pulse, kind: "morning", live: briefLive }));
     } catch (err) {
       console.error("[daily-pulse] morning brief failed:", String((err && err.message) || err).slice(0, 200));
     }
