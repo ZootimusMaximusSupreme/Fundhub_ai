@@ -15,7 +15,7 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | done — PR #22 merged 2026-10-05 |
 | MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | done — PR #29 merged 2026-10-05 |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | done — PR #31 merged 2026-10-05 |
-| MB6 | Evening brief (end-of-day text) + the brief replaces the old pulse text when live | MB3 (merged) | claimed — restarted 2026-10-05 (Chris: "let's get it done"), finishing draft PR #36 |
+| MB6 | Evening brief (end-of-day text) + the brief replaces the old pulse text when live | MB3 (merged) | done — PR #36 merged 2026-10-05 |
 
 
 **Runs at the same time:** MB1, MB2 and MB3 now. MB4 after his yes. MB5 after MB3.
@@ -308,3 +308,12 @@ Agents for Kickoff B are in `.claude/agents/` (mm-architect, mm-builder, mm-chor
 - Page `/app/morning-brief.html`, owner and admin only, in the Watch sidebar. Six parts in spec order, reds first, each number shows its source, all times Arizona, Morning/Evening switch.
 - `report_url` is now filled by `reportUrl(date, env)` in `src/ops/morning-brief.mjs`.
 - Tests: page test plus `e2e/morning-brief.spec.mjs` (6/6 Playwright with a stubbed API). Marked screenshots: `ops/workflows/morning-brief-2026-10-05-evidence/shots/*-MARKED.png`. No new failures after merging `main` (orchestrator run). Live-site proof waits for ship.
+
+### MB6 — Kickoff A agents, 2026-10-05 (PR #36, merged)
+
+- Evening brief "Good evening, Chris." at 9:00 p.m. Arizona (`EVENING_BRIEF_CRON = "0 4 * * *"` UTC), run by `src/workflows/evening-brief.mjs` and registered in `src/workflows/index.mjs`. Same builder as the morning (`kind`), covering today so far. Its systems section comes from the stored morning scorecard. The pulse never runs twice.
+- When `MORNING_BRIEF_LIVE` is true, the brief replaces the old pulse text (`sendPulseText` option in `src/pulse/daily-pulse.mjs`). While it is false, the old text goes out as before.
+- `src/ops/brief-offers.mjs`: ad and sales numbers per offer and per funnel. Anything that can't be split shows once under "all offers," with the reason. Suggestions come from MB4's `buildSuggestions`.
+- Migration 433 `morning_briefs.kind`: one row per company, day and kind; the greeting must match the kind. The endpoint takes `kind=` and returns it. Both texts end with "Full report: <url>". The page renders the evening brief and the grouped layout.
+- Tests (orchestrator, head d9480ad): lint and tsc clean, journeys up to date. No-database suite: 12142 pass and 32 fail, the same names as `main`. Scratch Postgres as `fundhub_app`: 36/36 brief, offer, suggestion, scorecard, heartbeat and system-check pg tests pass; `guard:db` 3/3, `guard:rls` 4/4. Playwright 8/8.
+- The first MB6 agent was stopped mid-work. The second hit a usage limit after pushing its finished commit, and the orchestrator verified that commit.
