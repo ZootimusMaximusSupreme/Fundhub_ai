@@ -591,12 +591,12 @@ The Capital Blueprint monthly fee is still open and isn't in this spec.
   - `meta_campaign_ids` (text[]), `ad_set_external_id`
   - `format_mix`, `cta_type` (default 'LEARN_MORE'), `weight` (default 1), `min_per_batch` (default 3), `test_key` (offers with the same key are tested against each other)
   - timestamps
-- **Seed three offers, as `live`:**
+- **Seed three offers.** Direct Book and SLO start `live`. Blueprint starts `draft` with a Make page request for its own page. It moves to `testing` once Chris approves its card, so its scripts get written and filmed while the page is built, and its ads load once the page is live (§17 decision 8):
 
   | tag | name | structure | first page | lane | registry tags | mix |
   |---|---|---|---|---|---|---|
   | `direct_book` | Direct Book | `book_call` | `https://apply.fundhub.ai/watch` | `sorting` | `rules.sorting` | `{"standard":2,"sorting":1}` |
-  | `blueprint` | Blueprint | `book_call` | `https://apply.fundhub.ai/watch` (§17 decision 8) | `uwiq` | `rules.uwiq` | `{"standard":1}` |
+  | `blueprint` | Blueprint | `book_call` | Blueprint's own page, made with Make page (§17 decision 8) | `uwiq` | `rules.uwiq` | `{"standard":1}` |
   | `slo` | SLO | `direct_buy` | `https://apply.fundhub.ai/roadmap` | `uwiq` | `rules.sorting` (SLO buyers book a call after buying, and the closer can sell anything) | `{"standard":1}` |
 
   The builder fills the other step pages from `marketing/landing-pages/`. A page it can't confirm stays blank and shows as missing on the card.
@@ -843,7 +843,7 @@ The Offers tab lists what's missing for each offer, so a new offer is one screen
 |---|---|
 | Direct Book (`direct_book`) | The sorting-hat ads are about phases: no education yet → learn; educated with a low score → fix the file; file ready → fund; already funded → max funding. The ad asks them to watch the video and book the call. No product lead, and no price. Sources: RULES.md and `marketing/ads/scripts/book-a-call-final-2026-10-03.md`. |
 | SLO (`slo`) | The page sells the roadmap: credit analysis, the dispute letter pack, the optimization roadmap, the funding snapshot and the bank and lender match list. $147, with $297 crossed out. The refund line is "if you're not happy with what you get, email us and we'll refund you", with no day count. The ad asks them to get the roadmap on the page. Sources: `marketing/landing-pages/slo/`. |
-| Blueprint (`blueprint`) | The accountability system that walks a client through each step, with a CSM and check-ins, for files in the 550s–700s. The ad asks them to book the call, where the closer sells it. No price and no timeline. Sources: `docs/finance/capital-blueprint-*.md` and the uwiq-lane scripts (`registry.json` lists their numbers). |
+| Blueprint (`blueprint`) | The accountability system that walks a client through each step, with a CSM and check-ins, for files in the 550s–700s. The ad sends them to Blueprint's own page, which books the call where the closer sells it. That page doesn't exist yet, so the card comes with a Make page request. No price and no timeline. Sources: `docs/finance/capital-blueprint-*.md` and the uwiq-lane scripts (`registry.json` lists their numbers). |
 
 Chris approves each card once in the Offers tab before the first batch (§16). After that he edits cards there, and each save goes to the repo through the outbox.
 
@@ -970,7 +970,7 @@ The writer lives in `src/marketing/writer.mjs` and runs as worker jobs.
 **The check loop**
 1. Run `checkScriptText(..., {strict: true})`. Failures go back to Claude, for up to 2 rounds.
 2. A judge pass with `MARKETING_CHECK_MODEL` (default `claude-sonnet-5-5`) checks the rules a pattern can't catch: Appendix A rules 13–34, plus "round two", "carry" and "man". It also checks the script against its offer card:
-   - the CTA asks for what the card says the ad asks for (an SLO ad sends them to get the roadmap; a Direct Book or Blueprint ad sends them to book the call)
+   - the CTA asks for what the card says the ad asks for (an SLO ad sends them to get the roadmap, a Direct Book ad to book the call, and a Blueprint ad to Blueprint's page, which books the call)
    - the beats follow the card's order
    - no price, promise or proof the card doesn't allow, and nothing that belongs to another offer
 
@@ -1704,7 +1704,7 @@ Put these in `docs/marketing/metrics.md`, and test each one with fixture data.
    - muted autoplay
    - tap to unmute (the `#fh-unmute` ids)
    - both trackers record under the same `video_key`
-6. **The missing video.** `slo-02-booking.html:210` points to `slo-vsl3-repair.mp4`, which doesn't exist (§16).
+6. **The missing video.** `slo-02-booking.html:210` points to `slo-vsl3-repair.mp4`, which doesn't exist. Chris doesn't know where it is (2026-10-05), so an agent searches Drive for it by name first. If it isn't found, the page keeps its current link and the health card shows the file as missing.
 
 ### 12.2 Bot block (M6b)
 
@@ -1818,7 +1818,7 @@ Chris did all of this from the Teleprompter app and the Command Center. His only
 
 ## 16. Only Chris
 
-1. Buy the Apple developer account ($99 a year).
+1. Buy the Apple developer account ($99 a year). Chris is getting it (2026-10-05).
 2. Name the Bluetooth teleprompter remote you'll use, and test the rig once with the app.
 3. Submagic: agents test the stored key first. If it fails, get the plan with API access. Confirm "Hormozi 2".
 4. Approve the access an agent sets up in your browser:
@@ -1826,7 +1826,7 @@ Chris did all of this from the Teleprompter app and the Command Center. His only
    - a GitHub fine-grained token for the app
    - the Render service
 5. Buy the Remotion company license. Fundhub has more than 3 people, so automated renders need one.
-6. Send the missing roadmap-book video (`slo-vsl3-repair.mp4`), or say to remove it.
+6. Nothing for `slo-vsl3-repair.mp4` unless an agent can't find it in Drive (M6, the missing video).
 7. Say "commit it" so this chat puts the spec, the intended journey and the agent files on main.
 8. Answer §17.
 9. Before the first batch, approve the three offer cards in the Offers tab, one screen each.
@@ -1843,9 +1843,10 @@ Chris did all of this from the Teleprompter app and the Command Center. His only
 5. **Video worker on Render Standard,** about $25 a month: a 10-ad shoot is ready in about 3 hours. Pro is about $85 a month: about 1.5 hours.
 6. **Batch size:** 3 scripts a day in total, split across the running offers by spend, with at least 3 a week for each offer (21 a week). The other choice is 3 a day for each running offer (63 a week with three offers).
 7. **Temporary video files** in R2 (audio, cuts, Submagic exports) are deleted automatically after 30 days. Finished videos are kept forever.
-8. **Where Blueprint ads send people:** the book-a-call page (/watch), and the closer sells Blueprint on the call, which matches the uwiq lane's rule today. When Blueprint gets its own page, change the first page on its offer card.
+8. **Where Blueprint ads send people (Chris, 2026-10-05):** to Blueprint's own page, which books the call. Make page builds it from the card. Until it's live, Blueprint scripts are written and filmed, and its ads load once the page is up.
 9. **Tags on old ads:** the SLO ads 84–90 get `slo`. Registry ads in the sorting, funding600 and premium lanes get `direct_book`, and uwiq ads get `blueprint`. White-label ads stay untagged. Chris can change any of them on the Offers tab.
-10. **Lead levels:** cold → engaged → warm → pulled → client → funded (11.1). The repo has three older definitions (`src/config/lead-temperature.mjs`, the SLO drip lanes, and the vendored L0–L3). This one is for marketing numbers, and the SLO drip keeps its own lanes.
+10. **Lead levels:** cold → engaged → warm → pulled → client → funded (11.1). The repo has three older definitions (`src/config/lead-temperature.mjs`, the SLO drip lanes, and the vendored L0–L3). This one is for marketing numbers, and the SLO drip keeps its own lanes. Chris hasn't decided yet (2026-10-05), so this default stands, and so do the morning brief's draft cadence rules.
+11. **SLO (Chris, 2026-10-05):** it runs when Chris wants it. It starts live, and pausing it on the Offers tab stops its scripts.
 
 ---
 

@@ -71,7 +71,8 @@ const DYING_ADS_SQL = `
          a.name AS ad_name,
          m.date AS metric_date,
          m.video_plays,
-         m.video_p25_watched
+         m.video_p25_watched,
+         m.clicks
     FROM ads a
     JOIN LATERAL (
       SELECT date, video_plays, video_p25_watched, clicks

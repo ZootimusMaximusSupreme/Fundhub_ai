@@ -209,12 +209,17 @@ export async function sendInviteForApplication(db, {
 }
 
 /** Aggregate read — v_eeo_aggregate only. Never selects eeo_responses directly. */
-export async function fetchEeoAggregate(db, { roleKey = null } = {}) {
-  const params = [];
-  let where = "";
+/* Scoped to ONE company. v_eeo_aggregate carries org_id on every row, and this
+   used to return every company's cells to any caller (found 2026-10-05 by
+   src/http/read-endpoints-org-scope.test.mjs). It throws without an org rather
+   than quietly reading across companies. */
+export async function fetchEeoAggregate(db, { orgId, roleKey = null } = {}) {
+  if (!orgId) throw new Error("fetchEeoAggregate: orgId is required");
+  const params = [orgId];
+  let where = "WHERE org_id = $1::uuid";
   if (roleKey) {
     params.push(roleKey);
-    where = `WHERE role_key = $${params.length}`;
+    where += ` AND role_key = $${params.length}`;
   }
   const { rows } = await db.query(
     `SELECT org_id, role_key, race_ethnicity, gender, responses, hired, rejected,

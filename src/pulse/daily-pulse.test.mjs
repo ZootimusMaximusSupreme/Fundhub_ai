@@ -175,3 +175,79 @@ test("this module does not import the Ops Admin money pulse", () => {
   assert.doesNotMatch(src, /^import .*from ["'].*ops\/pulse/m);
   assert.doesNotMatch(src, /^import .*ops-pulse/m);
 });
+
+/* ── MB2 (2026-10-05): the rest of the system ─────────────────────────────── */
+
+test("customer pages: the right words pass, a 200 with the wrong words is red", async () => {
+  const { checkFunnelPages, FUNNEL_PAGES } = await import("./daily-pulse.mjs");
+  const pages = FUNNEL_PAGES.slice(0, 2);
+  const rows = await checkFunnelPages({
+    applyBaseUrl: "https://apply.fundhub.ai",
+    pages,
+    fetchImpl: async (url) => String(url).endsWith("/roadmap")
+      ? { status: 200, text: async () => "<h1>I&#39;ll Show You How to <b>Get Funding</b> Forever!</h1>" }
+      : { status: 200, text: async () => "<h1>Page not found</h1>" }
+  });
+  assert.equal(rows[0].status, "PASS");
+  assert.equal(rows[0].group, "front_doors");
+  assert.equal(rows[1].status, "FAIL");
+  assert.ok(rows[1].customerSees);
+});
+
+test("the VSL check is a two-byte range read and needs a video type", async () => {
+  const { checkVslFiles } = await import("./daily-pulse.mjs");
+  const seen = [];
+  const rows = await checkVslFiles({
+    baseUrl: "https://fundhub.ai",
+    files: ["/funnel/a.mp4", "/funnel/b.mp4"],
+    fetchImpl: async (url, init) => {
+      seen.push(init.headers.range);
+      return String(url).endsWith("a.mp4")
+        ? { status: 206, headers: new Headers({ "content-type": "video/mp4" }) }
+        : { status: 404, headers: new Headers({ "content-type": "text/html" }) };
+    }
+  });
+  assert.deepEqual(seen, ["bytes=0-1", "bytes=0-1"]);
+  assert.deepEqual(rows.map((r) => r.status), ["PASS", "FAIL"]);
+});
+
+test("the morning text counts green, red and not checked — a skip is never a pass", async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-"));
+  const result = await runDailyPulse({
+    dryRun: true,
+    now: new Date("2026-10-05T13:00:00Z"),
+    fetchImpl: fakeFetch(LIVE_PAGES),
+    boardDir: tmp,
+    env: {},
+    gateRelayDirs: null,
+    recordRun: false,
+    probesImpl: async () => []
+  });
+  assert.equal(result.scorecard.date, "2026-10-05");
+  const nc = result.scorecard.checks.filter((c) => c.status === "not_checked");
+  assert.ok(nc.length > 0, "no database and no keys must show as not checked");
+  assert.ok(nc.every((c) => c.reason && !c.proof));
+  assert.ok(result.scorecard.checks.filter((c) => c.status === "green").every((c) => c.proof));
+  assert.ok(result.scorecard.checks.some((c) => c.id === "mac-repo" && c.status === "not_checked"));
+  assert.match(result.sms.body, new RegExp(`${result.counts.not_checked} not checked`));
+  assert.match(result.sms.body, /green/);
+  assert.doesNotMatch(result.sms.body, /pulse board/);
+  assert.equal(result.stored.saved, false, "a dry run never writes the morning record");
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("one broken check becomes one red row, not a missing morning", async () => {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-"));
+  const result = await runDailyPulse({
+    dryRun: true,
+    fetchImpl: fakeFetch(LIVE_PAGES),
+    boardDir: tmp,
+    env: {},
+    recordRun: false,
+    probesImpl: async () => { throw new Error("probe exploded"); }
+  });
+  const row = result.scorecard.checks.find((c) => c.id === "outside");
+  assert.equal(row.status, "red");
+  assert.match(row.proof, /probe exploded/);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});

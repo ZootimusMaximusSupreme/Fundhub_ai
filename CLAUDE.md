@@ -223,6 +223,10 @@ When Chris asks to change a page, he sees a marked draft before anything goes li
 
 Clarity Data Export: one pull per time Chris asks. Go through `src/adapters/clarity-export.mjs` only. Do not curl or fetch `https://www.clarity.ms/export-data` yourself. Do not retry. If that one pull fails, say the error and stop. Also never exceed Microsoft's 10 requests per project per day; the helper blocks call 11 before any HTTP request. Same law: `.cursor/rules/clarity-export-rate-limit.mdc` and `.claude/rules/clarity-export-rate-limit.md`.
 
+### Change cadence (owner-set 2026-10-05)
+
+The 8 cadence rules are starting defaults: nothing changes by itself, broken things get fixed the same day, budget moves are small and slow, pages change weekly, and at most 3 AI ops suggestions a morning, biggest dollar impact first. Light guardrails; Chris tunes the numbers later from proven data. Same law: `.cursor/rules/change-cadence.mdc` and `.claude/rules/change-cadence.md`.
+
 ## 3. Before writing any code
 
 1. Read the relevant code. Symbol lookup before file reads (Grep patterns, not full file reads).
