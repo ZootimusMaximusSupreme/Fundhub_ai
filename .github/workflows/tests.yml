@@ -306,13 +306,18 @@ jobs:
         run: npm run guard:db
 
       # And does that translate into the policies actually applying? Isolation
-      # suites only — not the whole suite, which needs ownership.
+      # suites only. They SET UP as the owner (DATABASE_URL — their cleanup runs
+      # ALTER TABLE … DISABLE TRIGGER, which needs ownership) and ASSERT through
+      # APP_DATABASE_URL, the unprivileged role (src/testing/rls-pool.mjs). This
+      # step used to point DATABASE_URL at the app role too, so every setup hook
+      # failed with "must be owner of table action_log" and all its tests were
+      # cancelled — never observed because the migrate step failed first.
+      # --test-concurrency=1: these files share partner fixtures and toggle the
+      # same triggers, so they run one at a time, as `npm test` runs pg files.
       - name: Partner isolation, as the unprivileged app role
         if: always()
-        env:
-          DATABASE_URL: ${{ env.APP_DATABASE_URL }}
         run: |
-          node --test \
+          node --test --test-concurrency=1 \
             src/compliance/rls-bypass.pg.test.mjs \
             src/compliance/invariants.pg.test.mjs \
             src/http/creative-endpoints.pg.test.mjs \

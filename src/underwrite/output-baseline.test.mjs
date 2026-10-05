@@ -293,11 +293,16 @@ const BASELINE_NODE_PDFS = Object.freeze([
 ]);
 
 /** Every document a client receives, in order. [filename, type, bureau]. */
+/* The four analysis documents are hosted web pages, not PDFs. Owner decision
+   2026-09-05, final: "stop making PDFs" (docs/journeys/CHANGELOG.md). The pack
+   switched to them (src/underwrite/letter-pack.mjs uiqDeliverablePdfs, engine
+   "html"); this baseline was re-recorded to that decision on 2026-10-05. Same
+   four documents, same order. */
 const BASELINE_FUNDING_PACK = Object.freeze([
-  ["Credit-Analysis-Report.pdf",     "credit_analysis",  null],
-  ["Funding-Snapshot.pdf",           "funding_snapshot", null],
-  ["Bank-Lender-Match-List.pdf",     "lender_match",     null],
-  ["Credit-Optimization-Roadmap.pdf", "roadmap",         null],
+  ["credit_analysis_report.html",    "credit_analysis",  null],
+  ["funding_snapshot.html",          "funding_snapshot", null],
+  ["lender_match_list.html",         "lender_match",     null],
+  ["optimization_roadmap.html",      "roadmap",          null],
   // Recorded 2026-10-02 with the change that added it: the Business Duplication
   // Map rides right after the four analysis pages (src/underwrite/letter-pack.mjs).
   ["business_duplication_map.html",  "business_duplication_map", null],
@@ -541,8 +546,15 @@ describe("baseline — the document pack a client receives", () => {
     pinned(pack.deliverableSkip, null, "the funding analysis skip reason");
     pinned(pack.summarySkip, null, "the summary document skip reason");
     for (const file of pack.files) {
-      assert.equal(file.contentType, "application/pdf", file.filename);
-      assert.equal(file.content.subarray(0, 4).toString(), "%PDF", `${file.filename} is not a PDF`);
+      // Hosted pages are HTML (owner, 2026-09-05); letters and the summary are
+      // still PDFs. Each file is what its name says it is.
+      if (file.filename.endsWith(".html")) {
+        assert.equal(file.contentType, "text/html", file.filename);
+        assert.ok(file.content.length > 0, `${file.filename} is empty`);
+      } else {
+        assert.equal(file.contentType, "application/pdf", file.filename);
+        assert.equal(file.content.subarray(0, 4).toString(), "%PDF", `${file.filename} is not a PDF`);
+      }
     }
   });
 
