@@ -43,7 +43,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 26 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 95 routes]
+    WHO -->|Yes| CANT[Blocked — 96 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 8 blocked]
     CANT --> B_banking[banking — 2 blocked]
@@ -64,7 +64,7 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_push[push — 3 blocked]
-    CANT --> B_read[Reading data — 19 blocked]
+    CANT --> B_read[Reading data — 20 blocked]
     CANT --> B_social[social — 3 blocked]
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 18 blocked]
@@ -73,7 +73,7 @@ flowchart TD
 
 ## What they can reach
 
-**163 of 258 routes.**
+**163 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -250,7 +250,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**95 of 258 routes.**
+**96 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -339,6 +339,7 @@ flowchart TD
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/slo-connections` | GET | owner, admin |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
+| `/api/read/systems-check` | GET | owner, admin |
 | `/api/slo-connections` | POST | owner, admin |
 | `/api/social/oauth` | — | owner, admin, partner |
 | `/api/social/posts` | GET, POST | employees: owner, admin<br>plus: partner |

@@ -112,7 +112,9 @@ test("registry: a GET ping writes up or down and never auto-fixes", async () => 
     fetchImpl: async (url) => {
       if (String(url).includes("/api/health")) return { status: 200 };
       if (String(url).includes("/app/pipeline.html")) return { status: 503 };
-      if (String(url).includes("/api/public/unsubscribe")) return { status: 400 };
+      if (String(url).includes("/api/public/unsubscribe")) {
+        return { status: 400, text: async () => '{"ok":false,"error":"token_required"}' };
+      }
       return { status: 404 };
     }
   });
@@ -124,4 +126,36 @@ test("registry: a GET ping writes up or down and never auto-fixes", async () => 
   assert.equal(pipeline.status, "down");
   assert.match(pipeline.suggestedFix, /Do not auto-fix/);
   assert.ok(checks.every((c) => c.kind === "registry"));
+});
+
+/* Tightened 2026-10-05 (MB2, spec gap 1). A refusal counts as up only when it
+   is the app's own refusal: JSON with ok:false or an error string. A 401 or 405
+   page from a gateway, Netlify or a crash is down. */
+test("registry: a refusal is up only when our own handler sent it", async () => {
+  const rows = [
+    { id: "read/a", kind: "api", path: "/api/read/a" },
+    { id: "read/b", kind: "api", path: "/api/read/b" },
+    { id: "read/c", kind: "api", path: "/api/read/c" },
+    { id: "read/d", kind: "api", path: "/api/read/d" },
+    { id: "read/e", kind: "api", path: "/api/read/e", expect: [401] }
+  ];
+  const answers = {
+    "/api/read/a": { status: 401, text: async () => '{"ok":false,"error":"unauthorized"}' },
+    "/api/read/b": { status: 401, text: async () => "<html>Unauthorized</html>" },
+    "/api/read/c": { status: 405, text: async () => "" },
+    "/api/read/d": { status: 403, text: async () => '{"ok":false,"error":"forbidden"}' },
+    "/api/read/e": { status: 405, text: async () => '{"ok":false,"error":"method_not_allowed"}' }
+  };
+  const checks = await checkRegistry({
+    rows,
+    baseUrl: "https://fundhub.ai",
+    fetchImpl: async (url) => answers[String(url).replace("https://fundhub.ai", "")]
+  });
+  const by = Object.fromEntries(checks.map((c) => [c.id, c]));
+  assert.equal(by["reg:read/a"].status, "up");
+  assert.equal(by["reg:read/b"].status, "down");
+  assert.match(by["reg:read/b"].detail, /not with the app's own refusal/);
+  assert.equal(by["reg:read/c"].status, "down");
+  assert.equal(by["reg:read/d"].status, "up");
+  assert.equal(by["reg:read/e"].status, "down", "a row's own expect list wins");
 });
