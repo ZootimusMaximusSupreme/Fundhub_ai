@@ -13,7 +13,27 @@
 // ?pass=hourly reads the last 3 days; ?pass=nightly reads 28. Any other value is
 // refused: the caller names a pass, never a number of days.
 
+import { db as defaultDb } from "../../src/db.mjs";
+import { recordHeartbeat } from "../../src/pulse/heartbeats.mjs";
 import { sweep, PASSES } from "../../src/workflows/meta-campaign-sync-sweeper.mjs";
+
+/* The pull's own result, written under the clock's job name
+   (src/pulse/heartbeats.mjs NETLIFY_JOBS). It lands after the clock's "woke
+   it" heartbeat, so a pull that fails is the newest heartbeat and the job is
+   red in the daily pulse. A pass where some partners failed is an error too. */
+export function heartbeatFor(result) {
+  if (!result || !result.ok) {
+    return { outcome: "error", error: (result && result.error) || "the pull did not run" };
+  }
+  const failed = Array.isArray(result.errored) ? result.errored : [];
+  if (failed.length) {
+    return {
+      outcome: "error",
+      error: `${failed.length} of ${result.partners} partners failed: ${String(failed[0].error || "").slice(0, 200)}`
+    };
+  }
+  return { outcome: "ok", error: null };
+}
 
 export const AUTH_HEADER = "x-fundhub-worker";
 
@@ -26,6 +46,8 @@ function passFrom(req) {
 }
 
 export async function handler(req, _ctx, deps = {}) {
+  const startedAt = new Date();
+  const db = deps.db || defaultDb;
   const env = deps.env || process.env;
   const run = deps.sweep || sweep;
   const expected = env.MARKETING_WORKER_SECRET || "";
@@ -48,6 +70,13 @@ export async function handler(req, _ctx, deps = {}) {
   if (!result.ok) console.error(`[meta-sync-background] ${pass} pass failed: ${result.error}`);
   else console.log(`[meta-sync-background] ${pass} pass: ${result.synced}/${result.partners} partners, ` +
     `${result.ads} ads, ${result.days_of_numbers} days of numbers, ${result.errored.length} with errors`);
+
+  const beat = heartbeatFor(result);
+  await recordHeartbeat(db, {
+    job: "meta-sync-sweeper", runner: "netlify", startedAt,
+    outcome: beat.outcome, error: beat.error,
+    itemCount: Number.isInteger(result.days_of_numbers) ? result.days_of_numbers : null
+  });
 
   return new Response(JSON.stringify({ ...result, pass }), {
     status: 200, headers: { "content-type": "application/json" }
