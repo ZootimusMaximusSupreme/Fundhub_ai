@@ -4,6 +4,8 @@
 // in the window", not a invented sample. Cost-per-funded needs ad spend rows
 // (migration 038); when spend is unknown the field is null with a reason.
 
+import { asStaff } from "../partners/rls.mjs";
+
 /**
  * daysForPeriod(period) → number of days to look back (inclusive of today).
  * @param {"today"|"7d"|"30d"|"qtd"|string} period
@@ -41,10 +43,11 @@ export function periodWords(period) {
 }
 
 /**
- * computeKpis(db, { orgId, period }) → plain object of KPI values.
+ * computeKpis(db, { orgId, period, staffScope }) → plain object of KPI values.
  * Money fields are integer cents. Rates are 0–1 floats or null.
+ * staffScope runs the ad spend read (default asStaff, src/partners/rls.mjs).
  */
-export async function computeKpis(db, { orgId, period = "7d" } = {}) {
+export async function computeKpis(db, { orgId, period = "7d", staffScope = asStaff } = {}) {
   if (!orgId) throw new TypeError("computeKpis: orgId required");
   const days = daysForPeriod(period);
 
@@ -105,13 +108,17 @@ export async function computeKpis(db, { orgId, period = "7d" } = {}) {
           AND created_at >= now() - ($2::int || ' days')::interval`,
       [orgId, days]
     ),
-    db.query(
+    /* ad_metrics_daily carries partner row-level security (046). On the app's
+       database role with no actor stamped it reads EMPTY — spend $0, not an
+       error — so this one read runs inside a staff scope, the way
+       src/ops/brief-offers.mjs (loadOfferNumbers) reads the ad tables. */
+    staffScope((tx) => tx.query(
       `SELECT COALESCE(SUM(spend_cents), 0)::bigint AS cents
          FROM ad_metrics_daily
         WHERE org_id = $1
           AND date >= (CURRENT_DATE - ($2::int - 1))`,
       [orgId, days]
-    ).catch(() => ({ rows: [{ cents: null }] }))
+    )).catch(() => ({ rows: [{ cents: null }] }))
   ]);
 
   // transactions.amount_paid is dollars (numeric 14,2), not cents.
