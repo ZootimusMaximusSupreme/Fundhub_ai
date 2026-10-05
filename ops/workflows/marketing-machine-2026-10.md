@@ -16,7 +16,7 @@ change manifest and blockers in their final message; the orchestrator copies the
 
 | Lane | Now | Next |
 |---|---|---|
-| A | M0.1 **blocked** (needs Chris's direct OK to edit CLAUDE.md and rule files); M0.2 and M0.3 **running** | M0.4 after M0.3 |
+| A | M0.1 **blocked** — Chris said yes; Auto mode still blocks saving rule files (needs mode switched to Accept edits). M0.2 running. M0.3 → PR #21 in review | M0.4 after M0.3 merges |
 | B | **running** — 9.1 state machine; merges after the CI fix | 9.2 aligner |
 | C | **running** — M0 step 6 (CI fix) | M6a, Appendix C lists, M6b |
 | D | 11.4 done → PR #19 reviewed, no blockers; merges after the CI fix | waiting — 11.1 needs M0 step 5 merged; 7.10 brain parts need M0 step 3 |
@@ -35,7 +35,7 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 |---|---|---|---|---|---|
 | M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | blocked | |
 | M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | claimed | |
-| M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | claimed | |
+| M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | done (in review) | #21 | |
 | M0.4 | Clock, worker, buzz, model client | A | mm-builder | pending | |
 | M0.5 | Meta v26.0, sync, ad-number resolver, tag views | A | mm-architect | pending | |
 | M0.6 | CI that actually checks work | C | mm-architect | claimed | |
@@ -96,7 +96,7 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 | Step | What | Agent | Status | PR |
 |---|---|---|---|---|
 | 12.1 | M6a videos off Netlify (R2) — needs `CLOUDFLARE_R2_API_TOKEN` (§16 item 4) | mm-builder | pending | |
-| App C | Bot policy lists | mm-chore | claimed | |
+| App C | Bot policy lists | mm-chore | done (review: no blockers; 3 small fixes in progress) | #20 | |
 | 12.2 | M6b bot block | mm-builder | pending | |
 
 ### M7 / M8 (lane D; screens in E)
@@ -112,6 +112,15 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 
 (Filled in by the orchestrator from each agent's final message.)
 
+### M0.3 — PR #21 (lane A, mm-builder)
+- `db/migrations/407_marketing_machine_tables.sql`: marketing_settings, marketing_offers, marketing_jobs, marketing_requests, marketing_buzzes, marketing_model_usage, ad_offer_tags, agent_requests, marketing_shoots (402/403 pattern; tag/org immutable trigger).
+- `db/migrations/408_marketing_offers_seed.sql`: direct_book, blueprint, slo live; decision-9 tags (slo 84–90; direct_book 13 ads; blueprint 26–31; white-label 72–76 untagged).
+- `api/marketing/settings.mjs`, `api/marketing/offers.mjs` (ROUTES, PULSE_REGISTRY, `ROLE_SETS.MARKETING`); `src/marketing/{settings,offers,requests,repo-writes,pg-fixture}.mjs`.
+- Tests: 16 unit + 22 pg, all pass on a scratch database. New `docs/journeys/marketing-machine-flow.md`.
+
+### Appendix C — PR #20 (lane C, mm-chore)
+- `src/config/bot-policy.mjs` + `bot-policy.test.mjs`. Parity with Appendix C checked by the reviewer (34 AI crawlers, 2 opt-outs, 12 scrapers, 11 previews/ad review, 4 search engines).
+
 ### 11.4 — PR #19 (lane D, mm-builder)
 - New `db/migrations/424_clarity_export_counter.sql`: table `clarity_export_calls` (org_id, project_id, day_utc; calls, machine_calls), 402/403 pattern. Manifest regenerated.
 - New `src/analytics/clarity-counter.mjs`: one atomic upsert; Microsoft cap 10/day and sweeper cap 2/day.
@@ -124,6 +133,11 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 - Found on main (handed to lane C): fresh `db/migrate.mjs` fails at `114_crm_agent_seed.sql` ("VALUES lists must all be the same length").
 
 ## Blockers and open questions
+
+- **M0.1 (update 2026-10-05):** Chris said yes in chat. The session's Auto-mode check still blocked the commit and the `.claude/rules/chris-word-wins.md` file ("Self-Modification"). Edits sit uncommitted in the M0.1 worktree, plus `.cursor/rules/chris-word-wins.mdc` and the CLAUDE.md "Chris's word wins" line. Waiting on Chris to switch the mode to Accept edits.
+- **M0.3 agent once started a bare `npm test` with the live `DATABASE_URL`;** it says it killed it within seconds, in the unit phase, with no database connection.
+- **M0.3 hookup pending:** `enqueueRepoWrite` in `src/marketing/repo-writes.mjs` is a stub until M0.2 (outbox) merges. Swap the body only.
+- **No SLO product key** in `src/config/offers.mjs`; SLO checkout step uses `diagnostic` (14700 cents).
 
 - **M0.1 blocked (2026-10-05).** The permission system refused the agent's commit: every M0.1 change edits CLAUDE.md, `.claude/rules/` or `.cursor/rules/`, and it would not accept the orchestrator's task as approval. It also refused the new "Chris's word wins" law (1b). Edits 1a, 1c–1f are done but uncommitted in the agent's worktree. Needs Chris's own yes.
 - **Live database in the cloud env.** This cloud session has `DATABASE_URL` set to the live Supabase pooler. Every agent was told to blank it for tests. No agent reports running a test against it.
