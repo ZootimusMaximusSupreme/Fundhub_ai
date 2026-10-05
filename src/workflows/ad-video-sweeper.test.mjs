@@ -94,7 +94,7 @@ describe("walk", () => {
        leaves a mark behind instead of a row that says nothing happened. */
     const patches = [];
     const store = fakeStore({
-      pending: [{ id: "r1", status: "staged", staged_at: "2026-09-22T10:00:00Z", drive_raw_file_id: "d1" }],
+      pending: [{ id: "r1", status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "2026-09-22T10:00:00Z", drive_raw_file_id: "d1" }],
       onPatch: (id, fields) => patches.push([id, fields])
     });
     const res = await walk(noDb, {
@@ -188,7 +188,7 @@ describe("walk", () => {
     const store = fakeStore({
       pending: [
         { id: "r1", status: "raw_landed", drive_raw_file_id: "d1" },
-        { id: "r2", status: "staged", staged_at: "2026-09-22T10:00:00Z", drive_raw_file_id: "d2" }
+        { id: "r2", status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "2026-09-22T10:00:00Z", drive_raw_file_id: "d2" }
       ]
     });
     const res = await walk(noDb, {
@@ -201,6 +201,52 @@ describe("walk", () => {
     });
     assert.equal(res.per.length, 2);
     assert.equal(res.advanced, 1);
+  });
+
+  test("a row the database refuses even a note for does NOT stop the pass", async () => {
+    /* Migration 416's NOT VALID ad_videos_identified_ck still checks every
+       UPDATE, so an old-order row at editing with no ad number refuses even a
+       note-only write. That row is reported; the rows behind it still move. */
+    const moved = [];
+    const store = fakeStore({
+      pending: [
+        { id: "bad", status: "editing", drive_raw_file_id: "d0" },
+        { id: "r2", status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "2026-09-22T10:00:00Z", drive_raw_file_id: "d2" }
+      ],
+      onPatch: (id, f) => {
+        if (id === "bad") throw new Error('violates check constraint "ad_videos_identified_ck"');
+        if (f.status) moved.push([id, f.status]);
+      }
+    });
+    const res = await walk(noDb, {
+      store,
+      ports: {
+        ...portsFor({ env: {}, naming }),
+        drive: { downloadFile: async () => ({ ok: true, bytes: new Uint8Array([1]), byteLength: 1 }) },
+        submagic: { createProjectFromFile: async () => ({ ok: true, projectId: "p9" }) }
+      }
+    });
+    assert.equal(res.ok, true);
+    assert.equal(res.per.length, 2);
+    const bad = res.per.find((p) => p.id === "bad");
+    assert.equal(bad.ok, false);
+    assert.match(bad.note, /could not be written.*identified_ck/);
+    assert.deepEqual(moved, [["r2", "editing"]], "the row behind the refused one still moves");
+  });
+
+  test("a sweep with one refused row still runs the rebuzz loop", async () => {
+    let rebuzzAsked = false;
+    const store = fakeStore({
+      pending: [{ id: "bad", status: "editing", drive_raw_file_id: "d0" }],
+      onPatch: () => { throw new Error("refused"); }
+    });
+    store.listPending = async (_db, opts) => {
+      if (opts?.states) { rebuzzAsked = true; return []; }
+      return [{ id: "bad", status: "editing", drive_raw_file_id: "d0" }];
+    };
+    const res = await sweep(noDb, { env: {}, store, naming });
+    assert.equal(res.ok, true);
+    assert.equal(rebuzzAsked, true);
   });
 
   test("a store missing listPending/patch is named", async () => {

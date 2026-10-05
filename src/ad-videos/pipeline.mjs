@@ -265,6 +265,16 @@ export async function submagicCreate(row, {
      one take, one of them still perfectly good. Moving straight to `editing`
      is the diagram's own arrow, without the upload. */
   if (has(row.submagic_project_id)) return ok({ status: "editing" }, "already at Submagic — resuming");
+  /* ONLY A CUT MASTER GOES TO SUBMAGIC (spec §9.1, owner decision 10). A row at
+     `staged` with no cut_at is an old-order take: staged used to mean "the raw
+     file is ready", and uploading it now would caption an uncut take. Nothing
+     is sent; scripts/ad-videos-move-in-flight-9-1.mjs moves it back. */
+  if (!has(row.cut_at)) {
+    return wait(
+      "this take has no cut master yet (cut_at is empty), so nothing was sent to Submagic. " +
+      "Only a cut master is captioned. An old-order take here is moved back by scripts/ad-videos-move-in-flight-9-1.mjs."
+    );
+  }
   if (!submagic?.createProjectFromFile) return wait("the Submagic provider was not supplied");
 
   /* A CLAIM STANDING WITH NO PROJECT ID IS A CRASH MID-UPLOAD, and it is the

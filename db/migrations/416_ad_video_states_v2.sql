@@ -81,6 +81,9 @@ BEGIN
   IF NOT EXISTS (
     SELECT 1 FROM ad_videos
      WHERE status IN ('cut', 'staged', 'editing', 'rendered', 'animated', 'awaiting_approval')
+       -- NULLs are distinct in a unique index, so rows with no ad number can
+       -- never collide and must not stop the index being built.
+       AND ad_id IS NOT NULL
      GROUP BY org_id, ad_id
     HAVING count(*) > 1
   ) THEN

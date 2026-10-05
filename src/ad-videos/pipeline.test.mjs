@@ -61,7 +61,7 @@ describe("the state table", () => {
   });
 
   test("a step that throws is caught and reported as retryable", async () => {
-    const out = await advance(row({ status: "staged", staged_at: "2026-09-22T10:00:00Z" }), {
+    const out = await advance(row({ status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "2026-09-22T10:00:00Z" }), {
       drive: { downloadFile: async () => okish({ bytes: new Uint8Array([1]), byteLength: 1 }) },
       claim: async () => true,
       submagic: { createProjectFromFile: () => { throw new Error("boom"); } }
@@ -135,7 +135,7 @@ describe("staging", () => {
 
 describe("Submagic", () => {
   test("create moves staged to editing and keeps the project id", async () => {
-    const out = await submagicCreate(row({ status: "staged", staged_at: "2026-09-22T10:00:00Z" }), {
+    const out = await submagicCreate(row({ status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "2026-09-22T10:00:00Z" }), {
       drive: { downloadFile: async () => okish({ bytes: new Uint8Array([1]), byteLength: 1 }) },
       claim: async () => true,
       submagic: { createProjectFromFile: async () => okish({ projectId: "proj9" }) }
@@ -150,7 +150,7 @@ describe("Submagic", () => {
      is the whole point of the staging build: the take is never world-readable
      and Submagic never has to fetch anything from us. */
   describe("the upload route — bytes, not a link", () => {
-    const staged = row({ status: "staged", staged_at: "2026-09-22T10:00:00Z", drive_raw_name: "IMG_4471.mov" });
+    const staged = row({ status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "2026-09-22T10:00:00Z", drive_raw_name: "IMG_4471.mov" });
     const bytes = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]); // an MP4 `ftyp` header
 
     test("the take is pulled from Drive and pushed to Submagic", async () => {
@@ -202,7 +202,7 @@ describe("Submagic", () => {
     });
 
     test("no Drive file is a dead end, said out loud", async () => {
-      const out = await submagicCreate(row({ status: "staged", staged_at: "t", drive_raw_file_id: null }), {
+      const out = await submagicCreate(row({ status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "t", drive_raw_file_id: null }), {
         submagic: { createProjectFromFile: async () => okish({}) }, env: {}
       });
       assert.equal(out.patch.status, "failed");
@@ -344,6 +344,21 @@ describe("the marketing-machine order (spec §9.1)", () => {
     }
   });
 
+  test("an uncut take at staged is NEVER sent to Submagic", async () => {
+    let downloaded = false;
+    let created = false;
+    const out = await submagicCreate(row({ status: "staged", staged_at: "t", cut_at: null }), {
+      claim: async () => true,
+      drive: { downloadFile: async () => { downloaded = true; return okish({ bytes: new Uint8Array([1]) }); } },
+      submagic: { createProjectFromFile: async () => { created = true; return okish({ projectId: "p" }); } }
+    });
+    assert.equal(downloaded, false);
+    assert.equal(created, false);
+    assert.equal(out.ok, false);
+    assert.equal(out.retryable, true);
+    assert.match(out.error, /no cut master/);
+  });
+
   test("an old-order take at editing with no cut is NOT exported", async () => {
     let exported = false;
     const out = await captionAndExport(row({ status: "editing", submagic_project_id: "p1" }), {
@@ -458,7 +473,7 @@ describe("running it twice", () => {
 
   test("a row already at Submagic does not get a SECOND PROJECT (a paid minute)", async () => {
     let called = false;
-    await submagicCreate(row({ status: "staged", staged_at: "t", submagic_project_id: "p1" }), {
+    await submagicCreate(row({ status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "t", submagic_project_id: "p1" }), {
       claim: async () => true,
       drive: { downloadFile: async () => okish({ bytes: new Uint8Array([1]), byteLength: 1 }) },
       submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p2" }); } }
@@ -509,7 +524,7 @@ describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
      answers. Every test here is about the ORDER of those two things, which is
      the only thing that makes the guard real. */
 
-  const staged = row({ status: "staged", staged_at: "2026-09-22T10:00:00Z" });
+  const staged = row({ status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "2026-09-22T10:00:00Z" });
   const bytes = new Uint8Array([0, 0, 0, 24, 102, 116, 121, 112]);
   const drive = { downloadFile: async () => okish({ bytes, byteLength: bytes.byteLength }) };
   const matched = row({ status: "matched", submagic_project_id: "p1" });
@@ -563,7 +578,7 @@ describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
        still be running behind it. The case this test is about is the one where
        something might be. */
     const out = await submagicCreate(row({
-      status: "staged", staged_at: "t", submagic_claimed_at: new Date().toISOString()
+      status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "t", submagic_claimed_at: new Date().toISOString()
     }), {
       drive, claim: async () => true,
       submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
@@ -584,7 +599,7 @@ describe("THE MARK GOES DOWN BEFORE THE MONEY GOES OUT", () => {
     let called = false;
     const stale = new Date(Date.now() - 21 * 60 * 1000).toISOString();
     const out = await submagicCreate(row({
-      status: "staged", staged_at: "t", submagic_claimed_at: stale
+      status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "t", submagic_claimed_at: stale
     }), {
       drive, claim: async () => true,
       submagic: { createProjectFromFile: async () => { called = true; return okish({ projectId: "p9" }); } },
@@ -693,7 +708,7 @@ describe("NOTHING IS EVER PUBLISHED TO GET A TAKE EDITED", () => {
     let uploaded = false;
     const bytes = new Uint8Array([1, 2, 3]);
     const out = await submagicCreate(row({
-      status: "staged", staged_at: "t", source_url: "https://drive.usercontent.google.com/download?id=x"
+      status: "staged", cut_at: "2026-10-05T00:00:00Z", staged_at: "t", source_url: "https://drive.usercontent.google.com/download?id=x"
     }), {
       drive: { downloadFile: async () => okish({ bytes, byteLength: 3 }) },
       claim: async () => true,

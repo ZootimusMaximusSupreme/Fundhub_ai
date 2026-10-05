@@ -63,7 +63,7 @@ retry arrow to keep it readable.
 | `transcribed` | match the words to a script; take number from "Take N" in the name, else the next free number (`store.nextFreeTakeNo`). The raw file is **not** renamed | `matched` | `pipeline.mjs` `matchAndRename()` |
 | `matched` | `planCut` — **not built (9.2)**, waits | `cut` or `merged` | `pipeline.mjs` `NOT_BUILT_YET` |
 | `cut` | `buildMaster` — **not built (9.3)**, waits | `staged` (or back to `transcribed`) | `pipeline.mjs` `NOT_BUILT_YET` |
-| `staged` | Submagic create, `autoRender:false` | `editing` | `pipeline.mjs` `submagicCreate()` |
+| `staged` | Submagic create, `autoRender:false`. A row with no `cut_at` (old order) waits and nothing is sent | `editing` | `pipeline.mjs` `submagicCreate()` |
 | `editing` | claimed export with **no** Submagic b-roll, then webhook or poll. A row with no `cut_at` and no export (old order) waits and is never exported | `rendered` | `pipeline.mjs` `captionAndExport()` |
 | `rendered` | `animate` — **not built (9.4)**, waits | `animated` | `pipeline.mjs` `NOT_BUILT_YET` |
 | `animated` | mint the approval link, save, buzz | `awaiting_approval` | `ad-video-sweeper.mjs` `approvalLinks()` + `pipeline.mjs` `saveFinishedAndNotify()` |
@@ -79,7 +79,9 @@ staged, editing, rendered, animated or awaiting_approval per ad.
 transcribed and failed may be missing an ad number.
 
 **The pace.** A pass moves up to 40 rows (`DEFAULT_BATCH`, `TAKES_PER_PASS`) and
-stops starting new ones at 12 minutes (`PASS_BUDGET_MS`).
+stops starting new ones at 12 minutes (`PASS_BUDGET_MS`). A row the database
+refuses even a note for is reported in the pass result and the walk goes on to
+the next row.
 
 **Rows caught mid-pipeline by the change** are moved once by
 `scripts/ad-videos-move-in-flight-9-1.mjs` (dry run first): editing,

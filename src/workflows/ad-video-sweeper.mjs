@@ -198,6 +198,24 @@ export async function detect(database, { store, env = process.env, limit = DEFAU
   return { ok: true, detected, skipped: listed.skipped || 0 };
 }
 
+/* noteOnly — write the "what I tried and why" note, and never throw.
+
+   ONE ROW THE DATABASE REFUSES MUST NOT STOP THE PASS. Measured in review of
+   migration 416: old-order rows at staged/editing with no ad number break the
+   NOT VALID ad_videos_identified_ck, which still checks every UPDATE — so even
+   a note-only write on those rows is refused. Thrown out of walk(), that ended
+   the pass, skipped rebuzz(), and froze every row behind it until
+   scripts/ad-videos-move-in-flight-9-1.mjs ran. Now the refusal is reported
+   for that row and the walk goes on. */
+async function noteOnly(store, database, id, mark) {
+  try {
+    await store.patch(database, id, mark);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String((err && err.message) || err).slice(0, 300) };
+  }
+}
+
 /* walk — move each row one step, and write down what happened. */
 export async function walk(database, {
   store, ports, limit = DEFAULT_BATCH, budgetMs = PASS_BUDGET_MS, now = Date.now
@@ -265,14 +283,20 @@ export async function walk(database, {
            refused the row said nothing and the reason only existed in a
            function log. Write the note on its own so the row says why. */
         const why = String((err && err.message) || err).slice(0, 300);
-        await store.patch(database, row.id, {
+        const noted = await noteOnly(store, database, row.id, {
           ...mark, last_step_note: `could not save the result of ${out.step}: ${why}`
         });
-        per.push({ id: row.id, from: row.status, step: out.step, to: row.status, ok: false, note: why });
+        per.push({ id: row.id, from: row.status, step: out.step, to: row.status, ok: false,
+          note: noted.ok ? why : `${why}; the note could not be written either: ${noted.error}` });
         continue;
       }
     } else {
-      await store.patch(database, row.id, mark);
+      const noted = await noteOnly(store, database, row.id, mark);
+      if (!noted.ok) {
+        per.push({ id: row.id, from: row.status, step: out.step, to: row.status, ok: false,
+          note: `${out.note || out.error || "waited"}; the note could not be written: ${noted.error}` });
+        continue;
+      }
     }
     per.push({
       id: row.id,
