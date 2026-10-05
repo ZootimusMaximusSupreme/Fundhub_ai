@@ -45,7 +45,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 27 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 88 routes]
+    WHO -->|Yes| CANT[Blocked — 91 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 8 blocked]
     CANT --> B_banking[banking — 2 blocked]
@@ -64,7 +64,7 @@ flowchart TD
     CANT --> B_partners[partners — 1 blocked]
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_push[push — 3 blocked]
-    CANT --> B_read[Reading data — 14 blocked]
+    CANT --> B_read[Reading data — 17 blocked]
     CANT --> B_repair[repair — 4 blocked]
     CANT --> B_social[social — 3 blocked]
     CANT --> B_staff[staff — 2 blocked]
@@ -74,7 +74,7 @@ flowchart TD
 
 ## What they can reach
 
-**168 of 256 routes.**
+**168 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -256,7 +256,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**88 of 256 routes.**
+**91 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -328,12 +328,15 @@ flowchart TD
 | `/api/read/eeo-aggregate` | GET | owner, admin |
 | `/api/read/failed-events` | GET | owner, admin |
 | `/api/read/invoices` | GET | owner, admin, sales_manager |
+| `/api/read/morning-brief` | GET | owner, admin |
 | `/api/read/my-numbers` | GET | owner, admin, closer, sales_manager |
 | `/api/read/ops-pulse` | GET | owner, admin |
+| `/api/read/ops-suggestions` | GET | owner, admin |
 | `/api/read/partners` | GET | employees: owner, admin, sales_manager<br>plus: partner |
 | `/api/read/sales-floor` | GET | owner, admin, sales_manager |
 | `/api/read/slo-connections` | GET | owner, admin |
 | `/api/read/staff` | GET | owner, admin, sales_manager |
+| `/api/read/systems-check` | GET | owner, admin |
 | `/api/repair/enroll` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/exceptions` | GET, POST | owner, admin, inquiry_specialist |
 | `/api/repair/generate` | POST | owner, admin, closer, inquiry_specialist |

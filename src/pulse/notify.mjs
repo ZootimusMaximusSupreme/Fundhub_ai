@@ -40,12 +40,24 @@ export function darwinWhatsAppNumber(env = process.env) {
   return raw || null;
 }
 
-export function formatChrisSms({ date, pass = 0, fail = 0, skip = 0, topFails = [] } = {}) {
+/* With `counts` (the stored scorecard's green / red / not_checked), the line
+   says those three words: a check that never ran is "not checked", never
+   lumped in beside a pass (spec gap 11), and the fixes point at the stored
+   scorecard rather than a board file the server cannot keep (gap 10). */
+export function formatChrisSms({ date, pass = 0, fail = 0, skip = 0, topFails = [], counts = null } = {}) {
   const day = String(date || "").trim() || "today";
   const first = Array.isArray(topFails) ? topFails.filter(Boolean).slice(0, 2) : [];
   const failLine = first.length
     ? ` Failed: ${first.join("; ")}.`
     : "";
+  if (counts) {
+    return (
+      `Fundhub morning check ${day}: ${counts.green || 0} green, ${counts.red || 0} red, ` +
+      `${counts.not_checked || 0} not checked.` +
+      failLine +
+      " Fixes are in the stored scorecard (/api/read/systems-check). I did not change any product code."
+    );
+  }
   return (
     `Fundhub morning check ${day}: ${pass} passed, ${fail} failed, ${skip} skipped.` +
     failLine +
@@ -81,11 +93,12 @@ export async function textChris({
   fail,
   skip,
   topFails,
+  counts = null,
   env = process.env,
   dryRun = true,
   sendImpl = sendSms
 } = {}) {
-  const body = formatChrisSms({ date, pass, fail, skip, topFails });
+  const body = formatChrisSms({ date, pass, fail, skip, topFails, counts });
   const to = chrisPulseSmsTo(env);
   if (!to) {
     return { sent: false, reason: `${PULSE_SMS_TO_ENV} unset`, body, to: null };
@@ -122,4 +135,36 @@ export async function ticketDarwin({
     { env }
   );
   return { ticket, sent: result?.status === "sent", reason: result?.error || null, to, result };
+}
+
+/* THE MORNING BRIEF TEXT (MB3, ops/workflows/morning-brief-2026-10-05.md).
+   Same number as the pulse text (PULSE_SMS_TO, or CHRIS_PULSE_SMS), same
+   Twilio provider. Returns a delivery record for the morning_briefs row:
+   only the last 4 digits of the number ever leave this function. */
+export function last4(number) {
+  const digits = String(number || "").replace(/\D+/g, "");
+  return digits.length >= 4 ? digits.slice(-4) : null;
+}
+
+export async function textMorningBrief({
+  body,
+  env = process.env,
+  dryRun = true,
+  sendImpl = sendSms
+} = {}) {
+  const to = chrisPulseSmsTo(env);
+  if (!to) {
+    return { delivery_status: "no_number", sent_to_last4: null, error: `${PULSE_SMS_TO_ENV} unset`, provider_message_id: null };
+  }
+  if (dryRun) {
+    return { delivery_status: "dry_run", sent_to_last4: last4(to), error: null, provider_message_id: null };
+  }
+  const result = await sendImpl({ to, body, channel: "sms" }, { env });
+  const sent = result?.status === "sent";
+  return {
+    delivery_status: sent ? "sent" : "failed",
+    sent_to_last4: last4(to),
+    error: sent ? null : String(result?.error || "send failed").slice(0, 300),
+    provider_message_id: sent ? (result?.providerMessageId || null) : null
+  };
 }

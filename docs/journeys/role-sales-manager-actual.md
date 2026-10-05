@@ -44,7 +44,7 @@ flowchart TD
     CAN --> A_top_level[Everything else — 31 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 76 routes]
+    WHO -->|Yes| CANT[Blocked — 79 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 8 blocked]
     CANT --> B_banking[banking — 1 blocked]
@@ -65,7 +65,7 @@ flowchart TD
     CANT --> B_privacy[privacy — 1 blocked]
     CANT --> B_proxy[proxy — 2 blocked]
     CANT --> B_push[push — 3 blocked]
-    CANT --> B_read[Reading data — 10 blocked]
+    CANT --> B_read[Reading data — 13 blocked]
     CANT --> B_repair[repair — 4 blocked]
     CANT --> B_social[social — 3 blocked]
     CANT --> B_staff[staff — 1 blocked]
@@ -75,7 +75,7 @@ flowchart TD
 
 ## What they can reach
 
-**180 of 256 routes.**
+**180 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -269,7 +269,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**76 of 256 routes.**
+**79 of 259 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -332,10 +332,13 @@ flowchart TD
 | `/api/read/inquiry-cases` | GET | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/read/lender-observations` | GET | owner, admin, funding_advisor |
 | `/api/read/lenders` | GET | owner, admin, funding_advisor |
+| `/api/read/morning-brief` | GET | owner, admin |
 | `/api/read/ops-pulse` | GET | owner, admin |
+| `/api/read/ops-suggestions` | GET | owner, admin |
 | `/api/read/proxy-sessions` | GET | owner, funding_advisor |
 | `/api/read/repair-cases` | GET | owner, admin, inquiry_specialist, funding_advisor |
 | `/api/read/slo-connections` | GET | owner, admin |
+| `/api/read/systems-check` | GET | owner, admin |
 | `/api/repair/enroll` | POST | owner, admin, closer, inquiry_specialist |
 | `/api/repair/exceptions` | GET, POST | owner, admin, inquiry_specialist |
 | `/api/repair/generate` | POST | owner, admin, closer, inquiry_specialist |

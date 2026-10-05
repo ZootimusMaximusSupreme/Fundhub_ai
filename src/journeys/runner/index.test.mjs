@@ -138,8 +138,12 @@ import { isSyntheticRow } from "./synthetic.mjs";
    Moved 89 -> 90 the same day with the Microsoft Clarity daily pull
    (clarity-insights-sweeper, PR #19, marketing machine 11.4). It is a cron with
    no event trigger, so like every sweeper here it will always appear in
-   neverFired. */
-const REGISTERED = 90;
+   neverFired.
+
+   Moved 90 -> 91 when this branch took main's evening brief (evening-brief,
+   cron 0 4 * * * UTC — 9 p.m. Arizona). A cron like the rest, so it also
+   always appears in neverFired. */
+const REGISTERED = 91;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

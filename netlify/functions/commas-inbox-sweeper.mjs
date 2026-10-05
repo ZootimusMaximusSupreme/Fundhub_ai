@@ -32,6 +32,7 @@
    money chain. */
 import "@pdf-lib/fontkit";
 import { db } from "../../src/db.mjs";
+import { recordHeartbeat, itemCountOf } from "../../src/pulse/heartbeats.mjs";
 import { drain } from "../../src/payments/commas-inbox.mjs";
 import { processCommasInboxRow } from "../../src/adapters/commas.mjs";
 import { ensureRegistered } from "../../src/register-all.mjs";
@@ -107,7 +108,12 @@ export async function sweepCommasInbox(db, options = {}) {
    unsupported value", and Netlify re-ran each pass twice (live, 2026-09-18:
    30 runs in 10 minutes instead of 10). src/http/scheduled-functions-return.test.mjs */
 export async function handler() {
+  const startedAt = new Date();
   const result = await sweepCommasInbox(db);
+  await recordHeartbeat(db, {
+    job: "commas-inbox-sweeper", runner: "netlify", startedAt,
+    outcome: result.ok ? "ok" : "error", itemCount: itemCountOf(result), error: result.error || null
+  });
   if (!result.ok) {
     console.error(`[commas-inbox-sweeper] pass failed: ${result.error}`);
   } else if (result.claimed > 0) {

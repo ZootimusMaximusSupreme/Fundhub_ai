@@ -13,6 +13,7 @@ import { blakeLeadWatch } from './blake-lead-watch.mjs';
 import { bs01PrecallLauncher } from './bs-01-precall-launcher.mjs';
 import { contractChaser } from './contract-chaser.mjs';
 import { dailyPulse } from './daily-pulse.mjs';
+import { eveningBrief } from './evening-brief.mjs';
 import { messageDispatchSweeper } from './message-dispatch-sweeper.mjs';
 import { commasInboxDrain } from './commas-inbox-drain.mjs';
 import { hiringBenchSweeper } from './hiring-bench-sweeper.mjs';
@@ -115,6 +116,11 @@ export const functions = [
   /* Daily pulse — 7:00 a.m. America/Denver (cron 0 13 * * * during MDT).
      Audit only. Recon AG-07 runtime. Does not auto-fix. */
   dailyPulse,
+  /* Evening brief — "Good evening, Chris." 9:00 p.m. Arizona (cron 0 4 * * *
+     UTC, EVENING_BRIEF_CRON). Same builder as the morning brief, "today so
+     far". Dry-run under MORNING_BRIEF_LIVE; texts nothing while it is false.
+     Never runs the pulse again — reads this morning's stored check. */
+  eveningBrief,
 
   /* THE OUTBOUND DRAIN. Registered 2026-08-02, and it is the reason any client
      email leaves this platform at all — twenty-six workflows queue mail and
