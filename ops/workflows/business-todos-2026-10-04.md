@@ -26,17 +26,16 @@ Rules: read `CLAUDE.md` first. Claim your row before you start. Write your manif
 
 | # | Item | Who | Status |
 |---|---|---|---|
-| U1 | The no-reply text (`src/workflows/slo-no-reply-197.mjs`, live) says "30% off… It's $197". The page price is $147. | Chris decides: off, or $147 | blocked on Chris |
-| U2 | Repo is public. The cloud proxy refuses repo-settings changes ("Repository settings writes are not permitted through this proxy"). | Chris: https://github.com/ZootimusMaximusSupreme/Fundhub_ai/settings → Change visibility | blocked on Chris |
-| U3 | Cloud cannot ship. `netlify status`: "Your session has expired." The Netlify token in the cloud env is rejected. Every live change from the cloud waits on this. | Chris: new token at https://app.netlify.com/user/applications#personal-access-tokens, then put it in the cloud environment as `NETLIFY_AUTH_TOKEN` | blocked on Chris |
-| U4 | Two branches with unmerged work exist only on GitLab: `ad-scripts-2026-10-02` (38 commits, 259 files: B-roll templates, scripts) and `all-scripts-2026-10-03` (2 files: book-a-call scripts, green-screen talking points). The teleprompter README points at a file on that second branch. | W1 (agent): replay onto GitHub main, push | pending |
+| U1 | No-reply follow-up text: change $197 to $147 (owner-set 2026-10-05: stays on, $147). | agent | in progress (branch slo-no-reply-147-2026-10-05) |
+| U3 | Cloud cannot ship (Netlify login expired). Owner-set 2026-10-05: fine — commit to the repo, ship later. | — | parked |
+| U4 | GitLab-only branches moved to GitHub. | W1 | done — see manifest |
 
 ## Still real — agents can do these
 
 | ID | Item | Evidence | Model |
 |---|---|---|---|
 | W2 | Rules say GitLab is the remote and GitHub is banned (4 files + `scripts/ship.mjs:7`). About 6–8 rule conflicts. 26 of 47 Cursor rules have no Claude twin. | checker 4 | Opus |
-| W4 | Prove Lead + Schedule show in Meta Test Events (CAPI is already on). | `src/messaging/providers/meta-capi.mjs:43` | Opus |
+| W4 | Prove every server event fires on both funnels (owner ask 2026-10-05). | in progress (branch server-events-check-2026-10-05) | `src/messaging/providers/meta-capi.mjs:43` | Opus |
 | W5 | UnderwriteIQ: confirmed 5.5× per bureau, summed over every available bureau. $20K card on 3 bureaus = $330K. Your math = $110K. Business = 2× primary bureau at 24+ months. | `src/underwrite/vendor/underwriter.cjs:196-285` | Opus |
 | W6 | "Up to 12 funding rounds" is on /watch, /thank-you, /funding-book-call, /roadmap-book, /roadmap-thank-you. How It Works has 5 steps; the 7-step note (`marketing/ads/notes-green-screen.md:54-67`) has businesses at step 2 and adds "remove inquiries and repeat". | live pages | Opus |
 | W7 | Pixel: Lead fires for everyone who finishes the survey, Schedule fires for every booking. Nothing checks answers. ShowedCall is in docs only. | `apply-survey.html:441`, `src/meta/map.mjs` | Opus |
@@ -54,13 +53,12 @@ Rules: read `CLAUDE.md` first. Claim your row before you start. Write your manif
 
 ## Open questions for Chris (one at a time, in this order)
 
-1. U1: The $197 follow-up text. Turn it off, or change it to $147?
 2. W5: Does the 5.5× apply once, or once per bureau?
 3. W5: Is business ≈ 2× personal, or tied to business age?
 
 ## Chris only (no agent can do these)
 
-U2 and U3 above. Financing approval. Filming. Mastermind the offer. Apple developer account ($99/yr).
+Delete the GitLab project (link in the manifest). Financing approval. Filming. Mastermind the offer. Apple developer account ($99/yr).
 Sales manager hand-offs. ClarityPay and Plaid calls. Old-client texts.
 
 ---
@@ -156,5 +154,24 @@ Share as one Artifact link and put it on the board. Push nothing to ClickFunnels
 
 ### W1 (lead session) — 2026-10-05
 - Re-checked the whole list (four read-only checkers). Results above.
-- Tried to make the repo private: refused by the cloud proxy (policy, not retried). Moved to Chris (U2).
-- Fetched GitLab `main`, `ad-scripts-2026-10-02`, `all-scripts-2026-10-03` into local refs `refs/gl/*` for U4.
+- Owner-set 2026-10-05: repo visibility is Chris's call, never raise it. Proof cards are done. The $197 follow-up text stays on at $147. Live push can wait; repo commits are enough.
+
+### GitLab → GitHub move — 2026-10-05 (done)
+
+GitLab held 5 branches, 3 merge requests, 1 tag. Every one checked against GitHub:
+
+| GitLab ref | Result on GitHub |
+|---|---|
+| `main` (`3f1b2f68`) | Same files as GitHub `main` (`1fbc0fa`). GitHub history is a 2026-10-04 rewrite: 2959 commits on both. |
+| `ad-scripts-2026-10-02` (MR 1) | Moved. 38 commits replayed onto the GitHub twin of its starting point → `1a836fd579`. Files identical to GitLab. |
+| `approval-carousel-2026-10-03` (MR 3) | Moved → `b397fb69e3`, 38 commits. Files identical. |
+| `all-scripts-2026-10-03` | Moved → `d8665631fc`, 54 commits. Files identical. |
+| `slo-197` | Nothing to move: every change is already in `main`. |
+| MR 2 head (`0385946d`) | Nothing to move: every change is already in `main`. |
+| tag `checkpoint/pre-fix-pass-2026-09-17` | Its commit is in GitHub `main` history as `2b3a64b4877f` (same files). The tag name itself could not be created: the cloud proxy blocks tag writes. From the Mac: `git tag checkpoint/pre-fix-pass-2026-09-17 2b3a64b4877f && git push origin --tags`. |
+
+Not moved: GitLab merge-request text and comments (the token has no API read scope). The code in them is moved.
+
+Rules: CLAUDE.md GitLab section → "GitHub is the remote". `.claude/rules/gitlab-push.md` → `github-push.md`, `.cursor/rules/gitlab-push.mdc` → `github-push.mdc`, `scripts/gitlab-push-whole-repo.mjs` → `scripts/github-push-whole-repo.mjs` (never forces, removes GitLab remotes). `scripts/ship.mjs` header comment. Lint clean, tsc clean, unit suite (database off) 35 fail vs 36 before, no new failures.
+
+Delete GitLab: the token is repository-only (`read_repository`, `write_repository`), so no agent can delete the project. Chris: https://gitlab.com/fundhub-llc-group/fundhub-llc-project/edit
