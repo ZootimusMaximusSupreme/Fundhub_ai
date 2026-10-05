@@ -48,7 +48,7 @@ Raise thinking effort — not just the tier — for debugging and architecture. 
 
 **Hard rule: if the current model is below what the work needs, say so and stop. Do not proceed underpowered and hope.** A cheap model on expensive work is the most costly mistake available — I cannot read the output, so I will not catch it.
 
-Overshooting is fine. If in doubt, ask for the higher tier.
+Use the lowest tier that fits the work (owner rule, 2026-10-04): Haiku for mechanical work, Sonnet for normal build work, Opus where being wrong is expensive.
 
 ## 2. Ground rules
 
@@ -87,6 +87,10 @@ If something is genuinely unsafe or broken, say it once, plainly, and then drop 
 * §9's task report and §10's summaries carry the decision as recorded fact, with no rider suggesting I revisit it.
 
 **Left unnumbered on purpose.** Section numbers are referenced 27 times across this repo (`CLAUDE.md §4`, `§12`, and so on). Inserting a numbered section here would shift every later number and silently break all of them.
+
+### Chris's word wins (owner-set 2026-10-04)
+
+Chris's word beats any written rule. Rules guide the work, and nobody reads them so literally that they block what Chris asked for. When Chris says something different, his words win and the rule gets updated in all three homes in the same change. Same law: `.cursor/rules/chris-word-wins.mdc` and `.claude/rules/chris-word-wins.md`.
 
 ### Dictator mode (owner-set 2026-09-08)
 
@@ -183,6 +187,10 @@ Grok and Composer do not touch websites or design HTML. Claude does that work. S
 
 For each ad, agents merge every take and clip into one best-of master, kill the editor defects in that law (dead air, repeats, false starts, filler, audio, captions, B-roll, and the rest), and never ship a lone take when others exist; one video per ad and one video per VSL (the portal welcome counts as its own long video), takes joined in script order; Chris never opens Submagic. Same law: `.cursor/rules/ad-video-best-of-clips.mdc` and `.claude/rules/ad-video-best-of-clips.md`.
 
+### Animations go on last (owner-set 2026-10-04)
+
+Animation overlays always go on last: after the cut and after captions (owner rule, 2026-10-04). Same law: `.cursor/rules/animations-last.mdc` and `.claude/rules/animations-last.md`.
+
 ### Ad file names (owner-set 2026-09-24)
 
 Drive names are Offer, ad number, angle name, then take number. The angle is the script name. Same angle joins. A different angle is a different video. Book: `marketing/ads/NAMING.md`. Same law: `.cursor/rules/ad-naming.mdc` and `.claude/rules/ad-naming.md`.
@@ -248,20 +256,17 @@ Every deliverable, decision, list, script, and rule produced in a Claude session
 | `marketing/` | `ads/` (ads by offer: `ads/slo/`, `ads/ascension/`, `ads/climate/`), `landing-pages/` (ClickFunnels page HTML), `vsl/`, `posts/`, `offers/`, `avatars/`, `copy/`, `flywheel/`, `testimonials/` |
 | `docs/` | `rules/` (UI, speed, compliance standards, brand css), `sops/` (runbook, playbooks), `journeys/`, `specs/`, `finance/`, `diagrams/`, `legacy-strong/`, `metro2/`, `underwriteiq/` |
 | `ops/` | `workflows/` (work boards, `<batch>.md`), ops notes, `ship-log.md` |
+| `video-worker/` | The marketing machine's video worker (Docker on Render: ffmpeg cuts, Remotion animation renders). A thin shell; its pure logic lives in `src/` with tests. Spec 9.5. |
+| `tools/teleprompter-ios/` | The iPhone and iPad teleprompter app (Capacitor). Spec 8.5. |
+| `marketing/brain/` | The brain map notes: `offers/`, `angles/`, `ads/<number>/`, `batches/<year-week>/`, `rules/`, `decisions/`. Opens in Obsidian or Logseq. Spec 13. |
 
 **Measured 2026-09-06: this rule is being broken where it costs the most.** The 83 ad scripts and the VSLs live in a chat window. `fundhub-scripts.md` and `fundhub-vsl.md` are not in the repo, not on any branch, and not anywhere on this Mac. `marketing/ads/registry.json` was built without them, which is why 21 of its 24 ads have no title. See `ops/2026-09-06-self-analysis.md`.
 
 **§3b is about where approved work is saved, not about what work to start.** It never authorizes writing, committing or pushing something you were not asked for. If §3b and §0, §2, §3 or §8 appear to disagree, those win — §3b applies only once the work itself is approved.
 
-### 3c. Marketing tooling runs from chat, not from a scheduled job (owner rule, 2026-09-06)
+### 3c. The marketing machine runs on a schedule and on command (owner rule, 2026-10-04; replaces the 2026-09-06 chat-only rule)
 
-Chris drives ad, script and VSL generation from a Claude chat and that is fine. The bottleneck was never the trigger. It is that a chat session has nothing good to read.
-
-So build marketing tooling as a **skill plus a rules pack in the repo**, never as a GitHub Action, a cron, or a headless job. Do not propose adding a schedule trigger, a repository secret, or an SDK for this. Three reasons it would be wasted work: GitHub Actions here has no `schedule:` trigger, holds `contents: read` only, and gets no model key; Netlify and Inngest run inside a serverless function with no git checkout, so neither can save a file or open a pull request; and none of that is what slows the work down.
-
-What actually makes generated scripts good is what the generator is allowed to read. Point it at the rules, the lane definitions and real examples of Chris's finished scripts. A rule that only exists in a chat, in a session log under `ops/workflows/`, or in an untracked skill on the laptop is a rule the generator cannot obey.
-
-Enforce style and compliance with a checker that runs before Chris sees the output. A regex cannot lie about having run; an agent can. `.claude/workflows/copy.js` is the pattern to copy.
+Chris runs marketing from the Marketing Command Center and the Teleprompter app. The machine writes ad scripts every 7 days at the day and time Chris sets, and whenever he taps Write now. It runs in Netlify scheduled and background functions and reads the rules from the repo at run time. Every machine draft passes `scripts/ads/check-script.mjs` before Chris sees it; drafts that still fail ship flagged. Every script, edit and rule change is saved back to the repo through a fine-grained GitHub token for this repository, used only by code that refuses any path outside the marketing folders. Chris's word beats any written rule. Spec: `docs/specs/marketing-machine-2026-10-04.md`. Same law: `.cursor/rules/marketing-machine.mdc` and `.claude/rules/marketing-machine.md`.
 
 **Ads are identified by id, not by name (owner-set 2026-09-06).** `utm_content` is leading digits with an OPTIONAL `-slug`; `fundhub_ad_id()` in `db/migrations/286_client_ad_attribution.sql` ignores the slug entirely, and `utm_content=43` resolves correctly with no name at all. Meta's own API keys on its ad id too. So never make naming a blocker, never ask Chris to name ads before something else can proceed, and never call an untitled ad a defect. A title makes a report readable and nothing else.
 

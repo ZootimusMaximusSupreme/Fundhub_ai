@@ -13,7 +13,7 @@ Rules: read `CLAUDE.md` first. Claim your row before you start. Write your manif
 | Network: allow the domains | Done. The cloud reaches api.netlify.com, api.supabase.com, api.myclickfunnels.com, api.inngest.com. |
 | Turn on Meta server events (CAPI) | Wrong. It went live 2026-10-02 (`docs/tracking/meta-events.md:1-3`). It needs `META_CAPI_ENABLED=1` only; the token is optional (`src/meta/token.mjs`). Left: confirm Lead + Schedule show in Test Events. |
 | Refund window 7 vs 30 days | Wrong. Every live refund line says 7 days. Only /roadmap has refund text. |
-| Edit pipeline "designed, not built" | Wrong. It is built (`src/ad-videos/pipeline.mjs`), runs every 5 min. Submagic's transcript replaced Deepgram; R2 was dropped on purpose. |
+| Edit pipeline "designed, not built" | Wrong. It is built (`src/ad-videos/pipeline.mjs`), runs every 5 min. Submagic's transcript replaced Deepgram; R2 was dropped on purpose. **Superseded 2026-10-04:** videos now move to Cloudflare R2 (`docs/specs/marketing-machine-2026-10-04.md` §2 item 12). |
 | Keep the "type yes" check before deploy | Wrong. `scripts/ship.mjs` has no such check. Only the old one-off `scripts/ship-slo-197.sh` has it. |
 | "12 funding rounds" on /apply and /book | Wrong. /apply has no marquee. /book is a 404; the booking page is /funding-book-call. |
 | VOICE.md, reference ad, teleprompter, climate pack, company brain | All exist on main. |
