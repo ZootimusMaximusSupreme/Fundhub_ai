@@ -47,7 +47,7 @@ Rules: read `CLAUDE.md` first. Claim your row before you start. Write your manif
 ## Open questions for Chris (one at a time, in this order)
 
 1. W7: What makes a survey answer "qualified" for Lead and Schedule? (The lookalike item says 760+ credit, $100K–$200K revenue.)
-2. W5: Does the 5.5× apply once, or once per bureau?
+2. ~~W5: once or per bureau?~~ Owner-set 2026-10-05: **per bureau**. Each bureau approves on its own. Do not change it to once.
 3. W5: Is business ≈ 2× personal, or tied to business age?
 
 ## Chris only (no agent can do these)
