@@ -313,10 +313,20 @@ test("climate page: it exists, loads its own scripts, and reads the climate endp
 });
 
 test("climate page: no approval odds, no promised amount, no guarantee", () => {
-  const text = PAGE_TEXT + PAGE_JS;
+  /* OWNER-SET 2026-10-05: the state table's bare column heading "Approval Odds"
+     is allowed. That column renders "—" only: the climate engine never sends
+     avg_approval_odds (src/climate/engine.test.mjs, "no fake approval rollup").
+     Exactly that one heading literal is taken out before the scan; a real
+     percentage chance of approval, a promised amount or a guarantee anywhere
+     else on the page is still banned. */
+  const HEADING = 'children:"Approval Odds"';
+  const all = PAGE_TEXT + PAGE_JS;
+  assert.ok(all.split(HEADING).length - 1 <= 1, "only the one table heading is allowed, not a second use");
+  const text = all.split(HEADING).join(" ");
   const banned = [
     /\b\d{1,3}\s?%\s?(approval|approved|odds)/i,
     /approval\s+(odds|chance|probability)/i,
+    /chance\s+of\s+(?:being\s+)?approv/i,
     /\bpre[- ]?approved\b/i,
     /\bguaranteed\s+funding\b/i,
     /\bno\s+denials\b/i,
