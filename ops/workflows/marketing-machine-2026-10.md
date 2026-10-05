@@ -12,6 +12,14 @@ change manifest and blockers in their final message; the orchestrator copies the
 - Kickoff ran in a **cloud session, not the Mac.** Code, PRs and reviews run here. Two things wait for the Mac: setting Netlify env vars and `npm run ship` (spec 0.8). There is no local `.env` here, which is fine: no step tests against the live database.
 - Cloud has no `gh` CLI. Agents read CI logs and open PRs through the GitHub MCP tools; mm-reviewer reads diffs with `git diff origin/main...<branch>`.
 
+## STATUS 2026-10-05 22:50 UTC — merged, NOT shipped
+
+- **Merged to main:** #23 (CI fix; carries #19), #33, #20, #21, #25, #24, #35, #39, #28, #40, then #49 (post-merge list fixes) and #50 (a stray conflict marker in netlify.toml that would have broken the deploy). main = 7f778dd.
+- **Proved on main:** lint clean; no-database suite 12,364 tests, 0 failures (clean env). Database phase: 167 pre-existing failures being fixed on mm/m0-6b-db-tests.
+- **Held on purpose (not merged):** lane B video PRs #26, #32, #34, #37, #38 — shipping 9.1 alone pauses the live video pipeline until the worker runs on Render (§16 item 4).
+- **SHIP BLOCKER:** this cloud session's `NETLIFY_AUTH_TOKEN` is expired ("Your session has expired"), so it cannot set env vars or deploy. Chris adds a new Netlify personal access token as `NETLIFY_AUTH_TOKEN` in the cloud environment settings; a NEW session then ships.
+- **Ship checklist (next session):** (1) set on Netlify production, one batch, `--secret` for secrets: `MARKETING_WORKER_SECRET` (generate), `META_API_VERSION=v26.0`, `GITHUB_REPO=ZootimusMaximusSupreme/Fundhub_ai`, `GITHUB_BRANCH=main`; confirm `CLARITY_DATA_EXPORT_TOKEN`, `CLARITY_PROJECT_ID`, `ADAPTERS_DRY_RUN` (off) exist. `GITHUB_REPO_TOKEN` needs Chris's fine-grained token (§16 item 4) — outbox rows wait until then. (2) `npm run ship` from a main checkout (applies migrations 406–412, 424 to production). (3) `/api/health` pending 0; marketing-clock logs "disabled"; meta-sync heartbeat green once the secret is set.
+
 ## Lane status
 
 | Lane | Now | Next |
