@@ -19,10 +19,10 @@ change manifest and blockers in their final message; the orchestrator copies the
 | A | **running** — M0 step 1 (rule changes); merges after the CI fix | M0 step 2 |
 | B | **running** — 9.1 state machine; merges after the CI fix | 9.2 aligner |
 | C | **running** — M0 step 6 (CI fix) | M6a, Appendix C lists, M6b |
-| D | **running** — 11.4 fixes (no dependency) | 11.1 after M0 step 5 merges |
+| D | 11.4 done → PR #19 in review | waiting — 11.1 needs M0 step 5 merged; 7.10 brain parts need M0 step 3 |
 | E | waiting — needs `docs/specs/marketing-machine-api.md` (first M1 PR, lane A) | 8.1 teleprompter |
 
-Running agents: 4 of 5.
+Running agents: 4 of 5 (A, B, C, reviewer on #19).
 
 2026-10-05: Chris said "Do the whole thing." Lanes A and B started before the CI fix merged so they aren't idle; nothing merges before the CI fix (spec 0.6).
 
@@ -90,7 +90,7 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 | 11.1 | Definitions + metric SQL (needs M0.5) | mm-architect | pending | |
 | 11.2 | Endpoints | mm-builder | pending | |
 | 11.3 | Screens | mm-builder (E) | pending | |
-| 11.4 | Fixes: Clarity adapter + sweeper, watch-curve clicks | mm-builder | claimed | |
+| 11.4 | Fixes: Clarity adapter + sweeper, watch-curve clicks | mm-builder | done (in review) | #19 | |
 
 ### M6 Website (lane C)
 | Step | What | Agent | Status | PR |
@@ -111,6 +111,17 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ## Change manifests
 
 (Filled in by the orchestrator from each agent's final message.)
+
+### 11.4 — PR #19 (lane D, mm-builder)
+- New `db/migrations/424_clarity_export_counter.sql`: table `clarity_export_calls` (org_id, project_id, day_utc; calls, machine_calls), 402/403 pattern. Manifest regenerated.
+- New `src/analytics/clarity-counter.mjs`: one atomic upsert; Microsoft cap 10/day and sweeper cap 2/day.
+- `src/adapters/clarity-export.mjs`: optional `counter`, `fetch`, `retries` (anything but 0 throws). File counter stays default for agent pulls.
+- `src/analytics/clarity-org-sync.mjs`: adapter + database counter, retries 0, logs and stops on failure.
+- `src/workflows/clarity-insights-sweeper.mjs` retries 0; registered in `src/workflows/index.mjs`; added to `EXPECTED_WORKFLOW_IDS`.
+- `src/ops/watch-curve.mjs`: `DYING_ADS_SQL` selects `m.clicks`.
+- Tests: `clarity-org-sync.test.mjs` (5), 3 new in `watch-curve.test.mjs`. Lint and typecheck clean. No-db suite: 31 failures vs main's 33 (the 2 fixed are the workflow-count tests); no new failures.
+- Sweeper cron 07:30 UTC daily; needs `CLARITY_DATA_EXPORT_TOKEN` and `CLARITY_PROJECT_ID` on Netlify (Mac check at ship).
+- Found on main (handed to lane C): fresh `db/migrate.mjs` fails at `114_crm_agent_seed.sql` ("VALUES lists must all be the same length").
 
 ## Blockers and open questions
 
