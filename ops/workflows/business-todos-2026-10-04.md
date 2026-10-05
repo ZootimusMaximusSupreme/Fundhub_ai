@@ -26,7 +26,7 @@ Rules: read `CLAUDE.md` first. Claim your row before you start. Write your manif
 
 | # | Item | Who | Status |
 |---|---|---|---|
-| U1 | No-reply follow-up text: change $197 to $147 (owner-set 2026-10-05: stays on, $147). | agent | in progress (branch slo-no-reply-147-2026-10-05) |
+| U1 | Follow-ups say $147 (owner-set 2026-10-05: stays on, $147): no-reply text, after-reply coupon, all 21 drip emails. Seeds 035 + 036. | agent | done in repo, PR #5; live on next ship |
 | U3 | Cloud cannot ship (Netlify login expired). Owner-set 2026-10-05: fine — commit to the repo, ship later. | — | parked |
 | U4 | GitLab-only branches moved to GitHub. | W1 | done — see manifest |
 
