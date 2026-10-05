@@ -87,6 +87,7 @@ const NO_ORG_COLUMN = new Map([
   ["sales-floor.mjs", "scoped in src/sales/metrics.mjs salesFloor() — every query binds org_id from the session"],
   ["unrecorded-calls.mjs", "scoped in src/sales/unrecorded.mjs listUnrecordedCalls(), which binds o.org_id = $1 and returns [] without an org"],
   ["ops-pulse.mjs", "scoped in src/ops/pulse.mjs computePulse() — every query binds org_id from the session"],
+  ["morning-brief.mjs", "scoped in src/ops/morning-brief.mjs readMorningBrief(), which binds org_id = $1 and throws without an org"],
   ["closer-deck.mjs", "scoped in src/sales/closer-deck.mjs buildCloserDeck() — every query binds org_id from the session"],
   /* Lender reads write no SQL in the handler. listLenders / matchForClient /
      listObservations in src/lenders/store.mjs always bind org_id = $1::uuid from

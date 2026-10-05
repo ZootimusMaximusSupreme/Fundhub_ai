@@ -22,11 +22,15 @@
    sweepers in this directory: the `schedule()` wrapper form would be a new npm
    dependency and CLAUDE.md §8 does not allow one for something a two-line
    config block already does. */
+import { db } from "../../src/db.mjs";
+import { recordHeartbeat } from "../../src/pulse/heartbeats.mjs";
+
 export const SWEEP_CRON = "*/5 * * * *";
 
 export const WORKER_PATH = "/.netlify/functions/ad-video-worker-background";
 
 export async function handler() {
+  const startedAt = new Date();
   const base = process.env.URL || process.env.DEPLOY_URL || "";
   const secret = process.env.AD_VIDEO_WORKER_SECRET || "";
 
@@ -35,6 +39,7 @@ export async function handler() {
        and a missing variable is not one — it is a thing to read in the log. */
     const why = !base ? "no site URL in the environment" : "AD_VIDEO_WORKER_SECRET is not set";
     console.error(`[ad-video-sweeper] did not start the worker: ${why}`);
+    await recordHeartbeat(db, { job: "ad-video-sweeper", runner: "netlify", startedAt, outcome: "error", error: why });
     return new Response(JSON.stringify({ ok: false, started: false, error: why }), {
       status: 200, headers: { "content-type": "application/json" }
     });
@@ -57,6 +62,7 @@ export async function handler() {
   }
 
   if (error) console.error(`[ad-video-sweeper] ${error}`);
+  await recordHeartbeat(db, { job: "ad-video-sweeper", runner: "netlify", startedAt, outcome: error ? "error" : "ok", error });
   return new Response(JSON.stringify({ ok: !error, started, error }), {
     status: 200, headers: { "content-type": "application/json" }
   });

@@ -22,6 +22,7 @@ import {
   ROLE_SETS, requireRole, isUuid, CLIENT_DATA_ERRORS, readDays
 } from "../../src/http/read-api.mjs";
 import { commandCenter } from "../../src/finance/command-center.mjs";
+import { loadCashflowByDay } from "../../src/finance/cashflow.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
 /* ?days= used to be defined here, in a copy identical to the one in
@@ -137,24 +138,10 @@ export default async function handler(req, res, deps = {}) {
       investParams
     );
 
-    const txFilter = [];
-    const txParams = [orgId, fromDay, asOf];
-    if (clientId) { txParams.push(clientId); txFilter.push(`client_id = $${txParams.length}`); }
-    if (entityId) {
-      txParams.push(entityId);
-      txFilter.push(`bank_account_id IN (SELECT id FROM bank_accounts WHERE entity_id = $${txParams.length})`);
-    }
-    const txWhere = txFilter.length ? ` AND ${txFilter.join(" AND ")}` : "";
-
-    const cashflowQ = database.query(
-      `SELECT posted_on::text AS day,
-              SUM(CASE WHEN amount_cents > 0 THEN amount_cents ELSE 0 END) AS inflow_cents,
-              SUM(CASE WHEN amount_cents < 0 THEN -amount_cents ELSE 0 END) AS outflow_cents
-         FROM bank_transactions
-        WHERE org_id = $1 AND posted_on BETWEEN $2 AND $3${txWhere}
-        GROUP BY posted_on ORDER BY posted_on`,
-      txParams
-    );
+    /* One shared copy of the cash in / cash out read: src/finance/cashflow.mjs.
+       The morning brief (src/ops/morning-brief.mjs) reads the same function. */
+    const cashflowQ = loadCashflowByDay(database, { orgId, fromDay, toDay: asOf, clientId, entityId })
+      .then((rows) => ({ rows }));
 
     /* Business-wide, never client/entity filtered — see the header note. */
     const marketingQ = database.query(
