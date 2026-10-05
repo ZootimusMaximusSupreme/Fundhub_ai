@@ -245,6 +245,10 @@ Agents for Kickoff B are in `.claude/agents/` (mm-architect, mm-builder, mm-chor
 
 ---
 
+## Leftovers (found, not owned by this board)
+
+- 2026-10-05: the GitHub test job "Named guards" is red on `main` because the test that every read page filters by company fails for 2 pages: `api/read/blueprint-combined-approval.mjs` and `api/read/eeo-aggregate.mjs`. This is not from this batch. It needs its own fix.
+
 ## Manifests
 
 ### MB0 — cloud session, 2026-10-05
