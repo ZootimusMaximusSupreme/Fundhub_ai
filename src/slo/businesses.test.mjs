@@ -33,11 +33,11 @@ function biz(over = {}) {
   };
 }
 
-test("price: 1 business is $297, each extra is $15, integer cents", () => {
+test("price: 1 business is $147, each extra is $15, integer cents", () => {
   assert.equal(SLO_EXTRA_BUSINESS_CENTS, 1500);
-  assert.equal(sloCheckoutTotalCents(1), 29700);
-  assert.equal(sloCheckoutTotalCents(2), 31200);
-  assert.equal(sloCheckoutTotalCents(5), 29700 + 1500 * 4);
+  assert.equal(sloCheckoutTotalCents(1), 14700);
+  assert.equal(sloCheckoutTotalCents(2), 16200);
+  assert.equal(sloCheckoutTotalCents(5), 14700 + 1500 * 4);
   assert.throws(() => sloCheckoutTotalCents(0), RangeError);
   assert.throws(() => sloCheckoutTotalCents(21), RangeError);
   assert.throws(() => sloCheckoutTotalCents(1.5), RangeError);

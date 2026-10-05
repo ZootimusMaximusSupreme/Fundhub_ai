@@ -58,7 +58,7 @@ Rows are added from `docs/tracking/page-inventory.md` (Phase 2). Same map in the
 | `section_view` | Each section with an `id` (or `data-fh-section`) reaching the screen, once per page load | `section` | shared tracker |
 | `carousel` | Testimonial carousel next, previous, play | `carousel`, `action` (next/prev/play), `index` | shared tracker (by `data-fh-carousel` / known classes) or page hook |
 | `faq_open` | Each FAQ question opened (`<details>` toggle or FAQ button) | `question` (label slug) | shared tracker |
-| `survey_answer` | Each survey question answered | `survey`, `step_num`, `question_id` | survey page hook |
+| `survey_answer` | Each survey question answered | `survey`, `step_num`, `question_id`, `last` (true once, on the survey's final submit) | survey page hook |
 | `survey_route` | Sorting hat routes someone | `survey`, `offer` (offer code) | thank-you / survey hook |
 | `buybox_tab` | Each buy box step shown (buy box v2 has no tabs: the "Step n of 3" line; same event, so before and after compare) | `tab` (1/2/3), `bbv` | /roadmap buy box hook |
 | `field_focus` | A buy box / survey / booking field gets focus, once per field per page load | `form`, `field` (name only), `bbv` (buy box only) | page hook |
@@ -66,7 +66,7 @@ Rows are added from `docs/tracking/page-inventory.md` (Phase 2). Same map in the
 | `continue` | Buy box step 1 button pressed ("Get My Funding Roadmap" on buy box v2, "Continue" before) | `step`, `bbv` | buy box hook |
 | `validation_error` | A field or step check fails | `form`, `field`, `code` (short slug, never the value), `bbv` (buy box only) | page hook |
 | `payment_attempt` | Pay pressed and card form submitted | `amount_cents`, `bbv` | buy box hook |
-| `payment_result` | checkout:success or a decline / error | `result` (success/fail), `code`, `bbv` | buy box hook |
+| `payment_result` | checkout:success or a decline / error | `result` (success/fail), `code`, `bbv`, `order_ref` (the order: up to 64 letters, digits, _ or -; Meta's Purchase id is built from it, see meta-events.md) | buy box hook |
 | `softpull_submit` | Start My Soft Pull pressed and accepted by the form check | `businesses` (count), `bbv` | buy box hook |
 | `calendar_view` | A booking calendar is on screen | `calendar` | booking hook |
 | `time_selected` | A time slot picked | `calendar` | booking hook |

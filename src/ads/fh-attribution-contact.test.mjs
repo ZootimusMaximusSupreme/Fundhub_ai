@@ -29,11 +29,12 @@ import { recordInterest } from "../../api/public/slo-interest.mjs";
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const SRC = fs.readFileSync(path.join(ROOT, "public/funnel/fh-attribution.js"), "utf8");
 
-function runRoadmap({ layout = "v2" } = {}) {
+function runRoadmap({ layout = "v2", search = "?utm_source=fb&utm_content=43-roadmap", cookie = "", storage = {}, now } = {}) {
   const posts = [];
   const doc = {};
   const win = {};
-  const store = {};
+  const store = { ...storage };
+  const asked = new Set();
   let timers = [];
   let nextTimer = 1;
 
@@ -44,6 +45,7 @@ function runRoadmap({ layout = "v2" } = {}) {
       own,
       querySelector(sel) {
         const m = /name="([^"]+)"/.exec(sel);
+        if (m) asked.add(m[1]);
         return m && own[m[1]] ? own[m[1]] : null;
       },
       contains: (n) => n === f || Object.values(own).includes(n),
@@ -63,6 +65,7 @@ function runRoadmap({ layout = "v2" } = {}) {
   Object.assign(doc, {
     readyState: "complete",
     referrer: "",
+    cookie,
     visibilityState: "visible",
     activeElement: null,
     listeners: {},
@@ -76,7 +79,7 @@ function runRoadmap({ layout = "v2" } = {}) {
     listeners: {},
     addEventListener(n, fn) { (win.listeners[n] ||= []).push(fn); },
     fetch(url, init) {
-      posts.push({ via: "fetch", url, body: JSON.parse(init.body) });
+      posts.push({ via: "fetch", url, init, body: init && typeof init.body === "string" ? JSON.parse(init.body) : null });
       return { catch() {} };
     }
   });
@@ -86,11 +89,12 @@ function runRoadmap({ layout = "v2" } = {}) {
     sendBeacon(url, blob) { posts.push({ via: "beacon", url, body: JSON.parse(blob.text) }); return true; }
   };
 
+  const FixedDate = now == null ? Date : Object.assign(function () { return new Date(now); }, { now: () => now });
   vm.runInNewContext(SRC, {
     window: win,
     document: doc,
     navigator,
-    location: { search: "?utm_source=fb&utm_content=43-roadmap", pathname: "/roadmap" },
+    location: { search, pathname: "/roadmap" },
     sessionStorage: {
       getItem: (k) => (k in store ? store[k] : null),
       setItem: (k, v) => { store[k] = String(v); }
@@ -102,7 +106,7 @@ function runRoadmap({ layout = "v2" } = {}) {
     clearTimeout(id) { timers = timers.filter((t) => t.id !== id); },
     setInterval: () => 0,
     clearInterval() {},
-    JSON, Math, Date, String, Number, Object, Array
+    JSON, Math, Date: FixedDate, String, Number, Object, Array
   });
 
   const fire = (name, target) => (doc.listeners[name] || []).forEach((fn) => fn({ target }));
@@ -110,6 +114,12 @@ function runRoadmap({ layout = "v2" } = {}) {
     posts,
     store,
     fields,
+    win,
+    doc,
+    /** Field names the script looked up on a form (hidden-input stamping included). */
+    asked,
+    /** A page fetch, through the script's wrapper. */
+    pageFetch(url, init) { return win.fetch(url, init); },
     contacts: () => posts.filter((p) => p.body.kind === "contact"),
     /** Type into a field; focus stays there. */
     type(name, value) {
@@ -344,5 +354,92 @@ describe("end to end: page → door → one row and one ClickFunnels contact", (
     assert.equal(d.cfContacts.size, 1, "one ClickFunnels contact");
     assert.deepEqual(d.cfContacts.get("pat@gmail.com"),
       { id: 1, firstName: "Pat", lastName: "Lee", phone: "+14155550134" });
+  });
+});
+
+/* Meta Phase 4 (docs/tracking/meta-events.md, "fbclid / fbc / fbp"): fbclid
+   kept first touch, fbc built from it when Meta's _fbc cookie is missing, fbp
+   from the _fbp cookie; both ride the step-1 contact post and the checkout and
+   soft-pull posts the page makes. InitiateCheckout moved to fh-events.js. */
+describe("fbclid, fbc and fbp", () => {
+  const FBCLID = "IwAR0x_9-AbC";
+  const FBP = "fb.1.1700000000000.1234567890";
+  const MS = 1_700_000_000_321;
+  const CHECKOUT = "https://fundhub.ai/api/public/slo-checkout";
+  const PULL = "https://fundhub.ai/api/public/slo-pull";
+
+  test("fbclid is kept first touch and fbc is built as fb.1.<ms>.<fbclid>; neither is stamped on a form", () => {
+    const p = runRoadmap({ search: `?utm_source=fb&fbclid=${FBCLID}`, now: MS });
+    const saved = JSON.parse(p.store.fh_attribution);
+    assert.equal(saved.fbclid, FBCLID);
+    assert.equal(saved.fbc, `fb.1.${MS}.${FBCLID}`);
+    assert.equal(p.asked.has("utm_source"), true, "the UTMs are stamped");
+    assert.equal(p.asked.has("fbclid") || p.asked.has("fbc"), false, "the click id never becomes a form field");
+
+    const later = runRoadmap({ search: "?fbclid=IwARsecondclick", storage: p.store, now: MS + 60_000 });
+    assert.equal(JSON.parse(later.store.fh_attribution).fbc, `fb.1.${MS}.${FBCLID}`, "first touch wins");
+  });
+
+  test("a junk fbclid is not kept", () => {
+    for (const bad of ["a%40b.co", "has%20space", "x".repeat(501)]) {
+      const p = runRoadmap({ search: `?fbclid=${bad}` });
+      assert.equal(JSON.parse(p.store.fh_attribution).fbclid, undefined, bad);
+    }
+  });
+
+  test("the step-1 contact post carries fbclid, fbc and fbp", () => {
+    const p = runRoadmap({ search: `?utm_source=fb&fbclid=${FBCLID}`, cookie: `x=1; _fbp=${FBP}`, now: MS });
+    p.type("email", "pat@gmail.com");
+    p.leave("email");
+    const c = p.contacts()[0].body;
+    assert.equal(c.fbclid, FBCLID);
+    assert.equal(c.fbc, `fb.1.${MS}.${FBCLID}`);
+    assert.equal(c.fbp, FBP);
+  });
+
+  test("Meta's own _fbc cookie wins over the built one; a junk cookie is ignored", () => {
+    const cookieFbc = "fb.1.1700000000555.IwARfromcookie";
+    const p = runRoadmap({ search: `?fbclid=${FBCLID}`, cookie: `_fbc=${cookieFbc}; _fbp=junk`, now: MS });
+    p.type("email", "pat@gmail.com");
+    p.leave("email");
+    const c = p.contacts()[0].body;
+    assert.equal(c.fbc, cookieFbc);
+    assert.equal("fbp" in c, false);
+  });
+
+  test("the checkout post gets fbc, fbp and fbclid next to a1 / a2; nothing the page sent is changed", () => {
+    const p = runRoadmap({ search: `?fbclid=${FBCLID}&a1=pl_7`, cookie: `_fbp=${FBP}`, now: MS });
+    const sent = { email: "pat@gmail.com", first_name: "Pat", utm_source: "fb" };
+    p.pageFetch(CHECKOUT, { method: "POST", headers: { accept: "application/json" }, body: JSON.stringify(sent) });
+    const post = p.posts.find((x) => x.url === CHECKOUT);
+    assert.deepEqual(post.body, { ...sent, webdriver: false, a1: "pl_7", fbclid: FBCLID, fbc: `fb.1.${MS}.${FBCLID}`, fbp: FBP });
+    assert.equal(post.init.method, "POST");
+  });
+
+  test("the soft-pull post gets fbc and fbp only; its own fields go out exactly as the page sent them", () => {
+    const p = runRoadmap({ search: `?fbclid=${FBCLID}&a1=pl_7`, cookie: `_fbp=${FBP}`, now: MS });
+    const sent = { ref: "slo_abc", client_id: "c-1", consent: true, ssn: "555-00-4444", dob: "1980-01-02" };
+    p.pageFetch(PULL, { method: "POST", body: JSON.stringify(sent) });
+    const pulls = p.posts.filter((x) => x.url === PULL);
+    assert.equal(pulls.length, 1);
+    assert.deepEqual(pulls[0].body, { ...sent, fbc: `fb.1.${MS}.${FBCLID}`, fbp: FBP });
+    assert.equal(p.posts.filter((x) => JSON.stringify(x.body).includes("4444")).length, 1, "the soft-pull body is never posted anywhere else");
+    assert.equal(JSON.stringify(p.store).includes("4444"), false, "and never stored");
+  });
+
+  test("a page fetch with no ids to add, or with no body, goes out untouched", () => {
+    const p = runRoadmap();
+    const init = { method: "GET", headers: { accept: "application/json" } };
+    p.pageFetch(`${CHECKOUT}?businesses=1`, init);
+    assert.equal(p.posts.find((x) => x.url === `${CHECKOUT}?businesses=1`).init, init, "the GET is passed through as is");
+    p.pageFetch(PULL, { method: "POST", body: JSON.stringify({ ref: "slo_abc" }) });
+    assert.deepEqual(p.posts.find((x) => x.url === PULL).body, { ref: "slo_abc" });
+  });
+
+  test("no InitiateCheckout here any more: the tracker sends it when the card step shows", () => {
+    assert.equal(/fbq\s*\(/.test(SRC), false, "fh-attribution.js never calls fbq");
+    assert.equal(/fh_ic_sent/.test(SRC), false);
+    const p = runRoadmap();
+    assert.equal((p.doc.listeners.click || []).length, 0, "no Pay-press listener");
   });
 });

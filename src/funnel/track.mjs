@@ -14,13 +14,27 @@
 // looks like one (a long run of digits, a date, an email), is dropped here
 // even if the browser sent it.
 //
-// It does not fan out to Inngest, create a client, or send anything.
+// It does not fan out to Inngest or create a client. It sends nothing itself:
+// a saved row from a real person that maps to a Meta event (src/meta/map.mjs)
+// is handed to src/meta/track-send.mjs, which sends the server copy through
+// the Conversions API (src/messaging/providers/meta-capi.mjs) only when
+// META_CAPI_ENABLED is "1". Contract: the "Phase 4 contract" section of
+// docs/tracking/meta-events.md.
+//
+// Four top-level fields come with that (same contract): meta_event_id (the id
+// the browser pixel used, so Meta counts the two copies once), fbc and fbp
+// (Meta's click id and browser id cookies), and url (the page address; a query
+// value that names or looks like a sensitive field is dropped before it is
+// stored or sent). Each is stored on the row only when present and valid.
 
 import { db as defaultDb } from "../db.mjs";
 import { defaultOrgId, emit } from "../events/bus.mjs";
 import { pickAttribution } from "../ads/attribution-keys.mjs";
 import { classifyVisitor } from "../slo/visitor.mjs";
 import { funnelFor } from "./pages.mjs";
+import { cleanMetaEventId } from "../meta/map.mjs";
+import { cleanFbc, cleanFbp } from "../meta/user-data.mjs";
+import { startMetaSend } from "../meta/track-send.mjs";
 
 // Same session rule as api/public/slo-interest.mjs (sessionStorage.fh_sid).
 const SESSION = /^[A-Za-z0-9_-]{8,80}$/;
@@ -40,6 +54,8 @@ const path = (max) => ({ type: "path", max });
 const int = (min, max) => ({ type: "number", min, max, int: true });
 const dec = (min, max) => ({ type: "number", min, max, int: false });
 const oneOf = (...values) => ({ type: "enum", values });
+const pattern = (re) => ({ type: "pattern", re });
+const bool = () => ({ type: "bool" });
 
 const SECONDS = int(0, MAX_SECONDS);
 const PERCENT = int(0, 100);
@@ -63,6 +79,15 @@ export const PREVIEW_DELIVERABLES = Object.freeze([
   "business_duplication_map",
 ]);
 const DELIVERABLE = oneOf(...PREVIEW_DELIVERABLES);
+
+// The $297 order a payment_result belongs to (the browser's Meta Purchase id is
+// "purchase.<order_ref>"; docs/tracking/meta-events.md, Phase 4 contract).
+const ORDER_REF = /^[A-Za-z0-9_-]{1,64}$/;
+/* Our own order refs are "slo_" + hex. About one in ten carries nine or more
+   digits in a row (or a run that reads as a date), which looksSensitiveValue
+   would take for a card or a birth date and drop. That exact shape is a ref we
+   minted, never a typed value, so it skips the value check. */
+const OWN_ORDER_REF = /^slo_[a-f0-9]+$/;
 
 export const TRACK_EVENTS = Object.freeze({
   page_view: { title: text(120) },
@@ -88,7 +113,7 @@ export const TRACK_EVENTS = Object.freeze({
   section_view: { section: slug(64) },
   carousel: { carousel: slug(64), action: oneOf("next", "prev", "play"), index: int(0, 1000) },
   faq_open: { question: slug(80) },
-  survey_answer: { survey: slug(40), step_num: int(0, 100), question_id: slug(64) },
+  survey_answer: { survey: slug(40), step_num: int(0, 100), question_id: slug(64), last: bool() },
   survey_route: { survey: slug(40), offer: slug(40) },
   buybox_tab: { tab: int(1, 3), bbv: BBV },
   field_focus: { form: FORM, field: FIELD, bbv: BBV },
@@ -96,7 +121,7 @@ export const TRACK_EVENTS = Object.freeze({
   continue: { step: int(0, 20), bbv: BBV },
   validation_error: { form: FORM, field: FIELD, code: slug(40), bbv: BBV },
   payment_attempt: { amount_cents: int(0, 10_000_000), bbv: BBV },
-  payment_result: { result: oneOf("success", "fail"), code: slug(40), bbv: BBV },
+  payment_result: { result: oneOf("success", "fail"), code: slug(40), bbv: BBV, order_ref: pattern(ORDER_REF) },
   softpull_submit: { businesses: int(0, 50), bbv: BBV },
   calendar_view: CALENDAR,
   time_selected: CALENDAR,
@@ -185,6 +210,8 @@ function cleanNumber(v, { min, max, int: whole }) {
 
 function cleanValue(v, spec) {
   if (spec.type === "number") return cleanNumber(v, spec);
+  if (spec.type === "bool") return v === true || v === "true" ? true : v === false || v === "false" ? false : undefined;
+  if (spec.type === "pattern") return typeof v === "string" && spec.re.test(v.trim()) ? v.trim() : undefined;
   if (typeof v !== "string" && typeof v !== "number") return undefined;
   if (spec.type === "enum") {
     const s = String(v).trim().toLowerCase();
@@ -210,11 +237,39 @@ export function cleanProps(event, raw) {
     // A link keeps only its path, so only the path is checked: a query string
     // carrying a long ad id must not cost the whole prop.
     const kept = spec.type === "path" && typeof v === "string" ? v.split(/[?#]/)[0] : v;
-    if (looksSensitiveValue(kept)) continue;
+    const ownRef = key === "order_ref" && typeof v === "string" && OWN_ORDER_REF.test(v.trim());
+    if (!ownRef && looksSensitiveValue(kept)) continue;
     const clean = cleanValue(v, spec);
     if (clean !== undefined) out[key] = clean;
   }
   return out;
+}
+
+// ── the page address (meta-events.md, Phase 4 contract) ─────────────────────
+
+const MAX_URL = 1000;
+
+/**
+ * The page address the event came from, for Meta's event_source_url. A
+ * fundhub.ai page only (http or https); no anchor; a query parameter whose
+ * key names a sensitive field, or whose value looks like one (an email, a
+ * phone, a long digit run, a date), is dropped. null when nothing usable.
+ */
+export function cleanPageUrl(raw) {
+  if (typeof raw !== "string" || !raw.trim() || raw.length > 4 * MAX_URL) return null;
+  let u;
+  try { u = new URL(raw.trim()); } catch { return null; }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return null;
+  const host = u.hostname.toLowerCase();
+  if (host !== "fundhub.ai" && !host.endsWith(".fundhub.ai")) return null;
+  u.hash = "";
+  u.username = "";
+  u.password = "";
+  for (const [key, value] of [...u.searchParams.entries()]) {
+    if (isSensitiveKey(key) || looksSensitiveValue(value) || looksSensitiveValue(key)) u.searchParams.delete(key);
+  }
+  const out = u.toString();
+  return out.length <= MAX_URL ? out : `${u.origin}${u.pathname}`.slice(0, MAX_URL);
 }
 
 // ── names and keys ───────────────────────────────────────────────────────────
@@ -314,6 +369,16 @@ export async function recordTrack(body, deps = {}) {
     actor_reason: who.reason
   };
 
+  // Meta dedupe id, click and browser ids, page address: kept only when valid.
+  const metaEventId = cleanMetaEventId(body.meta_event_id);
+  if (metaEventId) payload.meta_event_id = metaEventId;
+  const fbc = cleanFbc(body.fbc);
+  if (fbc) payload.fbc = fbc;
+  const fbp = cleanFbp(body.fbp);
+  if (fbp) payload.fbp = fbp;
+  const url = cleanPageUrl(body.url);
+  if (url) payload.url = url;
+
   const db = deps.db || defaultDb;
   const orgId = deps.orgId || (await (deps.defaultOrgId || defaultOrgId)(db));
 
@@ -333,5 +398,11 @@ export async function recordTrack(body, deps = {}) {
     skipInngest: true,
     idempotencyKey: trackIdempotencyKey(event, sessionId, seq, where.page)
   });
-  return { ok: true, actor: who.actor, saved: sent?.deduped !== true };
+  const saved = sent?.deduped !== true;
+
+  // The Meta server copy: saved rows from real people only, never awaited here
+  // (the door waits a capped time after it answers; see deps.onMetaSend).
+  if (saved) startMetaSend({ db, orgId, rowId: sent?.id || null, payload, actor: who.actor, deps });
+
+  return { ok: true, actor: who.actor, saved };
 }

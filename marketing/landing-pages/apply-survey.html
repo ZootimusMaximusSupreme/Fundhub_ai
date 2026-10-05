@@ -434,8 +434,13 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
   function advance() {
     var list = path();
     SEND_STEP(list[at].key);
-    /* step_num: where this screen sat on the path this visitor saw (contact is 1). */
-    fht('survey_answer', { survey: 'apply', step_num: at + 1, question_id: list[at].key });
+    /* step_num: where this screen sat on the path this visitor saw (contact is 1).
+       last: the final question (cf_svy_available_capital). The shared tracker turns that
+       one into Meta Lead (docs/tracking/meta-events.md, Phase 4 map); this page sends
+       nothing to Meta itself. */
+    var p = { survey: 'apply', step_num: at + 1, question_id: list[at].key };
+    if (at === list.length - 1) p.last = true;
+    fht('survey_answer', p);
     if (at < list.length - 1) { at++; render(); }
     else finish();
   }
@@ -484,21 +489,10 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     function toCal(smooth) { var c = document.getElementById('cal'); window.scrollTo({ top: c.getBoundingClientRect().top + window.pageYOffset - 16, behavior: smooth ? 'smooth' : 'auto' }); }
     setTimeout(function () { toCal(true); }, 900);
     setTimeout(function () { if (Math.abs(document.getElementById('cal').getBoundingClientRect().top - 16) > 40) toCal(false); }, 2400);
-    var leadEmail = (A.contact && A.contact.email) ? String(A.contact.email).toLowerCase() : 'apply';
-    fhTrack('Lead', 'lead:' + leadEmail);
   }
   /* Same live calendar as /funding-book-call (native AppointmentScheduler in a frame).
-     That page posts fh-book-height. A real Book or Confirm writes fh_booking_v1. */
-  var META_ONCE = {};
-  function fhTrack(name, eventId) {
-    if (META_ONCE[name]) return;
-    if (name === 'Lead' && !A.cf_svy_available_capital) return;
-    META_ONCE[name] = true;
-    try {
-      if (typeof window.fbq !== 'function') return;
-      window.fbq('track', name, {}, { eventID: eventId });
-    } catch (e) {}
-  }
+     That page posts fh-book-height. The framed calendar posts an accepted booking up
+     to this page; the shared tracker passes it on (and turns it into Meta Schedule). */
   function showCal() {
     var cal = document.getElementById('cal');
     cal.hidden = false;
@@ -518,31 +512,6 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
       var h = Math.ceil(Number(d.h));
       if (h >= 400) f.style.height = h + 'px';
     });
-    var KEY = 'fh_booking_v1', LOADED = Date.now();
-    function booked(raw) {
-      try {
-        var d = JSON.parse(raw || 'null');
-        return !!(d && d.name && d.email && d.submittedAt && d.submittedAt >= LOADED);
-      } catch (e) { return false; }
-    }
-    function onBooked(raw) {
-      var email = '', at = '';
-      try {
-        var d = JSON.parse(raw || 'null');
-        email = d && d.email ? String(d.email).toLowerCase() : '';
-        at = d && d.submittedAt ? String(d.submittedAt) : '';
-      } catch (e) {}
-      fhTrack('Schedule', 'schedule:' + (email || 'apply') + ':' + (at || 'book'));
-    }
-    window.addEventListener('storage', function (e) {
-      if (e.key === KEY && booked(e.newValue)) onBooked(e.newValue);
-    });
-    setInterval(function () {
-      try {
-        var raw = localStorage.getItem(KEY);
-        if (booked(raw)) onBooked(raw);
-      } catch (e) {}
-    }, 1500);
   }
   /* Approvals strip: sits still; each Next slides in the next higher batch (same 16 as /watch, deck.json). */
   var WINS = [

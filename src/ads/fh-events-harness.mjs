@@ -4,8 +4,10 @@
 // the real script in a vm context with just enough DOM: elements with
 // attributes, classes, text, sizes and positions; simple selectors (tag, #id,
 // .class, [attr], [attr="v"], comma lists — no descendant combinators, which
-// the script does not use); capture listeners; a fake clock and timers; and a
-// fake IntersectionObserver the test drives by hand.
+// the script does not use); capture listeners; a fake clock and timers; a
+// fake IntersectionObserver the test drives by hand; and, for the Meta side
+// (src/ads/fh-events-meta.test.mjs), document.cookie, location.search /
+// origin, window.__fhPv and a recording fbq (page.fbqCalls).
 //
 // It is not a browser. The real-browser proof is the Playwright walk.
 
@@ -58,8 +60,15 @@ export function makePage({
   visibility = "visible",
   fhq,
   io = true,
+  search = "",
+  cookie = "",
+  /** true: a fake fbq that records each call in page.fbqCalls. */
+  fbq = false,
+  /** window.__fhPv, as the head pixel snippet sets it. */
+  fhPv,
 } = {}) {
   const sent = [];
+  const fbqCalls = [];
   const docListeners = {};
   const winListeners = {};
   const valueReads = [];
@@ -131,6 +140,7 @@ export function makePage({
     readyState,
     visibilityState: visibility,
     title,
+    cookie,
     documentElement: html,
     body,
     addEventListener: (name, fn) => { (docListeners[name] ||= []).push(fn); },
@@ -147,7 +157,7 @@ export function makePage({
 
   const calls = [];
   const win = {
-    location: { pathname, hostname },
+    location: { pathname, hostname, search, origin: `https://${hostname}` },
     navigator: { webdriver, sendBeacon: (url, blob) => { sent.push({ url, text: blob.text }); return true; } },
     sessionStorage,
     innerHeight,
@@ -167,6 +177,8 @@ export function makePage({
   }
   if (clarity) win.clarity = (...a) => calls.push(a);
   if (fhq) win.fhq = fhq;
+  if (fbq) win.fbq = (...a) => { fbqCalls.push(JSON.parse(JSON.stringify(a))); };
+  if (fhPv !== undefined) win.__fhPv = fhPv;
   win.self = win;
   win.top = framed ? {} : win;
   win.document = document;
@@ -182,7 +194,7 @@ export function makePage({
   };
 
   const page = {
-    win, document, body, html, store, calls, sent, valueReads, clock, observed,
+    win, document, body, html, store, calls, sent, valueReads, clock, observed, fbqCalls,
     node,
     /** Parse every send. */
     bodies: () => sent.map((s) => JSON.parse(s.text)),

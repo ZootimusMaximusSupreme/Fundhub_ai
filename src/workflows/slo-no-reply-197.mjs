@@ -1,4 +1,4 @@
-// If they do not reply to the first note, send the $197 offer.
+// If they do not reply to the first note, send the $147 offer (owner-set 2026-10-05).
 // A reply takes them off this path. The first five who say yes get the
 // roadmap free instead, in slo-genuine-followup.
 
@@ -111,7 +111,7 @@ export async function handleNoReply({ event, db, step, mint = mintDiscountLink }
 }
 
 export const sloNoReply197 = inngest.createFunction(
-  { id: "slo-no-reply-197", name: "SLO — $197 offer when they do not reply" },
+  { id: "slo-no-reply-197", name: "SLO — $147 offer when they do not reply" },
   { event: "slo.contact_started" },
   ({ event, step }) => handleNoReply({ event: event.data, db, step })
 );

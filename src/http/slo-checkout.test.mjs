@@ -8,6 +8,7 @@ import handler, {
   parseAffiliateTrackingId,
   parseSloPhone,
   runSloCheckout,
+  sloMetaMatch,
   sloPageConfig
 } from "../../api/public/slo-checkout.mjs";
 import { resolveSloBuyer } from "../slo/buyer.mjs";
@@ -35,7 +36,7 @@ function fakeRes() {
 test("GET states $297 and the pull path, and no earnings figure", () => {
   const page = sloPageConfig(LIVE_ENV);
   assert.equal(page.priceCents, SLO_PRICE_CENTS);
-  assert.equal(page.priceCents, 29700);
+  assert.equal(page.priceCents, 14700);
   assert.equal(page.next, SLO_PULL_PATH);
   assert.equal(page.checkout.ready, true);
   const blob = JSON.stringify(page);
@@ -99,7 +100,9 @@ test("parseSloCheckoutBody keeps Creative Factory UTMs and drops junk", () => {
     utm_term: "sun",
     landing_path: "/roadmap/",
     referrer_domain: "l.facebook.com",
-    fbclid: "DROPME"
+    // Meta Phase 4 (docs/tracking/meta-events.md): fbclid is kept now; other click ids are still junk.
+    fbclid: "IwAR0x_9-AbC",
+    gclid: "DROPME"
   });
   assert.equal(ok.ok, true);
   assert.deepEqual(ok.attribution, {
@@ -109,7 +112,8 @@ test("parseSloCheckoutBody keeps Creative Factory UTMs and drops junk", () => {
     utm_content: "42-ringlights",
     utm_term: "sun",
     landing_path: "/roadmap/",
-    referrer_domain: "l.facebook.com"
+    referrer_domain: "l.facebook.com",
+    fbclid: "IwAR0x_9-AbC"
   });
 });
 
@@ -156,7 +160,7 @@ test("runSloCheckout mints Assessment at $297 and sends them to the pull form", 
   assert.equal(out.ref, "slo_test_ref_1");
   assert.equal(out.next, SLO_PULL_PATH);
   assert.equal(sent.length, 1);
-  assert.equal(sent[0].amountCents, 29700);
+  assert.equal(sent[0].amountCents, 14700);
   assert.equal(sent[0].productTitle, SLO_KEEP_TITLE);
   assert.equal(sent[0].productTitle, "Consulting Services Assessment");
   assert.equal(sent[0].successUrl, "https://fundhub.ai/roadmap/pull.html");
@@ -180,7 +184,7 @@ test("runSloCheckout writes a diagnostic payment link so the UnderwriteIQ pull f
   const out = await runSloCheckout({ email: "buyer@example.com", name: "Pat Lee" }, deps);
   assert.equal(out.ok, true);
   assert.equal(deps.links.length, 1);
-  assert.equal(deps.links[0].amountCents, 29700);
+  assert.equal(deps.links[0].amountCents, 14700);
   assert.equal(deps.links[0].ref, "slo_wire_1");
 });
 
@@ -238,7 +242,7 @@ test("POST without email is 400; GET is 200", async () => {
   const get = fakeRes();
   await handler({ method: "GET" }, get);
   assert.equal(get.statusCode, 200);
-  assert.equal(get.body.priceCents, 29700);
+  assert.equal(get.body.priceCents, 14700);
 });
 
 test("sloPullSuccessUrl never puts SSN or amount on the address", () => {
@@ -281,12 +285,12 @@ test("DEMO: records the order stamped demo, never calls Commas, answers ref + cl
   assert.equal(minted, 0, "Commas is never called in demo");
   assert.deepEqual(
     { ok: out.ok, demo: out.demo, ref: out.ref, client_id: out.client_id, priceCents: out.priceCents },
-    { ok: true, demo: true, ref: "slo_demo_1", client_id: CLIENT, priceCents: 29700 }
+    { ok: true, demo: true, ref: "slo_demo_1", client_id: CLIENT, priceCents: 14700 }
   );
   assert.equal(out.checkoutUrl, undefined);
   assert.equal(deps.links.length, 1);
   assert.equal(deps.links[0].isDemo, true);
-  assert.equal(deps.links[0].amountCents, 29700);
+  assert.equal(deps.links[0].amountCents, 14700);
   assert.equal(deps.links[0].ref, "slo_demo_1");
   assert.equal(events[0].name, "slo.checkout_started");
   assert.equal(events[0].payload.demo, true);
@@ -346,8 +350,8 @@ test("businesses: first free, $15 each extra, from a list or from a count", asyn
     replaceBusinesses: async (_db, args) => { stored.push(args); }
   }));
   amount = out.priceCents;
-  assert.equal(amount, 29700 + 1500 * 2);
-  assert.equal(out.priceDisplay, "$327");
+  assert.equal(amount, 14700 + 1500 * 2);
+  assert.equal(out.priceDisplay, "$177");
   assert.equal(stored.length, 1);
   assert.equal(stored[0].businesses.length, 3);
   assert.equal(stored[0].clientId, CLIENT);
@@ -406,7 +410,7 @@ test("GET says whether this is demo pay, and demo checkout counts as ready", asy
   assert.match(demo.notices.charge, /not charged/);
   const live = sloPageConfig(LIVE_ENV);
   assert.equal(live.demo, false);
-  assert.match(live.notices.charge, /\$297/);
+  assert.match(live.notices.charge, /\$147/);
   const dead = sloPageConfig(DEAD_ENV);
   assert.equal(dead.checkout.ready, false);
 });
@@ -640,4 +644,97 @@ test("demo takes no card at all, so it mints no embedded session", async () => {
   assert.equal(out.demo, true);
   assert.equal(out.embedded, undefined);
   assert.equal(asked, 0);
+});
+
+/* ── Meta match keys (Phase 4, docs/tracking/meta-events.md) ─────────────── */
+
+const META_FBC = "fb.1.1727800000000.IwAR2abcDEF_123-xyz";
+const META_FBP = "fb.1.1727800000000.1234567890";
+const PHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Mobile/15E148 Instagram";
+
+test("Meta: fbc / fbp from the POST, the IP and the user agent are kept on the order's checkout row", async () => {
+  const events = [];
+  const stored = [];
+  const res = fakeRes();
+  await handler(
+    {
+      method: "POST",
+      headers: {
+        origin: "https://apply.fundhub.ai",
+        "user-agent": PHONE_UA,
+        "x-nf-client-connection-ip": "203.0.113.9",
+        "x-forwarded-for": "198.51.100.1, 10.0.0.1"
+      },
+      body: { email: "pat.buyer@gmail.com", fbc: META_FBC, fbp: META_FBP }
+    },
+    res,
+    sloDeps({
+      ref: "slo_meta_1",
+      emit(_db, name, payload) { events.push({ name, payload }); return { id: "evt-1" }; },
+      storeClickIds: async (_db, row) => { stored.push(row); return true; },
+      createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo" })
+    })
+  );
+  assert.equal(res.statusCode, 200);
+  assert.deepEqual(events[0].payload.meta_match, {
+    fbc: META_FBC,
+    fbp: META_FBP,
+    client_ip_address: "203.0.113.9",
+    client_user_agent: PHONE_UA
+  });
+  // The client gets fbc / fbp (blanks only, inside storeClientMetaClickIds), never the IP or user agent.
+  assert.equal(stored.length, 1);
+  assert.deepEqual(stored[0], {
+    orgId: "org-1", clientId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", fbc: META_FBC, fbp: META_FBP
+  });
+});
+
+test("Meta: no x-nf-client-connection-ip → the first x-forwarded-for hop", async () => {
+  const events = [];
+  const res = fakeRes();
+  await handler(
+    { method: "POST", headers: { "x-forwarded-for": "198.51.100.1, 10.0.0.1" }, body: { email: "pat.buyer@gmail.com" } },
+    res,
+    sloDeps({
+      emit(_db, name, payload) { events.push({ name, payload }); return { id: "evt-1" }; },
+      createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo" })
+    })
+  );
+  assert.equal(events[0].payload.meta_match.client_ip_address, "198.51.100.1");
+});
+
+test("Meta: no fbc sent but an fbclid → fbc is built; junk fbc / fbp are dropped", () => {
+  const built = parseSloCheckoutBody({ email: "pat.buyer@gmail.com", fbclid: "IwAR9zz" });
+  assert.match(built.metaClickIds.fbc, /^fb\.1\.\d{13}\.IwAR9zz$/);
+  const junk = parseSloCheckoutBody({ email: "pat.buyer@gmail.com", fbc: "<b>x</b>", fbp: "pat@x.com" });
+  assert.deepEqual(junk.metaClickIds, { fbc: null, fbp: null });
+});
+
+test("Meta: nothing sent → no meta_match and no client write", async () => {
+  const events = [];
+  let stores = 0;
+  await runSloCheckout(parseSloCheckoutBody({ email: "pat.buyer@gmail.com" }), sloDeps({
+    emit(_db, name, payload) { events.push({ name, payload }); return { id: "evt-1" }; },
+    storeClickIds: async () => { stores += 1; },
+    createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo" })
+  }));
+  assert.equal("meta_match" in events[0].payload, false);
+  assert.equal(stores, 0);
+});
+
+test("Meta: a failed click-id write never stops the checkout", async () => {
+  const out = await runSloCheckout(parseSloCheckoutBody({ email: "pat.buyer@gmail.com", fbc: META_FBC }), sloDeps({
+    storeClickIds: async () => { throw new Error("db down"); },
+    createCheckoutSession: async () => ({ ok: true, paymentLink: "https://pay.example.test/slo" })
+  }));
+  assert.equal(out.ok, true);
+});
+
+test("Meta: the stored match never holds a raw email or phone", () => {
+  const parsed = parseSloCheckoutBody({ email: "pat.buyer@gmail.com", phone: "480-555-0100", fbc: META_FBC });
+  const m = sloMetaMatch(parsed, { clientIp: "203.0.113.9", userAgent: PHONE_UA });
+  const blob = JSON.stringify(m);
+  assert.equal(blob.includes("pat.buyer"), false);
+  assert.equal(blob.includes("5550100"), false);
+  assert.equal(sloMetaMatch(parsed, { clientIp: "not an ip" }).client_ip_address, undefined);
 });

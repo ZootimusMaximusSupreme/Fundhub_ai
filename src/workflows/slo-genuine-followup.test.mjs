@@ -324,7 +324,7 @@ test("handleReply: after a real answer, the gift becomes the 33% coupon", async 
     step: fakeStep()
   });
   assert.equal(res.sent, true);
-  assert.match(res.payUrl, /offer=197/);
+  assert.match(res.payUrl, /offer=147/);
   assert.deepEqual(
     db.messages.map((m) => m.template_key).sort(),
     [EMAIL_COUPON_KEY, SMS_COUPON_KEY].sort()

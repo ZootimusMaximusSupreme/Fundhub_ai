@@ -194,6 +194,44 @@ Source: `docs/ads/ANGLE-GENERATOR.md`, last section. Run all seven before a conc
 ---
 ---
 
+## 1.7 Dollar amounts are always numerals (owner-set 2026-10-04)
+
+Write every dollar amount as numerals, never spelled out in words. "$300,000", not "three hundred
+thousand dollars". "$100K" is fine in bullet cues. This applies to every script, including
+teleprompter scripts.
+
+---
+
+## 1.8 Delivery marks on every teleprompter script (owner-set 2026-10-04)
+
+Every script handed over for filming carries delivery marks:
+
+- CAPS on the word to punch
+- A blank line where he pauses. BigVU only pauses on a space, so a pause is a new paragraph.
+- ↑ at the end of a line where his pitch goes up (questions, setups before a reveal)
+
+Use pauses at the beats that matter (after the hook, before the reveal, before the CTA), not after
+every sentence.
+
+---
+
+## 1.9 Conversational voice (owner-set 2026-10-04)
+
+Scripts are a plain conversation with the viewer: Chris telling them what it is, the way he'd say it
+face to face. Contractions, simple words, 5th grade reading level. No hype, no preachy lines, and no
+filler like "dude", "bro" or "man" (he tried it and cut it).
+
+---
+
+## 1.10 Build long ads from all of Chris's own points (owner-approved 2026-10-04)
+
+When Chris dictates an ad, pull every point he made across all his messages in the thread, in his
+order, with his own phrases and stories, and do not trim points to shorten it. Then clean it into
+plain spoken sentences and apply the rules above. The model is
+`marketing/ads/reference/ad-scale-without-your-own-cash-2026-10-04.md`, which he called a work of art.
+
+---
+
 # PART 2 — THE TWO MEASUREMENTS
 
 These two rules did not exist anywhere in the repo before this file. Chris named both on

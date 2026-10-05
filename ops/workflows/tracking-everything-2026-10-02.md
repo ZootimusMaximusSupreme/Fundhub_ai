@@ -18,7 +18,7 @@ Nothing is pushed to ClickFunnels or deployed until Chris says "approved". Agent
 | P3-H1 | Buy box hooks + section/FAQ/carousel attributes in `slo/slo-01-sales.html` | agent | done — committed `bf563492` with fixes 1/4/5 |
 | P3-H2 | Survey hooks: `apply-survey.html`, `public/js/homepage-survey.js` + `public/index.html`, sorting hat `public/funnel/thankyou-sort.js` | agent | done — committed `38d69440` |
 | P3-H3 | Booking: /funding-book-call footer block (fix 3), `slo/slo-02-booking.html`, manifest (+ /order row), push script code block | agent | done — committed `1c19a6bd` |
-| P4 | Meta pixel + Conversions API | M1 server sender, M2 browser + fbc/fbp, M3 pages + pixel snippet, M4 server Purchase events | claimed — building (contract: `docs/tracking/meta-events.md` Phase 4) |
+| P4 | Meta pixel + Conversions API | M1–M4 | **done — LIVE** ship `10a7b8ca` + ClickFunnels pushes; first real server send accepted 2026-10-02 17:59 UTC |
 | G | Gates: show diffs, deploy on "approved", prove live, phone checklist, docs | this session | **done — live 2026-10-02** (ship `4ad9f02c` by another session + CF pushes by this session) |
 | Q1 | /roadmap and /roadmap/ → one URL | agent | done — committed (see Results) |
 | Q2+Q3+Q6+Q7p | /roadmap page: tap speed, layout shift, dead clicks, Fundhub LLC on page; /affiliates | agent | done — committed `24c002e8`, **not live**, draft https://claude.ai/artifact/MPSifyuxfghteotFPHfVtA |
@@ -216,3 +216,9 @@ Buy box v2 on /roadmap: refund line above the step-1 button; step 1 = first name
 - One Meta test send with that token from this session was refused by the safety check ("Credential Exploration"). Not retried. The server code reads the token the way `api/campaigns/sync.mjs` does; proof comes after ship from Meta's own reply stored on each row (`payload.meta`).
 - Four builders, disjoint files: M1 sender + map + hook (src/messaging/providers/meta-capi.mjs, src/meta/*, src/funnel/track.mjs, slo-interest), M2 browser (fh-events.js, fh-attribution.js, attribution-keys, 06 paste-in), M3 pages (manifest pixel snippet + META_PIXEL_ID, slo-01-sales, apply-survey, homepage, 04e, slo-02-booking, thankyou-sort), M4 server money events (slo-checkout fbc/fbp storage, payment webhook Purchase, offers Purchase, clickfunnels adapter).
 - Env to set at ship: META_CAPI_ENABLED=1, META_PIXEL_ID=2403674420141513 (+ META_TEST_EVENT_CODE only while testing).
+
+## Phase 4 LIVE — 2026-10-02
+
+- Commits: `a69223ec` (browser), `4d8118c3` (pages), `e7bbb227` (server sender + purchase events). Ship `10a7b8ca` (330 applied, 0 pending, Inngest re-registered). ClickFunnels pushes: funnel 968281 head pixel (verified), slo-297-sales, slo-297-booking, slo-297-thank-you, apply-survey.
+- Netlify: META_CAPI_ENABLED=1, META_PIXEL_ID=2403674420141513 (ADAPTERS_DRY_RUN=0, AD_TOKEN_ENC_KEY present).
+- Proof: first real /roadmap visitor after the ship (17:59:49 UTC) → server sent PageView + ViewContent with the browser's ids (`pv.<sid>.<rand>`, `<pv>.vc`), Meta reply recorded `sent: 2`, no error.
