@@ -8,10 +8,16 @@ import {
   summarizeSystems,
   formatMorningText,
   loadMoney,
-  money
+  money,
+  EVENING_BRIEF_CRON,
+  BRIEF_KINDS,
+  GREETINGS,
+  briefWindow,
+  summarizeStoredSystems,
+  buildMorningBrief
 } from "./morning-brief.mjs";
 import { textMorningBrief, last4 } from "../pulse/notify.mjs";
-import { parseBriefDate } from "../../api/read/morning-brief.mjs";
+import { parseBriefDate, parseBriefKind } from "../../api/read/morning-brief.mjs";
 
 // 13:00 UTC on 2026-10-05 is 6:00 a.m. Arizona.
 const SIX_AM_AZ = new Date("2026-10-05T13:00:00Z");
@@ -130,4 +136,104 @@ test("read endpoint date: default Arizona today, refuses bad and impossible date
   assert.equal(parseBriefDate("2026-02-30"), null);
   assert.equal(parseBriefDate("10/05/2026"), null);
   assert.equal(parseBriefDate("2026-10-05'; drop"), null);
+});
+
+/* ---------- evening brief (MB6) ---------- */
+
+// 04:00 UTC on 2026-10-06 is 9:00 p.m. on Monday 2026-10-05 in Arizona.
+const NINE_PM_AZ = new Date("2026-10-06T04:00:00Z");
+
+test("evening cron is one constant and lands at 9:00 p.m. Arizona", () => {
+  assert.equal(EVENING_BRIEF_CRON, "0 4 * * *");
+  const [min, hour] = EVENING_BRIEF_CRON.split(" ").map(Number);
+  const fire = new Date(Date.UTC(2026, 9, 6, hour, min));
+  const az = new Intl.DateTimeFormat("en-US", { timeZone: "America/Phoenix", hour: "numeric", minute: "2-digit" }).format(fire);
+  assert.equal(az.replace(/\s/g, " "), "9:00 PM");
+  assert.equal(phoenixDateStamp(fire), "2026-10-05");
+});
+
+test("windows: morning keeps last 24 hours and yesterday; evening is since Arizona midnight", () => {
+  const m = briefWindow("morning", SIX_AM_AZ);
+  assert.equal(m.brief_date, "2026-10-05");
+  assert.equal(m.label, "last 24 hours");
+  assert.equal(m.from, "2026-10-04T13:00:00.000Z");
+  assert.equal(m.day, "2026-10-04");
+
+  const e = briefWindow("evening", NINE_PM_AZ);
+  assert.equal(e.brief_date, "2026-10-05");
+  assert.equal(e.label, "today so far");
+  assert.equal(e.from, "2026-10-05T07:00:00.000Z"); // midnight Arizona
+  assert.equal(e.to, "2026-10-06T04:00:00.000Z");
+  assert.equal(e.day, "2026-10-05");
+
+  assert.throws(() => briefWindow("noon", NINE_PM_AZ), /morning or evening/);
+});
+
+test("the evening text starts Good evening, Chris. and says plainly when no morning check is stored", () => {
+  const text = formatMorningText({
+    kind: "evening",
+    now: NINE_PM_AZ,
+    systems: summarizeStoredSystems(null),
+    money: { line: LINES.moneyNotConnected },
+    team: { line: "Team, today so far: 0 calls held, 0 no-shows. Last 24 hours: files funded unknown." }
+  });
+  assert.ok(text.startsWith("Good evening, Chris. Monday, October 5."));
+  assert.match(text, /no morning check is stored for today/);
+  assert.match(text, /today so far/);
+  assert.equal(GREETINGS.morning, "Good morning, Chris.");
+  assert.throws(() => formatMorningText({ kind: "afternoon" }), /morning or evening/);
+});
+
+test("evening systems reads the stored morning check and names its time", () => {
+  const s = summarizeStoredSystems({
+    ran_at: "2026-10-05T13:00:00.000Z",
+    checks: [{ id: "health", status: "green", proof: "ok" }, { id: "login", status: "red", proof: "HTTP 500" }]
+  });
+  assert.equal(s.source, "stored_morning_check");
+  assert.match(s.line.replace(/\s/g, " "), /^Systems, from this morning's check at 6:00 AM: 1 of 2 checks green\. 1 red: login\./);
+  assert.equal(summarizeStoredSystems(null).source, "none_stored_today");
+});
+
+test("evening build reads this morning's stored check, never a pulse, and counts the team since midnight", async () => {
+  const seen = [];
+  const db = {
+    query: async (sql, params) => {
+      seen.push({ sql, params });
+      if (/FROM morning_briefs/.test(sql)) {
+        return { rows: [{ systems: { scorecard: { ran_at: "2026-10-05T13:00:00Z", checks: [{ id: "health", status: "green", proof: "ok" }] } } }] };
+      }
+      return { rows: [] };
+    }
+  };
+  const brief = await buildMorningBrief(db, {
+    orgId: "00000000-0000-0000-0000-000000000001",
+    kind: "evening",
+    now: NINE_PM_AZ,
+    env: { PLAID_ENV: "sandbox" },
+    pulse: { checks: [{ id: "login", status: "FAIL", detail: "must be ignored" }] }
+  });
+  assert.equal(brief.kind, "evening");
+  assert.equal(brief.brief_date, "2026-10-05");
+  assert.ok(brief.text_body.startsWith("Good evening, Chris. Monday, October 5."));
+  assert.match(brief.text_body.replace(/\s/g, " "), /Systems, from this morning's check at 6:00 AM: 1 of 1 checks green\. Nothing needs you\./);
+  assert.doesNotMatch(brief.text_body, /login/);
+  const stored = seen.find((q) => /FROM morning_briefs/.test(q.sql));
+  assert.match(stored.sql, /kind = 'morning'/);
+  assert.deepEqual(stored.params.slice(1), ["2026-10-05"]);
+  const closers = seen.find((q) => /GROUP BY o.staff_id, s.name/.test(q.sql));
+  assert.equal(closers.params[1], "2026-10-05T07:00:00.000Z");
+  assert.equal(closers.params[2], "2026-10-06T04:00:00.000Z");
+  const spend = seen.find((q) => /FROM ad_metrics_daily/.test(q.sql));
+  assert.equal(spend.params[1], "2026-10-05");
+  assert.match(brief.marketing.spend_line, /^Ad spend today so far \(2026-10-05\)/);
+});
+
+test("read endpoint kind: default morning, evening allowed, anything else refused", () => {
+  assert.equal(parseBriefKind(undefined), "morning");
+  assert.equal(parseBriefKind(""), "morning");
+  assert.equal(parseBriefKind("evening"), "evening");
+  assert.equal(parseBriefKind("morning"), "morning");
+  assert.equal(parseBriefKind("night"), null);
+  assert.equal(parseBriefKind("evening'; drop"), null);
+  assert.deepEqual([...BRIEF_KINDS], ["morning", "evening"]);
 });

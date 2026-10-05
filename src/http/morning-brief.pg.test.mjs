@@ -54,7 +54,7 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
   }
 
   async function purge() {
-    await db.query(`DELETE FROM morning_briefs WHERE brief_date IN ('2001-03-05','2001-03-06')`);
+    await db.query(`DELETE FROM morning_briefs WHERE brief_date IN ('2001-03-05','2001-03-06','2001-03-08')`);
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [STAFF_EMAIL_LIKE]);
     await db.query(`DELETE FROM orgs WHERE slug = $1`, [OTHER_ORG_SLUG]);
   }
@@ -148,5 +148,82 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
   test("another company's owner cannot see this company's brief", async () => {
     const r = await call({ token: otherOwner.token, query: { date: "2001-03-05" } });
     assert.equal(r.code, 404);
+  });
+
+  /* ---------- evening brief (MB6, migration 433) ---------- */
+
+  // 04:00 UTC is 9:00 p.m. Arizona the evening before.
+  const EVE1 = new Date("2001-03-06T04:00:00Z"); // evening of 2001-03-05
+  const EVE_NO_MORNING = new Date("2001-03-09T04:00:00Z"); // evening of 2001-03-08
+
+  test("the evening saves its own row beside the morning, reading the morning's stored check", async () => {
+    const sends = [];
+    const out = await runMorningBrief({
+      db, orgId, kind: "evening", now: EVE1,
+      env: { PULSE_SMS_TO: "+14805550199", PLAID_ENV: "sandbox" },
+      sendImpl: async (m) => { sends.push(m); return { status: "sent" }; }
+    });
+    assert.equal(sends.length, 0, "dry-run: nothing texted");
+    const row = out.saved.row;
+    assert.equal(row.kind, "evening");
+    assert.equal(row.brief_date, "2001-03-05");
+    assert.equal(row.delivery_status, "dry_run");
+    assert.ok(row.text_body.startsWith("Good evening, Chris. Monday, March 5."));
+    // The morning row for 2001-03-05 holds one green check (the rerun above).
+    assert.match(row.text_body.replace(/\s/g, " "), /Systems, from this morning's check at 6:00 AM: 1 of 1 checks green\./);
+    assert.equal(row.systems.source, "stored_morning_check");
+    assert.match(row.text_body, /Team, today so far:/);
+
+    const { rows } = await db.query(
+      `SELECT kind FROM morning_briefs WHERE org_id = $1 AND brief_date = '2001-03-05' ORDER BY kind`, [orgId]
+    );
+    assert.deepEqual(rows.map((r) => r.kind), ["evening", "morning"]);
+
+    // A rerun the same evening updates the one evening row.
+    await runMorningBrief({ db, orgId, kind: "evening", now: EVE1, env: {} });
+    const again = await db.query(
+      `SELECT count(*)::int AS n FROM morning_briefs WHERE org_id = $1 AND brief_date = '2001-03-05' AND kind = 'evening'`, [orgId]
+    );
+    assert.equal(again.rows[0].n, 1);
+  });
+
+  test("an evening with no morning check stored says so plainly", async () => {
+    const out = await runMorningBrief({ db, orgId, kind: "evening", now: EVE_NO_MORNING, env: {} });
+    assert.equal(out.saved.row.brief_date, "2001-03-08");
+    assert.match(out.saved.row.text_body, /Systems: no morning check is stored for today/);
+    assert.equal(out.saved.row.systems.source, "none_stored_today");
+  });
+
+  test("the database holds each kind to its own greeting and refuses any other kind", async () => {
+    await assert.rejects(db.query(
+      `INSERT INTO morning_briefs (org_id, brief_date, kind, text_body) VALUES ($1, '2001-03-08', 'morning', 'Good evening, Chris. x')`, [orgId]
+    ));
+    await assert.rejects(db.query(
+      `INSERT INTO morning_briefs (org_id, brief_date, kind, text_body) VALUES ($1, '2001-03-06', 'evening', 'Good morning, Chris. x')`, [orgId]
+    ));
+    await assert.rejects(db.query(
+      `INSERT INTO morning_briefs (org_id, brief_date, kind, text_body) VALUES ($1, '2001-03-06', 'noon', 'Good morning, Chris. x')`, [orgId]
+    ));
+    // Second evening row for the same day is refused by the (org, day, kind) key.
+    await assert.rejects(db.query(
+      `INSERT INTO morning_briefs (org_id, brief_date, kind, text_body) VALUES ($1, '2001-03-05', 'evening', 'Good evening, Chris. x')`, [orgId]
+    ));
+  });
+
+  test("GET kind=evening serves the evening; no kind is morning; bad kind 400; missing evening 404", async () => {
+    const eve = await call({ token: owner.token, query: { date: "2001-03-05", kind: "evening" } });
+    assert.equal(eve.code, 200);
+    assert.equal(eve.body.kind, "evening");
+    assert.ok(eve.body.brief.text_body.startsWith("Good evening, Chris."));
+
+    const morn = await call({ token: owner.token, query: { date: "2001-03-05" } });
+    assert.equal(morn.code, 200);
+    assert.equal(morn.body.kind, "morning");
+    assert.ok(morn.body.brief.text_body.startsWith("Good morning, Chris."));
+
+    assert.equal((await call({ token: owner.token, query: { date: "2001-03-05", kind: "night" } })).code, 400);
+    assert.equal((await call({ token: owner.token, query: { date: "2001-03-06", kind: "evening" } })).code, 404);
+    assert.equal((await call({ token: closer.token, query: { date: "2001-03-05", kind: "evening" } })).code, 403);
+    assert.equal((await call({ token: otherOwner.token, query: { date: "2001-03-05", kind: "evening" } })).code, 404);
   });
 });

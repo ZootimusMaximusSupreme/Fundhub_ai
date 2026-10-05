@@ -1,13 +1,16 @@
-// GET /api/read/morning-brief[?date=YYYY-MM-DD]
+// GET /api/read/morning-brief[?date=YYYY-MM-DD][&kind=morning|evening]
 //
-// The stored "Good morning, Chris" brief for one Arizona morning: the text
+// The stored "Good morning, Chris" brief for one Arizona morning — or, with
+// kind=evening, the "Good evening, Chris" brief for that evening (MB6): the text
 // and the full report behind it (systems, marketing, money, team,
-// suggestions, today). One row per morning in morning_briefs
-// (db/migrations/431_morning_briefs.sql), written by src/ops/morning-brief.mjs
-// as step 2 of the 6:00 a.m. pulse job. MB5's report page reads this.
+// suggestions, today). One row per day per kind in morning_briefs
+// (db/migrations/431_morning_briefs.sql, kind added in 433), written by
+// src/ops/morning-brief.mjs — the morning as step 2 of the 6:00 a.m. pulse job,
+// the evening by src/workflows/evening-brief.mjs. MB5's report page reads this.
 //
 // No date → today in America/Phoenix. A malformed or impossible date → 400.
-// No row for that morning → 404.
+// No kind → morning. Any kind but morning or evening → 400.
+// No row for that day and kind → 404.
 //
 // Owner and admin only (ROLE_SETS.OPS): the brief carries company cash, every
 // closer's numbers, and platform health. requireAuth then a real requireRole —
@@ -17,7 +20,7 @@
 import { db } from "../../src/db.mjs";
 import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { ROLE_SETS, requireRole, isUuid } from "../../src/http/read-api.mjs";
-import { readMorningBrief, phoenixDateStamp } from "../../src/ops/morning-brief.mjs";
+import { readMorningBrief, phoenixDateStamp, BRIEF_KINDS } from "../../src/ops/morning-brief.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 
 export function parseBriefDate(raw, now = new Date()) {
@@ -27,6 +30,12 @@ export function parseBriefDate(raw, now = new Date()) {
   const d = new Date(`${s}T00:00:00Z`);
   if (Number.isNaN(d.getTime()) || d.toISOString().slice(0, 10) !== s) return null;
   return s;
+}
+
+export function parseBriefKind(raw) {
+  if (raw == null || raw === "") return "morning";
+  const s = String(raw).trim();
+  return BRIEF_KINDS.includes(s) ? s : null;
 }
 
 export default async function handler(req, res, deps = {}) {
@@ -50,10 +59,13 @@ export default async function handler(req, res, deps = {}) {
     const date = parseBriefDate(req.query?.date, clock());
     if (!date) return res.status(400).json({ ok: false, error: "date must be YYYY-MM-DD" });
 
-    const brief = await readMorningBrief(database, { orgId: staff.org_id, date });
-    if (!brief) return res.status(404).json({ ok: false, error: "no_brief", date });
+    const kind = parseBriefKind(req.query?.kind);
+    if (!kind) return res.status(400).json({ ok: false, error: "kind must be morning or evening" });
 
-    return res.status(200).json({ ok: true, date, brief });
+    const brief = await readMorningBrief(database, { orgId: staff.org_id, date, kind });
+    if (!brief) return res.status(404).json({ ok: false, error: "no_brief", date, kind });
+
+    return res.status(200).json({ ok: true, date, kind, brief });
   } catch (e) {
     // A database that did not answer is a 503, not our bug (src/http/db-down.mjs).
     if (dbDown(res, e)) return;

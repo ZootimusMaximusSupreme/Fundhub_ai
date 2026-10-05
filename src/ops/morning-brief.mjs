@@ -1,4 +1,8 @@
 // The morning brief — "Good morning, Chris." plus the full report behind it.
+// And the evening brief — "Good evening, Chris." — built by this same code
+// (MB6, owner-set 2026-10-05: deals and ads move overnight, so Chris knows
+// what is going on before bed and again when he wakes up). One builder, two
+// kinds: 'morning' | 'evening'. No copy-paste fork.
 // MB3 on ops/workflows/morning-brief-2026-10-05.md. Spec:
 // docs/specs/morning-brief-2026-10-05.md ("The morning text", "The full report").
 // Flow: docs/journeys/morning-brief-flow.md.
@@ -13,9 +17,16 @@
 // line saying what it is waiting on. It never prints a guessed number.
 //
 // DRY-RUN. MORNING_BRIEF_LIVE is false. The brief is built and saved with
-// delivery_status 'dry_run'; nothing is texted. Today's pulse text is
-// untouched. Going live (and whether this text replaces the pulse text or
-// comes as well) is Chris's call after MB1 — see the PR.
+// delivery_status 'dry_run'; nothing is texted. The same switch holds the
+// evening brief. Owner-set 2026-10-05: once it is true, the morning brief
+// REPLACES the old "Fundhub morning check" pulse text — one text, not two
+// (src/workflows/daily-pulse.mjs passes sendPulseText: false). While it is
+// false the old pulse text still goes, unchanged.
+//
+// WINDOWS. Morning: team over the last 24 hours, ad spend and money for
+// yesterday (Arizona). Evening: "today so far" — since local midnight in
+// Arizona — and its systems line reads the check stored this morning; it
+// never runs the full pulse a second time (MB2 owns the checks).
 //
 // AUDIT ONLY. It never fixes, sends money, pulls credit, or changes an ad.
 
@@ -28,6 +39,13 @@ import { textMorningBrief } from "../pulse/notify.mjs";
 
 export const MORNING_BRIEF_LIVE = false;
 export const BRIEF_TZ = "America/Phoenix";
+// Arizona keeps no daylight time, so its offset never moves.
+export const BRIEF_UTC_OFFSET = "-07:00";
+export const BRIEF_KINDS = Object.freeze(["morning", "evening"]);
+
+// The evening brief's time. 9:00 p.m. Arizona = 04:00 UTC the next day.
+// Change this one line to move it (Inngest crons are UTC).
+export const EVENING_BRIEF_CRON = "0 4 * * *";
 
 export const LINES = {
   marketingWaiting:
@@ -40,8 +58,19 @@ export const LINES = {
   suggestionsWaiting: "Suggestions: none yet. They start when the cadence rules are approved (MB4).",
   todayWaiting: "Today: no source yet (MB4).",
   advisorWaiting: "Funding advisor files per person: no source yet. Nothing links a funding round to an advisor.",
-  systemsMissing: "Systems: the morning check did not run, so nothing was checked."
+  systemsMissing: "Systems: the morning check did not run, so nothing was checked.",
+  systemsNotStoredToday: "Systems: no morning check is stored for today, so nothing has been checked since last night."
 };
+
+export const GREETINGS = Object.freeze({
+  morning: "Good morning, Chris.",
+  evening: "Good evening, Chris."
+});
+
+function assertKind(kind) {
+  if (!BRIEF_KINDS.includes(kind)) throw new TypeError(`brief kind must be morning or evening, got ${kind}`);
+  return kind;
+}
 
 /* ---------- dates ---------- */
 
@@ -62,6 +91,42 @@ export function phoenixLongDate(now = new Date()) {
 function dayBefore(dateStr) {
   const d = new Date(`${dateStr}T00:00:00Z`);
   return new Date(d.getTime() - 86400000).toISOString().slice(0, 10);
+}
+
+/** Arizona local midnight that starts dateStr, as a Date. */
+export function phoenixMidnight(dateStr) {
+  return new Date(`${dateStr}T00:00:00${BRIEF_UTC_OFFSET}`);
+}
+
+/**
+ * The window each kind covers.
+ *   morning: team = last 24 hours ending now; ad spend and money = yesterday.
+ *   evening: team = since Arizona midnight; ad spend and money = today so far.
+ */
+export function briefWindow(kind, now = new Date()) {
+  assertKind(kind);
+  const briefDate = phoenixDateStamp(now);
+  if (kind === "evening") {
+    return {
+      kind,
+      brief_date: briefDate,
+      label: "today so far",
+      from: phoenixMidnight(briefDate).toISOString(),
+      to: now.toISOString(),
+      day: briefDate,
+      day_label: `today so far (${briefDate})`
+    };
+  }
+  const yesterday = dayBefore(briefDate);
+  return {
+    kind,
+    brief_date: briefDate,
+    label: "last 24 hours",
+    from: new Date(now.getTime() - 86400000).toISOString(),
+    to: now.toISOString(),
+    day: yesterday,
+    day_label: yesterday
+  };
 }
 
 export function money(cents) {
@@ -127,15 +192,15 @@ export function scorecardFromPulse(pulse, { now = new Date() } = {}) {
   };
 }
 
-export function summarizeSystems(scorecard) {
+export function summarizeSystems(scorecard, { prefix = "Systems:", missingLine = LINES.systemsMissing } = {}) {
   if (!scorecard || !Array.isArray(scorecard.checks)) {
-    return { status: "missing", total: 0, green: 0, red: 0, not_checked: 0, reds: [], line: LINES.systemsMissing };
+    return { status: "missing", total: 0, green: 0, red: 0, not_checked: 0, reds: [], line: missingLine };
   }
   const checks = scorecard.checks;
   const green = checks.filter((c) => c.status === "green").length;
   const reds = checks.filter((c) => c.status === "red");
   const notChecked = checks.filter((c) => c.status !== "green" && c.status !== "red").length;
-  let line = `Systems: ${green} of ${checks.length} checks green.`;
+  let line = `${prefix} ${green} of ${checks.length} checks green.`;
   if (reds.length) {
     line += ` ${reds.length} red: ` + reds.slice(0, 3).map((c) => {
       const day = c.day_count ? ` (day ${c.day_count})` : "";
@@ -157,30 +222,57 @@ export function summarizeSystems(scorecard) {
   };
 }
 
+/* The evening reads the check that already ran this morning. Today the stored
+   copy is the morning_briefs row's systems.scorecard (the pulse result in the
+   board's scorecard contract). When MB2's own stored scorecard lands, point
+   this one read at it. Never runs the pulse again. */
+export async function loadStoredScorecard(db, { orgId, briefDate }) {
+  const r = await db.query(
+    `SELECT systems FROM morning_briefs
+      WHERE org_id = $1 AND brief_date = $2::date AND kind = 'morning'`,
+    [orgId, briefDate]
+  );
+  const card = r.rows[0]?.systems?.scorecard;
+  return card && Array.isArray(card.checks) ? card : null;
+}
+
+function phoenixClock(iso) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return null;
+  return new Intl.DateTimeFormat("en-US", { timeZone: BRIEF_TZ, hour: "numeric", minute: "2-digit" }).format(d);
+}
+
+/** Evening systems line: today's stored morning check, or a plain "not stored". */
+export function summarizeStoredSystems(scorecard) {
+  const at = scorecard?.ran_at ? phoenixClock(scorecard.ran_at) : null;
+  const prefix = at ? `Systems, from this morning's check at ${at}:` : "Systems, from this morning's check:";
+  const s = summarizeSystems(scorecard, { prefix, missingLine: LINES.systemsNotStoredToday });
+  return { ...s, source: scorecard ? "stored_morning_check" : "none_stored_today" };
+}
+
 /* ---------- marketing ---------- */
 
 /* Spend comes from ad_metrics_daily — the same table the marketing machine's
    numbers (M5, docs/specs/marketing-machine-2026-10-04.md §11.1) count spend
    from. Everything else waits for M5; it is not rebuilt here. */
-export async function loadMarketing(db, { orgId, briefDate }) {
-  const yesterday = dayBefore(briefDate);
+export async function loadMarketing(db, { orgId, briefDate, day = dayBefore(briefDate), dayLabel = day }) {
   try {
     const r = await db.query(
       `SELECT COUNT(*)::int AS n, COALESCE(SUM(spend_cents), 0)::bigint AS cents
          FROM ad_metrics_daily
         WHERE org_id = $1 AND date = $2::date`,
-      [orgId, yesterday]
+      [orgId, day]
     );
     const n = Number(r.rows[0]?.n || 0);
     const cents = n ? Number(r.rows[0].cents) : null;
     return {
       status: "partial",
-      spend_day: yesterday,
+      spend_day: day,
       spend_cents: cents,
       spend_source: "ad_metrics_daily",
       spend_line: cents == null
-        ? `Ad spend ${yesterday}: no spend rows synced.`
-        : `Ad spend ${yesterday}: ${money(cents)}.`,
+        ? `Ad spend ${dayLabel}: no spend rows synced.`
+        : `Ad spend ${dayLabel}: ${money(cents)}.`,
       waiting: [LINES.marketingWaiting, LINES.dyingAdsWaiting],
       dashboard_url: null,
       dashboard_line: LINES.dashboardWaiting
@@ -202,16 +294,15 @@ export async function plaidLive(db, { orgId, env = process.env }) {
   return n ? { live: true, active_links: n } : { live: false, reason: "no active Plaid link" };
 }
 
-export async function loadMoney(db, { orgId, briefDate, env = process.env }) {
+export async function loadMoney(db, { orgId, briefDate, env = process.env, day = dayBefore(briefDate), dayLabel = day }) {
   try {
     const plaid = await plaidLive(db, { orgId, env });
     if (!plaid.live) {
       return { status: "not_connected", reason: plaid.reason, line: LINES.moneyNotConnected };
     }
-    const yesterday = dayBefore(briefDate);
     const monthStart = `${briefDate.slice(0, 8)}01`;
     const [dayRows, mtdRows] = await Promise.all([
-      loadCashflowByDay(db, { orgId, fromDay: yesterday, toDay: yesterday }),
+      loadCashflowByDay(db, { orgId, fromDay: day, toDay: day }),
       loadCashflowByDay(db, { orgId, fromDay: monthStart, toDay: briefDate })
     ]);
     const sum = (rows, k) => rows.reduce((n, r) => n + Number(r[k] || 0), 0);
@@ -220,12 +311,12 @@ export async function loadMoney(db, { orgId, briefDate, env = process.env }) {
     return {
       status: "ok",
       source: "bank_transactions via src/finance/cashflow.mjs (same read as Finance OS)",
-      day: yesterday,
+      day,
       in_cents: inY,
       out_cents: outY,
       mtd_in_cents: sum(mtdRows, "inflow_cents"),
       mtd_out_cents: sum(mtdRows, "outflow_cents"),
-      line: `Money posted ${yesterday}: ${money(inY)} in, ${money(outY)} out.`,
+      line: `Money posted ${dayLabel}: ${money(inY)} in, ${money(outY)} out.`,
       waiting: [LINES.accountsWaiting, LINES.creditLineWaiting]
     };
   } catch (err) {
@@ -235,8 +326,10 @@ export async function loadMoney(db, { orgId, briefDate, env = process.env }) {
 
 /* ---------- team and company ---------- */
 
-export async function loadTeam(db, { orgId, now }) {
-  const out = { status: "ok", window: "last 24 hours", waiting: [LINES.advisorWaiting] };
+export async function loadTeam(db, { orgId, now, window = briefWindow("morning", now) }) {
+  // company_8 (computePulse "today") always covers the last 24 hours; only the
+  // per-closer, CSM and unrecorded reads follow the window.
+  const out = { status: "ok", window: window.label, from: window.from, to: window.to, company_window: "last 24 hours", waiting: [LINES.advisorWaiting] };
 
   try {
     const pulse = await computePulse(db, { orgId, period: "today", now });
@@ -260,11 +353,11 @@ export async function loadTeam(db, { orgId, now }) {
          JOIN staff s ON s.id = o.staff_id AND s.org_id = o.org_id
         WHERE o.org_id = $1
           AND COALESCE(o.is_demo, false) = false
-          AND o.logged_at >= $2::timestamptz - interval '24 hours'
-          AND o.logged_at < $2::timestamptz
+          AND o.logged_at >= $2::timestamptz
+          AND o.logged_at < $3::timestamptz
         GROUP BY o.staff_id, s.name
         ORDER BY s.name`,
-      [orgId, now.toISOString()]
+      [orgId, window.from, window.to]
     );
     out.closers = r.rows;
   } catch (err) {
@@ -301,15 +394,18 @@ export async function loadTeam(db, { orgId, now }) {
   const noShows = Array.isArray(out.closers) ? out.closers.reduce((n, r) => n + r.no_shows, 0) : null;
   const funded = out.company_8?.funded_count?.value;
   const part = (v, word) => (v == null ? `${word} unknown` : `${v} ${word}`);
-  out.line = `Team, last 24 hours: ${part(held, "calls held")}, ${part(noShows, "no-shows")}, ${part(funded, "files funded")}.`;
+  out.line = window.label === out.company_window
+    ? `Team, ${window.label}: ${part(held, "calls held")}, ${part(noShows, "no-shows")}, ${part(funded, "files funded")}.`
+    : `Team, ${window.label}: ${part(held, "calls held")}, ${part(noShows, "no-shows")}. Last 24 hours: ${part(funded, "files funded")}.`;
   return out;
 }
 
 /* ---------- the text ---------- */
 
-export function formatMorningText({ now = new Date(), systems, marketing, money: m, team } = {}) {
-  const lines = [`Good morning, Chris. ${phoenixLongDate(now)}.`, ""];
-  lines.push(systems?.line || LINES.systemsMissing);
+export function formatMorningText({ kind = "morning", now = new Date(), systems, marketing, money: m, team } = {}) {
+  assertKind(kind);
+  const lines = [`${GREETINGS[kind]} ${phoenixLongDate(now)}.`, ""];
+  lines.push(systems?.line || (kind === "evening" ? LINES.systemsNotStoredToday : LINES.systemsMissing));
   const cash = team?.company_8?.cash_cents?.value;
   lines.push(`Last 24 hours: ${cash == null ? "cash collected unknown" : `${money(cash)} cash collected`}.`);
   if (marketing?.spend_line || marketing?.line) lines.push(marketing.spend_line || marketing.line);
@@ -321,20 +417,36 @@ export function formatMorningText({ now = new Date(), systems, marketing, money:
 
 /* ---------- build, save, send ---------- */
 
-export async function buildMorningBrief(db, { orgId, env = process.env, now = new Date(), pulse = null, scorecard = null } = {}) {
+export async function buildMorningBrief(db, { orgId, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null } = {}) {
   if (!orgId) throw new TypeError("buildMorningBrief: orgId required");
-  const briefDate = phoenixDateStamp(now);
-  const card = scorecard || scorecardFromPulse(pulse, { now });
-  const systems = summarizeSystems(card);
+  assertKind(kind);
+  const window = briefWindow(kind, now);
+  const briefDate = window.brief_date;
+  let systems;
+  if (kind === "evening") {
+    let card = scorecard;
+    if (!card) {
+      try {
+        card = await loadStoredScorecard(db, { orgId, briefDate });
+      } catch (err) {
+        systems = { ...summarizeStoredSystems(null), status: "error", line: errLine("Systems", err).line };
+      }
+    }
+    systems = systems || summarizeStoredSystems(card);
+  } else {
+    systems = summarizeSystems(scorecard || scorecardFromPulse(pulse, { now }));
+  }
   const [marketing, moneySection, team] = await Promise.all([
-    loadMarketing(db, { orgId, briefDate }),
-    loadMoney(db, { orgId, briefDate, env }),
-    loadTeam(db, { orgId, now })
+    loadMarketing(db, { orgId, briefDate, day: window.day, dayLabel: window.day_label }),
+    loadMoney(db, { orgId, briefDate, env, day: window.day, dayLabel: window.day_label }),
+    loadTeam(db, { orgId, now, window })
   ]);
-  const text = formatMorningText({ now, systems, marketing, money: moneySection, team });
+  const text = formatMorningText({ kind, now, systems, marketing, money: moneySection, team });
   return {
     org_id: orgId,
+    kind,
     brief_date: briefDate,
+    window: { label: window.label, from: window.from, to: window.to, day: window.day },
     systems,
     marketing,
     money: moneySection,
@@ -347,29 +459,30 @@ export async function buildMorningBrief(db, { orgId, env = process.env, now = ne
   };
 }
 
-const COLUMNS = `id, org_id, brief_date::text AS brief_date, systems, marketing, money, team, suggestions, today,
+const COLUMNS = `id, org_id, kind, brief_date::text AS brief_date, systems, marketing, money, team, suggestions, today,
   text_body, report_url, sent_to_last4, dry_run, delivery_status, delivery_error,
   provider_message_id, sent_at, created_at, updated_at`;
 
-export async function readMorningBrief(db, { orgId, date }) {
+export async function readMorningBrief(db, { orgId, date, kind = "morning" }) {
   if (!orgId) throw new TypeError("readMorningBrief: orgId required");
+  assertKind(kind);
   const r = await db.query(
-    `SELECT ${COLUMNS} FROM morning_briefs WHERE org_id = $1 AND brief_date = $2::date`,
-    [orgId, date]
+    `SELECT ${COLUMNS} FROM morning_briefs WHERE org_id = $1 AND brief_date = $2::date AND kind = $3`,
+    [orgId, date, kind]
   );
   return r.rows[0] || null;
 }
 
-/** Upsert one row per (org, Arizona day). A row already sent is never rewritten. */
+/** Upsert one row per (org, Arizona day, kind). A row already sent is never rewritten. */
 export async function saveMorningBrief(db, brief, delivery, { dryRun = true } = {}) {
   const r = await db.query(
     `INSERT INTO morning_briefs
-       (org_id, brief_date, systems, marketing, money, team, suggestions, today,
+       (org_id, brief_date, kind, systems, marketing, money, team, suggestions, today,
         text_body, report_url, sent_to_last4, dry_run, delivery_status, delivery_error,
         provider_message_id, sent_at)
-     VALUES ($1, $2::date, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
+     VALUES ($1, $2::date, $16, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15,
              CASE WHEN $13 = 'sent' THEN now() ELSE NULL END)
-     ON CONFLICT (org_id, brief_date) DO UPDATE SET
+     ON CONFLICT (org_id, brief_date, kind) DO UPDATE SET
        systems = EXCLUDED.systems, marketing = EXCLUDED.marketing, money = EXCLUDED.money,
        team = EXCLUDED.team, suggestions = EXCLUDED.suggestions, today = EXCLUDED.today,
        text_body = EXCLUDED.text_body, report_url = EXCLUDED.report_url,
@@ -385,21 +498,24 @@ export async function saveMorningBrief(db, brief, delivery, { dryRun = true } = 
       JSON.stringify(brief.team), JSON.stringify(brief.suggestions), JSON.stringify(brief.today),
       brief.text_body, brief.report_url,
       delivery.sent_to_last4, !!dryRun,
-      delivery.delivery_status, delivery.error, delivery.provider_message_id
+      delivery.delivery_status, delivery.error, delivery.provider_message_id,
+      brief.kind || "morning"
     ]
   );
   if (r.rows[0]) return { saved: true, row: r.rows[0] };
-  return { saved: false, reason: "already_sent", row: await readMorningBrief(db, { orgId: brief.org_id, date: brief.brief_date }) };
+  return { saved: false, reason: "already_sent", row: await readMorningBrief(db, { orgId: brief.org_id, date: brief.brief_date, kind: brief.kind || "morning" }) };
 }
 
 /**
- * runMorningBrief — build, (maybe) text, save. Called by step 2 of the pulse job.
+ * runMorningBrief — build, (maybe) text, save. Called by step 2 of the pulse job
+ * (kind 'morning') and by the evening-brief job (kind 'evening').
  * live defaults to MORNING_BRIEF_LIVE (false): nothing is texted.
  */
 export async function runMorningBrief({
-  db, orgId = null, env = process.env, now = new Date(), pulse = null, scorecard = null,
+  db, orgId = null, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null,
   live = MORNING_BRIEF_LIVE, sendImpl
 } = {}) {
+  assertKind(kind);
   if (!db) return { ok: false, reason: "no_db" };
   let org = orgId;
   if (!org) {
@@ -408,9 +524,9 @@ export async function runMorningBrief({
   }
   if (!org) return { ok: false, reason: "no_org" };
 
-  const brief = await buildMorningBrief(db, { orgId: org, env, now, pulse, scorecard });
+  const brief = await buildMorningBrief(db, { orgId: org, kind, env, now, pulse, scorecard });
 
-  const existing = await readMorningBrief(db, { orgId: org, date: brief.brief_date });
+  const existing = await readMorningBrief(db, { orgId: org, date: brief.brief_date, kind });
   if (existing && existing.delivery_status === "sent") {
     return { ok: true, brief, delivery: { delivery_status: "sent" }, saved: { saved: false, reason: "already_sent", row: existing } };
   }

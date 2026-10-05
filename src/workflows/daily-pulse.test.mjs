@@ -76,6 +76,50 @@ test("the morning brief runs as step 2, after the pulse, from the pulse's result
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
+/* Owner-set 2026-10-05: once the brief is live it REPLACES the pulse text.
+   One text, not two. While it is not live, the old text still goes. */
+async function liveRun({ briefLive }) {
+  const chrisTexts = [];
+  const whatsapps = [];
+  const briefs = [];
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-wf-"));
+  const out = await handle({
+    db: { query: async () => ({ rows: [] }) },
+    step: { run: async (_name, fn) => fn() },
+    env: { PULSE_SMS_TO: "+14805550199" },
+    dryRun: false,
+    boardDir: tmp,
+    gateRelayDirs: null,
+    fetchImpl: async () => ({ status: 200, text: async () => "Sign in password" }),
+    sendSms: async (m) => { chrisTexts.push(m); return { status: "sent" }; },
+    sendWhatsApp: async (m) => { whatsapps.push(m); return { status: "sent" }; },
+    morningBrief: async (args) => { briefs.push(args); return { ok: true }; },
+    briefLive
+  });
+  fs.rmSync(tmp, { recursive: true, force: true });
+  return { out, chrisTexts, briefs };
+}
+
+test("brief not live (today): the old pulse text still goes, and the brief is dry-run", async () => {
+  const { out, chrisTexts, briefs } = await liveRun({ briefLive: false });
+  assert.equal(chrisTexts.length, 1);
+  assert.match(chrisTexts[0].body, /morning check/i);
+  assert.equal(out.sms.sent, true);
+  assert.equal(briefs[0].live, false);
+  assert.equal(briefs[0].kind, "morning");
+});
+
+test("brief live: the pulse still runs and stores, but sends no text of its own", async () => {
+  const { out, chrisTexts, briefs } = await liveRun({ briefLive: true });
+  assert.equal(chrisTexts.length, 0, "one text, not two — the brief replaces the pulse text");
+  assert.equal(out.sms.sent, false);
+  assert.equal(out.sms.reason, "replaced_by_morning_brief");
+  assert.ok(Array.isArray(out.checks) && out.checks.length > 0, "the audit still ran");
+  assert.equal(briefs.length, 1);
+  assert.equal(briefs[0].live, true);
+  assert.equal(briefs[0].pulse, out);
+});
+
 test("a failed morning brief never hides the pulse result", async () => {
   const step = { run: async (_name, fn) => fn() };
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-wf-"));

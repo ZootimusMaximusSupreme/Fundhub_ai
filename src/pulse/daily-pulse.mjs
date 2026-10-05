@@ -329,7 +329,10 @@ export async function runDailyPulse({
   gmailClient = null,
   sendSms = undefined,
   sendWhatsApp = undefined,
-  recordRun = true
+  recordRun = true,
+  // false once the morning brief is live: the brief replaces this text
+  // (owner-set 2026-10-05, one text not two). The audit still runs and stores.
+  sendPulseText = true
 } = {}) {
   const date = denverDateStamp(now);
   const origin = String(baseUrl || DEFAULT_BASE_URL).replace(/\/+$/, "");
@@ -353,7 +356,9 @@ export async function runDailyPulse({
   const fail = failRows.length;
   const skip = checks.filter((c) => c.status === "skip").length;
 
-  const sms = await textChris({
+  const sms = !sendPulseText
+    ? { sent: false, reason: "replaced_by_morning_brief", body: null, to: null }
+    : await textChris({
     date,
     pass,
     fail,
