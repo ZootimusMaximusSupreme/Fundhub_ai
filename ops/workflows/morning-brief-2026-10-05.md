@@ -12,9 +12,9 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | MB0 | Projection, spec, this board, to-do lines (cloud session, 2026-10-05) | — | done |
 | MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | blocked — Kickoff A ran in a cloud session 2026-10-05, not the Mac; the cloud was refused Netlify env access. Needs the Mac. |
 | MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
-| MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
+| MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | done — PR #22 merged 2026-10-05 |
 | MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | claimed — Kickoff A agent, 2026-10-05 |
-| MB5 | The report page the text links to (front end, last) | MB3 read endpoint | pending |
+| MB5 | The report page the text links to (front end, last) | MB3 read endpoint | claimed — Kickoff A agent, 2026-10-05 |
 
 **Runs at the same time:** MB1, MB2 and MB3 now. MB4 after his yes. MB5 after MB3.
 
@@ -257,3 +257,12 @@ Agents for Kickoff B are in `.claude/agents/` (mm-architect, mm-builder, mm-chor
 - Added `docs/specs/morning-brief-2026-10-05.md`: what Chris asked, what the pulse checks and misses (read from the code), the text shape, the check rules, the cadence draft, the build order.
 - Added this board. Added to-do lines in `TODO.md` and `ops/todo-2026-10-05.md`.
 - No app code, schema, env or deploy changed.
+
+### MB3 — Kickoff A agent, 2026-10-05 (PR #22, merged)
+
+- New: `db/migrations/431_morning_briefs.sql`, `src/ops/morning-brief.mjs`, `src/finance/cashflow.mjs`, `api/read/morning-brief.mjs` (`GET /api/read/morning-brief?date=`, owner and admin only), `docs/journeys/morning-brief-flow.md`, and tests.
+- Edited: `src/workflows/daily-pulse.mjs` (step 2 "morning-brief" runs after the pulse), `src/pulse/notify.mjs` (`textMorningBrief`), `src/pulse/registry.mjs`, `netlify/functions/api.mjs`, `api/read/finance-command.mjs` (uses the shared cash read, same query), `src/http/read-endpoints-org-scope.test.mjs` (one entry: the company filter lives in `readMorningBrief`), `db/expected-migrations.mjs`, `docs/journeys/CHANGELOG.md`.
+- Dry-run: `MORNING_BRIEF_LIVE = false`. The brief is built and saved, and nothing is texted. The old pulse text is unchanged.
+- Tests: lint clean, tsc 0. With no database, the suite fails the same 33 tests that already fail on `main`. On a scratch Postgres as `fundhub_app`: `morning-brief.pg` 7/7, `finance-command.pg` 3/3, `guard:db` 3/3, `guard:rls` 4/4.
+- Waiting on: MB2 (day counts), the marketing numbers (M5), MB4 (suggestions), MB5 (report link), MB1 (going live).
+- Leftovers, not fixed: migration 114 fails on an empty database ("VALUES lists must all be the same length"), and some generated journey files are stale on `main`.
