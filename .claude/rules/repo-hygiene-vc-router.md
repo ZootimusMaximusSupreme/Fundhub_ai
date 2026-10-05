@@ -1,8 +1,3 @@
----
-description: Route repo organize / version-control / messy hygiene to Fundhub skills
-alwaysApply: true
----
-
 # Repo hygiene & version control router
 
 **Owner law (2026-08-24):** Organizing the repo and fixing “things keep getting lost” are their own doors. Load the matching skill before inventoring or changing git/ignore layout.
