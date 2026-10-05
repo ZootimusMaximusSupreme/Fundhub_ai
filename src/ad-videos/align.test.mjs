@@ -556,19 +556,17 @@ describe("a real shoot: several takes, each with its own trouble", () => {
     assertSane(plan);
   });
 
-  test("the switch cost keeps lines together in one take rather than chasing a re-done line", () => {
+  test("every line keeps its latest clean try: the re-done hook comes from take 3", () => {
     const owner = Object.fromEntries(plan.lines.map((l) => [l.index, l.take_id]));
     assert.deepEqual(owner, {
-      // Take 3's hook is the latest clean try, but using it costs a switch
-      // (0.15) that take 1's equally clean hook does not.
-      0: "IMG_0412.MOV",
+      0: "IMG_0414.MOV",
       1: "IMG_0412.MOV",
       2: "IMG_0412.MOV",
       3: "IMG_0413.MOV",
       4: "IMG_0413.MOV",
       5: "IMG_0413.MOV"
     });
-    assert.equal(plan.switches, 1);
+    assert.equal(plan.switches, 2);
   });
 
   test("dead air is gone: no silence over 0.6 s inside a piece, none at the head or tail", () => {
@@ -579,6 +577,81 @@ describe("a real shoot: several takes, each with its own trouble", () => {
       assert.ok(p.end - inside[inside.length - 1].end <= 0.08 + 0.45 + 1e-9, "tail plus at most a planned pause");
     }
     assert.ok(plan.duration < 18, `cut is ${plan.duration}s; the takes run ${r(t1.words.at(-1).end + t2.words.at(-1).end + t3raw.words.at(-1).end)}s`);
+  });
+});
+
+describe("review round 1 (PR #32)", () => {
+  const lineCoverage = (scriptText, said) => {
+    const plan = alignTakes({
+      script: { body: scriptText, parts: [{ kind: "hook", text: scriptText }] },
+      takes: [take("t1", null, [said])]
+    });
+    return plan.lines[0].coverage;
+  };
+
+  test("spoken numbers in a transcript are read as a phrase, like the script", () => {
+    assert.ok(lineCoverage("You can get $300,000 in funding.", "you can get 300 grand in funding") >= 0.9);
+    assert.ok(lineCoverage("You can get $100,000 in funding.", "you can get a hundred thousand in funding") >= 0.9);
+    assert.ok(lineCoverage("Start with $50K in funding.", "start with 50 grand in funding") >= 0.9);
+    assert.equal(lineCoverage("You can get $300,000 in funding.", "you can get 300 grand in funding"), 1);
+  });
+
+  test("a merged number keeps the time of the words it came from", () => {
+    const t1 = take("t1", null, ["you can get 300 grand"]);
+    const plan = alignTakes({ script: { body: "You can get $300,000.", parts: [{ kind: "hook", text: "You can get $300,000." }] }, takes: [t1] });
+    const thousand = plan.kept_words.find((w) => w.text === "thousand");
+    assert.equal(thousand.word, "grand");
+    assert.equal(thousand.start, t1.words[4].start);
+    assert.equal(thousand.end, t1.words[4].end);
+    const hundred = plan.kept_words.find((w) => w.text === "hundred");
+    assert.equal(hundred.word, "300");
+  });
+
+  test("years are said as years", () => {
+    assert.deepEqual(normalizeText("2026"), ["twenty", "twenty", "six"]);
+    assert.deepEqual(normalizeText("In 1905."), ["in", "nineteen", "oh", "five"]);
+    assert.deepEqual(normalizeText("2005"), ["two", "thousand", "five"]);
+    assert.deepEqual(normalizeText("1900"), ["nineteen", "hundred"]);
+    assert.deepEqual(normalizeText("$2,500"), ["two", "thousand", "five", "hundred"], "a price with a comma stays a plain number");
+  });
+
+  test("the LATEST qualifying try wins, even when an earlier one heard more words", () => {
+    const line = "The bank reads your whole file before it ever reads you.";
+    const n = normalizeText(line).length;
+    const t1 = take("t1", "2026-10-05T10:00:00Z", [line]);
+    const t2 = take("t2", "2026-10-05T10:05:00Z", ["the bank reads your whole file before it ever reads"]);
+    const plan = alignTakes({ script: { body: line, parts: [{ kind: "hook", text: line }] }, takes: [t1, t2] });
+    assert.equal(n, 11);
+    assert.equal(plan.lines[0].coverage, r(10 / 11), "take 2 heard 91%");
+    assert.equal(plan.lines[0].take_id, "t2", "take 2 is later and qualifies, so it wins over take 1's 100%");
+  });
+
+  test("a line the script says twice never reuses one recorded stretch", () => {
+    const hook = "Book the call today.";
+    const script = {
+      body: `${hook}\n\nThe bank reads your file before it reads you.\n\n${hook}`,
+      parts: [{ kind: "hook", text: hook }, { kind: "line2", text: L1 }, { kind: "cta", text: hook }]
+    };
+    const t1 = take("t1", null, [hook, L1, hook]);
+    const plan = alignTakes({ script, takes: [t1] });
+    assert.deepEqual(plan.missing_lines, []);
+    const first = plan.kept_words.filter((w) => w.line === 0);
+    const last = plan.kept_words.filter((w) => w.line === 2);
+    assert.equal(first[0].start, t1.words[0].start, "the hook is the first time he said it");
+    assert.equal(last[0].start, t1.words[4 + 9].start, "the CTA is the second time");
+    assertSane(plan);
+    const once = alignTakes({ script, takes: [take("t1", null, [hook, L1])] });
+    assert.equal(once.missing_lines.length, 1, "said once: only one of the two lines gets it");
+  });
+
+  test("an all-struck or empty script is a hold, not a rematch", () => {
+    const t1 = take("t1", null, [L0, L1, L2]);
+    const allStruck = alignTakes({ script: WORDS_SCRIPT, takes: [t1], struck: [0, 1, 2] });
+    assert.equal(allStruck.words_total, 0);
+    assert.equal(judgeCut(allStruck).action, "hold");
+    const empty = alignTakes({ script: { body: "" }, takes: [t1] });
+    assert.equal(judgeCut(empty).action, "hold");
+    assert.match(judgeCut(empty).hold_reason, /no script lines/);
   });
 });
 

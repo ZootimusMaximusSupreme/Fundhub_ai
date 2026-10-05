@@ -290,11 +290,11 @@ picture above is unchanged.
 
 ```mermaid
 flowchart TD
-    IN["the script (body, parts, style)<br/>+ every matched take of the ad<br/>(transcript_words, silences, recorded_at)"] --> N["normalize both sides to spoken words<br/>$300,000 = 300K = 300 grand; % = percent;<br/>contractions expanded; marks and CAPS dropped"]
+    IN["the script (body, parts, style)<br/>+ every matched take of the ad<br/>(transcript_words, silences, recorded_at)"] --> N["normalize both sides to spoken words<br/>$300,000 = 300K = 300 grand, and a hundred thousand = $100,000,<br/>read as phrases on both sides;<br/>% = percent; 2026 = twenty twenty six;<br/>contractions expanded; marks and CAPS dropped"]
     N --> L["split the script into lines from parts<br/>a blank line after a line = a planned pause"]
     L --> A["find every try at every line in every take<br/>(takes in recorded_at order)"]
     A --> S["stitch restarts: a later try that picks up at word j<br/>within 8 s joins the earlier try at j"]
-    S --> P["pick one try per line: 90%+ words and no stall over 1.0 s,<br/>else the best one; the latest wins a tie;<br/>a switch between takes costs 0.15"]
+    S --> P["pick one try per line: the LATEST try with 90%+ words and no stall over 1.0 s;<br/>if none qualifies, the best by coverage, a switch between takes costing 0.15;<br/>one recorded stretch is never used for two lines"]
     P --> D{"line under 85%?"}
     D -->|"its neighbours are kept in one take and the speech<br/>between them is under 2x the line's length"| SD["said differently — kept, marked"]
     D -->|"its try heard under 50% of the words"| M["missing"]
@@ -330,6 +330,10 @@ needs.
 - Nothing calls the aligner yet (UNVERIFIED in the flow until the §9.1 hookup lands).
 - The silences come from the video worker's silencedetect (§9.5), which is not
   built. Without them the edges are not snapped; everything else still runs.
-- "Dead air over 0.6 s inside a piece is cut down" comes from the best-of-clips
-  law's dead-air rule. The spec's §9.2 does not give a number for it; 0.6 s is
-  the aligner's setting (`maxInnerGapSeconds`).
+- Numbers the aligner chose that §9.2 does not give (listed at the top of
+  `align.mjs`, each one a setting): a try ends after a 3.0 s gap; a line's
+  expected length is 0.4 s a word; a line whose best try hears under 50% of its
+  words is missing; dead air over 0.6 s inside a piece is cut down (the
+  best-of-clips law says kill dead air, with no length).
+- A plan with no script words left (every line struck, or an empty script) is a
+  hold, never a rematch.

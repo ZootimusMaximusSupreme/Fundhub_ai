@@ -26,6 +26,28 @@
 // end|endTime} in seconds). `silences` is the take's silencedetect output
 // ({start, end} in seconds); without it, the edges are not snapped.
 
+// NUMBERS THIS FILE CHOSE THAT §9.2 DOES NOT GIVE. Every other number in
+// ALIGN_DEFAULTS is the spec's. These are the aligner's own settings, each one
+// overridable through `options`:
+//   attemptBreakSeconds 3.0  a gap this long between two matched words ends a try
+//   secondsPerWord      0.4  a line's expected length (about 150 words a minute),
+//                            used for the "under twice the line's length" test
+//   minLineCoverage     0.5  a line whose best try hears under half its words is
+//                            missing, not kept
+//   maxInnerGapSeconds  0.6  dead air longer than this inside a kept stretch is
+//                            cut down (the best-of-clips law says kill dead air;
+//                            the spec gives no length)
+// And these fixed choices inside the code:
+//   - a try starts on two script words in a row (one, for a one-word line)
+//   - a try steps over at most 2 extra or 2 dropped words, or 1 mis-heard word
+//   - going back over any of the last 3 script words said ends a try (a restart)
+//   - two tries of one line in the same take that overlap in time cost 10 in the
+//     dynamic program, so they are never both used
+//   - a tie-break of 0.0001 makes the latest try win between equal costs
+//   - a cue's keywords are its words of 4+ letters that are not common words
+//   - a bare four-digit number from 1100 to 2099 is read as a year
+//   - filler spellings: um, umm, ummm, uh, uhh, uhm, uhmm
+
 export const ALIGNER_VERSION = 1;
 
 export const ALIGN_DEFAULTS = Object.freeze({
@@ -143,11 +165,24 @@ function numberTokens(m) {
   return out;
 }
 
+/* A bare four-digit number from 1100 to 2099 is said the way a year is:
+   2026 → twenty twenty six, 1905 → nineteen oh five, 1900 → nineteen hundred,
+   2005 → two thousand five. (2500 → twenty five hundred, which is also how a
+   price is said.) A comma or a $ ("2,500", "$2500") reads as a plain number. */
+function yearWords(n) {
+  if (n >= 2000 && n <= 2009) return numberToWords(n);
+  const hi = Math.floor(n / 100), lo = n % 100;
+  if (lo === 0) return [...under1000(hi), "hundred"];
+  if (lo < 10) return [...under1000(hi), "oh", ONES[lo]];
+  return [...under1000(hi), ...under1000(lo)];
+}
+
 function tokenizeOne(raw) {
   // Keep a leading $ and a trailing %; strip every other edge mark.
   const core = raw.replace(/^[^a-z0-9$]+/, "").replace(/[^a-z0-9%]+$/, "");
   if (!core) return [];
   let m;
+  if (/^\d{4}$/.test(core) && Number(core) >= 1100 && Number(core) <= 2099) return yearWords(Number(core));
   if ((m = core.match(NUMBER_RE))) return numberTokens(m);
   if ((m = core.match(/^(\d+)(st|nd|rd|th)$/))) return ordinal(numberToWords(Number(m[1])));
   if ((m = core.match(/^\$?(\d+)([a-z]+)$/))) return [...numberToWords(Number(m[1])), m[2]];
@@ -159,36 +194,51 @@ function tokenizeOne(raw) {
     .flatMap((t) => (/^\d+$/.test(t) ? numberToWords(Number(t)) : [t]));
 }
 
-/* The number context rules, run over the token list:
+/* The number context rules, run over the whole token stream — never one word
+   at a time, because a transcript splits "300 grand" and "a hundred thousand"
+   into separate words and the rules need both:
    "a" counts as "one" before hundred/thousand/million; "grand" and "k" after a
    number mean thousand; "dollars" after a number is optional, so it is dropped
-   on both sides; "per cent" is "percent". */
-function numberContext(tokens) {
+   on both sides; "per cent" is "percent".
+   Items are { t, src }: src is the index of the source word each token came
+   from, so a merged token keeps its place on the take's clock. */
+function numberContext(items) {
   const out = [];
-  for (let i = 0; i < tokens.length; i += 1) {
-    const t = tokens[i];
-    const prev = out[out.length - 1];
+  for (let i = 0; i < items.length; i += 1) {
+    const { t, src } = items[i];
+    const nextT = items[i + 1]?.t;
+    const prev = out[out.length - 1]?.t;
     const prevIsNumber = prev !== undefined && NUMBER_WORDS.has(prev);
-    if (t === "a" && MULTIPLIER_WORDS.has(tokens[i + 1])) { out.push("one"); continue; }
-    if (t === "a" && tokens[i + 1] === "grand") { out.push("one"); continue; }
-    if ((t === "grand" || t === "k") && prevIsNumber) { out.push("thousand"); continue; }
+    if (t === "a" && (MULTIPLIER_WORDS.has(nextT) || nextT === "grand")) { out.push({ t: "one", src }); continue; }
+    if ((t === "grand" || t === "k") && prevIsNumber) { out.push({ t: "thousand", src }); continue; }
     if ((t === "dollars" || t === "dollar" || t === "bucks") && prevIsNumber) continue;
-    if (t === "per" && tokens[i + 1] === "cent") { out.push("percent"); i += 1; continue; }
-    out.push(t);
+    if (t === "per" && nextT === "cent") { out.push({ t: "percent", src }); i += 1; continue; }
+    out.push({ t, src });
   }
   return out;
 }
 
+function clean(text) {
+  return String(text ?? "")
+    .toLowerCase()
+    .replace(/[\u2018\u2019\u02bc`]/g, "'")
+    .replace(/\u2191/g, " ")
+    .replace(/[\u2013\u2014]/g, " ")
+    .replace(/&/g, " and ");
+}
+
+/* A list of words (a transcript) → tokens, each tagged with its source word. */
+function normalizeWords(words) {
+  const items = [];
+  words.forEach((w, src) => {
+    for (const t of clean(w).split(/\s+/).filter(Boolean).flatMap(tokenizeOne)) items.push({ t, src });
+  });
+  return numberContext(items);
+}
+
 /** Text → spoken-word tokens. Both the script and the transcript go through this. */
 export function normalizeText(text) {
-  const s = String(text ?? "")
-    .toLowerCase()
-    .replace(/[‘’ʼ`]/g, "'")
-    .replace(/↑/g, " ")
-    .replace(/[–—]/g, " ")
-    .replace(/&/g, " and ");
-  const tokens = s.split(/\s+/).filter(Boolean).flatMap(tokenizeOne);
-  return numberContext(tokens);
+  return normalizeWords(clean(text).split(/\s+/).filter(Boolean)).map((i) => i.t);
 }
 
 function editSimilarity(a, b) {
@@ -215,9 +265,6 @@ export function wordsMatch(a, b, opts = ALIGN_DEFAULTS) {
 /* ─────────────────────────────────────────────────────────────────────────
    THE SCRIPT, AS LINES
    ───────────────────────────────────────────────────────────────────────── */
-
-/** Parts said word for word. In the bullets style a `cue` is freestyled. */
-const WORD_FOR_WORD = new Set(["hook", "line2", "body", "reveal", "cta"]);
 
 function sentences(text) {
   return String(text)
@@ -308,18 +355,23 @@ function readSilences(silences) {
   return out.sort((a, b) => a.start - b.start);
 }
 
-/* One transcript word can be several spoken tokens ("$300,000" is three). The
-   word's time is shared out evenly, so a gap inside one word is zero. */
+/* The whole transcript is normalized as one stream (so "300" + "grand" and
+   "a" + "hundred" + "thousand" read the way the script does), and every token
+   keeps the time of the word it came from. One word can be several tokens
+   ("$300,000" is three); its time is shared out evenly, so a gap inside one
+   word is zero. */
 function takeTokens(words) {
-  const toks = [];
-  words.forEach((w, wi) => {
-    const parts = normalizeText(w.word);
-    const step = (w.end - w.start) / (parts.length || 1);
-    parts.forEach((text, k) => {
-      toks.push({ text, start: w.start + step * k, end: w.start + step * (k + 1), word_index: wi, word: w.word });
-    });
+  const items = normalizeWords(words.map((w) => w.word));
+  const count = new Map();
+  for (const it of items) count.set(it.src, (count.get(it.src) || 0) + 1);
+  const seen = new Map();
+  return items.map(({ t, src }) => {
+    const w = words[src];
+    const k = seen.get(src) || 0;
+    seen.set(src, k + 1);
+    const step = (w.end - w.start) / count.get(src);
+    return { text: t, start: w.start + step * k, end: w.start + step * (k + 1), word_index: src, word: w.word };
   });
-  return toks;
 }
 
 function prepareTakes(takes) {
@@ -486,26 +538,56 @@ function overlaps(a, b) {
   return a.take === b.take && b.start < a.end && b.end > a.start;
 }
 
-/* The candidates: every attempt with 90%+ coverage and no stall over 1.0 s; if
-   none qualifies, every attempt. Then a dynamic program over the lines, cost =
-   (1 − coverage) + 0.15 per switch between takes. A tiny recency term makes the
-   LATEST attempt win every tie, which is the spec's tie-break. */
-function chooseAttempts(lineAttempts, opts) {
-  const flat = lineAttempts.flat().sort((a, b) => a.take - b.take || a.start - b.start);
+/* Which try is "later": the take recorded later, then the try that ends later.
+   Two tries that end on the same word (a stitched try and its second half) are
+   ordered by coverage, so the fuller one counts as the later. */
+function byRecency(a, b) {
+  return a.take - b.take || a.end - b.end || a.coverage - b.coverage || a.start - b.start;
+}
+
+const qualifies = (a, opts) => a.coverage >= opts.qualifyCoverage && a.stall <= opts.maxStallSeconds;
+
+/* Step 4 of §9.2.
+   1. A line with a qualifying try (90%+ of its words, no stall over 1.0 s)
+      keeps its LATEST qualifying try. Coverage does not rank qualifying tries.
+   2. A line with none: a dynamic program over the lines, cost = (1 − coverage)
+      + 0.15 per switch between takes. The lines from step 1 are fixed in it, so
+      their takes still count for the switches. A tiny recency term makes the
+      latest try win a tie.
+   A recorded stretch is used once. A line written twice in the script (the hook
+   repeated as the CTA) gets two different tries; the earlier copy prefers a try
+   recorded before the one the later copy got. */
+function chooseAttempts(spokenLines, lineAttempts, opts) {
+  const flat = lineAttempts.flat().sort(byRecency);
   flat.forEach((a, r) => { a.rank = r; });
   const maxRank = Math.max(1, flat.length - 1);
   const eps = 1e-4;
+  const n = lineAttempts.length;
+  const choice = new Array(n).fill(null);
+  const fixed = new Array(n).fill(false);
+  const used = [];
+  const free = (a) => !used.some((u) => overlaps(u, a));
 
-  const cands = lineAttempts.map((atts) => {
-    const good = atts.filter((a) => a.coverage >= opts.qualifyCoverage && a.stall <= opts.maxStallSeconds);
-    return good.length ? good : atts;
-  });
+  // 1. The latest qualifying try, from the last line back to the first.
+  const laterCopyRank = new Map();
+  for (let i = n - 1; i >= 0; i -= 1) {
+    const good = lineAttempts[i].filter((a) => qualifies(a, opts) && free(a)).sort((a, b) => b.rank - a.rank);
+    if (!good.length) continue;
+    const key = spokenLines[i].tokens.join(" ");
+    const bound = laterCopyRank.get(key);
+    const pick = (bound !== undefined && good.find((a) => a.rank < bound)) || good[0];
+    choice[i] = pick;
+    fixed[i] = true;
+    used.push(pick);
+    laterCopyRank.set(key, pick.rank);
+  }
+
+  // 2. The dynamic program, for the lines step 1 did not settle.
+  const cands = lineAttempts.map((atts, i) => (fixed[i] ? [choice[i]] : atts.filter(free)));
   const order = cands.map((c, i) => (c.length ? i : -1)).filter((i) => i >= 0);
-  const choice = new Array(lineAttempts.length).fill(null);
   if (!order.length) return choice;
-
-  const own = (a) => (1 - a.coverage) + eps * (1 - a.rank / maxRank);
-  let cost = cands[order[0]].map(own);
+  const own = (a, i) => (fixed[i] ? 0 : (1 - a.coverage) + eps * (1 - a.rank / maxRank));
+  let cost = cands[order[0]].map((a) => own(a, order[0]));
   const back = [];
   for (let s = 1; s < order.length; s += 1) {
     const prev = cands[order[s - 1]], cur = cands[order[s]];
@@ -517,7 +599,7 @@ function chooseAttempts(lineAttempts, opts) {
         const c = cost[ai] + step;
         if (c < best - 1e-12) { best = c; arg = ai; }
       });
-      next.push(best + own(b));
+      next.push(best + own(b, order[s]));
       ptr.push(arg);
     }
     cost = next;
@@ -526,8 +608,20 @@ function chooseAttempts(lineAttempts, opts) {
   let arg = 0;
   cost.forEach((c, i) => { if (c < cost[arg] - 1e-12) arg = i; });
   for (let s = order.length - 1; s >= 0; s -= 1) {
-    choice[order[s]] = cands[order[s]][arg];
+    if (!fixed[order[s]]) choice[order[s]] = cands[order[s]][arg];
     if (s > 0) arg = back[s - 1][arg];
+  }
+
+  // Never one stretch for two lines: a later line that collides gives way to
+  // its next best try that is still free, or has none.
+  for (let i = 0; i < n; i += 1) {
+    if (fixed[i] || !choice[i]) continue;
+    const others = choice.filter((c, j) => j !== i && c && (fixed[j] || j < i));
+    if (!others.some((o) => overlaps(o, choice[i]))) continue;
+    const alt = cands[i]
+      .filter((a) => !others.some((o) => overlaps(o, a)))
+      .sort((a, b) => own(a, i) - own(b, i))[0];
+    choice[i] = alt || null;
   }
   return choice;
 }
@@ -730,7 +824,7 @@ export function alignTakes({ script, takes, struck = [], options = {} } = {}) {
   }
 
   // 4. One attempt per line.
-  const chosen = chooseAttempts(spoken.map((l) => attemptsByLine[l.index]), opts);
+  const chosen = chooseAttempts(spoken, spoken.map((l) => attemptsByLine[l.index]), opts);
   const state = new Map();
   spoken.forEach((line, i) => {
     const a = chosen[i];
@@ -986,9 +1080,15 @@ const REQUIRED = [["hook", "the hook"], ["line2", "line 2"], ["cta", "the call t
  * hold    — park at `cut` before any Submagic spend: the hook, line 2 or the CTA
  *           is missing, or coverage is under 70%. Chris picks Use this cut or Re-film.
  * rematch — under 50% coverage: back to `transcribed`, match again without this script.
+ * A plan with no script words left (every line struck, or an empty script) is
+ * a hold, never a rematch: the take is not the problem, so Chris decides.
  */
 export function judgeCut(plan, options = {}) {
   const opts = { ...ALIGN_DEFAULTS, ...options };
+  if (plan?.words_total === 0) {
+    const why = "no script lines are left to match (every line is struck, or the script is empty)";
+    return { action: "hold", hold_reason: why, reason: why };
+  }
   const coverage = Number(plan?.coverage) || 0;
   const pct = Math.round(coverage * 100);
   if (coverage < opts.rematchBelow) {
