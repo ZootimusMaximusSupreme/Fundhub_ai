@@ -75,6 +75,33 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 
 **Defaults used until Chris says otherwise (orchestrator, 2026-10-05):** the old pulse text keeps going (the brief does not replace it yet); numbers cover the last 24 hours; the text has no link until MB5; the Mac reporter (gap 12) is plan only.
 
+**MB2 plan (summary).** Every check reports green, red or not checked, using the board's contract.
+- New checks:
+  - jobs: 30 scheduled jobs, each red when it misses 3 times its schedule. The `job_heartbeats` table is written by one Inngest add-on, plus one line in each of the 6 Netlify sweepers.
+  - messages: the waiting queue and send failures, per channel.
+  - backend: `failed_events`.
+  - front_doors: 7 funnel pages and the VSL files.
+  - money_in: Commas, the ClickFunnels order (only if its order field is found), ClarityPay (not checked: no connection exists yet).
+  - tracking: Meta server events.
+  - outside: one read-only call per service. Never the Clarity export, and never a credit pull.
+  - site: Netlify not paused, last deploy ready.
+  - mac: plan only.
+- Gap 1: each API ping must get its exact expected answer, in the app's own refusal shape.
+- Migration 430: `job_heartbeats` and `pulse_scorecards`, one row per Arizona date. A red on a second morning says "day 2."
+- Read page: `GET /api/read/systems-check?date=`, owner and admin only.
+- Journey: new `docs/journeys/daily-pulse-actual.md`. `ops-pulse-actual.md` describes the Ops money pulse, a different thing.
+
+**MB2 defaults (orchestrator, 2026-10-05):**
+- Red after no Commas notice in 72 hours, no ClickFunnels order in 72 hours, or a message waiting more than 30 minutes.
+- No `NETLIFY_AUTH_TOKEN` gets copied to the live site, so the site check shows "not checked" until one is set.
+- No new pulse staff login. The Mac reporter is not built.
+- The daily check keeps its own text.
+
+**Open questions for Chris (MB2):**
+1. Build the Mac reporter, yes or no?
+2. May an agent set `NETLIFY_AUTH_TOKEN` on the live site so the site check runs?
+3. Should a `daily-pulse-intended.md` exist (written by Chris)?
+
 **Open questions for Chris (MB3):**
 1. When the brief goes live, should it replace the old "Fundhub morning check" text?
 2. "Last 24 hours" or "yesterday, midnight to midnight Arizona"?
