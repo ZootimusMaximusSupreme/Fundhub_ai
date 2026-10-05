@@ -1,0 +1,9 @@
+# UI standards (rebuild)
+
+When building or changing a screen, `docs/rules/UI-STANDARDS.md` is law. Brand (colors, fonts, spectrum) stays in `fundhub-brand.css`.
+
+If a request conflicts with a rule in that file, flag it. Do not silently pick.
+
+Do not invent a standard the file does not cover. Ask Chris.
+
+UI audit is a separate skill: `.cursor/skills/fundhub-ui-auditor/SKILL.md`. Findings only. Fixes only after Chris names them.

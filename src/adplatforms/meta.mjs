@@ -25,7 +25,7 @@ import { decryptToken } from "./tokens.mjs";
 import { buildTargeting } from "../compliance/targeting.mjs";
 
 export const PLATFORM = "meta";
-const API_VERSION = process.env.META_API_VERSION || "v21.0";
+const API_VERSION = process.env.META_API_VERSION || "v26.0";
 const BASE = "https://graph.facebook.com";
 
 /* Every call takes the connection row and derives its own token, so no caller
@@ -303,6 +303,9 @@ export function normalizeInsight(row) {
     reach: int(row.reach),
     frequency: num(row.frequency),
     clicks: int(row.clicks),
+    // Meta's inline_link_clicks: clicks on the ad's link (CTR in spec 11.1).
+    // null when Meta did not send it, never 0 (ad_metrics_daily.link_clicks, 411).
+    link_clicks: countOrNull(row.inline_link_clicks),
     ctr: num(row.ctr),
     conversions,
     cpa_cents: conversions > 0 ? Math.round(toCents(row.spend) / conversions) : null,

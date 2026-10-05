@@ -31,7 +31,7 @@ test("computeKpis counts funded rounds, not clients.funded", async () => {
       return { rows: [{ cents: 0, n: 0 }] };
     }
   };
-  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d" });
+  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d", staffScope: (fn) => fn(db) });
   const fundedSql = sqls.find((s) => /status = 'funded'/.test(s) || /funded IS TRUE/.test(s));
   assert.match(fundedSql, /FROM funding_rounds/);
   assert.doesNotMatch(fundedSql, /FROM clients/);
@@ -49,7 +49,7 @@ test("computeKpis treats funding_rounds.funded_amount as dollars", async () => {
       return { rows: [{ cents: 0, n: 0 }] };
     }
   };
-  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d" });
+  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d", staffScope: (fn) => fn(db) });
   assert.equal(out.funded_count, 2);
   assert.equal(out.funded_amount_cents, 5_000_000);
   assert.equal(formatCents(out.funded_amount_cents), "$50k");
@@ -65,7 +65,7 @@ test("computeKpis treats transactions.amount_paid as dollars", async () => {
       return { rows: [{ cents: 0, n: 0 }] };
     }
   };
-  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d" });
+  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d", staffScope: (fn) => fn(db) });
   const cashSql = sqls.find((s) => /SUM\(amount_paid\)/.test(s));
   assert.match(cashSql, /FROM transactions/);
   assert.doesNotMatch(cashSql, /::bigint AS cents/);
@@ -79,8 +79,30 @@ test("computeKpis keeps ad spend in cents — spend_cents is a real cents column
       return { rows: [{ cents: 0, n: 0, dollars: 0 }] };
     }
   };
-  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d" });
+  const out = await computeKpis(db, { orgId: "00000000-0000-4000-8000-000000000001", period: "7d", staffScope: (fn) => fn(db) });
   // No funded clients in the window, so cost-per-funded stays null with a reason.
   assert.equal(out.cost_per_funded_cents, null);
   assert.equal(out.cost_per_funded_reason, "no_funded_clients_in_window");
+});
+
+test("computeKpis reads ad spend inside the staff scope — the plain app login reads it as $0", async () => {
+  // ad_metrics_daily has partner row-level security (046). On the app's own
+  // login with no staff stamp the sum comes back 0, not an error.
+  const db = {
+    query: async (sql) => {
+      if (/SUM\(spend_cents\)/.test(String(sql))) return { rows: [{ cents: "0" }] };
+      if (/SUM\(funded_amount\)/.test(String(sql))) return { rows: [{ n: 2, dollars: 1000 }] };
+      return { rows: [{ cents: 0, n: 0, dollars: 0 }] };
+    }
+  };
+  // Inside the staff scope the same read sees the rows.
+  const staffTx = { query: async () => ({ rows: [{ cents: "30000" }] }) };
+  let scoped = 0;
+  const out = await computeKpis(db, {
+    orgId: "00000000-0000-4000-8000-000000000001",
+    period: "7d",
+    staffScope: async (fn) => { scoped += 1; return fn(staffTx); }
+  });
+  assert.equal(out.cost_per_funded_cents, 15000, "$300 of spend over 2 funded clients is $150 each, not $0");
+  assert.equal(scoped, 1, "the ad spend read runs inside the staff scope");
 });

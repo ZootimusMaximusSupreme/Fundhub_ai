@@ -39,24 +39,66 @@ test("uniqueNameMatch attaches only when one client matches", () => {
   );
 });
 
-test("attachDriveRecording stamps the latest call without a link", async () => {
+function stampDb() {
   const seen = [];
-  const db = {
+  return {
+    seen,
     async query(sql, params) {
       seen.push({ sql, params });
       if (/UPDATE call_outcomes/i.test(sql)) return { rows: [{ id: "co-1" }] };
-      if (/UPDATE customer_insights/i.test(sql)) return { rows: [] };
+      if (/UPDATE customer_insights/i.test(sql)) return { rows: [{ id: "ci-1" }] };
       return { rows: [] };
     }
   };
+}
+
+test("attachDriveRecording puts a sales meeting's link on the call logged at that time", async () => {
+  const db = stampDb();
   const out = await attachDriveRecording(db, {
     orgId: ORG,
     clientId: CLIENT,
+    fileName: "Funding Call - Jane Doe (2026-08-24 15:00 GMT-7) - Recording.mp4",
     url: "https://drive.google.com/file/d/abc"
   });
   assert.equal(out.attached, true);
   assert.equal(out.clientId, CLIENT);
-  assert.equal(seen.length, 2);
+  assert.equal(out.stamp.matched, "call");
+  assert.equal(db.seen.length, 1);
+  assert.match(db.seen[0].sql, /UPDATE call_outcomes SET recording_url/);
+  assert.match(db.seen[0].sql, /logged_at BETWEEN/);
+  assert.doesNotMatch(db.seen[0].sql, /ORDER BY logged_at DESC/);
+  assert.deepEqual(db.seen[0].params.slice(3), [
+    "2026-08-24T22:00:00.000Z", "2026-08-24T21:00:00.000Z", "2026-08-25T04:00:00.000Z"
+  ]);
+});
+
+test("attachDriveRecording puts a CSM meeting's link on the CSM answer, never on a sales call", async () => {
+  const db = stampDb();
+  const out = await attachDriveRecording(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    fileName: "CSM Check-in - Jane Doe (2026-08-24 15:00 GMT-7) - Recording.mp4",
+    url: "https://drive.google.com/file/d/csm"
+  });
+  assert.equal(out.stamp.matched, "csm_insight");
+  assert.equal(db.seen.length, 1);
+  assert.match(db.seen[0].sql, /UPDATE customer_insights SET recording_url/);
+  assert.ok(!db.seen.some((q) => /UPDATE call_outcomes/i.test(q.sql)));
+});
+
+test("attachDriveRecording stamps no row when the meeting type or time is unknown", async () => {
+  for (const [fileName, reason] of [
+    ["Meet Recording - Call A.mp4", "meeting_type_unknown"],
+    ["Funding Call - Jane Doe - Recording.mp4", "meeting_time_unknown"]
+  ]) {
+    const db = stampDb();
+    const out = await attachDriveRecording(db, {
+      orgId: ORG, clientId: CLIENT, fileName, url: "https://drive.google.com/file/d/x"
+    });
+    assert.equal(out.stamp.stamped, 0);
+    assert.equal(out.stamp.reason, reason);
+    assert.ok(!db.seen.some((q) => /^\s*UPDATE/i.test(q.sql)), fileName);
+  }
 });
 
 test("listRecentRecordings is honest when Drive is off and files are empty", async () => {
@@ -134,9 +176,10 @@ test("listRecentRecordings returns today's Drive file and name-matches a client"
   assert.equal(updates.length, 1);
 });
 
-test("stampCallTranscript writes words onto the latest empty call", async () => {
+function transcriptDb() {
   const seen = [];
-  const db = {
+  return {
+    seen,
     async query(sql, params) {
       seen.push({ sql, params });
       if (/recording_url = \$4/i.test(sql)) return { rows: [] };
@@ -144,11 +187,85 @@ test("stampCallTranscript writes words onto the latest empty call", async () => 
       return { rows: [] };
     }
   };
+}
+
+test("stampCallTranscript matches a sales meeting to the call logged at that time", async () => {
+  const db = transcriptDb();
   const out = await stampCallTranscript(db, {
     orgId: ORG,
     clientId: CLIENT,
-    transcript: "the start is part of ten percent"
+    transcript: "the start is part of ten percent",
+    meetingName: "Funding Call - Jane Doe (2026-08-24 15:00 GMT-7) - Recording.mp4"
   });
   assert.equal(out.stamped, 1);
-  assert.ok(seen.some((s) => /SET transcript/i.test(s.sql)));
+  assert.equal(out.matched, "meeting_time");
+  const update = db.seen.find((s) => /SET transcript/i.test(s.sql));
+  assert.match(update.sql, /logged_at BETWEEN/);
+  // 15:00 at GMT-7 is 22:00 UTC; the window is one hour before to six after.
+  assert.equal(update.params[3], "2026-08-24T22:00:00.000Z");
+  assert.equal(update.params[4], "2026-08-24T21:00:00.000Z");
+  assert.equal(update.params[5], "2026-08-25T04:00:00.000Z");
+});
+
+test("stampCallTranscript leaves a CSM check-in on the brain file, never on a sales call", async () => {
+  const db = transcriptDb();
+  const out = await stampCallTranscript(db, {
+    orgId: ORG,
+    clientId: CLIENT,
+    transcript: "how is the paydown going",
+    meetingName: "CSM Check-in - Jane Doe (2026-08-24 15:00 GMT-7) - Recording.mp4"
+  });
+  assert.equal(out.stamped, 0);
+  assert.equal(out.reason, "not_a_sales_meeting");
+  assert.ok(!db.seen.some((s) => /SET transcript/i.test(s.sql) && !/recording_url = \$4/i.test(s.sql)));
+});
+
+test("stampCallTranscript stamps nothing when the meeting type or time is unknown", async () => {
+  const noType = transcriptDb();
+  const a = await stampCallTranscript(noType, {
+    orgId: ORG, clientId: CLIENT, transcript: "words", meetingName: "Meet Recording - Call A.mp4"
+  });
+  assert.equal(a.stamped, 0);
+  assert.equal(a.reason, "meeting_type_unknown");
+
+  const noTime = transcriptDb();
+  const b = await stampCallTranscript(noTime, {
+    orgId: ORG, clientId: CLIENT, transcript: "words", meetingName: "Funding Call - Jane Doe - Recording.mp4"
+  });
+  assert.equal(b.stamped, 0);
+  assert.equal(b.reason, "meeting_time_unknown");
+});
+
+test("stampCallTranscript still prefers the sales call that holds the recording link", async () => {
+  const db = {
+    async query(sql) {
+      if (/recording_url = \$4/i.test(sql)) return { rows: [{ id: "co-url" }] };
+      return { rows: [] };
+    }
+  };
+  const out = await stampCallTranscript(db, {
+    orgId: ORG, clientId: CLIENT, transcript: "words", url: "https://drive.google.com/file/d/rec",
+    meetingName: "Funding Call - Jane Doe (2026-08-24 15:00 GMT-7) - Recording.mp4"
+  });
+  assert.equal(out.stamped, 1);
+  assert.equal(out.matched, "recording_url");
+});
+
+test("stampCallTranscript never follows a link onto a call when the meeting is a CSM meeting", async () => {
+  const seen = [];
+  const db = {
+    async query(sql) {
+      seen.push(sql);
+      // A call row DOES hold this link (stamped wrongly in the past): still refused.
+      if (/recording_url = \$4/i.test(sql)) return { rows: [{ id: "co-url" }] };
+      return { rows: [] };
+    }
+  };
+  const out = await stampCallTranscript(db, {
+    orgId: ORG, clientId: CLIENT, transcript: "check-in words", url: "https://drive.google.com/file/d/csm",
+    meetingName: "CSM Check-in - Jane Doe (2026-08-24 15:00 GMT-7) - Recording.mp4"
+  });
+  assert.equal(out.stamped, 0);
+  assert.equal(out.reason, "not_a_sales_meeting");
+  assert.equal(seen.length, 0, "no query runs for a CSM meeting");
 });

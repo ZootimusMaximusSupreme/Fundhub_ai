@@ -73,6 +73,23 @@ test("a module that exists but exports no handle says so", () => {
   assert.equal(reg.unrunnable[0].reason, "module exports no handle()");
 });
 
+test("a module that registers several functions names one handler per function id", () => {
+  const m1 = async () => "m1";
+  const reply = async () => "reply";
+  const mod = { handlers: { "a-01-thing": m1, "b-02-other": reply } };
+  const fns = [fn("a-01-thing"), fn("b-02-other"), fn("c-03-missing")];
+  const byId = new Map([
+    ["a-01-thing", { mod, file: "a.mjs" }],
+    ["b-02-other", { mod, file: "a.mjs" }],
+    ["c-03-missing", { mod, file: "a.mjs" }]
+  ]);
+  const reg = assemble(fns, byId);
+  assert.equal(reg.workflows.find((w) => w.id === "a-01-thing").handle, m1);
+  assert.equal(reg.workflows.find((w) => w.id === "b-02-other").handle, reply);
+  assert.deepEqual(reg.unrunnable.map((u) => u.id), ["c-03-missing"],
+    "a function with no entry in handlers (and no handle) is still reported");
+});
+
 test("no registered workflows at all is empty, not an error", () => {
   // Nothing registered means nothing to fail to load. The guard must not fire
   // on an empty list or it would turn a valid state into a crash.
