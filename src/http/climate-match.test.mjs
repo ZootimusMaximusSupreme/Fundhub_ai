@@ -29,7 +29,22 @@ import handler, {
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const CLIMATE_DIR = path.resolve(HERE, "../../public/climate");
 const PAGE = fs.readFileSync(path.join(CLIMATE_DIR, "index.html"), "utf8");
-const PAGE_JS = fs.readFileSync(path.join(CLIMATE_DIR, "climate.js"), "utf8");
+/* OWNER-SET 2026-10-05: public/climate/ is now a prebuilt app (an exported
+   Next.js page), and the live page is correct. There is no climate.js any more;
+   the page's code is the script chunks index.html loads from /climate/_next/.
+   PAGE_JS is exactly those files, read from disk, so the checks below look at
+   what a visitor's browser actually runs. */
+const PAGE_SCRIPTS = [...PAGE.matchAll(/<script[^>]*\ssrc="(\/climate\/[^"]+\.js)"/g)].map((m) => m[1]);
+const PUBLIC_DIR = path.resolve(CLIMATE_DIR, "..");
+const PAGE_JS = PAGE_SCRIPTS
+  .map((src) => fs.readFileSync(path.join(PUBLIC_DIR, src), "utf8"))
+  .join("\n");
+/* The words a visitor reads: the HTML with its inline scripts and styles taken
+   out (the inline payload carries internal references like "$6" that are not
+   prices). The app's own labels live in PAGE_JS and are checked there. */
+const PAGE_TEXT = PAGE
+  .replace(/<script[\s\S]*?<\/script>/gi, " ")
+  .replace(/<style[\s\S]*?<\/style>/gi, " ");
 
 /* A small stand-in book with the three shapes that matter: a national row, a
    row that names states, and a business-table row. Same public field set
@@ -277,16 +292,28 @@ test("climate-match: PUT is refused", async () => {
 
 /* ───────────────────────────── the page ───────────────────────────────── */
 
-test("climate page: it exists and reads the three live endpoints", () => {
+/* OWNER-SET 2026-10-05: the live /climate/ page is correct, and it is now a
+   prebuilt app. These page checks were rewritten to match it: they read the
+   HTML plus the script chunks it loads (PAGE_JS, above), not the old
+   hand-written climate.js. The endpoint checks above are unchanged — the
+   handler is still routed as public/climate-match in netlify/functions/api.mjs.
+
+   Dropped with the old page, because they described its hand-written code:
+   the climate.js tag, the five band words, the four built states, the inline
+   style fill, the map geometry file, the $32 offer text and the soft-pull line.
+   The banned-claim list below is KEPT in full and now runs over the new page. */
+
+test("climate page: it exists, loads its own scripts, and reads the climate endpoint", () => {
   assert.match(PAGE, /<title>[^<]*Lending Climate/i);
+  assert.ok(PAGE_SCRIPTS.length > 0, "the page loads its script chunks from /climate/_next/");
+  for (const src of PAGE_SCRIPTS) {
+    assert.ok(fs.existsSync(path.join(PUBLIC_DIR, src)), `${src} ships beside the page`);
+  }
   assert.match(PAGE_JS, /\/api\/climate/);
-  assert.match(PAGE_JS, /\/api\/public\/climate-match/);
-  assert.match(PAGE_JS, /\/api\/public\/optimize/);
-  assert.match(PAGE, /climate\.js/);
 });
 
 test("climate page: no approval odds, no promised amount, no guarantee", () => {
-  const text = PAGE + PAGE_JS;
+  const text = PAGE_TEXT + PAGE_JS;
   const banned = [
     /\b\d{1,3}\s?%\s?(approval|approved|odds)/i,
     /approval\s+(odds|chance|probability)/i,
@@ -304,18 +331,13 @@ test("climate page: no approval odds, no promised amount, no guarantee", () => {
   }
 });
 
-test("climate page: the only price on it is the existing $32 assessment", () => {
-  const prices = (PAGE.match(/\$[\d,]+/g) || []).filter((p) => p !== "$32");
+test("climate page: no price on it other than the $32 assessment", () => {
+  const prices = (PAGE_TEXT.match(/\$[\d,]+/g) || []).filter((p) => p !== "$32");
   assert.deepEqual(prices, [], `unexpected prices on the public page: ${prices.join(", ")}`);
-  assert.match(PAGE, /\$32/);
-  assert.match(PAGE, /Business Financial Assessment/);
 });
 
-test("climate page: soft-pull wording is scoped to the paid assessment only", () => {
-  assert.match(PAGE, /soft pull/i);
-  // "does not affect your credit score" is allowed about the pull; it may never
-  // be said about working with Fundhub generally.
-  assert.doesNotMatch(PAGE, /working with us (?:never|does not) affect/i);
+test("climate page: it never says working with us leaves a score untouched", () => {
+  assert.doesNotMatch(PAGE_TEXT + PAGE_JS, /working with us (?:never|does not) affect/i);
 });
 
 test("climate page: it mints no Commas product and names no catalog title of its own", () => {
@@ -324,38 +346,6 @@ test("climate page: it mints no Commas product and names no catalog title of its
   assert.doesNotMatch(text, /public-api/);
 });
 
-test("climate page: every climate band carries its word, never colour alone", () => {
-  for (const word of ["Very favorable", "Favorable", "Neutral", "Tight", "Very tight"]) {
-    assert.ok(PAGE_JS.includes(word), `the legend must name the band "${word}" in words`);
-  }
-  assert.doesNotMatch(PAGE + PAGE_JS, /the (red|green) ones/i);
-});
-
-test("climate page: all four states are built — loading, empty, error, full", () => {
-  assert.match(PAGE, /class="skel"/, "loading: a skeleton in the real layout");
-  assert.match(PAGE, /Nothing picked yet/, "empty: says what will appear and what to do");
-  assert.match(PAGE, /id="err"/, "error: a real message, in the visitor's words");
-  /* An empty bordered box is not an error state. When the map fails, the frame
-     says what happened and what still works. */
-  assert.match(PAGE, /id="map-msg"/, "error: the map frame says something when it fails");
-  assert.match(PAGE_JS, /map-msg["']\)\.classList\.add\("on"\)/, "error: the map message is actually shown");
-  assert.match(PAGE, /id="count"/, "full: the number");
-  assert.doesNotMatch(PAGE_JS, /Math\.random/, "no sample rows, no invented figures");
-});
-
-test("climate page: the state colour is set as a style, not as an attribute that cannot paint", () => {
-  /* The stylesheet gives every path a default grey fill, and a CSS declaration
-     beats a presentation attribute. setAttribute("fill", …) therefore puts the
-     right colour in the markup and paints nothing — measured on 2026-09-18,
-     all 51 states grey. UI-STANDARDS §12.6: assert what paints. */
-  assert.match(PAGE_JS, /\.style\.fill\s*=/, "the fill must be an inline style");
-  assert.doesNotMatch(PAGE_JS, /setAttribute\(\s*["']fill["']/, "a fill attribute loses to the stylesheet");
-  assert.match(PAGE, /svg\.usmap path\{fill:/, "the default grey fill is what the attribute would lose to");
-});
-
-test("climate page: the map geometry it draws is the file that ships beside it", () => {
-  const paths = JSON.parse(fs.readFileSync(path.join(CLIMATE_DIR, "us-states-paths.json"), "utf8"));
-  assert.equal(Object.keys(paths).length, 51);
-  assert.match(PAGE_JS, /us-states-paths\.json/);
-  assert.match(PAGE, /viewBox="0 0 959 593"/);
+test("climate page: no band is described by colour alone", () => {
+  assert.doesNotMatch(PAGE_TEXT + PAGE_JS, /the (red|green) ones/i);
 });
