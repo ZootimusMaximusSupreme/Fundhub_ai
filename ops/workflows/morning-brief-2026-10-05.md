@@ -10,13 +10,15 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | ID | Owns | Waits on | Status |
 |---|---|---|---|
 | MB0 | Projection, spec, this board, to-do lines (cloud session, 2026-10-05) | — | done |
-| MB1 | The morning text goes to Chris's new number | **Chris: the number** | blocked |
+| MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | pending — number received 2026-10-05 |
 | MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | pending |
 | MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | pending |
 | MB4 | Cadence rules and AI ops suggestions | **Chris: yes on the cadence draft** | blocked |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | pending |
 
-**Runs at the same time:** MB2 and MB3 now. MB1 as soon as Chris sends the number. MB4 after his yes. MB5 after MB3.
+**Runs at the same time:** MB1, MB2 and MB3 now. MB4 after his yes. MB5 after MB3.
+
+**MB1 number:** received from Chris 2026-10-05, ends in 6457. The full number stays out of the repo (`.env.example`: "Do not commit the number"). It was given to Chris in chat inside the MB1 prompt. Checked 2026-10-05: the cloud's egress proxy refuses `api.netlify.com`, and computer use can't type into Terminal, so MB1 runs in a Claude Code session on the Mac.
 
 **Real dependency:** MB3 reads MB2's scorecard. Both build to the contract below, so neither waits for the other to finish.
 
@@ -53,7 +55,7 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 
 ## Questions for Chris (one at a time, in this order)
 
-1. **What number should the morning text go to?** ← asked 2026-10-05, waiting
+1. ~~What number should the morning text go to?~~ Answered 2026-10-05 (ends in 6457).
 2. What time? (Today: 6:00 a.m. Arizona)
 3. Text only, or text plus an email with the full report? Which email?
 4. Cadence rules: yes to the draft in the spec, or which numbers change?
