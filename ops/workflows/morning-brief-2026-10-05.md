@@ -132,8 +132,9 @@ Spec: docs/specs/morning-brief-2026-10-05.md ("The morning text" and "The full r
 Build one morning text that starts "Good morning, Chris." plus a stored full report:
 - Systems: read the scorecard contract on the board (MB2). Until MB2 lands, use today's
   runDailyPulse() output mapped to the same shape.
-- Marketing: same numbers as the marketing dashboard another thread is building. Find its source in
-  the repo and read it. Do not rebuild it. Link to it.
+- Marketing: same numbers as the marketing machine another thread is building. Its spec is
+  docs/specs/marketing-machine-2026-10-04.md (journey: docs/journeys/marketing-machine-intended.md).
+  Read its numbers from the same source. Do not rebuild it. Link to its dashboard.
 - Team and company numbers: src/ops/pulse.mjs and src/ops/briefs.mjs (company 8, pods, calendar).
 - Money: Finance OS reads (api/read/finance-command.mjs, api/read/money-map.mjs). If Plaid is not in
   production yet, one line: "Money: not connected yet."
