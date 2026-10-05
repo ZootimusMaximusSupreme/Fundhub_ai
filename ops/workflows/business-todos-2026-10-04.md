@@ -158,8 +158,11 @@ Share as one Artifact link and put it on the board. Push nothing to ClickFunnels
 - Zero because nothing triggered them: Purchase and SoftPullSubmitted (0 paid orders since go-live), Schedule (no booking ever recorded), every book-a-call event (0 real visitors on /watch since 10-02 17:19; all 4 live ads point to /roadmap).
 - Not proven: the zero-count events (needs a real payment or booking, or a test fire with the stored Meta token, which this container cannot read). Whether `META_TEST_EVENT_CODE` is unset on Netlify production (Netlify login expired here).
 
-### Leftover card (not fixed, outside the named hole)
-- `public/funnel/fh-events.js` still sends $297 as the browser value for InitiateCheckout and Purchase; the server sends $147. Meta keeps whichever copy arrives first. Two tests in `src/funnel/track-meta.test.mjs` still pin 297 (2 of the pre-existing failures).
+### $297 browser value — fixed 2026-10-05 (Chris: "fix mismatch")
+- `public/funnel/fh-events.js` now sends $147 for InitiateCheckout and Purchase, same as the server. Tests pin both copies to `SLO_VALUE`. Branch `fix-meta-value-147-2026-10-05`, PR #6. Live on next ship.
+
+### Leftover card
+- CI `suite (real Postgres)` dies before any test: `fundhub_app` has no password in `.github/workflows/tests.yml`. Red on `main` too.
 
 ### W1 (lead session) — 2026-10-05
 - Re-checked the whole list (four read-only checkers). Results above.
