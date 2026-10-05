@@ -21,6 +21,11 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
 - [ ] Text your old-client list (40–50 people), target 10 sales
 - [ ] ClarityPay: call the rep with the questions in section 07 of the proposal, and sign up directly so you get your own checkout
 - [ ] Book the Plaid call and get the Plaid production API keys
+- [ ] ClarityPay rep, 2 more questions before funding deposits get financed (`docs/finance/call-funnel-projection-2026-10-05.md`)
+  - [ ] Does accepting the loan trigger a hard pull? On which bureau?
+  - [ ] Does the loan report to the bureaus? Which ones, and how many days after it funds?
+- [ ] $50K ad credit line from your friend. 4 closers absorb about $24K–$40K of ads a month, so it lasts about 2 months (projection doc above)
+- [ ] Saving work: every Mac session pushes to GitHub when it ends, not on the weekend. GitHub `main` is the one home; cloud sessions already save straight to it
 - [ ] Apply for the Meta Marketing API, Google Ads API and Partner API
 - [ ] Submagic: get the Business + API plan (repo law is API only, and there is no key yet)
 - [ ] Apple developer account ($99/year) so the teleprompter goes on your phone through TestFlight
@@ -48,8 +53,20 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
 - [ ] Re-check the 23 fixes in the "Roadmap Page Audit & Game Plan" doc against the live page, and finish what's left
 - [ ] Reference ad (Scale without your own cash) visuals: build the 3 new animations (spend up → more data → better ads; $10K / $20K / $50K a month climbing to $100K; rates going up while banks lend less). The existing templates are on main in `marketing/broll`.
 - [ ] CI: the real-database test job can't log in (`fundhub_app` has no password in `.github/workflows/tests.yml`), so it is red on every pull request
+- [ ] Morning brief and full systems check. Board: `ops/workflows/morning-brief-2026-10-05.md`. Spec: `docs/specs/morning-brief-2026-10-05.md`
+  - [ ] MB1: the morning text goes to your new number (waits on the number)
+  - [ ] MB2: the 6 a.m. check covers every component (scheduled jobs, stuck messages, customer pages, payments, ad tracking, outside services, the Mac's unsaved work)
+  - [ ] MB3: the "Good morning, Chris" text: systems, marketing, money, team, suggestions, plus the full report
+  - [ ] MB4: cadence rules and AI ops suggestions (waits on your yes to the draft)
+  - [ ] MB5: the report page the text links to (last)
+- [ ] Book-a-call revenue model: rebuild it after the first 20 real sales (real show rate, close rate, offer mix, ClarityPay payouts)
+- [ ] Financed deposits for 30 days, owner-set 2026-10-05: turn on financing for the funding deposit with a 30-day shut-off (credit optimization is already financeable). Waits on the ClarityPay answers and your "good file" line
 
 ### Needs something from you first
+
+- [ ] Morning text: the number it should go to. Today it lands on the 661 agent test line. Moving it also moves Blake's lead texts and the finished-ad text
+- [ ] Cadence rules: yes to the draft in `docs/specs/morning-brief-2026-10-05.md`, or which numbers change
+- [ ] Financed deposits: what counts as a "really good file"
 
 - [ ] Lead magnet: where is the 7-lesson outline ("How to get $100K–$300K in 0% funding off your credit file")? Then agents save it and host it in the client portal.
 - [ ] /thank-you video: the video file. Then agents put it at the top of /thank-you.
