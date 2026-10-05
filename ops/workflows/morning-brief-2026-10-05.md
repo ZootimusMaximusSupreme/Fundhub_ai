@@ -15,7 +15,7 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 | MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | done — PR #22 merged 2026-10-05 |
 | MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | done — PR #29 merged 2026-10-05 |
 | MB5 | The report page the text links to (front end, last) | MB3 read endpoint | done — PR #31 merged 2026-10-05 |
-| MB6 | Evening brief (end-of-day text) + the brief replaces the old pulse text when live | MB3 (merged) | claimed — Kickoff A agent, 2026-10-05 |
+| MB6 | Evening brief (end-of-day text) + the brief replaces the old pulse text when live | MB3 (merged) | paused — agent stopped mid-work; saved in draft PR #36 (WIP, not merged) |
 
 
 **Runs at the same time:** MB1, MB2 and MB3 now. MB4 after his yes. MB5 after MB3.
