@@ -110,22 +110,16 @@ A laptop died on 2026-09-07 holding uncommitted work. Four marketing skills and 
 
 So: commit to the local repository in the same session the work is done, every time, whether or not a push is possible. An unpushed commit survives. An uncommitted file does not. If you cannot push, commit anyway and say so.
 
-### GitHub is banned. GitLab is the remote (owner-set 2026-09-09, banned 2026-10-04)
+### GitHub is the remote. GitLab is retired (owner-set 2026-10-05)
 
-GitHub is banned. Do not add a GitHub remote. Do not push, fetch, or open a pull request on github.com. If a remote points at github.com, remove it.
+"We quit gitlabs." The repo lives on GitHub: https://github.com/ZootimusMaximusSupreme/Fundhub_ai (remote `origin`). Do not add a GitLab remote or push to gitlab.com. Every GitLab branch was moved to GitHub on 2026-10-05 with identical files.
 
-The full repo is on GitLab: group `fundhub-llc-group`, project `fundhub-llc-project`.
-https://gitlab.com/fundhub-llc-group/fundhub-llc-project
+Push with `git push -u origin <branch>`. From the Mac, `node scripts/github-push-whole-repo.mjs` pushes every local branch and tag and never forces. An unpushed commit is a problem. Law: `.cursor/rules/github-push.mdc` and `.claude/rules/github-push.md`.
 
-Push with `node scripts/gitlab-push-whole-repo.mjs` (remote name `gitlab`). That script pushes every local branch and every tag, then removes any GitHub remote. An unpushed commit is a problem. Law: `.cursor/rules/gitlab-push.mdc` and `.claude/rules/gitlab-push.md`.
+The repo's visibility is Chris's call. Do not raise it (owner-set 2026-10-05).
 
-What this changes about the rules around it:
-
-* §8's "open a pull request now" and "delete your branch when it lands" describe a
-  GitHub workflow that is not in use. Local branches and local merges still matter;
-  the pull-request half does not apply.
-* Do not compare against `origin/main`. Compare against `gitlab/main`.
-* Still commit locally every session. Then push that commit to GitLab.
+* §8's pull-request and branch rules apply. Compare against `origin/main`.
+* Still commit locally every session. Then push that commit to GitHub.
 
 ### Never ask permission to run a tool (owner-set 2026-09-08)
 
