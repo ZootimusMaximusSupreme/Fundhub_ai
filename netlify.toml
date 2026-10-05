@@ -162,6 +162,13 @@
 [functions."ad-video-sweeper"]
   schedule = "*/5 * * * *"
 
+<<<<<<< HEAD
+# The Meta pull (spec M0 step 5): every hour at :17 for the last 3 days, and the
+# 07:17 UTC run re-reads 28 days. It only starts meta-sync-background (15 min);
+# a full ad-account walk does not fit the 26 s /api/inngest gave it.
+[functions."meta-sync-sweeper"]
+  schedule = "17 * * * *"
+
 # The marketing machine's clock (spec M0 step 4). Reads the database, queues the
 # weekly batch job and wakes the background worker (marketing-worker-background).
 # It does nothing while the machine's `enabled` setting is false. SWEEP_CRON in

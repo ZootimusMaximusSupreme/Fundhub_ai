@@ -151,6 +151,7 @@ const API_KEYS = [
   "lender-observations",
   "lenders",
   "marketing-flags",
+  "marketing/ad-links",
   "marketing/offers",
   "marketing/settings",
   "message-templates",
