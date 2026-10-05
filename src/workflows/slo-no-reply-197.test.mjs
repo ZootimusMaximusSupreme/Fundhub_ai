@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { agreesToRoadmap, nextTextSlot, DISCOUNT_CENTS } from "../slo/discount-197.mjs";
 import { SLO_PRICE_CENTS } from "../slo/offer.mjs";
+import { DRIP_LANES } from "../slo/drip-plan.mjs";
 import { handleNoReply, EMAIL_197_KEY, SMS_197_KEY } from "./slo-no-reply-197.mjs";
 import { LOCK_M1 } from "./slo-genuine-followup.mjs";
 import { pgFake, ev } from "./test-support.mjs";
@@ -56,6 +57,99 @@ for (const key of ["SMS-SLO-197", "EMAIL-SLO-197"]) {
     assert.ok(!/\d+% off/.test(last.sql), `${last.file} still claims a percent off`);
   });
 }
+
+// Replay every db file in the order db/migrate.mjs applies them and return what
+// message_templates holds for each SLO template afterwards. `through` stops
+// after that file (a key like "seed/034_slo_first5_reply.sql").
+const SLO_KEY_RE = /^(?:SMS|EMAIL)-SLO-[A-Z0-9-]+$/;
+const unquote = (s) => s.replace(/''/g, "'");
+function storedSloTemplates({ through = null } = {}) {
+  const store = new Map();
+  for (const d of ["schema", "migrations", "seed"]) {
+    const dir = path.join(DB_DIR, d);
+    if (!fs.existsSync(dir)) continue;
+    for (const f of fs.readdirSync(dir).filter((x) => x.endsWith(".sql")).sort()) {
+      const file = `${d}/${f}`;
+      const sql = fs.readFileSync(path.join(dir, f), "utf8")
+        .split("\n").filter((line) => !line.trimStart().startsWith("--")).join("\n");
+      const mentions = [...sql.matchAll(/'((?:SMS|EMAIL)-SLO-[A-Z0-9-]+)'/g)].length;
+      if (mentions) {
+        const writes = [];
+        const tuple = /\(\s*'([^']+)',\s*'(?:sms|email)',\s*(NULL::text|'(?:[^']|'')*'),\s*\$c\$([\s\S]*?)\$c\$\s*\)/g;
+        for (const m of sql.matchAll(tuple)) {
+          if (!SLO_KEY_RE.test(m[1])) continue;
+          const subject = m[2] === "NULL::text" ? null : unquote(m[2].slice(1, -1));
+          writes.push({ at: m.index, key: m[1], subject, body: m[3] });
+        }
+        const update = /UPDATE message_templates\s+SET\s+([\s\S]*?)\s+WHERE template_key = '([^']+)'/g;
+        for (const m of sql.matchAll(update)) {
+          if (!SLO_KEY_RE.test(m[2])) continue;
+          const w = { at: m.index, key: m[2] };
+          const subject = m[1].match(/subject\s*=\s*'((?:[^']|'')*)'/);
+          const body = m[1].match(/body\s*=\s*\$c\$([\s\S]*?)\$c\$/);
+          if (subject) w.subject = unquote(subject[1]);
+          if (body) w.body = body[1];
+          writes.push(w);
+        }
+        assert.equal(writes.length, mentions,
+          `${file} names ${mentions} SLO templates but this test can read ${writes.length} writes. Teach it the new shape.`);
+        for (const w of writes.sort((a, b) => a.at - b.at)) {
+          const { at: _at, ...fields } = w;
+          store.set(w.key, { ...store.get(w.key), ...fields, file });
+        }
+      }
+      if (file === through) return store;
+    }
+  }
+  return store;
+}
+
+const SLO_147_FROM = "seed/034_slo_first5_reply.sql";
+const SLO_147_TO = "seed/036_slo_followups_147.sql";
+const DRIP_KEYS = Object.values(DRIP_LANES).flat();
+const PERCENT_KEYS = ["SMS-SLO-197", "EMAIL-SLO-197", "SMS-SLO-COUPON-01", "EMAIL-SLO-COUPON-01"];
+
+test("no SLO follow-up template, as stored after the last db file, says $197 or claims a percent off", () => {
+  const store = storedSloTemplates();
+  for (const key of [...PERCENT_KEYS, ...DRIP_KEYS]) assert.ok(store.has(key), `no db file writes ${key}`);
+  for (const [key, t] of store) {
+    const text = `${t.subject || ""}\n${t.body || ""}`;
+    assert.ok(!text.includes("$197"), `${key} (last written by ${t.file}) still says $197`);
+    assert.ok(!/\d+\s*% off/i.test(text), `${key} (last written by ${t.file}) still claims a percent off`);
+  }
+});
+
+test("every drip email and the coupon ask for $147", () => {
+  const store = storedSloTemplates();
+  for (const key of DRIP_KEYS) {
+    assert.ok(store.get(key).body.includes("$147: {{pay_url}}"), `${key} does not say $147: {{pay_url}}`);
+  }
+  for (const key of PERCENT_KEYS) {
+    assert.ok(store.get(key).body.includes("Here's the roadmap. It's $147:"), `${key} does not say It's $147:`);
+  }
+});
+
+test("the $147 change touched only the price and the percent claim — every other word is the same", () => {
+  const before = storedSloTemplates({ through: SLO_147_FROM });
+  const after = storedSloTemplates({ through: SLO_147_TO });
+  for (const key of DRIP_KEYS) {
+    assert.equal(after.get(key).body, before.get(key).body.replaceAll("$197", "$147"), `${key} body`);
+    assert.equal(after.get(key).subject, before.get(key).subject.replaceAll("$197", "$147"), `${key} subject`);
+  }
+  for (const key of PERCENT_KEYS) {
+    assert.equal(
+      after.get(key).body,
+      before.get(key).body.replace("Here's 30% off the roadmap. It's $197", "Here's the roadmap. It's $147"),
+      `${key} body`
+    );
+    const subject = before.get(key).subject;
+    assert.equal(after.get(key).subject, subject == null ? null : subject.replace(/^Here's 30% off$/, "Here's the roadmap"), `${key} subject`);
+  }
+  for (const [key, t] of after) {
+    if (DRIP_KEYS.includes(key) || PERCENT_KEYS.includes(key)) continue;
+    assert.deepEqual(t, before.get(key), `${key} should not have changed`);
+  }
+});
 
 function dbFor197(seed = {}) {
   const base = pgFake(seed);

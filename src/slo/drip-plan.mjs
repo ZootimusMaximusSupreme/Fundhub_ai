@@ -8,7 +8,7 @@
 //
 // Each lane is seven emails. The first ones go out a day apart.
 // After that, every two or three days. The step wraps, so the list does not end.
-// One ask on every email: the $197 roadmap.
+// One ask on every email: the $147 roadmap.
 
 import { mergeCustomFields } from "../workflows/custom-fields.mjs";
 

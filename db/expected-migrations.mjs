@@ -328,6 +328,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/033_slo_texts_voice.sql",
   "seed/034_slo_first5_reply.sql",
   "seed/035_slo_no_reply_147.sql",
+  "seed/036_slo_followups_147.sql",
   "seed/295_sms_copy_2026_09.sql"
 ]);
 
