@@ -22,18 +22,23 @@
 //
 // ORDER, and why:
 //   1. main only, clean tree — an uncommitted file would ship without a record.
-//   2. skip when nothing but the ship log changed since the last ship — every
-//      production deploy costs Netlify credits (the 2026-08-06 lesson).
+//   1b. git pull --ff-only, so a deploy never goes out behind GitHub (never a merge,
+//      never a force; a pull that cannot fast-forward stops the ship).
+//   2. skip when nothing but the ship log and the marketing machine's own folders
+//      (scripts/ship-changes.mjs) changed since the last ship — every production
+//      deploy costs Netlify credits (the 2026-08-06 lesson).
 //   3. lint and two guards.
 //   4. database changes, then 5. one `netlify deploy --prod`.
 //   6. /api/health must answer pending 0 for this build's list.
 //   7. re-register the app with Inngest (PUT /api/inngest) — Inngest keeps the job
 //      list it was last handed, so a job added in a ship never runs without this
 //      (board N25, 2026-09-18). Then the ship is written to ops/ship-log.md and
-//      committed. A failed run writes nothing, so the next run tries again.
+//      committed, then `git push` (never forced) so GitHub matches. A failed run writes
+//      nothing, so the next run tries again.
 
 import { loadEnv } from "./load-env.mjs";
 import { reregisterInngest } from "./inngest-register.mjs";
+import { onlyMachineFoldersChanged } from "./ship-changes.mjs";
 loadEnv();
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -61,6 +66,14 @@ const git = (...a) => run("git", a, { quiet: true }).out.trim();
 const branch = git("branch", "--show-current");
 if (branch !== "main") fail(`on branch "${branch}". Ship from main.`);
 if (git("status", "--porcelain")) fail("uncommitted changes. Commit them first, then ship.");
+
+// ── 1b. in step with GitHub ───────────────────────────────────────────────────
+if (DRY) say("→ git pull --ff-only (dry run: not running it)");
+else {
+  say("→ git pull --ff-only");
+  const pull = run("git", ["pull", "--ff-only"], { quiet: true });
+  if (!pull.ok) fail(`git pull --ff-only failed, so nothing was deployed: ${pull.out.trim().slice(0, 400)}`);
+}
 const head = git("rev-parse", "--short=8", "HEAD");
 
 // ── 2. anything to ship? ──────────────────────────────────────────────────────
@@ -72,8 +85,8 @@ function lastShipped() {
 }
 const prev = lastShipped();
 if (prev && run("git", ["cat-file", "-e", `${prev}^{commit}`], { quiet: true }).ok) {
-  const same = run("git", ["diff", "--quiet", prev, "HEAD", "--", ".", ":(exclude)ops/ship-log.md"], { quiet: true }).ok;
-  if (same) {
+  const changed = git("diff", "--name-only", prev, "HEAD").split("\n").filter(Boolean);
+  if (onlyMachineFoldersChanged(changed)) {
     say(`Nothing to ship: main (${head}) matches the last ship (${prev}).`);
     process.exit(0);
   }
@@ -208,4 +221,7 @@ if (!fs.existsSync(LOG)) {
 fs.appendFileSync(LOG, `| ${stamp} | ${head} | ${applied} | ${health.migrations} applied, ${health.pending} pending |\n`);
 run("git", ["add", "ops/ship-log.md"], { quiet: true });
 run("git", ["commit", "-q", "-m", `ship: ${head} is live\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>`], { quiet: true });
+const push = run("git", ["push"], { quiet: true });
+if (push.ok) say("  pushed to GitHub");
+else say(`  ! git push failed (the deploy is live and logged; push by hand): ${push.out.trim().slice(0, 300)}`);
 say(`\n✔ Shipped ${head}. Logged in ops/ship-log.md.\n`);
