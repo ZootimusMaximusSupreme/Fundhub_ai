@@ -16,13 +16,15 @@ change manifest and blockers in their final message; the orchestrator copies the
 
 | Lane | Now | Next |
 |---|---|---|
-| A | waiting — starts when lane C's CI fix merges | M0 step 1 |
-| B | waiting — starts with lane A | 9.1 state machine |
+| A | **running** — M0 step 1 (rule changes); merges after the CI fix | M0 step 2 |
+| B | **running** — 9.1 state machine; merges after the CI fix | 9.2 aligner |
 | C | **running** — M0 step 6 (CI fix) | M6a, Appendix C lists, M6b |
 | D | **running** — 11.4 fixes (no dependency) | 11.1 after M0 step 5 merges |
 | E | waiting — needs `docs/specs/marketing-machine-api.md` (first M1 PR, lane A) | 8.1 teleprompter |
 
-Running agents: 2 of 5.
+Running agents: 4 of 5.
+
+2026-10-05: Chris said "Do the whole thing." Lanes A and B started before the CI fix merged so they aren't idle; nothing merges before the CI fix (spec 0.6).
 
 ## Tasks
 
@@ -31,7 +33,7 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ### M0 Groundwork
 | Step | What | Lane | Agent | Status | PR |
 |---|---|---|---|---|---|
-| M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | pending | |
+| M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | claimed | |
 | M0.2 | Repo saves through an outbox | A | mm-builder | pending | |
 | M0.3 | Settings, offers, jobs (migration) | A | mm-builder | pending | |
 | M0.4 | Clock, worker, buzz, model client | A | mm-builder | pending | |
@@ -68,7 +70,7 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ### M3 Video pipeline (lane B; screens in E)
 | Step | What | Agent | Status | PR |
 |---|---|---|---|---|
-| 9.1 | Flow and state machine | mm-architect | pending | |
+| 9.1 | Flow and state machine | mm-architect | claimed | |
 | 9.2 | Aligner | mm-architect | pending | |
 | 9.3 | Encodes | mm-architect | pending | |
 | 9.4 | Animations, always last | mm-builder | pending | |
