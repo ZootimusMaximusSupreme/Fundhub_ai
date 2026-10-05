@@ -70,6 +70,8 @@ Stored in the database, one row per morning. `not_checked` is never counted as g
 - When the brief goes live, it **replaces** the old "Fundhub morning check" text. ("The text sucks.")
 - Add an **end-of-day brief** too. Overnight is when ads break and deals come in, so Chris should know what is going on before bed and when he wakes up. Times (owner-set): 6:00 a.m. Arizona morning, 9:00 p.m. Arizona evening.
 
+- Morning and evening briefs carry the **same** content, in full detail ("every hole of the company"): systems awareness first, then sales team metrics, finances (Finance OS), and ad metrics. Ad and sales numbers are **organized per offer and per funnel**. The stored report is the detailed document, shown on the MB5 page. The text is a short summary pointing to it. The format (text, email or page) matters less than seeing everything in one place.
+
 **Migration numbers:** 430 = MB2 (scorecard, job heartbeats). 431 = MB3 (`morning_briefs`). 406–429 are held by the marketing machine.
 
 **MB3 plan (summary).** The brief runs as step 2 of the 6:00 a.m. pulse job (`src/workflows/daily-pulse.mjs`), so it always runs after the pulse. Dry-run: built and saved, nothing new sent. One row per morning in `morning_briefs` (only the last 4 digits of the number are stored). Read page `GET /api/read/morning-brief?date=`, owner and admin only. Numbers are plain database reads, with no model.
