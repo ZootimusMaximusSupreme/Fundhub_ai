@@ -33,7 +33,9 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
 - [ ] W2 — Clean up the rules that contradict each other across CLAUDE.md, `.claude/rules` and `.cursor/rules`, and add the 26 missing Claude copies
 - [ ] W5 — UnderwriteIQ: 5.5× applies per bureau. Each bureau approves on its own (owner-set 2026-10-05; do not change it to once). Still open: is business ≈ 2× personal, or tied to business age
 - [ ] W6 — Page drafts, marked draft first: How It Works on /roadmap follows the 7-step note; "Up to 12 funding rounds" becomes 3–6 on /watch, /thank-you, /funding-book-call, /roadmap-book, /roadmap-thank-you
-- [ ] W7 — Tracking: the ShowedCall event, and Lead and Schedule fire only on qualified survey answers (you confirm what "qualified" means)
+- [x] W7 — QualifiedLead built and merged: Lead and Schedule fire for everyone; QualifiedLead fires for $1K+ available capital (owner-set 2026-10-05). Live after the /apply page push + ship.
+- [ ] ShowedCall event (not built yet)
+- [ ] Split test: Meta look-alikes of your old funded clients vs your new funnel's data only. Same ads, same budget, same week. Score on cost per QualifiedLead, then booked calls, then sales. Needs the old client list and Meta Marketing API access.
 - [ ] W8 — Credit optimization clients: reminder texts on day 1, 3 and 5 until their documents are uploaded (you approve the 3 texts)
 
 ### Next for agents (as soon as a slot frees)

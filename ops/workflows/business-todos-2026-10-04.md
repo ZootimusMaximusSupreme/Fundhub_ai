@@ -46,7 +46,7 @@ Rules: read `CLAUDE.md` first. Claim your row before you start. Write your manif
 
 ## Open questions for Chris (one at a time, in this order)
 
-1. W7: What makes a survey answer "qualified" for Lead and Schedule? (The lookalike item says 760+ credit, $100K–$200K revenue.)
+1. ~~W7: what counts as qualified?~~ Owner-set 2026-10-05: **disqualify nobody yet**. Lead and Schedule fire for everyone. One extra event, `QualifiedLead`, fires for Available Capital "$1k - $5k" or higher. Merged in PR #11; live after the /apply page push + ship.
 2. ~~W5: once or per bureau?~~ Owner-set 2026-10-05: **per bureau**. Each bureau approves on its own. Do not change it to once.
 3. W5: Is business ≈ 2× personal, or tied to business age?
 
@@ -166,6 +166,7 @@ No deploy. Commit, push, PR.
 - `public/funnel/fh-events.js` now sends $147 for InitiateCheckout and Purchase, same as the server. Tests pin both copies to `SLO_VALUE`. Branch `fix-meta-value-147-2026-10-05`, PR #6. Live on next ship.
 
 ### Leftover card
+- DPC-02 marks a client "showed" when any finished call exists, including a closer logging a no-show and AI-setter calls (`src/workflows/dpc-02-call-outcome-enforcement.mjs:30-33`). Matters before ShowedCall is built.
 - CI `suite (real Postgres)` dies before any test: `fundhub_app` has no password in `.github/workflows/tests.yml`. Red on `main` too.
 
 ### W1 (lead session) — 2026-10-05
