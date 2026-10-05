@@ -88,6 +88,48 @@ describe("notifyDyingBefore25", () => {
       "the alert day was not recorded");
   });
 
+  test("the dying-ads query selects clicks, so tap-throughs can be seen", async () => {
+    let seen = "";
+    const db = { query: async (sql) => { seen = sql; return { rows: [] }; } };
+    await notifyDyingBefore25(db, { partnerId: "p-1", send: async () => ({ ok: true }) });
+    assert.match(seen, /m\.clicks/);
+  });
+
+  test("does not buzz an ad whose viewers tap through to the page", async () => {
+    const db = {
+      query: async () => ({
+        rows: [{
+          ad_id: "ad-1", org_id: "org-1", partner_id: "p-1", ad_name: "Hop ad",
+          video_plays: 200, video_p25_watched: 40, clicks: 80
+        }]
+      })
+    };
+    let sent = false;
+    const out = await notifyDyingBefore25(db, {
+      partnerId: "p-1",
+      send: async () => { sent = true; return { ok: true, status: "sent" }; }
+    });
+    assert.equal(sent, false);
+    assert.equal(out.alerted, 0);
+    assert.equal(out.skipped, 1);
+  });
+
+  test("still buzzes a dying ad with few clicks", async () => {
+    const db = {
+      query: async (sql) => /FROM ads a/i.test(sql)
+        ? { rows: [{
+            ad_id: "ad-1", org_id: "org-1", partner_id: "p-1", ad_name: "Dying ad",
+            video_plays: 200, video_p25_watched: 40, clicks: 3
+          }] }
+        : { rows: [] }
+    };
+    const out = await notifyDyingBefore25(db, {
+      partnerId: "p-1",
+      send: async () => ({ ok: true, status: "sent" })
+    });
+    assert.equal(out.alerted, 1);
+  });
+
   test("does not buzz when enough people reach 25%", async () => {
     const db = {
       query: async () => ({

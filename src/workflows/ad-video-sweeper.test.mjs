@@ -58,9 +58,22 @@ describe("a pass that cannot run", () => {
        — the module, the database, the folder id — the sweeper SAYS SO and does
        not throw. A registered workflow that throws on import takes every other
        workflow in src/workflows/index.mjs down with it. */
-    assert.equal(res.ok, false);
-    assert.match(res.error, /store|DATABASE_URL/);
     assert.equal(typeof res.ok, "boolean");
+    if (!process.env.DATABASE_URL) {
+      // No database at all (the no-database CI job): the store cannot load, and
+      // the pass says so instead of throwing.
+      assert.equal(res.ok, false);
+      assert.match(res.error, /store|DATABASE_URL/);
+    } else {
+      /* A database is configured (the real-Postgres CI job, 2026-10-05): the
+         store loads, and with an empty answer behind it and no folder id the
+         pass finds nothing and moves nothing. Nothing is missing, so nothing is
+         reported — and it still did not throw. */
+      assert.equal(res.ok, true, res.error || "");
+      assert.equal(res.detected, 0);
+      assert.equal(res.advanced, 0);
+      assert.match(res.note || "", /DRIVE_RAW_FOLDER_ID/);
+    }
   });
 
   test("a store that throws is reported, not thrown", async () => {
