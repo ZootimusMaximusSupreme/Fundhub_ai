@@ -7,6 +7,8 @@ alwaysApply: true
 
 **Owner-set (2026-09-18):** Agents in Cursor must not use Claude or Anthropic models.
 
+**Newer rule wins for websites (owner-set 2026-09-21):** `grok-no-displays.mdc` says Grok and Composer do not touch websites or design code, and that work is left for Claude. For that work only, every line below that says to do it here or not to hand it to Claude does not apply. Everything else in this rule stands.
+
 ## Never
 
 - Invoke Claude / Anthropic (`claude-opus`, `claude-sonnet`, Task `claude-*`, etc.)
