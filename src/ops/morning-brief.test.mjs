@@ -14,7 +14,8 @@ import {
   GREETINGS,
   briefWindow,
   summarizeStoredSystems,
-  buildMorningBrief
+  buildMorningBrief,
+  loadSuggestions
 } from "./morning-brief.mjs";
 import { textMorningBrief, last4 } from "../pulse/notify.mjs";
 import { parseBriefDate, parseBriefKind } from "../../api/read/morning-brief.mjs";
@@ -210,7 +211,8 @@ test("evening build reads this morning's stored check, never a pulse, and counts
     kind: "evening",
     now: NINE_PM_AZ,
     env: { PLAID_ENV: "sandbox" },
-    pulse: { checks: [{ id: "login", status: "FAIL", detail: "must be ignored" }] }
+    pulse: { checks: [{ id: "login", status: "FAIL", detail: "must be ignored" }] },
+    suggest: async () => ({ ok: true, suggestions: [] })
   });
   assert.equal(brief.kind, "evening");
   assert.equal(brief.brief_date, "2026-10-05");
@@ -226,6 +228,56 @@ test("evening build reads this morning's stored check, never a pulse, and counts
   const spend = seen.find((q) => /FROM ad_metrics_daily/.test(q.sql));
   assert.equal(spend.params[1], "2026-10-05");
   assert.match(brief.marketing.spend_line, /^Ad spend today so far \(2026-10-05\)/);
+});
+
+/* ---------- suggestions slot (MB4's buildSuggestions) ---------- */
+
+const quietErr = async (fn) => {
+  const orig = console.error;
+  console.error = () => {};
+  try { return await fn(); } finally { console.error = orig; }
+};
+
+test("suggestions: top 3 in the report, 1 in the text, biggest first as MB4 ranked them", async () => {
+  const seen = [];
+  const items = [
+    { rule: "fix_broken", headline: "Fix the broken thing.", write_up: "Fix the broken thing first. It cost $1,200 this week." },
+    { rule: "raise_spend_ramp", headline: "Raise spend." },
+    { rule: "page_change_weekly", headline: "Change page A." },
+    { rule: "page_change_weekly", headline: "Change page B." }
+  ];
+  const s = await loadSuggestions({}, {
+    orgId: "o", briefDate: "2026-10-05", env: {},
+    suggest: async (args) => { seen.push(args); return { ok: true, suggestions: items }; }
+  });
+  assert.equal(seen[0].date, "2026-10-05");
+  assert.equal(seen[0].orgId, "o");
+  assert.equal(s.items.length, 3);
+  assert.equal(s.line, "Suggestion: Fix the broken thing first. It cost $1,200 this week. (2 more in the report.)");
+
+  const one = await loadSuggestions({}, { orgId: "o", briefDate: "2026-10-05", suggest: async () => ({ ok: true, suggestions: [{ headline: "Raise spend." }] }) });
+  assert.equal(one.line, "Suggestion: Raise spend.");
+
+  const none = await loadSuggestions({}, { orgId: "o", briefDate: "2026-10-05", suggest: async () => ({ ok: true, suggestions: [] }) });
+  assert.equal(none.line, "Suggestions: none today.");
+  assert.deepEqual(none.items, []);
+});
+
+test("a failed buildSuggestions never stops the brief: it says none today", async () => {
+  const thrown = await quietErr(() => loadSuggestions({}, { orgId: "o", briefDate: "2026-10-05", suggest: async () => { throw new Error("db gone"); } }));
+  assert.equal(thrown.status, "error");
+  assert.equal(thrown.line, "Suggestions: none today.");
+  const refused = await quietErr(() => loadSuggestions({}, { orgId: "o", briefDate: "2026-10-05", suggest: async () => ({ ok: false, reason: "org_id_required" }) }));
+  assert.equal(refused.line, "Suggestions: none today.");
+
+  const db = { query: async () => ({ rows: [] }) };
+  const brief = await quietErr(() => buildMorningBrief(db, {
+    orgId: "00000000-0000-0000-0000-000000000001", now: SIX_AM_AZ, env: { PLAID_ENV: "sandbox" },
+    pulse: { checks: [] }, suggest: async () => { throw new Error("boom"); }
+  }));
+  assert.ok(brief.text_body.startsWith("Good morning, Chris."));
+  assert.match(brief.text_body, /Suggestions: none today\./);
+  assert.deepEqual(brief.suggestions, []);
 });
 
 test("read endpoint kind: default morning, evening allowed, anything else refused", () => {

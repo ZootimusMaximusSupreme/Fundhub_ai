@@ -36,6 +36,7 @@ import { listUnrecordedCalls } from "../sales/unrecorded.mjs";
 import { loadCashflowByDay } from "../finance/cashflow.mjs";
 import { fromCents } from "../commissions/money.mjs";
 import { textMorningBrief } from "../pulse/notify.mjs";
+import { buildSuggestions } from "./suggestions.mjs";
 
 export const MORNING_BRIEF_LIVE = false;
 export const BRIEF_TZ = "America/Phoenix";
@@ -55,7 +56,7 @@ export const LINES = {
   moneyNotConnected: "Money: not connected yet.",
   accountsWaiting: "Per account (Fundhub LLC, Fundhub Credit Solutions, FH Consulting): no record yet of which bank account is which company.",
   creditLineWaiting: "Ad money left on the credit line: no source yet.",
-  suggestionsWaiting: "Suggestions: none yet. They start when the cadence rules are approved (MB4).",
+  suggestionsNone: "Suggestions: none today.",
   todayWaiting: "Today: no source yet (MB4).",
   advisorWaiting: "Funding advisor files per person: no source yet. Nothing links a funding round to an advisor.",
   systemsMissing: "Systems: the morning check did not run, so nothing was checked.",
@@ -400,9 +401,42 @@ export async function loadTeam(db, { orgId, now, window = briefWindow("morning",
   return out;
 }
 
+/* ---------- suggestions (MB4, src/ops/suggestions.mjs) ---------- */
+
+// Spec: at most 3 in the report, at most 1 in the text.
+export const MAX_SUGGESTIONS_IN_REPORT = 3;
+export const MAX_SUGGESTIONS_IN_TEXT = 1;
+
+/**
+ * The cadence-law suggestions for the brief's Arizona day. buildSuggestions
+ * runs its partner-RLS reads inside a staff scope itself. A failure here never
+ * stops the brief: it is logged and the brief says "Suggestions: none today."
+ */
+export async function loadSuggestions(db, { orgId, briefDate, env = process.env, suggest = buildSuggestions }) {
+  const none = (status, reason) => ({ status, reason: reason || null, items: [], line: LINES.suggestionsNone });
+  try {
+    const r = await suggest({ db, date: briefDate, orgId, env });
+    if (!r || r.ok === false) {
+      console.error("[morning-brief] suggestions not built:", String(r?.reason || "no result").slice(0, 200));
+      return none("error", r?.reason || "no result");
+    }
+    const items = (Array.isArray(r.suggestions) ? r.suggestions : []).slice(0, MAX_SUGGESTIONS_IN_REPORT);
+    if (!items.length) return none("none");
+    const shown = items.slice(0, MAX_SUGGESTIONS_IN_TEXT)
+      .map((x) => String(x.write_up || x.headline || "").trim()).filter(Boolean);
+    if (!shown.length) return { status: "ok", items, line: LINES.suggestionsNone };
+    const more = items.length - shown.length;
+    const tail = more > 0 ? ` (${more} more in the report.)` : "";
+    return { status: "ok", items, line: `Suggestion: ${shown[0]}${tail}` };
+  } catch (err) {
+    console.error("[morning-brief] suggestions failed:", String((err && err.message) || err).slice(0, 200));
+    return none("error", String((err && err.message) || err).slice(0, 200));
+  }
+}
+
 /* ---------- the text ---------- */
 
-export function formatMorningText({ kind = "morning", now = new Date(), systems, marketing, money: m, team } = {}) {
+export function formatMorningText({ kind = "morning", now = new Date(), systems, marketing, money: m, team, suggestions } = {}) {
   assertKind(kind);
   const lines = [`${GREETINGS[kind]} ${phoenixLongDate(now)}.`, ""];
   lines.push(systems?.line || (kind === "evening" ? LINES.systemsNotStoredToday : LINES.systemsMissing));
@@ -412,12 +446,13 @@ export function formatMorningText({ kind = "morning", now = new Date(), systems,
   lines.push(LINES.marketingWaiting);
   lines.push(m?.line || LINES.moneyNotConnected);
   lines.push(team?.line || "Team: could not be read.");
+  lines.push(suggestions?.line || LINES.suggestionsNone);
   return lines.join("\n");
 }
 
 /* ---------- build, save, send ---------- */
 
-export async function buildMorningBrief(db, { orgId, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null } = {}) {
+export async function buildMorningBrief(db, { orgId, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null, suggest = buildSuggestions } = {}) {
   if (!orgId) throw new TypeError("buildMorningBrief: orgId required");
   assertKind(kind);
   const window = briefWindow(kind, now);
@@ -436,12 +471,13 @@ export async function buildMorningBrief(db, { orgId, kind = "morning", env = pro
   } else {
     systems = summarizeSystems(scorecard || scorecardFromPulse(pulse, { now }));
   }
-  const [marketing, moneySection, team] = await Promise.all([
+  const [marketing, moneySection, team, suggestions] = await Promise.all([
     loadMarketing(db, { orgId, briefDate, day: window.day, dayLabel: window.day_label }),
     loadMoney(db, { orgId, briefDate, env, day: window.day, dayLabel: window.day_label }),
-    loadTeam(db, { orgId, now, window })
+    loadTeam(db, { orgId, now, window }),
+    loadSuggestions(db, { orgId, briefDate, env, suggest })
   ]);
-  const text = formatMorningText({ kind, now, systems, marketing, money: moneySection, team });
+  const text = formatMorningText({ kind, now, systems, marketing, money: moneySection, team, suggestions });
   return {
     org_id: orgId,
     kind,
@@ -451,8 +487,9 @@ export async function buildMorningBrief(db, { orgId, kind = "morning", env = pro
     marketing,
     money: moneySection,
     team,
-    suggestions: [],
-    suggestions_line: LINES.suggestionsWaiting,
+    suggestions: suggestions.items,
+    suggestions_line: suggestions.line,
+    suggestions_status: suggestions.status,
     today: { status: "waiting", line: LINES.todayWaiting },
     text_body: text,
     report_url: null
@@ -513,7 +550,7 @@ export async function saveMorningBrief(db, brief, delivery, { dryRun = true } = 
  */
 export async function runMorningBrief({
   db, orgId = null, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null,
-  live = MORNING_BRIEF_LIVE, sendImpl
+  live = MORNING_BRIEF_LIVE, sendImpl, suggest = buildSuggestions
 } = {}) {
   assertKind(kind);
   if (!db) return { ok: false, reason: "no_db" };
@@ -524,7 +561,7 @@ export async function runMorningBrief({
   }
   if (!org) return { ok: false, reason: "no_org" };
 
-  const brief = await buildMorningBrief(db, { orgId: org, kind, env, now, pulse, scorecard });
+  const brief = await buildMorningBrief(db, { orgId: org, kind, env, now, pulse, scorecard, suggest });
 
   const existing = await readMorningBrief(db, { orgId: org, date: brief.brief_date, kind });
   if (existing && existing.delivery_status === "sent") {

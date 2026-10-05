@@ -54,7 +54,7 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
   }
 
   async function purge() {
-    await db.query(`DELETE FROM morning_briefs WHERE brief_date IN ('2001-03-05','2001-03-06','2001-03-08')`);
+    await db.query(`DELETE FROM morning_briefs WHERE brief_date IN ('2001-03-05','2001-03-06','2001-03-08','2001-03-10')`);
     await db.query(`DELETE FROM staff WHERE email LIKE $1`, [STAFF_EMAIL_LIKE]);
     await db.query(`DELETE FROM orgs WHERE slug = $1`, [OTHER_ORG_SLUG]);
   }
@@ -78,10 +78,12 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
     const out = await runMorningBrief({
       db, orgId, now: DAY1, pulse: PULSE,
       env: { PULSE_SMS_TO: "+14805550199", PLAID_ENV: "sandbox" },
-      sendImpl: async (m) => { sends.push(m); return { status: "sent", providerMessageId: "SMx" }; }
+      sendImpl: async (m) => { sends.push(m); return { status: "sent", providerMessageId: "SMx" }; },
+      suggest: async () => ({ ok: true, suggestions: [] })
     });
     assert.equal(out.ok, true);
     assert.equal(sends.length, 0);
+    assert.match(out.saved.row.text_body, /Suggestions: none today\./);
     const row = out.saved.row;
     assert.equal(row.brief_date, "2001-03-05");
     assert.equal(row.delivery_status, "dry_run");
@@ -208,6 +210,43 @@ describe("morning brief: store + /api/read/morning-brief", { skip: !HAVE_DB ? "n
     await assert.rejects(db.query(
       `INSERT INTO morning_briefs (org_id, brief_date, kind, text_body) VALUES ($1, '2001-03-05', 'evening', 'Good evening, Chris. x')`, [orgId]
     ));
+  });
+
+  /* ---------- suggestions slot (MB4) ---------- */
+
+  test("the real buildSuggestions runs inside the brief as the app role and never stops it", async () => {
+    // No injected suggest: src/ops/suggestions.mjs runs its own staff-scoped reads.
+    const out = await runMorningBrief({ db, orgId, now: new Date("2001-03-10T13:00:00Z"), pulse: PULSE, env: {} });
+    assert.equal(out.ok, true);
+    assert.equal(out.saved.row.brief_date, "2001-03-10");
+    assert.ok(Array.isArray(out.saved.row.suggestions));
+    assert.ok(out.saved.row.suggestions.length <= 3);
+    assert.match(out.saved.row.text_body, /Suggestions?: /);
+  });
+
+  test("top 3 suggestions are stored in the report, one in the text; a failure says none today", async () => {
+    const items = [1, 2, 3, 4].map((n) => ({ rule: "fix_broken", subject_key: `k${n}`, headline: `Do thing ${n}.`, write_up: null }));
+    const eve = await runMorningBrief({
+      db, orgId, kind: "evening", now: new Date("2001-03-11T04:00:00Z"), env: {},
+      suggest: async ({ date }) => ({ ok: true, date, suggestions: items })
+    });
+    assert.equal(eve.saved.row.kind, "evening");
+    assert.equal(eve.saved.row.suggestions.length, 3);
+    assert.match(eve.saved.row.text_body, /Suggestion: Do thing 1\. \(2 more in the report\.\)/);
+    assert.doesNotMatch(eve.saved.row.text_body, /Do thing 2/);
+
+    const orig = console.error;
+    console.error = () => {};
+    let failed;
+    try {
+      failed = await runMorningBrief({
+        db, orgId, kind: "evening", now: new Date("2001-03-11T04:00:00Z"), env: {},
+        suggest: async () => { throw new Error("suggestions down"); }
+      });
+    } finally { console.error = orig; }
+    assert.equal(failed.ok, true);
+    assert.match(failed.saved.row.text_body, /Suggestions: none today\./);
+    assert.deepEqual(failed.saved.row.suggestions, []);
   });
 
   test("GET kind=evening serves the evening; no kind is morning; bad kind 400; missing evening 404", async () => {
