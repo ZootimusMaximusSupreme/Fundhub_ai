@@ -18,8 +18,8 @@ describe("/api/marketing/offers", { skip: !HAS_DB ? "no DATABASE_URL" : false },
   const repoWrites = [];
   const deps = {
     db,
-    // The outbox is not on main yet: tests swap the stub for a recorder, which is
-    // exactly the swap the real hookup will make.
+    // Most tests swap the real outbox call for a recorder. One test below uses the
+    // real one against repo_outbox.
     enqueueRepoWrite: async (_tx, args) => { repoWrites.push(args); return { queued: true, path: args.path }; }
   };
 
@@ -182,12 +182,20 @@ describe("/api/marketing/offers", { skip: !HAS_DB ? "no DATABASE_URL" : false },
     assert.deepEqual(r.body.repo_write, { queued: true, path: "marketing/offers/pgt_offer.md" });
   });
 
-  test("with the stub in place (no outbox yet) a card save succeeds and reports pending hookup", async () => {
+  test("with the real outbox a card save queues a repo_outbox row in the same transaction", async () => {
     const r = await call(org.tokens.owner, {
       method: "POST", body: { tag: "pgt_offer", card_md: "# card\n" }
     }, { db });
     assert.equal(r.code, 200);
-    assert.deepEqual(r.body.repo_write, { queued: false, pending: "outbox", path: "marketing/offers/pgt_offer.md" });
+    assert.equal(r.body.repo_write.queued, true);
+    assert.equal(r.body.repo_write.path, "marketing/offers/pgt_offer.md");
+    const row = (await db.query(
+      `SELECT path, mode, content, committed_at FROM repo_outbox WHERE id = $1`, [r.body.repo_write.id]
+    )).rows[0];
+    assert.equal(row.path, "marketing/offers/pgt_offer.md");
+    assert.equal(row.mode, "replace");
+    assert.equal(row.content, "# card\n");
+    assert.equal(row.committed_at, null);
   });
 
   test("a failing repo write rolls the whole save back", async () => {

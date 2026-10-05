@@ -22,7 +22,7 @@ flowchart TD
     J[Anyone else, including csm] --> K[403]
 ```
 
-- The marketing clock, worker and the 'enabled' switch are NOT BUILT yet (M0 step 4). Nothing reads `marketing_settings` except this endpoint.
+- The clock reads `enabled`, `batch_weekday`, `batch_time`, `timezone` (M0 step 4, below). The buzz path reads `quiet_start`, `quiet_end` and `timezone`. The batch writer that acts on the queued job is `NOT BUILT` (M1).
 
 ### Offers
 
@@ -56,7 +56,7 @@ flowchart TD
     E -->|Yes| G[enqueueRepoWrite in the same transaction]
     G -->|Throws| H[Roll back the whole save, 500]
     G -->|Returns| F
-    G -.-> I[PENDING HOOKUP: today a stub that queues nothing and answers queued false, pending outbox]
+    G --> I[Writes one repo_outbox row, mode replace, in that transaction, then wakes the worker. Answers queued true]
 ```
 
 ### Supporting tables (created, nothing writes them yet)
@@ -68,7 +68,7 @@ flowchart TD
 ### Gaps against the intended journey
 
 - The intended journey says Chris pauses or restarts an offer and edits its card in the Command Center. The endpoints exist; the screen is `NOT BUILT`.
-- The card save commits to the repo through the outbox in the intended flow. The outbox is `NOT BUILT` on this branch; see the single call site above.
+- The card save commits to the repo through the outbox in the intended flow. `src/marketing/repo-writes.mjs` calls the real outbox (M0 step 4); the commit happens when the worker drains it.
 
 ## Repo saves through an outbox (M0 step 2)
 
@@ -82,8 +82,8 @@ flowchart TD
     ROW --> ALLOW{Path on the allow-list after normalizing?}
     ALLOW -->|No| REFUSE[Refused. Nothing written, the save fails]
     ALLOW -->|Yes| WAIT[Row waits: replace = whole file, edit = the change itself]
-    WAKE[Wake the worker: NOT BUILT, waits on M0 step 4] -.-> DRAIN
-    CLOCK[Worker calls drainOutbox at most once a minute: NOT BUILT, waits on M0 step 4] -.-> DRAIN
+    WAKE[Marketing save wakes the worker, M0 step 4] --> DRAIN
+    CLOCK[Worker calls drainOutbox at most once a minute, M0 step 4] --> DRAIN
     WAIT --> DRAIN[drainOutbox]
     DRAIN --> LOCK{pg_try_advisory_lock free?}
     LOCK -->|No| BUSY[Skip: another drain is running]
@@ -109,5 +109,53 @@ flowchart TD
 Notes:
 - The outbox never forces a push and holds no transaction open across a GitHub call.
 - A row that has failed transiently 10 times gets an error instead of retrying forever.
-- `outboxHealth()` returns the counts and the last error for the health card. The card itself is part of M0 step 4 and later. `UNVERIFIED` until then.
+- `outboxHealth()` returns the counts and the last error for the health card. `marketingHealth()` in `src/marketing/health.mjs` returns it with the job queue and buzz counts. The health route that shows it is `NOT BUILT` (M2).
 - The GitHub env names are `GITHUB_REPO`, `GITHUB_BRANCH` (default `main`) and `GITHUB_REPO_TOKEN`. They are named in `.env.example`. Setting them on Netlify happens on the Mac.
+
+## Clock, worker, buzzes, model client (M0 step 4)
+
+Code: `netlify/functions/marketing-clock.mjs` (scheduled `*/15 * * * *` in netlify.toml), `netlify/functions/marketing-worker-background.mjs`, `src/marketing/{clock,worker,jobs,notify,wake,time,health,model-usage,handlers}.mjs`, `src/agents/model.mjs` (`callModel`). Tables: `marketing_jobs`, `marketing_buzzes`, `marketing_model_usage`, `repo_outbox`.
+
+```mermaid
+flowchart TD
+    TICK[Clock ticks every 15 minutes] --> ON{Any org with enabled true?}
+    ON -->|No| IDLE[Log disabled, do nothing, answer 200]
+    ON -->|Yes| DUE{Local weekday is batch_weekday, and clock is within 3 hours after batch_time?}
+    DUE -->|Yes| SLOT{Job for this local date and time already queued?}
+    SLOT -->|No| QJOB[Queue write_batch job]
+    SLOT -->|Yes| SKIP[Nothing]
+    DUE -->|No| SKIP
+    QJOB --> WORK
+    SKIP --> WORK{Runnable jobs, due buzzes or waiting outbox rows?}
+    WORK -->|Yes| WAKE[POST to the worker with x-fundhub-worker secret]
+    WORK -->|No| END[Done]
+    SAVE[A marketing save writes a repo_outbox row] --> WAKE
+    WAKE --> AUTH{Secret matches MARKETING_WORKER_SECRET?}
+    AUTH -->|No or not set| R404[404, nothing runs]
+    AUTH -->|Yes| RUN[Worker run, up to 15 minutes]
+    RUN --> HK[Once a minute: drainOutbox, send due buzzes, take back claims older than 16 minutes]
+    HK --> CLAIM[Claim up to 3 jobs, FOR UPDATE SKIP LOCKED]
+    CLAIM --> H{Handler for the job kind?}
+    H -->|No| FAILNOW[Job fails now: no handler for job kind]
+    H -->|Yes| EXEC[Run the handler, no transaction held open]
+    EXEC -->|OK| DONE[Job done, result saved]
+    EXEC -->|Throws| TRY{3rd attempt?}
+    TRY -->|No| REQ[Back in the line after a pause]
+    TRY -->|Yes| FAIL[Job failed with the reason]
+    CLAIM --> M9{9 minutes in?}
+    M9 -->|Yes| STOPNEW[Stop taking new work, let running jobs finish]
+    STOPNEW --> MORE{Runnable jobs left?}
+    MORE -->|Yes| SELF[Worker wakes itself again]
+    MORE -->|No| END
+```
+
+Buzzes: `queueBuzz` writes a `marketing_buzzes` row. Inside quiet hours (`quiet_start` to `quiet_end` in the org's time zone, default 21:00 to 07:00 Arizona) `send_after` is when quiet hours end. The worker sends due rows through `notify-fanout send()`, at most one of each kind per 10 minutes, and rows sharing a `group_key` go as one buzz. A failed send leaves the row for the next pass. Nothing calls `queueBuzz` yet: the callers (scripts ready, videos ready, stuck) arrive with M1 and M3. `NOT BUILT`.
+
+Model client: `callModel` with `provider: 'anthropic'` sends only to api.anthropic.com, never OpenAI, and returns an error (status 401, nothing sent) when `ANTHROPIC_API_KEY` is missing or has a `*` in it. `timeoutMs` aborts a slow call. `cache` sends the system prompt as one block with `cache_control` ephemeral. `tools` and `toolChoice` go to Anthropic as `tools` and `tool_choice`, and `tool_use` blocks come back as `toolCalls`. Usage goes to `marketing_model_usage` through `recordMarketingUsage` (not `recordUsage`). Nothing calls it yet: the writer arrives with M1. `NOT BUILT`.
+
+### Gaps against the intended journey
+
+- The job handler list is empty (`src/marketing/handlers.mjs`). A `write_batch` job queued by the clock fails with "no handler" until M1 adds the writer. The clock only queues while `enabled` is true, and `enabled` stays false until M1 is done.
+- If `MARKETING_WORKER_SECRET` or the site URL is not set, nothing wakes the worker. The save still succeeds and the row waits. The Netlify variable is set on the Mac with the rest of the batch; none was set by this step.
+- A save wakes the worker before its own transaction commits (the wake takes a network round trip first, so the worker normally starts after the commit). If it starts early the row waits for the next drain.
+- The clock does not wake the worker while `enabled` is false, so repo saves made while the machine is off wait for the next save's wake.

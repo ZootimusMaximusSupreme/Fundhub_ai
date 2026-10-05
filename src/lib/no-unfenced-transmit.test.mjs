@@ -60,6 +60,13 @@ const ALLOWED_RAW_FETCH = {
     "the worker, through the providers and the chokepoint. Added 2026-09-24 after the " +
     "worker had to move off Inngest (26 s) and off a scheduled function (30 s), both of " +
     "which killed a 120 MB upload mid-flight.",
+  "src/marketing/wake.mjs":
+    "Wakes the marketing worker. Its ONE call is a POST to our own deploy (process.env.URL) at " +
+    "/.netlify/functions/marketing-worker-background, behind MARKETING_WORKER_SECRET, to start the " +
+    "15-minute background function that Netlify will not put on a schedule. The marketing clock and " +
+    "the worker itself call it. Nothing leaves fundhub.ai and no vendor is reached; vendor calls " +
+    "happen inside the worker, through the providers and the chokepoint. Added 2026-10-05, " +
+    "same pattern as netlify/functions/ad-video-sweeper.mjs.",
   // ── Not actually the global fetch ────────────────────────────────────────
   "src/http/read-api.mjs":
     "`fetch` here is a local parameter holding a database reader, not the global.",
