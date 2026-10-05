@@ -50,3 +50,44 @@ test("handle is audit-only — dry-run writes findings and does not send", async
   assert.ok(Array.isArray(out.findings));
   fs.rmSync(tmp, { recursive: true, force: true });
 });
+
+test("the morning brief runs as step 2, after the pulse, from the pulse's result", async () => {
+  const order = [];
+  const step = { run: async (name, fn) => { order.push(name); return fn(); } };
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-wf-"));
+  const seen = [];
+  const fakeDb = { query: async () => ({ rows: [] }) };
+  const out = await handle({
+    db: fakeDb,
+    step,
+    env: {},
+    dryRun: true,
+    boardDir: tmp,
+    gateRelayDirs: null,
+    fetchImpl: async () => ({ status: 200, text: async () => "Sign in password Generate Apps Apply door" }),
+    sendSms: async () => { throw new Error("must not send"); },
+    sendWhatsApp: async () => { throw new Error("must not send"); },
+    morningBrief: async (args) => { seen.push(args); return { ok: true }; }
+  });
+  assert.deepEqual(order, ["run-pulse", "morning-brief"]);
+  assert.equal(seen.length, 1);
+  assert.equal(seen[0].pulse, out);
+  assert.equal(out.autoFix, false);
+  fs.rmSync(tmp, { recursive: true, force: true });
+});
+
+test("a failed morning brief never hides the pulse result", async () => {
+  const step = { run: async (_name, fn) => fn() };
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-wf-"));
+  const out = await handle({
+    db: { query: async () => ({ rows: [] }) },
+    step,
+    env: {},
+    dryRun: true,
+    boardDir: tmp,
+    fetchImpl: async () => ({ status: 200, text: async () => "" }),
+    morningBrief: async () => { throw new Error("boom"); }
+  });
+  assert.ok(Array.isArray(out.checks));
+  fs.rmSync(tmp, { recursive: true, force: true });
+});

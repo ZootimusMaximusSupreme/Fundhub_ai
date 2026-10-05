@@ -9,6 +9,7 @@
 import { inngest } from "./client.mjs";
 import { db as defaultDb } from "../db.mjs";
 import { PULSE_CRON, runDailyPulse } from "../pulse/daily-pulse.mjs";
+import { runMorningBrief } from "../ops/morning-brief.mjs";
 
 export { PULSE_CRON };
 
@@ -21,9 +22,10 @@ export async function handle({
   boardDir,
   gateRelayDirs,
   sendSms,
-  sendWhatsApp
+  sendWhatsApp,
+  morningBrief = runMorningBrief
 } = {}) {
-  return step.run("run-pulse", () => runDailyPulse({
+  const pulse = await step.run("run-pulse", () => runDailyPulse({
     db,
     env,
     dryRun,
@@ -34,6 +36,19 @@ export async function handle({
     sendWhatsApp,
     recordRun: !dryRun
   }));
+
+  // Step 2 — the morning brief (MB3). Runs after the pulse, from its result.
+  // Dry-run (MORNING_BRIEF_LIVE is false): builds and saves the morning_briefs
+  // row, texts nothing. A failure here never undoes or hides the pulse.
+  if (db) {
+    try {
+      await step.run("morning-brief", () => morningBrief({ db, env, pulse }));
+    } catch (err) {
+      console.error("[daily-pulse] morning brief failed:", String((err && err.message) || err).slice(0, 200));
+    }
+  }
+
+  return pulse;
 }
 
 export const dailyPulse = inngest.createFunction(
