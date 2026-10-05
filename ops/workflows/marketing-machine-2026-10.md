@@ -16,13 +16,13 @@ change manifest and blockers in their final message; the orchestrator copies the
 
 | Lane | Now | Next |
 |---|---|---|
-| A | **running** — M0 step 1 (rule changes); merges after the CI fix | M0 step 2 |
+| A | M0.1 **blocked** (needs Chris's direct OK to edit CLAUDE.md and rule files); M0.2 and M0.3 **running** | M0.4 after M0.3 |
 | B | **running** — 9.1 state machine; merges after the CI fix | 9.2 aligner |
 | C | **running** — M0 step 6 (CI fix) | M6a, Appendix C lists, M6b |
-| D | 11.4 done → PR #19 in review | waiting — 11.1 needs M0 step 5 merged; 7.10 brain parts need M0 step 3 |
+| D | 11.4 done → PR #19 reviewed, no blockers; merges after the CI fix | waiting — 11.1 needs M0 step 5 merged; 7.10 brain parts need M0 step 3 |
 | E | waiting — needs `docs/specs/marketing-machine-api.md` (first M1 PR, lane A) | 8.1 teleprompter |
 
-Running agents: 4 of 5 (A, B, C, reviewer on #19).
+Running agents: 5 of 5 (A: M0.2, M0.3; B: 9.1; C: M0.6, Appendix C).
 
 2026-10-05: Chris said "Do the whole thing." Lanes A and B started before the CI fix merged so they aren't idle; nothing merges before the CI fix (spec 0.6).
 
@@ -33,9 +33,9 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ### M0 Groundwork
 | Step | What | Lane | Agent | Status | PR |
 |---|---|---|---|---|---|
-| M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | claimed | |
-| M0.2 | Repo saves through an outbox | A | mm-builder | pending | |
-| M0.3 | Settings, offers, jobs (migration) | A | mm-builder | pending | |
+| M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | blocked | |
+| M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | claimed | |
+| M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | claimed | |
 | M0.4 | Clock, worker, buzz, model client | A | mm-builder | pending | |
 | M0.5 | Meta v26.0, sync, ad-number resolver, tag views | A | mm-architect | pending | |
 | M0.6 | CI that actually checks work | C | mm-architect | claimed | |
@@ -96,7 +96,7 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 | Step | What | Agent | Status | PR |
 |---|---|---|---|---|
 | 12.1 | M6a videos off Netlify (R2) — needs `CLOUDFLARE_R2_API_TOKEN` (§16 item 4) | mm-builder | pending | |
-| App C | Bot policy lists | mm-chore | pending | |
+| App C | Bot policy lists | mm-chore | claimed | |
 | 12.2 | M6b bot block | mm-builder | pending | |
 
 ### M7 / M8 (lane D; screens in E)
@@ -124,6 +124,10 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 - Found on main (handed to lane C): fresh `db/migrate.mjs` fails at `114_crm_agent_seed.sql` ("VALUES lists must all be the same length").
 
 ## Blockers and open questions
+
+- **M0.1 blocked (2026-10-05).** The permission system refused the agent's commit: every M0.1 change edits CLAUDE.md, `.claude/rules/` or `.cursor/rules/`, and it would not accept the orchestrator's task as approval. It also refused the new "Chris's word wins" law (1b). Edits 1a, 1c–1f are done but uncommitted in the agent's worktree. Needs Chris's own yes.
+- **Live database in the cloud env.** This cloud session has `DATABASE_URL` set to the live Supabase pooler. Every agent was told to blank it for tests. No agent reports running a test against it.
+- **Reviewer nit on #19 (for lane C):** `src/adapters/clarity-export.mjs` makes an unfenced fetch (not via `transmit()`, not on `ALLOWED_RAW_FETCH`). Pre-existing; already on main's red `no-unfenced-transmit` list.
 
 - Waiting on Chris (§16), not blocking current work: Apple developer account, Bluetooth remote name, Submagic key test, R2 token / GitHub app token / Render approvals, Remotion license, `slo-vsl3-repair.mp4`, offer-card approvals, Meet recording, course folders, request-runner approval.
 - Netlify env vars and `npm run ship` run from the Mac only.
