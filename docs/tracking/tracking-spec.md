@@ -58,7 +58,7 @@ Rows are added from `docs/tracking/page-inventory.md` (Phase 2). Same map in the
 | `section_view` | Each section with an `id` (or `data-fh-section`) reaching the screen, once per page load | `section` | shared tracker |
 | `carousel` | Testimonial carousel next, previous, play | `carousel`, `action` (next/prev/play), `index` | shared tracker (by `data-fh-carousel` / known classes) or page hook |
 | `faq_open` | Each FAQ question opened (`<details>` toggle or FAQ button) | `question` (label slug) | shared tracker |
-| `survey_answer` | Each survey question answered | `survey`, `step_num`, `question_id`, `last` (true once, on the survey's final submit) | survey page hook |
+| `survey_answer` | Each survey question answered | `survey`, `step_num`, `question_id`, `last` (true once, on the survey's final submit), `qualified` (/apply final submit only: true when Available Capital is "$1k - $5k" or higher, `src/config/qualified-lead.mjs` — a yes/no, never the answer) | survey page hook |
 | `survey_route` | Sorting hat routes someone | `survey`, `offer` (offer code) | thank-you / survey hook |
 | `buybox_tab` | Each buy box step shown (buy box v2 has no tabs: the "Step n of 3" line; same event, so before and after compare) | `tab` (1/2/3), `bbv` | /roadmap buy box hook |
 | `field_focus` | A buy box / survey / booking field gets focus, once per field per page load | `form`, `field` (name only), `bbv` (buy box only) | page hook |
@@ -133,7 +133,7 @@ Every page also gets page_view, time_on_page, exit, click (id, label, position),
 | Page | Extra database events | Clarity | Meta today | Missing |
 |---|---|---|---|---|
 | /watch | video (VSL), carousel/FAQ if present | yes | PageView B | ViewContent, server copies |
-| /apply | survey_answer (9 screens), field_focus/complete, validation_error; calendar_view / time_selected / booking_confirmed relayed from the framed calendar | yes | PageView B, Lead B, Schedule B | server copies, SurveyStep custom |
+| /apply | survey_answer (9 screens), field_focus/complete, validation_error; calendar_view / time_selected / booking_confirmed relayed from the framed calendar | yes | PageView B, Lead B, Schedule B, QualifiedLead B | server copies, SurveyStep custom |
 | /funding-book-call | calendar_view, time_selected, booking_confirmed (framed → parent; direct → itself) | yes | PageView B | Schedule when opened directly |
 | /thank-you | survey_route | yes | PageView B, AddToCalendar B, OpenInboxConfirm B | SurveyRouted custom, Purchase per offer |
 | /order | — | yes (added 2026-10-02) | PageView B | the native ClickFunnels checkout has no hooks of ours |

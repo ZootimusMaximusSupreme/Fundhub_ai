@@ -18,7 +18,8 @@ import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 
 import { makePage } from "./fh-events-harness.mjs";
-import { SLO_VALUE } from "../meta/map.mjs";
+import { SLO_VALUE, metaEventsFor } from "../meta/map.mjs";
+import { cleanProps } from "../funnel/track.mjs";
 
 const SID = "sess-abcdef12";
 const PV = `pv.${SID}.k3j9x`;
@@ -164,6 +165,54 @@ describe("Lead", () => {
       ["trackCustom", "SurveyStep", { survey: "apply", step: 9 }, last.meta_event_id],
     ]);
     assert.equal(last.meta_event_id, `${SID}.${last.seq}`);
+  });
+
+  test("/apply QualifiedLead (owner-set 2026-10-05): the last answer with qualified:true adds it on the same id; Lead fires for both", () => {
+    const yes = page({ pathname: "/apply" }).run();
+    yes.fbqCalls.length = 0;
+    yes.win.fhTrack("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: true });
+    const y = yes.events("survey_answer")[0];
+    assert.deepEqual(fbqs(yes), [
+      ["track", "Lead", { content_name: "apply" }, y.meta_event_id],
+      ["trackCustom", "SurveyStep", { survey: "apply", step: 9 }, y.meta_event_id],
+      ["trackCustom", "QualifiedLead", { content_name: "apply" }, y.meta_event_id],
+    ]);
+    assert.equal(y.props.qualified, true, "the flag rides to the database too");
+
+    const no = page({ pathname: "/apply" }).run();
+    no.fbqCalls.length = 0;
+    no.win.fhTrack("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: false });
+    assert.deepEqual(fbqs(no).map((c) => c[1]), ["Lead", "SurveyStep"], "less than $1k: still a Lead, no QualifiedLead");
+    assert.equal(no.events("survey_answer")[0].props.qualified, false);
+
+    const early = page({ pathname: "/apply" }).run();
+    early.fbqCalls.length = 0;
+    early.win.fhTrack("survey_answer", { survey: "apply", step_num: 3, question_id: "cf_svy_planned_use", qualified: true });
+    early.win.fhTrack("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: "true" });
+    assert.equal(named(early, "QualifiedLead").length, 0, "only a real true, only on the last answer");
+  });
+
+  test("browser and server agree: the post's props through the server map fire the same events, same ids", () => {
+    const APPLY = { pathname: "/apply" };
+    const HOME = { hostname: "fundhub.ai", pathname: "/" };
+    const cases = [
+      [APPLY, { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: true }],
+      [APPLY, { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: false }],
+      [APPLY, { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true }],
+      [APPLY, { survey: "apply", step_num: 4, question_id: "cf_svy_money_change_now", qualified: true }],
+      [HOME, { survey: "home", step_num: 10, question_id: "contact", last: true }],
+    ];
+    for (const [where, props] of cases) {
+      const p = page(where).run();
+      p.fbqCalls.length = 0;
+      p.win.fhTrack("survey_answer", props);
+      const body = p.events("survey_answer")[0];
+      const server = metaEventsFor({ ...body, props: cleanProps(body.event, body.props) })
+        .map((e) => [e.event_name, e.custom_data, e.event_id]);
+      const browser = fbqs(p).map(([, name, cd, id]) => [name, cd, id]);
+      assert.ok(browser.length > 0, "the browser fired something to compare");
+      assert.deepEqual(server, browser, JSON.stringify(props));
+    }
   });
 
   test("/home: Lead only on the page's once-only last:true — a resend after a failed submit (no last) is not a second Lead", () => {

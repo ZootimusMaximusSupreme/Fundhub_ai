@@ -148,7 +148,8 @@ test("apply-survey.html SEND_STEP posts the handoff shape to /api/webhooks/click
   assert.doesNotMatch(HTML, /fhTrack\('(Lead|Schedule)'/);
   assert.doesNotMatch(HTML, /['"](Lead|Schedule)['"]/);
   assert.equal(HTML.includes("fh_booking_v1"), false, "the old Schedule listener is gone");
-  assert.match(HTML, /if \(at === list\.length - 1\) p\.last = true;\n\s*fht\('survey_answer', p\);/);
+  /* The last screen carries last: true and the QualifiedLead yes/no (owner-set 2026-10-05). */
+  assert.match(HTML, /if \(at === list\.length - 1\) \{\n\s*p\.last = true;\n\s*p\.qualified = QUALIFIED_CAPITAL\.indexOf\(A\.cf_svy_available_capital\) > -1;\n\s*\}\n\s*fht\('survey_answer', p\);/);
 });
 
 test("apply-survey approval strip is the same 16 watch-proof cards", () => {

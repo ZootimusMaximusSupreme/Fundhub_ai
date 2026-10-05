@@ -8,6 +8,7 @@ Shipped `10a7b8ca` (Netlify) + ClickFunnels pushes (funnel 968281 head pixel, /r
 | /roadmap, /watch, /apply, fundhub.ai homepage | ViewContent (`<pv>.vc`) |
 | /roadmap | Lead (step-1 button, checks passed), InitiateCheckout (card step, once per session, $147), Purchase (`purchase.<order ref>`, $147, once — also sent by the server when the payment lands), ReachedBuyBox, SoftPullSubmitted, VideoProgress |
 | /apply, homepage survey | SurveyStep per question, Lead on the last question |
+| /apply | QualifiedLead (custom) on the last question when Available Capital is "$1k - $5k" or higher — owner-set 2026-10-05. Built, not live until the /apply page push and `npm run ship`. Lead still fires for everyone |
 | /apply, /roadmap-book, /funding-book-call | Schedule on a real booking |
 | /thank-you | SurveyRouted |
 | Six sorting-hat offers | Purchase at the offer price, server only, when Commas reports the payment |
@@ -49,6 +50,7 @@ Each event: `{ event_name, event_time, event_id, event_source_url, action_source
 | payment_result success | Purchase | once per order, id `purchase.<ref>` | value 147, currency USD |
 | booking_confirmed | Schedule | every booking page | content_name = calendar |
 | survey_answer | SurveyStep (custom) | each question answered | survey, step |
+| survey_answer on the last question with qualified: true (/apply: Available Capital "$1k - $5k" or higher, `src/config/qualified-lead.mjs`) | QualifiedLead (custom) | survey submit, same id as that Lead | content_name = survey |
 | survey_route | SurveyRouted (custom) | sorting hat route | offer |
 | video progress 25/50/75/100 | VideoProgress (custom) | each mark | video, pct |
 | section_view of the buy box (`fh-cf-form` / `fhw`) | ReachedBuyBox (custom) | once per page load | — |

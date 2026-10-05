@@ -113,7 +113,9 @@ export const TRACK_EVENTS = Object.freeze({
   section_view: { section: slug(64) },
   carousel: { carousel: slug(64), action: oneOf("next", "prev", "play"), index: int(0, 1000) },
   faq_open: { question: slug(80) },
-  survey_answer: { survey: slug(40), step_num: int(0, 100), question_id: slug(64), last: bool() },
+  // qualified: the /apply page's yes/no for QualifiedLead (src/config/qualified-lead.mjs),
+  // on the last question only. A flag, never the answer.
+  survey_answer: { survey: slug(40), step_num: int(0, 100), question_id: slug(64), last: bool(), qualified: bool() },
   survey_route: { survey: slug(40), offer: slug(40) },
   buybox_tab: { tab: int(1, 3), bbv: BBV },
   field_focus: { form: FORM, field: FIELD, bbv: BBV },
