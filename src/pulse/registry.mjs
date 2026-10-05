@@ -25,6 +25,8 @@ export const ALLOWED_UNMONITORED = {
   "ops/weekly-brief": "POST only. A GET answers 405 by design, and pinging it with a body would generate a real brief every time — a real model call, a real write into Company Brain (brain_files/brain_chunks) — on whatever schedule the pulse runs, not the weekly cadence Chris actually wants. This is meant to be run when a person (or a job Chris explicitly schedules) asks for it, not pinged for uptime.",
   "public/slo-repair-checkout": "POST only. A GET answers 405 by design, and pinging it with a body would record a repair plan choice (and, off demo, mint a real Commas link) for a buyer. It also refuses anyone slo-status would not show the repair offer to. The monitored doors for this offer are public/slo-checkout and public/slo-status.",
   "public/slo-pull": "POST only. A GET answers 405 by design, and pinging it with a body would store identity (including SSN) against a paid SLO file and emit diagnostic.paid, which starts C-00. The monitored door for this offer is public/slo-checkout, which answers GET with the price.",
+  "public/eeo-survey": "The survey token in the applicant's link is the whole credential, so a GET without one answers 400 on purpose — a ping would read that correct refusal as an outage every time. A POST is the applicant's own voluntary answer, and pinging it with a body would file a made-up demographic response into the bias-audit counts. The monitored door for this data is read/eeo-aggregate.",
+  "waypoint-tick": "POST only, client session. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would tick a step on a real client's checklist. The client's checklist itself is what a client opens; this is the checkbox behind it.",
   "public/ad-video-approve": "The approval token in Chris's phone notification is the whole credential, so a GET without one answers 404 on purpose — and it answers that identically for a made-up token, an expired one and a spent one, so the door cannot be used to find out which tokens exist. A ping would read that correct refusal as an outage every single time. Pinging it with a body is worse: a POST is the decision, and it would approve or reject a filmed take that nobody watched. The monitored door for this surface is ad-videos, the staff queue, which answers GET and reports how many takes are waiting."
 };
 
@@ -263,6 +265,7 @@ const API_KEYS = [
   "read/customer-insights",
   "read/deal-math",
   "read/documents",
+  "read/eeo-aggregate",
   "read/entitlements",
   "read/failed-events",
   "read/finance-ask",
@@ -281,8 +284,10 @@ const API_KEYS = [
   "read/message-templates",
   "read/messages",
   "read/money-map",
+  "read/morning-brief",
   "read/my-numbers",
   "read/ops-pulse",
+  "read/ops-suggestions",
   "read/partners",
   "read/partner-home-tiles",
   "read/partner-production",
@@ -298,6 +303,9 @@ const API_KEYS = [
   "read/search",
   "read/slo-connections",
   "read/staff",
+  /* The stored morning scorecard (MB2, 430). Owner/admin; an unsigned ping
+     answers the app's 401. */
+  "read/systems-check",
   "read/tradelines",
   "read/transactions",
   "read/underwrite",
@@ -309,6 +317,7 @@ const API_KEYS = [
   "repair/generate",
   "repair/inbound-mail",
   "repair/send",
+  "scripts/list",
   "shifts",
   "slo-connections",
   "social/channels",
@@ -357,6 +366,7 @@ const DESK_FILES = [
   "journeys.html",
   "lenders.html",
   "messaging.html",
+  "morning-brief.html",
   "my-numbers.html",
   "ops-admin.html",
   "partner-galaxy.html",
@@ -431,15 +441,32 @@ function checkRow(row, status, detail, suggestedFix = null) {
   };
 }
 
-function isUp(row, httpStatus) {
-  if (row.kind === "desk" || row.kind === "public_static") return httpStatus >= 200 && httpStatus < 300;
-  return (
-    (httpStatus >= 200 && httpStatus < 300) ||
-    httpStatus === 400 ||
-    httpStatus === 401 ||
-    httpStatus === 403 ||
-    httpStatus === 405
-  );
+/* The refusals a GET ping may get from a route that is working: bad
+   parameters (400), not signed in (401), wrong role (403), POST-only (405). */
+export const EXPECTED_REFUSALS = Object.freeze([400, 401, 403, 405]);
+
+/* isAppRefusal — the refusal came from OUR handler, not from a gateway, a
+   Netlify 404 page or a crash page. Every handler in api/ refuses with JSON
+   carrying `ok: false` and/or an `error` string (requireAuth, requireRole,
+   readHandler, the 405 guard). Tightened 2026-10-05 (MB2, spec gap 1): before
+   this, a bare 401 from anywhere counted as up, so most API pings proved only
+   that something answered. */
+export function isAppRefusal(bodyText) {
+  let parsed = null;
+  try { parsed = JSON.parse(String(bodyText || "")); } catch { return false; }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+  return parsed.ok === false || typeof parsed.error === "string";
+}
+
+export function isUp(row, httpStatus, bodyText = "") {
+  if (httpStatus >= 200 && httpStatus < 300) return true;
+  if (row.kind === "desk" || row.kind === "public_static") return false;
+  const expected = Array.isArray(row.expect) ? row.expect : EXPECTED_REFUSALS;
+  return expected.includes(httpStatus) && isAppRefusal(bodyText);
+}
+
+async function readBody(res) {
+  try { return typeof res.text === "function" ? await res.text() : ""; } catch { return ""; }
 }
 
 async function pingRow(row, fetchImpl, baseUrl) {
@@ -451,13 +478,17 @@ async function pingRow(row, fetchImpl, baseUrl) {
       signal: AbortSignal.timeout(15000)
     });
     const status = res.status;
-    if (isUp(row, status)) {
+    const body = status >= 200 && status < 300 ? "" : await readBody(res);
+    if (isUp(row, status, body)) {
       return checkRow(row, "up", `${row.path} ${status}`);
     }
+    const why = EXPECTED_REFUSALS.includes(status)
+      ? `${row.path} answered ${status} but not with the app's own refusal (not our handler)`
+      : `${row.path} answered ${status}`;
     return checkRow(
       row,
       "down",
-      `${row.path} answered ${status}`,
+      why,
       `Restore ${row.path}. Do not auto-fix from this pulse.`
     );
   } catch (err) {

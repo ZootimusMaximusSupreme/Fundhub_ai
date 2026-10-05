@@ -169,7 +169,11 @@ test("client-control-panel.html binds the live URL client and does not fake a pu
     "Apply list must read saved plays and amounts back onto the row");
   assert.ok(fs.readFileSync(path.join(APP, "data.js"), "utf8").includes("/api/applications?client_id="),
     "FHData.applications must still be the applications read for one client");
-  assert.ok(html.includes("Play name (optional)"), "staff can type or pick a play");
+  /* OWNER-SET 2026-09-06: the "How did you apply?" / play-name box was removed
+     ("the system already knows the way that it should be applied, so that's a
+     useless option" — see the note in the lender-row loop). This used to assert
+     the box was present; it now asserts the owner's decision holds. */
+  assert.ok(!html.includes("Play name (optional)"), "the play-name box stays removed (owner, 2026-09-06)");
   assert.ok(
     html.includes("Apply shows the client email, not a Fundhub address"),
     "Apply door must tell staff to use the client email, not Fundhub"

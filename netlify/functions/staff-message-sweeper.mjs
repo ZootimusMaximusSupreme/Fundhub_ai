@@ -53,6 +53,7 @@
 // queue time — and it is why a held message is re-gated rather than trusted.
 
 import { db } from "../../src/db.mjs";
+import { recordHeartbeat, itemCountOf } from "../../src/pulse/heartbeats.mjs";
 import { dispatchDue, DEFAULT_BATCH } from "../../src/messaging/dispatch.mjs";
 
 /* Every five minutes. The quiet-hours window opens on the hour, and a text held
@@ -131,7 +132,12 @@ export async function sweepStaffMessages(db, options = {}) {
    the pass. See commas-inbox-sweeper.mjs and
    src/http/scheduled-functions-return.test.mjs. */
 export async function handler() {
+  const startedAt = new Date();
   const result = await sweepStaffMessages(db);
+  await recordHeartbeat(db, {
+    job: "staff-message-sweeper", runner: "netlify", startedAt,
+    outcome: result.ok ? "ok" : "error", itemCount: itemCountOf(result), error: result.error || null
+  });
   if (!result.ok) {
     console.error(`[staff-message-sweeper] pass failed: ${result.error}`);
   } else if (result.claimed > 0) {

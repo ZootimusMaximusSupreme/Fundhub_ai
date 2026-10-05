@@ -112,23 +112,29 @@ export async function actingClientId(db, { accountId, orgId, sessionId, activeCl
   return id;
 }
 
-export async function listRepFiles(db, accountId) {
+/* `orgId` (optional) binds the read to the signed-in session's company, the
+   same way actingClientId() above does. api/auth/authorized-rep-file.mjs always
+   passes principal.orgId, so a link row can never surface a file from another
+   company even if one were written by mistake. */
+export async function listRepFiles(db, accountId, { orgId = null } = {}) {
   const { rows } = await db.query(
     `SELECT r.client_id, c.first_name, c.last_name
        FROM client_authorized_reps r
        JOIN clients c ON c.id = r.client_id
       WHERE r.account_id = $1 AND r.removed_at IS NULL
+        AND ($2::uuid IS NULL OR (r.org_id = $2::uuid AND c.org_id = $2::uuid))
       ORDER BY r.created_at ASC, r.client_id ASC`,
-    [accountId]
+    [accountId, orgId]
   );
   return rows;
 }
 
-export async function setActiveFile(db, { accountId, clientId } = {}) {
+export async function setActiveFile(db, { accountId, clientId, orgId = null } = {}) {
   const live = await db.query(
     `SELECT 1 FROM client_authorized_reps
-      WHERE account_id = $1 AND client_id = $2 AND removed_at IS NULL`,
-    [accountId, clientId]
+      WHERE account_id = $1 AND client_id = $2 AND removed_at IS NULL
+        AND ($3::uuid IS NULL OR org_id = $3::uuid)`,
+    [accountId, clientId, orgId]
   );
   if (!live.rows[0]) return { ok: false, status: 403, error: "not_your_file" };
   await db.query(

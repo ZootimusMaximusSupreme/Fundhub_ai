@@ -13,6 +13,8 @@ Four parts, in this order:
 
 `Offer / Ad # / Angle / Take #`
 
+**Update (owner-set 2026-10-04):** this format is for files named by hand. Phone uploads keep the camera's name, and the Command Center shows which take belongs to which ad.
+
 On the file, that is one line:
 
 `SLO Ad 7 — Haynes, the call that was never a roadmap Take 1.mp4`

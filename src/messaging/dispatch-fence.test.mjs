@@ -48,6 +48,10 @@ function fakeDb({
       }
       if (sql.includes("FROM message_templates")) return { rows: [{ subject: "Your file" }] };
       if (sql.includes("SELECT custom_fields FROM clients")) return { rows: [{ custom_fields: null }] };
+      // The dispatcher also copies a client's authorized reps (same answer as
+      // dispatch.test.mjs: none on file). Without this the fake threw before
+      // any send, so the fence-DOWN tests could not send either.
+      if (sql.includes("client_authorized_reps")) return { rows: [] };
       if (sql.includes("FROM clients")) {
         const col = /SELECT (\w+) AS address/.exec(sql)?.[1];
         return { rows: [{ address: client[col] ?? null }] };
