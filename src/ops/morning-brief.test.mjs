@@ -8,7 +8,8 @@ import {
   summarizeSystems,
   formatMorningText,
   loadMoney,
-  money
+  money,
+  reportUrl
 } from "./morning-brief.mjs";
 import { textMorningBrief, last4 } from "../pulse/notify.mjs";
 import { parseBriefDate } from "../../api/read/morning-brief.mjs";
@@ -130,4 +131,10 @@ test("read endpoint date: default Arizona today, refuses bad and impossible date
   assert.equal(parseBriefDate("2026-02-30"), null);
   assert.equal(parseBriefDate("10/05/2026"), null);
   assert.equal(parseBriefDate("2026-10-05'; drop"), null);
+});
+
+test("the report link points at the MB5 page for that Arizona morning", () => {
+  assert.equal(reportUrl("2026-10-05", {}), "https://fundhub.ai/app/morning-brief.html?date=2026-10-05");
+  assert.equal(reportUrl("2026-10-05", { APP_BASE_URL: "https://example.test/" }),
+    "https://example.test/app/morning-brief.html?date=2026-10-05");
 });

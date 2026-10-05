@@ -360,6 +360,7 @@ const DESK_FILES = [
   "journeys.html",
   "lenders.html",
   "messaging.html",
+  "morning-brief.html",
   "my-numbers.html",
   "ops-admin.html",
   "partner-galaxy.html",

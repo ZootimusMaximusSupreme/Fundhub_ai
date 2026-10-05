@@ -321,6 +321,12 @@ export function formatMorningText({ now = new Date(), systems, marketing, money:
 
 /* ---------- build, save, send ---------- */
 
+/** The report page the text links to (MB5): public/app/morning-brief.html. */
+export function reportUrl(briefDate, env = process.env) {
+  const base = String(env?.APP_BASE_URL || env?.URL || "https://fundhub.ai").replace(/\/+$/, "");
+  return `${base}/app/morning-brief.html?date=${briefDate}`;
+}
+
 export async function buildMorningBrief(db, { orgId, env = process.env, now = new Date(), pulse = null, scorecard = null } = {}) {
   if (!orgId) throw new TypeError("buildMorningBrief: orgId required");
   const briefDate = phoenixDateStamp(now);
@@ -343,7 +349,7 @@ export async function buildMorningBrief(db, { orgId, env = process.env, now = ne
     suggestions_line: LINES.suggestionsWaiting,
     today: { status: "waiting", line: LINES.todayWaiting },
     text_body: text,
-    report_url: null
+    report_url: reportUrl(briefDate, env)
   };
 }
 

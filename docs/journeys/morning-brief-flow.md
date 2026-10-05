@@ -1,6 +1,6 @@
 # Morning brief — flow (generated from code, 2026-10-05)
 
-What happens every morning, read from the code in `src/workflows/daily-pulse.mjs`, `src/ops/morning-brief.mjs`, `src/pulse/notify.mjs` and `api/read/morning-brief.mjs`. Board: `ops/workflows/morning-brief-2026-10-05.md` (MB3). Spec: `docs/specs/morning-brief-2026-10-05.md`.
+What happens every morning, read from the code in `src/workflows/daily-pulse.mjs`, `src/ops/morning-brief.mjs`, `src/pulse/notify.mjs` and `api/read/morning-brief.mjs`. Board: `ops/workflows/morning-brief-2026-10-05.md` (MB3, MB5). The page: `public/app/morning-brief.html` + `public/app/morning-brief.js`. Spec: `docs/specs/morning-brief-2026-10-05.md`.
 
 **No intended journey has this step yet.** No `-intended.md` file mentions the morning text or the daily pulse text. Chris has to decide whether this text replaces the pulse text or comes as well. Until he does, the brief is **dry-run**: it is built and saved, and nothing new is texted.
 
@@ -32,7 +32,12 @@ flowchart TD
     S1 --> ROW
     S2 --> ROW
     ROW --> READ["GET /api/read/morning-brief?date=<br/>owner/admin only, org from session"]
-    READ --> PAGE["Report page (MB5): UNVERIFIED, not built"]
+    READ --> PAGE["Report page /app/morning-brief.html (MB5)<br/>owner/admin only (shell OWNER_ADMIN_ONLY + ROLE_SETS.OPS)<br/>date picker, default today in Arizona<br/>Morning / Evening switch sends kind="]
+    PAGE --> P1{"Answer"}
+    P1 -->|200, row kind matches| P2["Six parts in order: Systems (red first),<br/>Marketing, Money, Team, Suggestions, Today<br/>each number with its source; times in Arizona"]
+    P1 -->|404| P3["'No morning brief was saved for that day.'"]
+    P1 -->|evening asked, row is morning<br/>(endpoint has no kind until MB6)| P4["'No evening brief was saved for that day.'"]
+    P1 -->|401/403| P5["'This report is for owner and admin logins.'"]
 ```
 
 ## States of a `morning_briefs` row
@@ -60,5 +65,5 @@ stateDiagram-v2
 | Ad money left on the credit line | No source in the repo |
 | Funding advisor files per person | Nothing links a funding round to an advisor |
 | Suggestions, "Today" | MB4 (waits on Chris's yes to the cadence rules) |
-| Report link | MB5 page not built |
+| Report link in the text | `report_url` is filled (`/app/morning-brief.html?date=`), but `formatMorningText` does not print a "Full report:" line yet |
 | Red check: what the customer sees, since when, day count | MB2 scorecard |
