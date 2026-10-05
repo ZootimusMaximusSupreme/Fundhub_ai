@@ -20,7 +20,11 @@ itself as a multipart upload, up to 2 GB.
 
 The repo's own earlier research (`docs/specs/video-pipeline-api-verification-2026-09-22.md`) says a
 Drive link cannot work and that takes must be copied to Cloudflare R2 or S3 first. **That is now
-measured wrong on both counts** — see §2.4 and §1.3. No R2, no S3, no new vendor, no new bill.
+measured wrong on both counts** — see §2.4 and §1.3. ~~No R2, no S3, no new vendor, no new bill.~~
+
+**Superseded 2026-10-04 (owner-set):** videos move to Cloudflare R2. Netlify paused the site over
+video bandwidth, and the `fundhub.ai` zone is already on Chris's Cloudflare account. See
+`docs/specs/marketing-machine-2026-10-04.md` §2 item 12 and M6a.
 
 ---
 
@@ -338,7 +342,8 @@ and fails with exactly the "not a downloadable media file" error the earlier res
 * **Supabase Storage** — 50 MB ceiling on our free plan, which a 200 MB take is four times over.
 * **Cloudflare R2 / S3** — a new vendor and a new bill for a problem Drive and Submagic already
   solve. The earlier research recommended this on the belief that Drive links cannot work; §2.4
-  measured that belief false.
+  measured that belief false. **Superseded 2026-10-04 (owner-set):** R2 is now the store for
+  videos (`docs/specs/marketing-machine-2026-10-04.md` §2 item 12).
 
 ### Before any of it can run
 

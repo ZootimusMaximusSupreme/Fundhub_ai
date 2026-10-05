@@ -31,6 +31,8 @@ export const INNGEST_JOBS = Object.freeze([
   ["meet-transcript-sweeper", "*/10 * * * *"],
   ["meta-campaign-sync-sweeper", "0 7 * * *"],
   ["clickfunnels-analytics-sweeper", "15 7 * * *"],
+  // Microsoft Clarity daily pull, registered by PR #19 (marketing machine 11.4).
+  ["clarity-insights-sweeper", "30 7 * * *"],
   ["subscription-billing-sweeper", "17 * * * *"],
   ["partner-production-floor", "0 14 1 * *"],
   ["doc-check-retry-sweeper", "*/20 * * * *"],
