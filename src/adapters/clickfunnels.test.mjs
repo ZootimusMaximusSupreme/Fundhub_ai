@@ -581,7 +581,10 @@ test("handleClickFunnelsWebhook: apply-survey upserts the ClickFunnels contact a
     CLICKFUNNELS_APPLY_SURVEY_INGEST_SECRET: APPLY_INGEST,
     CLICKFUNNELS_API_KEY: "test-key",
     CLICKFUNNELS_SUBDOMAIN: "myworkspace",
-    CLICKFUNNELS_WORKSPACE_ID: "42"
+    CLICKFUNNELS_WORKSPACE_ID: "42",
+    // The contact upsert goes through the ADAPTERS fence (2026-10-05); this test
+    // proves the send, so the fence is explicitly down here.
+    ADAPTERS_DRY_RUN: "0"
   };
   const headers = { "x-fundhub-apply-survey-ingest": APPLY_INGEST };
 

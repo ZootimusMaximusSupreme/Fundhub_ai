@@ -50,10 +50,9 @@ test("netlify.toml schedules the timed jobs this test covers", () => {
     "commas-inbox-sweeper",
     "creative-job-runner",
     "hubstaff-poll-sweeper",
-    /* Added 2026-10-05 (spec M0 step 5). The Meta pull went hourly; a full
-       ad-account walk does not fit /api/inngest's 26 s, so this clock starts
-       meta-sync-background (15 minutes). */
-    "meta-sync-sweeper",
+    /* Added 2026-10-05 (marketing machine M0 step 4). Only flags work and wakes
+       the background worker; does nothing while `enabled` is false. */
+    "marketing-clock",
     "social-publish-sweeper",
     "staff-message-sweeper"
   ]);

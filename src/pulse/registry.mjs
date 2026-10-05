@@ -25,6 +25,8 @@ export const ALLOWED_UNMONITORED = {
   "ops/weekly-brief": "POST only. A GET answers 405 by design, and pinging it with a body would generate a real brief every time — a real model call, a real write into Company Brain (brain_files/brain_chunks) — on whatever schedule the pulse runs, not the weekly cadence Chris actually wants. This is meant to be run when a person (or a job Chris explicitly schedules) asks for it, not pinged for uptime.",
   "public/slo-repair-checkout": "POST only. A GET answers 405 by design, and pinging it with a body would record a repair plan choice (and, off demo, mint a real Commas link) for a buyer. It also refuses anyone slo-status would not show the repair offer to. The monitored doors for this offer are public/slo-checkout and public/slo-status.",
   "public/slo-pull": "POST only. A GET answers 405 by design, and pinging it with a body would store identity (including SSN) against a paid SLO file and emit diagnostic.paid, which starts C-00. The monitored door for this offer is public/slo-checkout, which answers GET with the price.",
+  "public/eeo-survey": "The survey token in the applicant's link is the whole credential, so a GET without one answers 400 on purpose — a ping would read that correct refusal as an outage every time. A POST is the applicant's own voluntary answer, and pinging it with a body would file a made-up demographic response into the bias-audit counts. The monitored door for this data is read/eeo-aggregate.",
+  "waypoint-tick": "POST only, client session. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would tick a step on a real client's checklist. The client's checklist itself is what a client opens; this is the checkbox behind it.",
   "public/ad-video-approve": "The approval token in Chris's phone notification is the whole credential, so a GET without one answers 404 on purpose — and it answers that identically for a made-up token, an expired one and a spent one, so the door cannot be used to find out which tokens exist. A ping would read that correct refusal as an outage every single time. Pinging it with a body is worse: a POST is the decision, and it would approve or reject a filmed take that nobody watched. The monitored door for this surface is ad-videos, the staff queue, which answers GET and reports how many takes are waiting."
 };
 
@@ -264,6 +266,7 @@ const API_KEYS = [
   "read/customer-insights",
   "read/deal-math",
   "read/documents",
+  "read/eeo-aggregate",
   "read/entitlements",
   "read/failed-events",
   "read/finance-ask",
@@ -315,6 +318,7 @@ const API_KEYS = [
   "repair/generate",
   "repair/inbound-mail",
   "repair/send",
+  "scripts/list",
   "shifts",
   "slo-connections",
   "social/channels",
