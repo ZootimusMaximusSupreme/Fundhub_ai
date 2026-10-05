@@ -144,12 +144,16 @@ import { isSyntheticRow } from "./synthetic.mjs";
    cron 0 4 * * * UTC — 9 p.m. Arizona). A cron like the rest, so it also
    always appears in neverFired.
 
-   Moved 91 -> 92 when this branch added s-doc-reminders (W8: texts on day 1,
+   Moved 91 -> 90 when PR #39 (marketing machine M0 step 5) took the Meta pull
+   off Inngest (meta-campaign-sync-sweeper) and onto a Netlify scheduled
+   function, meta-sync-sweeper.
+
+   Moved 90 -> 91 when this branch added s-doc-reminders (W8: texts on day 1,
    3 and 5 to a client who has not uploaded documents; starts on deposit.paid
    and is cancelled by docs.received). src/workflows/index.test.mjs lists it by
    id (EXPECTED_WORKFLOW_IDS). It is event-triggered, so it appears in
    neverFired unless a seeded journey fires deposit.paid. */
-const REGISTERED = 92;
+const REGISTERED = 91;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

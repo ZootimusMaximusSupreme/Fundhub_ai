@@ -26,7 +26,7 @@ import { withTransaction } from "../../src/db/with-transaction.mjs";
 import {
   TAG_RE, cardPathFor, createOffer, getOffer, listOffers, updateOffer, validateOfferBody
 } from "../../src/marketing/offers.mjs";
-import { enqueueRepoWrite as defaultEnqueueRepoWrite } from "../../src/marketing/repo-writes.mjs";
+import { enqueueRepoWrite as defaultEnqueueRepoWrite, wakeAfterCommit } from "../../src/marketing/repo-writes.mjs";
 import { requestIdFrom, withRequestId } from "../../src/marketing/requests.mjs";
 
 export const ROUTE = "marketing/offers";
@@ -96,6 +96,11 @@ export default async function handler(req, res, deps = {}) {
         };
       })
     );
+    // The save has committed. Only now wake the worker, so it never looks for a
+    // row that is not there yet. A failed wake never fails the save.
+    if (!out.replayed && out.body?.repo_write?.queued && !out.body.repo_write.duplicate) {
+      await (deps.wakeWorker ?? wakeAfterCommit)();
+    }
     return res.status(out.status).json(out.replayed ? { ...out.body, replayed: true } : out.body);
   } catch (err) {
     if (err && err.code === "23505") {

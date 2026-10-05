@@ -451,15 +451,22 @@ describe("377 marketing label spine", { skip: !HAS_DB ? "no DATABASE_URL" : fals
       "a Meta ad id was accepted into our own ad-number column"
     );
 
-    // Two ads may not claim the same number.
-    await assert.rejects(
-      () => asStaff(async (tx) => {
-        const c = (await insertCreative(tx, partnerA, null)).rows[0];
-        await insertAd(tx, "Duplicate number", c.id, { fundhubNumber: "42" });
-      }),
-      /ads_fundhub_number_uq/,
-      "two ads claimed the same ad number"
-    );
+    // Since 411 (spec M0 step 5) two ads MAY carry the same number: one number
+    // runs in several ad sets. The unique index is gone; a plain one remains.
+    await asStaff(async (tx) => {
+      const c = (await insertCreative(tx, partnerA, null)).rows[0];
+      await insertAd(tx, "Same number, second ad set", c.id, { fundhubNumber: "42" });
+    });
+    const sharing = (await asStaff((tx) => tx.query(
+      `SELECT count(*)::int AS n FROM ads WHERE partner_id = $1 AND fundhub_ad_number = '42'`,
+      [partnerA]
+    ))).rows[0].n;
+    assert.ok(sharing >= 2, "a second ad could not carry the same ad number");
+    const idx = (await db.query(
+      `SELECT indexname FROM pg_indexes WHERE tablename = 'ads'
+          AND indexname IN ('ads_fundhub_number_uq', 'ads_fundhub_number_idx')`
+    )).rows.map((r) => r.indexname);
+    assert.deepEqual(idx, ["ads_fundhub_number_idx"], "the number index is not the plain one from 411");
   });
 
   // ── 6. the query Chris actually wants ───────────────────────────────────

@@ -126,6 +126,7 @@ import scriptsWrite from "../../api/scripts/write.mjs";
 import scriptsList from "../../api/scripts/list.mjs";
 import marketingSettings from "../../api/marketing/settings.mjs";
 import marketingOffers from "../../api/marketing/offers.mjs";
+import marketingAdLinks from "../../api/marketing/ad-links.mjs";
 import clickfunnelsConnect from "../../api/analytics/clickfunnels-connect.mjs";
 import clickfunnelsSync from "../../api/analytics/clickfunnels-sync.mjs";
 import readFunnelPages from "../../api/read/funnel-pages.mjs";
@@ -643,6 +644,9 @@ export const ROUTES = {
      created on first read; offers are funnels with a permanent tag. */
   "marketing/settings": marketingSettings,
   "marketing/offers": marketingOffers,
+  /* §6 step 5: leads whose ad has no number yet (GET), and Link (POST), which
+     sets the number on every ads row with that Meta id or name. */
+  "marketing/ad-links": marketingAdLinks,
   "read/funnel-pages": readFunnelPages,
   "read/video-stats": readVideoStats,
   "analytics/clickfunnels-connect": clickfunnelsConnect,

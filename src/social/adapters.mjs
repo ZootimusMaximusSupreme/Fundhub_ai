@@ -7,7 +7,7 @@
 import { decryptToken } from "../adplatforms/tokens.mjs";
 import { callPlatform } from "../adplatforms/_api.mjs";
 
-const API_VERSION = () => process.env.META_API_VERSION || "v21.0";
+const API_VERSION = () => process.env.META_API_VERSION || "v26.0";
 const BASE = "https://graph.facebook.com";
 
 function channelFromPost(post) {

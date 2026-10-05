@@ -26,7 +26,6 @@ import { blueprintFinanceOsAlerts } from './blueprint-finance-os-alerts.mjs';
 import { paidCheckoutExpirySweeper } from './paid-checkout-expiry-sweeper.mjs';
 import { affiliatePayoutRun } from './affiliate-payout-run.mjs';
 import { meetTranscriptSweeper } from './meet-transcript-sweeper.mjs';
-import { metaCampaignSyncSweeper } from './meta-campaign-sync-sweeper.mjs';
 import { clickfunnelsAnalyticsSweeper } from './clickfunnels-analytics-sweeper.mjs';
 import { clarityInsightsSweeper } from './clarity-insights-sweeper.mjs';
 import { subscriptionBillingSweeper } from './subscription-billing-sweeper.mjs';
@@ -320,8 +319,15 @@ export const functions = [
 
      One partner's broken connection never stops the pass: each is caught on its
      own and recorded against that connection's last_error, which is what the
-     screen already shows. */
-  metaCampaignSyncSweeper,
+     screen already shows.
+
+     metaCampaignSyncSweeper is NOT registered here any more (2026-10-05, spec
+     M0 step 5). The pull now runs hourly (3 days) plus nightly (28 days), and an
+     Inngest pass is killed at 26 seconds inside /api/inngest (spec §4 trap 5),
+     which a full ad-account walk is not bounded by. It runs as
+     netlify/functions/meta-sync-sweeper.mjs (the clock) →
+     meta-sync-background.mjs (15 minutes), calling the same sweep(). Registering
+     it here again would run every pass twice. */
   clickfunnelsAnalyticsSweeper,
 
   /* Microsoft Clarity daily pull. Registered 2026-10-05 (marketing machine 11.4).

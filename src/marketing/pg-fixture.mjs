@@ -46,7 +46,7 @@ export async function wipeMarketingOrg(orgId, { keepOrg = false } = {}) {
   // Children first: ad_offer_tags and agent_requests reference marketing_offers.
   for (const t of [
     "ad_offer_tags", "agent_requests", "marketing_model_usage", "marketing_jobs", "marketing_requests",
-    "marketing_buzzes", "marketing_shoots", "marketing_offers", "marketing_settings"
+    "marketing_buzzes", "marketing_shoots", "marketing_offers", "marketing_settings", "repo_outbox"
   ]) {
     await db.query(`DELETE FROM ${t} WHERE org_id = $1`, [orgId]);
   }
