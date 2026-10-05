@@ -1,22 +1,23 @@
-// $197 is the discount price for the roadmap. Full price stays $297.
-// The gift is this price. It goes out when they do not reply.
+// $147 is the price the no-reply follow-up offers for the roadmap (owner-set 2026-10-05).
+// It is the live page price (src/slo/offer.mjs SLO_PRICE_CENTS). The $297 list price is
+// display only. The gift is this price. It goes out when they do not reply.
 // The first five texts are a real conversation. A yes means the roadmap is free.
 
 import crypto from "node:crypto";
 
-export const DISCOUNT_CENTS = 19700;
+export const DISCOUNT_CENTS = 14700;
 
 export const DISCOUNT_REF_KEY = "slo_197_ref";
 
-/** Unpredictable id for the $197 checkout link. */
+/** Unpredictable id for the $147 checkout link. */
 export function newDiscountRef() {
   return `slo197_${crypto.randomBytes(12).toString("hex")}`;
 }
 
-/** Roadmap checkout, card step, at $197. Step 1 (name, email, phone) is skipped. */
+/** Roadmap checkout, card step, at $147. Step 1 (name, email, phone) is skipped. */
 export function discountCheckoutUrl(ref) {
   const id = encodeURIComponent(String(ref || "").trim());
-  return `https://apply.fundhub.ai/roadmap/?offer=197&ref=${id}#fhw`;
+  return `https://apply.fundhub.ai/roadmap/?offer=147&ref=${id}#fhw`;
 }
 
 export const FIRST_FIVE = 5;
