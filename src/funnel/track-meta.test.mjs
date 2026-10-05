@@ -6,7 +6,7 @@
 //
 // What this proves: the four new top-level fields are kept only when valid
 // (meta_event_id, fbc, fbp, url — a sensitive url query value is dropped), and
-// the two new props (payment_result order_ref, survey_answer last); the hook
+// the new props (payment_result order_ref, survey_answer last and qualified); the hook
 // runs only for a saved row, from a person, with the switch on, for a mapped
 // event that carries the browser's meta_event_id (the browser's once-rules
 // decide that); it never holds up the answer; agents (automated browsers, and
@@ -130,6 +130,13 @@ describe("the new top-level fields", () => {
     assert.deepEqual(cleanProps("survey_answer", { survey: "apply", last: "false" }), { survey: "apply", last: false });
     assert.deepEqual(cleanProps("survey_answer", { survey: "apply", last: "yes" }), { survey: "apply" });
     assert.deepEqual(cleanProps("survey_answer", { survey: "apply", last: 1 }), { survey: "apply" });
+  });
+
+  test("survey_answer keeps qualified as a true / false flag, never an answer (owner-set 2026-10-05)", () => {
+    assert.deepEqual(cleanProps("survey_answer", { survey: "apply", last: true, qualified: true }), { survey: "apply", last: true, qualified: true });
+    assert.deepEqual(cleanProps("survey_answer", { survey: "apply", last: true, qualified: false }), { survey: "apply", last: true, qualified: false });
+    assert.deepEqual(cleanProps("survey_answer", { survey: "apply", qualified: "$1k - $5k" }), { survey: "apply" });
+    assert.deepEqual(cleanProps("survey_answer", { survey: "apply", answer: "$1k - $5k", available_capital: "$100k+" }), { survey: "apply" });
   });
 });
 
@@ -294,6 +301,28 @@ describe("what Meta gets", () => {
       ["SurveyStep", `${SID}.12`, { survey: "apply", step: 10 }]
     ]);
     assert.equal(h.updates[0].patch.meta.event_name, "Lead,SurveyStep");
+  });
+
+  test("a qualified last answer: Lead, SurveyStep and QualifiedLead in one request, one shared id", async () => {
+    const h = harness();
+    await send(h, { event: "survey_answer", page: "/apply", seq: 12,
+      props: { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: true } });
+    await h.settle();
+    assert.deepEqual(h.metaCalls[0].body.data.map((e) => [e.event_name, e.event_id, e.custom_data]), [
+      ["Lead", `${SID}.12`, { content_name: "apply" }],
+      ["SurveyStep", `${SID}.12`, { survey: "apply", step: 9 }],
+      ["QualifiedLead", `${SID}.12`, { content_name: "apply" }]
+    ]);
+    assert.equal(h.updates[0].patch.meta.event_name, "Lead,SurveyStep,QualifiedLead");
+    assert.equal(h.rows[0].payload.props.qualified, true, "the flag is saved on the row");
+  });
+
+  test("a last answer under $1k: Lead and SurveyStep still go, QualifiedLead does not", async () => {
+    const h = harness();
+    await send(h, { event: "survey_answer", page: "/apply", seq: 12,
+      props: { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: false } });
+    await h.settle();
+    assert.deepEqual(h.metaCalls[0].body.data.map((e) => e.event_name), ["Lead", "SurveyStep"]);
   });
 
   test("Purchase only with the browser's purchase.<order_ref> id, once per order", async () => {

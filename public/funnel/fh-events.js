@@ -285,6 +285,11 @@
       var last = p.last === true;
       if (last) add("Lead", data({ content_name: p.survey }));
       add("SurveyStep", data({ survey: p.survey, step: p.step_num }), null, true);
+      /* QualifiedLead: the same last answer, when the page marked it qualified
+         (/apply: Available Capital "$1k - $5k" or higher, src/config/qualified-lead.mjs).
+         Only the page's yes/no rides here, never the answer. Lead above still
+         fires for everyone. */
+      if (last && p.qualified === true) add("QualifiedLead", data({ content_name: p.survey }), null, true);
     } else if (event === "buybox_tab") {
       if (p.tab === 2 && first("fh_ic_sent", true)) add("InitiateCheckout", data(PRICE));
     } else if (event === "payment_result") {

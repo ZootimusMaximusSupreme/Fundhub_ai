@@ -22,8 +22,9 @@
 //
 // ViewContent is the one row with its own id: "<PageView id>.vc". Purchase is
 // sent only with a "purchase.<order_ref>" id. Meta dedupes on event name + id,
-// so the two events of one row (Lead and SurveyStep on the survey's final
-// submit) share the row's id, exactly as the browser sends them.
+// so the events of one row (Lead, SurveyStep and, when qualified, QualifiedLead
+// on the survey's final submit) share the row's id, exactly as the browser
+// sends them.
 //
 // The match rules are the same ones fh-events.js uses, so the browser copy and
 // the server copy fire on the same rows.
@@ -116,6 +117,15 @@ export const META_MAP = Object.freeze([
     event: "survey_answer", meta: "SurveyStep", custom: true,
     match: () => true,
     customData: (row) => data({ survey: props(row).survey, step: props(row).step_num }),
+  },
+  {
+    // Owner-set 2026-10-05. The same last answer as the survey Lead, when the
+    // /apply page marked it qualified (Available Capital "$1k - $5k" or higher,
+    // src/config/qualified-lead.mjs). Only the page's yes/no reaches us, never
+    // the answer. Lead still fires for everyone. Same rule as fh-events.js.
+    event: "survey_answer", meta: "QualifiedLead", custom: true,
+    match: (row) => props(row).last === true && props(row).qualified === true,
+    customData: (row) => data({ content_name: props(row).survey }),
   },
   {
     event: "survey_route", meta: "SurveyRouted", custom: true,

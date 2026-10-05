@@ -21,6 +21,9 @@ import path from "node:path";
 import vm from "node:vm";
 import { fileURLToPath } from "node:url";
 
+import { isQualifiedLead, QUALIFIED_LEAD_QUESTION } from "../config/qualified-lead.mjs";
+import { CF_SURVEY_QUESTIONS } from "../survey/cf-question-map.mjs";
+
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 const read = (p) => fs.readFileSync(path.join(ROOT, p), "utf8");
 const APPLY_HTML = read("marketing/landing-pages/apply-survey.html");
@@ -31,8 +34,9 @@ const THANKS_JS = read("public/funnel/thankyou-sort.js");
 /* The props each event may carry (spec, "Events"). */
 const ALLOWED = {
   /* last: true on the final question only (docs/tracking/meta-events.md, Phase 4 map:
-     the shared tracker turns it into Meta Lead). */
-  survey_answer: ["survey", "step_num", "question_id", "last"],
+     the shared tracker turns it into Meta Lead). qualified: the /apply page's yes/no
+     on that same final question (src/config/qualified-lead.mjs, owner-set 2026-10-05). */
+  survey_answer: ["survey", "step_num", "question_id", "last", "qualified"],
   survey_route: ["survey", "offer"],
   field_focus: ["form", "field"],
   field_complete: ["form", "field"],
@@ -379,10 +383,12 @@ const APPLY_CONTACT_EVENTS = [
   ev("survey_answer", { survey: "apply", step_num: 1, question_id: "contact" }),
 ];
 
-/* The final question (cf_svy_available_capital) carries last: true; no other screen does. */
+/* The final question (cf_svy_available_capital) carries last: true and the page's
+   QualifiedLead yes/no; no other screen carries either. */
 const answersOf = (path) =>
-  path.map(([key], i) => ev("survey_answer", {
-    survey: "apply", step_num: i + 2, question_id: key, ...(i === path.length - 1 ? { last: true } : {}),
+  path.map(([key, label], i) => ev("survey_answer", {
+    survey: "apply", step_num: i + 2, question_id: key,
+    ...(i === path.length - 1 ? { last: true, qualified: isQualifiedLead({ [key]: label }) } : {}),
   }));
 
 describe("/apply survey hooks (apply-survey.html)", () => {
@@ -405,7 +411,24 @@ describe("/apply survey hooks (apply-survey.html)", () => {
   test("only the final question (available capital, step 9) carries last: true, on both paths", () => {
     for (const rest of [APPLY_BIZ, APPLY_PERSONAL]) {
       const lasts = walkApply(rest).page.events().filter((e) => e[1].last !== undefined);
-      assert.deepEqual(lasts, [ev("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true })]);
+      assert.deepEqual(lasts, [ev("survey_answer", { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: true })]);
+    }
+  });
+
+  test("QualifiedLead flag (owner-set 2026-10-05): every Available Capital choice, both paths, matches src/config/qualified-lead.mjs", () => {
+    const capital = CF_SURVEY_QUESTIONS.find((q) => q.payloadKey === QUALIFIED_LEAD_QUESTION).options;
+    assert.equal(capital.length, 5);
+    for (const rest of [APPLY_BIZ, APPLY_PERSONAL]) {
+      for (const label of capital) {
+        const walk = [...rest.slice(0, -1), [QUALIFIED_LEAD_QUESTION, label]];
+        const got = walkApply(walk).page.events().filter((e) => e[0] === "survey_answer");
+        const last = got.at(-1)[1];
+        assert.equal(last.last, true, `${label}: the last answer is still marked (Lead fires for everyone)`);
+        assert.equal(last.qualified, isQualifiedLead({ [QUALIFIED_LEAD_QUESTION]: label }), label);
+        assert.equal(last.qualified, label !== "Less than $1k", label);
+        assert.equal(got.filter((e) => "qualified" in e[1]).length, 1, `${label}: only the last answer carries the flag`);
+        assertNoValues(got, [label]);
+      }
     }
   });
 

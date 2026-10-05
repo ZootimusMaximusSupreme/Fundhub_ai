@@ -60,6 +60,7 @@ const SAMPLES = [
   row("payment_result", { props: { result: "success", bbv: 2 }, meta_event_id: "purchase.ord_123" }),
   row("booking_confirmed", { page: "/apply", props: { calendar: "funding-book-call" } }),
   row("survey_answer", { page: "/apply", props: { survey: "apply", step_num: 3, question_id: "cf_svy_planned_use" } }),
+  row("survey_answer", { page: "/apply", props: { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true, qualified: true } }),
   row("survey_route", { page: "/thank-you", props: { survey: "apply", offer: "slo" } }),
   row("video", { page: "/watch", props: { video: "vsl", action: "progress", pct: 50 } }),
   row("section_view", { props: { section: "fhw" } }),
@@ -68,7 +69,7 @@ const SAMPLES = [
 
 describe("META_MAP is the contract table", () => {
   test("same rows, same order: our event, Meta event, custom or not", () => {
-    assert.equal(ROWS.length, 12, "the contract table has twelve rows");
+    assert.equal(ROWS.length, 13, "the contract table has thirteen rows");
     assert.equal(META_MAP.length, ROWS.length);
     ROWS.forEach(([ours, meta], i) => {
       const rule = META_MAP[i];
@@ -169,6 +170,23 @@ describe("everything else maps to nothing", () => {
     }
   });
 
+  test("QualifiedLead: the last answer with qualified: true; Lead still fires either way (owner-set 2026-10-05)", () => {
+    const last = { survey: "apply", step_num: 9, question_id: "cf_svy_available_capital", last: true };
+    const yes = metaEventsFor(row("survey_answer", { page: "/apply", props: { ...last, qualified: true } }));
+    assert.deepEqual(yes.map((e) => e.event_name), ["Lead", "SurveyStep", "QualifiedLead"], "$1k or more");
+    assert.deepEqual(yes[2].custom_data, { content_name: "apply" });
+    const no = metaEventsFor(row("survey_answer", { page: "/apply", props: { ...last, qualified: false } }));
+    assert.deepEqual(no.map((e) => e.event_name), ["Lead", "SurveyStep"], "less than $1k: Lead, no QualifiedLead");
+    const unmarked = metaEventsFor(row("survey_answer", { page: "/apply", props: last }));
+    assert.deepEqual(unmarked.map((e) => e.event_name), ["Lead", "SurveyStep"], "an older page with no flag");
+    const notLast = metaEventsFor(row("survey_answer", { page: "/apply", props: { survey: "apply", step_num: 3, qualified: true } }));
+    assert.deepEqual(notLast.map((e) => e.event_name), ["SurveyStep"], "only on the last answer");
+    for (const flag of ["true", 1, "yes"]) {
+      const out = metaEventsFor(row("survey_answer", { page: "/apply", props: { ...last, qualified: flag } }));
+      assert.deepEqual(out.map((e) => e.event_name), ["Lead", "SurveyStep"], String(flag));
+    }
+  });
+
   test("never a survey answer, an email or a phone in custom_data", () => {
     for (const s of SAMPLES) {
       for (const e of metaEventsFor(s)) {
@@ -201,6 +219,12 @@ describe("event_id: the browser's id, so Meta counts each event once", () => {
   test("the last survey question: Lead and SurveyStep under the row's one id", () => {
     const ids = metaEventsFor({ ...SAMPLES[3], meta_event_id: "sess-abcdef12.9" }).map((e) => [e.event_name, e.event_id]);
     assert.deepEqual(ids, [["Lead", "sess-abcdef12.9"], ["SurveyStep", "sess-abcdef12.9"]]);
+  });
+
+  test("a qualified last answer: QualifiedLead shares the row's one id with Lead and SurveyStep", () => {
+    const qualified = SAMPLES.find((s) => s.props.qualified === true);
+    const ids = metaEventsFor({ ...qualified, meta_event_id: "sess-abcdef12.9" }).map((e) => [e.event_name, e.event_id]);
+    assert.deepEqual(ids, [["Lead", "sess-abcdef12.9"], ["SurveyStep", "sess-abcdef12.9"], ["QualifiedLead", "sess-abcdef12.9"]]);
   });
 
   test("Purchase only with purchase.<order ref>, once per order", () => {

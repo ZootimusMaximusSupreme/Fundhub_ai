@@ -185,6 +185,11 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     { key: 'cf_svy_available_capital', type: 'single', title: 'Available Capital', hint: 'Cash you could put toward getting funded.',
       opts: ['Less than $1k', '$1k - $5k', '$5k - $25k', '$25k - $100k', '$100k+'] }
   ];
+  /* QualifiedLead (owner-set 2026-10-05): Available Capital "$1k - $5k" or higher.
+     Same list as QUALIFIED_CAPITAL_ANSWERS in src/config/qualified-lead.mjs;
+     src/config/qualified-lead.test.mjs fails if the two differ. Only the yes/no
+     goes to the tracker, never the answer. */
+  var QUALIFIED_CAPITAL = ['$1k - $5k', '$5k - $25k', '$25k - $100k', '$100k+'];
   var A = {}, at = 0;
   var body = document.getElementById('body'), form = document.getElementById('sv');
 
@@ -437,9 +442,13 @@ pre{margin:18px 0 0;padding:14px;background:var(--panel);border-radius:10px;font
     /* step_num: where this screen sat on the path this visitor saw (contact is 1).
        last: the final question (cf_svy_available_capital). The shared tracker turns that
        one into Meta Lead (docs/tracking/meta-events.md, Phase 4 map); this page sends
-       nothing to Meta itself. */
+       nothing to Meta itself. qualified (last question only): true/false from
+       QUALIFIED_CAPITAL; when true the shared tracker also sends QualifiedLead. */
     var p = { survey: 'apply', step_num: at + 1, question_id: list[at].key };
-    if (at === list.length - 1) p.last = true;
+    if (at === list.length - 1) {
+      p.last = true;
+      p.qualified = QUALIFIED_CAPITAL.indexOf(A.cf_svy_available_capital) > -1;
+    }
     fht('survey_answer', p);
     if (at < list.length - 1) { at++; render(); }
     else finish();
