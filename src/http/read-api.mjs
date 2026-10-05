@@ -182,6 +182,11 @@ export const ROLE_SETS = {
      a separate gate from api/hiring/* so demographic summaries never ride alongside
      applicant PII and scoring trails (053_eeo_selfid.sql). */
   COMPLIANCE: new Set(["owner", "admin"]),
+  /* The marketing machine (docs/specs/marketing-machine-2026-10-04.md §4 trap 2):
+     settings, offers, scripts and videos. Only Chris turns ads on, so only the
+     owner and admin reach any marketing/* route. Roles can be added later by
+     naming them here, never by reusing STAFF. */
+  MARKETING: new Set(["owner", "admin"]),
   /* The lender database. Chris's call, 2026-08-17: the Lenders list is
      commercial relationship data the funding advisor maintains — who each
      lender is, what they pull, the terms and the insider notes — and it is not

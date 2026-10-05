@@ -26,6 +26,77 @@ change it in the source file too, or the two will drift and the older one will w
 ---
 ---
 
+# PART 0 — CHRIS'S RULES
+
+0. Chris's word beats every rule below. These rules guide the writer, and they are never read so literally that they block what Chris asked for.
+
+**Words**
+
+1. Never write "credit repair." Say "credit optimization" or "optimize your credit."
+2. Never say "your number" or "the number." Spell it out, for example: "how much we think you'll qualify for based on where you're at right now."
+3. Never write "carry" or "carries" for what a file is worth. Say how much funding it can get them.
+4. Never write "shelf company" or "sitting on a shelf." Say "an LLC or a company you forgot about."
+5. Never mention EIN, DUNS, net-30 vendors or gas cards.
+6. Never write "no guarantees." Say what's most likely based on the data.
+7. "Maximum amount of funding" stays exactly as written.
+8. Say "review your file the way a lender does."
+9. A "funding sequence" holds several rounds. Never call the next sequence "round two."
+10. Write Fundhub with a lowercase h. No em dashes.
+11. Dollar amounts are always numerals, like $300,000.
+12. No "dude," "bro" or "man" filler, and no hype. Write it conversational, at a 5th grade level.
+
+**Sentences**
+
+13. Never write "it's not X, it's Y." No slogans and no made-up nouns like "the belt" or "the rung."
+14. No cute figures of speech. State the fact plainly.
+15. Don't describe something by what it isn't. Say what it is.
+16. No two-sentence pairs where the second sentence lands the point. Say it in one sentence.
+17. No chopped fragments for effect. Use full, plain sentences.
+18. Cause before effect: "The condition of your credit determines where you are in the funding process."
+19. Speak with certainty. Never "could" or "could be worth."
+
+**Talking to the viewer**
+
+20. Second person, straight at the viewer: "you," never "most business owners."
+21. Never make the viewer feel stupid. Open on what their file is worth.
+22. Never tell viewers what they are or what they do.
+23. Never say they aren't being judged. Say something that builds Chris up instead, like "back before I spent thousands of hours mastering the funding game."
+24. Never put a slow timeline on a fix. Call it a simple tweak.
+25. The audience already knows stacking and funding. Never explain it like they're new. Talk like the authority.
+
+**Structure**
+
+26. The hook tells them something they don't already know. An obvious fact gets swiped past.
+27. Line 2 is a bridge, and an open loop is best: name something they don't know yet and hold it.
+28. Pay the loop off right before the call to action. Never announce it ("I'll show you before this video ends").
+29. Every ad gets its own call to action. Book-a-call ads never mention a price.
+30. Never sell credit optimization in an ad. It's the lowest offer.
+31. Don't open every ad with "My name is Chris." Use the full intro only where Chris is the proof, a short "I'm Chris, I run Fundhub" on some, and none on others.
+32. Industry-slam ads never name competitors or mock how anyone looks.
+33. Don't use the "Frodo / skip the journey" framing.
+34. Every ad in a batch is a whole different ad. No hook swaps on the same body.
+
+**Proof Chris allows**
+
+35. A decade in the industry, hundreds of files, thousands of data points. Don't use Koi Poke or $25M.
+36. He funded a little over $1,000,000 for himself and invested it in cash-flowing companies for 10 years, with real losses along the way.
+37. He learned stacking 10 years ago from the one person teaching it, and some of his clients were funded 8 years ago.
+38. He pulled $100K lines on four companies off one personal file, on stated income with no income docs. It's four companies, not five.
+
+**Format**
+
+39. Teleprompter scripts are full, flowing sentences in paragraphs. No line-broken fragments.
+40. Delivery marks: CAPS = punch the word, a blank line = pause, ↑ = pitch goes up.
+41. Hand scripts over as plain text with blank lines between paragraphs, but not after every sentence.
+42. Standard ads run about a minute (about 150 words). Sorting-hat shorts run 115–125 words.
+43. Green screen and Notes ads are bullet cues. No internal labels like "Payoffs."
+44. Long ads keep every point Chris gave. Never cut them down.
+
+*Note for the writer: rules 39 and 42 describe the words style. Since Chris's 10/4 plan, standard ads default to the bullets style in Appendix B.*
+
+---
+---
+
 # PART 1 — THE HARD NO'S
 
 Applies to all three ad types.
@@ -104,7 +175,7 @@ let that sink in · plot twist · trust me
 
 ## 1.3 Avoid these — the market has poisoned them
 
-Source: `docs/ads/ASSET-BANK.md` section 8.
+Source: `marketing/ads/ASSET-BANK.md` section 8.
 
 - "lenders compete for you" — sounds like the spam swarm
 - "get matched with 75 lenders" as a headline — the audience has a bad memory of it
@@ -125,7 +196,7 @@ against an industry 30–45** — not an adjective.
 "no daily payments" · "know the real cost" · "judged on your business, not just your FICO" ·
 "owners the banks ignore" · "bridge the gap" · "before anyone pulls your credit".
 
-## 1.4 Two more, from `docs/ads/README.md`
+## 1.4 Two more, from `marketing/ads/README.md`
 
 - **Never name the tech stack.** No vendor names, ever. It is "our system", or the name we gave it.
 - **Never lead with white-label.** Two concepts maximum, and only as a door mentioned at the end.
@@ -181,7 +252,7 @@ pull. That is `CLAUDE.md` §7 and it is a label Chris asked for, not advice.
 
 ## 1.6 What kills a concept
 
-Source: `docs/ads/ANGLE-GENERATOR.md`, last section. Run all seven before a concept goes on a sheet.
+Source: `marketing/ads/ANGLE-GENERATOR.md`, last section. Run all seven before a concept goes on a sheet.
 
 1. It fails the mechanism test (see 3.1).
 2. It is a duplicate of another concept in **argument**, not just in wording.
@@ -240,7 +311,7 @@ These two rules did not exist anywhere in the repo before this file. Chris named
 ## 2.1 Word count per runtime band
 
 **The floor first: minimum 60 seconds. No exceptions.** (owner-set 2026-09-01,
-`docs/ads/ANGLE-GENERATOR.md`.) A short hook is fine. A short *ad* is not. If a concept only has 30
+`marketing/ads/ANGLE-GENERATOR.md`.) A short hook is fine. A short *ad* is not. If a concept only has 30
 seconds of substance in it, it is not finished — go back and give it the mechanism in full.
 
 **The speaking rate is an assumption. Chris can change it and every number below moves with it.**
@@ -352,7 +423,7 @@ Highest volume, most rewriting, most split-testing. This is where most of the sp
 
 ### 3.1 The angle formula
 
-Source: `docs/ads/ANGLE-GENERATOR.md`.
+Source: `marketing/ads/ANGLE-GENERATOR.md`.
 
 > **ANGLE = one ENEMY × one MECHANISM × one AUDIENCE**
 >
@@ -468,7 +539,7 @@ ever exists in writing, it goes here first.
 
 ## Section 2 — VSLs
 
-**Long form.** `docs/ads/CONTROLS.md` holds the Founder VSL as the one worked example, and it is
+**Long form.** `marketing/ads/CONTROLS.md` holds the Founder VSL as the one worked example, and it is
 841 words. Everything in this section is derived from that script, not invented.
 
 Everything in Part 1 still applies. Everything in Section 1 still applies except runtime and shape.
@@ -508,7 +579,7 @@ Read straight off the Founder VSL. Keep the order. Beats can be short; none can 
 - **Cause-first still governs the first fifteen seconds.** Beats 1–4 have to land the cause before
   the founder story earns its place.
 - **The mechanism is explained once.** Beat 12. Not sprinkled through.
-- **The refusal is mandatory.** Beat 15, quoted in `docs/ads/CONTROLS.md`: *"I know there are a lot
+- **The refusal is mandatory.** Beat 15, quoted in `marketing/ads/CONTROLS.md`: *"I know there are a lot
   of people in this space who will tell you whatever you want to hear to get you on a call. We're
   not going to do that."* A VSL without it is not our VSL. (Corrected 2026-09-07: an earlier draft
   said Chris named this line "the voice" — that could not be traced to anything he actually said,
@@ -634,7 +705,7 @@ Bring these to Chris. Do not claim them as passed.
    word. Found by adversarial review 2026-09-07 and left as a known, documented gap rather than
    built out — a real irregular-verb-aware checker is a bigger job than one night's build. If this
    ever bites for real, tell Chris and widen the specific phrase's forms by hand in
-   `docs/ads/rules-data.mjs` rather than trying to solve it generally.
+   `marketing/ads/rules-data.mjs` rather than trying to solve it generally.
 
 ---
 
