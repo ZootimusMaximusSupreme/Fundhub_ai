@@ -62,6 +62,10 @@ function writeCounts(counterPath, counts) {
  * @param {string} [opts.dimension2]
  * @param {string} [opts.dimension3]
  * @param {string} [opts.counterPath] — override for tests; default credentials/clarity-export-daily.json
+ * @param {{reserve: (projectId: string, dateUtc: string, cap: number) => Promise<{ok: boolean, reason?: string}>}} [opts.counter]
+ *   database counter (src/analytics/clarity-counter.mjs); replaces the file counter
+ * @param {0} [opts.retries] — must be 0; this adapter never retries
+ * @param {typeof fetch} [opts.fetch] — fake for tests
  * @param {NodeJS.ProcessEnv} [opts.env]
  * @param {Date} [opts.now] — override clock for tests
  */
@@ -81,21 +85,38 @@ export async function fetchClarityLiveInsights(opts = {}) {
     );
   }
 
-  const counterPath = opts.counterPath || DEFAULT_COUNTER_PATH;
-  const dateUtc = utcDateKey(opts.now || new Date());
-  const key = counterKey(projectId, dateUtc);
-  const counts = readCounts(counterPath);
-  const used = Number(counts[key] || 0);
-
-  if (used >= CLARITY_EXPORT_DAILY_CAP) {
-    throw new Error(
-      `Clarity Data Export daily cap (${CLARITY_EXPORT_DAILY_CAP}) used for project ${projectId} on ${dateUtc} UTC. Stop. Do not retry.`
-    );
+  if (opts.retries != null && Number(opts.retries) !== 0) {
+    throw new Error("Clarity Data Export never retries. Pass retries: 0 or leave it out.");
   }
 
-  // Count this call before fetch — Microsoft counts the HTTP request.
-  counts[key] = used + 1;
-  writeCounts(counterPath, counts);
+  const dateUtc = utcDateKey(opts.now || new Date());
+
+  if (opts.counter) {
+    // Database-backed counter (Netlify cannot write credentials/). The store
+    // reserves one request atomically and says no once a cap is used.
+    const reserved = await opts.counter.reserve(projectId, dateUtc, CLARITY_EXPORT_DAILY_CAP);
+    if (!reserved || reserved.ok !== true) {
+      throw new Error(
+        `Clarity Data Export daily cap used for project ${projectId} on ${dateUtc} UTC` +
+          `${reserved && reserved.reason ? ` (${reserved.reason})` : ""}. Stop. Do not retry.`
+      );
+    }
+  } else {
+    const counterPath = opts.counterPath || DEFAULT_COUNTER_PATH;
+    const key = counterKey(projectId, dateUtc);
+    const counts = readCounts(counterPath);
+    const used = Number(counts[key] || 0);
+
+    if (used >= CLARITY_EXPORT_DAILY_CAP) {
+      throw new Error(
+        `Clarity Data Export daily cap (${CLARITY_EXPORT_DAILY_CAP}) used for project ${projectId} on ${dateUtc} UTC. Stop. Do not retry.`
+      );
+    }
+
+    // Count this call before fetch — Microsoft counts the HTTP request.
+    counts[key] = used + 1;
+    writeCounts(counterPath, counts);
+  }
 
   const url = new URL(CLARITY_EXPORT_URL);
   if (opts.numOfDays != null && opts.numOfDays !== "") {
@@ -105,7 +126,8 @@ export async function fetchClarityLiveInsights(opts = {}) {
   if (opts.dimension2) url.searchParams.set("dimension2", String(opts.dimension2));
   if (opts.dimension3) url.searchParams.set("dimension3", String(opts.dimension3));
 
-  const res = await fetch(url.toString(), {
+  const fetchFn = opts.fetch || globalThis.fetch;
+  const res = await fetchFn(url.toString(), {
     method: "GET",
     headers: {
       Authorization: `Bearer ${token}`,

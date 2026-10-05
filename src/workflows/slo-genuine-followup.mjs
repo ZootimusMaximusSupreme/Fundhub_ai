@@ -450,6 +450,14 @@ export async function handleReply({ event, db, step }) {
   return { done: true, sent: true, clientId, sms, email, payUrl };
 }
 
+/* One module, three functions — so the journey runner gets one handler per
+   function id (src/journeys/runner/registry.mjs reads `handlers`). */
+export const handlers = {
+  "slo-genuine-followup": handleM1,
+  "slo-genuine-reply": handleReply,
+  "slo-genuine-checkout-sms": handleCheckoutM1Sms
+};
+
 export const sloGenuineFollowup = inngest.createFunction(
   { id: "slo-genuine-followup", name: "SLO — genuine unpaid follow-up (message 1)" },
   { event: "slo.contact_started" },

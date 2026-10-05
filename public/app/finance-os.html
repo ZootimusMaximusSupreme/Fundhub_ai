@@ -302,6 +302,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 </div></div>
 
 <div class="navgroup" data-fh-section="watch"><button class="navhead" type="button">Watch<span class="chev">▾</span></button><div class="navlist">
+        <a class="navitem" href="morning-brief.html"><span class="ico">☀</span><span class="lbl">Morning brief</span></a>
         <a class="navitem" href="galaxy.html"><span class="ico">✷</span><span class="lbl">Galaxy</span></a>
         <a class="navitem" href="ops-admin.html"><span class="ico">⚙</span><span class="lbl">Ops &amp; Admin</span></a>
 </div></div>
@@ -497,15 +498,18 @@ button,input,select,textarea{font:inherit;color:inherit}
      here on 2026-09-06: an invoice due 2026-09-20 printed "due Sep 19, 2026"
      in Mountain time. That is a wrong date on a bill, which is exactly the
      off-by-one api/read/money-map.mjs casts its date columns to text to avoid.
-     Reading the Y-M-D out of the string and formatting it back in UTC cannot
-     shift, whatever timezone the browser is in. */
+     Reading the Y-M-D out of the string, pinning it to NOON UTC and formatting
+     it in Arizona cannot shift, whatever timezone the browser is in: noon UTC
+     is 5am the same day in Phoenix, which never observes daylight time. (It
+     used to format in UTC; staff screens name no zone but Arizona — see the
+     Arizona-time test in src/http/crm-html.test.mjs.) */
   function day(iso) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(iso == null ? "" : iso));
     if (!m) return "no date";
-    var d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+    var d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12));
     if (isNaN(d.getTime())) return "no date";
     return d.toLocaleDateString(undefined, {
-      timeZone: "UTC", year: "numeric", month: "short", day: "numeric"
+      timeZone: "America/Phoenix", year: "numeric", month: "short", day: "numeric"
     });
   }
 
