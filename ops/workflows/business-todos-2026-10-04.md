@@ -18,103 +18,71 @@ Rules: read `CLAUDE.md` first. Claim your row before you start. Write your manif
 | "12 funding rounds" on /apply and /book | Wrong. /apply has no marquee. /book is a 404; the booking page is /funding-book-call. |
 | VOICE.md, reference ad, teleprompter, climate pack, company brain | All exist on main. |
 
-## Moved back to open (the list said done, it is not)
+## Done 2026-10-05 — merged to `main` on GitHub (live on the next `npm run ship`)
 
-- **Proof cards on /roadmap.** Not on the live page. The card CSS ships, but there are 0 cards in the HTML and no proof script. Same in `marketing/landing-pages/slo/slo-01-sales.html`.
+- PR #1: GitHub is the remote. Rules, push script, this board.
+- PR #2 + #3: B-roll animation kit (tool animations + approvals carousel + batch 3), moved from GitLab. The two forks were merged together, keeping both.
+- PR #4: book-a-call scripts + green-screen talking points (sections 7 and 8).
+- PR #5: every follow-up says $147: no-reply text, after-reply coupon, all 21 drip emails (seeds 035, 036).
+- PR #6: the browser sends $147 to Meta, same as the server.
+- Server events on both funnels checked (W4 manifest below).
+- Owner-set 2026-10-05: proof cards are done. Repo visibility is not raised. Ship later (the cloud's Netlify login is expired).
 
-## Urgent
+## Plan for the rest — 5 workflows, all at once, no dependencies
 
-| # | Item | Who | Status |
+| ID | Owns | Needs from Chris | Status |
 |---|---|---|---|
-| U1 | Follow-ups say $147 (owner-set 2026-10-05: stays on, $147): no-reply text, after-reply coupon, all 21 drip emails. Seeds 035 + 036. | agent | done in repo, PR #5; live on next ship |
-| U3 | Cloud cannot ship (Netlify login expired). Owner-set 2026-10-05: fine — commit to the repo, ship later. | — | parked |
-| U4 | GitLab-only branches moved to GitHub. | W1 | done — see manifest |
+| W2 | Rule conflicts across CLAUDE.md, `.claude/rules`, `.cursor/rules`; add the 26 missing Claude twins | Only a conflict with no clear winner by date | pending |
+| W5 | UnderwriteIQ math: one sample file, engine vs Chris's math, then fix after his answers | 2 answers (below) | pending |
+| W6 | Page drafts: /roadmap How It Works → the 7-step note; "Up to 12 funding rounds" → 3–6 on 5 pages. Marked draft first | OK on the draft before it goes live | pending |
+| W7 | Tracking: the ShowedCall event, and Lead/Schedule fire only on qualified survey answers | What counts as qualified | pending |
+| W8 | Credit-optimization doc reminders: texts on day 1, 3 and 5 until documents are uploaded | OK on the 3 texts | pending |
 
-## Still real — agents can do these
+**Next in line (when a slot frees):** AI-crawler block on every ClickFunnels page. Capital Blueprint promo alerts (60/30/7 days), payment reserve, payment timing. The teleprompter loads scripts straight from the repo.
 
-| ID | Item | Evidence | Model |
-|---|---|---|---|
-| W2 | Rules say GitLab is the remote and GitHub is banned (4 files + `scripts/ship.mjs:7`). About 6–8 rule conflicts. 26 of 47 Cursor rules have no Claude twin. | checker 4 | Opus |
-| W4 | Server events, both funnels (owner ask 2026-10-05). Done, see manifest. | read-only database check | Opus |
-| W5 | UnderwriteIQ: confirmed 5.5× per bureau, summed over every available bureau. $20K card on 3 bureaus = $330K. Your math = $110K. Business = 2× primary bureau at 24+ months. | `src/underwrite/vendor/underwriter.cjs:196-285` | Opus |
-| W6 | "Up to 12 funding rounds" is on /watch, /thank-you, /funding-book-call, /roadmap-book, /roadmap-thank-you. How It Works has 5 steps; the 7-step note (`marketing/ads/notes-green-screen.md:54-67`) has businesses at step 2 and adds "remove inquiries and repeat". | live pages | Opus |
-| W7 | Pixel: Lead fires for everyone who finishes the survey, Schedule fires for every booking. Nothing checks answers. ShowedCall is in docs only. | `apply-survey.html:441`, `src/meta/map.mjs` | Opus |
-| W8 | Doc reminders: nothing texts on day 1/3/5 before upload. One request is sent once. | `src/workflows/s-doc-collection.mjs:56-68` | Opus |
-| — | AI crawlers allowed: robots.txt is `User-agent: * / Disallow:`. | https://apply.fundhub.ai/robots.txt | later |
-| — | /thank-you has no video. /watch VSL still plays from Netlify (22MB). | live pages | later |
-| — | Capital Blueprint: promo alerts, payment reserve, payment timing, per-letter upsell, monthly fee — none built. Last two blocked on Chris (no product title, no amount). | `src/workflows/blueprint-finance-os-alerts.mjs:17` | later |
-| — | Bank list: 237 banks have no bureau (`db/migrations/365_…sql:23`). | | later |
-| — | Lead magnet 7-lesson outline: not saved anywhere. | | later |
+**Blocked on something only Chris has:** the 7-lesson lead magnet outline (where is it?), the /thank-you video file, where the VSL should move to, the monthly member fee amount, the per-letter upsell product, Climate map vs globe.
 
-## Low value — Chris can kill these
-
-- **/order page.** Still live ($297), but hidden from Google (`noindex`), not in the sitemap, and no live page links to it.
-- **"Turn off the free-access system".** No code is called that. The nearest thing is "first five get the roadmap free" (`src/slo/discount-197.mjs`), which shuts itself off after 5.
+**Chris can kill:** the old /order page (hidden from Google, nothing links to it). "Turn off the free-access system": no code has that name; the nearest thing is "first five get the roadmap free", which shuts itself off after 5.
 
 ## Open questions for Chris (one at a time, in this order)
 
+1. W7: What makes a survey answer "qualified" for Lead and Schedule? (The lookalike item says 760+ credit, $100K–$200K revenue.)
 2. W5: Does the 5.5× apply once, or once per bureau?
 3. W5: Is business ≈ 2× personal, or tied to business age?
 
 ## Chris only (no agent can do these)
 
-Delete the GitLab project (link in the manifest). Financing approval. Filming. Mastermind the offer. Apple developer account ($99/yr).
-Sales manager hand-offs. ClarityPay and Plaid calls. Old-client texts.
+Delete the GitLab project: https://gitlab.com/fundhub-llc-group/fundhub-llc-project/edit. Financing approval. Filming and editing. Mastermind the offer. Apple developer account ($99/yr). Sales manager hand-offs. ClarityPay and Plaid calls. Old-client texts. Submagic Business + API plan. Meta / Google / Partner API applications.
 
 ---
 
-## Prompts (paste one into a new session, or the lead session starts them)
+## Prompts (the lead session starts these as helpers; each also works pasted into a new session)
 
-### W2 — rules: GitHub is home, then one set of rules
+### W2 — one set of rules
 
 ```
-Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai. Read CLAUDE.md first.
+Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai, branch off origin/main. Read CLAUDE.md first.
 Board: ops/workflows/business-todos-2026-10-04.md. Mark W2 "claimed" there before you start.
 
-Owner call 2026-10-04: "we quit gitlabs." GitHub is the repo's home now. This replaces the
-CLAUDE.md section "GitHub is banned. GitLab is the remote".
+GitHub is already the remote (done 2026-10-05). Do not touch the GitHub/GitLab rules.
 
-Part 1. Rewrite every rule, script and note that says GitLab is the remote or GitHub is banned,
-so they say GitHub is the remote:
-- CLAUDE.md, that section and line 127 ("compare against gitlab/main") (keep it unnumbered; do not renumber any section)
-- .claude/rules/gitlab-push.md and .cursor/rules/gitlab-push.mdc (same words in both)
-- scripts/gitlab-push-whole-repo.mjs (rewrite for GitHub or retire it; say which)
-- scripts/ship.mjs line 7 ("There is no GitHub")
-Do not remove any key or env var.
-
-Part 2. List every rule that contradicts another across CLAUDE.md, .claude/rules and
-.cursor/rules. One line each: the two rules, and which wins (the newer owner-set date wins).
-Known: commit-every-session vs "commit only if he asked" (.cursor/rules/repo-hygiene-vc-router.mdc:15);
-"read .env" rules vs the .env read deny in .claude/settings.json. Write the list on the board.
-Fix the losing side only where the winner is clear by date. Ask Chris about the rest, one at a time.
-26 .cursor/rules/*.mdc files have no .claude/rules twin — add the twins (same words).
-
-Run npm run lint. Commit, push to origin. Write your manifest on the board. Do not ship.
-```
-
-### W4 — prove Meta Lead + Schedule
-
-```
-Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai. Read CLAUDE.md first.
-Board: ops/workflows/business-todos-2026-10-04.md. Mark W4 "claimed" there before you start.
-
-Server-side Meta CAPI went live 2026-10-02 (docs/tracking/meta-events.md). Gate is META_CAPI_ENABLED=1
-(src/messaging/providers/meta-capi.mjs:43). Token comes from ad_platform_connections if
-META_CAPI_ACCESS_TOKEN is unset (src/meta/token.mjs).
-
-Prove Lead and Schedule reach Meta: fire one of each through the real path with a Meta test event
-code, and read them back from Events Manager Test Events by API. Paste the proof on the board.
-If something blocks you, write the exact error on the board and stop. Change no code.
-Do not touch pixel conditioning or ShowedCall (W7).
+1. List every rule that contradicts another across CLAUDE.md, .claude/rules and .cursor/rules. One line
+   each: the two rules, and which wins (the newer owner-set date wins). Known: commit-every-session vs
+   "commit only if he asked" (.cursor/rules/repo-hygiene-vc-router.mdc:15 and
+   .cursor/skills/fundhub-version-control/SKILL.md); "read .env" rules vs the .env read deny in
+   .claude/settings.json. Write the list on the board.
+2. Fix the losing side only where the winner is clear by date. Ask Chris about the rest, one at a time.
+3. 26 .cursor/rules/*.mdc files have no .claude/rules twin. Add each twin with the same words.
+Do not renumber CLAUDE.md. No app code. Run npm run lint. Commit, push the branch, open a PR.
 ```
 
 ### W5 — UnderwriteIQ math
 
 ```
-Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai. Read CLAUDE.md first.
+Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai, branch off origin/main. Read CLAUDE.md first.
 Board: ops/workflows/business-todos-2026-10-04.md. Mark W5 "claimed" there before you start.
 
-Read-only until Chris answers. Change no code.
+Read-only until Chris answers.
 
 Chris's math: highest card limit × 5.5 = personal. Business ≈ 2× personal. Personal loans on top.
 A $20K card ≈ $110K personal, ≈ $220K business.
@@ -124,16 +92,15 @@ bureau; L260-263 sums every available bureau; L270-271 drops to 1/3 only when ex
 fundable; loans ×3.0 added at L275; business L277-285 = 0.5×/1×/2× by age, applied to the primary
 bureau's card number.
 
-Run one sample credit file through the engine. Report on the board: which file, what the engine
-prints, Chris's math by hand, the gap. Then ask Chris, one at a time, and wait:
-  a. Does the 5.5× apply once, or once per bureau?
-  b. Is business ≈ 2× personal, or tied to business age?
+Run one sample credit file through the engine. Report: which file, what the engine prints, Chris's math
+by hand, the gap. Then the lead session asks Chris (a) 5.5× once or per bureau, (b) business ≈2× or tied
+to age. After his answers: smallest fix, tests, lint, tsc, unit suite with the database off. PR.
 ```
 
 ### W6 — funnel copy, marked drafts only
 
 ```
-Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai. Read CLAUDE.md first.
+Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai, branch off origin/main. Read CLAUDE.md first.
 Board: ops/workflows/business-todos-2026-10-04.md. Mark W6 "claimed" there before you start.
 
 Follow .claude/rules/page-edits-marked-draft.md exactly. Marked draft first. Nothing goes live.
@@ -145,10 +112,47 @@ marketing/landing-pages/.
 2. "Up to 12 funding rounds" is live on /watch, /thank-you, /funding-book-call, /roadmap-book,
    /roadmap-thank-you. The model is 3–6 rounds. Red-box each one with the fix.
 
-Share as one Artifact link and put it on the board. Push nothing to ClickFunnels.
+Share as one Artifact link. Push nothing to ClickFunnels until Chris says push it.
 ```
 
----
+### W7 — ShowedCall + qualified-only Lead and Schedule
+
+```
+Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai, branch off origin/main. Read CLAUDE.md first
+(§3a build order: workflow questions before schema). Board: ops/workflows/business-todos-2026-10-04.md.
+Mark W7 "claimed" there before you start.
+
+Today (checked 2026-10-05): Lead fires for everyone who finishes the /apply survey
+(marketing/landing-pages/apply-survey.html:441, src/meta/map.mjs survey_answer→Lead,
+public/funnel/fh-events.js:284). Schedule fires on every booking (map.mjs booking_confirmed, match () => true).
+ShowedCall is planned in marketing/ads/apply-survey-meta-tracking-2026-09-30.md and not built.
+
+1. List the survey questions and answers that exist today. Propose one rule for "qualified" built only
+   from those answers. The lead session asks Chris to confirm it.
+2. After he confirms: Lead and Schedule fire only for qualified answers, in both the browser and the
+   server copy (same rule, one source). Add ShowedCall: find where a call is marked showed in the code
+   and send it server-side from there.
+3. Tests for every path. Lint, tsc, unit suite with the database off (never against DATABASE_URL, it is
+   live). No deploy. Commit, push, PR.
+```
+
+### W8 — doc reminder texts, day 1 / 3 / 5
+
+```
+Fundhub repo, GitHub ZootimusMaximusSupreme/Fundhub_ai, branch off origin/main. Read CLAUDE.md first
+(§3a build order, §12 outbound rules). Board: ops/workflows/business-todos-2026-10-04.md.
+Mark W8 "claimed" there before you start.
+
+Credit-optimization clients get one document request (src/workflows/s-doc-collection.mjs:56-68, one-shot
+lock doc_01_request_sent_at). doc-check runs only after an upload (src/workflows/doc-check.mjs).
+Nothing chases them before that.
+
+Build: texts on day 1, 3 and 5 after the request until their documents are uploaded; stop as soon as an
+upload lands. Reuse the existing patterns: Inngest sleeps like src/workflows/f-02-portal-id-missing.mjs,
+templates as a new db/seed file, sendTemplated only queues. Draft the 3 texts in the existing SMS voice;
+the lead session shows them to Chris before merge. Tests, lint, tsc, unit suite with the database off.
+No deploy. Commit, push, PR.
+```
 
 ## Manifests
 
