@@ -17,6 +17,8 @@ import {SHOTGUN_APPLY_BASE, SHOTGUN_APPLY_HERO, ShotgunApply, shotgunApplyDefaul
 import {TASK_BY_TASK_BASE, TASK_BY_TASK_HERO, TaskByTask, taskByTaskDefaults} from './TaskByTask';
 import {REFUND_PROMISE_BASE, REFUND_PROMISE_HERO, RefundPromise, refundPromiseDefaults} from './RefundPromise';
 import {TEN_SECONDS_BASE, TEN_SECONDS_HERO, TenSeconds, tenSecondsDefaults} from './TenSeconds';
+import {SPEND_DATA_ADS_BASE, SPEND_DATA_ADS_HERO, SpendDataAds, spendDataAdsDefaults} from './SpendDataAds';
+import {AMOUNT_LADDER_BASE, AMOUNT_LADDER_HERO, AmountLadder, amountLadderDefaults} from './AmountLadder';
 
 export type TemplateEntry = {
   /** Composition id for the CLI. */
@@ -229,5 +231,27 @@ export const TEMPLATES: TemplateEntry[] = [
     hero: ITEM_COUNT_HERO,
     component: ItemCount,
     defaultProps: itemCountDefaults,
+  }),
+  // Batch 4 (2026-10-05): the reference ad "Scale without your own cash"
+  // (marketing/ads/reference/ad-scale-without-your-own-cash-2026-10-04.md). Board: K6 in ops/workflows/knockout-2026-10-05.md.
+  entry({
+    id: 'SpendDataAds',
+    file: 'spend-data-ads',
+    title: 'More spend, more data, better ads',
+    what: 'A floating card with three rows joined by blue lines: a cash stack grows, twelve squares light up one by one, then four bars rise. The words are the three links of the line.',
+    base: SPEND_DATA_ADS_BASE,
+    hero: SPEND_DATA_ADS_HERO,
+    component: SpendDataAds,
+    defaultProps: spendDataAdsDefaults,
+  }),
+  entry({
+    id: 'AmountLadder',
+    file: 'amount-ladder',
+    title: 'A ladder of amounts, climbing past the top one',
+    what: 'A cash stack climbs a ladder of evenly spaced rungs, each showing an amount the line says; it ends above the dashed top rung with a blue slab of new cash on top. Pass the amounts lowest first.',
+    base: AMOUNT_LADDER_BASE,
+    hero: AMOUNT_LADDER_HERO,
+    component: AmountLadder,
+    defaultProps: amountLadderDefaults,
   }),
 ];
