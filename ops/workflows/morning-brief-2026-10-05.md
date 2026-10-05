@@ -175,6 +175,28 @@ the spec's order: Systems, Marketing, Money, Team, Suggestions, Today. Red check
 shows where it came from. Add the page to src/pulse/registry.mjs. Live Playwright check. Commit, push, PR.
 ```
 
+## Run it all — two kickoff prompts (Chris, 2026-10-05)
+
+Paste each into Claude Code on the Mac, running Opus. They are independent and can run side by side in two sessions.
+
+### Kickoff A — morning brief and systems check (MB1 to MB5)
+
+```
+Fundhub repo. Read CLAUDE.md, then ops/workflows/morning-brief-2026-10-05.md and docs/specs/morning-brief-2026-10-05.md.
+Chris approves the split on the board. Run MB1 first myself on this Mac (the new text number is +14808656457; follow the MB1 prompt on the board).
+Then delegate MB2 and MB3 to two agents at the same time, each using its prompt on the board, each in its own worktree and branch, each opening one PR.
+MB5 starts after MB3's read endpoint merges. MB4 stays blocked until Chris says yes to the cadence rules.
+Mark each row claimed on the board before it starts and write its manifest when done. When every PR is merged, delete each merged branch locally and on GitHub, run npm run ship once, and finish with the CLAUDE.md section 9 report.
+```
+
+### Kickoff B — marketing machine (another thread owns it)
+
+```
+Read docs/specs/marketing-machine-2026-10-04.md and run section 0. I approve the spec, its split and the intended journey. Section 17: all defaults. Start the lanes.
+```
+
+Agents for Kickoff B are in `.claude/agents/` (mm-architect, mm-builder, mm-chore, mm-reviewer). Step prompts are in the spec, section 0.9.
+
 ---
 
 ## Manifests
