@@ -1,134 +1,150 @@
-// src/ad-videos/states.mjs — the thirteen states a filmed take moves through,
+// src/ad-videos/states.mjs — the nineteen states a filmed take moves through,
 // and which moves between them are legal.
 //
 // Pure. No database, no network, no clock. That is the point: every transition
 // in the pipeline can be proved by a unit test that runs on a laptop with no
-// Postgres, which is the only kind of proof available here today.
+// Postgres.
 //
-// Ground truth: marketing/ads/video-pipeline-plan.md §2 (the state table) and §5 (the
-// diagram). db/migrations/389_ad_videos.sql carries the same thirteen names in
+// REBUILT 2026-10-05 for the marketing machine. Ground truth:
+// docs/specs/marketing-machine-2026-10-04.md §9.1 "The state machine".
+// db/migrations/416_ad_video_states_v2.sql carries the same nineteen names in
 // ad_videos_status_ck, and STATES below is the list that must match it.
 //
+// THE ORDER CHANGED. The cut is now made from the script BEFORE Submagic sees
+// the film (owner decision 10), and our animations go on LAST (owner decision
+// 9). So the transcript comes from our own Whisper call, not from Submagic, and
+// the old order (staged → editing → transcribed → matched) is gone:
+//
+//   raw_landed → prepared → transcribed → matched → cut → staged → editing
+//     → rendered → animated → awaiting_approval → approved → delivered → loaded
+//
 // ═══════════════════════════════════════════════════════════════════════════
-// TWO PLACES THIS DELIBERATELY DIFFERS FROM THE PLAN'S DIAGRAM, AND WHY
+// TWO RULES WORTH KNOWING
 //
-// Both are recorded here rather than quietly reconciled (CLAUDE.md §4: a gap
-// between intended and actual is a finding).
+// 1. FAILED IS REACHABLE FROM EVERY STATE A WORKER ACTS ON, and Retry goes back
+//    to the state the take failed FROM (ad_videos.last_good_status), not to the
+//    start. store.retryFailed() picks the state and clears only the marks from
+//    that step on. That is why `failed` may move to any FAILABLE state here:
+//    the machine allows the family, the row's own column picks the one.
 //
-// 1. FAILED IS REACHABLE FROM EVERY WORKING STATE, not only from `transcribed`
-//    and `editing` as the diagram draws it. The plan's own state TABLE says
-//    what fires `failed`: "any worker error". Six states have a worker acting
-//    on them and any of the six can throw. Drawing only two arrows would mean a
-//    Drive copy that dies has nowhere legal to go, and the row would either sit
-//    in `staged` forever or be forced into a state the machine refuses.
-//
-// 2. REJECTED IS A DEAD END ON ITS OWN ROW. The diagram draws rejected → filming
-//    ("re-film as the next take"). That arrow is real, but it is a NEW ROW at
-//    take_no + 1, not this row moving backwards: 389's header and the plan's §2
-//    both say one row is one take and is never overwritten. Moving the same row
-//    back to `filming` would have to renumber take_no, which is the one thing
-//    the table forbids. So nextTake() in store.mjs is that arrow, and
-//    transition() refuses the in-place move.
+// 2. REJECTED IS A DEAD END ON ITS OWN ROW. A re-film is a NEW ROW at the next
+//    take number: one row is one take and is never renumbered (389's header).
+//    store.nextTake() is that arrow, and transition() refuses the in-place move.
 
-/* The thirteen, in pipeline order. This array IS the order the queue screen
+/* The nineteen, in pipeline order. This array IS the order the queue screen
    sorts by and the order a reader should think in — it is not alphabetical and
-   must not be sorted. */
+   must not be sorted. The four endings come last. */
 export const STATES = Object.freeze([
   "scripted",
   "filming",
   "raw_landed",
-  "staged",
+  "prepared",
   "transcribed",
   "matched",
+  "cut",
+  "staged",
   "editing",
   "rendered",
+  "animated",
   "awaiting_approval",
   "approved",
   "delivered",
+  "loaded",
   "rejected",
-  "failed"
+  "failed",
+  "merged",
+  "superseded"
 ]);
 
 const STATE_SET = new Set(STATES);
 
-/* What each state means in plain words, and what fires the move INTO it.
-   Straight from the plan's table. The queue screen renders `meaning`; nothing
-   reads `firedBy` but a person, which is exactly what it is for. */
+/* What each state means in plain words, and what fires the move INTO it. The
+   queue screen renders `meaning`; nothing reads `firedBy` but a person, which
+   is exactly what it is for. */
 export const STATE_MEANING = Object.freeze({
   scripted:          { meaning: "words exist, ad number assigned", firedBy: "the script row gets an ad number" },
   filming:           { meaning: "script is in the teleprompter",   firedBy: "pushed or pasted" },
-  raw_landed:        { meaning: "a video showed up in Raw",        firedBy: "the Drive poll sees a new video file, size above zero" },
-  staged:            { meaning: "copied to our storage, link ready", firedBy: "the copy finishes" },
-  transcribed:       { meaning: "we have the words",               firedBy: "the transcript comes back" },
-  matched:           { meaning: "we know which ad and which take", firedBy: "Claude matches above the confidence line" },
+  raw_landed:        { meaning: "a video showed up in SLO Ads",    firedBy: "the Drive poll sees a new video file, size above zero" },
+  prepared:          { meaning: "the worker has the sound and the pauses", firedBy: "the video worker probes the take and pulls its audio" },
+  transcribed:       { meaning: "we have the words",               firedBy: "the transcript comes back with word times" },
+  matched:           { meaning: "we know which ad and which take", firedBy: "the match names a script" },
+  cut:               { meaning: "the cut plan is made",            firedBy: "the aligner lines the takes up against the script" },
+  staged:            { meaning: "the cut master is saved, ready for captions", firedBy: "the worker builds the master with no animations" },
   editing:           { meaning: "Submagic has it",                 firedBy: "Create Project returns a project id" },
-  rendered:          { meaning: "the finished file exists",        firedBy: "the Submagic webhook says done" },
-  awaiting_approval: { meaning: "waiting on Chris",                firedBy: "we saved the finished file" },
+  rendered:          { meaning: "captions are on",                 firedBy: "Submagic's export comes back" },
+  animated:          { meaning: "animations are on and the final file exists", firedBy: "the worker lays the animations on last and finalizes" },
+  awaiting_approval: { meaning: "waiting on Chris",                firedBy: "the approval link is minted and the buzz goes out" },
   approved:          { meaning: "Chris said yes",                  firedBy: "Chris. Only a person may do this." },
-  delivered:         { meaning: "video and brief are in Paul's folder", firedBy: "both uploads finish" },
-  rejected:          { meaning: "Chris said no — re-film as the next take", firedBy: "Chris" },
-  failed:            { meaning: "a step broke, reason stored",     firedBy: "any worker error" }
+  delivered:         { meaning: "the file is in the finished-ads folder", firedBy: "the upload finishes" },
+  loaded:            { meaning: "a paused ad is in Meta",          firedBy: "Load all approved" },
+  rejected:          { meaning: "Chris said no — the script goes back to Shoot Day", firedBy: "Chris" },
+  failed:            { meaning: "a step broke, reason stored",     firedBy: "any worker error" },
+  merged:            { meaning: "this take was folded into its ad's master", firedBy: "a later take of an ad that already has a master" },
+  superseded:        { meaning: "a newer cut of this ad was approved", firedBy: "Chris approves a recut" }
 });
 
-/* The states a worker is acting on, and can therefore break in. Every one of
-   these may move to `failed`. See note 1 in the header. */
+/* The states a worker acts on, and can therefore break in. Must equal the keys
+   of NEXT_STEP in src/ad-videos/pipeline.mjs (seam.test.mjs checks it). */
 export const WORKING_STATES = Object.freeze([
-  "raw_landed", "staged", "transcribed", "matched", "editing", "rendered"
+  "raw_landed", "prepared", "transcribed", "matched", "cut", "staged",
+  "editing", "rendered", "animated", "approved"
 ]);
 
-/* Nothing leaves these. `delivered` is the end of the line. `rejected` is the
-   end of THIS take — the re-film is a new row (note 2). */
-export const TERMINAL_STATES = Object.freeze(["delivered", "rejected"]);
+/* Every state a take may fail from — and so every state Retry may return it to
+   (failed → last_good_status). Migration 416's ad_videos_last_good_status_ck
+   holds the same list. */
+export const FAILABLE_STATES = Object.freeze(
+  STATES.filter((s) => s === "scripted" || s === "filming" || s === "awaiting_approval" ||
+    WORKING_STATES.includes(s))
+);
+
+/* Nothing leaves these. `rejected` is the end of THIS take — the re-film is a
+   new row (rule 2). `merged` lives on inside its master. `superseded` was
+   replaced by a newer approved cut. `loaded` is not here: it still moves to
+   superseded, but only inside a recut approval. */
+export const TERMINAL_STATES = Object.freeze(["rejected", "merged", "superseded"]);
 
 /* Only a person may cause these moves. A worker that tries one is a bug worth
-   failing loudly on, not a step to allow "just in case": the whole pipeline
-   exists so that Chris touches exactly two things, and approving his own
-   unwatched video automatically would be the one failure nobody would notice
-   until Paul had already run it. */
-export const HUMAN_ONLY = Object.freeze(["approved", "rejected"]);
+   failing loudly on: approving Chris's own unwatched video automatically is the
+   one failure nobody would notice until the ad was running. `superseded` only
+   ever happens inside his approval of a recut. */
+export const HUMAN_ONLY = Object.freeze(["approved", "rejected", "superseded"]);
 
-/* TRANSITIONS — from → the states it may move to.
+/* TRANSITIONS — from → the states it may move to. Spec §9.1:
 
-   Read it as the plan's diagram. The `failed` entry on each working state is
-   note 1; the absence of `rejected → filming` is note 2. */
+   forward    raw_landed → prepared → transcribed → matched → cut → staged →
+              editing → rendered → animated → awaiting_approval → approved →
+              delivered → loaded
+   merged     matched → merged (a later take of an ad that already has a master)
+   failed     every FAILABLE state → failed; failed → last_good_status (Retry)
+   late take  staged, editing, rendered, animated, awaiting_approval → cut
+   rematch    cut → transcribed (coverage under 50%)
+   re-film    cut → rejected
+   recut      approved, delivered, loaded → superseded
+   edits      awaiting_approval → cut (strike or restore a line)
+              awaiting_approval → editing (caption word)
+              awaiting_approval → rendered (animation) */
+const F = "failed";
 export const TRANSITIONS = Object.freeze({
-  scripted:          Object.freeze(["filming", "failed"]),
-  filming:           Object.freeze(["raw_landed", "failed"]),
-  raw_landed:        Object.freeze(["staged", "failed"]),
-  /* CORRECTED 2026-09-23, AND THIS IS WHY THE FIRST REAL TAKE NEVER MOVED.
-     
-     These three rows were written from the original plan and never matched the
-     pipeline that was built. src/ad-videos/pipeline.mjs NEXT_STEP is what
-     actually runs, and it goes staged -> editing -> transcribed -> matched ->
-     rendered. This table said staged -> transcribed -> matched -> editing.
-     
-     The built order is the only one physically possible: Submagic IS the
-     transcriber, so there is no transcript until Create Project has returned a
-     project id. STATE_MEANING above already said exactly that — `editing` is
-     "Submagic has it", fired by "Create Project returns a project id", and
-     `transcribed` is "we have the words". The two tables in this one file
-     contradicted each other.
-     
-     Nothing caught it because nothing had ever run end to end. Measured on
-     production: the upload SUCCEEDED, Submagic returned a project id, and the
-     pipeline then threw `cannot go staged -> editing` writing the result down.
-     The project was paid for and the id was lost.
-     
-     transitions-match-the-pipeline.test.mjs now pins this table to NEXT_STEP so
-     the two cannot drift apart again. */
-  staged:            Object.freeze(["editing", "failed"]),
-  editing:           Object.freeze(["transcribed", "failed"]),
-  transcribed:       Object.freeze(["matched", "failed"]),
-  matched:           Object.freeze(["rendered", "failed"]),
-  rendered:          Object.freeze(["awaiting_approval", "failed"]),
-  awaiting_approval: Object.freeze(["approved", "rejected", "failed"]),
-  approved:          Object.freeze(["delivered", "failed"]),
-  // "retry the broken step" in the diagram. Back to `staged`, because that is
-  // the first step whose input (the raw file in Drive) still exists after any
-  // later step died — re-staging is cheap and every step after it is derived.
-  failed:            Object.freeze(["staged"]),
-  delivered:         Object.freeze([]),
-  rejected:          Object.freeze([])
+  scripted:          Object.freeze(["filming", F]),
+  filming:           Object.freeze(["raw_landed", F]),
+  raw_landed:        Object.freeze(["prepared", F]),
+  prepared:          Object.freeze(["transcribed", F]),
+  transcribed:       Object.freeze(["matched", F]),
+  matched:           Object.freeze(["cut", "merged", F]),
+  cut:               Object.freeze(["staged", "transcribed", "rejected", F]),
+  staged:            Object.freeze(["editing", "cut", F]),
+  editing:           Object.freeze(["rendered", "cut", F]),
+  rendered:          Object.freeze(["animated", "cut", F]),
+  animated:          Object.freeze(["awaiting_approval", "cut", F]),
+  awaiting_approval: Object.freeze(["approved", "rejected", "cut", "editing", "rendered", F]),
+  approved:          Object.freeze(["delivered", "superseded", F]),
+  delivered:         Object.freeze(["loaded", "superseded"]),
+  loaded:            Object.freeze(["superseded"]),
+  failed:            FAILABLE_STATES,
+  rejected:          Object.freeze([]),
+  merged:            Object.freeze([]),
+  superseded:        Object.freeze([])
 });
 
 export function isState(value) {
@@ -173,7 +189,7 @@ export class AdVideoStateError extends Error {
  * a row being written into a state it cannot legally be in.
  *
  * opts.by — "worker" (the default) or "human". A worker may not cause a move
- * into `approved` or `rejected`; see HUMAN_ONLY.
+ * into a HUMAN_ONLY state.
  */
 export function transition(from, to, { by = "worker" } = {}) {
   if (!isState(from)) {

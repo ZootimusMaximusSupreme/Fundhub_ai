@@ -7,20 +7,18 @@
 // makes every step below testable with no database, no network and no clock.
 //
 // ═══════════════════════════════════════════════════════════════════════════
-// THE ORDER CHANGED FROM THE PLAN, AND HERE IS EXACTLY WHERE.
+// THE ORDER CHANGED AGAIN ON 2026-10-05 (marketing machine, spec §9.1).
 //
-// marketing/ads/video-pipeline-plan.md puts `transcribed` before Submagic, because it was
-// written against Deepgram. The owner's decision of 2026-09-22 replaced Deepgram
-// with Submagic's own word-level transcript, and that transcript does not exist
-// until the project has been created. So two states swap places:
+// The cut is now made from the script BEFORE Submagic (owner decision 10), and
+// our animations go on LAST (owner decision 9). So the words come from our own
+// Whisper call, not from Submagic, and Submagic only ever sees a cut master:
 //
-//   plan:  staged → transcribed → matched → editing
-//   code:  staged → editing → transcribed → matched
+//   old:  raw_landed → staged → editing → transcribed → matched → rendered
+//   new:  raw_landed → prepared → transcribed → matched → cut → staged
+//           → editing → rendered → animated → awaiting_approval
 //
-// No state is added, removed or renamed, so the database's status list is
-// untouched. This is a gap between the written plan and the built code and it is
-// recorded here, in docs/journeys/ad-video-flow.md, and in the task report
-// rather than quietly reconciled (CLAUDE.md §4).
+// Migration 416 carries the new states. Rows already in flight under the old
+// order are moved by scripts/ad-videos-move-in-flight-9-1.mjs.
 // ═══════════════════════════════════════════════════════════════════════════
 //
 // EVERY STEP IS SAFE TO RUN TWICE. The sweeper runs every five minutes and a
@@ -30,7 +28,7 @@
 //   stage            → staged_at                already set? skip
 //   submagic create  → submagic_project_id      already set? skip
 //   read transcript  → transcript               already set? skip
-//   match + rename   → script_id / renamed_at   already set? skip
+//   match            → script_id / take_no      already set? resume
 //   place + export   → exported_at              already set? skip
 //   notify           → notified_at              already set? skip
 //   deliver          → drive_final_file_id      already set? skip
@@ -74,26 +72,32 @@ import { planBroll } from "./broll.mjs";
 import { matchTakeToScript } from "./match.mjs";
 import { linkNumber } from "./naming.mjs";
 
-/** The states, exactly as marketing/ads/video-pipeline-plan.md §2 names them. */
-export const STATES = Object.freeze([
-  "scripted", "filming", "raw_landed", "staged", "editing", "transcribed",
-  "matched", "rendered", "awaiting_approval", "approved", "delivered",
-  "rejected", "failed"
-]);
+/** The states — ONE list, owned by states.mjs and re-exported here so the two
+    can never drift apart again. */
+export { STATES } from "./states.mjs";
 
 /** The 4K law (.claude/rules/video-4k-unless-ad.md): a take that is not a paid
     ad must be 3840×2160. An ad may stay 1080p. */
 export const FOUR_K_HEIGHT = 2160;
 
 /** Which step runs at each state. A state that is not here is a resting place:
-    a person moves it, or nothing does. */
+    a person moves it, or nothing does.
+
+    THE MARKETING-MACHINE ORDER (spec §9.1, 2026-10-05): cut → Submagic
+    captions → animations → finalize. Five of these steps are built in later
+    steps of the spec and WAIT here, with their reason written on the row, until
+    they land — see NOT_BUILT_YET below. `stage` and `readTranscript` belong to
+    the old order and no state runs them any more. */
 export const NEXT_STEP = Object.freeze({
-  raw_landed: "stage",
-  staged: "submagicCreate",
-  editing: "readTranscript",
+  raw_landed: "prepare",
+  prepared: "transcribe",
   transcribed: "matchAndRename",
-  matched: "placeBrollAndExport",
-  rendered: "saveFinishedAndNotify",
+  matched: "planCut",
+  cut: "buildMaster",
+  staged: "submagicCreate",
+  editing: "captionAndExport",
+  rendered: "animate",
+  animated: "saveFinishedAndNotify",
   approved: "deliverToPaul"
 });
 
@@ -372,16 +376,27 @@ export async function readTranscript(row, { submagic, env = process.env } = {}) 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   matchAndRename — the ad number, and the file name that finally says so.
+   matchAndRename — the ad number and the take number. NOTHING IS RENAMED.
 
-   The match happens first and the rename only happens if it cleared the
-   confidence floor. A file renamed on a guess is worse than a file with the
-   phone's own name: the guess looks like a fact to everybody downstream.
+   THE NAME IS KEPT, THE RENAME IS GONE (spec §9.1 step 5, 2026-10-05). This
+   step used to rename the raw file in Drive to `084_t01_raw_…`, a format
+   marketing/ads/NAMING.md marks wrong, and the best-of-clips law says the raw
+   library is never moved or renamed. The function keeps its name so NEXT_STEP
+   and seam.test.mjs stay stable. `renamed_at` stays in the table, unused.
+
+   THE TAKE NUMBER comes from "Take N" in the file name. Otherwise it is the
+   next free number for that ad, from the `nextTakeNo` port the sweeper
+   supplies. It used to default to 1, which collided on ad_videos_take_uq the
+   moment a second unnamed take of the same ad landed.
    ───────────────────────────────────────────────────────────────────────── */
 export async function matchAndRename(row, {
-  drive, naming, candidateScripts = [], env = process.env, fetchImpl
+  candidateScripts = [], nextTakeNo, env = process.env, fetchImpl
 } = {}) {
-  if (has(row.script_id) && has(row.renamed_at)) return skip("already matched and renamed");
+  /* Already matched: move on rather than sit. A skip writes nothing, and a row
+     that writes nothing at `transcribed` would stay there for ever. */
+  if (has(row.script_id) && has(row.take_no) && has(row.ad_id)) {
+    return ok({ status: "matched" }, "already matched");
+  }
   if (!has(row.transcript)) return wait("no transcript yet");
 
   let scriptId = row.script_id;
@@ -414,26 +429,17 @@ export async function matchAndRename(row, {
     );
   }
 
-  /* THE TAKE NUMBER. A phone names a file "SLO Ad 1 Take 2.mp4", which
-     parseVideoName does not read, so take_no is NULL when the row is made.
-     The number is right there in the name; read it rather than invent one.
-     "Take 6" is take 6. No word "Take" is take 1. UNIQUE (org, ad, take) then
+  /* THE TAKE NUMBER. "Take 6" in the file name is take 6. With no "Take N",
+     it is the next free number for this ad. UNIQUE (org, ad, take) still
      refuses a real collision loudly instead of a quiet overwrite. */
-  const takeNo = row.take_no
-    ?? (Number((/\btake\s*(\d{1,3})\b/i.exec(String(row.drive_raw_name || "")) || [])[1]) || 1);
-
-  let renamedAt = row.renamed_at || null;
-  /* THE REAL NAMING MODULE, BY ITS REAL NAMES. This used to call
-     naming.rawName({ adId, takeNo, date }) — a function that exists only in
-     pipeline.test.mjs's hand-written stub. src/ad-videos/naming.mjs exports
-     rawFileName(adId, takeNo, takeDate). Measured 2026-09-24 on the first real
-     take: the guard was false, the rename silently never ran, renamed_at stayed
-     NULL. seam.test.mjs now checks every naming.* call against the module. */
-  if (!renamedAt && drive?.renameFile && naming?.rawFileName) {
-    const name = naming.rawFileName(adId, takeNo, new Date(row.created_at));
-    const r = await drive.renameFile(row.drive_raw_file_id, name, { env });
-    if (!r.ok) return r.retryable === false ? dead(r.error) : wait(r.error);
-    renamedAt = r.at || new Date().toISOString();
+  let takeNo = has(row.take_no) ? Number(row.take_no) : takeFromName(row.drive_raw_name);
+  if (!takeNo) {
+    if (typeof nextTakeNo !== "function") {
+      return wait("the file name has no \"Take N\" and the nextTakeNo port was not supplied — " +
+        "the take number is never guessed");
+    }
+    takeNo = await nextTakeNo({ orgId: row.org_id, adId: String(adId) });
+    if (!Number.isInteger(takeNo) || takeNo < 1) return wait("could not read the next free take number");
   }
 
   return ok({
@@ -441,9 +447,14 @@ export async function matchAndRename(row, {
     script_id: scriptId,
     ad_id: String(adId),
     take_no: takeNo,
-    match_confidence: confidence ?? null,
-    renamed_at: renamedAt
+    match_confidence: confidence ?? null
   });
+}
+
+/** "SLO Ad 1 Take 2.mp4" → 2. No "Take N" in the name → null. */
+export function takeFromName(name) {
+  const n = Number((/\btake\s*(\d{1,3})\b/i.exec(String(name || "")) || [])[1]);
+  return Number.isInteger(n) && n > 0 ? n : null;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -767,7 +778,7 @@ export async function buzz(row, { notify, approveUrl, rejectUrl, env = process.e
 }
 
 /* The approve and reject links for a take that already holds its token. The
-   sweeper mints a token only at `rendered`; a retry must reuse the one on the
+   sweeper mints a token only at `animated`; a retry must reuse the one on the
    row, or every link already sent goes dead. The token IS the credential
    (api/public/ad-video-approve.mjs), stored as-is. */
 export function linksFromToken(row, env = process.env) {
@@ -903,10 +914,64 @@ export async function deliverToPaul(row, {
   });
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+   captionAndExport — Submagic's captions, exported. NO B-ROLL.
+
+   Our animations are the B-roll and they go on LAST, after this step
+   (owner decision 9). So nothing is placed at Submagic here: this is the
+   claimed export and the poll from placeBrollAndExport, with an empty library.
+
+   ONLY A CUT MASTER IS EXPORTED. A row at `editing` with no cut_at reached
+   Submagic under the old order (the raw take, before the match). Exporting it
+   would bill a render of an uncut take, so it waits and says why until
+   scripts/ad-videos-move-in-flight-9-1.mjs moves it. The one exception is an
+   old row whose export was ALREADY asked for: polling it costs nothing, and the
+   move script sends exactly those rows here on purpose.
+   ───────────────────────────────────────────────────────────────────────── */
+export async function captionAndExport(row, ports = {}) {
+  const alreadyExported = has(row.exported_at) || has(row.export_claimed_at);
+  if (!has(row.cut_at) && !alreadyExported) {
+    return wait(
+      "this take reached Submagic under the old order, before it was matched and cut. " +
+      "Nothing was exported. scripts/ad-videos-move-in-flight-9-1.mjs moves it back to raw_landed."
+    );
+  }
+  return placeBrollAndExport(row, { ...ports, brollLibrary: [] });
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   THE STEPS LATER PARTS OF THE SPEC BUILD.
+
+   Each one WAITS and says which part of the spec builds it. A wait writes its
+   reason on the row (last_step_note), so a take sitting here reads as "not
+   built yet", never as silence. They are real steps in NEXT_STEP so that the
+   state machine, the queue and the tests are already the final shape, and the
+   step that lands only has to replace one function body.
+   ───────────────────────────────────────────────────────────────────────── */
+export const NOT_BUILT_YET = Object.freeze({
+  prepare: "the video worker (spec §9.5) probes the take, pulls the audio and finds the pauses",
+  transcribe: "whisperWords (spec §9.1 step 4) reads the words with their times",
+  planCut: "the aligner (spec §9.2) makes the cut plan and settles the master",
+  buildMaster: "the encodes (spec §9.3) build the cut master",
+  animate: "the animations (spec §9.4) go on last, then the final file is made"
+});
+
+const notBuilt = (name) => async () =>
+  wait(`${name} is not built yet — ${NOT_BUILT_YET[name]}. The take is safe and waits here.`);
+
+export const prepare = notBuilt("prepare");
+export const transcribe = notBuilt("transcribe");
+export const planCut = notBuilt("planCut");
+export const buildMaster = notBuilt("buildMaster");
+export const animate = notBuilt("animate");
+
 /** The steps, by name, so the sweeper does not hold a switch statement. */
 export const STEPS = Object.freeze({
-  stage, submagicCreate, readTranscript, matchAndRename,
-  placeBrollAndExport, pollFinished, saveFinishedAndNotify, deliverToPaul
+  prepare, transcribe, matchAndRename, planCut, buildMaster,
+  submagicCreate, captionAndExport, animate, saveFinishedAndNotify, deliverToPaul,
+  /* The old order's steps. No state runs them now; kept until the steps that
+     replace their parts (9.3, 9.5) land and remove them. */
+  stage, readTranscript, placeBrollAndExport, pollFinished
 });
 
 /**

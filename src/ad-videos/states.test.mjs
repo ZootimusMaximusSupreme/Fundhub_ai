@@ -13,65 +13,80 @@ import { test, describe } from "node:test";
 import assert from "node:assert";
 
 import {
-  STATES, TRANSITIONS, TERMINAL_STATES, WORKING_STATES, HUMAN_ONLY, STATE_MEANING,
+  STATES, TRANSITIONS, TERMINAL_STATES, WORKING_STATES, FAILABLE_STATES, HUMAN_ONLY, STATE_MEANING,
   isState, isTerminal, isHumanOnly, canTransition, nextStates,
   transition, AdVideoStateError
 } from "./states.mjs";
 
-/* THE DIAGRAM, TYPED OUT BY HAND. If this list and TRANSITIONS ever disagree,
-   one of them is wrong and this file says which move it was. */
-/* CORRECTED 2026-09-23 to the order in docs/journeys/ad-video-flow.md.
- *
- * This list used to carry the ORIGINAL PLAN's order — staged -> transcribed ->
- * matched -> editing. The journey diagram does not say that and has not for a
- * long time; it draws staged -> editing -> transcribed -> matched, and §66 of
- * that same file names the swap as a known gap in so many words.
- *
- * The built order is the only possible one: Submagic IS the transcriber, so
- * there are no words until Create Project has returned a project id. states.mjs
- * itself already said so in STATE_MEANING while its TRANSITIONS table said the
- * opposite.
- *
- * What it cost: the first real take ever run reached Submagic, the upload
- * SUCCEEDED, a project id came back — and the pipeline threw
- * `cannot go staged -> editing` writing it down. The project was paid for and
- * the id was lost, and the take sat at `staged` looking like a vendor fault.
- */
-const LEGAL = [
+/* THE DIAGRAM, TYPED OUT BY HAND, from docs/specs/marketing-machine-2026-10-04.md
+   §9.1 "The state machine". If this list and TRANSITIONS ever disagree, one of
+   them is wrong and this file says which move it was.
+
+   REBUILT 2026-10-05. The old order (staged → editing → transcribed → matched,
+   Submagic as the transcriber) is gone: the cut is made from the script before
+   Submagic, and our animations go on last. */
+const FORWARD = [
   ["scripted", "filming"],
   ["filming", "raw_landed"],
-  ["raw_landed", "staged"],
-  ["staged", "editing"],
-  ["editing", "transcribed"],
+  ["raw_landed", "prepared"],
+  ["prepared", "transcribed"],
   ["transcribed", "matched"],
-  ["matched", "rendered"],
-  ["rendered", "awaiting_approval"],
+  ["matched", "cut"],
+  ["cut", "staged"],
+  ["staged", "editing"],
+  ["editing", "rendered"],
+  ["rendered", "animated"],
+  ["animated", "awaiting_approval"],
   ["awaiting_approval", "approved"],
-  ["awaiting_approval", "rejected"],
   ["approved", "delivered"],
-  ["failed", "staged"],
-  // "any worker error" — the plan's state table, not its diagram. See the
-  // header of states.mjs, note 1.
-  ["scripted", "failed"],
-  ["filming", "failed"],
-  ["raw_landed", "failed"],
-  ["staged", "failed"],
-  ["transcribed", "failed"],
-  ["matched", "failed"],
-  ["editing", "failed"],
-  ["rendered", "failed"],
-  ["awaiting_approval", "failed"],
-  ["approved", "failed"]
+  ["delivered", "loaded"]
+];
+
+const SIDE = [
+  // a later take of an ad that already has a master
+  ["matched", "merged"],
+  // a late take before approval: recut
+  ["staged", "cut"],
+  ["editing", "cut"],
+  ["rendered", "cut"],
+  ["animated", "cut"],
+  ["awaiting_approval", "cut"],
+  // coverage under 50%: match again
+  ["cut", "transcribed"],
+  // Re-film
+  ["cut", "rejected"],
+  // Chris says no
+  ["awaiting_approval", "rejected"],
+  // edits on the same row (caption word, animation; strike/restore is → cut above)
+  ["awaiting_approval", "editing"],
+  ["awaiting_approval", "rendered"],
+  // a recut is approved
+  ["approved", "superseded"],
+  ["delivered", "superseded"],
+  ["loaded", "superseded"]
+];
+
+/* Every state a take may fail from, and so every state Retry may put it back. */
+const FAILABLE = [
+  "scripted", "filming", "raw_landed", "prepared", "transcribed", "matched",
+  "cut", "staged", "editing", "rendered", "animated", "awaiting_approval", "approved"
+];
+
+const LEGAL = [
+  ...FORWARD,
+  ...SIDE,
+  ...FAILABLE.map((s) => [s, "failed"]),
+  ...FAILABLE.map((s) => ["failed", s])
 ];
 
 const legalSet = new Set(LEGAL.map(([f, t]) => `${f}>${t}`));
 
 describe("ad video states — the list itself", () => {
-  test("there are exactly the thirteen states the plan names, in pipeline order", () => {
+  test("there are exactly the nineteen states the spec names, in pipeline order", () => {
     assert.deepEqual(STATES, [
-      "scripted", "filming", "raw_landed", "staged", "transcribed", "matched",
-      "editing", "rendered", "awaiting_approval", "approved", "delivered",
-      "rejected", "failed"
+      "scripted", "filming", "raw_landed", "prepared", "transcribed", "matched",
+      "cut", "staged", "editing", "rendered", "animated", "awaiting_approval",
+      "approved", "delivered", "loaded", "rejected", "failed", "merged", "superseded"
     ]);
   });
 
@@ -95,7 +110,7 @@ describe("ad video states — the list itself", () => {
     assert.deepEqual(Object.keys(TRANSITIONS).sort(), [...STATES].sort());
   });
 
-  test("isState knows the thirteen and refuses everything else", () => {
+  test("isState knows the nineteen and refuses everything else", () => {
     for (const s of STATES) assert.equal(isState(s), true, s);
     for (const junk of ["", null, undefined, "APPROVED", "done", "pending", "approved "]) {
       assert.equal(isState(junk), false, String(junk));
@@ -144,9 +159,10 @@ describe("ad video states — every illegal move is refused", () => {
         );
       }
     }
-    // 13 states, 156 ordered pairs, 22 legal ones.
-    assert.equal(checked, 13 * 12 - LEGAL.length);
-    assert.equal(checked, 134);
+    // 19 states, 342 ordered pairs, 54 legal ones.
+    assert.equal(LEGAL.length, 54);
+    assert.equal(checked, 19 * 18 - LEGAL.length);
+    assert.equal(checked, 288);
   });
 
   test("the message names the moves that ARE possible, so the fix is in the error", () => {
@@ -156,18 +172,24 @@ describe("ad video states — every illegal move is refused", () => {
     } catch (err) {
       assert.match(err.message, /editing/);
       assert.match(err.message, /failed/);
-      assert.deepEqual(err.allowed, ["editing", "failed"]);
+      assert.deepEqual(err.allowed, ["editing", "cut", "failed"]);
     }
   });
 });
 
 describe("ad video states — the dead ends", () => {
-  test("delivered and rejected are the only ones nothing leaves", () => {
+  test("rejected, merged and superseded are the only ones nothing leaves", () => {
     const dead = STATES.filter((s) => TRANSITIONS[s].length === 0);
-    assert.deepEqual(dead.sort(), ["delivered", "rejected"]);
-    assert.deepEqual([...TERMINAL_STATES].sort(), ["delivered", "rejected"]);
+    assert.deepEqual(dead.sort(), ["merged", "rejected", "superseded"]);
+    assert.deepEqual([...TERMINAL_STATES].sort(), ["merged", "rejected", "superseded"]);
     for (const s of TERMINAL_STATES) assert.equal(isTerminal(s), true);
     assert.equal(isTerminal("failed"), false, "failed retries; it is not the end");
+  });
+
+  test("loaded moves only to superseded, and only a person does it", () => {
+    assert.deepEqual(nextStates("loaded"), ["superseded"]);
+    assert.throws(() => transition("loaded", "superseded"), /only a person/);
+    assert.equal(transition("loaded", "superseded", { by: "human" }), "superseded");
   });
 
   test("rejected does NOT move back to filming — a re-film is a new row", () => {
@@ -183,8 +205,8 @@ describe("ad video states — the dead ends", () => {
     });
   });
 
-  test("delivered is the end of the line and says so", () => {
-    assert.throws(() => transition("delivered", "approved"), (err) => {
+  test("superseded is the end of the line and says so", () => {
+    assert.throws(() => transition("superseded", "approved", { by: "human" }), (err) => {
       assert.equal(err.code, "illegal_transition");
       assert.match(err.message, /end of the line/);
       return true;
@@ -199,21 +221,22 @@ describe("ad video states — failure and retry", () => {
     }
   });
 
-  test("a failure retries at staged, the last step whose input still exists", () => {
-    assert.deepEqual(nextStates("failed"), ["staged"]);
-    assert.equal(transition("failed", "staged"), "staged");
+  test("a failure retries at the step it failed from (last_good_status)", () => {
+    assert.deepEqual(nextStates("failed"), FAILABLE);
+    assert.deepEqual([...FAILABLE_STATES], FAILABLE);
+    for (const s of FAILABLE) assert.equal(canTransition(s, "failed"), true, s);
   });
 
-  test("a failure cannot jump straight back to where it broke", () => {
-    for (const s of ["transcribed", "matched", "editing", "rendered", "awaiting_approval"]) {
+  test("a failure never retries into an ending", () => {
+    for (const s of ["delivered", "loaded", "rejected", "merged", "superseded", "failed"]) {
       assert.equal(canTransition("failed", s), false, `failed → ${s} must not be allowed`);
     }
   });
 });
 
 describe("ad video states — only a person approves", () => {
-  test("approved and rejected are the human-only moves", () => {
-    assert.deepEqual([...HUMAN_ONLY].sort(), ["approved", "rejected"]);
+  test("approved, rejected and superseded are the human-only moves", () => {
+    assert.deepEqual([...HUMAN_ONLY].sort(), ["approved", "rejected", "superseded"]);
     for (const s of HUMAN_ONLY) assert.equal(isHumanOnly(s), true);
   });
 
@@ -263,7 +286,7 @@ describe("ad video states — the edges", () => {
   test("nextStates hands back a copy, so a caller cannot edit the machine", () => {
     const got = nextStates("staged");
     got.push("delivered");
-    assert.deepEqual(nextStates("staged"), ["editing", "failed"]);
+    assert.deepEqual(nextStates("staged"), ["editing", "cut", "failed"]);
   });
 
   test("nextStates on an unknown state is empty rather than a throw", () => {
@@ -278,23 +301,31 @@ describe("ad video states — the edges", () => {
 });
 
 describe("ad video states — the whole happy path, end to end", () => {
-  test("a take walks scripted → delivered one legal move at a time", () => {
-    /* The order the pipeline actually runs, and the order the journey diagram
-       draws: Submagic has the take BEFORE there are any words to read. */
+  test("a take walks scripted → loaded one legal move at a time", () => {
+    /* cut → Submagic captions → animations, always in that order (owner
+       decision 9): animated comes after rendered, and only animated reaches
+       Chris. */
     const path = [
-      "scripted", "filming", "raw_landed", "staged", "editing", "transcribed",
-      "matched", "rendered", "awaiting_approval", "approved", "delivered"
+      "scripted", "filming", "raw_landed", "prepared", "transcribed", "matched",
+      "cut", "staged", "editing", "rendered", "animated", "awaiting_approval",
+      "approved", "delivered", "loaded"
     ];
     let at = path[0];
     for (const to of path.slice(1)) {
       at = transition(at, to, { by: isHumanOnly(to) ? "human" : "worker" });
     }
-    assert.equal(at, "delivered");
-    assert.equal(isTerminal(at), true);
+    assert.equal(at, "loaded");
+  });
+
+  test("animations always go last: nothing reaches Chris without them", () => {
+    assert.equal(canTransition("rendered", "awaiting_approval"), false);
+    assert.equal(canTransition("editing", "animated"), false);
+    const into = STATES.filter((s) => canTransition(s, "awaiting_approval"));
+    assert.deepEqual(into, ["animated", "failed"]);
   });
 
   test("a rejected take ends at rejected and goes no further", () => {
-    let at = transition("rendered", "awaiting_approval");
+    let at = transition("animated", "awaiting_approval");
     at = transition(at, "rejected", { by: "human" });
     assert.deepEqual(nextStates(at), []);
   });

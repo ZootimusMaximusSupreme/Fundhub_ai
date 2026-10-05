@@ -36,7 +36,10 @@ import { sweep } from "../../src/workflows/ad-video-sweeper.mjs";
    hour is still far more than Chris films. */
 /* Chris 2026-09-24: the long videos have to land in Submagic in one pass,
    not one every five minutes. Still capped, so a bug cannot drain the hour. */
-export const TAKES_PER_PASS = 10;
+/* Raised from 10 to 40 for the marketing machine (spec §9.1 "Pace"), so a big
+   shoot's newest takes do not wait behind its oldest. The sweeper stops
+   starting new rows at twelve minutes (PASS_BUDGET_MS), inside the fifteen. */
+export const TAKES_PER_PASS = 40;
 
 /** The header the scheduler proves itself with. */
 export const AUTH_HEADER = "x-fundhub-worker";

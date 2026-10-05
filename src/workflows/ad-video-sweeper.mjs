@@ -53,8 +53,16 @@ export const SWEEP_CRON = "*/5 * * * *";
 
 export const SOURCE_WORKFLOW = "ad-video-sweeper";
 
-/** How many rows one pass will move. Small on purpose: see the header. */
-export const DEFAULT_BATCH = 10;
+/** How many rows one pass will move. Still bounded: see the header. Raised from
+    10 to 40 for the marketing machine (spec §9.1 "Pace"), so a big shoot's
+    newest takes do not wait behind its oldest. PASS_BUDGET_MS is the other
+    half of the bound. */
+export const DEFAULT_BATCH = 40;
+
+/** A pass stops STARTING new rows after twelve minutes, inside the background
+    function's fifteen (spec §9.1 "Pace"). A row not reached is still due and
+    the next pass takes it. */
+export const PASS_BUDGET_MS = 12 * 60 * 1000;
 
 /** How many new Drive files one pass will pick up. */
 export const DEFAULT_DETECT_LIMIT = 20;
@@ -88,10 +96,13 @@ async function loadStore(options) {
 
    Passed in rather than imported by the pipeline, so every step is testable
    with a stub and nothing in src/ad-videos/ can open a socket of its own. */
-export function portsFor({ env = process.env, naming, staging, saveFinished, candidateScripts = [], brollLibrary = [] } = {}) {
+export function portsFor({ env = process.env, naming, staging, saveFinished, candidateScripts = [], brollLibrary = [], nextTakeNo } = {}) {
   return {
     env,
     naming,
+    /* The next free take number for an ad, for a file with no "Take N" in its
+       name (spec §9.1 step 5). store.nextFreeTakeNo, bound to the database. */
+    nextTakeNo,
     /* The real stager, unless a test hands in its own. It publishes nothing by
        default: `direct` mode makes no call and no link, and the take's bytes
        move once, inside the fence, when submagicCreate() runs. */
@@ -121,10 +132,12 @@ export function portsFor({ env = process.env, naming, staging, saveFinished, can
 /* approvalLinks — the two buttons in the notification, and the only place a
    token is put in a URL.
 
-   Called for one row, only when that row is at `rendered` and is therefore
-   about to be shown to Chris. store.mintApprovalLink() writes the token on the
-   row first and hands it back; if it returns null the row was not at `rendered`
-   any more — somebody else got there — and no link is built.
+   Called for one row, only when that row is at `animated` and is therefore
+   about to be shown to Chris (spec §9.1 step 12: the link is minted on the move
+   from `animated`, so Chris approves the finished file with its animations).
+   store.mintApprovalLink() writes the token on the row first and hands it
+   back; if it returns null the row was not at `animated` any more — somebody
+   else got there — and no link is built.
 
    THE TOKEN IS IN THE QUERY STRING, and that is what it is for: a phone
    notification has no session, so the link IS the credential (owner decision 5,
@@ -133,7 +146,7 @@ export function portsFor({ env = process.env, naming, staging, saveFinished, can
    nothing else. It is never logged: the sweeper's per-row report carries the id
    and the state, never the URL. */
 export async function approvalLinks(database, row, { store, env = process.env } = {}) {
-  if (row?.status !== "rendered") return { approveUrl: null, rejectUrl: null };
+  if (row?.status !== "animated") return { approveUrl: null, rejectUrl: null };
   if (typeof store?.mintApprovalLink !== "function") return { approveUrl: null, rejectUrl: null };
 
   const minted = await store.mintApprovalLink(database, { orgId: row.org_id, id: row.id });
@@ -186,15 +199,21 @@ export async function detect(database, { store, env = process.env, limit = DEFAU
 }
 
 /* walk — move each row one step, and write down what happened. */
-export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {}) {
+export async function walk(database, {
+  store, ports, limit = DEFAULT_BATCH, budgetMs = PASS_BUDGET_MS, now = Date.now
+} = {}) {
   if (typeof store?.listPending !== "function" || typeof store?.patch !== "function") {
     return { ok: false, advanced: 0, error: "the store does not offer listPending/patch" };
   }
   const rows = (await store.listPending(database, { limit })) || [];
   const per = [];
   let advanced = 0;
+  const startedAt = now();
+  let stoppedEarly = 0;
 
   for (const row of rows) {
+    /* Out of time: start nothing new. The rows left are still due. */
+    if (now() - startedAt >= budgetMs) { stoppedEarly += 1; continue; }
     /* The one step that needs something minted before it runs. Every other
        step's ports are the same for every row. */
     const links = await approvalLinks(database, row, { store, env: ports.env });
@@ -264,7 +283,7 @@ export async function walk(database, { store, ports, limit = DEFAULT_BATCH } = {
       note: out.note || out.error || null
     });
   }
-  return { ok: true, advanced, per };
+  return { ok: true, advanced, per, ...(stoppedEarly ? { notStarted: stoppedEarly } : {}) };
 }
 
 /* rebuzz — a finished ad whose buzz did not land gets buzzed again.
@@ -327,7 +346,10 @@ export async function sweep(database, options = {}) {
       candidateScripts: typeof store.candidateScripts === "function"
         ? await store.candidateScripts(database)
         : [],
-      brollLibrary: options.brollLibrary || await loadBrollLibrary(env)
+      brollLibrary: options.brollLibrary || await loadBrollLibrary(env),
+      nextTakeNo: typeof store.nextFreeTakeNo === "function"
+        ? (args) => store.nextFreeTakeNo(database, args)
+        : undefined
     });
 
     const found = await detect(database, { store, env, limit: options.detectLimit });

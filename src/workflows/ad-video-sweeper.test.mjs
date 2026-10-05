@@ -16,7 +16,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   sweep, detect, walk, portsFor, adVideoSweeper,
-  SWEEP_CRON, DEFAULT_BATCH, DEFAULT_DETECT_LIMIT, loadBrollLibrary
+  SWEEP_CRON, DEFAULT_BATCH, DEFAULT_DETECT_LIMIT, PASS_BUDGET_MS, loadBrollLibrary
 } from "./ad-video-sweeper.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -133,16 +133,15 @@ describe("walk", () => {
       pending: [{ id: "r1", status: "raw_landed", drive_raw_file_id: "d1" }],
       onPatch: (id, f) => patches.push([id, f])
     });
-    /* staging: null on purpose. The real stager is wired in now and would move
-       this row, so the "stuck" case has to be a port that is genuinely absent
-       rather than a feature that was never built. */
+    /* raw_landed runs `prepare`, which the video worker (spec §9.5) builds. Until
+       it lands the take waits — and says so on the row. */
     const res = await walk(noDb, {
       store,
-      ports: { ...portsFor({ env: {}, naming }), staging: null }
+      ports: portsFor({ env: {}, naming })
     });
     assert.equal(patches.length, 1, "a waiting row must say why — silence is how a stall goes unnoticed");
     const [, wrote] = patches[0];
-    assert.match(wrote.last_step_note, /staging port was not supplied/,
+    assert.match(wrote.last_step_note, /prepare is not built yet/,
       "the reason the step gave must be readable in the database, not only in a return value");
     assert.ok(wrote.last_step_at, "and when it last tried");
     assert.deepEqual(
@@ -150,22 +149,39 @@ describe("walk", () => {
       ["last_step", "last_step_at", "last_step_note"],
       "a wait writes the note and NOTHING else — no status, no timestamp, no claim"
     );
-    assert.match(res.per[0].note, /staging port was not supplied/);
+    assert.match(res.per[0].note, /prepare is not built yet/);
   });
 
-  test("the sweeper hands the pipeline a real stager, so a raw take moves with no network", async () => {
-    /* The gap this batch closed. `direct` staging makes no call and publishes
-       no link — it only marks the row ready for the upload route. */
-    const patches = [];
+  test("the approval link is minted at animated — never before the animations are on", async () => {
+    /* spec §9.1 step 12: the gate moved from `rendered` to `animated`. */
+    const minted = [];
+    const store = {
+      ...fakeStore({
+        pending: [
+          { id: "r1", org_id: "o", status: "rendered", drive_raw_file_id: "d1" },
+          { id: "r2", org_id: "o", status: "animated", finished_url: "https://x/f.mp4", drive_raw_file_id: "d2" }
+        ]
+      }),
+      mintApprovalLink: async (_db, { id }) => { minted.push(id); return { token: "a".repeat(48) }; }
+    };
+    await walk(noDb, { store, ports: portsFor({ env: {}, naming }) });
+    assert.deepEqual(minted, ["r2"]);
+  });
+
+  test("a pass stops starting new rows when its time budget is spent", async () => {
     const store = fakeStore({
-      pending: [{ id: "r1", status: "raw_landed", drive_raw_file_id: "d1" }],
-      onPatch: (id, f) => patches.push([id, f])
+      pending: [
+        { id: "r1", status: "raw_landed", drive_raw_file_id: "d1" },
+        { id: "r2", status: "raw_landed", drive_raw_file_id: "d2" }
+      ]
     });
-    const res = await walk(noDb, { store, ports: portsFor({ env: {}, naming }) });
-    assert.equal(res.advanced, 1);
-    assert.equal(patches[0][1].status, "staged");
-    assert.equal(patches[0][1].source_url, undefined, "direct staging must not publish a link");
-    assert.equal(patches[0][1].storage_raw_key, "drive:d1");
+    // the pass starts at 0, row 1 is checked at 0, row 2 at 20 — past a 10 ms budget
+    const clock = [0, 0, 20];
+    const res = await walk(noDb, {
+      store, ports: portsFor({ env: {}, naming }), budgetMs: 10, now: () => clock.shift() ?? 99
+    });
+    assert.equal(res.per.length, 1, "the second row is left for the next pass");
+    assert.equal(res.notStarted, 1);
   });
 
   test("every row in the batch gets a turn, and one stuck row does not block the rest", async () => {
@@ -179,7 +195,6 @@ describe("walk", () => {
       store,
       ports: {
         ...portsFor({ env: {}, naming }),
-        staging: null,
         drive: { downloadFile: async () => ({ ok: true, bytes: new Uint8Array([1]), byteLength: 1 }) },
         submagic: { createProjectFromFile: async () => ({ ok: true, projectId: "p9" }) }
       }
@@ -216,8 +231,12 @@ describe("a whole pass", () => {
     assert.equal(asked, 3);
   });
 
-  test("the default batch is bounded and small — every step past staged costs money", () => {
-    assert.ok(DEFAULT_BATCH > 0 && DEFAULT_BATCH <= 25);
+  test("the default batch is bounded — every step past staged costs money", () => {
+    /* 40 since the marketing machine (spec §9.1 "Pace"); PASS_BUDGET_MS is the
+       other half of the bound. */
+    assert.ok(DEFAULT_BATCH > 0 && DEFAULT_BATCH <= 40);
+    assert.ok(PASS_BUDGET_MS > 0 && PASS_BUDGET_MS <= 12 * 60 * 1000,
+      "a pass must stop starting rows inside the background function's fifteen minutes");
     assert.ok(DEFAULT_DETECT_LIMIT > 0 && DEFAULT_DETECT_LIMIT <= 50);
   });
 });

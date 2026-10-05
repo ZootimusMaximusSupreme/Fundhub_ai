@@ -26,12 +26,21 @@ import { TRANSITIONS, STATES } from "./states.mjs";
 /* What each step actually writes, read off pipeline.mjs. Kept by hand on
    purpose: a list that regenerates itself from the thing it is checking proves
    nothing. Add a step, add its line here. */
+/* REBUILT 2026-10-05 for the marketing-machine order (spec §9.1). The steps
+   later parts of the spec build (prepare, transcribe, planCut, buildMaster,
+   animate) are listed with what they WILL write, so the table already holds
+   them to the machine the day they land. */
 const STEP_WRITES = Object.freeze({
-  stage: ["staged"],
-  submagicCreate: ["editing"],
-  readTranscript: ["transcribed"],
+  prepare: ["prepared"],
+  transcribe: ["transcribed"],
   matchAndRename: ["matched"],
-  placeBrollAndExport: ["rendered"],
+  // a new master is cut; a later take of an ad that has one is merged into it
+  planCut: ["cut", "merged"],
+  // the master is built; or coverage under 50% sends it back to be matched again
+  buildMaster: ["staged", "transcribed"],
+  submagicCreate: ["editing"],
+  captionAndExport: ["rendered"],
+  animate: ["animated"],
   saveFinishedAndNotify: ["awaiting_approval"],
   deliverToPaul: ["delivered"]
 });

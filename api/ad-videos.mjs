@@ -1,7 +1,7 @@
 // GET /api/ad-videos — the filmed takes, and where each one is stuck.
 //
 //   ?status=awaiting_approval          one state
-//   ?status=editing,rendered           several
+//   ?status=cut,animated               several (states: src/ad-videos/states.mjs)
 //   ?ad_id=43                          every take of one ad (UNPADDED)
 //   ?limit= ?offset=
 //
