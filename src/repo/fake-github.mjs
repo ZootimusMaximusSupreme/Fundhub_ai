@@ -6,6 +6,8 @@
 // with force:false answers 422 "Update is not a fast forward" unless the new
 // commit's parent is the current head.
 
+import { createHash } from "node:crypto";
+
 const OWNER_REPO = "acme/site";
 
 export function makeFakeGithub({ files = {}, branch = "main" } = {}) {
@@ -45,7 +47,9 @@ export function makeFakeGithub({ files = {}, branch = "main" } = {}) {
     if (forced >= 0) {
       const f = hooks.failNext[forced];
       if (!f.keep) hooks.failNext.splice(forced, 1);
-      return json(f.status, { message: f.message || "forced failure" });
+      return new Response(JSON.stringify({ message: f.message || "forced failure" }), {
+        status: f.status, headers: { "content-type": "application/json", ...(f.headers || {}) }
+      });
     }
 
     if (method === "GET" && route === `/git/ref/heads/${branch}`) {
@@ -63,7 +67,11 @@ export function makeFakeGithub({ files = {}, branch = "main" } = {}) {
     if (method === "GET" && (m = /^\/contents\/(.+)$/.exec(route))) {
       const ref = u.searchParams.get("ref");
       const c = commits.find((x) => x.sha === ref) || head();
-      return Object.prototype.hasOwnProperty.call(c.files, m[1]) ? text(200, c.files[m[1]]) : json(404, { message: "Not Found" });
+      if (!Object.prototype.hasOwnProperty.call(c.files, m[1])) return json(404, { message: "Not Found" });
+      const etag = `"${createHash("sha1").update(c.files[m[1]]).digest("hex")}"`;
+      const sent = init.headers?.["If-None-Match"];
+      if (sent && sent === etag) return new Response(null, { status: 304, headers: { etag } });
+      return new Response(c.files[m[1]], { status: 200, headers: { "content-type": "text/plain", etag } });
     }
     if (method === "POST" && route === "/git/trees") {
       const sha = `tree${++n}`;

@@ -42,8 +42,9 @@ import { randomUUID } from "node:crypto";
 import { assertAllowedPath, PathRefused } from "./allow-list.mjs";
 import { applyEdit, validateEdit, EditError } from "./edits.mjs";
 import {
-  repoConfig, getRef, getCommit, readFile, recentCommits, createTree, createCommit, updateRef
+  repoConfig, getRef, getCommit, recentCommits, createTree, createCommit, updateRef
 } from "./github.mjs";
+import { readRepoFile } from "./read.mjs";
 import { parseRegistry } from "../ads/registry.mjs";
 
 export const DRAIN_LOCK_KEY = 4060002;
@@ -153,7 +154,7 @@ const byAge = (a, b) =>
   new Date(a.created_at) - new Date(b.created_at) || String(a.id).localeCompare(String(b.id));
 
 /** Transient: worth another drain later. Everything else stops and shows on the health card. */
-const isTransient = (r) => r.blocked || r.status === 0 || r.status === 429 || r.status >= 500;
+const isTransient = (r) => r.blocked || r.rateLimited || r.status === 0 || r.status === 429 || r.status >= 500;
 
 /**
  * One drain. Returns { status, committed, commit?, errored?, message? } where status is
@@ -166,16 +167,27 @@ export async function drainOutbox({ pool, env = process.env, fetchImpl, maxRows 
   const cfg = repoConfig(env, { fetchImpl });
   if (!cfg.configured) return { status: "not_configured", committed: 0 };
   const c = await pool.connect();
+  /* A connection that may still hold the lock must never go back to the pool:
+     the next borrower would inherit it. release(true) destroys the connection. */
+  let destroy = false;
   try {
     const lock = await c.query(`SELECT pg_try_advisory_lock($1) AS ok`, [DRAIN_LOCK_KEY]);
     if (!lock.rows[0].ok) return { status: "busy", committed: 0 };
     try {
       return await drainLocked(c, cfg, maxRows);
     } finally {
-      await c.query(`SELECT pg_advisory_unlock($1)`, [DRAIN_LOCK_KEY]).catch(() => {});
+      try {
+        const un = await c.query(`SELECT pg_advisory_unlock($1) AS ok`, [DRAIN_LOCK_KEY]);
+        if (!un.rows[0]?.ok) destroy = true;
+      } catch {
+        destroy = true;
+      }
     }
+  } catch (e) {
+    destroy = true;
+    throw e;
   } finally {
-    c.release();
+    c.release(destroy);
   }
 }
 
@@ -269,7 +281,7 @@ async function drainLocked(c, cfg, maxRows) {
     let readFailure = null;
     for (const row of pending) {
       if (row.mode === "edit" && !state.has(row.path)) {
-        const cur = await readFile(cfg, row.path, head.sha);
+        const cur = await readRepoFile(cfg, row.path, head.sha);
         if (!cur.ok) { readFailure = cur; break; }
         state.set(row.path, cur.text);
       }

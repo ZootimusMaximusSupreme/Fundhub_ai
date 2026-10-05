@@ -33,7 +33,9 @@ export class PathRefused extends Error {
 
 /** The normalized path, or null when it cannot be one. */
 export function normalizeRepoPath(input) {
-  if (typeof input !== "string" || input === "" || input.includes("\0") || input.includes("\\")) return null;
+  /* Control characters (NUL, tab, newline, CR, DEL, ...) are refused: a newline in
+     a path would land in the commit body and could forge an `Outbox:` trailer. */
+  if (typeof input !== "string" || input === "" || /[\u0000-\u001f\u007f-\u009f\u2028\u2029]/.test(input) || input.includes("\\")) return null;
   if (input.startsWith("/") || /^[A-Za-z]:/.test(input)) return null;
   const n = path.posix.normalize(input);
   if (n === "." || n === ".." || n.startsWith("../") || n.startsWith("/") || n.endsWith("/")) return null;

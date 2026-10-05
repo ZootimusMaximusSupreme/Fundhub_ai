@@ -173,6 +173,33 @@ describe("repo outbox", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
     assert.equal((await drain(gh)).status, "committed");
   });
 
+  test("a secondary rate limit 403 is transient: not stopped, tried again next drain", async () => {
+    const gh = makeFakeGithub();
+    const row = await enqueue({ path: `${P}-a.md`, mode: "replace", content: "x" });
+    gh.hooks.failNext.push({ method: "PATCH", route: "/git/refs", status: 403, message: "You have exceeded a secondary rate limit", headers: { "retry-after": "60" } });
+    const out = await drain(gh);
+    assert.equal(out.status, "retry_later");
+    const r = await rowOf(row.id);
+    assert.equal(r.error, null);
+    assert.equal(r.claimed_at, null);
+    assert.equal((await drain(gh)).status, "committed");
+  });
+
+  test("a connection whose unlock fails is destroyed, not returned to the pool", async () => {
+    const calls = [];
+    const fakeClient = {
+      query: async (sql) => {
+        if (/pg_try_advisory_lock/.test(sql)) return { rows: [{ ok: true }] };
+        if (/pg_advisory_unlock/.test(sql)) throw new Error("connection lost");
+        return { rows: [], rowCount: 0 };
+      },
+      release: (destroy) => calls.push(destroy)
+    };
+    const out = await drainOutbox({ pool: { connect: async () => fakeClient }, env: FAKE_ENV, fetchImpl: makeFakeGithub().fetchImpl });
+    assert.equal(out.status, "empty");
+    assert.deepEqual(calls, [true]);
+  });
+
   test("a network failure is transient: the claim is given back and the next drain succeeds", async () => {
     const gh = makeFakeGithub();
     const row = await enqueue({ path: `${P}-a.md`, mode: "replace", content: "x" });

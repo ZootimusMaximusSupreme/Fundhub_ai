@@ -48,7 +48,7 @@ function pathEncode(p) {
   return String(p).split("/").map(encodeURIComponent).join("/");
 }
 
-async function call(cfg, method, route, { body, raw = false, what } = {}) {
+async function call(cfg, method, route, { body, raw = false, what, headers: extraHeaders } = {}) {
   if (!cfg || !cfg.configured) {
     return { ok: false, blocked: false, status: 0, body: null,
       error: "GitHub repo not configured (GITHUB_REPO and GITHUB_REPO_TOKEN)" };
@@ -57,7 +57,8 @@ async function call(cfg, method, route, { body, raw = false, what } = {}) {
     Authorization: `Bearer ${cfg.token}`,
     Accept: raw ? "application/vnd.github.raw+json" : "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
-    "User-Agent": "fundhub-app"
+    "User-Agent": "fundhub-app",
+    ...(extraHeaders || {})
   };
   const init = { method, headers };
   if (body !== undefined) {
@@ -74,15 +75,26 @@ async function call(cfg, method, route, { body, raw = false, what } = {}) {
   });
 }
 
-const fail = (res, extra = {}) => ({
-  ok: false,
-  blocked: Boolean(res.blocked),
-  status: res.status,
-  error: redact(
-    (res.body && typeof res.body === "object" && res.body.message) || res.error || `HTTP ${res.status}`
-  ),
-  ...extra
-});
+/* GitHub's secondary rate limit arrives as a 403 (sometimes a 429) carrying a
+   retry-after header or a "rate limit" message. It clears by itself, so it is
+   transient, not a hard stop. */
+function isRateLimited(res, message) {
+  if (res.status === 429) return true;
+  if (res.status !== 403) return false;
+  return Boolean(res.headers?.["retry-after"]) || /rate limit/i.test(String(message || ""));
+}
+
+const fail = (res, extra = {}) => {
+  const message = (res.body && typeof res.body === "object" && res.body.message) || res.error || `HTTP ${res.status}`;
+  return {
+    ok: false,
+    blocked: Boolean(res.blocked),
+    status: res.status,
+    rateLimited: isRateLimited(res, message),
+    error: redact(message),
+    ...extra
+  };
+};
 
 /** The branch's head commit sha. */
 export async function getRef(cfg) {
@@ -100,13 +112,24 @@ export async function getCommit(cfg, sha) {
   return { ok: true, status: res.status, tree };
 }
 
-/** A file's text at a ref. A missing file is { ok: true, text: null }. */
-export async function readFile(cfg, path, ref) {
+/**
+ * A file's text at a ref, through the Contents API with an ETag.
+ * Pass the ETag from an earlier read as `etag`: a 304 comes back as
+ * { ok: true, notModified: true } and the caller keeps its cached copy.
+ * A missing file is { ok: true, text: null }.
+ */
+export async function readFile(cfg, path, ref, { etag } = {}) {
   const res = await call(cfg, "GET",
-    `/contents/${pathEncode(path)}?ref=${encodeURIComponent(ref || cfg.branch)}`, { raw: true });
+    `/contents/${pathEncode(path)}?ref=${encodeURIComponent(ref || cfg.branch)}`,
+    { raw: true, headers: etag ? { "If-None-Match": etag } : undefined });
+  if (res.status === 304) return { ok: true, status: 304, notModified: true, etag };
   if (res.status === 404) return { ok: true, status: 404, text: null };
   if (!res.ok) return fail(res);
-  return { ok: true, status: res.status, text: typeof res.body === "string" ? res.body : "" };
+  return {
+    ok: true, status: res.status,
+    text: typeof res.body === "string" ? res.body : "",
+    etag: res.headers?.etag || null
+  };
 }
 
 /** The newest commits on the branch, as { sha, message }. */

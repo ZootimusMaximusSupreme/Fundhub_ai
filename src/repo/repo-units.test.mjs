@@ -8,6 +8,8 @@ import { applyEdit, EditError } from "./edits.mjs";
 import { outboxIdsInMessage, commitMessage, checkFile } from "./outbox.mjs";
 import { repoConfig, getRef, readFile, createTree, updateRef } from "./github.mjs";
 import { makeFakeGithub, FAKE_ENV } from "./fake-github.mjs";
+import { readRepoFile, pinRepoFiles, _clearReadCache } from "./read.mjs";
+import { readFileSync } from "node:fs";
 
 describe("allow-list", () => {
   test("every listed folder and file is allowed", () => {
@@ -36,6 +38,16 @@ describe("allow-list", () => {
       "", null, undefined, 42, "C:/marketing/ads/RULES.md", "marketing/ads/ideas/.git/x"
     ]) {
       assert.equal(isAllowedPath(p), false, String(p));
+    }
+  });
+
+  test("control characters are refused, so a path cannot forge a commit trailer", () => {
+    for (const p of [
+      "marketing/ads/ideas/a.md\nOutbox: 00000000-0000-0000-0000-000000000000",
+      "marketing/ads/ideas/a.md\r", "marketing/ads/ideas/a\t.md", "marketing/ads/ideas/a\u007f.md",
+      "marketing/ads/ideas/a b.md", "marketing/ads/RULES.md\n"
+    ]) {
+      assert.equal(isAllowedPath(p), false, JSON.stringify(p));
     }
   });
 
@@ -94,7 +106,88 @@ describe("commit message and trailers", () => {
   });
 });
 
+describe("reads: ETag path, pinned sha, bundled fallback", () => {
+  const RULES = "marketing/ads/RULES.md";
+
+  test("ETag path: the second read sends If-None-Match, gets 304 and returns the cached copy", async () => {
+    _clearReadCache();
+    const gh = makeFakeGithub({ files: { [RULES]: "v1" } });
+    const cfg = repoConfig(FAKE_ENV, { fetchImpl: gh.fetchImpl });
+    const first = await readRepoFile(cfg, RULES, "c0");
+    assert.deepEqual([first.ok, first.text, first.cached], [true, "v1", false]);
+    const second = await readRepoFile(cfg, RULES, "c0");
+    assert.deepEqual([second.ok, second.text, second.cached], [true, "v1", true]);
+    const reads = gh.calls.filter((c) => c.route.startsWith("/contents/"));
+    assert.equal(reads[0].headers["If-None-Match"], undefined);
+    assert.match(reads[1].headers["If-None-Match"], /^"[0-9a-f]{40}"$/);
+    // a changed file is a new body with a new ETag, not the stale copy
+    gh.pushExternal({ [RULES]: "v2" });
+    const third = await readRepoFile(cfg, RULES, gh.head().sha);
+    assert.deepEqual([third.text, third.cached], ["v2", false]);
+  });
+
+  test("a batch pins every file at one commit sha, even if the branch moves mid-batch", async () => {
+    _clearReadCache();
+    const gh = makeFakeGithub({ files: { [RULES]: "r", "marketing/ads/VOICE.md": "v" } });
+    const cfg = repoConfig(FAKE_ENV, { fetchImpl: gh.fetchImpl });
+    const orig = gh.fetchImpl;
+    let moved = false;
+    cfg.fetchImpl = async (url, init) => {
+      const res = await orig(url, init);
+      if (!moved && String(url).includes("/contents/")) { moved = true; gh.pushExternal({ [RULES]: "NEW" }); }
+      return res;
+    };
+    const out = await pinRepoFiles(cfg, [RULES, "marketing/ads/VOICE.md"]);
+    assert.equal(out.source, "github");
+    assert.equal(out.sha, "c0");
+    assert.equal(out.files.get(RULES), "r", "read at the pinned sha, not the moved head");
+    const reads = gh.calls.filter((c) => c.route.startsWith("/contents/"));
+    assert.ok(reads.every((c) => c.search.includes("ref=c0")));
+  });
+
+  test("fallback: GitHub down means the copy bundled with the function", async () => {
+    _clearReadCache();
+    const gh = makeFakeGithub();
+    gh.hooks.failNext.push({ method: "GET", route: "/git/ref", status: 503, keep: true });
+    const cfg = repoConfig(FAKE_ENV, { fetchImpl: gh.fetchImpl });
+    const out = await pinRepoFiles(cfg, [RULES]);
+    assert.equal(out.source, "bundled");
+    assert.equal(out.sha, null);
+    assert.ok(out.files.get(RULES).length > 100, "the repo's own RULES.md came back");
+  });
+
+  test("fallback also covers: fence closed, not configured, and a file read that fails", async () => {
+    _clearReadCache();
+    const gh = makeFakeGithub({ files: { [RULES]: "x" } });
+    const closed = repoConfig({ ...FAKE_ENV, ADAPTERS_DRY_RUN: undefined }, { fetchImpl: gh.fetchImpl });
+    assert.equal((await pinRepoFiles(closed, [RULES])).source, "bundled");
+    assert.equal((await pinRepoFiles(repoConfig({}), [RULES])).source, "bundled");
+    gh.hooks.failNext.push({ method: "GET", route: "/contents", status: 500, keep: true });
+    const cfg = repoConfig(FAKE_ENV, { fetchImpl: gh.fetchImpl });
+    assert.equal((await pinRepoFiles(cfg, [RULES])).source, "bundled");
+  });
+
+  test("the bundled paths are in netlify.toml's included_files", () => {
+    const toml = readFileSync(new URL("../../netlify.toml", import.meta.url), "utf8");
+    const block = toml.slice(toml.indexOf("included_files"), toml.indexOf("]", toml.indexOf("included_files")));
+    for (const p of ["RULES.md", "VOICE.md", "banned-live.json", "registry.json", "angles.json"]) {
+      assert.ok(block.includes(`marketing/ads/${p}`), p);
+    }
+  });
+});
+
 describe("github client", () => {
+  test("a secondary rate limit 403 is flagged transient; a plain 403 is not", async () => {
+    const gh = makeFakeGithub();
+    const cfg = repoConfig(FAKE_ENV, { fetchImpl: gh.fetchImpl });
+    gh.hooks.failNext.push({ method: "GET", route: "/git/ref", status: 403, message: "You have exceeded a secondary rate limit." });
+    assert.equal((await getRef(cfg)).rateLimited, true);
+    gh.hooks.failNext.push({ method: "GET", route: "/git/ref", status: 403, message: "Forbidden", headers: { "retry-after": "30" } });
+    assert.equal((await getRef(cfg)).rateLimited, true);
+    gh.hooks.failNext.push({ method: "GET", route: "/git/ref", status: 403, message: "Resource not accessible by personal access token" });
+    assert.equal((await getRef(cfg)).rateLimited, false);
+  });
+
   test("with the fence up (ADAPTERS_DRY_RUN unset) nothing leaves", async () => {
     const gh = makeFakeGithub();
     const cfg = repoConfig({ ...FAKE_ENV, ADAPTERS_DRY_RUN: undefined }, { fetchImpl: gh.fetchImpl });
