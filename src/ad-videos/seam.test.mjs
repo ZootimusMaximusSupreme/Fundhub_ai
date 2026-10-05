@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 import { PENDING_STATES } from "./store.mjs";
 import * as store from "./store.mjs";
 import { NEXT_STEP, STATES as PIPELINE_STATES } from "./pipeline.mjs";
-import { STATES as STORE_STATES } from "./states.mjs";
+import { STATES as STORE_STATES, WORKING_STATES } from "./states.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(HERE, "..", "..");
@@ -57,7 +57,10 @@ function adVideoColumns() {
   }
 
   for (const file of fs.readdirSync(MIGRATIONS)) {
-    if (!/^39[0-9]_.*\.sql$/.test(file)) continue;
+    /* 390–399 built the marks; 416 added the marketing-machine columns. Every
+       later file that alters ad_videos counts too. */
+    const n = Number((/^(\d+)_.*\.sql$/.exec(file) || [])[1]);
+    if (!(n >= 390)) continue;
     const sql = fs.readFileSync(path.join(MIGRATIONS, file), "utf8");
     if (!/ALTER TABLE ad_videos/.test(sql)) continue;
     for (const m of sql.matchAll(/ADD COLUMN IF NOT EXISTS\s+([a-z_][a-z0-9_]*)/g)) {
@@ -192,7 +195,7 @@ describe("the sweeper and the store speak the same language", () => {
 describe("the state lists have not drifted apart", () => {
   test("the store, the state machine and the pipeline name the same states", () => {
     assert.deepEqual([...STORE_STATES].sort(), [...PIPELINE_STATES].sort(),
-      "the pipeline's STATES and states.mjs's STATES must be the same thirteen words — " +
+      "the pipeline's STATES and states.mjs's STATES must be the same nineteen words — " +
       "the database's CHECK constraint pins them and a state in one list only is a row " +
       "that cannot be written");
   });
@@ -209,9 +212,14 @@ describe("the state lists have not drifted apart", () => {
        it, the pipeline would move a video past Chris. */
     assert.ok(!PENDING_STATES.includes("awaiting_approval"),
       "awaiting_approval is Chris's. A worker step for it would approve videos nobody watched.");
-    for (const dead of ["delivered", "rejected", "failed"]) {
+    for (const dead of ["delivered", "loaded", "rejected", "failed", "merged", "superseded"]) {
       assert.ok(!PENDING_STATES.includes(dead), `${dead} is an ending, not a queue`);
     }
+  });
+
+  test("the states a worker acts on are exactly the states that have a step", () => {
+    assert.deepEqual([...WORKING_STATES].sort(), Object.keys(NEXT_STEP).sort(),
+      "states.mjs WORKING_STATES (which may fail) and pipeline.mjs NEXT_STEP must name the same states");
   });
 });
 
@@ -238,14 +246,16 @@ describe("the pipeline only calls naming functions that exist", () => {
       .replace(/^\s*import\b.*$/gm, "");        // `from "./naming.mjs"` is a path, not a call
     const called = new Set();
     for (const m of src.matchAll(/\bnaming\??\.(\w+)/g)) called.add(m[1]);
-    assert.ok(called.size >= 4, `expected the pipeline to call naming functions, found ${[...called].join(", ")}`);
+    /* Three since 2026-10-05: the raw rename (rawFileName) was removed — the
+       raw library is never renamed (spec §9.1 step 5). */
+    assert.ok(called.size >= 3, `expected the pipeline to call naming functions, found ${[...called].join(", ")}`);
     const missing = [...called].filter((fn) => typeof naming[fn] !== "function");
     assert.deepStrictEqual(missing, [],
       `pipeline.mjs calls naming.${missing.join(", naming.")} but naming.mjs exports no such function — ` +
       "this is the gap that skipped the rename on the first real take");
   });
 
-  test("the real module names a raw take the way the rename step calls it", async () => {
+  test("the real module's names keep their shapes", async () => {
     const { rawFileName, finalFileName, briefFileName, paulFolderName } = await import("./naming.mjs");
     assert.strictEqual(rawFileName("84", 1, new Date("2026-09-24T01:45:25Z")), "084_t01_raw_2026-09-24.mp4");
     assert.strictEqual(finalFileName("84", 1, 1), "084_t01_final_v1.mp4");

@@ -76,7 +76,7 @@ describe("POST /api/public/ad-video-approve", { skip: !HAVE_DB ? "no DATABASE_UR
     const adId = newAdId();
     const { token, expiresAt } = mintApprovalToken({ ttlHours });
     const row = await asStaff((tx) => createTake(tx, {
-      orgId: org, partnerId: partner, adId, takeNo: 1, status: "rendered",
+      orgId: org, partnerId: partner, adId, takeNo: 1, status: "animated",
       video_kind: videoKind, width, height,
       finished_url: "https://example.invalid/out.mp4", duration_seconds: 102
     }));

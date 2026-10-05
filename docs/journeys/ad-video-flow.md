@@ -1,19 +1,18 @@
 # Ad video — from a filmed take to Paul's folder
 
-Generated from the code on 2026-09-22, updated the same day when staging and the
-binary transfer landed. Written against `src/ad-videos/pipeline.mjs`,
-`src/ad-videos/staging.mjs`, `src/workflows/ad-video-sweeper.mjs`,
-`src/messaging/providers/submagic.mjs`,
-`src/messaging/providers/google-drive-write.mjs`, `src/messaging/providers/ntfy.mjs`,
-`src/lib/outbound-fetch.mjs` and the `submagic` branch in `src/http/router.mjs`.
+**Rebuilt from the code on 2026-10-05 for the marketing machine (spec §9.1, step
+9.1: the state machine).** Written against `src/ad-videos/states.mjs`,
+`src/ad-videos/pipeline.mjs` (`NEXT_STEP`), `src/ad-videos/store.mjs`,
+`src/workflows/ad-video-sweeper.mjs` and `db/migrations/416_ad_video_states_v2.sql`.
+The intended journey is `docs/journeys/marketing-machine-intended.md`; the spec is
+`docs/specs/marketing-machine-2026-10-04.md` §9.
 
-The plan is `docs/video-pipeline-plan.md`. The vendor facts are
-`docs/specs/video-pipeline-unknowns-settled-2026-09-22.md`, which corrects the
-earlier `docs/specs/video-pipeline-api-verification-2026-09-22.md` on three
-points: the Drive link works, Submagic takes the file directly, and creates are
-30 an hour rather than 500. The 4K rule is `.claude/rules/video-4k-unless-ad.md`.
+**The order never changes: cut → Submagic captions → our animations → finalize.**
 
-**Chris films, and Chris approves. That is the whole job.**
+Five steps in this picture are built by later steps of the spec. Until each one
+lands, a take that reaches it **waits there** and its row says so in
+`last_step_note` ("prepare is not built yet — …"). They are marked UNVERIFIED
+below: the state machine allows the move, and no code makes it yet.
 
 ---
 
@@ -21,24 +20,36 @@ points: the Drive link works, Submagic takes the file directly, and creates are
 
 ```mermaid
 flowchart TD
-    A["Chris films the take<br/>phone shares it to the Raw Drive folder"] --> B["raw_landed"]
-    B -->|"sweeper sees a new video, size above zero"| B
-    B -->|"stage: nothing is published, no link is made"| C["staged"]
-    C -->|"upload the bytes (or hand over the link), autoRender OFF"| D["editing"]
-    D -->|"Submagic returns words[] with real times"| E["transcribed"]
-    D -->|"still listening"| D
-    E -->|"Claude picks the script, then the Drive file is renamed"| F["matched"]
-    E -->|"no script clears the 80 floor"| X["failed<br/>a person looks"]
-    F -->|"upload OUR clips, place them, Export Project"| F2["exported<br/>(still matched)"]
-    F2 -->|"Submagic webhook, checked against the API"| G["rendered"]
-    F2 -->|"or the 5-minute poll finds it finished"| G
-    F2 -->|"Submagic says the render failed"| X
-    G -->|"save our copy, buzz Chris's phone"| H["awaiting_approval"]
-    H -->|"Chris taps Reject"| R["rejected<br/>re-film as the next take"]
-    H -->|"Chris taps Approve"| I["approved"]
-    I -->|"make folder 043, write the brief, upload the video"| J["delivered"]
-    X -->|"a person fixes it and the row is put back"| C
+    A["Chris drops takes into SLO Ads<br/>any names; never moved or renamed"] --> B["raw_landed"]
+    B -->|"UNVERIFIED — prepare (9.5 worker): probe, audio, pauses"| P["prepared"]
+    P -->|"UNVERIFIED — transcribe (whisperWords, §9.1 step 4)"| T["transcribed"]
+    T -->|"matchAndRename: script, ad number, take number. NO rename"| M["matched"]
+    T -->|"no script fits"| X["failed"]
+    M -->|"UNVERIFIED — planCut (9.2 aligner)"| C["cut"]
+    M -->|"UNVERIFIED — a later take of an ad that has a master"| MG["merged (end)"]
+    C -->|"UNVERIFIED — buildMaster (9.3), no animations"| S["staged"]
+    C -->|"UNVERIFIED — coverage under 50%: match again"| T
+    C -->|"Chris: Re-film"| RJ["rejected (end)<br/>script back to Shoot Day"]
+    S -->|"submagicCreate"| E["editing"]
+    E -->|"captionAndExport: export, NO Submagic b-roll; webhook or poll"| R["rendered"]
+    R -->|"UNVERIFIED — animate (9.4): our animations go on LAST, finalize"| AN["animated"]
+    AN -->|"approval link minted here; buzz"| W["awaiting_approval"]
+    W -->|"Chris taps Approve"| AP["approved"]
+    W -->|"Chris taps Reject"| RJ
+    W -->|"edit: strike or restore a line"| C
+    W -->|"edit: caption word"| E
+    W -->|"edit: animation"| R
+    S & E & R & AN & W -->|"a late take before approval"| C
+    AP -->|"deliverToPaul"| D["delivered"]
+    D -->|"UNVERIFIED — Load all approved (M4)"| L["loaded"]
+    AP & D & L -->|"Chris approves a recut (approve supersede:true)"| SU["superseded (end)"]
+    X -->|"Retry: back to last_good_status"| B
 ```
+
+`failed` can be reached from every state a worker acts on, plus `scripted`,
+`filming` and `awaiting_approval`. Retry puts the take back at the state it
+failed from (`last_good_status`), not at the start. The picture draws only one
+retry arrow to keep it readable.
 
 ---
 
@@ -46,32 +57,49 @@ flowchart TD
 
 | From | What runs | To | Where it lives |
 |---|---|---|---|
-| — | Drive `files.list` on the Raw folder every 5 minutes | `raw_landed` | `ad-video-sweeper.mjs` `detect()` |
-| `raw_landed` | get the take ready. Nothing is published | `staged` | `pipeline.mjs` `stage()` + `staging.mjs` |
-| `staged` | upload the bytes to Submagic, `autoRender:false` | `editing` | `pipeline.mjs` `submagicCreate()` |
-| `editing` | Submagic Get Project → `words[]` | `transcribed` | `pipeline.mjs` `readTranscript()` |
-| `transcribed` | Claude matches the words to a script, then Drive rename | `matched` | `pipeline.mjs` `matchAndRename()` |
-| `matched` | upload our clips, place them, Export Project | stays `matched`, `exported_at` set | `pipeline.mjs` `placeBrollAndExport()` |
-| `matched` + exported | Submagic webhook **or** the 5-minute poll | `rendered` | `router.mjs` / `pipeline.mjs` `pollFinished()` |
-| `rendered` | save our copy, buzz the phone | `awaiting_approval` | `pipeline.mjs` `saveFinishedAndNotify()` |
-| `awaiting_approval` | **Chris taps Approve or Reject** | `approved` / `rejected` | a person. Nothing else moves it. |
-| `approved` | folder `043`, the brief, the video | `delivered` | `pipeline.mjs` `deliverToPaul()` |
+| — | Drive `files.list` on SLO Ads every 5 minutes | `raw_landed` | `ad-video-sweeper.mjs` `detect()` |
+| `raw_landed` | `prepare` — **not built (9.5)**, waits | `prepared` | `pipeline.mjs` `NOT_BUILT_YET` |
+| `prepared` | `transcribe` — **not built (§9.1 step 4)**, waits | `transcribed` | `pipeline.mjs` `NOT_BUILT_YET` |
+| `transcribed` | match the words to a script; take number from "Take N" in the name, else the next free number (`store.nextFreeTakeNo`). The raw file is **not** renamed | `matched` | `pipeline.mjs` `matchAndRename()` |
+| `matched` | `planCut` — **not built (9.2)**, waits | `cut` or `merged` | `pipeline.mjs` `NOT_BUILT_YET` |
+| `cut` | `buildMaster` — **not built (9.3)**, waits | `staged` (or back to `transcribed`) | `pipeline.mjs` `NOT_BUILT_YET` |
+| `staged` | Submagic create, `autoRender:false` | `editing` | `pipeline.mjs` `submagicCreate()` |
+| `editing` | claimed export with **no** Submagic b-roll, then webhook or poll. A row with no `cut_at` and no export (old order) waits and is never exported | `rendered` | `pipeline.mjs` `captionAndExport()` |
+| `rendered` | `animate` — **not built (9.4)**, waits | `animated` | `pipeline.mjs` `NOT_BUILT_YET` |
+| `animated` | mint the approval link, save, buzz | `awaiting_approval` | `ad-video-sweeper.mjs` `approvalLinks()` + `pipeline.mjs` `saveFinishedAndNotify()` |
+| `awaiting_approval` | **Chris taps Approve, Reject or an edit** | `approved` / `rejected` / `cut` / `editing` / `rendered` | a person. No worker step. |
+| `approved` | the finished-ads folder | `delivered` | `pipeline.mjs` `deliverToPaul()` |
+| `delivered` | Load all approved — **not built (M4)** | `loaded` | — |
+| `failed` | **Retry** (a person) | `last_good_status` | `store.mjs` `retryFailed()` |
+
+**The locks in the database (416):** `ad_videos_one_finished_uq` — one of
+approved, delivered or loaded per ad. `ad_videos_one_master_uq` — one of cut,
+staged, editing, rendered, animated or awaiting_approval per ad.
+`ad_videos_identified_ck` — only scripted, filming, raw_landed, prepared,
+transcribed and failed may be missing an ad number.
+
+**The pace.** A pass moves up to 40 rows (`DEFAULT_BATCH`, `TAKES_PER_PASS`) and
+stops starting new ones at 12 minutes (`PASS_BUDGET_MS`).
+
+**Rows caught mid-pipeline by the change** are moved once by
+`scripts/ad-videos-move-in-flight-9-1.mjs` (dry run first): editing,
+transcribed, and staged or matched with no export go back to `raw_landed`, with
+the old Submagic project id kept in `last_step_note`; matched with an export
+goes to `editing` so the paid export is polled. It builds
+`ad_videos_one_master_uq` and validates `ad_videos_identified_ck` if 416 could
+not, and it never picks between two takes of one ad.
 
 ---
 
-## Two places the code does not match the plan
+## Gaps between intended and actual (CLAUDE.md §4)
 
-Both are recorded rather than reconciled (CLAUDE.md §4).
-
-**1. Two states swapped places.** The plan puts `transcribed` before Submagic,
-because it was written against Deepgram. The owner's decision of 2026-09-22
-replaced Deepgram with Submagic's own word-level transcript, and that transcript
-does not exist until the project has been created. So:
-
-* plan: `staged → transcribed → matched → editing`
-* code: `staged → editing → transcribed → matched`
-
-No state is added, removed or renamed. The database's status list is untouched.
+* **Five steps are not built yet** (prepare, transcribe, planCut, buildMaster,
+  animate). A take stops at `raw_landed` today and says why. Steps 9.2–9.5 of
+  the spec build them.
+* **Delivery, loading, the edit and recut routes, one buzz per shoot and the
+  signed final link** are later steps (9.6, 9.7, M4). The states and moves for
+  them exist; the code that makes the moves does not.
+* **The brief is plain text, not a PDF** — see below.
 
 **2. The brief is plain text, not a PDF.** The plan names `043_brief.pdf`.
 `uploadTextFile()` writes text, and making a PDF would need a new dependency.
@@ -190,13 +218,12 @@ every update costing another export. So:
   Submagic has no list endpoint, so nothing can find out whether the first one
   landed and a person has to look. A standing export claim POLLS instead, which
   costs nothing and settles the question outright.
-* **a retry clears last run's marks.** `retryFailed()` puts the row back at
-  `staged`, and every step after staging skips when its own mark is already
-  set — so a retried take used to skip every step, write an empty patch, and sit
-  at `staged` for ever without saying so. It now clears the project id, the
-  transcript, the rename, the b-roll, the export, the render, the notification
-  and both claims. The inputs — the Drive file, the ad number, the take number,
-  the matched script — survive.
+* **a retry clears the failed step's marks.** Since 2026-10-05 `retryFailed()`
+  puts the row back at `last_good_status` and clears only that step's marks and
+  later ones (`STEP_MARKS` in `store.mjs`), including both spend claims when the
+  retry reaches the Submagic steps. A mark left standing would make its step
+  skip and write nothing for ever. The inputs — the Drive file, the ad number,
+  the take number, the matched script — survive.
 * AI B-roll is never asked for — 3 credits a clip against 15 credits a month is
   five clips for a hundred ads. `buildItems()` refuses the type outright.
 
@@ -255,7 +282,7 @@ always found nothing and answered "no take is waiting on this project".
 **Chris's notification had no buttons in it.** `approveUrl` and `rejectUrl` were
 both `null`, because the worker half had no token minter. `approvalLinks()` in
 the sweeper now mints one per row, a moment before that row's buzz goes out, and
-only while the row is still `rendered` — so a second mint cannot kill the link
+only while the row is still `animated` (it was `rendered` before 2026-10-05) — so a second mint cannot kill the link
 in the notification he is looking at right now.
 
 **Three approval doors became one.** Two of the three builders each built a way

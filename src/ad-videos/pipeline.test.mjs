@@ -16,7 +16,7 @@ import {
   advance, STATES, NEXT_STEP, checkResolution, buildBrief, FOUR_K_HEIGHT,
   stage, submagicCreate, readTranscript, matchAndRename,
   placeBrollAndExport, pollFinished, saveFinishedAndNotify, deliverToPaul,
-  recordSubmagicWebhook, renotify
+  recordSubmagicWebhook, renotify, takeFromName, captionAndExport, NOT_BUILT_YET
 } from "./pipeline.mjs";
 
 const NAMING = {
@@ -249,7 +249,7 @@ describe("match and rename", () => {
     transcript_words: [{ word: "most", startTime: 0, endTime: 0.3 }]
   });
 
-  test("THE RENAME ONLY HAPPENS AFTER THE MATCH", async () => {
+  test("no match, no number — and nothing is renamed", async () => {
     let renamed = false;
     const out = await matchAndRename(transcribed, {
       drive: { renameFile: async () => { renamed = true; return okish({ at: "2026-09-23T10:00:00Z" }); } },
@@ -258,8 +258,56 @@ describe("match and rename", () => {
       env: { ANTHROPIC_API_KEY: "" }
     });
     assert.equal(out.ok, false);
-    assert.equal(renamed, false,
-      "a file renamed on a guess looks like a fact to everybody downstream");
+    assert.equal(renamed, false);
+  });
+
+  test("THE RAW FILE IS NEVER RENAMED, even after a match (spec §9.1 step 5)", async () => {
+    let renamed = false;
+    const out = await matchAndRename(row({
+      status: "transcribed", transcript: "w", script_id: "s1", ad_id: "84", take_no: null,
+      drive_raw_name: "SLO Ad 1 Take 3.mp4"
+    }), {
+      drive: { renameFile: async () => { renamed = true; return okish({}); } },
+      naming: NAMING
+    });
+    assert.equal(out.ok, true);
+    assert.equal(out.patch.status, "matched");
+    assert.equal(renamed, false, "the raw library stays exactly as Chris dropped it");
+    assert.equal(out.patch.renamed_at, undefined);
+  });
+
+  test("the take number comes from \"Take N\" in the file name", async () => {
+    const out = await matchAndRename(row({
+      status: "transcribed", transcript: "w", script_id: "s1", ad_id: "84", take_no: null,
+      drive_raw_name: "SLO Ad 1 Take 3.mp4"
+    }), { nextTakeNo: async () => { throw new Error("must not be asked"); } });
+    assert.equal(out.patch.take_no, 3);
+  });
+
+  test("with no \"Take N\" it is the next free number for that ad — never 1 by default", async () => {
+    let asked = null;
+    const out = await matchAndRename(row({
+      status: "transcribed", transcript: "w", script_id: "s1", ad_id: "84", take_no: null,
+      drive_raw_name: "IMG_4471.mov", org_id: "org1"
+    }), { nextTakeNo: async (a) => { asked = a; return 4; } });
+    assert.equal(out.patch.take_no, 4);
+    assert.deepEqual(asked, { orgId: "org1", adId: "84" });
+  });
+
+  test("with no \"Take N\" and no port it waits rather than guess", async () => {
+    const out = await matchAndRename(row({
+      status: "transcribed", transcript: "w", script_id: "s1", ad_id: "84", take_no: null,
+      drive_raw_name: "IMG_4471.mov"
+    }), {});
+    assert.equal(out.ok, false);
+    assert.equal(out.retryable, true);
+    assert.match(out.error, /never guessed/);
+  });
+
+  test("takeFromName reads the number and nothing else", () => {
+    assert.equal(takeFromName("SLO Ad 7 — Haynes Take 2.mp4"), 2);
+    assert.equal(takeFromName("IMG_4471.mov"), null);
+    assert.equal(takeFromName(null), null);
   });
 
   test("a script with no ad number stops the row and says why", async () => {
@@ -270,11 +318,75 @@ describe("match and rename", () => {
     assert.match(out.error, /ad number must exist before filming/);
   });
 
-  test("with an id and a name already on the row it does nothing", async () => {
+  test("already matched: it moves on to matched instead of sitting at transcribed", async () => {
     const out = await matchAndRename(row({
-      status: "transcribed", transcript: "w", script_id: "s1", renamed_at: "2026-09-23T10:00:00Z"
+      status: "transcribed", transcript: "w", script_id: "s1", take_no: 2
     }), {});
-    assert.equal(out.skipped, true);
+    assert.equal(out.ok, true);
+    assert.deepEqual(out.patch, { status: "matched" });
+    assert.equal(out.note, "already matched");
+  });
+});
+
+describe("the marketing-machine order (spec §9.1)", () => {
+  test("the steps later parts of the spec build WAIT and say who builds them", async () => {
+    for (const [state, name] of [
+      ["raw_landed", "prepare"], ["prepared", "transcribe"], ["matched", "planCut"],
+      ["cut", "buildMaster"], ["rendered", "animate"]
+    ]) {
+      const out = await advance(row({ status: state }), {});
+      assert.equal(out.step, name);
+      assert.equal(out.ok, false);
+      assert.equal(out.retryable, true, `${name} must wait, not fail`);
+      assert.deepEqual(out.patch, {}, `${name} must not move the take`);
+      assert.match(out.error, /not built yet — .*spec §9\./);
+      assert.ok(NOT_BUILT_YET[name]);
+    }
+  });
+
+  test("an old-order take at editing with no cut is NOT exported", async () => {
+    let exported = false;
+    const out = await captionAndExport(row({ status: "editing", submagic_project_id: "p1" }), {
+      claim: async () => true,
+      submagic: { exportProject: async () => { exported = true; return okish({}); } }
+    });
+    assert.equal(exported, false, "an uncut raw take must never be billed a render");
+    assert.equal(out.ok, false);
+    assert.match(out.error, /old order/);
+  });
+
+  test("an old-order take whose export was already asked for is POLLED, not exported again", async () => {
+    let exported = false;
+    const out = await captionAndExport(row({
+      status: "editing", submagic_project_id: "p1", exported_at: "2026-09-24T00:00:00Z"
+    }), {
+      submagic: {
+        exportProject: async () => { exported = true; return okish({}); },
+        getProject: async () => okish({ status: "completed", downloadUrl: "https://real.test/o.mp4" })
+      }
+    });
+    assert.equal(exported, false);
+    assert.equal(out.patch.status, "rendered");
+  });
+
+  test("a cut master is exported with NO Submagic b-roll — our animations go on last", async () => {
+    let placed = false;
+    let exported = false;
+    const out = await captionAndExport(row({
+      status: "editing", submagic_project_id: "p1", cut_at: "2026-10-05T00:00:00Z",
+      transcript_words: [{ word: "approval", startTime: 1, endTime: 1.4 }]
+    }), {
+      claim: async () => true,
+      brollLibrary: [{ name: "approval.mp4", mimeType: "video/mp4", url: "https://x/a.mp4" }],
+      submagic: {
+        uploadUserMedia: async () => { placed = true; return okish({ userMediaId: "m1" }); },
+        updateProject: async () => { placed = true; return okish({}); },
+        exportProject: async () => { exported = true; return okish({}); }
+      }
+    });
+    assert.equal(placed, false);
+    assert.equal(exported, true);
+    assert.ok(out.patch.exported_at);
   });
 });
 

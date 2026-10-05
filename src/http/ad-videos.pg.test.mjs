@@ -116,7 +116,7 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
         "without FORCE the table owner bypasses every policy, including the token door");
     });
 
-    test("the status check names exactly the thirteen states the code knows", async () => {
+    test("the status check names every state the code knows (416)", async () => {
       const def = (await db.query(
         `SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint
           WHERE conname = 'ad_videos_status_ck'`
@@ -156,13 +156,14 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
       // The build rule from the plan's §8, and the whole reason this table has
       // a partial unique index rather than a comment asking people to be careful.
       const first = await make({ status: "awaiting_approval" });
+      const a = await asStaff((tx) => approve(tx, { orgId: org, id: first.id, approvedBy: "chris" }));
+      assert.equal(a.status, "approved");
+
+      // A second master may exist once the first is no longer a master (416).
       const second = await asStaff((tx) => nextTake(tx, {
         orgId: org, partnerId: partner, adId: first.ad_id, status: "awaiting_approval"
       }));
       assert.equal(second.take_no, 2);
-
-      const a = await asStaff((tx) => approve(tx, { orgId: org, id: first.id, approvedBy: "chris" }));
-      assert.equal(a.status, "approved");
 
       await assert.rejects(
         asStaff((tx) => approve(tx, { orgId: org, id: second.id, approvedBy: "chris" })),
@@ -171,6 +172,46 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
             "a second finished video for one ad number must be refused by the database");
           return true;
         }
+      );
+    });
+
+    test("ONE MASTER PER AD while it is being made (416 ad_videos_one_master_uq)", async () => {
+      const first = await make({ status: "cut" });
+      await assert.rejects(
+        asStaff((tx) => nextTake(tx, {
+          orgId: org, partnerId: partner, adId: first.ad_id, status: "awaiting_approval"
+        })),
+        (err) => { assert.equal(err.code, "23505", "two masters for one ad must be refused"); return true; }
+      );
+      // A later take that is merged into the master is fine.
+      const merged = await asStaff((tx) => nextTake(tx, {
+        orgId: org, partnerId: partner, adId: first.ad_id, status: "merged"
+      }));
+      assert.equal(merged.status, "merged");
+    });
+
+    test("a recut approval supersedes the old finished video in the same transaction", async () => {
+      const old = await make({ status: "awaiting_approval" });
+      await asStaff((tx) => approve(tx, { orgId: org, id: old.id, approvedBy: "chris" }));
+      const recut = await asStaff((tx) => nextTake(tx, {
+        orgId: org, partnerId: partner, adId: old.ad_id, status: "awaiting_approval"
+      }));
+      const ok = await asStaff((tx) => approve(tx, {
+        orgId: org, id: recut.id, approvedBy: "chris", supersede: true
+      }));
+      assert.equal(ok.status, "approved");
+      const was = (await asStaff((tx) => tx.query(
+        `SELECT status FROM ad_videos WHERE id = $1`, [old.id]
+      ))).rows[0];
+      assert.equal(was.status, "superseded");
+    });
+
+    test("staged and editing now need an ad number (416 ad_videos_identified_ck)", async () => {
+      await assert.rejects(
+        asStaff((tx) => tx.query(
+          `INSERT INTO ad_videos (org_id, partner_id, status) VALUES ($1, $2, 'staged')`, [org, partner]
+        )),
+        (err) => { assert.equal(err.code, "23514"); return true; }
       );
     });
 
@@ -320,26 +361,26 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
         orgId: org, partnerId: partner, adId, takeNo: 1, driveFileId: fileId
       }));
       await asStaff((tx) => advance(tx, {
-        orgId: org, id: row.id, from: "raw_landed", to: "staged",
-        patch: { source_url: "https://example.invalid/take.mp4" }
+        orgId: org, id: row.id, from: "raw_landed", to: "prepared",
+        patch: { audio_storage_key: "audio/take.ogg" }
       }));
 
       const again = await asStaff((tx) => claimTake(tx, {
         orgId: org, partnerId: partner, adId, takeNo: 1, driveFileId: fileId
       }));
       assert.equal(again.created, false);
-      assert.equal(again.row.status, "staged", "the poll must not undo the stager's work");
+      assert.equal(again.row.status, "prepared", "the poll must not undo the worker's work");
     });
 
     test("a retried advance whose first run succeeded returns null rather than moving twice", async () => {
-      const row = await make({ status: "staged" });
+      const row = await make({ status: "prepared" });
       const first = await asStaff((tx) => advance(tx, {
-        orgId: org, id: row.id, from: "staged", to: "transcribed", patch: { transcript: "hello" }
+        orgId: org, id: row.id, from: "prepared", to: "transcribed", patch: { transcript: "hello" }
       }));
       assert.equal(first.status, "transcribed");
 
       const retry = await asStaff((tx) => advance(tx, {
-        orgId: org, id: row.id, from: "staged", to: "transcribed", patch: { transcript: "hello" }
+        orgId: org, id: row.id, from: "prepared", to: "transcribed", patch: { transcript: "hello" }
       }));
       assert.equal(retry, null, "a caller must read null as 'somebody already did this'");
     });
@@ -384,17 +425,17 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
     });
 
     test("a worker cannot set approved_at through a patch", async () => {
-      const row = await make({ status: "staged" });
+      const row = await make({ status: "prepared" });
       await assert.rejects(
         asStaff((tx) => advance(tx, {
-          orgId: org, id: row.id, from: "staged", to: "transcribed",
+          orgId: org, id: row.id, from: "prepared", to: "transcribed",
           patch: { approved_at: new Date() }
         })),
         (err) => { assert.equal(err.code, "unpatchable_column"); return true; }
       );
     });
 
-    test("the whole path walks scripted → delivered", async () => {
+    test("the whole path walks scripted → loaded (spec §9.1 order)", async () => {
       const adId = newAdId();
       const row = await asStaff((tx) => createTake(tx, {
         orgId: org, partnerId: partner, adId, takeNo: 1, status: "scripted"
@@ -403,11 +444,20 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
       const steps = [
         ["scripted", "filming", {}],
         ["filming", "raw_landed", { drive_raw_file_id: `walk-${adId}`, drive_raw_name: "IMG_1.mov" }],
-        ["raw_landed", "staged", { source_url: "https://example.invalid/t.mp4", storage_raw_key: "raw/x.mp4" }],
-        ["staged", "transcribed", { transcript: "Most people apply in the wrong order" }],
+        ["raw_landed", "prepared", {
+          recorded_at: new Date(), audio_storage_key: "audio/x.ogg",
+          silences: [{ start: 1.2, end: 1.5 }]
+        }],
+        ["prepared", "transcribed", {
+          transcript: "Most people apply in the wrong order",
+          transcript_words: [{ word: "Most", start: 0, end: 0.3 }]
+        }],
         ["transcribed", "matched", { match_confidence: 96 }],
-        ["matched", "editing", { submagic_project_id: `proj-${adId}` }],
-        ["editing", "rendered", { finished_url: "https://example.invalid/out.mp4", width: 1920, height: 1080 }]
+        ["matched", "cut", { cut_plan: { keep: [[0, 12.5]] }, cut_version: 1 }],
+        ["cut", "staged", { cut_storage_key: "cut/x.mp4", cut_at: new Date(), master_duration_seconds: 42.5 }],
+        ["staged", "editing", { submagic_project_id: `proj-${adId}` }],
+        ["editing", "rendered", { finished_url: "https://example.invalid/out.mp4", width: 1920, height: 1080 }],
+        ["rendered", "animated", { animation_items: [{ template: "Stat", at: 3 }], animated_at: new Date() }]
       ];
       let at = "scripted";
       for (const [from, to, patch] of steps) {
@@ -416,7 +466,7 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
         assert.equal(got.status, to);
         at = to;
       }
-      assert.equal(at, "rendered");
+      assert.equal(at, "animated");
 
       const armed = await asStaff((tx) => armForApproval(tx, {
         orgId: org, id: row.id, token: "a".repeat(48), expiresAt: new Date(Date.now() + 3600e3)
@@ -436,10 +486,17 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
 
       const finished = await asStaff((tx) => finishedTake(tx, { orgId: org, adId }));
       assert.equal(finished.id, row.id);
+
+      const loaded = await asStaff((tx) => advance(tx, {
+        orgId: org, id: row.id, from: "delivered", to: "loaded", patch: { loaded_at: new Date() }
+      }));
+      assert.equal(loaded.status, "loaded");
+      const stillFinished = await asStaff((tx) => finishedTake(tx, { orgId: org, adId }));
+      assert.equal(stillFinished.id, row.id, "a loaded ad is still the ad's one finished video");
     });
 
     test("approving spends the token", async () => {
-      const row = await make({ status: "rendered" });
+      const row = await make({ status: "animated" });
       await asStaff((tx) => armForApproval(tx, {
         orgId: org, id: row.id, token: "b".repeat(48), expiresAt: new Date(Date.now() + 3600e3)
       }));
@@ -451,14 +508,16 @@ describe("GET /api/ad-videos", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
       assert.equal(raw.approval_expires_at, null);
     });
 
-    test("a failure can be retried back to staged", async () => {
+    test("a failure is retried back to the step it failed at (last_good_status)", async () => {
       const row = await make({ status: "editing" });
-      await asStaff((tx) => markFailed(tx, {
+      const failed = await asStaff((tx) => markFailed(tx, {
         orgId: org, id: row.id, from: "editing", reason: "Submagic timed out"
       }));
+      assert.equal(failed.last_good_status, "editing");
       const back = await asStaff((tx) => retryFailed(tx, { orgId: org, id: row.id }));
-      assert.equal(back.status, "staged");
+      assert.equal(back.status, "editing");
       assert.equal(back.failure_reason, null, "the old reason must not stick to a retried row");
+      assert.equal(back.last_good_status, null);
     });
 
     test("a rejection ends this take and the re-film is a NEW row", async () => {

@@ -63,7 +63,10 @@ const ROW_COLUMNS =
    submagic_project_id, finished_url, storage_final_key, finished_version,
    paul_folder_id, drive_final_file_id, approval_expires_at, approved_at,
    approved_by, rejected_reason, failure_reason, created_at, updated_at,
-   last_step, last_step_note, last_step_at`;
+   last_step, last_step_note, last_step_at,
+   recorded_at, source_take_ids, late, hold_reason, cut_version, cut_at,
+   master_duration_seconds, animated_at, edit_round, last_good_status,
+   loaded_at, load_error`;
 
 const FULL_COLUMNS = `${ROW_COLUMNS}, transcript, source_url`;
 
@@ -86,7 +89,17 @@ const PATCHABLE = new Set([
   "drive_raw_file_id", "drive_raw_name", "width", "height", "duration_seconds",
   "storage_raw_key", "source_url", "transcript", "match_confidence",
   "submagic_project_id", "finished_url", "storage_final_key", "finished_version",
-  "paul_folder_id", "drive_final_file_id", "failure_reason", "rejected_reason"
+  "paul_folder_id", "drive_final_file_id", "failure_reason", "rejected_reason",
+
+  /* 416 — what the new steps learn (spec §9.1). edit_round and
+     last_good_status are NOT here: an edit and a failure move them through
+     their own functions, so a worker cannot rewrite where Retry goes. */
+  "recorded_at", "audio_storage_key", "silences",
+  "source_take_ids", "late", "hold_reason",
+  "cut_plan", "cut_version", "cut_storage_key", "cut_at", "master_duration_seconds",
+  "submagic_storage_key", "animation_items", "animated_at", "caption_fixes",
+  "meta_video_id", "meta_creative_id", "meta_ad_external_id", "ad_row_id",
+  "loaded_at", "load_error"
 
   /* THE MARKS A WORKER LEAVES are NOT repeated here. They are added to this
      same Set by the `WORKER_MARKS` loop further down this file, next to the
@@ -112,7 +125,14 @@ const PATCHABLE = new Set([
    note rides on the same UPDATE, the row said nothing at all. `transcript_words`
    was the first jsonb column this store ever wrote, so nothing had covered it.
    JSON.stringify first and Postgres casts the text to jsonb itself. */
-const JSON_COLUMNS = new Set(["transcript_words"]);
+const JSON_COLUMNS = new Set([
+  "transcript_words",
+  /* 416: the pauses the worker found, the cut plan, our animations and the
+     caption words Chris fixed. All jsonb, all sent as JSON text for the same
+     reason. source_take_ids is a uuid[] and is NOT here: node-postgres sends a
+     JavaScript array as a Postgres array, which is what that column wants. */
+  "silences", "cut_plan", "animation_items", "caption_fixes"
+]);
 
 function buildPatch(patch, startIndex) {
   const sets = [];
@@ -231,7 +251,7 @@ export async function lastTakeNo(tx, { orgId, adId }) {
 export async function finishedTake(tx, { orgId, adId }) {
   const r = await tx.query(
     `SELECT ${ROW_COLUMNS} FROM ad_videos
-      WHERE org_id = $1 AND ad_id = $2 AND status IN ('approved', 'delivered')`,
+      WHERE org_id = $1 AND ad_id = $2 AND status IN ('approved', 'delivered', 'loaded')`,
     [orgId, normalizeAdId(adId)]
   );
   return r.rows[0] || null;
@@ -385,9 +405,11 @@ export async function markFailed(tx, { orgId, id, from, reason }) {
       "a failure must say why — a status of failed with no reason is the silence this table exists to prevent");
   }
   transition(from, "failed");
+  /* last_good_status is where Retry will put the take back (spec §9.1). It is
+     the state the failing step RAN at, so the retry runs that step again. */
   const r = await tx.query(
     `UPDATE ad_videos
-        SET status = 'failed', failure_reason = $4
+        SET status = 'failed', failure_reason = $4, last_good_status = $3
       WHERE id = $1 AND org_id = $2 AND status = $3
       RETURNING ${FULL_COLUMNS}`,
     [id, orgId, from, words]
@@ -395,67 +417,88 @@ export async function markFailed(tx, { orgId, id, from, reason }) {
   return r.rows[0] || null;
 }
 
-/* The marks a retry has to wipe, and the reason wiping them is the whole fix.
-   Ordered the way the pipeline runs, so a reader can follow it.
+/* RETRY, PER STEP (spec §9.1, 2026-10-05).
 
-   ═══════════════════════════════════════════════════════════════════════════
-   WITHOUT THIS LIST A RETRIED TAKE NEVER MOVES AGAIN.
+   Retry used to put every failed take back at `staged` and wipe everything
+   after it. In the new order that is wrong twice over: staged now means "the
+   cut master is built", so a take that failed while it was being prepared
+   would skip its own step, and a take that failed at the export would throw
+   away a cut that was fine.
 
-   retryFailed() puts the row back at `staged`, and the step that runs at
-   `staged` is submagicCreate(). That step's first line is "have I already got a
-   project id? then skip" — and a take that failed at, say, the export still has
-   its project id. So it skips, returns an EMPTY patch, and because the patch is
-   empty the sweeper writes nothing and the status never moves. The row sits at
-   `staged` forever, on every pass, silently. The same trap waits at every later
-   step: a stale transcript stalls the transcriber, a stale renamed_at stalls the
-   matcher, a stale exported_at sends the exporter to poll a render that was
-   never asked for.
+   So a take goes back to the state it failed FROM (last_good_status, written
+   by markFailed) and only the marks that step and the steps after it leave
+   are cleared. A step that finds its own mark still standing reads "already
+   done" and skips, and a skip writes nothing — that is how a retried take used
+   to sit still for ever, so this list has to cover every such mark.
 
-   So a retry clears everything downstream of staging. The raw file in Drive and
-   the row's identity (ad_id, take_no, script_id) survive, because those are the
-   inputs, not the work. script_id in particular is kept on purpose: the match
-   is the expensive, model-driven step and the transcript it was made from is
-   about to be read again from a project that says the same words.
+   The inputs survive every retry: the raw file in Drive and the row's
+   identity (ad_id, take_no, script_id). The match is kept on purpose; the
+   under-50% rematch (cut → transcribed) is the move that clears it.
 
-   THE TWO SPEND CLAIMS ARE HERE FOR A SECOND REASON. A claim standing with no
-   result is how the pipeline refuses to pay twice after a crash, and it is
-   DELIBERATELY unclearable by any worker. A person retrying the take is the
-   one act that says "I have looked, go again" — so this is the only place they
-   come off. See migration 391 and the header of src/ad-videos/pipeline.mjs. */
-const RETRY_CLEARS = Object.freeze([
-  "submagic_claimed_at", "submagic_project_id",
-  "transcript", "transcript_words",
-  "renamed_at",
-  "broll_placed_at", "broll_count", "broll_notes",
-  "export_claimed_at", "exported_at",
-  "rendered_at", "finished_url", "storage_final_key", "save_note",
-  "notified_at", "notify_error",
-  "delivery_note"
+   THE TWO SPEND CLAIMS come off here and nowhere else. A claim standing with no
+   result is how the pipeline refuses to pay twice after a crash, and a person
+   retrying the take is the one act that says "I have looked, go again". See
+   migration 391 and the header of src/ad-videos/pipeline.mjs. */
+const STEP_MARKS = Object.freeze([
+  ["raw_landed",        ["recorded_at", "audio_storage_key", "silences"]],
+  ["prepared",          ["transcript", "transcript_words"]],
+  ["transcribed",       ["renamed_at"]],
+  ["matched",           ["cut_plan", "hold_reason"]],
+  ["cut",               ["cut_storage_key", "cut_at", "master_duration_seconds"]],
+  ["staged",            ["submagic_claimed_at", "submagic_project_id"]],
+  ["editing",           ["broll_placed_at", "broll_count", "broll_notes",
+                         "export_claimed_at", "exported_at",
+                         "rendered_at", "finished_url", "submagic_storage_key"]],
+  ["rendered",          ["animated_at", "storage_final_key", "save_note"]],
+  ["animated",          ["notified_at", "notify_error"]],
+  ["awaiting_approval", []],
+  ["approved",          ["delivery_note"]]
 ]);
+const STEP_ORDER = STEP_MARKS.map(([s]) => s);
+
+/* Where a take with no last_good_status goes: it failed before migration 416
+   wrote one, under the old order, so it starts over from the raw file. */
+export const RETRY_FALLBACK = "raw_landed";
+
+/** The marks a retry back to `status` clears: that step's and every later one. */
+export function retryClears(status) {
+  const at = STEP_ORDER.indexOf(status);
+  /* scripted and filming come before any worker, so a retry there clears all.
+     An unknown state never gets here — transition() refuses it first. */
+  const from = at === -1 ? 0 : at;
+  return Object.freeze(STEP_MARKS.slice(from).flatMap(([, cols]) => cols));
+}
+
+/* Every mark any retry can clear, for src/ad-videos/store-retry.test.mjs. */
+const RETRY_CLEARS = Object.freeze(retryClears(RETRY_FALLBACK));
 
 /**
- * Put the take back in the queue after a failure — the diagram's "retry the
- * broken step" arrow. Back to `staged`, because the raw file in Drive is the
- * one input that still exists after any later step died, and everything after
- * staging is derived from it.
+ * Put the take back in the queue after a failure — the Retry button.
  *
- * Which is exactly why everything after staging is cleared here. See
- * RETRY_CLEARS above: a retry that leaves last run's marks standing is not a
- * retry, it is a take that stalls at `staged` and never says so.
+ * Back to last_good_status, with only that step's marks and later ones cleared
+ * (see STEP_MARKS above). A person asks for this, so the move is made as one:
+ * last_good_status may be `approved`, which only a person may move a take to.
  *
- * Costs a second Submagic project, and that is the right trade: a person asked
- * for this, the old project's render is the one that failed, and 30 creates an
- * hour is not the constraint a hand-driven retry runs into.
+ * Returns null when the row is not failed any more (somebody else retried it).
  */
 export async function retryFailed(tx, { orgId, id }) {
-  transition("failed", "staged");
-  const cleared = RETRY_CLEARS.map((c) => `${c} = NULL`).join(", ");
+  const cur = await tx.query(
+    `SELECT last_good_status FROM ad_videos
+      WHERE id = $1 AND org_id = $2 AND status = 'failed'`,
+    [id, orgId]
+  );
+  if (!cur.rows[0]) return null;
+  const to = cur.rows[0].last_good_status || RETRY_FALLBACK;
+  transition("failed", to, { by: "human" });
+
+  const cleared = retryClears(to).map((c) => `${c} = NULL`);
+  const sets = ["status = $3", "failure_reason = NULL", "last_good_status = NULL", ...cleared];
   const r = await tx.query(
     `UPDATE ad_videos
-        SET status = 'staged', failure_reason = NULL, ${cleared}
+        SET ${sets.join(", ")}
       WHERE id = $1 AND org_id = $2 AND status = 'failed'
       RETURNING ${FULL_COLUMNS}`,
-    [id, orgId]
+    [id, orgId, to]
   );
   return r.rows[0] || null;
 }
@@ -472,7 +515,7 @@ export { RETRY_CLEARS as RETRY_CLEARS_FOR_TEST };
  * before any notification goes out. A notification carrying a token the row
  * does not yet hold is a link that 404s on the one tap that matters.
  */
-export async function armForApproval(tx, { orgId, id, from = "rendered", token, expiresAt, patch = {} }) {
+export async function armForApproval(tx, { orgId, id, from = "animated", token, expiresAt, patch = {} }) {
   transition(from, "awaiting_approval");
   const { sets, params } = buildPatch(patch, 6);
   const assignments = [
@@ -498,13 +541,38 @@ export async function armForApproval(tx, { orgId, id, from = "rendered", token, 
  * into `approved`, and this function is only ever reached from a request a
  * person made. The phone tap is the other door and lives in token.mjs.
  */
-export async function approve(tx, { orgId, id, approvedBy }) {
+export async function approve(tx, { orgId, id, approvedBy, supersede = false }) {
   const who = String(approvedBy == null ? "" : approvedBy).trim().slice(0, 120);
   if (!who) {
     throw new AdVideoStoreError("approver_required",
       "an approval must name who gave it — 389 refuses an approved_at with no approved_by");
   }
   transition("awaiting_approval", "approved", { by: "human" });
+
+  /* A RECUT (spec §9.1 step 6). Approving the new master moves the ad's old
+     finished video to `superseded` IN THIS SAME TRANSACTION, so
+     ad_videos_one_finished_uq never sees two. Without `supersede: true` the
+     index refuses the second finished video, as it always has. The new row is
+     checked and locked first, so an approval that is not going to happen never
+     supersedes anything. */
+  if (supersede) {
+    const target = await tx.query(
+      `SELECT ad_id FROM ad_videos
+        WHERE id = $1 AND org_id = $2 AND status = 'awaiting_approval'
+        FOR UPDATE`,
+      [id, orgId]
+    );
+    if (!target.rows[0]) return null;
+    for (const from of ["approved", "delivered", "loaded"]) transition(from, "superseded", { by: "human" });
+    await tx.query(
+      `UPDATE ad_videos
+          SET status = 'superseded'
+        WHERE org_id = $1 AND ad_id = $2 AND id <> $3
+          AND status IN ('approved', 'delivered', 'loaded')`,
+      [orgId, target.rows[0].ad_id, id]
+    );
+  }
+
   const r = await tx.query(
     `UPDATE ad_videos
         SET status = 'approved', approved_at = now(), approved_by = $3,
@@ -572,7 +640,8 @@ export async function markDelivered(tx, { orgId, id, paulFolderId, driveFinalFil
    src/ad-videos/pipeline.mjs — src/ad-videos/store-sweeper.test.mjs fails if
    the two lists drift apart. */
 export const PENDING_STATES = Object.freeze([
-  "raw_landed", "staged", "editing", "transcribed", "matched", "rendered", "approved"
+  "raw_landed", "prepared", "transcribed", "matched", "cut", "staged",
+  "editing", "rendered", "animated", "approved"
 ]);
 
 /* The marks a step leaves, added by 390. Patchable, unlike status and the
@@ -592,7 +661,9 @@ const WORKER_MARKS = Object.freeze([
      including one that waited and moved nothing — a take that retries in
      silence looks identical to a take nobody is touching, and that is how the
      first pilot take sat at `staged` with no explanation. */
-  "last_step", "last_step_note", "last_step_at"
+  "last_step", "last_step_note", "last_step_at",
+  /* The video worker's claim on a row (416, spec §9.5). */
+  "worker_job_id", "worker_job_type", "worker_claimed_at"
 ]);
 for (const c of WORKER_MARKS) PATCHABLE.add(c);
 
@@ -615,6 +686,12 @@ const PENDING_COLUMNS = `
      state of a stalled take is readable from the same query that lists it,
      rather than needing a second look at a column nothing returns. */
   v.last_step, v.last_step_note, v.last_step_at,
+  /* What the new steps read and write (416, spec §9.1). */
+  v.recorded_at, v.audio_storage_key, v.silences, v.source_take_ids, v.late,
+  v.hold_reason, v.cut_plan, v.cut_version, v.cut_storage_key, v.cut_at,
+  v.master_duration_seconds, v.submagic_storage_key, v.animation_items,
+  v.animated_at, v.caption_fixes, v.edit_round, v.last_good_status,
+  v.worker_job_id, v.worker_job_type, v.worker_claimed_at,
   /* The token, so a buzz can be tried again with the links already sent. */
   v.approval_token,
   s.title, s.hook_text, s.body AS script_body`;
@@ -871,6 +948,18 @@ export async function candidateScripts(db, { limit = 400 } = {}) {
 }
 
 /**
+ * nextFreeTakeNo(db, { orgId, adId }) → the next take number for this ad.
+ *
+ * The matcher's port for a file with no "Take N" in its name (spec §9.1 step
+ * 5). It used to default to 1, which collided on ad_videos_take_uq the moment a
+ * second unnamed take of the same ad landed. The unique index still refuses a
+ * real race loudly, and the next pass asks again.
+ */
+export async function nextFreeTakeNo(db, { orgId, adId }) {
+  return asStaff(async (tx) => (await lastTakeNo(tx, { orgId, adId })) + 1, { db });
+}
+
+/**
  * mintApprovalLink(db, { orgId, id }) → { token, expiresAt } or null.
  *
  * The credential that goes in the phone notification, written on the row
@@ -879,13 +968,15 @@ export async function candidateScripts(db, { limit = 400 } = {}) {
  *
  * WHY THIS AND NOT armForApproval(). armForApproval moves the row to
  * awaiting_approval in the same statement, and the buzz has to be sent while
- * it is still `rendered` — the notification is what carries the link. So this
+ * it is still `animated` — the notification is what carries the link. So this
  * writes the token only, and the pipeline's own patch makes the state move a
  * moment later through patch() above, past the state machine, as usual.
  *
- * `AND status = 'rendered'` is what keeps this from re-arming a take that is
+ * `AND status = 'animated'` is what keeps this from re-arming a take that is
  * already waiting on Chris: a second mint would kill the link in the
- * notification he is looking at right now.
+ * notification he is looking at right now. It was `rendered` until 416: the
+ * link is now minted on the move from `animated`, because Chris approves the
+ * finished file with the animations on (spec §9.1 step 12).
  */
 export async function mintApprovalLink(db, { orgId = null, id, ttlHours } = {}) {
   const { token, expiresAt } = mintApprovalToken(
@@ -896,7 +987,7 @@ export async function mintApprovalLink(db, { orgId = null, id, ttlHours } = {}) 
       `UPDATE ad_videos
           SET approval_token = $2, approval_expires_at = $3
         WHERE id = $1
-          AND status = 'rendered'
+          AND status = 'animated'
           AND ($4::uuid IS NULL OR org_id = $4)
         RETURNING id`,
       [id, token, expiresAt, orgId]
