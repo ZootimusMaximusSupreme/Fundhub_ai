@@ -110,6 +110,9 @@ export async function handleNoReply({ event, db, step, mint = mintDiscountLink }
   return { done: true, sent: true, clientId, sms, email, payUrl };
 }
 
+/** The journey runner's entry point (src/journeys/runner/registry.mjs). */
+export const handle = handleNoReply;
+
 export const sloNoReply197 = inngest.createFunction(
   { id: "slo-no-reply-197", name: "SLO — $147 offer when they do not reply" },
   { event: "slo.contact_started" },

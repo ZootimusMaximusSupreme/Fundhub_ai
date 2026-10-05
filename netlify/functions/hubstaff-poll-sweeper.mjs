@@ -1,4 +1,5 @@
 import { db } from "../../src/db.mjs";
+import { recordHeartbeat, itemCountOf } from "../../src/pulse/heartbeats.mjs";
 import { pollAndMergeHubstaff } from "../../src/shifts/hubstaff-ingest.mjs";
 
 export const SWEEP_CRON = "*/10 * * * *";
@@ -16,7 +17,12 @@ export async function sweepHubstaffPoll(dbConn, options = {}) {
 // function style, which rejects a { statusCode, body } object and re-runs the
 // pass. See src/http/scheduled-functions-return.test.mjs.
 export async function handler() {
+  const startedAt = new Date();
   const result = await sweepHubstaffPoll(db);
+  await recordHeartbeat(db, {
+    job: "hubstaff-poll-sweeper", runner: "netlify", startedAt,
+    outcome: result.ok ? "ok" : "error", itemCount: itemCountOf(result), error: result.error || null
+  });
   if (!result.ok) console.error(`[hubstaff-poll-sweeper] pass failed: ${result.error}`);
   else if (result.skipped && result.reason === "not_configured") { /* quiet */ }
   else if (result.merged > 0 || (result.fetch_errors && result.fetch_errors.length)) {

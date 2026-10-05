@@ -1,10 +1,20 @@
+-- 114_crm_agent_seed.sql
+--
+-- RESTORED 2026-10-05 (marketing machine M0 step 6, the CI fix; Chris: "Go").
+-- This is the renamed copy of 114_ghl_agent_seed.sql. 372_rename_legacy_crm_column_and_keys.sql
+-- moved the recorded key to this name. The 2026-10-04 text cleanup cut lines and
+-- code values out of the SQL below, so it did not run on an empty database (CI,
+-- scratch databases) or silently matched nothing. The SQL is restored word for
+-- word from the original. The original file is now a no-op so this runs once.
+-- Production already records both keys, so nothing here re-runs there.
+--
 --
 -- THE GAP. 037_agent_registry.sql seeded 14 codes sourced from the
 -- agent-editor.html mockup screen — mostly sample identities with no real
--- definition behind them. The actual business runs agents in 
--- Conversation AI / AI Agent actions, extracted verbatim from the Source
+-- definition behind them. The actual business runs agents in GoHighLevel
+-- Conversation AI / AI Agent actions, extracted verbatim from the GHL Source
 -- of Truth doc (AGENT-DEFINITIONS-EXTRACTED.txt). None of that content lived
--- in this database. This migration seeds it, under new codes (-*) so it
+-- in this database. This migration seeds it, under new codes (GHL-*) so it
 -- cannot collide with or overwrite 037's AG-*/OP-* rows regardless of
 -- whether those seeded in a given environment.
 --
@@ -13,7 +23,7 @@
 -- sort_order — and nothing else. It cannot hold:
 --   - a sender identity ("From: Josh at Fundhub" vs "From: Fundhub Billing")
 --   - whether the agent's own bot can book a calendar slot (Booking: ON/OFF)
--- - which triggers/STICKYs fire it (no column at all)
+--   - which GHL triggers/STICKYs fire it (no column at all)
 --   - a structured output schema for the two internal, non-messaging agents
 --     (Document Check, Recon), which emit JSON, not chat replies
 --   - a channel value covering "SMS + Email both" — the existing CHECK only
@@ -32,9 +42,9 @@
 ALTER TABLE agents
   ADD COLUMN IF NOT EXISTS from_name       text,
   ADD COLUMN IF NOT EXISTS booking_enabled boolean NOT NULL DEFAULT false,
- -- Raw trigger/STICKY identifiers, verbatim from the doc. Not the same
+  -- Raw GHL trigger/STICKY identifiers, verbatim from the doc. Not the same
   -- thing as agent-editor.html's canonical bus events (entry.captured etc.)
- -- — these are workflow STICKY names, kept as-is rather than mapped
+  -- — these are GHL workflow STICKY names, kept as-is rather than mapped
   -- onto a taxonomy the source document never used.
   ADD COLUMN IF NOT EXISTS trigger_events  jsonb NOT NULL DEFAULT '[]'::jsonb,
   -- Only Document Check and Recon use this: they answer in JSON, not chat.
@@ -46,7 +56,7 @@ ALTER TABLE agents
   CHECK (channel IS NULL OR channel IN ('sms', 'email', 'sms_email', 'voice', 'internal'));
 
 -- AGENT 6 (Repair / Fundhub Client Care) is referenced across the source doc
--- but has no definition block in it. No row is seeded for it — LEGACY-AGENT is a
+-- but has no definition block in it. No row is seeded for it — GHL-06 is a
 -- deliberate gap in the code sequence below, not an omission to fix later
 -- with an invented prompt.
 
@@ -59,7 +69,8 @@ SELECT o.id, v.code, v.name, v.agent_class, v.channel, 'draft',
   FROM orgs o
   CROSS JOIN (VALUES
 
- ('LEGACY-AGENT', 'Agent 1 — Lead Follow-up & Booking', 'client_facing', 'sms_email',
+    ('GHL-A1', 'Agent 1 — Lead Follow-up & Booking', 'client_facing', 'sms_email',
+     'ghl', 'BC-03: yes. v2 block: yes.', 'Josh at Fundhub', true,
      '["STICKY - S-04B Confirmation + Reminders (638406bd-a93f-40f2-bb74-328cfa5142bb)", "STICKY - S-05a No-Show Recovery (6fabebc4-25f3-43fd-8af4-e1d4c36a9962)"]'::jsonb,
      NULL,
 $prompt$PERSONALITY
@@ -80,7 +91,8 @@ One clarifying question maximum, then steer to booking or stop.
 Write like a person. Short sentences. One next step per message. STOP on a complaint, a legal threat, distress, or a serious issue you cannot resolve. On these: stop and end. No human takes over. For an objection about the offer, that is what the call is for, steer to booking.$prompt$,
      200),
 
- ('LEGACY-AGENT', 'Agent 2 — AR / Collections', 'client_facing', 'sms_email',
+    ('GHL-A2', 'Agent 2 — AR / Collections', 'client_facing', 'sms_email',
+     'ghl', 'BC-03: no. v2 block: yes (mainly billing fields: balance_due, invoice_status, service_delivered, days_overdue). Note: AR-01/02/03 published per Chris''s call; compliance pass remains open. Build Suggestive, compliance-review wording before it ever sends.',
      'Fundhub Billing', false,
      '["STICKY - AR-01 Billing First Notice (c48a3006-87c1-4c7c-b313-bffe94292bb1)", "STICKY - AR-02 Billing Reminder (b782382d-dc1b-4a4f-8a78-00b175c69c41)", "STICKY - AR-03 Billing Final Notice (789617f7-7180-4b3c-8024-8c30bd421e0f)"]'::jsonb,
      NULL,
@@ -100,7 +112,8 @@ STOP on: dispute, hardship, cannot pay, refund request, legal mention, contested
 OPEN ITEM (deferred): whether "payment-plan request" stays in the STOP list. A willing payer arguably should not be routed to collections. Revisit when the payment-plan flow is built.$prompt$,
      210),
 
- ('LEGACY-AGENT', 'Agent 3 — Non-Buyer & Nurture', 'client_facing', 'sms_email',
+    ('GHL-A3', 'Agent 3 — Non-Buyer & Nurture', 'client_facing', 'sms_email',
+     'ghl', 'BC-03: yes. v2 block: yes.', 'Josh at Fundhub', true,
      '["STICKY - N-01 Cold (c1172aa2-9a44-4eef-a439-8347457f60bd)", "STICKY - N-02 Warm (d7e27768-7c48-4329-80f4-f0b6a77980a1)", "STICKY - N-03 Hot (831135dd-175d-4854-b555-1d7582a30249)", "STICKY - N-04 Post-Funding (e7607d09-4882-470a-ac56-8ed216c573a8)"]'::jsonb,
      NULL,
 $prompt$PERSONALITY
@@ -131,7 +144,8 @@ One clarifying question maximum, then steer to booking or stop.
 Write like a person. Short sentences. One next step per message. STOP on a complaint, a dispute, a legal threat, or distress. On these: stop and end. No human takes over. For an objection or a money question, that is what the call is for, steer to booking. Repair-lane note: in-house repair fulfillment is decommissioned (outsourced). The repair lane stays valid only to the extent the repair downsell is still sold/booked in-house. If repair is fully off, drop the repair lane and run funding-only.$prompt$,
      220),
 
- ('LEGACY-AGENT', 'Agent 4 — Backend Pre-Call (replies only)', 'client_facing', 'sms_email',
+    ('GHL-A4', 'Agent 4 — Backend Pre-Call (replies only)', 'client_facing', 'sms_email',
+     'ghl', 'BC-03: yes. v2 block: yes. Note: AI BOT only on this agent. No AI SMS, change no sends. The drip keeps sending on its own; the agent only catches replies.',
      'Josh at Fundhub', false,
      '["STICKY - BS-EMAIL-FUNDING-72HR (86dfbeb1-ab51-49ef-9580-1bd5ebe96875)", "STICKY - BS-EMAIL-REPAIR-72HR (d75c911e) — DECOMMISSIONED, no wiring"]'::jsonb,
      NULL,
@@ -153,7 +167,8 @@ One clarifying question maximum, then steer back to the call or stop.
 Write like a person. Short sentences. One next step per message. STOP on a complaint, a legal threat, distress, or a real objection you cannot resolve. On these: stop and end. No human takes over. For a money, amount, or eligibility question, that is what the call covers, point them back to it.$prompt$,
      230),
 
- ('LEGACY-AGENT', 'Agent 5 — Onboarding & Doc-Chasing', 'client_facing', 'sms_email',
+    ('GHL-A5', 'Agent 5 — Onboarding & Doc-Chasing', 'client_facing', 'sms_email',
+     'ghl', 'BC-03: no. v2 block: yes.', 'Fundhub Onboarding', false,
      '["STICKY - F-02 Portal / ID Missing (4deadbb0-4749-45e5-a1b7-59ccb3d46f4a)", "STICKY - F-06 Doc Request (6e296a07-a758-49cb-ac71-686b1ec1da54)", "STICKY - F-10 Inbox Forwarding (b76f38d2-057f-481b-a0e4-13d88fe8ab19)"]'::jsonb,
      NULL,
 $prompt$PERSONALITY
@@ -175,7 +190,8 @@ Ask at most one clarifying question. If you still cannot tell what they need, st
 Write like a person. Short sentences. One next step per message. STOP on any money or eligibility question, a complaint, or if you still cannot help after one try. On these: stop and end. No human takes over.$prompt$,
      240),
 
- ('LEGACY-AGENT', 'Agent 7 — Affiliate Re-engagement', 'client_facing', 'sms_email',
+    ('GHL-A7', 'Agent 7 — Affiliate Re-engagement', 'client_facing', 'sms_email',
+     'ghl', 'BC-03: no. v2 credit block: NO, uses live affiliate fields instead.',
      'Fundhub Partners', false,
      '["STICKY - AF-06 Reactivation (c41e76ce-ff44-4cc8-bb93-530a65f6b09e)", "STICKY - AF-01 Activation (af040b7e) — no wiring (field-setter; only send is optional/deferred)"]'::jsonb,
      NULL,
@@ -199,7 +215,8 @@ Write like a person. Short, upbeat, one easy next step. STOP on a payout or bala
 Affiliate fields: affiliate_tier_level, affiliate_balance_due, affiliate_payout_status, affiliate_total_leads, direct_downline_count, affiliate_last_activity_date.$prompt$,
      250),
 
- ('DOC-CHECK', 'Document Check', 'client_facing', 'internal',
+    ('GHL-DOC', 'Document Check', 'client_facing', 'internal',
+     'ghl', 'Config: AI Agent action inside its own workflow. Template Build Your Own, Model GPT-5.2 (Medium thinking), Conversation Memory OFF, Tools None, Output Format JSON, Draft/OFF. Reads uploaded ID / proof of address / Articles, confirms clear and correct, helps fix, flags off. Image reading ON.',
      NULL, false,
      '["TRG Tag Added: docs:uploaded"]'::jsonb,
      '{"outcome": "accept, request_more, or hold", "documents_reviewed": ["list what you saw"], "issues": ["each problem in one line, empty if none"], "message_to_client": "what to tell the client, only if request_more", "hold_reason": "one line, only if hold"}'::jsonb,
@@ -211,12 +228,13 @@ Passport, used only as the identity document when the ID address is stale. The n
 Articles of Incorporation. The business name must match the business on file. Check every document for quality first: fully in frame, all corners, no glare, not blurry, legible. If a document is blurry, cut off, or unreadable, set the outcome to request_more and tell them to retake it clearly or download a PDF. Then check consistency: names match, DOB matches, the address on the ID and the proof of address match and are current, the business name on the Articles matches. If the client seems confused about how to get a document, explain it in plain, patient language: what counts as a utility bill and how to download one as a PDF, where to get Articles of Incorporation from their state, and that a passport can stand in for the ID. EIN is a number we collect, not a document. Decide the outcome. accept: everything is present, legible, consistent, and the address is current and matching. request_more: something is missing, unclear, stale, or does not match, say exactly what the client needs to fix or send. hold: a document looks altered, the identity or business does not match the client, or the data conflicts in a way a human should review. Be specific and kind. Never approve a document you cannot clearly read.$prompt$,
      260),
 
- ('LEGACY-AGENT', 'Recon', 'client_facing', 'internal',
+    ('GHL-RECON', 'Recon', 'client_facing', 'internal',
+     'ghl', 'Config: AI Agent action inside its own workflow. Template Build Your Own, Model GPT-5.2 (Medium thinking), Conversation Memory OFF, Tools None, Output Format JSON, Draft/OFF. Watches system health; when HX or DPC flags a break/stall, triages and emails plus texts Chris. Never fixes, never messages a client. Image reading OFF.',
      NULL, false,
      '["TRG Tag Added: recon:flag"]'::jsonb,
      '{"severity": "high, medium, low, or suppress", "what_broke": "one line", "where": "workflow and contact name or id", "likely_cause": "one line", "next_step": "one line, the fix"}'::jsonb,
 $prompt$INSTRUCTIONS
-You are Recon, the health watchdog for fundhub. A Health or Progress workflow flagged this contact because something may have broken or stalled. Read the contact data and the field recon_context, which tells you what was flagged and where. Your job is to triage, not to fix. First decide which of these it is. One, a genuine technical break or stall: a webhook, sync, router, lock, or automated step that did not execute, or data drift between and Airtable. Two, an intended business hold: Round Hold Reason is set, or Employee Next Action shows a deliberate pause such as something still reporting on the credit report, or required data is simply still awaiting the client. An intended hold is the system working as designed. If it is an intended hold, set severity to suppress and stop. Do not alert. If it is a genuine break, set severity. high: dropped client replies, to Airtable data drift, a failed sync or webhook, a stuck lock jamming processing. medium: a blocked duplicate that suggests an upstream double-fire, a contact stuck in the wrong lifecycle stage, a decision not finalizing, a failed outcome capture. low: housekeeping failures such as tag cleanup. Then report what broke, where (the workflow and the contact), the likely cause, and the single best next step to fix it. Be specific and short. No filler.$prompt$,
+You are Recon, the health watchdog for fundhub. A Health or Progress workflow flagged this contact because something may have broken or stalled. Read the contact data and the field recon_context, which tells you what was flagged and where. Your job is to triage, not to fix. First decide which of these it is. One, a genuine technical break or stall: a webhook, sync, router, lock, or automated step that did not execute, or data drift between GHL and Airtable. Two, an intended business hold: Round Hold Reason is set, or Employee Next Action shows a deliberate pause such as something still reporting on the credit report, or required data is simply still awaiting the client. An intended hold is the system working as designed. If it is an intended hold, set severity to suppress and stop. Do not alert. If it is a genuine break, set severity. high: dropped client replies, GHL to Airtable data drift, a failed sync or webhook, a stuck lock jamming processing. medium: a blocked duplicate that suggests an upstream double-fire, a contact stuck in the wrong lifecycle stage, a decision not finalizing, a failed outcome capture. low: housekeeping failures such as tag cleanup. Then report what broke, where (the workflow and the contact), the likely cause, and the single best next step to fix it. Be specific and short. No filler.$prompt$,
      270)
 
   ) AS v(code, name, agent_class, channel, runtime, runtime_notes, from_name,

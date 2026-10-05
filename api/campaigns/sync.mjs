@@ -106,9 +106,10 @@ import {
   VIDEO_INSIGHT_REQUEST_FIELDS
 } from "../../src/adplatforms/meta.mjs";
 import { notifyDyingBefore25 } from "../../src/ops/watch-curve.mjs";
+import { adNumberFromMetaAd } from "../../src/marketing/ad-numbers.mjs";
 import { safeError } from "../../src/http/health.mjs";
 
-const API_VERSION = () => process.env.META_API_VERSION || "v21.0";
+const API_VERSION = () => process.env.META_API_VERSION || "v26.0";
 const BASE = "https://graph.facebook.com";
 
 /* How many days of numbers to pull, and how far the pager is allowed to walk.
@@ -151,6 +152,11 @@ const BASE = "https://graph.facebook.com";
    produces about 23 pages across 28 days, well inside INSIGHT_MAX_PAGES. A pull
    that ever does hit that cap keeps what it read and says so. */
 export const INSIGHT_WINDOW_DAYS = 28;
+/* THE HOURLY PASS (spec M0 step 5, 2026-10-05): the last 3 days every hour, so
+   today's spend is on the screen within the hour; the nightly pass keeps the
+   full 28 days above, so restated and missed days are still repaired.
+   netlify/functions/meta-sync-sweeper.mjs picks which one runs. */
+export const HOURLY_WINDOW_DAYS = 3;
 export const INSIGHT_MAX_PAGES = 100;
 export const INSIGHT_PAGE_SIZE = 500;
 
@@ -300,7 +306,7 @@ function tokenFor(connection) {
 export function insightsRequestUrl(connection, { since, until, version = API_VERSION() } = {}) {
   const params = new URLSearchParams({
     fields: [
-      "ad_id", "spend", "impressions", "clicks", "ctr", "actions",
+      "ad_id", "spend", "impressions", "clicks", "inline_link_clicks", "ctr", "actions",
       "purchase_roas", "date_start",
       ...VIDEO_INSIGHT_REQUEST_FIELDS
     ].join(","),
@@ -387,9 +393,9 @@ export function groupInsightsByAd(rows) {
    per day. It was seven days for as long as a person pressing Sync was the only
    thing that ever ran it — see INSIGHT_WINDOW_DAYS above for why that pair of
    facts lost days permanently, and why the window is 28 now. */
-export function insightWindow(now = Date.now()) {
+export function insightWindow(now = Date.now(), days = INSIGHT_WINDOW_DAYS) {
   return {
-    since: new Date(now - INSIGHT_WINDOW_DAYS * 864e5).toISOString().slice(0, 10),
+    since: new Date(now - days * 864e5).toISOString().slice(0, 10),
     until: new Date(now).toISOString().slice(0, 10)
   };
 }
@@ -460,27 +466,52 @@ async function upsertAdSet(tx, { orgId, partnerId, connectionId, campaignId, row
   return ins.rows[0];
 }
 
+/* OUR AD NUMBER, READ OFF THE AD (spec M0 step 5). adNumberFromMetaAd reads the
+   ad's own link utm_content first (source 'utm'), then its name, "SLO Ad 93 — …"
+   (source 'name'). It is written ONLY while fundhub_ad_number is still NULL: a
+   number a person linked (manual) or the loader set (loader) is never
+   overwritten by a sync. landing_url keeps its old value when Meta says nothing.
+   Our database only — nothing here edits the live ad on Meta. */
 async function upsertAd(tx, { orgId, partnerId, connectionId, campaignId, adSetId, row }) {
   const externalId = String(row.id);
+  const found = adNumberFromMetaAd(row);
+  const number = found.number == null ? null : String(found.number);
   const existing = await tx.query(
     `SELECT id FROM ads WHERE connection_id = $1 AND external_id = $2`,
     [connectionId, externalId]
   );
   if (existing.rows[0]) {
     const u = await tx.query(
-      `UPDATE ads SET name = $2, status = $3, updated_at = now() WHERE id = $1 RETURNING *`,
-      [existing.rows[0].id, row.name, row.status || null]
+      `UPDATE ads SET name = $2, status = $3,
+              landing_url = COALESCE($4, landing_url),
+              fundhub_ad_number_source = CASE
+                WHEN fundhub_ad_number IS NULL AND $5::text IS NOT NULL THEN $6
+                ELSE fundhub_ad_number_source END,
+              fundhub_ad_number = COALESCE(fundhub_ad_number, $5),
+              updated_at = now()
+        WHERE id = $1 RETURNING *`,
+      [existing.rows[0].id, row.name, row.status || null, found.landingUrl,
+       number, number ? found.source : null]
     );
     return u.rows[0];
   }
   const ins = await tx.query(
     `INSERT INTO ads (
-       org_id, partner_id, connection_id, campaign_id, ad_set_id, external_id, name, status
-     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
-    [orgId, partnerId, connectionId, campaignId, adSetId, externalId, row.name, row.status || null]
+       org_id, partner_id, connection_id, campaign_id, ad_set_id, external_id, name, status,
+       landing_url, fundhub_ad_number, fundhub_ad_number_source
+     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+    [orgId, partnerId, connectionId, campaignId, adSetId, externalId, row.name, row.status || null,
+     found.landingUrl, number, number ? found.source : null]
   );
   return ins.rows[0];
 }
+
+/* The ads list asks Meta for the creative's link fields, so the sync can read
+   our number off the link and match the landing page to an offer. If Meta
+   refuses that request (a token without creative access), the plain list is
+   read instead and the ads still sync — without the link. */
+export const AD_FIELDS = "id,name,status,adset_id";
+export const AD_FIELDS_WITH_CREATIVE = `${AD_FIELDS},creative{url_tags,link_url,object_story_spec}`;
 
 /* storeInsights → the number of days actually written
 
@@ -518,12 +549,13 @@ async function storeInsights(tx, { orgId, partnerId, adId, insights }) {
          video_continuous_2s_watched, video_plays,
          video_p25_watched, video_p50_watched, video_p75_watched,
          video_p95_watched, video_p100_watched, video_thruplay_watched,
-         video_play_curve
-       ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb)
+         video_play_curve, link_clicks
+       ) VALUES ($1,$2,$3,$4::date,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18::jsonb,$19)
        ON CONFLICT (ad_id, date) DO UPDATE SET
          spend_cents = EXCLUDED.spend_cents,
          impressions = EXCLUDED.impressions,
          clicks = EXCLUDED.clicks,
+         link_clicks = EXCLUDED.link_clicks,
          ctr = EXCLUDED.ctr,
          roas = EXCLUDED.roas,
          video_continuous_2s_watched = EXCLUDED.video_continuous_2s_watched,
@@ -542,7 +574,9 @@ async function storeInsights(tx, { orgId, partnerId, adId, insights }) {
        row.video_p25_watched ?? null,
        row.video_p50_watched ?? null, row.video_p75_watched ?? null,
        row.video_p95_watched ?? null, row.video_p100_watched ?? null,
-       row.video_thruplay_watched ?? null, curve]
+       row.video_thruplay_watched ?? null, curve,
+       // NULL when Meta did not send it (411): never 0.
+       row.link_clicks ?? null]
     );
     stored += 1;
   }
@@ -636,7 +670,9 @@ function describeError(entry) {
 
    It throws NO_CONNECTION / NO_TOKEN the way it always did; the handler turns
    those into the same 400s, and the sweeper counts them as skips. */
-export async function syncPartnerConnections({ partnerId, connectionId = null, deps = {} }) {
+export async function syncPartnerConnections({
+  partnerId, connectionId = null, deps = {}, windowDays = INSIGHT_WINDOW_DAYS
+}) {
   /* Every database touch below opens its own short transaction. NONE of them
      wraps a call to Meta — that is the whole point of this shape. */
   const inScope = (fn) => withPartnerScope({ kind: "partner", partnerId }, fn);
@@ -670,7 +706,7 @@ export async function syncPartnerConnections({ partnerId, connectionId = null, d
     stats.connections += 1;
     try {
       const token = tokenFor(connection);
-      const { since, until } = insightWindow();
+      const { since, until } = insightWindow(Date.now(), windowDays);
 
       /* ONE call for every ad's numbers, instead of one call per ad. Done
          before the walk so each ad's days are already in hand when its row is
@@ -780,11 +816,17 @@ export async function syncPartnerConnections({ partnerId, connectionId = null, d
             });
           }
           for (const srow of setPull.rows) {
-            const adPull = await metaList(
-              `${srow.id}/ads`,
-              "id,name,status,adset_id",
-              { token, ctx: deps }
-            );
+            let adPull;
+            try {
+              adPull = await metaList(
+                `${srow.id}/ads`, AD_FIELDS_WITH_CREATIVE, { token, ctx: deps }
+              );
+            } catch {
+              /* Read without the creative's link rather than lose the ads.
+                 The ads still sync; only the number-from-link and the
+                 landing page are missing for this ad set. */
+              adPull = await metaList(`${srow.id}/ads`, AD_FIELDS, { token, ctx: deps });
+            }
             if (adPull.truncated) {
               stats.errors.push({
                 campaign: crow.id,

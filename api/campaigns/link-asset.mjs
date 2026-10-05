@@ -204,7 +204,12 @@ export default async function handler(req, res) {
       const sets = [];
       const params = [adId, partnerId];
       if (setsAsset)  { params.push(assetId);  sets.push(`asset_id = $${params.length}`); }
-      if (setsNumber) { params.push(adNumber); sets.push(`fundhub_ad_number = $${params.length}`); }
+      if (setsNumber) {
+        params.push(adNumber);
+        sets.push(`fundhub_ad_number = $${params.length}`);
+        // A person typed it (411): 'manual'. A cleared number has no source.
+        sets.push(`fundhub_ad_number_source = CASE WHEN $${params.length}::text IS NULL THEN NULL ELSE 'manual' END`);
+      }
 
       const updated = (await tx.query(
         `UPDATE ads SET ${sets.join(", ")}, updated_at = now()
@@ -240,10 +245,10 @@ export default async function handler(req, res) {
     if (err.code === "CROSS_PARTNER" || err.code === "CROSS_ORG") {
       return res.status(400).json({ ok: false, error: err.code.toLowerCase(), message: err.message });
     }
-    // 23505 — ads_fundhub_number_uq (377:575). The number pool is shared across
-    // the whole company, not per partner (377:542-548), so the ad already
-    // holding it may well belong to somebody else. Its id is deliberately not
-    // returned.
+    // 23505 — a unique index refused the write. ads_fundhub_number_uq (377:575)
+    // was dropped in 411 (spec M0 step 5): one number may now run in several
+    // ad sets, so two ads sharing a number is no longer refused. Kept for any
+    // other unique index on ads; the id is deliberately not returned.
     if (err.code === "23505") {
       return res.status(409).json({
         ok: false,

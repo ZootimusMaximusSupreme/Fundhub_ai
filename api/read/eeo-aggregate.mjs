@@ -11,8 +11,9 @@ import { requireAuth } from "../../src/http/middleware/requireAuth.mjs";
 import { readHandler, ROLE_SETS } from "../../src/http/read-api.mjs";
 import { fetchEeoAggregate } from "../../src/hiring/eeo-selfid.mjs";
 
-export const fetchRows = async (db, { limit, offset, query }) => {
-  const rows = await fetchEeoAggregate(db, { roleKey: query.role || null });
+// The caller's company comes from the SESSION, never from the query string.
+export const fetchRows = async (db, { limit, offset, query, staff }) => {
+  const rows = await fetchEeoAggregate(db, { orgId: staff.org_id, roleKey: query.role || null });
   return rows.slice(offset, offset + limit + 1);
 };
 

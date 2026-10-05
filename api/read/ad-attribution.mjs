@@ -17,6 +17,7 @@ import { ROLE_SETS, requireRole, isUuid } from "../../src/http/read-api.mjs";
 import { dbDown } from "../../src/http/db-down.mjs";
 import { readClientAdAttribution } from "../../src/ads/store.mjs";
 import { resolveAd } from "../../src/ads/registry.mjs";
+import { asStaff } from "../../src/partners/rls.mjs";
 
 export function shapeResolved(row, ad) {
   return {
@@ -61,10 +62,23 @@ export default async function handler(req, res, deps = {}) {
     if (!exists.rows.length) return res.status(404).json({ ok: false, error: "client_not_found" });
 
     const row = await readClientAdAttribution(database, { orgId, clientId });
-    const ad = resolveAd(row?.ad_id ?? null);
+    /* The RESOLVED number (v_client_ad_number, 411, spec M0 step 5), not the
+       bare utm_content digits: a lead from a hand-loaded live ad carries Meta's
+       ad id in utm_term and the ad name in utm_content, so row.ad_id is empty
+       for every one of them. The view reads `ads`, which forces partner
+       row-level security, so it runs inside asStaff(). */
+    const num = row ? await (deps.asStaff ?? asStaff)((tx) => tx.query(
+      `SELECT ad_number, ad_number_source FROM v_client_ad_number
+        WHERE org_id = $1 AND client_id = $2`,
+      [orgId, clientId]
+    ).then((r) => r.rows[0] || null)) : null;
+    const adNumber = num?.ad_number ?? null;
+    const ad = resolveAd(adNumber == null ? null : String(adNumber));
     return res.status(200).json({
       ok: true,
       client_id: clientId,
+      ad_number: adNumber,
+      ad_number_source: num?.ad_number_source ?? null,
       attribution: row,
       registry: ad,
       resolved: shapeResolved(row, ad)

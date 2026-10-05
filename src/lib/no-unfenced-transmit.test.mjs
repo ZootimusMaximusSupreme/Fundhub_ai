@@ -52,6 +52,14 @@ const NETWORK_TOKENS = [
    That is the bar. If a new entry can do either, it does not belong here — it
    belongs behind a fence. */
 const ALLOWED_RAW_FETCH = {
+  "netlify/functions/meta-sync-sweeper.mjs":
+    "The clock for the Meta pull (marketing machine M0 step 5). Its ONE call is a POST to " +
+    "our own deploy (process.env.URL) at /.netlify/functions/meta-sync-background, behind " +
+    "MARKETING_WORKER_SECRET, to start the 15-minute worker. It never reaches a client or a vendor.",
+  "src/clients/dossier-summary.mjs":
+    "It never calls the network itself: it only wraps the fetch it is handed with an abort " +
+    "signal (callWithTimeout) and passes it to callModel in src/agents/model.mjs, which makes " +
+    "the one model call. It cannot reach a client or change a vendor record.",
   "netlify/functions/ad-video-sweeper.mjs":
     "The clock for the ad-video pipeline. Its ONE call is a POST to our own deploy " +
     "(process.env.URL) at /.netlify/functions/ad-video-worker-background, behind a shared " +
@@ -60,6 +68,13 @@ const ALLOWED_RAW_FETCH = {
     "the worker, through the providers and the chokepoint. Added 2026-09-24 after the " +
     "worker had to move off Inngest (26 s) and off a scheduled function (30 s), both of " +
     "which killed a 120 MB upload mid-flight.",
+  "src/marketing/wake.mjs":
+    "Wakes the marketing worker. Its ONE call is a POST to our own deploy (process.env.URL) at " +
+    "/.netlify/functions/marketing-worker-background, behind MARKETING_WORKER_SECRET, to start the " +
+    "15-minute background function that Netlify will not put on a schedule. The marketing clock and " +
+    "the worker itself call it. Nothing leaves fundhub.ai and no vendor is reached; vendor calls " +
+    "happen inside the worker, through the providers and the chokepoint. Added 2026-10-05, " +
+    "same pattern as netlify/functions/ad-video-sweeper.mjs.",
   // ── Not actually the global fetch ────────────────────────────────────────
   "src/http/read-api.mjs":
     "`fetch` here is a local parameter holding a database reader, not the global.",
@@ -110,6 +125,15 @@ const ALLOWED_RAW_FETCH = {
     "Defaults fetchImpl and passes it to the Drive client. Never calls it.",
   "src/company-brain/walk.mjs":
     "Defaults fetchImpl and passes it to the Drive client. Never calls it.",
+  "src/slo/cf-contact.mjs":
+    "Puts an injected fetchImpl on ctx.fetch and passes it to upsertContact() in " +
+    "src/analytics/clickfunnels.mjs, whose one write goes through transmit() behind " +
+    "the ADAPTERS fence (2026-10-05). Never calls fetch itself.",
+  "src/adapters/clickfunnels.mjs":
+    "syncApplySurveyClickfunnelsContact puts an injected fetchImpl on ctx.fetch and " +
+    "passes it to upsertContact() in src/analytics/clickfunnels.mjs, whose one write " +
+    "goes through transmit() behind the ADAPTERS fence (2026-10-05). Never calls " +
+    "fetch itself.",
 
   // ── Company-owned accounts. Reach the company's own pages, not a client ──
   "src/social/oauth.mjs":
@@ -156,11 +180,20 @@ const ALLOWED_RAW_FETCH = {
     "else of the buyer's leaves; no client is contacted and no client or vendor " +
     "record is written.",
   "src/analytics/clickfunnels.mjs":
-    "Reads Chris's own ClickFunnels workspace: funnels, pages, page stats. " +
-    "GET only — listFunnels/listPages/fetchPageStats never POST, PUT or DELETE " +
-    "anything. No client is contacted and no vendor record is changed; this can " +
-    "neither reach a client nor spend money the way the ad-platform adapters " +
-    "above can.",
+    "Reads Chris's own ClickFunnels workspace: teams, workspaces, funnels, pages, " +
+    "page stats — raw GETs through cfFetch(), which never POST, PUT or DELETE. " +
+    "The one write in the file, upsertContact() (a client's contact, added after " +
+    "this entry was first written), goes through transmit() behind the ADAPTERS " +
+    "fence since 2026-10-05, so the raw path reaches no client and changes no " +
+    "vendor record.",
+  "src/adapters/clarity-export.mjs":
+    "Microsoft Clarity Data Export: one GET of our own site's aggregate traffic " +
+    "insights, capped at Microsoft's 10 a day (CLAUDE.md 'Clarity Data Export'). " +
+    "Read-only; no client is contacted and no vendor record is changed.",
+  "src/analytics/clarity-export.mjs":
+    "The older Clarity Data Export reader (still used by " +
+    "scripts/clarity-insights-pull.mjs). One GET of our own site's aggregate " +
+    "insights. Read-only; no client is contacted and no vendor record is changed.",
   "src/analytics/youtube.mjs":
     "Reads watch time on Chris's own YouTube channel via the Analytics/Data " +
     "APIs. refreshAccessToken exchanges an OAuth token (matching " +

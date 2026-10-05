@@ -30,7 +30,14 @@ const DELIBERATELY_UNSERVED = {
      netlify/functions/ad-video-sweeper.mjs, 15 minutes instead of 26 seconds —
      which calls the very same sweep() out of this directory. Registering it
      here again would put two crons on the same take. */
-  "ad-video-sweeper": "runs as a Netlify scheduled function; an Inngest pass is killed at 26s mid-upload"
+  "ad-video-sweeper": "runs as a Netlify scheduled function; an Inngest pass is killed at 26s mid-upload",
+  /* Moved out of Inngest on 2026-10-05 (spec M0 step 5). The Meta pull now runs
+     hourly (3 days) plus nightly (28 days); a full ad-account walk is not
+     bounded by the 26 seconds /api/inngest gets. It runs as
+     netlify/functions/meta-sync-sweeper.mjs → meta-sync-background.mjs (15
+     minutes), calling the same sweep(). Registering it here again would run
+     every pass twice. */
+  "meta-campaign-sync-sweeper": "runs as a Netlify scheduled function waking a background function; a full Meta walk does not fit 26s"
 };
 
 /* EVERY WORKFLOW THIS REPO SERVES, BY NAME.
@@ -71,6 +78,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "c-03-inquiry-removed-resume-or-hold",
   "c-05-pre-funding-review",
   "c-06-crs-results-router",
+  "clarity-insights-sweeper",
   "commas-inbox-drain",
   "contract-chaser",
   "daily-pulse",
@@ -82,6 +90,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "dpc-05-no-progress-escalation",
   "ds-01-repair-referral",
   "ds-02-diy-letters",
+  "evening-brief",
   "f-01-funding-intake",
   "f-02-portal-id-missing",
   "f-03-round-submitted",
@@ -101,7 +110,6 @@ const EXPECTED_WORKFLOW_IDS = [
   "inquiry-call-sweeper",
   "meet-transcript-sweeper",
   "message-dispatch-sweeper",
-  "meta-campaign-sync-sweeper",
   "clickfunnels-analytics-sweeper",
   "n-01-cold-nurture",
   "n-02-warm-nurture",
@@ -193,6 +201,14 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      added, in the words of the person who added it. The counts named in it are
      the historical record of what the pin said at the time; the pin itself is
      EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
+
+     Added the evening brief (2026-10-05, MB6) — Chris asked for a
+     "Good evening, Chris." text at 9:00 p.m. Arizona so he knows what came in
+     during the day before bed, not only at 6:00 a.m. Same builder as the
+     morning brief (src/ops/morning-brief.mjs, kind 'evening'). Registering it
+     TEXTS NOBODY: MORNING_BRIEF_LIVE is false, so it builds and saves one
+     morning_briefs row per evening with delivery_status 'dry_run'. It never
+     runs the pulse; it reads the check stored that morning.
 
      Added the affiliate payout run (2026-09-21) — the first thing in this
      repository that ever turned an affiliate's accrued commission into a payout

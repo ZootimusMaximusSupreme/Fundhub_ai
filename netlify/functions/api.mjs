@@ -79,6 +79,7 @@ import readPartnerHomeTiles from "../../api/read/partner-home-tiles.mjs";
 import readPartnerTraining from "../../api/read/partner-training.mjs";
 import readMessageTemplates from "../../api/read/message-templates.mjs";
 import readStaff from "../../api/read/staff.mjs";
+import readSystemsCheck from "../../api/read/systems-check.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
 import staffMonitoringConsent from "../../api/staff/monitoring-consent.mjs";
 import staffAvatar from "../../api/staff/avatar.mjs";
@@ -100,11 +101,13 @@ import readFinanceOsSuggestions from "../../api/read/finance-os-suggestions.mjs"
 import readBankingSurface from "../../api/read/banking-surface.mjs";
 import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
+import readMorningBrief from "../../api/read/morning-brief.mjs";
 import readFinanceCommand from "../../api/read/finance-command.mjs";
 import readFinanceAsk from "../../api/read/finance-ask.mjs";
 import readCompanyBrain from "../../api/read/company-brain.mjs";
 import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mjs";
 import readOpsPulse from "../../api/read/ops-pulse.mjs";
+import readOpsSuggestions from "../../api/read/ops-suggestions.mjs";
 import opsHireCloser from "../../api/ops/hire-closer.mjs";
 import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import companyBrainSync from "../../api/company-brain/sync.mjs";
@@ -121,6 +124,9 @@ import readAdBooks from "../../api/read/ad-books.mjs";
 import readAdSpine from "../../api/read/ad-spine.mjs";
 import scriptsWrite from "../../api/scripts/write.mjs";
 import scriptsList from "../../api/scripts/list.mjs";
+import marketingSettings from "../../api/marketing/settings.mjs";
+import marketingOffers from "../../api/marketing/offers.mjs";
+import marketingAdLinks from "../../api/marketing/ad-links.mjs";
 import clickfunnelsConnect from "../../api/analytics/clickfunnels-connect.mjs";
 import clickfunnelsSync from "../../api/analytics/clickfunnels-sync.mjs";
 import readFunnelPages from "../../api/read/funnel-pages.mjs";
@@ -454,6 +460,7 @@ export const ROUTES = {
   "read/partner-training": readPartnerTraining,
   "read/message-templates": readMessageTemplates,
   "read/staff": readStaff,
+  "read/systems-check": readSystemsCheck,
   "staff/telemetry": staffTelemetry,
   "staff/monitoring-consent": staffMonitoringConsent,
   "staff/avatar": staffAvatar,
@@ -542,6 +549,8 @@ export const ROUTES = {
   // handler and the screen: a screen whose endpoint 404s is the exact failure
   // this map exists to prevent, and it has shipped twice.
   "read/money-map": readMoneyMap,
+  // The stored "Good morning, Chris" brief, one row per Arizona morning. Owner/admin.
+  "read/morning-brief": readMorningBrief,
 
   // read/finance-command is the roll-up: money-map answers "one client's whole
   // picture", this answers "every client's, folded into one number, or narrowed
@@ -568,6 +577,8 @@ export const ROUTES = {
   // Ops / AI COO v1. GET is read-only pulse + briefs. POST creates the
   // hire-closer task and LinkedIn post when packed. ROLE_SETS.OPS.
   "read/ops-pulse": readOpsPulse,
+  // AI ops suggestions for one morning (MB4, 432). Read only. ROLE_SETS.OPS.
+  "read/ops-suggestions": readOpsSuggestions,
   "ops/hire-closer": opsHireCloser,
 
   // Owner-only classification review queue (H-3). Also carries staff uploads
@@ -628,6 +639,14 @@ export const ROUTES = {
      Factory screen. Without it the picker only ever held the script saved in
      that one browser tab, and a reload emptied it. */
   "scripts/list": scriptsList,
+  /* The marketing machine (docs/specs/marketing-machine-2026-10-04.md §6 step 3).
+     GET/POST, ROLE_SETS.MARKETING (owner, admin). Settings is one row per org,
+     created on first read; offers are funnels with a permanent tag. */
+  "marketing/settings": marketingSettings,
+  "marketing/offers": marketingOffers,
+  /* §6 step 5: leads whose ad has no number yet (GET), and Link (POST), which
+     sets the number on every ads row with that Meta id or name. */
+  "marketing/ad-links": marketingAdLinks,
   "read/funnel-pages": readFunnelPages,
   "read/video-stats": readVideoStats,
   "analytics/clickfunnels-connect": clickfunnelsConnect,

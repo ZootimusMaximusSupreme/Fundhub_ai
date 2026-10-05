@@ -5,13 +5,14 @@ description: >-
   vs never commit, small commits, no amend/force without ask, evidence commit
   policy, protect main, stash/WIP boards. Use when Chris says version control,
   VC check, losing work, commit policy, branch cleanup, stash, or "don't lose
-  this." Never commits unless he asks.
+  this." Commits locally every session (CLAUDE.md, owner-set 2026-09-08).
 ---
 
 # Fundhub Version Control
 
-You keep git from eating Chris’s work. You do **not** commit unless he says
-commit.
+You keep git from eating Chris’s work. You **commit locally every session**
+(CLAUDE.md, owner-set 2026-09-08) and push that commit to GitHub (owner-set
+2026-10-05).
 
 Repo clutter / evidence trees / ignore proposals → also load
 `fundhub-repo-hygiene` when both apply. Prefer hygiene for “organize the mess,”
@@ -41,11 +42,11 @@ Prove with `git status` / `git stash list` / branch list — don’t invent:
 - `.env`, `.env.*` (except `.env.example`)
 - `credentials/`
 - Secrets, tokens, passwords, raw SSN/bank/ID packs
-- Anything Chris did not ask to commit
+- Anything outside what he asked you to do this session
 
 Confirm secrets by **name only**. Never print values.
 
-## Commit only when asked
+## Commit every session
 
 - Follow user git safety rules: status + diff + log, HEREDOC message, no `--no-verify`, no force-push to main, no amend unless the amend rules all pass.
 - Prefer **small commits** (one unit / one board row set).
@@ -55,8 +56,8 @@ Confirm secrets by **name only**. Never print values.
 
 | Kind | Default |
 |---|---|
-| Board `.md` under `ops/workflows/` (task list, findings text) | OK to commit when he asks — small, useful |
-| Small JSON prove summaries (no PII) | OK when he asks |
+| Board `.md` under `ops/workflows/` (task list, findings text) | Commit with the session’s work — small, useful |
+| Small JSON prove summaries (no PII) | OK to commit |
 | Huge screenshot / video evidence trees | Prefer **GITIGNORE** or ARCHIVE after hygiene go — do not silently `git add` multi‑hundred‑MB dumps |
 | Marked decision screenshots he needs in git | Commit only the marked set he named |
 
@@ -65,15 +66,15 @@ If unsure: propose on the board; wait.
 ## How not to lose work (order)
 
 1. **Named board** — `ops/workflows/<batch>.md` with status + claim (CLAUDE.md §5).
-2. **Named branch** — one concern per branch; push when he asks.
-3. **Commit when he asks** — small, green-enough units.
+2. **Named branch** — one concern per branch; push it to GitHub.
+3. **Commit every session** — small, green-enough units.
 4. **Stash only as short parking** — if you stash, write the stash reason + restore steps on the board the same turn. Stash is not the archive.
-5. **Before switching branches** — status clean, or stash+board, or commit (if asked). Never “just checkout” over a dirty tree of product work.
+5. **Before switching branches** — status clean, or stash+board, or commit. Never “just checkout” over a dirty tree of product work.
 
 ## Branch hygiene (propose, don’t mass-delete)
 
 - List local vs remote, merged vs open.
-- Propose delete only for **merged** remotes / clearly dead locals — wait for go.
+- **Merged** branches, remote and local: delete them (CLAUDE.md §8, owner-set 2026-08-31, which wins over “wait for go”). Clearly dead locals that were never merged: propose, wait for go.
 - Do not delete branches that still have unique commits or open PRs.
 - Note worktrees (`git worktree list`) if present.
 

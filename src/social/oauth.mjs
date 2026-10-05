@@ -4,7 +4,12 @@
 import crypto from "node:crypto";
 import { encryptToken } from "../adplatforms/tokens.mjs";
 
-const META_GRAPH = "https://graph.facebook.com/v21.0";
+// META_API_VERSION is pinned in .env.example (v26.0, spec M0 step 5).
+const metaVersion = (env = process.env) => {
+  const v = String(env?.META_API_VERSION ?? "").trim();
+  return /^v\d{1,3}\.\d{1,3}$/.test(v) ? v : "v26.0";
+};
+const metaGraph = () => `https://graph.facebook.com/${metaVersion()}`;
 const LI_AUTH = "https://www.linkedin.com/oauth/v2/authorization";
 const LI_TOKEN = "https://www.linkedin.com/oauth/v2/accessToken";
 
@@ -50,7 +55,7 @@ export function metaAuthUrl({ appId, redirectUri, state, scopes } = {}) {
     "pages_show_list", "pages_manage_posts", "pages_read_engagement",
     "instagram_basic", "instagram_content_publish"
   ]).join(",");
-  const dialog = new URL("https://www.facebook.com/v21.0/dialog/oauth");
+  const dialog = new URL(`https://www.facebook.com/${metaVersion()}/dialog/oauth`);
   dialog.searchParams.set("client_id", appId);
   dialog.searchParams.set("redirect_uri", redirectUri);
   dialog.searchParams.set("state", state);
@@ -78,7 +83,7 @@ export async function exchangeMetaCode({ code, redirectUri, env = process.env, f
     return { ok: false, reason: "not_configured", missing: ["META_APP_ID", "META_APP_SECRET"].filter((k) => !env[k]) };
   }
   const doFetch = fetchImpl || fetch;
-  const tokenUrl = new URL(`${META_GRAPH}/oauth/access_token`);
+  const tokenUrl = new URL(`${metaGraph()}/oauth/access_token`);
   tokenUrl.searchParams.set("client_id", appId);
   tokenUrl.searchParams.set("client_secret", secret);
   tokenUrl.searchParams.set("redirect_uri", redirectUri);
@@ -88,7 +93,7 @@ export async function exchangeMetaCode({ code, redirectUri, env = process.env, f
   if (!tok.access_token) return { ok: false, reason: "token_exchange_failed", detail: tok };
 
   const pagesRes = await doFetch(
-    `${META_GRAPH}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${encodeURIComponent(tok.access_token)}`
+    `${metaGraph()}/me/accounts?fields=id,name,access_token,instagram_business_account&access_token=${encodeURIComponent(tok.access_token)}`
   );
   const pages = await pagesRes.json().catch(() => ({}));
   return {

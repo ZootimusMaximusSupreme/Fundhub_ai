@@ -2872,7 +2872,11 @@ document.addEventListener("DOMContentLoaded", async function () {
 
   /* The file he is looking at lives on the session, not in the saved account.
      The saved account still names the first file after he switches. */
-  var repSession = await session();
+  /* A saved STAFF role is not a rep (a rep signs in as a client), so it skips
+     this read and answers with no wait on the server, as it did before the rep
+     switch landed (hole 13, src/http/portal-staff-greeting.test.mjs). */
+  var savedStaff = !!STAFF_ROLES[roleHint()];
+  var repSession = savedStaff ? null : await session();
   if (repSession && repSession.staff && repSession.staff.authorized_rep && repSession.staff.client_id) {
     clientId = String(repSession.staff.client_id);
     window.__fhClientId = Promise.resolve(clientId);
@@ -2884,7 +2888,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     } catch (e) {}
   }
 
-  await paintRepFiles();
+  if (!savedStaff) await paintRepFiles();
 
   if (!clientId) {
     paintEmptyIdentity();

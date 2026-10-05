@@ -79,7 +79,7 @@ describe("the request", () => {
     assert.deepEqual(out, { ok: true, sent: 1 });
     assert.equal(meta.calls.length, 1);
     const { url, init, body } = meta.calls[0];
-    assert.equal(url, `https://graph.facebook.com/v21.0/${DEFAULT_PIXEL_ID}/events`);
+    assert.equal(url, `https://graph.facebook.com/v26.0/${DEFAULT_PIXEL_ID}/events`);
     assert.equal(DEFAULT_PIXEL_ID, "2403674420141513");
     assert.equal(init.method, "POST");
     assert.equal(init.headers["Content-Type"], "application/json");
@@ -92,7 +92,7 @@ describe("the request", () => {
     assert.equal(metaEventsUrl({ META_API_VERSION: "v22.0", META_PIXEL_ID: "123456789" }),
       "https://graph.facebook.com/v22.0/123456789/events");
     assert.equal(metaEventsUrl({ META_API_VERSION: "../x", META_PIXEL_ID: "abc" }),
-      `https://graph.facebook.com/v21.0/${DEFAULT_PIXEL_ID}/events`);
+      `https://graph.facebook.com/v26.0/${DEFAULT_PIXEL_ID}/events`);
   });
 
   test("META_TEST_EVENT_CODE rides on every batch when set", async () => {

@@ -453,9 +453,15 @@ test("item 8: the lander never offers done-for-you; the Dispute Letter Pack copy
   assert.doesNotMatch(html, /Credits toward your deposit if you ever go done-for-you/);
   assert.doesNotMatch(html, /your \$297 counts toward it/);
   assert.doesNotMatch(html, /If you'd rather we run it, you'll see that option after checkout/);
-  /* Rewritten 2026-09-29 (roadmap reorder, owner-approved): the answer now says
-     "No" outright. Still do-it-yourself, still no done-for-you offer. */
-  assert.match(html, /<summary>Can you do the work for me\?<\/summary><div class="a">No\. This is do-it-yourself\. You mail your own letters, so you hold every receipt and see every reply\.<\/div>/);
+  /* Rewritten 2026-09-29 (roadmap reorder, owner-approved): the answer says
+     "No" outright. Still do-it-yourself, still no done-for-you offer.
+     OWNER-SET 2026-10-05: the current FAQ copy is correct. It still answers "No"
+     and keeps the client mailing their own letters; the later help it names is
+     a call with the team, not the team doing the work. Pinned as it reads on
+     main. */
+  assert.match(html, /<summary>Can you do the work for me\?<\/summary><div class="a">No\. You do it yourself, so you stay in control\. You mail your own letters, so you keep every receipt and see every reply\. If you want help later, every document has a button to book a call with my team\.<\/div>/);
   assert.match(html, /Zero score impact from that pull<\/div>/);
-  assert.match(html, /Print\. Sign\. Mail\./);
+  /* OWNER-SET 2026-10-05: the Dispute Letter Pack line as it reads on main
+     (the 10-04 rewrite replaced "Print. Sign. Mail." with this line). */
+  assert.match(html, /<b>Dispute Letter Pack<\/b>, every letter written for your accounts, all six rounds, ready to mail/);
 });
