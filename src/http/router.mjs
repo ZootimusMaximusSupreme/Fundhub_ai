@@ -406,6 +406,14 @@ async function dispatchWebhook({ db, provider, rawBody, headers = {}, url, env =
     }
   }
 
+  /* The video worker's callback (spec 9.5): POST /api/webhooks/video-worker.
+     HMAC-signed over timestamp + body with a 5-minute window, so unlike the
+     Submagic door above it IS authenticated. NO ROUTES ENTRY, same reason. */
+  if (provider === "video-worker") {
+    const { handleVideoWorkerCallback } = await import("../ad-videos/worker-callback.mjs");
+    return handleVideoWorkerCallback({ db, rawBody, headers, env });
+  }
+
   if (provider === "mailgun-events") {
     let body;
     try { body = rawBody ? JSON.parse(rawBody) : {}; }

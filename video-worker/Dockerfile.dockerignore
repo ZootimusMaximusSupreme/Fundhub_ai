@@ -1,0 +1,16 @@
+# BuildKit reads <dockerfile>.dockerignore in preference to a root one (same
+# pattern as render-service/). The image needs exactly these out of the repo:
+#   video-worker/                      this service
+#   marketing/broll/                   the animation kit (not its node_modules or previews)
+#   src/ad-videos/{worker-protocol,worker-jobs,overlay-plan,ffmpeg-plan}.mjs
+# Everything else is excluded so no app source, no test and no .env can reach a layer.
+*
+!video-worker/**
+video-worker/node_modules
+!marketing/broll/**
+marketing/broll/node_modules
+marketing/broll/previews
+!src/ad-videos/worker-protocol.mjs
+!src/ad-videos/worker-jobs.mjs
+!src/ad-videos/overlay-plan.mjs
+!src/ad-videos/ffmpeg-plan.mjs
