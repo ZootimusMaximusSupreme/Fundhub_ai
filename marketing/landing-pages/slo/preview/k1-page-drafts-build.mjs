@@ -1,30 +1,47 @@
-/* K1 page drafts, round 1: red boxes only. Nothing here is live.
+/* K1 page drafts, round 2: the fixes written in, every new or changed line marked green.
+ * Nothing here is live.
  *
- * Law: .claude/rules/page-edits-marked-draft.md. This script READS the live
- * source files and never changes them. Nothing is pushed to ClickFunnels.
+ * Law: .claude/rules/page-edits-marked-draft.md. This script READS the live source files and
+ * never changes them. Nothing is pushed to ClickFunnels. Round 1 (the red boxes Chris saw) is
+ * commit 2a221be in PR #45.
  *
- * What Chris asked for (to-do list W6, 2026-10-04, plus the 23 /roadmap fixes
- * from the 2026-09-29 Roadmap Page Audit, board ops/workflows/knockout-2026-10-05.md):
- *   1. /roadmap "How It Works" follows the 7-step note, marketing/ads/notes-green-screen.md
- *      lines 54-67 (approved 10/2/2026), plus every one of the 23 fixes still open.
- *      Checked against the page 2026-10-05: two are still open (3 and 22).
- *   2. "Up to 12 funding rounds" becomes "3 to 6 funding rounds" on /watch, /thank-you,
- *      /funding-book-call, /roadmap-book and /roadmap-thank-you. The number comes from
- *      the /watch video script of 9/30: "a funding sequence keeps going for three to
- *      six rounds" (marketing/ads/reference/vsl-scripts-latest.md, line 24).
+ * Chris answered "Please finish" to round 1, so the five picks are the ones round 1 offered:
+ *   1. /roadmap "How It Works": the 5 steps become the 7 steps of the note approved 10/2/2026
+ *      (marketing/ads/notes-green-screen.md lines 54-67), in the note's order.
+ *   2. The 5 bold one-liners are dropped. The note's own line leads each step. Every word of the
+ *      old paragraphs moves under a step, word for word (the build proves it).
+ *   3. "Up to 12 funding rounds" becomes "3 to 6 funding rounds" on /watch, /thank-you,
+ *      /funding-book-call, /roadmap-book and /roadmap-thank-you. The number is the 9/30 /watch
+ *      video script: "a funding sequence keeps going for three to six rounds"
+ *      (marketing/ads/reference/vsl-scripts-latest.md, line 24).
+ *   4. The three testimonial cover pictures: the big headline becomes one small line near the
+ *      bottom, same words. The new pictures are made by scripts/testimonials/render-small-thumbnails.mjs
+ *      and wait in marketing/testimonials/posters-v2/ (not in public/funnel/) until Chris says push it.
+ *   5. Gene's caption stays as it is.
  *
- * Every fact on a note comes from the repo or from Chris. A fact that is not in the repo
- * (how soon Gene's first approval came) is asked for, never invented.
+ * Run:    node marketing/landing-pages/slo/preview/k1-page-drafts-build.mjs
+ * Out:    k1-drafts/<page>-draft.html   one marked draft per page, self-contained, with a button
+ *                                       at the top that hides the marks
+ *         k1-drafts/index.html          the drafts, what changed, what "push it" does, the 23 fixes
+ *         k1-drafts/artifact-main.html  the same index as an Artifact page
  *
- * Run:  node marketing/landing-pages/slo/preview/k1-page-drafts-build.mjs
- * Out:  k1-drafts/<page>-draft.html   one marked draft per page, self-contained
- *       k1-drafts/index.html          the list of drafts, the 23 fixes, and what Chris decides
- *       k1-drafts/artifact-main.html  the same index as an Artifact page (no html/head/body tags)
- * Every script, tracker, video file and card form is taken out of the drafts, so opening
- * one sends nothing to Meta, Clarity or Fundhub and cannot take a card.
+ * Push-ready pages (only after Chris says push it):
+ *         node marketing/landing-pages/slo/preview/k1-page-drafts-build.mjs --clean <dir>
+ *   writes the six changed sources, with no mark anywhere, under <dir> at the same paths they have
+ *   under marketing/landing-pages/. Writing into marketing/landing-pages itself also needs
+ *   --push-approved, so nobody overwrites a live source by accident.
+ *
+ * What the build proves on every run (it throws if any of these fail):
+ *   - each moved sentence is on the live page word for word, and the moved words equal the old
+ *     paragraphs' words (nothing lost, nothing added)
+ *   - each clean page equals its draft with every mark stripped
+ *   - each clean page differs from today's live source only by the approved edits
+ *   - 16 of the status lines for the 23 fixes still match what the live page says
+ * Every script, tracker, video file and card form is taken out of the drafts, so opening one sends
+ * nothing to Meta, Clarity or Fundhub and cannot take a card.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { wrapFragment } from "../../harness/_shell.js";
 
@@ -32,6 +49,7 @@ const here = dirname(fileURLToPath(import.meta.url));
 const LP = join(here, "..", ".."); // marketing/landing-pages
 const REPO = join(LP, "..", ".."); // repo root
 const OUT = join(here, "k1-drafts");
+const POSTERS_V2 = join(REPO, "marketing", "testimonials", "posters-v2");
 mkdirSync(OUT, { recursive: true });
 
 const rd = (...p) => readFileSync(join(LP, ...p), "utf8");
@@ -49,84 +67,35 @@ function once(s, from, to) {
   if (s.indexOf(from, i + 1) >= 0) throw new Error(`marker is not unique: ${from.slice(0, 90)}`);
   return s.slice(0, i) + to + s.slice(i + from.length);
 }
-const strip = (h) => h.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
+const countOf = (s, t) => s.split(t).length - 1;
+const textOf = (h) => h.replace(/<[^>]+>/g, " ").replace(/&amp;/g, "&").replace(/\s+/g, " ").trim();
 const bag = (t) => {
   const m = new Map();
   for (const w of t.toLowerCase().match(/[a-z0-9$,.'%+-]+/g) || []) m.set(w, (m.get(w) || 0) + 1);
   return m;
 };
 
-/* ---------- the marks: one list per page, used by the page and by the index ---------- */
-const MARKS = {};
-function mark(page, where, problem, fix, extra = "") {
-  const list = (MARKS[page] ||= []);
-  const n = list.length + 1;
-  list.push({ n, where, problem, fix });
-  return (
-    `<div class="fhx-note"><span class="fhx-num">${n}</span>` +
-    `<span class="w"><b>Problem:</b> ${problem}</span>` +
-    `<div class="s"><b>Try:</b> ${fix}</div>${extra}</div>`
-  );
+/* ---------- the marks ----------
+   green  <ins class="fhx-new">text</ins>        new words
+          class="... fhx-new" on a real element   a changed element (picture, scrolling-bar line)
+   blue   <ins class="fhx-moved"><em class="fhx-from">..</em>text</ins>   old words moved word for word
+          <div class="fhx-sec" data-tag="..">..</div><!--/fhx-sec-->      a new or moved section
+   strip() takes every one of them out again. The build checks strip(draft source) === clean source. */
+const NEW = (t, marked) => (marked ? `<ins class="fhx-new">${t}</ins>` : t);
+const MOVED = (from, t, marked) => (marked ? `<ins class="fhx-moved"><em class="fhx-from">from old step ${from}</em>${t}</ins>` : t);
+const SEC = (tag, html, marked) => (marked ? `\n<div class="fhx-sec" data-tag="${tag}">\n${html}\n</div><!--/fhx-sec-->\n` : html);
+function strip(h) {
+  return h
+    .replace(/\n<div class="fhx-sec" data-tag="[^"]*">\n/g, "")
+    .replace(/\n<\/div><!--\/fhx-sec-->\n/g, "")
+    .replace(/<em class="fhx-from">[^<]*<\/em>/g, "")
+    .replace(/<ins class="fhx-(?:new|moved)">([\s\S]*?)<\/ins>/g, "$1")
+    .replace(/ class="fhx-new"/g, "")
+    .replace(/ fhx-new"/g, '"');
 }
-
-/* ---------- take everything live out of a draft ---------- */
-function makeStatic(html) {
-  return html
-    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
-    .replace(/<noscript>[\s\S]*?<\/noscript>/gi, "")
-    .replace(/<iframe\b[\s\S]*?<\/iframe>/gi, `<div class="fhx-checkout"><b>A frame sits here on the live page</b><i>Left out of this draft.</i></div>`)
-    .replace(/(<video\b[^>]*?)\s+src="[^"]*"/gi, "$1")
-    .replace(/(<video\b[^>]*?)\s+autoplay\b/gi, "$1")
-    .replace(/<img\b[^>]*src="https:\/\/www\.google\.com\/s2\/favicons[^>]*>/gi, "");
-}
-
-/* ---------- bake the few pictures in: a shared copy loads nothing from fundhub.ai ---------- */
-function bake(html) {
-  const urls = [...new Set(html.match(/https:\/\/fundhub\.ai\/funnel\/[A-Za-z0-9._-]+\.jpg/g) || [])];
-  for (const u of urls) {
-    const f = join(REPO, "public", "funnel", u.split("/").pop());
-    if (!existsSync(f)) throw new Error(`picture not in the repo: ${f}`);
-    html = html.split(u).join("data:image/jpeg;base64," + readFileSync(f).toString("base64"));
-  }
-  return html;
-}
-
-/* ---------- the marked-draft toolkit (same look as reorg-draft-build.mjs) ---------- */
-const TOOLKIT = (label) => `
-<style>
-.fhx-banner{position:fixed;left:0;right:0;top:0;z-index:99999;background:#B00020;color:#fff;font:600 12.5px/1.4 system-ui,sans-serif;padding:8px 16px;text-align:center}
-.fhx-banner a{color:#fff;text-decoration:underline;margin-left:10px;white-space:nowrap}
-html body{padding-top:48px!important}
-@media(max-width:760px){html body{padding-top:76px!important}}
-.fhx-sec{position:relative;outline:2px dashed #2F6FEB;outline-offset:6px;margin:34px 0}
-.fhx-sec::before{content:attr(data-tag);display:block;font:700 11px/1.3 system-ui,sans-serif;letter-spacing:.04em;color:#fff;background:#2F6FEB;padding:5px 9px;border-radius:4px;margin-bottom:10px;width:max-content;max-width:100%}
-.fhx-bad{outline:3px solid #E00 !important;outline-offset:2px;background:rgba(255,0,0,.06) !important;position:relative}
-.fhx-num{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;border-radius:11px;background:#E00;color:#fff;font:700 12px system-ui,sans-serif;padding:0 6px;margin-right:6px;vertical-align:middle}
-.fhx-note{display:block;margin:8px 0 14px;padding:10px 12px;border-left:4px solid #E00;background:#FFF1F1;color:#222;font:14px/1.45 system-ui,sans-serif!important;text-align:left;border-radius:4px;font-weight:400;letter-spacing:0;text-transform:none}
-.fhx-note,.fhx-note .w,.fhx-note .s{font-size:14px!important;line-height:1.45!important}
-.fhx-note b{color:inherit}
-.fhx-note .w{color:#900}
-.fhx-note .s{margin-top:6px;color:#0B5D1E}
-.fhx-note .s b{color:#0B5D1E}
-.fhx-note .src{margin-top:6px;color:#555;font-size:12.5px!important}
-.fhx-wrap{max-width:900px;margin:12px auto;padding:0 16px}
-.fhx-wrap .fhx-note{margin:10px 0 0}
-.fhx-new{background:rgba(22,163,74,.18);box-shadow:0 0 0 2px rgba(22,163,74,.28);border-radius:3px}
-.fhx-moved{border-bottom:2px solid #2F6FEB}
-.fhx-from{display:inline-block;font:700 10px/1 ui-monospace,monospace;color:#fff;background:#2F6FEB;border-radius:3px;padding:2px 4px;margin-right:4px;vertical-align:1px;font-style:normal;letter-spacing:.03em;text-transform:none}
-.fhx-checkout{box-sizing:border-box;width:calc(100% - 32px);max-width:720px;margin:24px auto;padding:18px 20px;border:2px dashed #2F6FEB;border-radius:10px;background:#F3F7FF;color:#111113;font:14px/1.5 system-ui,sans-serif;display:grid;gap:6px;text-align:left}
-.fhx-checkout i{color:#555}
-.fhx-pagenote{max-width:900px;margin:10px auto;padding:10px 12px;border:1px solid #D4D4D8;border-radius:6px;background:#FAFAFA;color:#333;font:13px/1.45 system-ui,sans-serif}
-</style>
-<div class="fhx-banner">DRAFT, NOT LIVE · Round 1 · ${label}<a href="index.html">All drafts</a></div>`;
-
-const finish = (html, title, label) =>
-  bake(makeStatic(html))
-    .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
-    .replace("</body>", `${TOOLKIT(label)}\n</body>`);
 
 /* ============================================================
-   /roadmap : How It Works follows the 7-step note, plus the fixes still open
+   /roadmap : How It Works becomes the 7 steps of the note, the three pictures get the small line
    ============================================================ */
 const NOTE_STEPS = (() => {
   // lines 54-67 of marketing/ads/notes-green-screen.md, the block between the ``` fences
@@ -142,14 +111,10 @@ const HIW_END = at(SALES, "</section>", HIW_START) + "</section>".length;
 const HIW = SALES.slice(HIW_START, HIW_END);
 const OLD_ROWS = [...HIW.matchAll(/<div class="srow">[\s\S]*?<\/div><\/div><\/div>/g)].map((m) => m[0]);
 if (OLD_ROWS.length !== 5) throw new Error(`expected 5 old steps, found ${OLD_ROWS.length}`);
-const OLD = OLD_ROWS.map((r) => ({
-  title: r.match(/<div class="t">([^<]+)<\/div>/)[1],
-  tagline: r.match(/<div class="d"><b>([^<]+)<\/b>/)[1],
-  body: r.match(/<div class="d"><b>[^<]+<\/b>\s*([\s\S]*?)<\/div><\/div><\/div>$/)[1].trim(),
-}));
+const OLD_ROWS_BLOCK = HIW.slice(HIW.indexOf(OLD_ROWS[0]), HIW.indexOf(OLD_ROWS[4]) + OLD_ROWS[4].length);
+const OLD_BODIES = OLD_ROWS.map((r) => r.match(/<div class="d"><b>[^<]+<\/b>\s*([\s\S]*?)<\/div><\/div><\/div>$/)[1].trim());
 
-/* The words that move, word for word, and which old step they come from. Each one is checked
-   against the live page, and the proof at the bottom checks that no word was lost or added. */
+/* The words that move, word for word, and which old step they come from. */
 const GAP = (t) => `<span class="fh-gap">${t}</span>`;
 const MOVES = [
   /* new step 1 */ [[1, `I pull your credit with a soft pull. Your roadmap shows up in your portal. It shows what you qualify for right now. Even with perfect credit, your roadmap reveals the 13 hidden data points that transform a decent file into one that can secure an additional ${GAP("$100,000+")} in low-interest funding.`]],
@@ -165,96 +130,168 @@ const MOVES = [
 ];
 for (const chunks of MOVES) for (const [, text] of chunks) at(SALES, text); // each is on the live page, word for word
 {
-  const before = bag(strip(OLD.map((o) => o.body).join(" ")));
-  const after = bag(strip(MOVES.flat().map(([, t]) => t).join(" ")));
+  const before = bag(textOf(OLD_BODIES.join(" ")));
+  const after = bag(textOf(MOVES.flat().map(([, t]) => t).join(" ")));
   const diff = [...new Set([...before.keys(), ...after.keys()])].filter((w) => before.get(w) !== after.get(w));
   if (diff.length) throw new Error(`moved words do not match the old paragraphs: ${diff.join(", ")}`);
 }
 
-const NEW_ROWS = NOTE_STEPS.map((st, i) => {
-  const moved = MOVES[i]
-    .map(([from, text]) => `<span class="fhx-moved"><em class="fhx-from">from old step ${from}</em>${text}</span>`)
-    .join(" ");
-  return `<div class="srow"><span class="n">0${st.n}</span><div><div class="t"><span class="fhx-new">${st.name}</span></div><div class="d"><b><span class="fhx-new">${st.line}</span></b> ${moved}</div></div></div>`;
-});
-const NEW_HIW =
-  `<section class="sect">\n      <span class="kicker">How It Works</span>\n      <div class="h2">Get Every Dollar Your File Can Get. Then Do It Again, On Your Own.</div>\n      <div class="rows">\n        ` +
-  NEW_ROWS.join("\n        ") +
-  `\n      </div>\n      <a class="btn" href="#fh-order">Get My $147 Funding Roadmap</a>\n    </section>`;
+const newRows = (marked) =>
+  NOTE_STEPS.map(
+    (st, i) =>
+      `<div class="srow"><span class="n">0${st.n}</span><div><div class="t">${NEW(st.name, marked)}</div>` +
+      `<div class="d"><b>${NEW(st.line, marked)}</b> ${MOVES[i].map(([from, text]) => MOVED(from, text, marked)).join(" ")}</div></div></div>`,
+  ).join("\n        ");
 
-const OLD_NOTES = [
-  [
-    `Today this section has five steps. The note you approved on 10/2 has seven. This first step leads with what the roadmap shows. The note's first step is what the buyer does: check your credit.`,
-    `Becomes step 1, "${NOTE_STEPS[0].name}." The bold line is replaced by the note's line. Every word of the paragraph moves under step 1, unchanged. The note's emoji stay on the reel note, not the page.`,
-  ],
-  [
-    `This one step mixes parts of three of the note's steps: 3 (match your information), 4 (the letters) and 7 (inquiries). The note keeps them apart.`,
-    `The paragraph is split, word for word. "The gap is the money…" and "Your roadmap shows every item…" go under step 3. "Follow the roadmap, send the optimization letters, and maximize your fundability." goes under step 4. The bold line is replaced by the note's lines.`,
-  ],
-  [
-    `In the note, the business check belongs to step 3, "${NOTE_STEPS[2].name}." It has no step of its own.`,
-    `The whole paragraph moves under step 3, unchanged. The bold line is replaced.`,
-  ],
-  [
-    `In the note, opening a business comes second ("do this early"), and "do it again for every business" comes last.`,
-    `The first two sentences move under step 2. "You can repeat this process, funding company after company after company." moves under step 7. The bold line is replaced.`,
-  ],
-  [
-    `The note makes this two steps: find the banks (5), then apply in the right order (6).`,
-    `"Your list shows the banks that approve files like yours." moves under step 5. "Apply in that order for every business you set up…" moves under step 6. The bold line is replaced.`,
-  ],
-];
-const OLD_MARKED = OLD_ROWS.map((r, i) =>
-  r.replace('<div class="srow">', '<div class="srow fhx-bad">') +
-  mark("roadmap", `How It Works, step 0${i + 1} today: "${OLD[i].title}"`, OLD_NOTES[i][0], OLD_NOTES[i][1]),
-);
-let HIW_OLD = HIW;
-OLD_ROWS.forEach((r, i) => {
-  HIW_OLD = once(HIW_OLD, r, OLD_MARKED[i]);
-});
+/* The three cover pictures. The old files stay live until the push; the new ones are written to
+   marketing/testimonials/posters-v2/ and go to public/funnel/ under the -v2 names at push time. */
+const POSTER_IDS = ["colin2", "gene", "sarah"];
+const posterUrl = (id, v2) => `https://fundhub.ai/funnel/slo-testimonial-${id}-poster${v2 ? "-v2" : ""}.jpg`;
 
-/* ---------- testimonials: the three cover pictures, and Gene's caption ---------- */
-const SAME_FIX = `Keep the same words, but as one small line at the bottom of the picture, name first. Today the headline fills about a third of the picture, and the caption right under it says the same thing again.`;
-const POSTERS = {
-  "slo-testimonial-colin2-poster": [`The cover picture shows "Around $225,000 in funding" in huge type. It reads like an ad.`, SAME_FIX],
-  "slo-testimonial-gene-poster": [`The cover picture shows "About $420,000 over three years" in huge type. It reads like an ad.`, SAME_FIX],
-  "slo-testimonial-sarah-poster": [`The cover picture shows "Set to be approved for around $80,000" in four lines of huge type. It reads like an ad.`, SAME_FIX],
-};
-const GENE_CAPTION = [
-  `"Over three years" tells a buyer this takes a long time. What a buyer wants to know is how soon the first approval came. That number is not in the repo: Gene's script only says "about $420,000 over the last three years."`,
-  `I did not write a number. Give me how long Gene waited for his first approval and the line says that. If you do not have it, the caption stays as it is. The headline on his picture says "over three years" too, so it would change the same way.`,
-];
-const FIGS = [...SALES.matchAll(/<figure class="tcard">[\s\S]*?<\/figure>/g)].map((m) => m[0]);
-if (FIGS.length !== 3) throw new Error(`expected 3 testimonial cards, found ${FIGS.length}`);
-let SALES2 = SALES;
-for (const fig of FIGS) {
-  const id = Object.keys(POSTERS).find((k) => fig.includes(k));
-  if (!id) throw new Error("testimonial card has no known cover picture");
-  let f = once(fig, '<div class="vslot">', '<div class="vslot fhx-bad">');
-  const who = id.includes("colin") ? "Colin" : id.includes("gene") ? "Gene" : "Sarah";
-  let notes = mark("roadmap", `Testimonials, ${who}'s cover picture`, POSTERS[id][0], POSTERS[id][1]);
-  if (who === "Gene") {
-    f = once(f, '<figcaption class="tcap">', '<figcaption class="tcap fhx-bad">');
-    notes += mark("roadmap", `Testimonials, Gene's caption`, GENE_CAPTION[0], GENE_CAPTION[1]);
+function roadmapSource(marked) {
+  let s = SALES;
+  /* How It Works */
+  const hiwNew = HIW.replace(OLD_ROWS_BLOCK, () => newRows(marked));
+  const tag = "How It Works, now 7 steps in the order of your approved note (10/2). Green = the note's words. Blue = old words moved word for word. The 5 bold one-liners are gone.";
+  s = once(s, HIW, SEC(tag, hiwNew, marked));
+  /* the three pictures */
+  for (const id of POSTER_IDS) {
+    const fig = [...s.matchAll(/<figure class="tcard">[\s\S]*?<\/figure>/g)].map((m) => m[0]).find((f) => f.includes(posterUrl(id, false)));
+    if (!fig) throw new Error(`no testimonial card for ${id}`);
+    let f = once(fig, posterUrl(id, false), posterUrl(id, true));
+    if (marked) f = once(f, '<div class="vslot">', '<div class="vslot fhx-new">');
+    s = once(s, fig, f);
   }
-  f = once(f, "</figcaption>", `</figcaption>${notes}`);
-  SALES2 = once(SALES2, fig, f);
+  return s;
 }
-/* the old How It Works rows were marked first, so the numbers read top to bottom */
-SALES2 = once(SALES2, HIW, "@@HIW@@");
-
-/* the index and the fix list point at these red boxes by number */
-if (MARKS.roadmap.length !== 9 || !MARKS.roadmap[7].where.includes("Gene's caption")) {
-  throw new Error("red box numbers moved: fix the fix list (3 and 22)");
+function revertRoadmap(s) {
+  for (const id of POSTER_IDS) s = once(s, posterUrl(id, true), posterUrl(id, false));
+  return once(s, HIW.replace(OLD_ROWS_BLOCK, () => newRows(false)), HIW);
 }
 
-/* ---------- assemble the /roadmap draft ---------- */
+/* ============================================================
+   The five pages that say "Up to 12 funding rounds"
+   ============================================================ */
+const OLD_ROUND = "<span>Up to 12 funding rounds</span>";
+const NEW_ROUND = "3 to 6 funding rounds";
+function roundSource(src, marked) {
+  if (countOf(src, OLD_ROUND) !== 2) throw new Error(`expected "Up to 12 funding rounds" twice (two scrolling-bar sets), found ${countOf(src, OLD_ROUND)}`);
+  return src.split(OLD_ROUND).join(marked ? `<span class="fhx-new">${NEW_ROUND}</span>` : `<span>${NEW_ROUND}</span>`);
+}
+const revertRound = (s) => s.split(`<span>${NEW_ROUND}</span>`).join(OLD_ROUND);
+
+const ROUND_PAGES = [
+  { key: "watch", url: "/watch", rel: "01-vsl.html", out: "watch-draft.html", keyName: "apply-watch (page 25061160, builder page)" },
+  { key: "thank-you", url: "/thank-you", rel: "05-thank-you.html", out: "thank-you-draft.html", keyName: "apply-thank-you (page 25063539, builder page)" },
+  { key: "funding-book-call", url: "/funding-book-call", rel: "04b-book-bottom.html", top: "04a-book-top.html", out: "funding-book-call-draft.html", keyName: "apply-book (page 25062844, builder page)" },
+  { key: "roadmap-book", url: "/roadmap-book", rel: join("slo", "slo-02-booking.html"), out: "roadmap-book-draft.html", keyName: "slo-297-booking (page 25516165, custom page)" },
+  { key: "roadmap-thank-you", url: "/roadmap-thank-you", rel: join("slo", "slo-03-thank-you.html"), out: "roadmap-thank-you-draft.html", keyName: "slo-297-thank-you (page 25516166, custom page)" },
+];
+
+/* ---------- build every page twice: marked (the draft) and clean (what goes live) ---------- */
+const CLEAN = new Map(); // path under marketing/landing-pages -> clean source
+const MARKED = new Map();
 {
-  let page = SALES2.replace(
-    "@@HIW@@",
-    `\n<div class="fhx-sec" data-tag="TODAY · How It Works, 5 steps · each red box says where its words go">\n${HIW_OLD}\n</div>\n` +
-      `<div class="fhx-sec" data-tag="NEW · How It Works, 7 steps in the order of your approved note (10/2) · green = the note's words · blue = old words moved word for word">\n${NEW_HIW}\n</div>\n`,
-  );
+  const clean = roadmapSource(false);
+  const marked = roadmapSource(true);
+  if (strip(marked) !== clean) throw new Error("/roadmap: the clean page is not the draft with the marks stripped");
+  if (revertRoadmap(clean) !== SALES) throw new Error("/roadmap: the clean page differs from the live source by more than the approved edits");
+  CLEAN.set(join("slo", "slo-01-sales.html"), clean);
+  MARKED.set("roadmap", marked);
+}
+for (const p of ROUND_PAGES) {
+  const live = rd(p.rel);
+  const clean = roundSource(live, false);
+  const marked = roundSource(live, true);
+  if (strip(marked) !== clean) throw new Error(`${p.url}: the clean page is not the draft with the marks stripped`);
+  if (revertRound(clean) !== live) throw new Error(`${p.url}: the clean page differs from the live source by more than the approved edits`);
+  CLEAN.set(p.rel, clean);
+  MARKED.set(p.key, marked);
+}
+
+/* ---------- take everything live out of a draft ---------- */
+function makeStatic(html) {
+  return html
+    .replace(/<script\b[\s\S]*?<\/script>/gi, "")
+    .replace(/<noscript>[\s\S]*?<\/noscript>/gi, "")
+    .replace(/<iframe\b[\s\S]*?<\/iframe>/gi, `<div class="fhx-checkout"><b>A frame sits here on the live page</b><i>Left out of this draft.</i></div>`)
+    .replace(/(<video\b[^>]*?)\s+src="[^"]*"/gi, "$1")
+    .replace(/(<video\b[^>]*?)\s+autoplay\b/gi, "$1")
+    .replace(/<img\b[^>]*src="https:\/\/www\.google\.com\/s2\/favicons[^>]*>/gi, "");
+}
+
+/* ---------- bake the pictures in: a shared copy loads nothing from fundhub.ai ---------- */
+function bake(html) {
+  const urls = [...new Set(html.match(/https:\/\/fundhub\.ai\/funnel\/[A-Za-z0-9._-]+\.jpg/g) || [])];
+  for (const u of urls) {
+    const name = u.split("/").pop();
+    const f = name.endsWith("-poster-v2.jpg") ? join(POSTERS_V2, name) : join(REPO, "public", "funnel", name);
+    if (!existsSync(f)) {
+      throw new Error(`picture not found: ${f}` + (name.endsWith("-v2.jpg") ? " (run: CHROMIUM_PATH=<chromium> node scripts/testimonials/render-small-thumbnails.mjs)" : ""));
+    }
+    html = html.split(u).join("data:image/jpeg;base64," + readFileSync(f).toString("base64"));
+  }
+  return html;
+}
+
+/* ---------- the marked-draft toolkit ----------
+   The "hide the marks" button is a checkbox and a label, no script, so it also works where a page
+   is not allowed to run scripts. Every rule that shows a mark is switched off by :checked. */
+const TOOLKIT = (legend) => `
+<style>
+.fhx-cb{position:absolute;opacity:0;pointer-events:none;width:1px;height:1px}
+.fhx-banner{position:fixed;left:0;right:0;top:0;z-index:99999;background:#0B5D1E;color:#fff;font:600 12.5px/1.4 system-ui,sans-serif;padding:8px 16px;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;justify-content:center;text-align:center}
+.fhx-banner a{color:#fff;text-decoration:underline;white-space:nowrap}
+.fhx-btn{display:inline-block;cursor:pointer;background:#fff;color:#0B5D1E;border-radius:6px;padding:6px 10px;font:700 12px system-ui,sans-serif;white-space:nowrap}
+.fhx-btn .off{display:none}
+.fhx-cb:checked ~ .fhx-banner .fhx-btn .on{display:none}
+.fhx-cb:checked ~ .fhx-banner .fhx-btn .off{display:inline}
+.fhx-cb:focus-visible ~ .fhx-banner .fhx-btn{outline:3px solid #fff;outline-offset:2px}
+html body{padding-top:48px!important}
+@media(max-width:760px){html body{padding-top:84px!important}}
+
+/* the marks */
+.fhx-sec{position:relative;outline:2px dashed #2F6FEB;outline-offset:6px;margin:34px 0}
+.fhx-sec::before{content:attr(data-tag);display:block;font:700 11px/1.3 system-ui,sans-serif;letter-spacing:.04em;color:#fff;background:#2F6FEB;padding:5px 9px;border-radius:4px;margin-bottom:10px;width:max-content;max-width:100%}
+ins.fhx-new,ins.fhx-moved{text-decoration:none}
+ins.fhx-new,.marq-set span.fhx-new{background:rgba(22,163,74,.18);box-shadow:0 0 0 2px rgba(22,163,74,.28);border-radius:3px}
+.fhx-moved{border-bottom:2px solid #2F6FEB}
+.fhx-from{display:inline-block;font:700 10px/1 ui-monospace,monospace;color:#fff;background:#2F6FEB;border-radius:3px;padding:2px 4px;margin-right:4px;vertical-align:1px;font-style:normal;letter-spacing:.03em;text-transform:none}
+.vslot.fhx-new{outline:3px solid #16A34A!important;outline-offset:3px}
+.vslot.fhx-new::after{content:"NEW PICTURE";position:absolute;top:8px;left:8px;z-index:3;background:#0B5D1E;color:#fff;font:700 10px/1 ui-monospace,monospace;letter-spacing:.06em;padding:5px 7px;border-radius:3px;pointer-events:none}
+.fhx-checkout{box-sizing:border-box;width:calc(100% - 32px);max-width:720px;margin:24px auto;padding:18px 20px;border:2px dashed #2F6FEB;border-radius:10px;background:#F3F7FF;color:#111113;font:14px/1.5 system-ui,sans-serif;display:grid;gap:6px;text-align:left}
+.fhx-checkout i{color:#555}
+.fhx-pagenote{max-width:900px;margin:12px auto;padding:10px 12px;border:1px solid #D4D4D8;border-radius:6px;background:#FAFAFA;color:#333;font:13px/1.45 system-ui,sans-serif}
+.fhx-pagenote,.fhx-pagenote *{font-size:13px!important;line-height:1.45!important}
+
+/* the scrolling bar is frozen so every line shows; with the marks hidden it scrolls as it does live */
+.fhx-cb:not(:checked) ~ .c-wrapper .marq{overflow:visible!important}
+.fhx-cb:not(:checked) ~ .c-wrapper .marq-track{animation:none!important;width:auto!important;justify-content:center;transform:none!important}
+.fhx-cb:not(:checked) ~ .c-wrapper .marq-set{flex-wrap:wrap;justify-content:center;row-gap:10px;padding:0 16px}
+.fhx-cb:not(:checked) ~ .c-wrapper .marq-set + .marq-set{display:none!important}
+
+/* hide the marks: the page reads clean */
+.fhx-cb:checked ~ .c-wrapper .fhx-sec{outline:0!important;margin:0!important}
+.fhx-cb:checked ~ .c-wrapper .fhx-sec::before{display:none!important}
+.fhx-cb:checked ~ .c-wrapper ins.fhx-new,.fhx-cb:checked ~ .c-wrapper .marq-set span.fhx-new{background:none!important;box-shadow:none!important}
+.fhx-cb:checked ~ .c-wrapper .fhx-moved{border-bottom:0!important}
+.fhx-cb:checked ~ .c-wrapper .fhx-from{display:none!important}
+.fhx-cb:checked ~ .c-wrapper .vslot.fhx-new{outline:0!important}
+.fhx-cb:checked ~ .c-wrapper .vslot.fhx-new::after{display:none!important}
+.fhx-cb:checked ~ .c-wrapper .fhx-pagenote{display:none!important}
+</style>
+<div class="fhx-banner"><span>DRAFT, NOT LIVE · Round 2 · ${legend}</span><label class="fhx-btn" for="fhx-hide"><span class="on">Hide the marks</span><span class="off">Show the marks</span></label><a href="index.html">All drafts</a></div>`;
+
+function draft(html, title, legend) {
+  return bake(makeStatic(html))
+    .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+    .replace("<body>", `<body>\n<input type="checkbox" id="fhx-hide" class="fhx-cb" aria-label="Hide the marks">`)
+    .replace("</body>", `${TOOLKIT(legend)}\n</body>`);
+}
+
+/* ---------- /roadmap draft ---------- */
+{
+  let page = MARKED.get("roadmap");
   /* checkout: keep the order summary, leave the card and Social Security form out */
   const cut0 = at(page, "<!-- ================= SPLIT-LINE");
   const cut1 = at(page, "<!-- SLOT-UTM");
@@ -264,56 +301,26 @@ if (MARKS.roadmap.length !== 9 || !MARKS.roadmap[7].where.includes("Gene's capti
     `<span>Step 1 · Info &nbsp;→&nbsp; Step 2 · Card ($147) &nbsp;→&nbsp; Step 3 · Soft pull</span>` +
     `<i>Left out of this draft so nothing here can take a card or personal details.</i></div>\n` +
     page.slice(cut1);
-  const label = "red = wrong, fix under it · blue dashed = new or moved · green = new words from your note";
-  writeFileSync(join(OUT, "roadmap-draft.html"), finish(wrapFragment(page), "Draft · /roadmap", label));
+  writeFileSync(join(OUT, "roadmap-draft.html"), draft(wrapFragment(page), "Draft · /roadmap", "green = new or changed · blue = new section and moved words"));
 }
 
-/* ============================================================
-   The five pages that say "Up to 12 funding rounds"
-   ============================================================ */
-const ROUND_PROBLEM = `The scrolling bar says "Up to 12 funding rounds." The /watch video says a funding sequence keeps going for "three to six rounds." The page and the video have to say the same number.`;
-const ROUND_FIX = `3 to 6 funding rounds`;
-const ROUND_SRC = `<div class="src">Where 3 to 6 comes from: the /watch video script of 9/30, "that's how a funding sequence keeps going for three to six rounds." Saved in marketing/ads/reference/vsl-scripts-latest.md, line 24.</div>`;
-const OLD_ROUND = "<span>Up to 12 funding rounds</span>";
-const FREEZE = `<style>
-.marq{overflow:visible!important}
-.marq-track{animation:none!important;width:auto!important;justify-content:center;transform:none!important}
-.marq-set{flex-wrap:wrap;justify-content:center;row-gap:10px;padding:0 16px}
-.marq-set + .marq-set{display:none!important}
-</style>`;
-
-const ROUND_PAGES = [
-  { key: "watch", url: "/watch", file: "01-vsl.html", out: "watch-draft.html", page: () => wrapFragment(rd("01-vsl.html")) },
-  { key: "thank-you", url: "/thank-you", file: "05-thank-you.html", out: "thank-you-draft.html", page: () => wrapFragment(rd("05-thank-you.html")) },
-  {
-    key: "funding-book-call",
-    url: "/funding-book-call",
-    file: "04a-book-top.html + 04b-book-bottom.html",
-    out: "funding-book-call-draft.html",
-    page: () =>
-      wrapFragment(
-        rd("04a-book-top.html") +
-          `\n<div class="fhx-checkout"><b>The booking calendar sits here on the live page</b><i>It is the ClickFunnels calendar. Left out of this draft so nothing here can book a call.</i></div>\n` +
-          rd("04b-book-bottom.html"),
-      ),
-  },
-  { key: "roadmap-book", url: "/roadmap-book", file: "slo/slo-02-booking.html", out: "roadmap-book-draft.html", page: () => wrapFragment(rd("slo", "slo-02-booking.html")) },
-  { key: "roadmap-thank-you", url: "/roadmap-thank-you", file: "slo/slo-03-thank-you.html", out: "roadmap-thank-you-draft.html", page: () => wrapFragment(rd("slo", "slo-03-thank-you.html")) },
-];
+/* ---------- the five scrolling-bar drafts ---------- */
 for (const p of ROUND_PAGES) {
-  let html = p.page();
-  const first = at(html, OLD_ROUND);
-  html = html.slice(0, first) + `<span class="fhx-bad">Up to 12 funding rounds</span>` + html.slice(first + OLD_ROUND.length);
-  const m = html.match(/<div class="marq" aria-hidden="true">[\s\S]*?<\/div><\/div><\/div>/);
-  if (!m) throw new Error(`no scrolling bar on ${p.url}`);
-  const where = `${p.url}, the scrolling bar above the footer`;
+  let html;
   const note =
-    `<div class="fhx-wrap"><div class="fhx-pagenote">The scrolling bar is frozen here so every line shows. Live, it scrolls. Nothing else on this page changes.</div>` +
-    mark(p.key, where, ROUND_PROBLEM, ROUND_FIX, ROUND_SRC) +
-    `</div>`;
-  html = html.replace(m[0], () => m[0] + note);
-  html = html.replace("</head>", `${FREEZE}\n</head>`);
-  writeFileSync(join(OUT, p.out), finish(html, `Draft · ${p.url}`, `red = wrong, fix under it`));
+    `<div class="fhx-pagenote">The scrolling bar is frozen here so every line shows. Live, it scrolls. Press "Hide the marks" and it scrolls again. Nothing else on this page changes.</div>`;
+  const withNote = (src) => src.replace(/(<div class="marq" aria-hidden="true">[\s\S]*?<\/div><\/div><\/div>)/, (m) => m + note);
+  if (p.top) {
+    html = wrapFragment(
+      rd(p.top) +
+        `\n<div class="fhx-checkout"><b>The booking calendar sits here on the live page</b><i>It is the ClickFunnels calendar. Left out of this draft so nothing here can book a call.</i></div>\n` +
+        withNote(MARKED.get(p.key)),
+    );
+  } else {
+    html = wrapFragment(withNote(MARKED.get(p.key)));
+  }
+  if (!html.includes("fhx-pagenote")) throw new Error(`no scrolling bar on ${p.url}`);
+  writeFileSync(join(OUT, p.out), draft(html, `Draft · ${p.url}`, "green = new or changed"));
 }
 
 /* ============================================================
@@ -323,7 +330,7 @@ const CUT = "You cut it on 2026-10-01";
 const FIXES = [
   [1, "Move What You Get under the testimonials", "gone", `${CUT} (What You Get). The page is now headline, video, How It Works, testimonials, guarantee, FAQ, checkout.`],
   [2, "Cut the good-credit section and fold its points into the 800-score answer", "done", "The section was cut 2026-10-01. The first FAQ answer now covers the 800-score question."],
-  [3, "Gene's \"over three years\" on screen one", "open", "The Gene line left screen one on 2026-10-01, but \"over three years\" is still in his caption and on his cover picture. The repo has no number for how soon his first approval came, so the draft asks you. Red box 8."],
+  [3, "Gene's \"over three years\" on screen one", "left", "You said leave Gene's caption as it is. The screen-one line was cut 2026-10-01. \"Over three years\" stays in his caption and in the small line on his picture, because the repo has no number for how soon his first approval came."],
   [4, "Show a first win within a month", "gone", `${CUT} ("Your fastest first win").`],
   [5, "Checklist of the buyer's work, with times", "gone", `${CUT} ("What Happens Next").`],
   [6, "Business Duplication Map: a sample and a real example", "done", "The sample is under \"See a sample\" in the order summary. The real document was built 2026-10-02. A real client's file cannot go on a public page (your 2026-10-02 sample rule)."],
@@ -342,7 +349,7 @@ const FIXES = [
   [19, "Good-credit header and first FAQ answer say what a funding-ready file is", "done", "The header went with the section. The first FAQ answer says a high score is not a file set up for max funding, and names the 13 hidden data points."],
   [20, "\"All five\" does not match the six items", "done", "\"All five\" is gone. The order summary lists five documents plus a free bonus, and the bonus has its own sample."],
   [21, "Remove \"systems nominal · fundhub.ai\" from the footer", "done", "It is not on the page. The footer reads: Fundhub.ai | Copyright © 2026 Fundhub LLC | All Rights Reserved."],
-  [22, "Tone down the big headlines on the testimonial videos", "open", "All three cover pictures carry a huge 3-to-4-line headline. Red boxes 6, 7 and 9."],
+  [22, "Tone down the big headlines on the testimonial videos", "draft", "The three cover pictures now carry the same words on one small line near the bottom, with the name and business type above it. Green outlines on /roadmap."],
   [23, "Write down the change time", "partly", "The change log (marketing/ads/roadmap-page-changes.md) has the 2026-09-29 and 2026-10-01 pushes. It is missing 2026-10-02 (guarantee back, new buy box; I found no push time in the repo) and 2026-10-04 (price to $147, live 3:07 p.m. Pacific, per ops/workflows/roadmap-marketing-2026-10-04.md). The push for these drafts writes its own row."],
 ];
 
@@ -368,31 +375,42 @@ const FIXES = [
     [16, hasNo("What Happens Next")],
     [11, hasNo("Discover")],
   ];
-  for (const [n, ok] of checks) {
-    if (!ok) throw new Error(`fix ${n}: the page no longer matches the status written for it`);
-  }
+  for (const [n, ok] of checks) if (!ok) throw new Error(`fix ${n}: the page no longer matches the status written for it`);
 }
 
 /* ============================================================
-   The index: drafts, the decisions, the 23 fixes
+   The index: what changed in green, what "push it" does, the drafts, the 23 fixes
    ============================================================ */
 const esc = (t) => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const ROUND_LINE = "\"Up to 12 funding rounds\" now reads \"3 to 6 funding rounds.\"";
+const SMALL = (kicker, words) =>
+  `The big headline is now one small line near the bottom, "${words}." The name and business type sit above it: ${kicker}.`;
+const GREEN = {
+  roadmap: [
+    ["How It Works", `The 5 steps are now the 7 steps of your 10/2 note, in its order: ${NOTE_STEPS.map((s) => s.name).join(", ")}.`],
+    ["How It Works", "Each step now opens with the note's own line, for example \"Pull your report and make sure everything on it is accurate and in line.\""],
+    ["How It Works", "Every word of the old paragraphs moved under a step, word for word (blue underline, tagged with the old step number). The 5 bold one-liners are gone."],
+    ["Colin's picture", SMALL("COLIN SCHMIDT · BUSINESS OWNER", "Around $225,000 in funding")],
+    ["Gene's picture", SMALL("GENE · OWNER, THREE LLCS", "About $420,000 over three years")],
+    ["Sarah's picture", SMALL("SARAH · SALES TEAM AT FUNDHUB", "Set to be approved for around $80,000") + " Her strip sits lower than the other two because her video has a caption burned in at that height on every frame I checked, and the strip has to cover it."],
+  ],
+  watch: [["The scrolling bar", ROUND_LINE]],
+  "thank-you": [["The scrolling bar", ROUND_LINE]],
+  "funding-book-call": [["The scrolling bar", ROUND_LINE]],
+  "roadmap-book": [["The scrolling bar", ROUND_LINE]],
+  "roadmap-thank-you": [["The scrolling bar", ROUND_LINE]],
+};
 const DRAFTS = [
-  { key: "roadmap", url: "/roadmap", file: "roadmap-draft.html", live: "https://apply.fundhub.ai/roadmap", change: "How It Works goes from 5 steps to the 7 steps in your 10/2 note. The big headlines on the testimonial pictures. Gene's \"over three years.\"" },
-  { key: "watch", url: "/watch", file: "watch-draft.html", live: "https://apply.fundhub.ai/watch", change: "\"Up to 12 funding rounds\" becomes \"3 to 6 funding rounds.\"" },
-  { key: "thank-you", url: "/thank-you", file: "thank-you-draft.html", live: "https://apply.fundhub.ai/thank-you", change: "\"Up to 12 funding rounds\" becomes \"3 to 6 funding rounds.\"" },
-  { key: "funding-book-call", url: "/funding-book-call", file: "funding-book-call-draft.html", live: "https://apply.fundhub.ai/funding-book-call", change: "\"Up to 12 funding rounds\" becomes \"3 to 6 funding rounds.\"" },
-  { key: "roadmap-book", url: "/roadmap-book", file: "roadmap-book-draft.html", live: "https://apply.fundhub.ai/roadmap-book", change: "\"Up to 12 funding rounds\" becomes \"3 to 6 funding rounds.\"" },
-  { key: "roadmap-thank-you", url: "/roadmap-thank-you", file: "roadmap-thank-you-draft.html", live: "https://apply.fundhub.ai/roadmap-thank-you", change: "\"Up to 12 funding rounds\" becomes \"3 to 6 funding rounds.\"" },
+  { key: "roadmap", url: "/roadmap", file: "roadmap-draft.html", change: "How It Works is now the 7 steps of your 10/2 note. The three testimonial pictures carry their headline on one small line." },
+  ...ROUND_PAGES.map((p) => ({ key: p.key, url: p.url, file: p.out, change: ROUND_LINE })),
 ];
-const DECISIONS = [
-  ["How It Works: swap the 5 steps for the 7 in your 10/2 note, in its order?", "Yes. Every word of the old paragraphs moves under a step. Only the five bold one-liners are replaced (next question)."],
-  ["The 5 bold one-liners (like \"Get approved, not declined.\") give way to the note's own lines. Keep any of them?", "Drop them. The note's lines do the same job."],
-  ["Change \"Up to 12 funding rounds\" to \"3 to 6 funding rounds\" on all five pages?", "Yes. It is the number in your 9/30 /watch video."],
-  ["Shrink the big headlines on the three testimonial pictures?", "Yes. One small line at the bottom, same words."],
-  ["Gene: how long until his first approval? Give me the number, or his caption stays as it is.", "Leave it, unless you have the number."],
+const PUSH = [
+  "I strip every mark. The clean pages come from this same script. The script proves that each clean page is its draft with only the marks removed, and that it differs from today's live page only by the changes on this page.",
+  "The three new pictures go live first: copied to the site's picture folder and shipped from the Mac, because the /roadmap page points to them. The picture links in the testimonial data file change at the same time.",
+  "Then the pages go to ClickFunnels by API, never by hand. /roadmap, /roadmap-book and /roadmap-thank-you are full custom pages (keys slo-297-sales, slo-297-booking, slo-297-thank-you). /watch, /thank-you and /funding-book-call are builder pages: the push script cannot replace their body, so each gets a small marked head block that swaps the words as the page loads, the way the /watch line under the headline was changed (three new keys, not written yet). Never a full replace of a builder page.",
+  "I check each live page and write one new row in the change log with the real push time. The push saves a copy of each old page first.",
 ];
-const CHIP = { done: ["DONE", "ok"], open: ["NOT DONE", "bad"], partly: ["PARTLY", "mid"], gone: ["NO LONGER TRUE", "dim"] };
+const CHIP = { done: ["DONE", "ok"], draft: ["IN THE DRAFT", "ok"], left: ["LEFT AS IS", "mid"], partly: ["PARTLY", "mid"], gone: ["NO LONGER TRUE", "dim"] };
 const count = (k) => FIXES.filter((f) => f[2] === k).length;
 
 const INDEX_CSS = `
@@ -408,28 +426,30 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px
 .k1 .legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin:18px 0 0;padding:0;list-style:none;font-size:13px}
 .k1 .legend li{display:flex;align-items:center;gap:8px}
 .k1 .sw{width:16px;height:16px;border-radius:3px;flex:0 0 auto}
-.k1 .sw.r{outline:3px solid var(--red);outline-offset:-3px;background:var(--red-bg)}
 .k1 .sw.b{outline:2px dashed var(--blue);outline-offset:-2px}
 .k1 .sw.g{background:var(--green-bg);box-shadow:0 0 0 2px var(--green) inset}
+.k1 .sw.h{background:var(--fg)}
 .k1 h2{font:700 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:40px 0 12px}
-.k1 .decide{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:d}
-.k1 .decide li{counter-increment:d;display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
-.k1 .decide li::before{content:counter(d);font:700 13px/28px var(--mono);text-align:center;width:28px;height:28px;border-radius:50%;background:var(--blue-bg);color:var(--blue)}
-.k1 .decide b{display:block;font-weight:600}
-.k1 .decide span{display:block;color:var(--muted);font-size:14px;margin-top:3px}
+.k1 .list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.k1 .list li{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:11px 14px}
+.k1 .list b{font-weight:600}
+.k1 .list span{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.k1 .left{margin:10px 0 0;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--dim-bg);color:var(--muted);font-size:14px}
+.k1 .push{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:p}
+.k1 .push li{counter-increment:p;display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.k1 .push li::before{content:counter(p);font:700 13px/28px var(--mono);text-align:center;width:28px;height:28px;border-radius:50%;background:var(--blue-bg);color:var(--blue)}
 .k1 .after{margin:14px 0 0;color:var(--muted);font-size:14px;max-width:70ch}
 .k1 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:12px}
 .k1 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
 .k1 .card .u{font:600 15px/1.3 var(--mono);word-break:break-all}
 .k1 .card .c{margin:0;color:var(--muted);font-size:14px}
-.k1 .card .n{font:600 12px/1 var(--mono);color:var(--red)}
+.k1 .card .n{font:600 12px/1 var(--mono);color:var(--green)}
 .k1 .open{display:inline-block;justify-self:start;background:var(--fg);color:var(--bg);text-decoration:none;font-weight:600;font-size:14px;padding:10px 14px;border-radius:8px}
 .k1 .open:focus-visible,.k1 summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
 .k1 details{border-top:1px solid var(--line);padding-top:8px}
 .k1 summary{cursor:pointer;font-size:13px;color:var(--muted)}
-.k1 .m{margin:10px 0 0;padding:10px 12px;border-left:4px solid var(--red);background:var(--red-bg);border-radius:4px;font-size:13.5px}
+.k1 .m{margin:10px 0 0;padding:10px 12px;border-left:4px solid var(--green);background:var(--green-bg);border-radius:4px;font-size:13.5px}
 .k1 .m b{font-weight:600}
-.k1 .m .t{color:var(--green);margin-top:5px}
 .k1 .sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:13px}
 .k1 .sum span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
 .k1 .fixes{margin:0;padding:0;list-style:none;display:grid;gap:8px}
@@ -443,37 +463,42 @@ body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px
 .k1 .chip.mid{background:var(--amber-bg);color:var(--amber)}
 .k1 .chip.dim{background:var(--dim-bg);color:var(--muted)}
 `;
-const marksHtml = (key) =>
-  (MARKS[key] || [])
-    .map((m) => `<div class="m"><b>${m.n}. ${m.where}</b><div>${m.problem}</div><div class="t"><b>Try:</b> ${m.fix}</div></div>`)
-    .join("");
+const greenHtml = (key) =>
+  (GREEN[key] || []).map(([where, what]) => `<div class="m"><b>${esc(where)}</b><div>${esc(what)}</div></div>`).join("");
+const nGreen = (key) => (GREEN[key] || []).length;
 const INDEX_BODY = `
 <div class="k1">
   <span class="pill">Draft · not live</span>
   <h1>Fundhub page drafts</h1>
-  <p class="lede">Round 1 of 2, 2026-10-05. Six pages, one draft each. Red boxes show what is wrong, with the fix under each one. Nothing here is on a live page, and nothing was pushed.</p>
+  <p class="lede">Round 2 of 2, 2026-10-05. Your five picks are written into the six drafts. Every new or changed line is green. Open a draft and press "Hide the marks" at the top to read it clean. Nothing here is on a live page, and nothing was pushed.</p>
   <ul class="legend">
-    <li><span class="sw r"></span>Red box: what is wrong, fix under it</li>
-    <li><span class="sw b"></span>Blue dashed box: new or moved</li>
-    <li><span class="sw g"></span>Green: new words, straight from your note</li>
+    <li><span class="sw g"></span>Green: new or changed</li>
+    <li><span class="sw b"></span>Blue: new section, and old words moved word for word</li>
+    <li><span class="sw h"></span>"Hide the marks" button: reads the page clean</li>
   </ul>
 
-  <h2>Your call</h2>
-  <ol class="decide">
-    ${DECISIONS.map(([q, pick]) => `<li><div><b>${esc(q)}</b><span>My pick: ${esc(pick)}</span></div></li>`).join("\n    ")}
+  <h2>What changed, in green</h2>
+  <ul class="list">
+    ${Object.keys(GREEN).flatMap((k) => GREEN[k].map(([where, what]) => `<li><b>${esc(DRAFTS.find((d) => d.key === k).url)} · ${esc(where)}</b><span>${esc(what)}</span></li>`)).join("\n    ")}
+  </ul>
+  <p class="left">Not changed, your pick: Gene's caption stays as it is.</p>
+
+  <h2>When you say "push it"</h2>
+  <ol class="push">
+    ${PUSH.map((t) => `<li><div>${esc(t)}</div></li>`).join("\n    ")}
   </ol>
-  <p class="after">Say "fix it" and I turn the red boxes into green fixes on this same link. Say "push it" and I take every mark off, push the pages, prove them live, and write the change time in the log.</p>
+  <p class="after">Until you say it, nothing is live, the pull request stays a draft, and the live pages are untouched.</p>
 
   <h2>The drafts</h2>
   <div class="grid">
     ${DRAFTS.map((d) => {
-      const n = (MARKS[d.key] || []).length;
-      return `<div class="card"><div class="u">${d.url}</div><p class="c">${esc(d.change)}</p><div class="n">${n} red box${n === 1 ? "" : "es"}</div><a class="open" href="${d.file}">Open the draft</a><details><summary>The red boxes, in words</summary>${marksHtml(d.key)}</details></div>`;
+      const n = nGreen(d.key);
+      return `<div class="card"><div class="u">${d.url}</div><p class="c">${esc(d.change)}</p><div class="n">${n} green change${n === 1 ? "" : "s"}</div><a class="open" href="${d.file}">Open the draft</a><details><summary>The green changes, in words</summary>${greenHtml(d.key)}</details></div>`;
     }).join("\n    ")}
   </div>
 
   <h2>The 23 /roadmap fixes, checked against the page today</h2>
-  <div class="sum"><span>${count("done")} done</span><span>${count("open")} not done</span><span>${count("partly")} partly</span><span>${count("gone")} no longer true</span></div>
+  <div class="sum"><span>${count("done")} done</span><span>${count("draft")} in the draft</span><span>${count("left")} left as is</span><span>${count("partly")} partly</span><span>${count("gone")} no longer true</span></div>
   <ol class="fixes">
     ${FIXES.map(([n, what, st, why]) => `<li><span class="no">${n}</span><div class="what">${esc(what)} <span class="chip ${CHIP[st][1]}">${CHIP[st][0]}</span></div><div class="why">${esc(why)}</div></li>`).join("\n    ")}
   </ol>
@@ -488,7 +513,24 @@ writeFileSync(
   `<!doctype html>\n<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">\n<title>Fundhub Page Drafts</title>\n<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">\n<style>${INDEX_CSS}</style></head><body>${INDEX_BODY}</body></html>\n`,
 );
 
+/* ---------- --clean <dir>: the push-ready pages, no mark anywhere ---------- */
+const ci = process.argv.indexOf("--clean");
+if (ci >= 0) {
+  const target = process.argv[ci + 1];
+  if (!target || target.startsWith("--")) throw new Error("--clean needs a folder: --clean <dir>");
+  const dir = resolve(target);
+  if (dir === resolve(LP) && !process.argv.includes("--push-approved")) {
+    throw new Error("that folder holds the live page sources. Chris has not said push it yet, so nothing is written. (After he does: add --push-approved.)");
+  }
+  for (const [rel, html] of CLEAN) {
+    mkdirSync(dirname(join(dir, rel)), { recursive: true });
+    writeFileSync(join(dir, rel), html);
+  }
+  console.log(`wrote ${CLEAN.size} clean pages under ${dir}: ${[...CLEAN.keys()].join(", ")}`);
+}
+
 console.log(
-  `built ${DRAFTS.length} drafts + index. Red boxes: ${DRAFTS.map((d) => `${d.url} ${(MARKS[d.key] || []).length}`).join(", ")}. ` +
-    `Fixes: ${count("done")} done, ${count("open")} not done, ${count("partly")} partly, ${count("gone")} no longer true.`,
+  `built ${DRAFTS.length} drafts + index. Green changes: ${DRAFTS.map((d) => `${d.url} ${nGreen(d.key)}`).join(", ")}. ` +
+    `Proved: moved words intact, clean = draft minus marks, clean differs from live only by the approved edits (${CLEAN.size} pages). ` +
+    `Fixes: ${count("done")} done, ${count("draft")} in the draft, ${count("left")} left as is, ${count("partly")} partly, ${count("gone")} no longer true.`,
 );
