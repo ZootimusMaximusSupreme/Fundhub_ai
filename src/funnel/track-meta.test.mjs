@@ -22,6 +22,7 @@ import assert from "node:assert/strict";
 import { recordTrack, TRACK_CAP_SQL, cleanPageUrl, cleanProps } from "./track.mjs";
 import { SESSION_CONTACT_SQL, sha256 } from "../meta/user-data.mjs";
 import { RECORD_META_SQL } from "../meta/track-send.mjs";
+import { SLO_VALUE } from "../meta/map.mjs";
 import { clearMetaTokenCache } from "../meta/token.mjs";
 import handler, { recordInterest, META_WAIT_MS } from "../../api/public/slo-interest.mjs";
 
@@ -271,7 +272,7 @@ describe("what Meta gets", () => {
     assert.equal(h.metaCalls[0].body.test_event_code, "TEST4242");
   });
 
-  test("InitiateCheckout: $297 under the browser's id; the next tab-2 post (no id) sends nothing", async () => {
+  test("InitiateCheckout: the live price under the browser's id; the next tab-2 post (no id) sends nothing", async () => {
     const h = harness();
     await send(h, { event: "buybox_tab", seq: 5, props: { tab: 2, bbv: 2 } });
     await send(h, { event: "buybox_tab", seq: 9, props: { tab: 2, bbv: 2 }, meta_event_id: undefined });
@@ -280,7 +281,7 @@ describe("what Meta gets", () => {
     const ev = h.metaCalls[0].body.data[0];
     assert.equal(ev.event_name, "InitiateCheckout");
     assert.equal(ev.event_id, `${SID}.5`);
-    assert.deepEqual(ev.custom_data, { value: 297, currency: "USD" });
+    assert.deepEqual(ev.custom_data, { value: SLO_VALUE, currency: "USD" });
   });
 
   test("the last survey question: Lead and SurveyStep in one request, one shared id", async () => {
@@ -304,7 +305,7 @@ describe("what Meta gets", () => {
     assert.equal(h.rows[0].payload.props.order_ref, "ord_9", "the order ref is kept on the row");
     assert.equal(h.metaCalls.length, 1);
     assert.deepEqual(h.metaCalls[0].body.data.map((e) => [e.event_name, e.event_id, e.custom_data]),
-      [["Purchase", "purchase.ord_9", { value: 297, currency: "USD" }]]);
+      [["Purchase", "purchase.ord_9", { value: SLO_VALUE, currency: "USD" }]]);
   });
 });
 

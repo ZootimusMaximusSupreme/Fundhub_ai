@@ -31,7 +31,7 @@
 import { fromCents } from "../commissions/money.mjs";
 import { SLO_PRICE_CENTS } from "../slo/offer.mjs";
 
-/** $297 as Meta wants it: a number of dollars, from integer cents. */
+/** The live roadmap price as Meta wants it: a number of dollars, from integer cents. */
 export const SLO_VALUE = Number(fromCents(SLO_PRICE_CENTS));
 export const CURRENCY = "USD";
 

@@ -96,7 +96,9 @@
   /* Meta: the map is docs/tracking/meta-events.md, "Map (database event → Meta)". */
   var VIEW_CONTENT = { "/roadmap": 1, "/watch": 1, "/apply": 1, "/home": 1 };
   var BUY_BOX = { "fh-cf-form": 1, fhw: 1 };
-  var PRICE = { value: 297, currency: "USD" };
+  /* The live roadmap price. Must equal SLO_VALUE in src/meta/map.mjs (the server copy);
+     src/ads/fh-events-meta.test.mjs holds the two together. */
+  var PRICE = { value: 147, currency: "USD" };
   var REF = /^[A-Za-z0-9_-]{1,64}$/;
   var PV_ID = /^[A-Za-z0-9_.-]{1,120}$/;
   var CLICK_ID = /^[A-Za-z0-9_-]{1,500}$/;
