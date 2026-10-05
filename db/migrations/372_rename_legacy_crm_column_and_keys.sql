@@ -5,18 +5,25 @@ DO $m$
 DECLARE
   v_old text := chr(103) || chr(104) || chr(108);
 BEGIN
+  -- Guarded 2026-10-05 (M0 step 6): on a fresh database both names are already
+  -- recorded (the renamed copy and the no-op original both apply), so renaming
+  -- the old key would collide with the new one. Skip when the new key exists.
+  -- Production ran this file before the guard; no effect there.
   EXECUTE format(
-    'UPDATE schema_migrations SET key = %L WHERE key = %L',
+    'UPDATE schema_migrations SET key = %1$L WHERE key = %2$L
+       AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE key = %1$L)',
     'migrations/114_crm_agent_seed.sql',
     'migrations/114_' || v_old || '_agent_seed.sql'
   );
   EXECUTE format(
-    'UPDATE schema_migrations SET key = %L WHERE key = %L',
+    'UPDATE schema_migrations SET key = %1$L WHERE key = %2$L
+       AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE key = %1$L)',
     'migrations/168_retire_legacy_crm_agents.sql',
     'migrations/168_retire_' || v_old || '_agents.sql'
   );
   EXECUTE format(
-    'UPDATE schema_migrations SET key = %L WHERE key = %L',
+    'UPDATE schema_migrations SET key = %1$L WHERE key = %2$L
+       AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE key = %1$L)',
     'migrations/255_doc_agent_docs_received.sql',
     'migrations/255_' || v_old || '_doc_docs_received.sql'
   );

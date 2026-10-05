@@ -6,11 +6,23 @@
 // on the client control panel so a human sees exactly what the AI sees.
 //
 // READ ONLY. Nothing here writes. Missing pieces stay null — never invented.
+//
+// Owner law (2026-08-15, restated 2026-10-05): no agent starts blank. Every
+// call carries the client's whole dossier (src/clients/dossier.mjs): every
+// message, call, CSM answer, payment, contract, credit pull and brain
+// transcript, with no count limits and no text cuts. When it is too big for one
+// model call, the older items arrive as the running summary from
+// client_dossier_summaries and everything newer still arrives in full.
 
 import { listWaypoints } from "../waypoints/store.mjs";
 import { nextStepOf } from "../progress/read.mjs";
-
-const RECENT_MESSAGE_LIMIT = 20;
+import {
+  buildDossier,
+  readDossierSummary,
+  renderDossier,
+  DEFAULT_PROMPT_BUDGET_CHARS
+} from "../clients/dossier.mjs";
+import { scrubSensitive, scrubText } from "../clients/scrub.mjs";
 
 const SURVEY_KEYS = [
   "how_much_funding_does_your_business_need",
@@ -22,26 +34,28 @@ const SURVEY_KEYS = [
 ];
 
 /**
- * fetchContext(db, { orgId, clientId, conversationId?, channel?, recentLimit? })
+ * fetchContext(db, { orgId, clientId, conversationId?, channel?, budgetChars? })
  * → {
  *     conversation: { id, channel, summary, agent_code, agent_halted_at, agent_halt_reason, last_pulse_at } | null,
- *     recent_messages: [{ id, direction, channel, body, sender_kind, sender_agent_code, created_at }],
+ *     recent_messages: [...every message in the conversation, oldest first — no limit],
  *     survey: { [key]: value },
  *     client: { id, first_name, last_name, email, phone, funded, funded_amount, tags, flags },
  *     snapshot: { pipeline_stage, funding_round, fico, prequal_amount, agent_context_field, outcome_tier },
- *     insights: [{ stage, channel, answers, notes, recording_url, meeting_url, occurred_at }],
- *     recent_calls: [{ outcome, notes, recording_url, transcript, logged_at }],
+ *     insights: [...every CSM answer, newest first],
+ *     recent_calls: [...every sales call, newest first, full transcript],
  *     checklist: { open_step, open_count } | null,
+ *     dossier: the whole client file (src/clients/dossier.mjs) | null,
+ *     dossier_render: { mode, items_total, items_in_full, items_summarized, over_budget, summary_needed } | null,
  *     as_prompt_block: string   // ready to inject under the system prompt
  *   }
  */
 export async function fetchContext(db, {
-  orgId, clientId, conversationId = null, channel = null, recentLimit = RECENT_MESSAGE_LIMIT
+  orgId, clientId, conversationId = null, channel = null, budgetChars = DEFAULT_PROMPT_BUDGET_CHARS
 } = {}) {
   if (!orgId) throw new Error("fetchContext: orgId is required");
   if (!clientId) throw new Error("fetchContext: clientId is required");
 
-  const [clientRes, convoRes, messagesRes, stageRes, roundRes, cfRes, insightRes, callRes] = await Promise.all([
+  const [clientRes, convoRes, stageRes, roundRes, cfRes, dossier, dossierSummary] = await Promise.all([
     db.query(
       `SELECT id, first_name, last_name, email, phone, funded, funded_amount,
               tags, outcome_tier, dnd_sms, dnd_email, dnd_voice
@@ -75,16 +89,6 @@ export async function fetchContext(db, {
             [orgId, clientId]
           ),
     db.query(
-      `SELECT id, direction, channel, rendered_body AS body, sender_kind,
-              sender_agent_code, created_at, subject
-         FROM messages
-        WHERE org_id = $1 AND client_id = $2
-          AND ($3::uuid IS NULL OR conversation_id = $3)
-        ORDER BY created_at DESC
-        LIMIT $4`,
-      [orgId, clientId, conversationId, recentLimit]
-    ),
-    db.query(
       `SELECT ps.name AS stage_name, p.name AS pipeline_name
          FROM cards c
          JOIN pipeline_stages ps ON ps.id = c.stage_id
@@ -115,28 +119,19 @@ export async function fetchContext(db, {
         WHERE client_id = $1 AND org_id = $2`,
       [clientId, orgId]
     ),
-    db.query(
-      `SELECT stage, channel, answers, notes, recording_url, meeting_url, occurred_at
-         FROM customer_insights
-        WHERE client_id = $1 AND org_id = $2
-        ORDER BY occurred_at DESC
-        LIMIT 6`,
-      [clientId, orgId]
-    ),
-    db.query(
-      `SELECT outcome, notes, recording_url, transcript, logged_at
-         FROM call_outcomes
-        WHERE client_id = $1 AND org_id = $2
-        ORDER BY logged_at DESC
-        LIMIT 3`,
-      [clientId, orgId]
-    )
+    buildDossier(db, { orgId, clientId }),
+    readDossierSummary(db, { orgId, clientId })
   ]);
 
   const clientRow = clientRes.rows[0] || null;
   const cf = cfRes.rows[0] || {};
   const convo = convoRes.rows[0] || null;
-  const recent = (messagesRes.rows || []).slice().reverse();
+  // Every message in this conversation (or every message, when no conversation
+  // was named), oldest first. No limit.
+  const recent = (dossier?.messages || [])
+    .filter((m) => !conversationId || m.conversation_id === conversationId)
+    .slice()
+    .reverse();
 
   const survey = {};
   for (const key of SURVEY_KEYS) {
@@ -221,7 +216,7 @@ export async function fetchContext(db, {
     snapshot
   };
 
-  context.insights = (insightRes.rows || []).map((row) => ({
+  context.insights = (dossier?.csm || []).map((row) => ({
     stage: row.stage || null,
     channel: row.channel || null,
     answers: row.answers && typeof row.answers === "object" ? row.answers : {},
@@ -230,8 +225,9 @@ export async function fetchContext(db, {
     meeting_url: row.meeting_url || null,
     occurred_at: row.occurred_at || null
   }));
-  context.recent_calls = (callRes.rows || []).map((row) => ({
+  context.recent_calls = (dossier?.calls || []).map((row) => ({
     outcome: row.outcome || null,
+    belief_failed: row.belief_failed || null,
     notes: row.notes || null,
     recording_url: row.recording_url || null,
     transcript: row.transcript || null,
@@ -261,15 +257,38 @@ export async function fetchContext(db, {
     ).length
   };
 
-  context.as_prompt_block = formatPromptBlock(context);
-  return context;
+  context.dossier = dossier;
+  const rendered = dossier
+    ? renderDossier(dossier, { summary: dossierSummary, budgetChars })
+    : null;
+  context.dossier_render = rendered
+    ? {
+        mode: rendered.mode,
+        items_total: rendered.items_total,
+        items_in_full: rendered.items_in_full,
+        items_summarized: rendered.items_summarized,
+        over_budget: rendered.over_budget,
+        summary_needed: rendered.summary_needed
+      }
+    : null;
+  // The same scrubber the dossier uses runs over everything this returns and
+  // over the prompt text: no SSN, tax id, birth date, full card or account
+  // number, password or token reaches a model, the shadow log or the screen.
+  // (The dossier was scrubbed when it was built.)
+  const { dossier: built, ...rest } = context;
+  const safe = scrubSensitive(rest);
+  safe.dossier = built;
+  safe.as_prompt_block = scrubText(formatPromptBlock(safe, { dossierText: rendered?.text || null }));
+  return safe;
 }
 
-/* formatPromptBlock — compact text the model reads. Nulls omitted so the
-   model is not told "unknown" for facts we do not have. */
-export function formatPromptBlock(ctx) {
+/* formatPromptBlock — the text the model reads. Nulls omitted so the model is
+   not told "unknown" for facts we do not have. Nothing is cut: with a dossier,
+   the dossier carries every message, call and CSM answer in full; without one,
+   the three lists below are printed in full. */
+export function formatPromptBlock(ctx, { dossierText = null } = {}) {
   const lines = ["CLIENT CONTEXT (read-only facts; do not invent missing values)"];
-  const c = ctx.client;
+  const c = dossierText ? null : ctx.client;
   if (c) {
     const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
     if (name) lines.push(`Name: ${name}`);
@@ -294,11 +313,11 @@ export function formatPromptBlock(ctx) {
   if (s.outcome_tier) lines.push(`Outcome tier: ${s.outcome_tier}`);
   if (s.analyzer_path) lines.push(`Analyzer path: ${s.analyzer_path}`);
   if (s.employee_next_action) lines.push(`Employee next action: ${s.employee_next_action}`);
-  if (s.agent_context_field) {
+  if (!dossierText && s.agent_context_field) {
     lines.push("Stored agent context:");
-    lines.push(String(s.agent_context_field).slice(0, 2000));
+    lines.push(String(s.agent_context_field));
   }
-  const surveyKeys = Object.keys(ctx.survey || {});
+  const surveyKeys = dossierText ? [] : Object.keys(ctx.survey || {});
   if (surveyKeys.length) {
     lines.push("Survey answers:");
     for (const k of surveyKeys) lines.push(`  - ${k}: ${ctx.survey[k]}`);
@@ -306,7 +325,7 @@ export function formatPromptBlock(ctx) {
   if (ctx.conversation?.summary) {
     lines.push(`Conversation summary: ${ctx.conversation.summary}`);
   }
-  if (ctx.recent_messages?.length) {
+  if (!dossierText && ctx.recent_messages?.length) {
     lines.push("Recent messages (oldest first):");
     for (const m of ctx.recent_messages) {
       const who = m.direction === "inbound"
@@ -314,31 +333,31 @@ export function formatPromptBlock(ctx) {
         : (m.sender_kind === "agent"
           ? `AGENT(${m.sender_agent_code || "?"})`
           : (m.sender_kind || "OUTBOUND").toUpperCase());
-      lines.push(`  [${who}] ${(m.body || "").slice(0, 500)}`);
+      lines.push(`  [${who}] ${m.body || ""}`);
     }
   }
-  if (ctx.insights?.length) {
+  if (!dossierText && ctx.insights?.length) {
     lines.push("Customer interviews / check-ins:");
     for (const i of ctx.insights) {
       const when = i.occurred_at ? ` ${i.occurred_at}` : "";
       lines.push(`  - ${i.stage || "insight"} ${i.channel || ""}${when}`.trim());
-      if (i.notes) lines.push(`    notes: ${String(i.notes).slice(0, 400)}`);
+      if (i.notes) lines.push(`    notes: ${String(i.notes)}`);
       const answers = i.answers && typeof i.answers === "object" ? i.answers : {};
-      for (const [k, v] of Object.entries(answers).slice(0, 12)) {
+      for (const [k, v] of Object.entries(answers)) {
         if (v == null || v === "") continue;
-        lines.push(`    ${k}: ${String(v).slice(0, 200)}`);
+        lines.push(`    ${k}: ${typeof v === "object" ? JSON.stringify(v) : String(v)}`);
       }
       if (i.recording_url) lines.push(`    recording: ${i.recording_url}`);
     }
   }
-  if (ctx.recent_calls?.length) {
+  if (!dossierText && ctx.recent_calls?.length) {
     lines.push("Recent sales calls:");
     for (const call of ctx.recent_calls) {
       const rec = call.recording_url ? ` recording: ${call.recording_url}` : "";
       lines.push(`  - ${call.outcome || "logged"} ${call.logged_at || ""}${rec}`.trim());
-      if (call.notes) lines.push(`    notes: ${String(call.notes).slice(0, 400)}`);
+      if (call.notes) lines.push(`    notes: ${String(call.notes)}`);
       if (call.transcript) {
-        lines.push(`    said: ${String(call.transcript).slice(0, 1200)}`);
+        lines.push(`    said: ${String(call.transcript)}`);
       }
     }
   }
@@ -346,11 +365,15 @@ export function formatPromptBlock(ctx) {
   if (step) {
     lines.push("Open checklist step (Capital Blueprint coach — stay on this step only):");
     lines.push(`  Title: ${step.title}`);
-    if (step.detail) lines.push(`  Detail: ${String(step.detail).slice(0, 800)}`);
+    if (step.detail) lines.push(`  Detail: ${String(step.detail)}`);
     if (step.due_at) lines.push(`  Due: ${step.due_at}${step.overdue ? " (overdue)" : ""}`);
     lines.push(`  State: ${step.state}`);
   } else if (ctx.checklist && ctx.checklist.open_count === 0) {
     lines.push("Checklist: no open steps (all done or not seeded).");
+  }
+  if (dossierText) {
+    lines.push("");
+    lines.push(dossierText);
   }
   return lines.join("\n");
 }

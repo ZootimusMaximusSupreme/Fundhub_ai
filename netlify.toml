@@ -114,7 +114,14 @@
     #
     # Same class as the two entries in external_node_modules below and as
     # scripts/black-reports/** above: a runtime path esbuild cannot see.
-    "vendor/underwriteiq-full/**"
+    "vendor/underwriteiq-full/**",
+    # Marketing machine: the repo copy of the shared files, read when GitHub
+    # cannot be reached (src/repo/read.mjs). Spec M0 step 2, "Reads".
+    "marketing/ads/RULES.md",
+    "marketing/ads/VOICE.md",
+    "marketing/ads/banned-live.json",
+    "marketing/ads/registry.json",
+    "marketing/ads/angles.json"
   ]
   # letter-generator.js require()s this at load time. esbuild leaves it
   # external, which 502s the whole /api/* function (login included).
@@ -154,6 +161,20 @@
 # dead. A scheduled function gets 15 minutes.
 [functions."ad-video-sweeper"]
   schedule = "*/5 * * * *"
+
+<<<<<<< HEAD
+# The Meta pull (spec M0 step 5): every hour at :17 for the last 3 days, and the
+# 07:17 UTC run re-reads 28 days. It only starts meta-sync-background (15 min);
+# a full ad-account walk does not fit the 26 s /api/inngest gave it.
+[functions."meta-sync-sweeper"]
+  schedule = "17 * * * *"
+
+# The marketing machine's clock (spec M0 step 4). Reads the database, queues the
+# weekly batch job and wakes the background worker (marketing-worker-background).
+# It does nothing while the machine's `enabled` setting is false. SWEEP_CRON in
+# netlify/functions/marketing-clock.mjs must match.
+[functions."marketing-clock"]
+  schedule = "*/15 * * * *"
 
 # Every minute, not every five. This one drains the Commas payment queue: the
 # webhook only stores the bytes and answers, so nothing a client pays reaches

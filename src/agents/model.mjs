@@ -134,7 +134,7 @@ function pickProvider(env, mediaParts) {
 }
 
 /**
- * callModel({ system, user, env?, fetchImpl?, model?, maxTokens? })
+ * callModel({ system, user, env?, fetchImpl?, model?, maxTokens?, provider?, timeoutMs?, cache?, tools?, toolChoice? })
  * → {
  *     mode: 'live' | 'shadow',
  *     text: string | null,          // assistant reply (synthetic marker when keyless)
@@ -146,10 +146,29 @@ function pickProvider(env, mediaParts) {
 export async function callModel({
   system, user, env = process.env, fetchImpl = globalThis.fetch,
   model = DEFAULT_MODEL, maxTokens = DEFAULT_MAX_TOKENS,
-  media = []
+  media = [],
+  // Marketing machine (spec M0 step 4). All optional; none change the default path.
+  //   provider  'anthropic' forces Claude: no OpenAI fallback, and a missing or
+  //             masked ANTHROPIC_API_KEY is an error, never a silent switch.
+  //   timeoutMs aborts the vendor call after this long (no timeout when unset).
+  //   cache     sends the system prompt as one block marked cache_control ephemeral.
+  //   tools / toolChoice  passed to Anthropic as tools / tool_choice.
+  provider: forcedProvider = null, timeoutMs = null, cache = false,
+  tools = null, toolChoice = null
 } = {}) {
   const mediaParts = Array.isArray(media) ? media.filter(Boolean) : [];
-  const provider = pickProvider(env, mediaParts);
+  if (forcedProvider && forcedProvider !== "anthropic") {
+    return failedBeforeSend({ system, user, model, maxTokens, provider: String(forcedProvider) },
+      `provider must be 'anthropic' when set (got ${JSON.stringify(forcedProvider)})`);
+  }
+  if (forcedProvider === "anthropic") {
+    const key = env && env.ANTHROPIC_API_KEY;
+    if (!key || isMasked(key)) {
+      return failedBeforeSend({ system, user, model, maxTokens, provider: "anthropic" },
+        "anthropic 401: ANTHROPIC_API_KEY is missing or masked, so nothing was sent");
+    }
+  }
+  const provider = forcedProvider === "anthropic" ? "anthropic" : pickProvider(env, mediaParts);
   const request = {
     model: provider === "openai" ? openaiModelName(model, env) : model,
     system: String(system || ""),
@@ -188,9 +207,11 @@ export async function callModel({
 
   try {
     if (provider === "openai") {
-      return await callOpenAI({ env, fetchImpl, request, mediaParts });
+      return await callOpenAI({ env, fetchImpl: withTimeout(fetchImpl, timeoutMs), request, mediaParts });
     }
-    return await callAnthropic({ env, fetchImpl, request, mediaParts });
+    return await callAnthropic({
+      env, fetchImpl: withTimeout(fetchImpl, timeoutMs), request, mediaParts, cache, tools, toolChoice
+    });
   } catch (err) {
     return {
       mode: "live",
@@ -204,6 +225,39 @@ export async function callModel({
       usage: { input_tokens: 0, output_tokens: 0 }
     };
   }
+}
+
+// An answer that is an error and was never sent. status 401 keeps
+// classifyModelFailure from calling a missing key "temporary": waiting will not fix it.
+function failedBeforeSend({ system, user, model, maxTokens, provider }, error) {
+  return {
+    mode: "live",
+    text: null,
+    raw: null,
+    request: { model, system: String(system || ""), user: String(user || ""), max_tokens: maxTokens, media_count: 0, provider },
+    status: provider === "anthropic" ? 401 : 400,
+    error,
+    usage: { input_tokens: 0, output_tokens: 0 }
+  };
+}
+
+// Aborts the call after timeoutMs. The thrown error carries no status, so
+// classifyModelFailure treats it as temporary (the call never got an answer).
+function withTimeout(fetchImpl, timeoutMs) {
+  const ms = Number(timeoutMs);
+  if (!Number.isFinite(ms) || ms <= 0) return fetchImpl;
+  return async (url, init = {}) => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetchImpl(url, { ...init, signal: controller.signal });
+    } catch (err) {
+      if (controller.signal.aborted) throw new Error(`model call timed out after ${ms} ms`);
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
+  };
 }
 
 async function callOpenAI({ env, fetchImpl, request, mediaParts }) {
@@ -246,9 +300,19 @@ async function callOpenAI({ env, fetchImpl, request, mediaParts }) {
   return { mode: "live", text, raw, request, error: null, usage };
 }
 
-async function callAnthropic({ env, fetchImpl, request, mediaParts }) {
+async function callAnthropic({ env, fetchImpl, request, mediaParts, cache = false, tools = null, toolChoice = null }) {
   const key = env.ANTHROPIC_API_KEY;
   const userContent = buildUserContent(request.user, mediaParts);
+  const body = {
+    model: request.model,
+    max_tokens: request.max_tokens,
+    system: cache && request.system
+      ? [{ type: "text", text: request.system, cache_control: { type: "ephemeral" } }]
+      : request.system,
+    messages: [{ role: "user", content: userContent }]
+  };
+  if (Array.isArray(tools) && tools.length) body.tools = tools;
+  if (toolChoice) body.tool_choice = typeof toolChoice === "string" ? { type: toolChoice } : toolChoice;
   const res = await fetchImpl("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -256,12 +320,7 @@ async function callAnthropic({ env, fetchImpl, request, mediaParts }) {
       "x-api-key": key,
       "anthropic-version": "2023-06-01"
     },
-    body: JSON.stringify({
-      model: request.model,
-      max_tokens: request.max_tokens,
-      system: request.system,
-      messages: [{ role: "user", content: userContent }]
-    })
+    body: JSON.stringify(body)
   });
 
   const raw = await res.json().catch(() => null);
@@ -279,7 +338,10 @@ async function callAnthropic({ env, fetchImpl, request, mediaParts }) {
   }
 
   const text = extractText(raw);
-  return { mode: "live", text, raw, request, error: null, usage };
+  const toolCalls = Array.isArray(raw && raw.content)
+    ? raw.content.filter((b) => b && b.type === "tool_use")
+    : [];
+  return { mode: "live", text, raw, request, error: null, usage, ...(toolCalls.length ? { toolCalls } : {}) };
 }
 
 function buildUserContent(userText, mediaParts = []) {
@@ -340,10 +402,16 @@ function extractText(raw) {
 
 function usageOf(raw) {
   const u = raw && raw.usage;
-  return {
+  const out = {
     input_tokens: Math.max(0, Number(u && (u.input_tokens || u.prompt_tokens)) || 0),
     output_tokens: Math.max(0, Number(u && (u.output_tokens || u.completion_tokens)) || 0)
   };
+  // Prompt-cache counts, only when the vendor reports them (Anthropic does).
+  if (u && (u.cache_read_input_tokens != null || u.cache_creation_input_tokens != null)) {
+    out.cache_read_tokens = Math.max(0, Number(u.cache_read_input_tokens) || 0);
+    out.cache_creation_tokens = Math.max(0, Number(u.cache_creation_input_tokens) || 0);
+  }
+  return out;
 }
 
 export default callModel;
