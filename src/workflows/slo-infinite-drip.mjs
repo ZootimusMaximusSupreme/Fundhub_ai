@@ -85,6 +85,11 @@ export async function sweepSloDrip(db, now = new Date()) {
   return { ok: true, scanned: r.rows.length, results };
 }
 
+/** The journey runner's entry point (src/journeys/runner/registry.mjs). */
+export async function handle({ db: handleDb } = {}) {
+  return sweepSloDrip(handleDb || db);
+}
+
 export const sloInfiniteDrip = inngest.createFunction(
   { id: "slo-infinite-drip", name: "SLO — infinite roadmap drip" },
   { cron: SWEEP_CRON },

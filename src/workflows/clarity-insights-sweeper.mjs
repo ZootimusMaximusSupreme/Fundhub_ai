@@ -24,7 +24,7 @@ export async function handle({ step } = {}) {
 }
 
 export const clarityInsightsSweeper = inngest.createFunction(
-  { id: "clarity-insights-sweeper", name: "Microsoft Clarity insights sweeper" },
+  { id: "clarity-insights-sweeper", name: "Microsoft Clarity insights sweeper", retries: 0 },
   { cron: SWEEP_CRON },
   () => sweep(),
 );

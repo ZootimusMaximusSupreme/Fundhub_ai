@@ -2,7 +2,9 @@
 
 import { asStaff } from "../partners/rls.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
-import { fetchProjectLiveInsights, normalizeNumOfDays } from "./clarity-export.mjs";
+import { normalizeNumOfDays, VALID_DIMENSIONS } from "./clarity-export.mjs";
+import { fetchClarityLiveInsights } from "../adapters/clarity-export.mjs";
+import { clarityDbCounter } from "./clarity-counter.mjs";
 
 export function clarityQueryKey(q) {
   const parts = [q.dimension1, q.dimension2, q.dimension3].filter(Boolean);
@@ -45,23 +47,38 @@ export async function runClarityOrgSync(opts = {}) {
   let synced = 0;
   const errors = [];
 
-  for (const q of queries) {
-    const result = await fetchProjectLiveInsights({
-      token,
-      numOfDays,
-      dimension1: q.dimension1,
-      dimension2: q.dimension2,
-      dimension3: q.dimension3,
-      fetch: opts.fetch,
-    });
+  // The counter lives in the database (Netlify cannot write credentials/).
+  // Microsoft's 10/day cap is enforced by the adapter; this run adds its own 2/day.
+  const counter = clarityDbCounter(db, { orgId });
+  const env = { CLARITY_DATA_EXPORT_TOKEN: token, CLARITY_PROJECT_ID: projectId };
 
-    if (!result.ok) {
-      errors.push({
-        query: q,
-        status: result.status,
-        message: result.message,
-      });
+  for (const q of queries) {
+    const bad = [q.dimension1, q.dimension2, q.dimension3].find(
+      (d) => d && !VALID_DIMENSIONS.has(String(d).trim()),
+    );
+    if (bad) {
+      errors.push({ query: q, message: `Invalid Clarity dimension: ${bad}` });
       continue;
+    }
+
+    let payload;
+    try {
+      payload = await fetchClarityLiveInsights({
+        env,
+        counter,
+        retries: 0,
+        numOfDays,
+        dimension1: q.dimension1,
+        dimension2: q.dimension2,
+        dimension3: q.dimension3,
+        fetch: opts.fetch,
+      });
+    } catch (err) {
+      // A failed pull is logged and the run stops: no retry, no further calls.
+      const message = String(err && err.message ? err.message : err);
+      console.error(`[clarity-org-sync] pull failed, stopping: ${message}`);
+      errors.push({ query: q, message });
+      break;
     }
 
     const queryKey = clarityQueryKey(q);
@@ -87,10 +104,10 @@ export async function runClarityOrgSync(opts = {}) {
           q.dimension1 ?? null,
           q.dimension2 ?? null,
           q.dimension3 ?? null,
-          JSON.stringify(result.payload),
+          JSON.stringify(payload),
         ],
       );
-    }, { db });
+    }, { db, pool: opts.pool });
 
     synced++;
   }

@@ -28,7 +28,7 @@ The finished ad must be the best of all clips and takes, and it must also kill t
 
 Chris never opens Submagic. Agents run merge, trim, upload, captions, and B-roll in the pipeline.
 
-Joining and editorial cuts happen **before** Submagic sees the film (Submagic takes one upload per project). Submagic's job is captions and our B-roll on top of the already-merged master.
+Joining and editorial cuts happen **before** Submagic sees the film (Submagic takes one upload per project). Submagic adds captions to the already-merged master. Our animation overlays (our B-roll) go on last, after captions (owner-set 2026-10-04; law: `animations-last`). Submagic AI B-roll stays off.
 
 ## Never
 

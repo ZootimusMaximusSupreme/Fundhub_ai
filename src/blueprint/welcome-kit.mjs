@@ -40,8 +40,11 @@ export async function fundingSnapshotNumbersForClient(db, { orgId, clientId }) {
   );
   const crsResult = crsRes.rows[0]?.result;
   if (crsResult && typeof crsResult === "object") {
+    /* Only the two dollar figures are read back below; the name never reaches a
+       printed page from here. No stand-in word is supplied for a missing name
+       (src/metro2/letters/consumer-name.test.mjs). */
     const personal = {
-      name: `${row.first_name || ""} ${row.last_name || ""}`.trim() || "Client"
+      name: `${row.first_name || ""} ${row.last_name || ""}`.trim()
     };
     const client = buildBlackReportClient({ crsResult, personal });
     return {

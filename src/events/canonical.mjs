@@ -148,7 +148,20 @@ export const CANONICAL_EVENTS = [
   "subscription.renewed",
   "subscription.past_due",
   "subscription.canceled",
-  "subscription.completed"
+  "subscription.completed",
+  /* THE $297 ROADMAP (SLO) PAGE. api/public/slo-interest.mjs emits
+     slo.contact_started when a visitor leaves an email, and
+     api/public/slo-checkout.mjs emits slo.checkout_started when they open the
+     checkout. Both still pass allowNonCanonical (written before this entry);
+     they are listed here because registered workflows trigger on them
+     (slo-genuine-followup, slo-no-reply-197, slo-genuine-checkout-sms), and an
+     event a workflow listens for belongs on this list. Added 2026-10-05.
+
+     Keep the line below short — scripts/diagrams/generate.mjs uses the comment
+     line immediately above a group as that group's section name in the table. */
+  // $297 roadmap page
+  "slo.contact_started",
+  "slo.checkout_started"
 ];
 
 export const isCanonical = (name) => CANONICAL_EVENTS.includes(name);
