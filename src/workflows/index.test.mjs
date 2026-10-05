@@ -71,6 +71,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "c-03-inquiry-removed-resume-or-hold",
   "c-05-pre-funding-review",
   "c-06-crs-results-router",
+  "clarity-insights-sweeper",
   "commas-inbox-drain",
   "contract-chaser",
   "daily-pulse",
