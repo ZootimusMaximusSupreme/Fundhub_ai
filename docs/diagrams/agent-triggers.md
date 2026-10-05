@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 90 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 91 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -45,6 +45,7 @@ flowchart LR
   e_deposit_paid --> w_c_02b_inquiry_removal_requested["c-02b-inquiry-removal-requested"]
   e_deposit_paid --> w_s_06_post_call_funding_purchased["s-06-post-call-funding-purchased"]
   e_deposit_paid --> w_s_doc_collection["s-doc-collection"]
+  e_deposit_paid --> w_s_doc_reminders["s-doc-reminders"]
   e_diagnostic_paid(["diagnostic.paid"])
   e_diagnostic_paid --> w_af_02_referral_ownership_capture["af-02-referral-ownership-capture"]
   e_diagnostic_paid --> w_c_00_crs_soft_pull_request["c-00-crs-soft-pull-request"]
@@ -112,7 +113,7 @@ flowchart LR
 | `booking.noshow` | 1 | `s-05a-no-show-recovery` |
 | `booking.rescheduled` | 2 | `bs-01-precall-launcher`, `s-04b-booking-reminders` |
 | `call.completed` | 4 | `ai-set-03-no-answer-cadence`, `ds-01-repair-referral`, `s-08-post-call-funding-declined`, `s-offer-bucket` |
-| `deposit.paid` | 3 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased`, `s-doc-collection` |
+| `deposit.paid` | 4 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased`, `s-doc-collection`, `s-doc-reminders` |
 | `diagnostic.paid` | 2 | `af-02-referral-ownership-capture`, `c-00-crs-soft-pull-request` |
 | `docs.received` | 3 | `doc-check`, `f-06-funding-conditions-missing-docs`, `repair-bureau-response-reader` |
 | `entry.captured` | 5 | `af-02-referral-ownership-capture`, `at-01-first-touch-capture`, `s-00-welcome`, `s-01-new-lead-intake`, `s-02-incomplete-survey-nudge` |
