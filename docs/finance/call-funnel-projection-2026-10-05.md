@@ -46,7 +46,7 @@ Success fees come weeks later, only for clients a bank actually funds. The model
 - One closer takes about 198 booked calls a month: 10 slots a day, packed at 90% (9 calls), 22 workdays. Source: the model's staffing section.
 - 4 closers (1 now plus 3 onboarding) take about **790 booked calls a month**.
 - So 4 closers fill up at about **$23,800 of ads a month at $30 a call**, or **$39,600 at $50**.
-- At that pace the $50K lasts about 2 months, unless more closers are added.
+- At that pace the $50K lasts about 2 months at $30 a call, or about 5 weeks at $50, unless more closers are added.
 - Spending the whole $50K in one month at $30 a call would need about 8 closers. At $50 a call, about 5.
 
 ## The $250,000-a-month goal
