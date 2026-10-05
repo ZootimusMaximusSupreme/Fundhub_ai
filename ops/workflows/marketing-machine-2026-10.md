@@ -36,8 +36,8 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 | M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | done (Chris approved; mode switched) | #33 | |
 | M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | done (review blocker fixed: ETag reads, bundled fallback, 3 nits) | #25 | |
 | M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | done (in review) | #21 | |
-| M0.4 | Clock, worker, buzz, model client (stacked on #21 + #25) | A | mm-builder | claimed | |
-| M0.5 | Meta v26.0, sync, ad-number resolver, tag views | A | mm-architect | pending | |
+| M0.4 | Clock, worker, buzz, model client (stacked on #21 + #25; migration 410) | A | mm-builder | done (review: no blockers; should-fixes done) | #35 | |
+| M0.5 | Meta v26.0, sync, ad-number resolver, tag views (stacked on #21; migrations 411–412) | A | mm-architect | claimed | |
 | M0.6 | CI that actually checks work | C | mm-architect | claimed — repairing 114/168/255 + guarding 372 (Chris: go) | #23 | |
 | M0.7 | Journey docs (`marketing-machine-flow.md`) | A | mm-chore | pending | |
 | M0.8 | Ship stays in step with GitHub | A | mm-builder | done (review blocker fixed: `--no-renames`) | #24 | |
@@ -72,9 +72,9 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 |---|---|---|---|---|
 | 9.1 | Flow and state machine (migration 416) | mm-architect | done (review blocker fixed in ac97749); **ships together with 9.2–9.5** | #26 | |
 | 9.2 | Aligner | mm-architect | done (in review) | #32 | |
-| 9.3 | Encodes | mm-architect | claimed | |
-| 9.4 | Animations, always last | mm-builder | pending | |
-| 9.5 | Video worker (`video-worker/`) | mm-builder | pending | |
+| 9.3 | Encodes | mm-architect | done (A/V drift fixed, 60-piece run frame-exact) | #34 | |
+| 9.4 | Animations, always last | mm-builder | claimed | |
+| 9.5 | Video worker (`video-worker/`) | mm-builder | done (in review) | #37 | |
 | 9.6 | Approval and light editing (routes B, screen E) | mm-builder | pending | |
 | 9.7 | Delivery | mm-builder | pending | |
 
@@ -133,6 +133,8 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 - Found on main (handed to lane C): fresh `db/migrate.mjs` fails at `114_crm_agent_seed.sql` ("VALUES lists must all be the same length").
 
 ## Blockers and open questions
+
+- **Mac list (env names, values never in git):** add to `.env.example` and set on Netlify in one batch before one ship: `GITHUB_REPO`, `GITHUB_REPO_TOKEN`, `GITHUB_BRANCH` (#25); `MARKETING_WORKER_SECRET` (#35); `VIDEO_WORKER_URL`, `VIDEO_WORKER_KEY`, `VIDEO_WORKER_CALLBACK_SECRET`, `VIDEO_WORKER_CALLBACK_URL`, `CLOUDFLARE_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET_AD_VIDEO` (#37; the cloud session's permission check blocks reading `.env.example`); `CLARITY_DATA_EXPORT_TOKEN` and `CLARITY_PROJECT_ID` checked (#19).
 
 - **Live migration check (2026-10-05, read-only):** production `schema_migrations` holds BOTH old and new keys for 114, 168 and 255, plus both 372 files. Nothing in those files will run again on live, so repairing them only affects fresh databases. Chris said go; lane C is repairing.
 - **M0.9 setter calls:** needs one real completed-call webhook body from Bland; none exists in the repo.
