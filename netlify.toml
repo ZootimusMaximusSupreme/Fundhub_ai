@@ -155,6 +155,12 @@
 [functions."ad-video-sweeper"]
   schedule = "*/5 * * * *"
 
+# The Meta pull (spec M0 step 5): every hour at :17 for the last 3 days, and the
+# 07:17 UTC run re-reads 28 days. It only starts meta-sync-background (15 min);
+# a full ad-account walk does not fit the 26 s /api/inngest gave it.
+[functions."meta-sync-sweeper"]
+  schedule = "17 * * * *"
+
 # Every minute, not every five. This one drains the Commas payment queue: the
 # webhook only stores the bytes and answers, so nothing a client pays reaches
 # the money chain until a pass runs. That delay is visible to a human.

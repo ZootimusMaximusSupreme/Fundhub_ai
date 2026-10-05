@@ -404,14 +404,20 @@ describe("POST /api/campaigns/link-asset", { skip: !HAVE_DB ? "no DATABASE_URL" 
 
   // ── 4. the ad number's own rules ────────────────────────────────────────
 
-  test("two ads cannot claim the same number", async () => {
+  /* Changed 2026-10-05 (spec M0 step 5, migration 411): one number may run in
+     several ad sets, so ads_fundhub_number_uq became a plain index. Two Meta
+     ads carrying the same number is now the normal case, and a typed number
+     records its source as 'manual'. */
+  test("two ads can carry the same number, each marked manual", async () => {
     await call({ partner_id: partnerA, ad_id: adA, fundhub_ad_number: "77" }, staffToken);
     const r = await call({ partner_id: partnerA, ad_id: adA2, fundhub_ad_number: "77" }, staffToken);
 
-    assert.strictEqual(r.code, 409, JSON.stringify(r.body));
-    assert.strictEqual(r.body.error, "ad_number_taken");
-    const row = await adRow(adA2);
-    assert.notStrictEqual(row.fundhub_ad_number, "77");
+    assert.strictEqual(r.code, 200, JSON.stringify(r.body));
+    const both = await asStaff((tx) => tx.query(
+      `SELECT fundhub_ad_number, fundhub_ad_number_source FROM ads WHERE id = ANY($1)`, [[adA, adA2]]
+    ).then((x) => x.rows));
+    assert.deepStrictEqual(both.map((b) => [b.fundhub_ad_number, b.fundhub_ad_number_source]),
+      [["77", "manual"], ["77", "manual"]]);
   });
 
   test("a Meta ad id is refused in our number column", async () => {

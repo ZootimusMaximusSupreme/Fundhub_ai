@@ -30,7 +30,14 @@ const DELIBERATELY_UNSERVED = {
      netlify/functions/ad-video-sweeper.mjs, 15 minutes instead of 26 seconds —
      which calls the very same sweep() out of this directory. Registering it
      here again would put two crons on the same take. */
-  "ad-video-sweeper": "runs as a Netlify scheduled function; an Inngest pass is killed at 26s mid-upload"
+  "ad-video-sweeper": "runs as a Netlify scheduled function; an Inngest pass is killed at 26s mid-upload",
+  /* Moved out of Inngest on 2026-10-05 (spec M0 step 5). The Meta pull now runs
+     hourly (3 days) plus nightly (28 days); a full ad-account walk is not
+     bounded by the 26 seconds /api/inngest gets. It runs as
+     netlify/functions/meta-sync-sweeper.mjs → meta-sync-background.mjs (15
+     minutes), calling the same sweep(). Registering it here again would run
+     every pass twice. */
+  "meta-campaign-sync-sweeper": "runs as a Netlify scheduled function waking a background function; a full Meta walk does not fit 26s"
 };
 
 /* EVERY WORKFLOW THIS REPO SERVES, BY NAME.
@@ -101,7 +108,6 @@ const EXPECTED_WORKFLOW_IDS = [
   "inquiry-call-sweeper",
   "meet-transcript-sweeper",
   "message-dispatch-sweeper",
-  "meta-campaign-sync-sweeper",
   "clickfunnels-analytics-sweeper",
   "n-01-cold-nurture",
   "n-02-warm-nurture",

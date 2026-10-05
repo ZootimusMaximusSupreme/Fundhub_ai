@@ -10,13 +10,21 @@
 import { test, describe } from "node:test";
 import assert from "node:assert";
 
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
 import {
   sweep,
   SWEEP_CRON,
   SOURCE_WORKFLOW,
   DUE_PARTNERS_SQL,
+  PASSES,
+  passFor,
   metaCampaignSyncSweeper
 } from "./meta-campaign-sync-sweeper.mjs";
+
+const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..");
 import { INSIGHT_WINDOW_DAYS } from "../../api/campaigns/sync.mjs";
 
 const A = "11111111-1111-1111-1111-111111111111";
@@ -34,26 +42,40 @@ describe("the pull runs on a clock, not only when somebody presses a button", ()
      api/campaigns/sync.mjs on a schedule. Miss eight days and, with the old
      seven-day window, day eight was gone for good — and a missing day is drawn
      as zero spend, so it looked like the money was never spent. */
-  test("the sweeper is registered, so something other than a person runs the sync", async () => {
-    const { functions } = await import("./index.mjs");
-    const ids = functions.map((fn) => fn.id());
-    assert.ok(ids.includes("meta-campaign-sync-sweeper"),
-      "the Meta sync sweeper is not registered — the pull is back to button-only, " +
-      "and days nobody presses for are lost permanently");
+  /* Since 2026-10-05 (spec M0 step 5) the clock is a Netlify scheduled function,
+     not an Inngest cron: hourly 3 days plus a nightly 28 does not fit the 26 s
+     /api/inngest gets. The schedule lives in netlify.toml. */
+  test("netlify.toml puts the Meta pull on an hourly clock", () => {
+    const toml = readFileSync(path.join(ROOT, "netlify.toml"), "utf8");
+    const m = /\[functions\."meta-sync-sweeper"\]\s*\n\s*schedule\s*=\s*"([^"]+)"/.exec(toml);
+    assert.ok(m, "meta-sync-sweeper has no schedule — the pull is back to button-only");
+    assert.equal(m[1], SWEEP_CRON, "netlify.toml and SWEEP_CRON disagree");
+    assert.equal(SWEEP_CRON, "17 * * * *", "every hour");
   });
 
-  test("it is registered as a clock job, and the clock is daily", async () => {
+  test("the sweeper is not also an Inngest cron, so no pass runs twice", async () => {
     const { functions } = await import("./index.mjs");
-    const fn = functions.find((f) => f.id() === "meta-campaign-sync-sweeper");
-    const triggers = (fn.opts && fn.opts.triggers) || [];
-    const crons = triggers.map((t) => t.cron).filter(Boolean);
-    const events = triggers.map((t) => t.event).filter(Boolean);
+    const ids = functions.map((fn) => fn.id());
+    assert.ok(!ids.includes("meta-campaign-sync-sweeper"),
+      "the Meta sync is registered on Inngest again — every pass would run twice, " +
+      "and the Inngest one is killed at 26 seconds");
+  });
 
-    assert.deepEqual(crons, [SWEEP_CRON], "the schedule is not the one this file declares");
-    assert.equal(SWEEP_CRON, "0 7 * * *", "07:00 UTC — midnight Pacific, just after the day closes");
-    assert.deepEqual(events, [],
-      "a clock job must not also wait for an event — an event nobody emits is how this " +
-      "job silently stops running again");
+  test("the 07:00 UTC hour is the nightly 28-day pass; every other hour reads 3 days", () => {
+    assert.equal(passFor(new Date("2026-10-05T07:17:00Z")), "nightly");
+    assert.equal(passFor(new Date("2026-10-05T08:17:00Z")), "hourly");
+    assert.equal(passFor(new Date("2026-10-05T06:59:59Z")), "hourly");
+    assert.deepEqual({ ...PASSES }, { hourly: 3, nightly: 28 });
+  });
+
+  test("the window it is asked for reaches the sync", async () => {
+    const seen = [];
+    await sweep({
+      listPartners: async () => [A],
+      sync: async ({ windowDays }) => { seen.push(windowDays); return clean(); },
+      windowDays: 3
+    });
+    assert.deepEqual(seen, [3]);
   });
 
   test("the id the registry sees is the id this file exports", () => {

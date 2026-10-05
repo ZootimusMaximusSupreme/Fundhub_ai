@@ -60,6 +60,12 @@ const ALLOWED_RAW_FETCH = {
     "the worker, through the providers and the chokepoint. Added 2026-09-24 after the " +
     "worker had to move off Inngest (26 s) and off a scheduled function (30 s), both of " +
     "which killed a 120 MB upload mid-flight.",
+  "netlify/functions/meta-sync-sweeper.mjs":
+    "The clock for the Meta pull (spec M0 step 5). Its ONE call is a POST to our own deploy " +
+    "(process.env.URL) at /.netlify/functions/meta-sync-background, behind " +
+    "MARKETING_WORKER_SECRET, to start the 15-minute background pull. Nothing leaves " +
+    "fundhub.ai; Meta is reached only inside the worker, through src/adplatforms/_api.mjs. " +
+    "Added 2026-10-05 when the pull went hourly and could no longer fit /api/inngest's 26 s.",
   // ── Not actually the global fetch ────────────────────────────────────────
   "src/http/read-api.mjs":
     "`fetch` here is a local parameter holding a database reader, not the global.",

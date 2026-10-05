@@ -59,13 +59,24 @@
 // confusing 400.
 //
 //
-// DAILY, NOT HOURLY. Meta reports by whole day in the ad account's own
-// timezone, so a day is not final until it has ended there. 07:00 UTC is
-// midnight Pacific and 01:00 Mountain, so the pass runs just after the previous
-// day closes across the US. An hourly pull would re-read the same 28 days
-// twenty-four times for numbers that move once. And the 28-day window means a
-// pass that is missed, paused or broken costs nothing permanent — the next one
-// that succeeds repairs it.
+// HOURLY 3 DAYS, PLUS A NIGHTLY 28 (spec M0 step 5, 2026-10-05). The machine
+// splits each week's scripts by the last 7 days of spend, and the Command
+// Center is where Chris looks for how marketing is doing, so today's spend has
+// to arrive within the hour. The hourly pass reads only the last 3 days, which
+// is where Meta is still moving. Meta reports by whole day in the ad account's
+// own timezone, so a day is not final until it has ended there: the nightly
+// pass at 07:00 UTC (midnight Pacific, 01:00 Mountain) re-reads all 28 days,
+// so a pass that is missed, paused or broken still costs nothing permanent.
+//
+// NOT AN INNGEST CRON ANY MORE. An Inngest pass runs inside the synchronous
+// /api/inngest request, which Netlify kills at 26 seconds (spec §4 trap 5), and
+// a full walk of an ad account (every campaign, ad set and ad, then the
+// numbers) is not bounded by 26 seconds. The clock is now
+// netlify/functions/meta-sync-sweeper.mjs (scheduled, it only starts the work)
+// and the work runs in netlify/functions/meta-sync-background.mjs (15
+// minutes) — the same split ad-video-sweeper uses. Both call sweep() below.
+// metaCampaignSyncSweeper is still exported but no longer registered in
+// src/workflows/index.mjs; registering it again would run every pass twice.
 //
 //
 // REGISTERING IT SENDS NOTHING AND SPENDS NOTHING. The sync is a READ from Meta
@@ -80,13 +91,29 @@ import { inngest } from "./client.mjs";
 import { asStaff } from "../partners/rls.mjs";
 import {
   syncPartnerConnections,
-  INSIGHT_WINDOW_DAYS
+  INSIGHT_WINDOW_DAYS,
+  HOURLY_WINDOW_DAYS
 } from "../../api/campaigns/sync.mjs";
 
-/* 07:00 UTC daily — midnight Pacific, 01:00 Mountain. See the header for why
-   daily rather than hourly, and why this hour. */
-export const SWEEP_CRON = "0 7 * * *";
+/* Every hour at :17 (off the top of the hour, where every other job lands).
+   The 07:xx UTC run is the nightly 28-day pass — midnight Pacific, 01:00
+   Mountain — and every other hour reads 3 days. See the header. Must match
+   netlify.toml [functions."meta-sync-sweeper"] and that file's SWEEP_CRON. */
+export const SWEEP_CRON = "17 * * * *";
+export const NIGHTLY_UTC_HOUR = 7;
 export const SOURCE_WORKFLOW = "meta-campaign-sync-sweeper";
+
+/* The two passes, by name. The scheduler sends the name, never a number of
+   days, so an outside caller cannot ask for an unbounded window. */
+export const PASSES = Object.freeze({
+  hourly: HOURLY_WINDOW_DAYS,
+  nightly: INSIGHT_WINDOW_DAYS
+});
+
+/** Which pass a clock tick runs: nightly in the 07:00 UTC hour, else hourly. */
+export function passFor(now = new Date()) {
+  return new Date(now).getUTCHours() === NIGHTLY_UTC_HOUR ? "nightly" : "hourly";
+}
 
 /* The partners worth a pull, read ACROSS the partner boundary.
    asStaff() is the staff scope in src/partners/rls.mjs — the same boundary
@@ -124,11 +151,12 @@ export async function duePartners({ scope = asStaff } = {}) {
 export async function sweep({
   listPartners = duePartners,
   sync = syncPartnerConnections,
-  deps = {}
+  deps = {},
+  windowDays = INSIGHT_WINDOW_DAYS
 } = {}) {
   const tally = {
     ok: true,
-    window_days: INSIGHT_WINDOW_DAYS,
+    window_days: windowDays,
     partners: 0,
     synced: 0,
     campaigns: 0,
@@ -152,7 +180,7 @@ export async function sweep({
 
   for (const partnerId of partnerIds) {
     try {
-      const stats = await sync({ partnerId, deps });
+      const stats = await sync({ partnerId, deps, windowDays });
       tally.synced += 1;
       tally.campaigns += stats.campaigns || 0;
       tally.ad_sets += stats.ad_sets || 0;
