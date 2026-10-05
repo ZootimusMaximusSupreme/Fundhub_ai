@@ -47,6 +47,8 @@ export const NETLIFY_JOBS = Object.freeze([
   ["hubstaff-poll-sweeper", "*/10 * * * *"],
   ["ad-video-sweeper", "*/5 * * * *"],
   ["commas-inbox-sweeper", "* * * * *"],
+  /* The marketing machine's clock (spec M0 step 4). */
+  ["marketing-clock", "*/15 * * * *"],
   /* The Meta pull (spec M0 step 5). The clock and its background worker both
      write under this one name, so a missing MARKETING_WORKER_SECRET or a failed
      pull is the newest heartbeat and the job shows red. */
