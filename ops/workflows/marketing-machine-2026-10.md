@@ -33,15 +33,15 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ### M0 Groundwork
 | Step | What | Lane | Agent | Status | PR |
 |---|---|---|---|---|---|
-| M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | blocked | |
+| M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | done (Chris approved; mode switched) | #33 | |
 | M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | done (review blocker fixed: ETag reads, bundled fallback, 3 nits) | #25 | |
 | M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | done (in review) | #21 | |
 | M0.4 | Clock, worker, buzz, model client (stacked on #21 + #25) | A | mm-builder | claimed | |
 | M0.5 | Meta v26.0, sync, ad-number resolver, tag views | A | mm-architect | pending | |
-| M0.6 | CI that actually checks work | C | mm-architect | blocked (migration 114 call) | #23 | |
+| M0.6 | CI that actually checks work | C | mm-architect | claimed — repairing 114/168/255 + guarding 372 (Chris: go) | #23 | |
 | M0.7 | Journey docs (`marketing-machine-flow.md`) | A | mm-chore | pending | |
 | M0.8 | Ship stays in step with GitHub | A | mm-builder | done (review blocker fixed: `--no-renames`) | #24 | |
-| M0.9 | Full client dossier (migration 409) | A | mm-architect | claimed | |
+| M0.9 | Full client dossier (migration 409) | A | mm-architect | done (in review); setter-call item blocked on one real Bland webhook payload | #28 | |
 
 ### M1 Script machine (lane A)
 | Step | What | Agent | Status | PR |
@@ -70,8 +70,8 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ### M3 Video pipeline (lane B; screens in E)
 | Step | What | Agent | Status | PR |
 |---|---|---|---|---|
-| 9.1 | Flow and state machine (migration 416) | mm-architect | fixing review blocker (sweeper crashes on rows with no ad number after 416); **ships together with 9.2–9.5** | #26 | |
-| 9.2 | Aligner | mm-architect | claimed | |
+| 9.1 | Flow and state machine (migration 416) | mm-architect | done (review blocker fixed in ac97749); **ships together with 9.2–9.5** | #26 | |
+| 9.2 | Aligner | mm-architect | done (in review) | #32 | |
 | 9.3 | Encodes | mm-architect | claimed | |
 | 9.4 | Animations, always last | mm-builder | pending | |
 | 9.5 | Video worker (`video-worker/`) | mm-builder | pending | |
@@ -133,6 +133,11 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 - Found on main (handed to lane C): fresh `db/migrate.mjs` fails at `114_crm_agent_seed.sql` ("VALUES lists must all be the same length").
 
 ## Blockers and open questions
+
+- **Live migration check (2026-10-05, read-only):** production `schema_migrations` holds BOTH old and new keys for 114, 168 and 255, plus both 372 files. Nothing in those files will run again on live, so repairing them only affects fresh databases. Chris said go; lane C is repairing.
+- **M0.9 setter calls:** needs one real completed-call webhook body from Bland; none exists in the repo.
+- **Leftover card (not worked):** `stampRecordingUrl` in `src/sales/recordings.mjs` still writes a recording link onto the client's latest call with no link (same wrong-row risk as the transcript fix).
+- **Gaps found by M0.9:** no pipeline stage-history table; funnel events carry no client id, so a client's page/video activity is empty until visitors are linked to clients.
 
 - **9.1 leftovers (orchestrator decision):** the §9.1 flow pieces outside the state machine (whisperWords, Submagic create from the master link, captions job, candidate ranking/late parking, one buzz per shoot, signed links, queue-next-step, `video_kind='vsl'`, edit/recut/hold/assign/retry routes) go to lane B mm-builder as step "9.1b", after 9.2 and 9.3.
 - **9.1 at ship (Mac):** after 416 applies, run `node --env-file=.env scripts/ad-videos-move-in-flight-9-1.mjs` (dry run), then `--apply`. If it reports an ad with two master takes, Chris picks.
