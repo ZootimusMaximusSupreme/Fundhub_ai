@@ -36,7 +36,7 @@ flowchart TD
     REPEAT --> SMS["textChris: 'X green, Y red, Z not checked' to PULSE_SMS_TO"]
     REPEAT --> DARWIN["ticketDarwin (WhatsApp only if DARWIN_WHATSAPP)"]
     REPEAT --> SAVE{"live run?"}
-    SAVE -->|yes| ROW["pulse_scorecards: one row per Phoenix date (upsert)"]
+    SAVE -->|yes| ROW["pulse_scorecards: one row per company per Phoenix date (upsert); default company"]
     SAVE -->|dry run| NOSAVE[not stored]
     REPEAT --> FILE["pulse-YYYY-MM-DD.md board file (kept only on a laptop; /tmp on the server)"]
     REPEAT --> AGRUN["agent_runs row (live only)"]
@@ -67,7 +67,7 @@ flowchart TD
     AUTH -->|not owner/admin| F403[403]
     AUTH -->|ok| DATE{"date given?"}
     DATE -->|not YYYY-MM-DD| B400[400]
-    DATE -->|given| ONE["that morning's row"]
+    DATE -->|given| ONE["that morning's row for the caller's company (org_id from the session)"]
     DATE -->|none| NEWEST["newest morning"]
     ONE & NEWEST --> FOUND{row?}
     FOUND -->|no| N404[404]

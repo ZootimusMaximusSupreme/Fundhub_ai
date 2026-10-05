@@ -83,27 +83,29 @@ export function buildScorecard({ checks = [], now = new Date(), previous = null 
   return { date, ran_at: now.toISOString(), checks: rows };
 }
 
-export async function loadPreviousScorecard(db, date) {
-  if (!db) return null;
+export async function loadPreviousScorecard(db, orgId, date) {
+  if (!db || !orgId) return null;
   const { rows } = await db.query(
     `SELECT to_char(scorecard_date, 'YYYY-MM-DD') AS date, checks
        FROM pulse_scorecards
-      WHERE scorecard_date < $1::date
+      WHERE org_id = $1::uuid AND scorecard_date < $2::date
       ORDER BY scorecard_date DESC
       LIMIT 1`,
-    [date]
+    [orgId, date]
   );
   return rows[0] || null;
 }
 
-/* saveScorecard — one row per morning; a re-run the same morning replaces it. */
-export async function saveScorecard(db, card) {
+/* saveScorecard — one row per company per morning; a re-run the same morning
+   replaces it. */
+export async function saveScorecard(db, orgId, card) {
+  if (!orgId) throw new Error("saveScorecard: an org is required");
   const n = countChecks(card.checks);
   const { rows } = await db.query(
     `INSERT INTO pulse_scorecards
-       (scorecard_date, ran_at, checks, green_count, red_count, not_checked_count)
-     VALUES ($1::date, $2, $3::jsonb, $4, $5, $6)
-     ON CONFLICT (scorecard_date) DO UPDATE
+       (org_id, scorecard_date, ran_at, checks, green_count, red_count, not_checked_count)
+     VALUES ($7::uuid, $1::date, $2, $3::jsonb, $4, $5, $6)
+     ON CONFLICT (org_id, scorecard_date) DO UPDATE
         SET ran_at = EXCLUDED.ran_at,
             checks = EXCLUDED.checks,
             green_count = EXCLUDED.green_count,
@@ -111,21 +113,7 @@ export async function saveScorecard(db, card) {
             not_checked_count = EXCLUDED.not_checked_count,
             updated_at = now()
      RETURNING id`,
-    [card.date, card.ran_at, JSON.stringify(card.checks), n.green, n.red, n.not_checked]
+    [card.date, card.ran_at, JSON.stringify(card.checks), n.green, n.red, n.not_checked, orgId]
   );
   return { saved: true, id: rows[0]?.id || null, counts: n };
-}
-
-/* readScorecard — the read endpoint's query. `date` null = newest morning. */
-export async function readScorecard(db, date = null) {
-  const { rows } = await db.query(
-    `SELECT to_char(scorecard_date, 'YYYY-MM-DD') AS date, ran_at, checks,
-            green_count, red_count, not_checked_count
-       FROM pulse_scorecards
-      WHERE ($1::date IS NULL OR scorecard_date = $1::date)
-      ORDER BY scorecard_date DESC
-      LIMIT 1`,
-    [date]
-  );
-  return rows;
 }

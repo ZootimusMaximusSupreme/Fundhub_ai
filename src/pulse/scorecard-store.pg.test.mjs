@@ -13,18 +13,20 @@
  * SKIPS WITHOUT A DATABASE, LOUDLY:
  *   DATABASE_URL=postgres://… node --test src/pulse/scorecard-store.pg.test.mjs
  */
-import { test, describe, after } from "node:test";
+import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { db, close } from "../db.mjs";
-import { saveScorecard, loadPreviousScorecard, readScorecard } from "./scorecard.mjs";
-import { runDailyPulse } from "./daily-pulse.mjs";
+import { saveScorecard, loadPreviousScorecard } from "./scorecard.mjs";
+import { runDailyPulse, defaultOrgId } from "./daily-pulse.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 
 describe("stored scorecard", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => {
+  let org;
+  before(async () => { org = await defaultOrgId(db); assert.ok(org, "a default org exists (seeded)"); });
   after(async () => { await close(); });
 
   test("one row per morning; a re-run replaces it", async () => {
@@ -33,10 +35,10 @@ describe("stored scorecard", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
       ran_at: "1990-01-01T13:00:00.000Z",
       checks: [{ id: "x", group: "backend", status, ...(status === "green" ? { proof: "ok" } : { reason: "none" }) }]
     });
-    await saveScorecard(db, card("not_checked"));
-    await saveScorecard(db, card("green"));
+    await saveScorecard(db, org, card("not_checked"));
+    await saveScorecard(db, org, card("green"));
     const { rows } = await db.query(
-      `SELECT green_count, not_checked_count, checks FROM pulse_scorecards WHERE scorecard_date = '1990-01-01'`);
+      `SELECT green_count, not_checked_count, checks FROM pulse_scorecards WHERE org_id = $1 AND scorecard_date = '1990-01-01'`, [org]);
     assert.equal(rows.length, 1);
     assert.equal(rows[0].green_count, 1);
     assert.equal(rows[0].not_checked_count, 0);
@@ -45,17 +47,17 @@ describe("stored scorecard", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
   test("a headline that disagrees with its own list is refused", async () => {
     // One not_checked check counted as one green: same total, wrong words.
     await assert.rejects(db.query(
-      `INSERT INTO pulse_scorecards (scorecard_date, checks, green_count, red_count, not_checked_count)
-       VALUES ('1990-01-02', '[{"id":"a","status":"not_checked"}]'::jsonb, 1, 0, 0)`),
+      `INSERT INTO pulse_scorecards (org_id, scorecard_date, checks, green_count, red_count, not_checked_count)
+       VALUES ($1, '1990-01-02', '[{"id":"a","status":"not_checked"}]'::jsonb, 1, 0, 0)`, [org]),
       /pulse_scorecards_counts_match/);
     await assert.rejects(db.query(
-      `INSERT INTO pulse_scorecards (scorecard_date, checks, green_count, red_count, not_checked_count)
-       VALUES ('1990-01-02', '[{"id":"a","status":"skipped"}]'::jsonb, 0, 0, 0)`),
+      `INSERT INTO pulse_scorecards (org_id, scorecard_date, checks, green_count, red_count, not_checked_count)
+       VALUES ($1, '1990-01-02', '[{"id":"a","status":"skipped"}]'::jsonb, 0, 0, 0)`, [org]),
       /pulse_scorecards_counts_match/, "a status outside the three words is refused");
   });
 
   test("a live run reads yesterday's row: the same red says day 2", async () => {
-    await saveScorecard(db, {
+    await saveScorecard(db, org, {
       date: "1990-03-01",
       ran_at: "1990-03-01T13:00:00.000Z",
       checks: [{ id: "mac-repo", group: "mac", status: "red", proof: "p", since: "1990-02-28", day_count: 2, fix: "f", customer_sees: "c" }]
@@ -76,9 +78,11 @@ describe("stored scorecard", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () 
     assert.equal(result.stored.saved, true);
     assert.equal(result.sms.sent, false, "no number in env — nothing is texted");
 
-    const prev = await loadPreviousScorecard(db, "1990-03-02");
+    const prev = await loadPreviousScorecard(db, org, "1990-03-02");
     assert.equal(prev.date, "1990-03-01");
-    const [stored] = await readScorecard(db, "1990-03-02");
+    const [stored] = (await db.query(
+      `SELECT to_char(scorecard_date, 'YYYY-MM-DD') AS date, checks, green_count, red_count, not_checked_count
+         FROM pulse_scorecards WHERE org_id = $1 AND scorecard_date = '1990-03-02'`, [org])).rows;
     assert.equal(stored.date, "1990-03-02");
     const health = stored.checks.find((c) => c.id === "health");
     assert.equal(health.status, "red");

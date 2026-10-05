@@ -3,8 +3,11 @@
 -- Board: ops/workflows/morning-brief-2026-10-05.md. Spec:
 -- docs/specs/morning-brief-2026-10-05.md, "What it misses" gaps 2 and 10.
 --
--- Two tables, both platform-wide (no org column): a scheduled job and the
--- morning check belong to the whole platform, not to one company.
+-- job_heartbeats is platform-wide (no org column): a scheduled job belongs to
+-- the whole platform. pulse_scorecards carries the company it was run for,
+-- because its queue, dead-letter, payment and tracking checks read that
+-- company's rows, and the read endpoint scopes to the caller's company like
+-- every other read (src/http/read-endpoints-org-scope.test.mjs).
 --
 --   job_heartbeats    one row each time a scheduled job finishes. Written by the
 --                     Inngest heartbeat add-on (src/workflows/client.mjs) and by
@@ -13,7 +16,7 @@
 --                     within 3x its schedule (src/pulse/heartbeats.mjs).
 --                     Written once, never changed: INSERT and SELECT only.
 --
---   pulse_scorecards  one row per morning (America/Phoenix date). The scorecard
+--   pulse_scorecards  one row per company per morning (America/Phoenix date). The scorecard
 --                     contract on the board, stored where the server can keep
 --                     it. Before this the scorecard was a markdown file in /tmp
 --                     on the server, wiped on every cold start. A re-run on the
@@ -43,6 +46,7 @@ CREATE INDEX IF NOT EXISTS job_heartbeats_job_finished_idx
 
 CREATE TABLE IF NOT EXISTS pulse_scorecards (
   id                 uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id             uuid        NOT NULL REFERENCES orgs(id),
   scorecard_date     date        NOT NULL,
   ran_at             timestamptz NOT NULL DEFAULT now(),
   checks             jsonb       NOT NULL CHECK (jsonb_typeof(checks) = 'array'),
@@ -51,7 +55,7 @@ CREATE TABLE IF NOT EXISTS pulse_scorecards (
   not_checked_count  integer     NOT NULL CHECK (not_checked_count >= 0),
   created_at         timestamptz NOT NULL DEFAULT now(),
   updated_at         timestamptz NOT NULL DEFAULT now(),
-  CONSTRAINT pulse_scorecards_one_per_day UNIQUE (scorecard_date),
+  CONSTRAINT pulse_scorecards_one_per_day UNIQUE (org_id, scorecard_date),
   -- The counts are the checks array, counted, status by status. A row whose
   -- headline disagrees with its own list is the "8 passed" that hid 2 skipped
   -- (gap 11). Every check must carry one of the three statuses.
@@ -65,7 +69,7 @@ CREATE TABLE IF NOT EXISTS pulse_scorecards (
 
 -- Row-level security: the same shape as 374. These tables carry no client or
 -- partner data, so the policy admits the application; the grants below are
--- what limit it.
+-- what limit it, and the read endpoint binds the caller's org_id.
 ALTER TABLE public.job_heartbeats ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.job_heartbeats FORCE ROW LEVEL SECURITY;
 ALTER TABLE public.pulse_scorecards ENABLE ROW LEVEL SECURITY;
@@ -106,4 +110,4 @@ END $$;
 COMMENT ON TABLE job_heartbeats IS
   'One row per finished scheduled-job run (Inngest cron or Netlify scheduled function). Read by the daily pulse (Recon AG-07). Insert-only.';
 COMMENT ON TABLE pulse_scorecards IS
-  'One row per morning (America/Phoenix date): the daily systems check scorecard, board contract shape. Written by src/pulse/daily-pulse.mjs, read by GET /api/read/systems-check.';
+  'One row per company per morning (America/Phoenix date): the daily systems check scorecard, board contract shape. Written by src/pulse/daily-pulse.mjs, read by GET /api/read/systems-check.';

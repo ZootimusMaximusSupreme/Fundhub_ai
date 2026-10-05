@@ -509,7 +509,7 @@ export async function runDailyPulse({
   // stored morning; a read failure there only loses the day count.
   let previous = null;
   if (db) {
-    try { previous = await loadPreviousScorecard(db, buildScorecard({ now }).date); } catch { previous = null; }
+    try { previous = await loadPreviousScorecard(db, resolvedOrg, buildScorecard({ now }).date); } catch { previous = null; }
   }
   const scorecard = buildScorecard({ checks, now, previous });
   const counts = countChecks(scorecard.checks);
@@ -546,9 +546,9 @@ export async function runDailyPulse({
   /* Saved on a live run only, like the agent_runs row below: a dry run from a
      laptop must not overwrite the morning's real record. */
   let stored = { saved: false, reason: "dry_run_or_no_db" };
-  if (!dryRun && db) {
+  if (!dryRun && db && resolvedOrg) {
     try {
-      stored = await saveScorecard(db, scorecard);
+      stored = await saveScorecard(db, resolvedOrg, scorecard);
     } catch (err) {
       stored = { saved: false, reason: String((err && err.message) || err).slice(0, 160) };
     }

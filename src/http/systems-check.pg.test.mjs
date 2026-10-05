@@ -44,7 +44,7 @@ describe("GET /api/read/systems-check", { skip: !HAVE_DB ? "no DATABASE_URL" : f
     assert.ok(owner && closer, "the default org has an owner and a closer (seeded)");
     ownerToken = (await createSession(db, { staffId: owner.id, orgId: owner.org_id })).token;
     closerToken = (await createSession(db, { staffId: closer.id, orgId: closer.org_id })).token;
-    await saveScorecard(db, {
+    await saveScorecard(db, org, {
       date: DATE,
       ran_at: "1990-06-01T13:00:00.000Z",
       checks: [
@@ -82,6 +82,17 @@ describe("GET /api/read/systems-check", { skip: !HAVE_DB ? "no DATABASE_URL" : f
   test("a bad date is 400, a morning with no row is 404", async () => {
     assert.equal((await call(`/api/read/systems-check?date=yesterday`, ownerToken)).status, 400);
     assert.equal((await call(`/api/read/systems-check?date=1990-06-02`, ownerToken)).status, 404);
+  });
+
+  test("another company's morning is not visible", async () => {
+    const other = (await db.query(
+      `INSERT INTO orgs (slug, name) VALUES ($1, 'Systems check other co') RETURNING id`,
+      [`syscheck-${process.pid}-${Date.now()}`])).rows[0].id;
+    await saveScorecard(db, other, {
+      date: "1990-06-03", ran_at: "1990-06-03T13:00:00.000Z",
+      checks: [{ id: "health", group: "backend", status: "green", proof: "other company" }]
+    });
+    assert.equal((await call(`/api/read/systems-check?date=1990-06-03`, ownerToken)).status, 404);
   });
 
   test("a closer is refused, and no session is 401", async () => {
