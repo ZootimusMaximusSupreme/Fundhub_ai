@@ -22,7 +22,7 @@ test('critical bots must stay allowed', () => {
 
   for (const bot of critical) {
     assert.ok(!isBotBlocked(bot), `${bot} must not be blocked`);
-    assert.ok(getAllowedBots().some(b => bot.includes(b) || bot.includes(b)), `${bot} must be in allowed list`);
+    assert.ok(getAllowedBots().includes(bot), `${bot} must be in allowed list`);
   }
 });
 
@@ -55,11 +55,20 @@ test('search engines are restricted to allowed paths', () => {
   const searchBots = ['Googlebot', 'Bingbot', 'DuckDuckBot', 'Applebot'];
 
   for (const bot of searchBots) {
+    // Test with trailing slash
     assert.ok(isSearchEngineAllowedOnPath(`${bot}/1.0`, '/'), `${bot} should be allowed on /`);
     assert.ok(isSearchEngineAllowedOnPath(`${bot}/1.0`, '/privacy/'), `${bot} should be allowed on /privacy/`);
     assert.ok(isSearchEngineAllowedOnPath(`${bot}/1.0`, '/terms/'), `${bot} should be allowed on /terms/`);
+
+    // Test without trailing slash
+    assert.ok(isSearchEngineAllowedOnPath(`${bot}/1.0`, '/privacy'), `${bot} should be allowed on /privacy`);
+    assert.ok(isSearchEngineAllowedOnPath(`${bot}/1.0`, '/terms'), `${bot} should be allowed on /terms`);
+
+    // Test that child paths are NOT allowed
     assert.ok(!isSearchEngineAllowedOnPath(`${bot}/1.0`, '/app/'), `${bot} should NOT be allowed on /app/`);
     assert.ok(!isSearchEngineAllowedOnPath(`${bot}/1.0`, '/watch'), `${bot} should NOT be allowed on /watch`);
+    assert.ok(!isSearchEngineAllowedOnPath(`${bot}/1.0`, '/privacy/something'), `${bot} should NOT be allowed on /privacy/something`);
+    assert.ok(!isSearchEngineAllowedOnPath(`${bot}/1.0`, '/terms/something'), `${bot} should NOT be allowed on /terms/something`);
   }
 });
 
@@ -98,4 +107,27 @@ test('search engines are recognized correctly', () => {
   for (const bot of searchBots) {
     assert.ok(isBotAllowed(`${bot}/1.0`), `${bot} should be recognized as allowed bot`);
   }
+});
+
+test('allowed bots never count as blocked, even if substring of blocked name', () => {
+  // Test case-insensitive matching with allow list winning
+  // facebookexternalhit should never be blocked even if it matches a blocked pattern
+  assert.ok(!isBotBlocked('facebookexternalhit'), 'facebookexternalhit must not be blocked');
+  assert.ok(!isBotBlocked('FACEBOOKEXTERNALHIT'), 'FACEBOOKEXTERNALHIT (uppercase) must not be blocked');
+
+  // Meta-externalads should never be blocked
+  assert.ok(!isBotBlocked('meta-externalads'), 'meta-externalads must not be blocked');
+  assert.ok(!isBotBlocked('META-EXTERNALADS'), 'META-EXTERNALADS (uppercase) must not be blocked');
+});
+
+test('case-insensitive matching for bots', () => {
+  // Blocked bots should be matched case-insensitively
+  assert.ok(isBotBlocked('gptbot'), 'gptbot (lowercase) should be blocked');
+  assert.ok(isBotBlocked('GPTBOT'), 'GPTBOT (uppercase) should be blocked');
+  assert.ok(isBotBlocked('GpTbOt'), 'GpTbOt (mixed case) should be blocked');
+
+  // Allowed bots should be matched case-insensitively
+  assert.ok(isBotAllowed('googlebot'), 'googlebot (lowercase) should be allowed');
+  assert.ok(isBotAllowed('GOOGLEBOT'), 'GOOGLEBOT (uppercase) should be allowed');
+  assert.ok(isBotAllowed('GoOgLeBot'), 'GoOgLeBot (mixed case) should be allowed');
 });

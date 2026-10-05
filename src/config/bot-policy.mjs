@@ -92,7 +92,7 @@ export const ALLOWED_LINK_PREVIEWS_AND_ADS = [
 ];
 
 /**
- * Search engines — allowed only on /, /privacy/, /terms/
+ * Search engines — allowed only on /, /privacy, /terms
  */
 export const SEARCH_ENGINES = [
   'Googlebot',
@@ -131,12 +131,21 @@ export function getAllowedBots() {
 
 /**
  * Check if a bot is blocked
+ * Spec §12.2: The allow list is checked first. Allowed bots never count as blocked.
+ * Matching is case-insensitive.
  */
 export function isBotBlocked(userAgent) {
   if (!userAgent) return false;
 
+  // Check allow list first (Spec §12.2)
+  const allowed = getAllowedBots();
+  const userAgentLower = userAgent.toLowerCase();
+  if (allowed.some(bot => userAgentLower.includes(bot.toLowerCase()))) {
+    return false; // Allowed bots are never blocked
+  }
+
   const blocked = getBlockedBots();
-  return blocked.some(bot => userAgent.includes(bot));
+  return blocked.some(bot => userAgentLower.includes(bot.toLowerCase()));
 }
 
 /**
@@ -147,14 +156,15 @@ export function isBotAllowed(userAgent) {
 
   const allowed = getAllowedBots();
   const searchEngines = SEARCH_ENGINES;
+  const userAgentLower = userAgent.toLowerCase();
 
-  // Check explicit allows
-  if (allowed.some(bot => userAgent.includes(bot))) {
+  // Check explicit allows (case-insensitive)
+  if (allowed.some(bot => userAgentLower.includes(bot.toLowerCase()))) {
     return true;
   }
 
   // Check search engines (they're handled separately by path restrictions)
-  if (searchEngines.some(bot => userAgent.includes(bot))) {
+  if (searchEngines.some(bot => userAgentLower.includes(bot.toLowerCase()))) {
     return true;
   }
 
@@ -163,24 +173,26 @@ export function isBotAllowed(userAgent) {
 
 /**
  * Check if a search engine is allowed on a specific path
- * Search engines are only allowed on: /, /privacy/, /terms/
+ * Spec §17 decision 3: Search engines allowed only on /, /privacy, /terms
+ * Accept both /privacy/ and /privacy (with or without trailing slash)
+ * But do NOT allow child paths like /privacy/something
  */
 export function isSearchEngineAllowedOnPath(userAgent, path) {
   if (!userAgent) return false;
 
   const searchEngines = SEARCH_ENGINES;
-  const isSearchEngine = searchEngines.some(bot => userAgent.includes(bot));
+  const userAgentLower = userAgent.toLowerCase();
+  const isSearchEngine = searchEngines.some(bot => userAgentLower.includes(bot.toLowerCase()));
 
   if (!isSearchEngine) return false;
 
-  // Only allow on specific paths
-  if (path === '/') return true;
-  if (path === '/privacy/') return true;
-  if (path === '/terms/') return true;
+  // Normalize path for comparison (remove trailing slash for /privacy and /terms)
+  const normalizedPath = path === '/privacy/' ? '/privacy' :
+                         path === '/terms/' ? '/terms' :
+                         path;
 
-  // Also allow children of /privacy/ and /terms/
-  if (path.startsWith('/privacy/')) return true;
-  if (path.startsWith('/terms/')) return true;
-
-  return false;
+  // Only allow on specific paths (exact match only, no children)
+  return normalizedPath === '/' ||
+         normalizedPath === '/privacy' ||
+         normalizedPath === '/terms';
 }
