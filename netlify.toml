@@ -114,7 +114,14 @@
     #
     # Same class as the two entries in external_node_modules below and as
     # scripts/black-reports/** above: a runtime path esbuild cannot see.
-    "vendor/underwriteiq-full/**"
+    "vendor/underwriteiq-full/**",
+    # Marketing machine: the repo copy of the shared files, read when GitHub
+    # cannot be reached (src/repo/read.mjs). Spec M0 step 2, "Reads".
+    "marketing/ads/RULES.md",
+    "marketing/ads/VOICE.md",
+    "marketing/ads/banned-live.json",
+    "marketing/ads/registry.json",
+    "marketing/ads/angles.json"
   ]
   # letter-generator.js require()s this at load time. esbuild leaves it
   # external, which 502s the whole /api/* function (login included).
