@@ -9,6 +9,14 @@ import {QUALIFY_TODAY_BASE, QUALIFY_TODAY_HERO, QualifyToday, qualifyTodayDefaul
 import {RATES_RISING_BASE, RATES_RISING_HERO, RatesRising, ratesRisingDefaults} from './RatesRising';
 import {SOFT_PULL_BASE, SOFT_PULL_HERO, SoftPull, softPullDefaults} from './SoftPull';
 import {STEP_PATH_BASE, STEP_PATH_HERO, StepPath, stepPathDefaults} from './StepPath';
+import {ITEM_COUNT_BASE, ITEM_COUNT_HERO, ItemCount, itemCountDefaults} from './ItemCount';
+import {PICK_YOUR_PATH_BASE, PICK_YOUR_PATH_HERO, PickYourPath, pickYourPathDefaults} from './PickYourPath';
+import {LETTERS_WRITTEN_BASE, LETTERS_WRITTEN_HERO, LettersWritten, lettersWrittenDefaults} from './LettersWritten';
+import {PROOF_CHIPS_BASE, PROOF_CHIPS_HERO, ProofChips, proofChipsDefaults} from './ProofChips';
+import {SHOTGUN_APPLY_BASE, SHOTGUN_APPLY_HERO, ShotgunApply, shotgunApplyDefaults} from './ShotgunApply';
+import {TASK_BY_TASK_BASE, TASK_BY_TASK_HERO, TaskByTask, taskByTaskDefaults} from './TaskByTask';
+import {REFUND_PROMISE_BASE, REFUND_PROMISE_HERO, RefundPromise, refundPromiseDefaults} from './RefundPromise';
+import {TEN_SECONDS_BASE, TEN_SECONDS_HERO, TenSeconds, tenSecondsDefaults} from './TenSeconds';
 
 export type TemplateEntry = {
   /** Composition id for the CLI. */
@@ -140,5 +148,86 @@ export const TEMPLATES: TemplateEntry[] = [
     hero: SOFT_PULL_HERO,
     component: SoftPull,
     defaultProps: softPullDefaults,
+  }),
+  // Batch 3 (2026-10-03): 3D allowed, no money anywhere. Board: ops/workflows/broll-v3-2026-10-03.md.
+  entry({
+    id: 'RefundPromise',
+    file: 'refund-promise',
+    title: 'Refund promise',
+    what: 'A $297 receipt floats in, a blue email envelope lands on its corner, and a calm blue "We\'ll refund you" stamp presses onto it. Never a day count.',
+    base: REFUND_PROMISE_BASE,
+    hero: REFUND_PROMISE_HERO,
+    component: RefundPromise,
+    defaultProps: refundPromiseDefaults,
+  }),
+  entry({
+    id: 'TenSeconds',
+    file: 'ten-seconds',
+    title: 'About ten seconds, all in your account',
+    what: 'A blue ring ticks once around a big "10" on a floating dial while the account card settles in and the real deliverables drop into their slots.',
+    base: TEN_SECONDS_BASE,
+    hero: TEN_SECONDS_HERO,
+    component: TenSeconds,
+    defaultProps: tenSecondsDefaults,
+  }),
+  entry({
+    id: 'LettersWritten',
+    file: 'letters-written',
+    title: 'Every letter written (real sample letters)',
+    what: 'Six real sample letters stand in depth with tabs 1 to 6; the front page is the real Round 1 letter from the /roadmap sample, marked Sample.',
+    base: LETTERS_WRITTEN_BASE,
+    hero: LETTERS_WRITTEN_HERO,
+    component: LettersWritten,
+    defaultProps: lettersWrittenDefaults,
+  }),
+  entry({
+    id: 'TaskByTask',
+    file: 'task-by-task',
+    title: 'Task by task, month by month',
+    what: 'A thick roadmap card checks off the real Month 1 tasks from the sample roadmap one by one, then Month 2 slides in to show it keeps going.',
+    base: TASK_BY_TASK_BASE,
+    hero: TASK_BY_TASK_HERO,
+    component: TaskByTask,
+    defaultProps: taskByTaskDefaults,
+  }),
+  entry({
+    id: 'PickYourPath',
+    file: 'pick-your-path',
+    title: 'Pick your path',
+    what: 'The file sits at the start of a path that splits into two or three lanes; one lane lights blue up to its card while the others stay gray.',
+    base: PICK_YOUR_PATH_BASE,
+    hero: PICK_YOUR_PATH_HERO,
+    component: PickYourPath,
+    defaultProps: pickYourPathDefaults,
+  }),
+  entry({
+    id: 'ShotgunApply',
+    file: 'shotgun-apply',
+    title: 'Sent to every lender',
+    what: 'Copies of one file go out to nine blank bank slabs, a red hard-inquiry slot fills for each, and most slabs flip to a calm red Declined. No bank names, no amounts.',
+    base: SHOTGUN_APPLY_BASE,
+    hero: SHOTGUN_APPLY_HERO,
+    component: ShotgunApply,
+    defaultProps: shotgunApplyDefaults,
+  }),
+  entry({
+    id: 'ProofChips',
+    file: 'proof-chips',
+    title: 'Proof chips (simple ProofWall)',
+    what: 'Thick glossy proof pills come forward one at a time and stack in depth, then the lead line lands under them. No approvals, no money.',
+    base: PROOF_CHIPS_BASE,
+    hero: PROOF_CHIPS_HERO,
+    component: ProofChips,
+    defaultProps: proofChipsDefaults,
+  }),
+  entry({
+    id: 'ItemCount',
+    file: 'item-count',
+    title: 'One item or twelve (simple count)',
+    what: 'A thick white tile counts from 1 up to 12; a small raised blue block rises with each tick. No ring, no dots, no money.',
+    base: ITEM_COUNT_BASE,
+    hero: ITEM_COUNT_HERO,
+    component: ItemCount,
+    defaultProps: itemCountDefaults,
   }),
 ];
