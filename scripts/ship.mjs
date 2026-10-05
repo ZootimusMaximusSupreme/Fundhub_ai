@@ -38,7 +38,7 @@
 
 import { loadEnv } from "./load-env.mjs";
 import { reregisterInngest } from "./inngest-register.mjs";
-import { onlyMachineFoldersChanged } from "./ship-changes.mjs";
+import { onlyMachineFoldersChanged, changedPathsArgs, parseChangedPaths } from "./ship-changes.mjs";
 loadEnv();
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
@@ -85,9 +85,9 @@ function lastShipped() {
 }
 const prev = lastShipped();
 if (prev && run("git", ["cat-file", "-e", `${prev}^{commit}`], { quiet: true }).ok) {
-  const changed = git("diff", "--name-only", prev, "HEAD").split("\n").filter(Boolean);
+  const changed = parseChangedPaths(git(...changedPathsArgs(prev)));
   if (onlyMachineFoldersChanged(changed)) {
-    say(`Nothing to ship: main (${head}) matches the last ship (${prev}).`);
+    say(`Nothing to ship: only machine folders changed since the last ship (${prev}); main is at ${head}.`);
     process.exit(0);
   }
 }
@@ -223,5 +223,5 @@ run("git", ["add", "ops/ship-log.md"], { quiet: true });
 run("git", ["commit", "-q", "-m", `ship: ${head} is live\n\nCo-Authored-By: Claude Opus 5 <noreply@anthropic.com>`], { quiet: true });
 const push = run("git", ["push"], { quiet: true });
 if (push.ok) say("  pushed to GitHub");
-else say(`  ! git push failed (the deploy is live and logged; push by hand): ${push.out.trim().slice(0, 300)}`);
+else say(`  ! git push failed (the deploy is live and logged). Run git pull --rebase, then git push:${push.out.trim().slice(0, 300)}`);
 say(`\n✔ Shipped ${head}. Logged in ops/ship-log.md.\n`);

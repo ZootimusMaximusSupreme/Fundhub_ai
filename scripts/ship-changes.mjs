@@ -26,6 +26,18 @@ export function isMachinePath(p) {
   return IGNORED_FILES.includes(f) || MACHINE_FOLDERS.some((d) => f.startsWith(d));
 }
 
+// The git call that lists what changed since the last ship. --no-renames matters: with
+// rename detection a move from src/foo.mjs to marketing/brain/foo.mjs lists only the new
+// path, which would hide the deleted code path and wrongly read as "nothing to ship".
+export function changedPathsArgs(prev, head = "HEAD") {
+  return ["diff", "--name-only", "--no-renames", prev, head];
+}
+
+// Parses `git diff --name-only` output into a path list.
+export function parseChangedPaths(out) {
+  return String(out ?? "").split("\n").map((l) => l.trim()).filter(Boolean);
+}
+
 // True when every changed path is inside a machine folder (or is the ship log), which
 // includes the case of no changed paths at all. One path outside them means ship.
 export function onlyMachineFoldersChanged(paths) {
