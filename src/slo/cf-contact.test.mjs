@@ -64,7 +64,7 @@ test("upsert posts the safe contact and keeps the pull alive when ClickFunnels r
     env: {
       CLICKFUNNELS_API_KEY: "test-key",
       CLICKFUNNELS_SUBDOMAIN: "myworkspace",
-      CLICKFUNNELS_WORKSPACE_ID: "42"
+      CLICKFUNNELS_WORKSPACE_ID: "42", ADAPTERS_DRY_RUN: "0"
     },
     fetchImpl: async (url, init) => {
       calls.push({ url, init });
@@ -85,7 +85,7 @@ test("upsert posts the safe contact and keeps the pull alive when ClickFunnels r
     env: {
       CLICKFUNNELS_API_KEY: "test-key",
       CLICKFUNNELS_SUBDOMAIN: "myworkspace",
-      CLICKFUNNELS_WORKSPACE_ID: "42"
+      CLICKFUNNELS_WORKSPACE_ID: "42", ADAPTERS_DRY_RUN: "0"
     },
     fetchImpl: async () => ({
       ok: false,
@@ -107,7 +107,7 @@ test("a skip says why, so the step-1 save can record it", async () => {
 
 test("a refusal carries ClickFunnels' own words and status, never the key", async () => {
   const out = await syncSloClickfunnelsContact(PERSON, {
-    env: { CLICKFUNNELS_API_KEY: "secret-key-123", CLICKFUNNELS_SUBDOMAIN: "myworkspace", CLICKFUNNELS_WORKSPACE_ID: "42" },
+    env: { CLICKFUNNELS_API_KEY: "secret-key-123", CLICKFUNNELS_SUBDOMAIN: "myworkspace", CLICKFUNNELS_WORKSPACE_ID: "42", ADAPTERS_DRY_RUN: "0" },
     fetchImpl: async () => ({
       ok: false,
       status: 401,
@@ -146,7 +146,7 @@ function upsertingClickfunnels() {
 test("step 1 (email, then phone) and step 3 land on one ClickFunnels contact", async () => {
   const cf = upsertingClickfunnels();
   const opts = {
-    env: { CLICKFUNNELS_API_KEY: "k", CLICKFUNNELS_SUBDOMAIN: "myworkspace", CLICKFUNNELS_WORKSPACE_ID: "42" },
+    env: { CLICKFUNNELS_API_KEY: "k", CLICKFUNNELS_SUBDOMAIN: "myworkspace", CLICKFUNNELS_WORKSPACE_ID: "42", ADAPTERS_DRY_RUN: "0" },
     fetchImpl: cf.fetchImpl
   };
   // Step 1, email alone (api/public/slo-interest.mjs lower-cases it).
@@ -168,4 +168,31 @@ test("step 1 (email, then phone) and step 3 land on one ClickFunnels contact", a
   assert.equal(final.phone_number, "+16615550100");
   assert.equal(final.custom_attributes.business_name, "Ada Hauling");
   assert.equal(JSON.stringify(cf.calls).includes("123-45-6789"), false);
+});
+
+test("with the ADAPTERS fence up, nothing reaches ClickFunnels and the save still finishes", async () => {
+  let called = false;
+  const fetchImpl = async () => {
+    called = true;
+    return { ok: true, status: 200, text: async () => "{}", headers: { get: () => null } };
+  };
+  for (const fence of [undefined, "1", "true"]) {
+    called = false;
+    const env = { CLICKFUNNELS_API_KEY: "k", CLICKFUNNELS_SUBDOMAIN: "myworkspace", CLICKFUNNELS_WORKSPACE_ID: "42" };
+    if (fence !== undefined) env.ADAPTERS_DRY_RUN = fence;
+    const origWarn = console.warn;
+    const origErr = console.error;
+    console.warn = () => {};
+    console.error = () => {};
+    let out;
+    try {
+      out = await syncSloClickfunnelsContact(PERSON, { env, fetchImpl });
+    } finally {
+      console.warn = origWarn;
+      console.error = origErr;
+    }
+    assert.equal(called, false, `ADAPTERS_DRY_RUN=${fence ?? "(unset)"} must hold the write`);
+    assert.equal(out.ok, false);
+    assert.equal(out.error, "clickfunnels_refused");
+  }
 });
