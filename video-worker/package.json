@@ -1,0 +1,20 @@
+{
+  "name": "fundhub-video-worker",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Fundhub video worker (spec 9.5). A thin shell: HTTP, ffmpeg, R2 and Remotion. Every decision lives in ../src/ad-videos/worker-*.mjs, overlay-plan.mjs and ffmpeg-plan.mjs.",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node server.mjs",
+    "bundle": "node scripts/bundle.mjs",
+    "ensure-browser": "node scripts/ensure-browser.mjs",
+    "sign": "node scripts/sign.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "3.1146.0",
+    "@aws-sdk/s3-request-presigner": "3.1146.0",
+    "@remotion/bundler": "4.0.532",
+    "@remotion/renderer": "4.0.532"
+  }
+}

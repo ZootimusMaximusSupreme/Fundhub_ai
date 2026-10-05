@@ -276,3 +276,62 @@ which is the only kind of proof available on a machine with no Postgres.
 local Postgres on this Mac. Nothing about migration 389, migration 390, the
 constraints, the row-level security policies, or any SQL statement in
 `store.mjs` or `token.mjs` has been executed even once.
+
+---
+
+## The video worker (marketing machine step 9.5) — built, NOT wired, NOT deployed
+
+Added 2026-10-05 from `src/ad-videos/worker-*.mjs`, `overlay-plan.mjs`,
+`src/messaging/providers/video-worker.mjs` and `video-worker/`. Spec:
+`docs/specs/marketing-machine-2026-10-04.md` section 9.5. Nothing above this
+line changed: the sweeper still walks the old states, and nothing calls the
+worker yet. Everything marked UNVERIFIED waits on PR #26 (the new states and
+columns, 9.1) and on the step that makes the sweeper send jobs.
+
+The worker is a small separate service (Docker, Node 22, ffmpeg, Chrome for
+Remotion). Netlify cannot run those. It takes four kinds of job and never
+decides anything itself: the decisions are in `src/` and tested there.
+
+```mermaid
+flowchart TD
+    S["Netlify sweeper or a webhook<br/>UNVERIFIED: not wired yet"] -->|"claim the row: worker_job_id = id<br/>UNVERIFIED: columns come from 9.1"| P["POST /jobs to the worker<br/>X-Fundhub-Video-Key, answers 202"]
+    P --> Q["worker queue<br/>one job at a time"]
+    Q --> J1["prepare<br/>raw_landed to prepared"]
+    Q --> J2["build_cut<br/>cut to staged"]
+    Q --> J3["copy_export<br/>editing to rendered"]
+    Q --> J4["render_and_overlay<br/>rendered to animated"]
+    J1 -->|"download take with the one-hour Drive token, probe, audio .ogg to R2, silences"| CB
+    J2 -->|"download takes, build the 1080x1920 master, run the cut checks, master to R2"| CB
+    J2 -->|"a cut check fails: nothing is uploaded, Submagic is not paid for"| CB
+    J3 -->|"copy Submagic's export into R2"| CB
+    J4 -->|"render only new clips, overlay once, finalize, final to R2"| CB
+    CB["signed callback to /api/webhooks/video-worker<br/>HMAC over timestamp + body, 5 minute window"] --> H{"re-read the row"}
+    H -->|"row still points at this job and is in the job's start state"| A["advance the row, release the claim"]
+    H -->|"row moved on, or points at a newer job"| N["ignore, answer 200"]
+    H -->|"job failed"| F["failed with the worker's reason"]
+    P -.->|"worker restarted: GET /jobs/id is 404"| R["reclaim the row and resend"]
+```
+
+**The order never changes:** cut, then Submagic captions, then animation
+overlays, then finalize. `build_cut` never draws an animation.
+
+**What is proved and what is not**
+
+- Proved (unit tests, fakes only): the job ids, the key check, the callback
+  signature and its window, the claim and reclaim, every step of the four jobs
+  in order, the cut-check block, the clip cache, the full-frame animation limits
+  and the finalize checks. Also run once end to end on a Linux box with real
+  ffmpeg 6.1 and the real 9.3 module on synthetic clips: master 1080x1920, 30 fps,
+  the overlay lands, a second run reuses the cached clip. That run used a local
+  folder in place of Drive and R2.
+- UNVERIFIED: any SQL (`CLAIM_SQL`, `RECLAIM_SQL`, `RELEASE_SQL`, the store calls
+  in the callback). The states `prepared`, `cut` and `animated` exist only after
+  9.1 merges, so until then a callback that needs one answers 200 `ignored`.
+- UNVERIFIED: the Docker image has not been built; Remotion has not rendered a
+  real template here; no R2 call has been made; Drive and Submagic links have
+  not been fetched. Render is not set up (section 16 item 4, Chris, on the Mac).
+- Known dependency: see-through animation renders need each kit template to
+  honor `transparent: true` (the 10/2 plan's step 1). Until then
+  `animation_mode = 'fullframe'` and its limits apply.
+- A signed R2 link answers 403 to HEAD. The first real run must prove that
+  Submagic and Meta can both fetch one (`npm run sign` in `video-worker/`).
