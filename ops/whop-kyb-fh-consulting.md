@@ -18,7 +18,9 @@ Source: https://docs.whop.com/payments-and-billing/financing/apply
 
 ## Business description (paste)
 
-FH Consulting LLC sells self-paced business operations education to small business owners. We offer three programs: Operations Foundations ($5,000), Operations Systems ($5,000), and Operations Intensive ($10,000), which combines both programs with scheduled live review sessions. Each program includes video lessons, written lessons, and templates, delivered online with lifetime access right after purchase. Tuition is a one-time payment. Customers can get a full refund within 14 days if they have used less than 20% of the content. Website: fhconsulting.online
+FH Consulting LLC sells self-paced online courses on business operations to small business owners. Customers pay once and get immediate online access to video lessons, written lessons, and templates. Programs are priced at $5,000 and $10,000.
+
+(Owner-set 2026-10-05: bare minimum, no website line.)
 
 ## Categories Whop's financing partners decline
 
