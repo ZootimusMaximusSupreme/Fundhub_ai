@@ -5,7 +5,8 @@
      src/workflows/s-doc-collection.mjs, src/handlers/inquiry-docs.mjs,
      src/funding/billed-fee-check.mjs, src/applications/status.mjs (2026-09-18),
      src/handlers/doc-check.mjs, src/inquiry-ops/doc-gate.mjs,
-     api/dashboard/client.mjs, public/app/client-control-panel.html. -->
+     api/dashboard/client.mjs, public/app/client-control-panel.html,
+     src/workflows/s-doc-reminders.mjs (2026-10-05). -->
 
 # The funding round — what the code actually does
 
@@ -261,6 +262,34 @@ The gate now has its own one-shot lock, `doc_gate_closed_at`, claimed and releas
 independently of the send. It stays one-shot: `doc-check` clears `round_hold_reason` when the
 documents arrive but leaves `doc_gate_closed_at` set, so a replayed `deposit.paid` cannot put
 a cleared hold back.
+
+### The reminder texts on day 1, 3 and 5 (added 2026-10-05)
+
+Before this, nothing chased a client who never uploaded: `doc-check` only runs after an upload.
+`s-doc-reminders` listens to the same `deposit.paid`, so day 1 counts from the moment the request
+goes out.
+
+```mermaid
+flowchart TD
+    DEP[deposit.paid] --> R[s-doc-reminders<br/>src/workflows/s-doc-reminders.mjs]
+    R --> W[Sleep: 1 day, then 2 more, then 2 more<br/>= day 1, day 3, day 5]
+    W --> Q{Inside 8pm to 8am Arizona?}
+    Q -->|Yes| Q8[Wait until 8am first<br/>so the check runs right before the text]
+    Q -->|No| C
+    Q8 --> C{Fresh check before every text:<br/>a DOC-01 request is on file?<br/>nothing uploaded? - same rule as the portal tick<br/>hold still Documents Pending Approval?}
+    C -->|All yes| T[Queue SMS-DOC-REMIND-DAY1 / DAY3 / DAY5<br/>sendTemplated, once per client]
+    C -->|Any no| STOP[Stop. Nothing more is sent]
+    T -->|Day 1 or 3| W
+    T -->|Day 5| DONE[Done: three texts at most]
+    T -->|Client opted out| STOP
+    UP[docs.received for this client] -.->|cancelOn ends the run| STOP
+    T --> GATE[The dispatcher sends it through the messaging gate<br/>opt-out and quiet hours, src/messaging/dispatch.mjs]
+```
+
+The words are in `db/seed/037_doc_reminder_texts.sql`. Without that file every send is a
+`template_pending` no-op. "Once per client" is the idempotency key `doc-remind:<client id>`:
+a second `deposit.paid` or a replay cannot queue the same reminder twice, because the messages
+unique index refuses the second row.
 
 ---
 

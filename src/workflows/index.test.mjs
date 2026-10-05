@@ -124,6 +124,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "s-06-post-call-funding-purchased",
   "s-08-post-call-funding-declined",
   "s-doc-collection",
+  "s-doc-reminders",
   "s-nobook-chase",
   "s-offer-bucket",
   "s-portal-invite",

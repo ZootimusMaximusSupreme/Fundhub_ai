@@ -75,6 +75,7 @@ import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
 import { sNobookChase } from './s-nobook-chase.mjs';
 import { s06PostCallFundingPurchased } from './s-06-post-call-funding-purchased.mjs';
 import { sDocCollection } from './s-doc-collection.mjs';
+import { sDocReminders } from './s-doc-reminders.mjs';
 import { s08PostCallFundingDeclined } from './s-08-post-call-funding-declined.mjs';
 import { sOfferBucket } from './s-offer-bucket.mjs';
 import { sloPackDelivery } from './slo-pack-delivery.mjs';
@@ -437,6 +438,9 @@ export const functions = [
   s05aNoShowRecovery,
   s06PostCallFundingPurchased,
   sDocCollection,
+  /* W8 (2026-10-05): texts on day 1, 3 and 5 after the documents request,
+     until an upload lands. Only queues; words in db/seed/037. */
+  sDocReminders,
   s08PostCallFundingDeclined,
   sOfferBucket,
   sloPackDelivery,
