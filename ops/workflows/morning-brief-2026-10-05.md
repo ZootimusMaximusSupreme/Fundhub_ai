@@ -11,10 +11,10 @@ Model: Opus — the cloud session that wrote this board is on Opus. Match. MB2 a
 |---|---|---|---|
 | MB0 | Projection, spec, this board, to-do lines (cloud session, 2026-10-05) | — | done |
 | MB1 | The morning text goes to Chris's new number | A Mac session (the cloud can't reach Netlify) | blocked — Kickoff A ran in a cloud session 2026-10-05, not the Mac; the cloud was refused Netlify env access. Needs the Mac. |
-| MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | claimed — Kickoff A agent, 2026-10-05, building (Chris: "run the whole thing") |
+| MB2 | Full systems check: extend the daily pulse (Recon AG-07) to every component | — | done — PR #30 merged 2026-10-05 |
 | MB3 | Morning brief: "Good morning, Chris" text + stored report, built from MB2 + team + marketing + money | MB1 to send live (it builds and dry-runs without it) | done — PR #22 merged 2026-10-05 |
 | MB4 | Cadence rules and AI ops suggestions | Chris said yes 2026-10-05 | done — PR #29 merged 2026-10-05 |
-| MB5 | The report page the text links to (front end, last) | MB3 read endpoint | claimed — Kickoff A agent, 2026-10-05 |
+| MB5 | The report page the text links to (front end, last) | MB3 read endpoint | done — PR #31 merged 2026-10-05 |
 | MB6 | Evening brief (end-of-day text) + the brief replaces the old pulse text when live | MB3 (merged) | claimed — Kickoff A agent, 2026-10-05 |
 
 
@@ -287,3 +287,24 @@ Agents for Kickoff B are in `.claude/agents/` (mm-architect, mm-builder, mm-chor
   - The dying-ad SQL in `src/ops/watch-curve.mjs` never selects `clicks`.
   - Migration 114 is broken on a fresh database.
 - Safety note: about 18:51 UTC, MB4 ran the unit stage of `npm test` with the inherited live `DATABASE_URL`. The live database refuses connections from this cloud machine (measured: connection timeout), so nothing reached it.
+
+### MB2 — Kickoff A agent, 2026-10-05 (PR #30, merged)
+
+- Migration 430: `job_heartbeats` (one row per scheduled-job run) and `pulse_scorecards` (one row per company per Arizona date, in the board contract shape).
+- New: `src/pulse/heartbeats.mjs`, `src/pulse/system-checks.mjs` (message queue, failed events, money in, Meta tracking), `src/pulse/scorecard.mjs` (day counts, not checked never green), `src/messaging/providers/pulse-probes.mjs` (one read-only call per outside service: CRS login only, never the Clarity export), `api/read/systems-check.mjs` (`GET /api/read/systems-check?date=`, owner and admin only).
+- Edited:
+  - `src/pulse/daily-pulse.mjs`: funnel pages, VSL files, Mac row; the scorecard is saved on live runs.
+  - `src/pulse/registry.mjs`: a refusal counts as up only when it is the app's own refusal.
+  - `src/pulse/notify.mjs`: the text now says "X green, Y red, Z not checked."
+  - Every scheduled job writes a heartbeat: one Inngest add-on, plus 6 Netlify functions.
+  - New `docs/journeys/daily-pulse-actual.md`.
+- Tests: on scratch Postgres, the new pg tests passed 19/19 as `fundhub_app`. With `main` merged in, no-database run (orchestrator): the only new failure was stale journeys. Fixed by running `npm run journeys`, then lint and tsc clean.
+- Defaults pending Chris: Commas 72 hours, queue 30 minutes. ClickFunnels orders: off, because no order event exists in the code. ClarityPay and Netlify: not checked.
+- Found, not fixed: `https://fundhub.ai/funnel/slo-vsl3-repair.mp4` is 404 and the live /roadmap-book page links to it. `/api/public/decline-autopsy` is 404.
+- Safety: about 18:50 UTC, 3 MB2 pg tests ran with the inherited live `DATABASE_URL`. The orchestrator checked live read-only through Supabase: no `pulsechk-` company, no commas_inbox rows and no failed_events rows in the last 3 hours. Nothing landed.
+
+### MB5 — Kickoff A agent, 2026-10-05 (PR #31, merged)
+
+- Page `/app/morning-brief.html`, owner and admin only, in the Watch sidebar. Six parts in spec order, reds first, each number shows its source, all times Arizona, Morning/Evening switch.
+- `report_url` is now filled by `reportUrl(date, env)` in `src/ops/morning-brief.mjs`.
+- Tests: page test plus `e2e/morning-brief.spec.mjs` (6/6 Playwright with a stubbed API). Marked screenshots: `ops/workflows/morning-brief-2026-10-05-evidence/shots/*-MARKED.png`. No new failures after merging `main` (orchestrator run). Live-site proof waits for ship.
