@@ -16,8 +16,8 @@ change manifest and blockers in their final message; the orchestrator copies the
 
 | Lane | Now | Next |
 |---|---|---|
-| A | M0.1 **blocked** — Chris said yes; Auto mode still blocks saving rule files (needs mode switched to Accept edits). M0.2 running. M0.3 → PR #21 in review | M0.4 after M0.3 merges |
-| B | 9.1 → PR #26 in review; 9.2 aligner **running** | 9.3 encodes |
+| A | M0.4 **running** (stacked); M0.1 **blocked** — Chris said yes; Auto mode still blocks saving rule files (needs mode switched to Accept edits). M0.2 running. M0.3 → PR #21 in review | M0.4 after M0.3 merges |
+| B | 9.1 → PR #26 fixing review blocker; 9.2 aligner and 9.3 encodes **running** | 9.1b flow pieces |
 | C | **running** — M0 step 6 (CI fix) | M6a, Appendix C lists, M6b |
 | D | 11.4 done → PR #19 reviewed, no blockers; merges after the CI fix | waiting — 11.1 needs M0 step 5 merged; 7.10 brain parts need M0 step 3 |
 | E | waiting — needs `docs/specs/marketing-machine-api.md` (first M1 PR, lane A) | 8.1 teleprompter |
@@ -34,9 +34,9 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 | Step | What | Lane | Agent | Status | PR |
 |---|---|---|---|---|---|
 | M0.1 | Rule changes (§3c, chris-word-wins, animations-last, §1 tier line, superseded lines, §3b rows) | A | mm-architect | blocked | |
-| M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | fixing review blocker (ETag reads + bundled fallback) | #25 | |
+| M0.2 | Repo saves through an outbox (migration 406) | A | mm-builder | done (review blocker fixed: ETag reads, bundled fallback, 3 nits) | #25 | |
 | M0.3 | Settings, offers, jobs (migrations 407–408) | A | mm-builder | done (in review) | #21 | |
-| M0.4 | Clock, worker, buzz, model client | A | mm-builder | pending | |
+| M0.4 | Clock, worker, buzz, model client (stacked on #21 + #25) | A | mm-builder | claimed | |
 | M0.5 | Meta v26.0, sync, ad-number resolver, tag views | A | mm-architect | pending | |
 | M0.6 | CI that actually checks work | C | mm-architect | blocked (migration 114 call) | #23 | |
 | M0.7 | Journey docs (`marketing-machine-flow.md`) | A | mm-chore | pending | |
@@ -70,9 +70,9 @@ Status: `pending` / `claimed` / `done` / `blocked`.
 ### M3 Video pipeline (lane B; screens in E)
 | Step | What | Agent | Status | PR |
 |---|---|---|---|---|
-| 9.1 | Flow and state machine (migration 416) | mm-architect | done (in review); **ships together with 9.2–9.5** — alone it pauses new takes at raw_landed | #26 | |
+| 9.1 | Flow and state machine (migration 416) | mm-architect | fixing review blocker (sweeper crashes on rows with no ad number after 416); **ships together with 9.2–9.5** | #26 | |
 | 9.2 | Aligner | mm-architect | claimed | |
-| 9.3 | Encodes | mm-architect | pending | |
+| 9.3 | Encodes | mm-architect | claimed | |
 | 9.4 | Animations, always last | mm-builder | pending | |
 | 9.5 | Video worker (`video-worker/`) | mm-builder | pending | |
 | 9.6 | Approval and light editing (routes B, screen E) | mm-builder | pending | |
