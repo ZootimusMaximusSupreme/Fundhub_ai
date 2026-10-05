@@ -16,15 +16,17 @@ function mockDb(extra = {}) {
             id: CLIENT, first_name: "Jane", last_name: "Doe",
             email: "jane@x.test", phone: null, funded: true,
             funded_amount: 50000, tags: [], outcome_tier: null,
-            dnd_sms: false, dnd_email: false, dnd_voice: false
+            dnd_sms: false, dnd_email: false, dnd_voice: false,
+            ...(extra.client || {})
           }]
         };
       }
       if (/FROM conversations/i.test(sql)) return { rows: [] };
-      if (/FROM messages/i.test(sql)) return { rows: [] };
+      if (/FROM messages/i.test(sql)) return { rows: extra.messages || [] };
       if (/FROM cards/i.test(sql)) return { rows: [] };
       if (/FROM funding_rounds/i.test(sql)) return { rows: [] };
-      if (/FROM client_custom_fields/i.test(sql)) return { rows: [{}] };
+      if (/FROM client_custom_fields/i.test(sql)) return { rows: [extra.cf || {}] };
+      if (/FROM crs_results/i.test(sql)) return { rows: extra.crs || [] };
       if (/FROM customer_insights/i.test(sql)) {
         return { rows: extra.insights || [] };
       }
@@ -121,4 +123,58 @@ test("fetchContext puts every call transcript in the prompt in full (no cut)", a
   for (let i = 0; i < 5; i++) assert.match(ctx.as_prompt_block, new RegExp(`END-${i}`));
   assert.ok(ctx.as_prompt_block.includes(long));
   assert.equal(ctx.dossier_render.mode, "full");
+});
+
+test("nothing sensitive reaches fetchContext().as_prompt_block or the context JSON", async () => {
+  // Every value is made up; key-shaped ones are assembled at runtime so secret
+  // scanning does not read this file as a leak.
+  const SSN = "123-45-6789";
+  const SSN_PLAIN = "987654321";
+  const CARD = ["4111", "1111", "1111", "1111"].join("");
+  const TOKEN = ["sk", "live", "FAKEFAKEFAKE0000TESTONLY"].join("_");
+  const DOB = "02/03/1980";
+  const PASSWORD = "Hunter2Secret!";
+  const ACCOUNT = "5524880012345678";
+  const ctx = await fetchContext(mockDb({
+    client: { custom_fields: { ssn: SSN_PLAIN, date_of_birth: "1980-02-03", note: `dob: ${DOB}` } },
+    cf: {
+      social_security_number: SSN,
+      agent_context: `client said ssn ${SSN}, password is ${PASSWORD}, card ${CARD}`,
+      cf_svy_self_reported_fico: "640"
+    },
+    messages: [{
+      id: "m-1", direction: "inbound", channel: "sms", created_at: "2026-09-01T00:00:00Z",
+      body: `here you go: SSN ${SSN_PLAIN}, born on ${DOB}, pin: 4821, link https://x.test/a?token=${TOKEN}`
+    }],
+    insights: [{
+      stage: "mid", channel: "call", occurred_at: "2026-09-02T00:00:00Z",
+      answers: { pin: 4821, bank_account: 123456789012, how_it_went: "good" }, notes: `pwd: ${PASSWORD}`
+    }],
+    calls: [{
+      outcome: "deposit", logged_at: "2026-09-03T00:00:00Z",
+      transcript: `my social is ${SSN} and the card is ${CARD.match(/.{4}/g).join(" ")}`
+    }],
+    crs: [{
+      id: "crs-1", provider: "crs", created_at: "2026-09-04T00:00:00Z",
+      result: {
+        scores: { tu: 640 },
+        tradelines: [{ creditorName: "CAPITAL ONE", accountIdentifier: ACCOUNT, currentBalanceAmount: 100 }],
+        bureaus: { TU: { creditFiles: [{ ssns: [{ ssn: SSN_PLAIN }], dobs: [{ dob: "1980-02-03" }] }] } }
+      }
+    }]
+  }), { orgId: ORG, clientId: CLIENT });
+
+  const block = ctx.as_prompt_block;
+  const json = JSON.stringify(ctx);
+  for (const secret of [SSN, SSN_PLAIN, CARD, TOKEN, DOB, "1980-02-03", PASSWORD, ACCOUNT, "4821", "123456789012"]) {
+    assert.ok(!block.includes(secret), `${secret} reached the prompt`);
+    assert.ok(!json.includes(secret), `${secret} reached the context JSON`);
+  }
+  // The useful facts are still there.
+  assert.match(block, /CAPITAL ONE/);
+  assert.match(block, /how_it_went: good/);
+  assert.match(block, /cf_svy_self_reported_fico: 640/);
+  // Profile and survey are printed once, not twice.
+  assert.equal(block.split("cf_svy_self_reported_fico").length - 1, 1);
+  assert.equal(block.split("Jane").length - 1, 1);
 });
