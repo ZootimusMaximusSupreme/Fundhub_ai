@@ -171,7 +171,8 @@ test("recheck exits the drip once the call has been held", async () => {
   const db = pgFake({
     clients: [fundingClient()],
     templates: templatesFor(FUNDING_PREFIX, cells),
-    events: [{ client_id: "cl-1", name: "call.completed" }]
+    // Held = a closer logged it as held (the "showed" rule, src/sales/call-outcomes.mjs).
+    callOutcomes: [{ client_id: "cl-1", outcome: "deposit" }]
   });
   const res = await handle({
     event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
@@ -195,8 +196,8 @@ test("recheck gates every later wake, not only the one after the kickoff", async
   const step = {
     run: async (id, fn) => {
       if (id.startsWith("send-")) sends += 1;
-      // Simulate call.completed arriving after the third send.
-      if (sends === 3 && !db.events.length) db.events.push({ client_id: "cl-1", name: "call.completed" });
+      // Simulate the closer logging the call as held after the third send.
+      if (sends === 3 && !db.callOutcomes.length) db.callOutcomes.push({ client_id: "cl-1", outcome: "deposit" });
       return fn();
     },
     sleep: async () => {},
@@ -210,6 +211,24 @@ test("recheck gates every later wake, not only the one after the kickoff", async
   assert.equal(res.stoppedBecause, "call_held");
   assert.ok(db.messages.length < 18, "the drip stopped rather than sending all 18");
   assert.ok(db.messages.length <= 4, `stopped promptly after the call, got ${db.messages.length}`);
+});
+
+test("an AI-setter call or a closer's No show is not a held call — the drip runs on", async () => {
+  const cells = allCells(FUNDING_PREFIX);
+  const db = pgFake({
+    clients: [fundingClient()],
+    templates: templatesFor(FUNDING_PREFIX, cells),
+    // The Bland confirm call AI-SET-01 places right after the booking, and a closer's No show.
+    events: [{ client_id: "cl-1", name: "call.completed", payload: { source: "bland", disposition: "voicemail" } }],
+    callOutcomes: [{ client_id: "cl-1", outcome: "no_show" }]
+  });
+  const res = await handle({
+    event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),
+    db, step: fakeStep()
+  });
+
+  assert.notEqual(res.stoppedBecause, "call_held");
+  assert.ok(db.messages.length > 1, "the pre-call copy kept going past the kickoff");
 });
 
 test("recheck does not read cf_analyzer_recommendation — that field is written during the call", async () => {
@@ -318,7 +337,7 @@ test("sms: sends nothing when the call is already held before the precall wake",
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", outcome_tier: null, custom_fields: {} }],
     templates: smsTemplates(),
-    events: [{ client_id: "cl-1", name: "call.completed" }]
+    callOutcomes: [{ client_id: "cl-1", outcome: "callback" }]
   });
   const res = await handle({
     event: ev("booking.created", { startTime: farStart() }, { clientId: "cl-1" }),

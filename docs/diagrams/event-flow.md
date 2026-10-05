@@ -130,10 +130,10 @@ flowchart LR
 | `diagnostic.paid` | journey spine | `onDiagnosticPaid`, `onDiagnosticPaidSoftPull`, `onMoneyEventForMeta`, `onDiagnosticPaidMoney` | 2 |
 | `analysis.completed` | journey spine | `onAnalysisCompleted`, `onAnalysisCompletedDeliverables`, `onAnalysisCompletedSloPack` | 9 |
 | `booking.created` | journey spine | `onBookingCreated`, `onInterviewBooked` | 9 |
-| `booking.rescheduled` | journey spine | `onBookingRescheduled` | 2 |
+| `booking.rescheduled` | journey spine | `onBookingRescheduled` | 3 |
 | `booking.cancelled` | journey spine | `onBookingCancelled` | 0 |
 | `booking.noshow` | journey spine | `onBookingNoshow` | 1 |
-| `call.completed` | journey spine | `onCallCompleted` | 4 |
+| `call.completed` | journey spine | `onCallCompleted`, `onCallCompletedForMeta` | 5 |
 | `decision.rendered` | journey spine | `onDecisionRendered` | 0 |
 | `deposit.paid` | journey spine | `onDepositPaid`, `onPaidMidCheckin`, `onDepositPaidGate`, `onMoneyEventForMeta`, `onDepositPaidMoney`, `onDealCloseWinAlert` | 3 |
 | `sale.closed` | journey spine | `onSaleClosed`, `onPaidMidCheckin`, `onMoneyEventForMeta`, `onSaleClosedMoney`, `onDealCloseWinAlert` | 0 |

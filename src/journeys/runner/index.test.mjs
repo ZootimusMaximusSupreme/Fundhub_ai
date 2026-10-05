@@ -146,8 +146,13 @@ import { isSyntheticRow } from "./synthetic.mjs";
 
    Moved 91 -> 90 when PR #39 (marketing machine M0 step 5) took the Meta pull
    off Inngest (meta-campaign-sync-sweeper) and onto a Netlify scheduled
-   function, meta-sync-sweeper. */
-const REGISTERED = 90;
+   function, meta-sync-sweeper.
+
+   Moved 90 -> 91 with DPC-02 — Late Show (dpc-02-late-show, K3, 2026-10-05).
+   It runs on call.completed and undoes a no-show when a closer logs late.
+   Its module now also registers DPC-02 itself, so it names both in
+   `handlers`. */
+const REGISTERED = 91;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

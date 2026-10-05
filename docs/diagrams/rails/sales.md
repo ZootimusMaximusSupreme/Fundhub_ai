@@ -30,7 +30,7 @@ stateDiagram-v2
     closed_won --> downsell
     downsell --> lost
     lost --> [*]
-    note right of showed : moved by dpc-02-call-outcome-enforcement
+    note right of showed : moved by dpc-02-call-outcome-enforcement, dpc-02-call-outcome-enforcement
     note right of lost : moved by dpc-02-call-outcome-enforcement
     note right of closed_won : moved by dpc-03-inbound-reply-router
     note right of downsell : moved by dpc-03-inbound-reply-router
@@ -51,7 +51,7 @@ card into, via `moveCardToStage`.
 | 1 | `survey_complete` | Survey Complete | — |
 | 2 | `booked` | Booked | `s-04-call-booked` |
 | 3 | `confirmed` | Confirmed | — |
-| 4 | `showed` | Showed | `dpc-02-call-outcome-enforcement` |
+| 4 | `showed` | Showed | `dpc-02-call-outcome-enforcement`, `dpc-02-call-outcome-enforcement` |
 | 5 | `diagnostic_paid` | Diagnostic Paid | — |
 | 6 | `decision_rendered` | Decision Rendered | — |
 | 7 | `closed_won` | Closed Won (deposit) | `dpc-03-inbound-reply-router` |

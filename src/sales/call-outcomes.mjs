@@ -22,6 +22,53 @@ export class CallOutcomeError extends Error {
   }
 }
 
+/* ── THE "SHOWED" RULE (owner-set 2026-10-05, K3) ──────────────────────────
+   A client showed for a booked call when a closer logged Deposit, Downsell,
+   Callback or Not a fit for them at or after that call's booked start time.
+   Demo rows never count. Nothing else counts:
+     - a closer's "No show" is a no-show;
+     - an AI-setter (Bland) call is not the sales call — AI-SET-01 dials right
+       after the booking to confirm it — so its call.completed never counts;
+     - the calendar only ever says booked, moved or cancelled. Nothing in this
+       system records that a meeting took place without a closer log.
+   Not a fit counts (Chris, 2026-10-05): they came, and treating them as a
+   no-show would send them the no-show texts.
+
+   One rule, one source. DPC-02 (src/workflows/dpc-02-call-outcome-enforcement.mjs)
+   decides showed or no-show with it, S-05A stops the no-show texts with it, and
+   the Meta ShowedCall (src/handlers/meta-showed-call.mjs) fires on it.
+
+   A closer log carries no booking id, so the booked start time is what ties a
+   log to a call: a log from an older call cannot hide a new no-show. */
+export const SHOWED_OUTCOMES = Object.freeze(["deposit", "downsell", "callback", "not_a_fit"]);
+
+/** True when a closer outcome means the client showed. */
+export function isShowedOutcome(outcome) {
+  return SHOWED_OUTCOMES.includes(normalizeOutcome(outcome));
+}
+
+export const CLOSER_LOGGED_SHOWED_SQL =
+  `SELECT 1 AS showed
+     FROM call_outcomes
+    WHERE client_id = $1
+      AND outcome = ANY($2::text[])
+      AND is_demo IS NOT TRUE
+      AND ($3::timestamptz IS NULL OR logged_at >= $3::timestamptz)
+    LIMIT 1`;
+
+/**
+ * The rule, read from the database: did a closer log that this client showed,
+ * at or after `since` (the call's booked start)? With no usable `since`, a log
+ * at any time counts.
+ */
+export async function closerLoggedShowed(db, { clientId, since = null } = {}) {
+  if (!clientId) return false;
+  const at = since == null || since === "" ? null : new Date(since);
+  const sinceIso = at && !Number.isNaN(at.getTime()) ? at.toISOString() : null;
+  const r = await db.query(CLOSER_LOGGED_SHOWED_SQL, [clientId, [...SHOWED_OUTCOMES], sinceIso]);
+  return Array.isArray(r?.rows) && r.rows.length > 0;
+}
+
 const PAID = `status IN ('paid','succeeded','complete','completed')`;
 
 const CHECKLIST_KEYS = [
@@ -235,7 +282,9 @@ async function emitCloserCallCompleted(db, row, { offerKey, repairReferral }) {
     disposition: "closer",
     repairReferral: repairReferral === true,
     declineReason: null,
-    taskId: row.task_id || null
+    taskId: row.task_id || null,
+    // The closer log's own id: the Meta ShowedCall event id is built from it.
+    callOutcomeId: row.id
   }, {
     orgId,
     clientId,

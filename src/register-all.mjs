@@ -23,6 +23,7 @@ import { register as registerContractSigned } from "./handlers/contract-signed.m
 import { register as registerContractConsent } from "./handlers/contract-consent.mjs";
 import { register as registerAgentRuntime } from "./agents/runtime.mjs";
 import { register as registerMetaPurchase } from "./handlers/meta-purchase.mjs";
+import { register as registerMetaShowedCall } from "./handlers/meta-showed-call.mjs";
 
 let _done = false;
 
@@ -85,6 +86,10 @@ export function registerAll() {
      uses to mark the order paid, and every money write should be on file
      before anything is reported outward. It never throws. */
   registerMetaPurchase();
+  /* Meta ShowedCall (K3). After comms, which files the Bland voice call on the
+     same call.completed; this one acts only on a closer log that says the
+     client showed (src/sales/call-outcomes.mjs). It never throws. */
+  registerMetaShowedCall();
   _done = true;
 }
 

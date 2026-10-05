@@ -37,7 +37,7 @@ import { c03InquiryRemovedResumeOrHold } from './c-03-inquiry-removed-resume-or-
 import { c05PreFundingReview } from './c-05-pre-funding-review.mjs';
 import { c06CrsResultsRouter } from './c-06-crs-results-router.mjs';
 import { dpc01AnalyzerLock } from './dpc-01-analyzer-lock.mjs';
-import { dpc02CallOutcomeEnforcement } from './dpc-02-call-outcome-enforcement.mjs';
+import { dpc02CallOutcomeEnforcement, dpc02LateShow } from './dpc-02-call-outcome-enforcement.mjs';
 import { dpc03InboundReplyRouter } from './dpc-03-inbound-reply-router.mjs';
 import { dpc05NoProgressEscalation } from './dpc-05-no-progress-escalation.mjs';
 import { ds01RepairReferral } from './ds-01-repair-referral.mjs';
@@ -379,6 +379,7 @@ export const functions = [
   c06CrsResultsRouter,
   dpc01AnalyzerLock,
   dpc02CallOutcomeEnforcement,
+  dpc02LateShow,
   dpc03InboundReplyRouter,
   dpc05NoProgressEscalation,
   ds01RepairReferral,

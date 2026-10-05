@@ -22,6 +22,8 @@ export function pgFake(seed = {}) {
   const invoicePayments = seed.invoicePayments || [];
   const paymentLinks = seed.paymentLinks || [];
   const crsResults = seed.crsResults || [];
+  // closer logs: [{ client_id, outcome, logged_at?, is_demo? }]
+  const callOutcomes = seed.callOutcomes || [];
   const messages = [];
   const tasks = [];
   let n = 0;
@@ -31,8 +33,17 @@ export function pgFake(seed = {}) {
     clients.find((c) => c.org_id === org && String(c.email || "").toLowerCase() === String(email).toLowerCase());
 
   return {
-    clients, events, templates, messages, tasks, fundingRounds, applications, inquiryLog, pipelineStages, cards, behaviorScores, invoices, invoicePayments, paymentLinks, crsResults,
+    clients, events, templates, messages, tasks, fundingRounds, applications, inquiryLog, pipelineStages, cards, behaviorScores, invoices, invoicePayments, paymentLinks, crsResults, callOutcomes,
     async query(sql, params = []) {
+      // --- call_outcomes: the "showed" rule (src/sales/call-outcomes.mjs closerLoggedShowed) ---
+      if (/FROM call_outcomes/.test(sql) && /outcome = ANY/.test(sql)) {
+        const [clientId, outcomes, since] = params;
+        const sinceMs = since ? new Date(since).getTime() : null;
+        const hit = callOutcomes.some((o) =>
+          o.client_id === clientId && outcomes.includes(o.outcome) && o.is_demo !== true &&
+          (sinceMs == null || new Date(o.logged_at).getTime() >= sinceMs));
+        return { rows: hit ? [{ showed: 1 }] : [] };
+      }
       // --- behavior_scores (BC-01/BC-02) ---
       if (/INSERT INTO behavior_scores \(org_id, client_id, responsiveness\)/.test(sql)) {
         behaviorScores.push({ org_id: params[0], client_id: params[1], responsiveness: params[2] });

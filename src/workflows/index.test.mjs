@@ -86,6 +86,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "doc-check-retry-sweeper",
   "dpc-01-analyzer-lock",
   "dpc-02-call-outcome-enforcement",
+  "dpc-02-late-show",
   "dpc-03-inbound-reply-router",
   "dpc-05-no-progress-escalation",
   "ds-01-repair-referral",
@@ -201,6 +202,13 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      added, in the words of the person who added it. The counts named in it are
      the historical record of what the pin said at the time; the pin itself is
      EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
+
+     Added DPC-02 — Late Show (2026-10-05, K3) — Chris confirmed the "showed"
+     rule and that a closer who logs after DPC-02's 5-minute check must undo
+     the no-show. It runs on every call.completed and acts only on a closer log
+     of Deposit, Downsell, Callback or Not a fit for a client still marked
+     no_show: call_outcome back to showed, the call:no_show tag off, and the
+     sales card from "lost" back to "showed". It sends nothing to anyone.
 
      Added the evening brief (2026-10-05, MB6) — Chris asked for a
      "Good evening, Chris." text at 9:00 p.m. Arizona so he knows what came in

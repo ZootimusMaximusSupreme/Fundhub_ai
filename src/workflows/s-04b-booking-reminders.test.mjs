@@ -86,7 +86,8 @@ test("s-04b: stops before 24h reminder if call already held", async () => {
   const db = pgFake({
     clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
     templates: sms(),
-    events: [{ client_id: "cl-1", name: "call.completed" }]
+    // Held = a closer logged it as held (the "showed" rule, src/sales/call-outcomes.mjs).
+    callOutcomes: [{ client_id: "cl-1", outcome: "deposit" }]
   });
   const clock = clockStep();
   const res = await handle({
@@ -96,6 +97,23 @@ test("s-04b: stops before 24h reminder if call already held", async () => {
   assert.equal(res.stoppedBecause, "call_held");
   assert.equal(db.messages.length, 2);
   assert.deepEqual(db.messages.map((m) => m.template_key), [SMS_CONFIRM, EMAIL_CONFIRM]);
+});
+
+test("s-04b: an AI-setter call or a closer's No show is not a held call — the reminders still go", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: sms(),
+    // AI-SET-01's confirm call (Bland) right after the booking, and a closer's No show.
+    events: [{ client_id: "cl-1", name: "call.completed", payload: { source: "bland", disposition: "voicemail" } }],
+    callOutcomes: [{ client_id: "cl-1", outcome: "no_show" }]
+  });
+  const clock = clockStep();
+  const res = await handle({
+    event: ev("booking.created", { startTime: inHours(72) }, { clientId: "cl-1" }),
+    db, step: clock.step, now: clock.now, requestMagicLinkImpl: portalStub
+  });
+  assert.notEqual(res.stoppedBecause, "call_held");
+  assert.ok(db.messages.length > 2, "the 24-hour and 2-hour reminders went out");
 });
 
 test("s-04b: booked stage sends exactly one text and one email, immediately", async () => {

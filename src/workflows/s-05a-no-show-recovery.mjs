@@ -2,6 +2,10 @@
 // Source: the CRM sticky "S-05a No-Show Recovery". Trigger: booking.noshow
 // (dpc-02 emits this 5 minutes after a missed ClickFunnels call). Spec 4.4: four touches,
 // email + SMS each. Stop on booking.created. Re-check before each send.
+// Also stops when a closer logs, late, that the client showed (owner-set 2026-10-05):
+// the same "showed" rule DPC-02 uses (src/sales/call-outcomes.mjs), asked from the
+// missed call's booked start. Touch 1 goes at the no-show check itself, so a late
+// log stops touches 2 to 4.
 
 import { inngest } from "./client.mjs";
 import { db } from "../db.mjs";
@@ -9,6 +13,7 @@ import { resolveClient } from "../handlers/client-lifecycle.mjs";
 import { addTags } from "./tags.mjs";
 import { createTask } from "../lib/create-task.mjs";
 import { sendTemplated } from "./messaging.mjs";
+import { closerLoggedShowed } from "../sales/call-outcomes.mjs";
 
 export const EMAIL_TEMPLATE_KEY = "EMAIL-S05A-NOSHOW-RECOVERY";
 export const SMS_TEMPLATE_KEY = "SMS-S05A-NOSHOW-RECOVERY";
@@ -49,6 +54,9 @@ export async function handle({ event, db, step }) {
   const orgId = event.orgId;
   const eventId = event.id;
   const priorBookings = await step.run("snapshot-bookings", () => bookingCreatedCount(db, clientId));
+  // The missed call's booked start: a closer log at or after it means they showed.
+  const since = event.payload?.startTime ?? null;
+  const showedLate = () => closerLoggedShowed(db, { clientId, since });
 
   await step.run("tag-no-show", () => addTags(db, clientId, ["call:no_show"]));
 
@@ -73,6 +81,9 @@ export async function handle({ event, db, step }) {
   if (await step.run("check-booked-2", () => hasRebooked(db, clientId, priorBookings))) {
     return { done: true, stoppedAt: "before-touch-2", touch1, task };
   }
+  if (await step.run("check-showed-2", showedLate)) {
+    return { done: true, stoppedAt: "before-touch-2", reason: "closer_logged_showed", touch1, task };
+  }
   const touch2 = await step.run("send-touch-2", () =>
     sendPair(db, {
       orgId, clientId, eventId: `${eventId}:2`,
@@ -83,6 +94,9 @@ export async function handle({ event, db, step }) {
   if (await step.run("check-booked-3", () => hasRebooked(db, clientId, priorBookings))) {
     return { done: true, stoppedAt: "before-touch-3", touch1, touch2, task };
   }
+  if (await step.run("check-showed-3", showedLate)) {
+    return { done: true, stoppedAt: "before-touch-3", reason: "closer_logged_showed", touch1, touch2, task };
+  }
   const touch3 = await step.run("send-touch-3", () =>
     sendPair(db, {
       orgId, clientId, eventId: `${eventId}:3`,
@@ -92,6 +106,9 @@ export async function handle({ event, db, step }) {
   await step.sleep("wait-96h", "96h");
   if (await step.run("check-booked-4", () => hasRebooked(db, clientId, priorBookings))) {
     return { done: true, stoppedAt: "before-touch-4", touch1, touch2, touch3, task };
+  }
+  if (await step.run("check-showed-4", showedLate)) {
+    return { done: true, stoppedAt: "before-touch-4", reason: "closer_logged_showed", touch1, touch2, touch3, task };
   }
   const touch4 = await step.run("send-touch-4", () =>
     sendPair(db, {

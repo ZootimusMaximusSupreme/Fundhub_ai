@@ -10,8 +10,52 @@ import {
   CallOutcomeError,
   logCallOutcome,
   resolveCashCollected,
-  presentOutcome
+  presentOutcome,
+  SHOWED_OUTCOMES,
+  isShowedOutcome,
+  closerLoggedShowed,
+  CLOSER_LOGGED_SHOWED_SQL
 } from "../sales/call-outcomes.mjs";
+
+// --- the "showed" rule (owner-set 2026-10-05) ---------------------------------
+
+test("showed rule: every closer outcome except No show, Not a fit included", () => {
+  assert.deepEqual([...SHOWED_OUTCOMES].sort(), OUTCOMES.filter((o) => o !== "no_show").sort());
+  assert.ok(SHOWED_OUTCOMES.includes("not_a_fit"));
+  assert.ok(!SHOWED_OUTCOMES.includes("no_show"));
+});
+
+test("showed rule: isShowedOutcome reads closer outcomes only", () => {
+  for (const o of ["deposit", "downsell", "callback", "not_a_fit", "Not a fit", "DEPOSIT"]) {
+    assert.equal(isShowedOutcome(o), true, o);
+  }
+  // A closer's No show, Bland dispositions and nothing at all.
+  for (const o of ["no_show", "No show", "no_answer", "voicemail", "transferred", "declined", "", null, undefined]) {
+    assert.equal(isShowedOutcome(o), false, String(o));
+  }
+});
+
+test("showed rule: closerLoggedShowed asks call_outcomes once, from the booked start", async () => {
+  const calls = [];
+  const db = { query: async (sql, params) => { calls.push({ sql, params }); return { rows: [{ showed: 1 }] }; } };
+  assert.equal(await closerLoggedShowed(db, { clientId: "cl-1", since: "2026-10-05T18:00:00Z" }), true);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].sql, CLOSER_LOGGED_SHOWED_SQL);
+  assert.deepEqual(calls[0].params, ["cl-1", [...SHOWED_OUTCOMES], "2026-10-05T18:00:00.000Z"]);
+  assert.match(CLOSER_LOGGED_SHOWED_SQL, /is_demo IS NOT TRUE/);
+  assert.match(CLOSER_LOGGED_SHOWED_SQL, /logged_at >= \$3/);
+
+  // No start (or one that is not a date): a log at any time counts.
+  await closerLoggedShowed(db, { clientId: "cl-1" });
+  await closerLoggedShowed(db, { clientId: "cl-1", since: "not a date" });
+  assert.equal(calls[1].params[2], null);
+  assert.equal(calls[2].params[2], null);
+
+  const empty = { query: async () => ({ rows: [] }) };
+  assert.equal(await closerLoggedShowed(empty, { clientId: "cl-1" }), false);
+  assert.equal(await closerLoggedShowed(db, { clientId: null }), false);
+  assert.equal(calls.length, 3, "no client, no query");
+});
 
 test("beliefs: seven Cole Gordon beliefs", () => {
   assert.deepEqual(BELIEFS, ["pain", "doubt", "cost", "desire", "money", "support", "trust"]);
@@ -180,7 +224,8 @@ test("logCallOutcome: emits call.completed with closer disposition after a write
     disposition: "closer",
     repairReferral: true,
     declineReason: null,
-    taskId
+    taskId,
+    callOutcomeId: "out-closer-1"
   });
 });
 

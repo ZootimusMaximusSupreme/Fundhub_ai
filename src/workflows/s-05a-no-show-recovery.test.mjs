@@ -132,4 +132,57 @@ test("s-05a: original booking.created does not count as a rebook", async () => {
   assert.equal(db.messages.length, 8);
 });
 
+// --- a closer logs, late, that they showed (owner-set 2026-10-05) -----------
+
+const allTemplates = () => [
+  { org_id: "org-1", template_key: EMAIL_TEMPLATE_KEY, channel: "email", body: "t1e", compliance_passed: true },
+  { org_id: "org-1", template_key: SMS_TEMPLATE_KEY, channel: "sms", body: "t1s", compliance_passed: true },
+  { org_id: "org-1", template_key: EMAIL_NOSHOW_02, channel: "email", body: "t2e", compliance_passed: true },
+  { org_id: "org-1", template_key: SMS_NOSHOW_02, channel: "sms", body: "t2s", compliance_passed: true },
+  { org_id: "org-1", template_key: "EMAIL-S05A-NOSHOW-03", channel: "email", body: "t3e", compliance_passed: true },
+  { org_id: "org-1", template_key: "SMS-S05A-NOSHOW-03", channel: "sms", body: "t3s", compliance_passed: true },
+  { org_id: "org-1", template_key: "EMAIL-S05A-NOSHOW-04", channel: "email", body: "t4e", compliance_passed: true },
+  { org_id: "org-1", template_key: "SMS-S05A-NOSHOW-04", channel: "sms", body: "t4s", compliance_passed: true }
+];
+const START = "2026-10-05T18:00:00.000Z";
+
+for (const [label, outcome, stopped] of [
+  ["a late Deposit stops touches 2 to 4", "deposit", true],
+  ["a late Not a fit stops touches 2 to 4", "not_a_fit", true],
+  ["a closer's No show does not stop them", "no_show", false]
+]) {
+  test(`s-05a: ${label}`, async () => {
+    const db = pgFake({ clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }], templates: allTemplates() });
+    const step = {
+      run: async (id, fn) => {
+        const out = await fn();
+        // The closer logs 40 minutes after the missed call's start, after touch 1 went.
+        if (id === "send-touch-1") db.callOutcomes.push({ client_id: "cl-1", outcome, logged_at: "2026-10-05T18:40:00.000Z" });
+        return out;
+      },
+      sleep: async () => {}
+    };
+    const res = await handle({ event: ev("booking.noshow", { startTime: START, bookingUid: "b1" }, { clientId: "cl-1" }), db, step });
+    if (stopped) {
+      assert.equal(res.stoppedAt, "before-touch-2");
+      assert.equal(res.reason, "closer_logged_showed");
+      assert.equal(db.messages.length, 2, "only touch 1 (email + text) went out");
+    } else {
+      assert.equal(res.stoppedAt, undefined);
+      assert.equal(db.messages.length, 8);
+    }
+  });
+}
+
+test("s-05a: a held call from before the missed one does not stop the texts", async () => {
+  const db = pgFake({
+    clients: [{ id: "cl-1", org_id: "org-1", email: "a@b.com", custom_fields: {} }],
+    templates: allTemplates(),
+    callOutcomes: [{ client_id: "cl-1", outcome: "callback", logged_at: "2026-10-01T18:40:00.000Z" }]
+  });
+  const res = await handle({ event: ev("booking.noshow", { startTime: START, bookingUid: "b1" }, { clientId: "cl-1" }), db, step: pgStep() });
+  assert.equal(res.stoppedAt, undefined);
+  assert.equal(db.messages.length, 8);
+});
+
 

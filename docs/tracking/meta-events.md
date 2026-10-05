@@ -58,6 +58,15 @@ Each event: `{ event_name, event_time, event_id, event_source_url, action_source
 
 The old `InitiateCheckout` on the Pay press in `fh-attribution.js` and the hand-written `Lead`/`Schedule` calls in `apply-survey.html` are replaced by this map (no double counting).
 
+## Server-only events
+No browser copy. Each goes through the one sender and writes its result on the event row as `payload.meta`.
+
+| Our event | Meta event | When | event_id | Sent by |
+|---|---|---|---|---|
+| call.completed from a closer log (disposition `closer`) with outcome Deposit, Downsell, Callback or Not a fit | ShowedCall (custom) | the closer saves the log | `showed.<closer log id>` | `src/handlers/meta-showed-call.mjs` |
+
+ShowedCall (K3, owner-set 2026-10-05) follows the one "showed" rule in `src/sales/call-outcomes.mjs` — the same rule DPC-02 uses to decide showed or no-show. Never a closer's No show, never an AI-setter (Bland) call, never the calendar. `action_source: "system_generated"`, no custom_data; user_data is hashed email and phone, external_id, and the fbc / fbp kept on the client. Demo clients and company / test emails are skipped. One per closer log, so a second held call is a second ShowedCall, the way Schedule counts every booking.
+
 ## fbclid / fbc / fbp
 - Stop dropping `fbclid`. The browser keeps it (first touch) and, when the `_fbc` cookie is missing, builds `fbc = "fb.1.<ms>.<fbclid>"`. `fbp` comes from the `_fbp` cookie.
 - Every track post, the step-1 contact, the checkout and the soft-pull post carry `fbc` and `fbp`. The server stores them on the order/client so a later server-only Purchase (payment webhook) can send them.
