@@ -2,42 +2,89 @@
  * Tracking inventory for ClickFunnels Custom HTML pushes.
  * Env overrides repo ground truth. Never commit secrets.
  *
- * Meta pixel ID ground truth: ops/workflows/archive/ads-revenue-model-2026-08-24.md
- * (also live on apply.fundhub.ai via CF site tracking — verify with view-source fbq init).
+ * Meta pixel ID: env META_PIXEL_ID (owner ask 2026-10-02: the id lives in env, the
+ * same name the server sender reads — docs/tracking/meta-events.md "Phase 4 contract").
+ * The push runs on a laptop, so it reads the local .env (or the shell); Netlify's copy
+ * is for the server. When META_PIXEL_ID is missing (or not all digits) the push falls
+ * back to META_PIXEL_FALLBACK_ID, the pixel that has always been live, so a push
+ * without the env var changes nothing. Ground truth for that id:
+ * ops/workflows/archive/ads-revenue-model-2026-08-24.md.
+ * public/index.html (fundhub.ai homepage, a static Netlify page) cannot read env and
+ * carries metaPixelHeadHtml(META_PIXEL_FALLBACK_ID) as written text; a test keeps it equal.
  */
+
+export const META_PIXEL_FALLBACK_ID = "2403674420141513";
 
 /** @param {Record<string, string | undefined>} env */
 export function metaPixelId(env = process.env) {
-  for (const name of [
-    "META_PIXEL_ID",
-    "FACEBOOK_PIXEL_ID",
-    "FB_PIXEL_ID",
-    "PIXEL_ID",
-    "META_PIXEL",
-    "FB_PIXEL",
-  ]) {
-    const v = String(env[name] ?? "").trim();
-    if (v) return { id: v, envName: name };
-  }
-  return { id: "2403674420141513", envName: "repo:ads-revenue-model-2026-08-24" };
+  const v = String(env.META_PIXEL_ID ?? "").trim();
+  if (/^\d{6,20}$/.test(v)) return { id: v, envName: "META_PIXEL_ID" };
+  return { id: META_PIXEL_FALLBACK_ID, envName: v ? "fallback (META_PIXEL_ID is not digits)" : "fallback (META_PIXEL_ID unset)" };
 }
 
-/** Standard Meta base pixel + PageView (no CAPI). */
-export function metaPixelHeadHtml(pixelId) {
+/**
+ * Meta base pixel + ONE PageView that carries an event id (Phase 4 contract,
+ * docs/tracking/meta-events.md "Same event_id in browser and server").
+ *
+ * window.__fhPv = "pv.<fh_sid>.<random>". fh_sid is the session id in sessionStorage,
+ * made the same way public/funnel/fh-events.js and fh-attribution.js make it, so all
+ * three agree. The shared tracker sends window.__fhPv as the page_view's
+ * meta_event_id, and the server's PageView copy uses it, so Meta counts the page once.
+ * A second copy of this block on the same page does nothing (window.__fhPv is set), so
+ * a page never fires two PageViews from it.
+ *
+ * `noscript: false` leaves out the no-JavaScript image (the funnel head on ClickFunnels
+ * keeps its own in the funnel footer code).
+ */
+export function metaPixelHeadHtml(pixelId, { noscript = true } = {}) {
   const id = String(pixelId).replace(/[^\d]/g, "");
   if (!id) return "";
-  return `<!-- Meta Pixel (Fundhub) -->
+  const block = `<!-- Meta Pixel (Fundhub) -->
 <script>
 !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?
 n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
 n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
 document,'script','https://connect.facebook.net/en_US/fbevents.js');
+if(!window.__fhPv&&window.self===window.top){(function(w){var s='';try{s=w.sessionStorage.getItem('fh_sid')||'';}catch(e){}
+if(!/^[A-Za-z0-9_-]{8,80}$/.test(s)){s=(Math.random().toString(36).slice(2)+new Date().getTime().toString(36)+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);try{w.sessionStorage.setItem('fh_sid',s);}catch(e){}}
+w.__fhPv='pv.'+s+'.'+Math.random().toString(36).slice(2,10);})(window);
 fbq('init', '${id}');
-fbq('track', 'PageView');
-</script>
+fbq('track', 'PageView', {}, {eventID: window.__fhPv});}
+</script>`;
+  if (!noscript) return block;
+  return `${block}
 <noscript><img height="1" width="1" style="display:none" alt=""
 src="https://www.facebook.com/tr?id=${id}&ev=PageView&noscript=1"/></noscript>`;
+}
+
+/**
+ * The one Meta pixel <script> in a ClickFunnels FUNNEL head_code (with our comment and a
+ * following <noscript> when they are there). Funnel 968281's head holds a bare pixel
+ * (no comment, a plain fbq('track', 'PageView')) — measured by API GET 2026-10-02.
+ */
+const FUNNEL_PIXEL_SCRIPT =
+  /(?:<!-- Meta Pixel \([^)\n]*\) -->[ \t]*\r?\n)?<script>(?:(?!<\/script>)[\s\S])*?fbq\('init'[\s\S]*?<\/script>(?:[ \t]*\r?\n<noscript>[\s\S]*?<\/noscript>)?/g;
+
+/**
+ * Funnel head_code with its Meta pixel swapped for metaPixelHeadHtml (PageView with
+ * eventID). Every other byte (preconnect, Direct ROAS, anything else) stays as it is.
+ * Throws unless the live head holds exactly one pixel: zero means nothing to swap (adding
+ * a pixel is not this function's call), two means fix by hand.
+ * @returns {{ next: string, changed: boolean }}
+ */
+export function nextFunnelHeadCode(live, pixelId) {
+  const code = String(live ?? "");
+  const inits = (code.match(/fbq\('init'/g) || []).length;
+  const found = [...code.matchAll(FUNNEL_PIXEL_SCRIPT)];
+  if (inits !== 1 || found.length !== 1) {
+    throw new Error(`funnel head holds ${inits} pixel init(s) in ${found.length} script(s) — expected exactly one`);
+  }
+  const m = found[0];
+  const want = metaPixelHeadHtml(pixelId, { noscript: m[0].includes("<noscript>") });
+  if (!want) throw new Error("no pixel id");
+  const next = code.slice(0, m.index) + want + code.slice(m.index + m[0].length);
+  return { next, changed: next !== code };
 }
 
 export const FH_ATTRIBUTION_SRC = "https://fundhub.ai/funnel/fh-attribution.js";
@@ -408,6 +455,13 @@ export const DO_NOT_FULL_REPLACE_PATHS = new Set([
 ]);
 
 export const PUSH_MANIFEST = [
+  {
+    key: "funnel-968281-pixel",
+    funnelId: "968281",
+    liveUrl: "https://apply.fundhub.ai/watch",
+    strategy: "funnel_head_pixel",
+    note: "Funnel-level head_code of the Fundhub Funnel: the Meta pixel every builder step loads (/watch, /funding-book-call, /thank-you, /order). Swaps only that pixel <script> for metaPixelHeadHtml (one PageView with eventID window.__fhPv); preconnect and Direct ROAS stay byte for byte. PUT /funnels/968281 head_code_mode replace, read back. Custom HTML steps (/apply, every 984178 step) carry their own copy in the page; funnel 984178 has no head code.",
+  },
   {
     key: "apply-watch",
     funnelId: "968281",

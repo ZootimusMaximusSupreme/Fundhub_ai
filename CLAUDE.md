@@ -110,28 +110,16 @@ A laptop died on 2026-09-07 holding uncommitted work. Four marketing skills and 
 
 So: commit to the local repository in the same session the work is done, every time, whether or not a push is possible. An unpushed commit survives. An uncommitted file does not. If you cannot push, commit anyway and say so.
 
-### We do not use GitHub (owner-set 2026-09-09)
+### GitHub is the remote. GitLab is retired (owner-set 2026-10-05)
 
-Chris does not use GitHub. This is a choice, not a lockout, and it is settled.
+"We quit gitlabs." The repo lives on GitHub: https://github.com/ZootimusMaximusSupreme/Fundhub_ai (remote `origin`). Do not add a GitLab remote or push to gitlab.com. Every GitLab branch was moved to GitHub on 2026-10-05 with identical files.
 
-So: **never push, never try to push, and never treat an unpushed commit as a problem.**
-`origin/main` is stale by design and will only fall further behind. Do not compare
-against it, do not report the gap, and do not propose a backup, a mirror, a bundle or
-any other way to get the work off this machine. It has been raised and answered.
+Push with `git push -u origin <branch>`. From the Mac, `node scripts/github-push-whole-repo.mjs` pushes every local branch and tag and never forces. An unpushed commit is a problem. Law: `.cursor/rules/github-push.mdc` and `.claude/rules/github-push.md`.
 
-What this changes about the rules around it:
+The repo's visibility is Chris's call. Do not raise it (owner-set 2026-10-05).
 
-* §8's "open a pull request now" and "delete your branch when it lands" describe a
-  GitHub workflow that is not in use. Local branches and local merges still matter;
-  the pull-request half does not apply.
-* §8's check `git branch -r --no-merged origin/main` is misleading here, because
-  `origin/main` is frozen. Use `git branch -r --no-merged main` — the local one — if
-  you need to find stranded work.
-* The "commit locally, every session" rule above is now the WHOLE safety net rather
-  than half of it. That makes it more important, not less. Commit every session.
-
-Earlier notes in this repo describe GitHub as "locked out" with 2FA lost. That framing
-is wrong and it made agents treat a settled decision as a fault to route around.
+* §8's pull-request and branch rules apply. Compare against `origin/main`.
+* Still commit locally every session. Then push that commit to GitHub.
 
 ### Never ask permission to run a tool (owner-set 2026-09-08)
 
@@ -210,6 +198,10 @@ Chris never logs into Submagic, ClickFunnels, or any other tool an agent can run
 ### Finish the answer (owner-set 2026-09-24)
 
 If the answer needs a fact you can look up, look it up and put it in the same answer. Do not stop and make Chris ask the next fact. Ask only when you are blocked on a decision only he can make. Same law: `.cursor/rules/finish-the-answer.mdc` and `.claude/rules/finish-the-answer.md`.
+
+### Env full copies — never masked (owner-set 2026-10-04)
+
+`.env` and `credentials/` hold **full** secrets for local and Claude cloud paste. Never `****************` placeholders (Netlify list masks). Audit with `node scripts/env-audit-masks.mjs`; merge reveals via `credentials/env.revealed` and `node scripts/env-refresh-local-from-netlify.mjs --merge-revealed credentials/env.revealed`. Same law: `.cursor/rules/env-full-copies-never-masked.mdc` and `.claude/rules/env-full-copies-never-masked.md`.
 
 ### Ad watch curve (owner-set 2026-09-27)
 

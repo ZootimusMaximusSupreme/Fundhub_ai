@@ -195,6 +195,7 @@
     var idx = 0;
     var multiPick = {};
     var otherText = "";
+    var lastSent = false;
 
     function steps() {
       return visibleSteps(answers);
@@ -429,7 +430,13 @@
         if (fieldOk(f[0], f[1])) fhField("field_complete", f[0]);
       });
       var list = steps();
-      fht("survey_answer", { survey: "home", step_num: idx + 1, question_id: list[idx].id });
+      // last: the final question (contact, step 10). The shared tracker turns it into
+      // Meta Lead (docs/tracking/meta-events.md, Phase 4 map). Once per page load, so a
+      // second press after a failed send is not a second Lead.
+      var answer = { survey: "home", step_num: idx + 1, question_id: list[idx].id };
+      if (!lastSent) answer.last = true;
+      lastSent = true;
+      fht("survey_answer", answer);
       btn.disabled = true;
       btn.textContent = "Sending…";
       setErr("");

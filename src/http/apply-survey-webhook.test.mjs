@@ -141,10 +141,14 @@ test("apply-survey.html SEND_STEP posts the handoff shape to /api/webhooks/click
   assert.equal(HTML.includes("window.FH_APPLY_SURVEY_INGEST="), false, "ingest secret is injected at push, not stored in the fragment");
   assert.match(HTML, /data-src="https:\/\/apply\.fundhub\.ai\/funding-book-call"/);
   assert.equal(HTML.includes("Preview calendar"), false);
-  assert.equal((HTML.match(/fbq\('track'/g) || []).length, 1, "one browser track helper");
-  assert.match(HTML, /fhTrack\('Lead'/);
-  assert.match(HTML, /name === 'Lead' && !A\.cf_svy_available_capital/);
-  assert.match(HTML, /fhTrack\('Schedule'/);
+  /* Phase 4 (docs/tracking/meta-events.md): the shared tracker is the only Meta sender.
+     Lead comes from survey_answer last:true, Schedule from the framed calendar's
+     booking_confirmed. The page itself calls fbq for nothing (no double counting). */
+  assert.equal(HTML.includes("fbq("), false, "no hand-written Meta call on the page");
+  assert.doesNotMatch(HTML, /fhTrack\('(Lead|Schedule)'/);
+  assert.doesNotMatch(HTML, /['"](Lead|Schedule)['"]/);
+  assert.equal(HTML.includes("fh_booking_v1"), false, "the old Schedule listener is gone");
+  assert.match(HTML, /if \(at === list\.length - 1\) p\.last = true;\n\s*fht\('survey_answer', p\);/);
 });
 
 test("apply-survey approval strip is the same 16 watch-proof cards", () => {

@@ -43,8 +43,11 @@ n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;
 n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;
 t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,
 document,'script','https://connect.facebook.net/en_US/fbevents.js');
+if(!window.__fhPv&&window.self===window.top){(function(w){var s='';try{s=w.sessionStorage.getItem('fh_sid')||'';}catch(e){}
+if(!/^[A-Za-z0-9_-]{8,80}$/.test(s)){s=(Math.random().toString(36).slice(2)+new Date().getTime().toString(36)+Math.random().toString(36).slice(2)).replace(/[^A-Za-z0-9_-]/g,'').slice(0,40);try{w.sessionStorage.setItem('fh_sid',s);}catch(e){}}
+w.__fhPv='pv.'+s+'.'+Math.random().toString(36).slice(2,10);})(window);
 fbq('init', '2403674420141513');
-fbq('track', 'PageView');
+fbq('track', 'PageView', {}, {eventID: window.__fhPv});}
 </script>
 <noscript><img height="1" width="1" style="display:none" alt=""
 src="https://www.facebook.com/tr?id=2403674420141513&ev=PageView&noscript=1"/></noscript>
@@ -679,9 +682,13 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
 .cfw{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#0A0A0A;padding:10px 12px 14px;text-align:left;line-height:1.5;font-size:15px}
 .cfw *{box-sizing:border-box;margin:0}
 .cfw [hidden],[data-extra][hidden]{display:none!important}
-/* Buy box v2 (owner-set 2026-10-02): a plain "Step 1 of 3" line replaces the
-   three step tabs. Nothing to tap, so nothing can look locked. */
-.cfw-progress{margin:2px 0 4px;text-align:center;font-size:13px;font-weight:600;line-height:1.4;color:#52525B}
+/* Buy box v2 (owner-set 2026-10-02): a thin blue progress bar replaces the
+   three step tabs, the same look as the /apply survey bar (track #E4E4E7, fill
+   #188bf6). No "Step 1 of 3" words on screen (owner-set 2026-10-02); screen
+   readers still hear it from aria-valuetext. Nothing to tap. */
+.cfw-progress{height:6px;margin:4px 0 6px;border-radius:999px;background:#E4E4E7;overflow:hidden}
+.cfw-progress i{display:block;height:100%;width:33.333%;background:#188bf6;border-radius:inherit;transition:width .35s ease}
+@media (prefers-reduced-motion:reduce){.cfw-progress i{transition:none}}
 .cfw-refund{margin-top:14px;text-align:center;font-size:13.5px;line-height:1.5;color:#52525B}
 .cfw-step{display:none}.cfw-step.on{display:block}
 .cfw-addline{font-size:12.5px;color:#52525B;line-height:1.5;margin:6px 0 2px}
@@ -1144,7 +1151,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     }catch(e){}})();
     </script>
     <div class="cfw-formerr" data-formerr role="alert" hidden></div>
-    <div class="cfw-progress" data-progress>Step 1 of 3</div>
+    <div class="cfw-progress" data-progress role="progressbar" aria-label="Checkout progress" aria-valuemin="1" aria-valuemax="3" aria-valuenow="1" aria-valuetext="Step 1 of 3"><i></i></div>
 
     <form class="cfw-step s1 on" novalidate autocomplete="on">
       <div class="row2">
@@ -1520,6 +1527,18 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     return sdkLoad;
   }
   function cardNote(msg){if(cardWait){cardWait.textContent=msg;cardWait.hidden=false;}}
+  /* Facebook and Instagram's in-app browsers often reload the page when the
+     buyer comes back from another app (a bank app, a text code). The order
+     lives only in this page, so a reload put a paid buyer back on step 1 with
+     a fresh $297 card form. Write the paid order into the address bar — the
+     same ?ref=&client_id=#fhw link the paid return already reads — so a reload
+     opens step 3. */
+  function keepPaid(o){
+    try{
+      var q=new URLSearchParams(location.search);q.set('ref',o.ref);q.set('client_id',o.client_id);
+      history.replaceState(history.state,'',location.pathname+'?'+q.toString()+'#fhw');
+    }catch(e){}
+  }
   function dropCard(){
     if(card&&typeof card.destroy==='function'){try{card.destroy();}catch(e){}}
     card=null;cardSig=null;cardReady=false;
@@ -1564,9 +1583,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
       /* Paid. Stay here and open the soft pull — no redirect anywhere. */
       card.on('checkout:success',function(){
         setBusy(false);
-        if(order){order.locked=true;}
+        if(order){order.locked=true;keepPaid(order);}
         hideFormErr();
-        fht('payment_result',{result:'success'});
+        /* order_ref: the shared tracker sends Meta Purchase with event id
+           "purchase.<order_ref>", the same id the payment webhook's server copy uses. */
+        var pr={result:'success'};if(order&&order.ref)pr.order_ref=String(order.ref);
+        fht('payment_result',pr);
         go(3);
       });
       /* A declined card or a gateway refusal. Their words, on our page. */
@@ -1798,7 +1820,7 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
        the box down the screen. */
     var r=root.getBoundingClientRect();if(r.top<0)root.scrollIntoView({block:'start'});
     s1.classList.toggle('on',n===1);s2.classList.toggle('on',n===2);s3.classList.toggle('on',n===3);
-    progress.textContent='Step '+n+' of 3';
+    progress.firstChild.style.width=(n*100/3)+'%';progress.setAttribute('aria-valuenow',n);progress.setAttribute('aria-valuetext','Step '+n+' of 3');
   }
   function showPane(name){
     var form=name==='form';
@@ -1817,10 +1839,12 @@ body>div:last-child{margin-bottom:0!important;padding-bottom:0!important}
     if(!form){var r=root.getBoundingClientRect();if(r.top<0||r.top>window.innerHeight*0.6)root.scrollIntoView({behavior:'smooth',block:'start'});}
   }
   function onContinue(){
-    fht('continue',{step:1});
     /* Paid: steps 1 and 2 are behind them. The soft pull is all that is left. */
     if(order&&order.locked){go(3);return;}
     if(!checkStep1()){var f=s1.querySelector('.err');if(f)f.focus();return;}
+    /* Only a press that passes the step-1 checks counts (the shared tracker sends it
+       to Meta as Lead). A failed press already sends validation_error. */
+    fht('continue',{step:1});
     var c=contact();
     var lf=s3.querySelector('[name="first_name"]'),ll=s3.querySelector('[name="last_name"]');
     if(!lf.value)lf.value=c.first_name;if(!ll.value)ll.value=c.last_name;

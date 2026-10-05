@@ -22,6 +22,15 @@
 // It lives in src/funnel/track.mjs; the contract is
 // docs/tracking/tracking-spec.md.
 //
+// A saved track event that maps to a Meta event also goes to Meta's
+// Conversions API (src/meta/track-send.mjs; contract: the "Phase 4 contract"
+// section of docs/tracking/meta-events.md). This door passes it the client's
+// IP and user agent, answers first, then waits up to META_WAIT_MS for it, the
+// same way it waits for ClickFunnels. Real people only; off unless
+// META_CAPI_ENABLED is "1". The step-1 contact row now also keeps the browser
+// session id, so a session's later Meta events can carry its hashed email and
+// phone.
+//
 // Each row says actor "person" or "agent", and why. See src/slo/visitor.mjs.
 
 import { db as defaultDb } from "../../src/db.mjs";
@@ -35,6 +44,7 @@ import { syncSloClickfunnelsContact } from "../../src/slo/cf-contact.mjs";
 import { inngest } from "../../src/workflows/client.mjs";
 import { FUNNEL_PAGES } from "../../src/funnel/pages.mjs";
 import { recordTrack } from "../../src/funnel/track.mjs";
+import { clientIpFrom } from "../../src/meta/user-data.mjs";
 
 const METHODS = "GET, POST, OPTIONS";
 const SESSION = /^[A-Za-z0-9_-]{8,80}$/;
@@ -54,6 +64,12 @@ const MAX_EMAIL = 160;
 // this short wait the function host (AWS Lambda under Netlify) can freeze
 // once the answer goes out, before the ClickFunnels call has finished.
 export const CF_WAIT_MS = 3000;
+
+// Same idea for the Meta Conversions API send of a track event: the answer is
+// already out; this only keeps the function alive long enough for the send
+// (3 s timeout in src/messaging/providers/meta-capi.mjs) plus its two small
+// database reads and the result UPDATE.
+export const META_WAIT_MS = 4000;
 
 // kind "page" and "click": one step open, one button press, on the /watch path
 // or the /roadmap path (public/funnel/fh-events.js). Pages are an allow-list so
@@ -279,6 +295,9 @@ export async function recordInterest(body, deps = {}) {
     // Empty or invalid phone stays null. Email still starts the follow-up;
     // SMS waits until a phone lands (contact upgrade or checkout catch-up).
     payload.phone = phone.error ? null : phone.value;
+    // The browser session (fh_sid), so this session's Meta server events can
+    // find the email and phone (src/meta/user-data.mjs, sessionContact).
+    if (SESSION.test(sessionId)) payload.session_id = sessionId;
   }
 
   const db = deps.db || defaultDb;
@@ -378,19 +397,28 @@ export default async function handler(req, res, deps = {}) {
   }
   try {
     let cfWrite = null;
+    let metaSend = null;
     const result = await recordInterest(readBody(req), {
       ...deps,
       userAgent: deps.userAgent || header(req, "user-agent"),
+      clientIp: deps.clientIp || clientIpFrom(req),
       onCfWrite: (job) => {
         cfWrite = job;
         if (typeof deps.onCfWrite === "function") deps.onCfWrite(job);
+      },
+      onMetaSend: (job) => {
+        metaSend = job;
+        if (typeof deps.onMetaSend === "function") deps.onMetaSend(job);
       }
     });
     if (!result.ok) return res.status(400).json(result);
-    // The answer is settled before ClickFunnels is waited on, and the wait is
-    // capped. A ClickFunnels failure is recorded on the row, never returned.
+    // The answer is settled before ClickFunnels or Meta is waited on, and each
+    // wait is capped. A failure is recorded on the row, never returned.
     res.status(200).json(result);
-    await settleWithin(cfWrite, deps.cfWaitMs ?? CF_WAIT_MS);
+    await Promise.all([
+      settleWithin(cfWrite, deps.cfWaitMs ?? CF_WAIT_MS),
+      settleWithin(metaSend, deps.metaWaitMs ?? META_WAIT_MS)
+    ]);
     return;
   } catch (err) {
     return res.status(500).json({ ok: false, error: safeError(err) });

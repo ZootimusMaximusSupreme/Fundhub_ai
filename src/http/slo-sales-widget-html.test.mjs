@@ -92,7 +92,13 @@ test("buy box v2: step 1 — the refund line right above the button, the button,
   assert.doesNotMatch(html, /Step 1 of 3\. Your card is next, then the short soft pull form\./);
   /* The button keeps its handler and its tracking event. */
   assert.match(widgetScript, /s1\.addEventListener\('submit',function\(e\)\{e\.preventDefault\(\);onContinue\(\);\}\);/);
-  assert.match(widgetScript, /function onContinue\(\)\{\n\s*fht\('continue',\{step:1\}\);/);
+  /* continue (Meta Lead via the shared tracker) only after the step-1 checks pass:
+     a failed press sends validation_error, never continue. */
+  assert.match(
+    widgetScript,
+    /function onContinue\(\)\{\n(?:\s*\/\*[^*]*\*\/\n)?\s*if\(order&&order\.locked\)\{go\(3\);return;\}\n\s*if\(!checkStep1\(\)\)\{var f=s1\.querySelector\('\.err'\);if\(f\)f\.focus\(\);return;\}\n(?:\s*\/\*[\s\S]*?\*\/\n)?\s*fht\('continue',\{step:1\}\);\n\s*var c=contact\(\);/
+  );
+  assert.equal((widgetScript.match(/fht\('continue'/g) || []).length, 1, "one continue send");
 });
 
 test("buy box v2: every buy box event carries bbv:2 (widget and sample previews)", () => {
@@ -103,12 +109,28 @@ test("buy box v2: every buy box event carries bbv:2 (widget and sample previews)
   assert.match(preview, /fbq\('trackCustom','PreviewOpened',\{content_name:d\}\)/);
 });
 
+test("checkout:success sends payment_result with the order's ref, for Meta Purchase id purchase.<ref> (Phase 4)", () => {
+  const at = widgetScript.indexOf("card.on('checkout:success'");
+  const success = widgetScript.slice(at, widgetScript.indexOf("card.on('form:submission_error'", at));
+  assert.match(success, /var pr=\{result:'success'\};if\(order&&order\.ref\)pr\.order_ref=String\(order\.ref\);\n\s*fht\('payment_result',pr\);\n\s*go\(3\);/);
+  /* bbv still rides on it: fht adds it to every buy box event. */
+  assert.match(widgetScript, /function fht\(e,p\)\{try\{p=p\|\|\{\};p\.bbv=BBV;/);
+  /* The fails carry no ref. */
+  assert.match(widgetScript, /fht\('payment_result',\{result:'fail',code:'card_declined'\}\);/);
+  assert.match(widgetScript, /fht\('payment_result',\{result:'fail',code:'checkout_error'\}\);/);
+});
+
+test("the page sends Meta nothing itself except PreviewOpened: Lead, InitiateCheckout, Purchase come from the shared tracker", () => {
+  const fbqCalls = [...html.matchAll(/fbq\(([^)]*)\)/g)].map((m) => m[1]);
+  assert.deepEqual(fbqCalls, ["'trackCustom','PreviewOpened',{content_name:d}"]);
+});
+
 test("the guarantee is back in its old place, right before the FAQ, word for word (owner ask 2026-10-02)", () => {
   const g = html.indexOf('<section class="sect" data-fh-section="guarantee">');
   const faq = html.indexOf('<section class="sect" data-fh-section="faq">');
   assert.ok(g > 0 && faq > g, "guarantee section sits before the FAQ");
   assert.equal(html.slice(g, faq).split("<section").length - 1, 1, "nothing but the guarantee between them");
-  assert.match(html.slice(g, faq), /<section class="sect" data-fh-section="guarantee"><div class="cardw">\s*<span class="kicker">The Guarantee<\/span>\s*<p>If you're not happy with what you get, email support@fundhub\.ai within 7 days and <b>you get the full \$297 back\.<\/b><\/p>\s*<\/div><a class="btn fh-go-pay" href="#fh-order">Get My Roadmap<\/a><\/section>/);
+  assert.match(html.slice(g, faq), /<section class="sect" data-fh-section="guarantee"><div class="cardw">\s*<span class="kicker">The Guarantee<\/span>\s*<p>If you're not happy with what you get, email support@fundhub\.ai within 7 days and <b>you get the full \$147 back\.<\/b><\/p>\s*<\/div><a class="btn fh-go-pay" href="#fh-order">Get My Roadmap<\/a><\/section>/);
   /* The CTA is caught by the scroll-to-the-buy-box handler. */
   assert.match(html, /closest\('a\[href="#fh-order"\]'\)/);
   assert.match(html, /\.fh-root \.cardw\{/);
@@ -174,7 +196,7 @@ test("buy box v2: the phone moved to step 3, still required, and is sent with th
 });
 
 test("the card charges the base price on its own — step 3 cannot change it", () => {
-  assert.match(widgetScript, /function paintTotal\(\)\{\n\s*totalEl\.textContent=money\(price\.base\);/);
+  assert.match(widgetScript, /function paintTotal\(\)\{\n\s*totalEl\.innerHTML='<s class="fh-was">\$297<\/s> '\+money\(price\.base\);/);
   assert.match(widgetScript, /payBtn\.textContent='Get My Roadmap · '\+money\(price\.base\);/);
   /* the extras get their own line on step 3, never the pay button */
   assert.match(widgetScript, /function paintExtras\(\)\{/);
@@ -264,7 +286,7 @@ test("the consent box uses the pull form's words, and covers texts too", () => {
 });
 
 test("prices: first business free, each extra from the server (default 1500 cents)", () => {
-  assert.match(widgetScript, /var price=\{base:29700,each:1500,max:20\};/);
+  assert.match(widgetScript, /var price=\{base:14700,each:1500,max:20\};/);
   assert.match(widgetScript, /extra=price\.each\*\(n-1\)/);
   assert.match(html, /\+ Add a business \(\$15\)/);
 });

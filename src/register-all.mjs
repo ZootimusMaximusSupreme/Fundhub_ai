@@ -22,6 +22,7 @@ import { register as registerCrsDeliverables } from "./handlers/crs-deliverables
 import { register as registerContractSigned } from "./handlers/contract-signed.mjs";
 import { register as registerContractConsent } from "./handlers/contract-consent.mjs";
 import { register as registerAgentRuntime } from "./agents/runtime.mjs";
+import { register as registerMetaPurchase } from "./handlers/meta-purchase.mjs";
 
 let _done = false;
 
@@ -79,6 +80,11 @@ export function registerAll() {
   // After comms: the inbound message row must exist before the runtime
   // looks it up by provider_ref. Handler order on the bus is registration order.
   registerAgentRuntime();
+  /* Meta Purchase (server copy). LAST, and strictly after registerPaymentLinks:
+     the $297 order's Purchase fires on the same payment.received that handler
+     uses to mark the order paid, and every money write should be on file
+     before anything is reported outward. It never throws. */
+  registerMetaPurchase();
   _done = true;
 }
 

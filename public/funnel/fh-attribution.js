@@ -6,6 +6,13 @@
      Kept off ATTRIBUTION_KEYS on purpose: that list is ad UTMs only. */
   var AFF = ["a1", "a2"];
   var STORE = "fh_attribution";
+  /* Meta's click id (docs/tracking/meta-events.md, "fbclid / fbc / fbp").
+     Kept first touch in fh_attribution and never stamped on a form. When
+     Meta's own _fbc cookie is missing, fbc is built from it:
+     "fb.1.<ms first seen>.<fbclid>". public/funnel/fh-events.js reads the same
+     two keys and saves them by the same rule when it sees the click first. */
+  var CLICK_ID = /^[A-Za-z0-9_-]{1,500}$/;
+  var FB_COOKIE = /^fb\.[0-9]\.[0-9]{10,16}\.[A-Za-z0-9_.-]{1,500}$/;
 
   function read() {
     try { return JSON.parse(sessionStorage.getItem(STORE) || "{}") || {}; } catch (e) { return {}; }
@@ -26,6 +33,11 @@
   if (a1 && !saved.a1) { saved.a1 = a1.slice(0, 64); seen = true; }
   var a2 = (qs.get("a2") || "").trim();
   if (a2 && !saved.a2) { saved.a2 = a2.slice(0, 64); seen = true; }
+  var fbclid = (qs.get("fbclid") || "").trim();
+  if (fbclid && !saved.fbclid && CLICK_ID.test(fbclid)) {
+    saved.fbclid = fbclid;
+    saved.fbc = "fb.1." + Date.now() + "." + fbclid;
+  }
   if (seen || !saved.landing_path) {
     if (!saved.landing_path) saved.landing_path = location.pathname;
     if (!saved.referrer_domain && document.referrer) {
@@ -57,25 +69,60 @@
   var tries = 0;
   var t = setInterval(function () { stamp(); if (++tries > 20) clearInterval(t); }, 500);
 
+  /* One cookie by name, only when it has Meta's fb.<n>.<ms>.<id> shape. */
+  function cookie(name) {
+    var all = "";
+    try { all = String(document.cookie || ""); } catch (e) { return ""; }
+    var parts = all.split(";");
+    for (var i = 0; i < parts.length; i++) {
+      var kv = parts[i].replace(/^\s+/, "");
+      if (kv.indexOf(name + "=") !== 0) continue;
+      var v = kv.slice(name.length + 1);
+      try { v = decodeURIComponent(v); } catch (e2) {}
+      return FB_COOKIE.test(v) ? v : "";
+    }
+    return "";
+  }
+  /* fbc: Meta's _fbc cookie, else the one built from the first fbclid.
+     fbp: Meta's _fbp cookie. Either is left out when there is none. */
+  function metaIds() {
+    var data = read();
+    var out = {};
+    var fbc = cookie("_fbc") || (FB_COOKIE.test(data.fbc || "") ? data.fbc : "");
+    var fbp = cookie("_fbp");
+    if (fbc) out.fbc = fbc;
+    if (fbp) out.fbp = fbp;
+    return out;
+  }
+
   // /roadmap only. Step 1 (name, email) is saved when the email is real, even
   // if they never press Pay. The phone (asked on step 3 since buy box v2,
   // 2026-10-02; on step 1 before that) is merged into the same save when it is
-  // typed. No other step-3 box is ever read here. Pressing Pay tells Meta,
-  // unless this browser or this email is one of us. Rules match
-  // src/slo/visitor.mjs.
+  // typed. No other step-3 box is ever read here. Meta's InitiateCheckout is
+  // sent by public/funnel/fh-events.js (card step shown), not from here.
+  // The checkout and soft-pull posts the page makes get fbc / fbp added (and
+  // the checkout its a1 / a2 and fbclid); nothing in either body is read.
   var nativeFetch = window.fetch;
   if (typeof nativeFetch === "function") {
     window.fetch = function (url, opt) {
       var next = opt;
       try {
         var u = typeof url === "string" ? url : "";
-        if (next && typeof next.body === "string" && u.indexOf("slo-checkout") !== -1) {
+        var checkout = u.indexOf("slo-checkout") !== -1;
+        var pull = u.indexOf("slo-pull") !== -1;
+        if (next && typeof next.body === "string" && (checkout || pull)) {
           var parsed = JSON.parse(next.body);
-          if (parsed && typeof parsed === "object") {
-            parsed.webdriver = navigator.webdriver === true;
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
             var stored = read();
-            if (stored.a1 && !parsed.a1) parsed.a1 = stored.a1;
-            if (stored.a2 && !parsed.a2) parsed.a2 = stored.a2;
+            if (checkout) {
+              parsed.webdriver = navigator.webdriver === true;
+              if (stored.a1 && !parsed.a1) parsed.a1 = stored.a1;
+              if (stored.a2 && !parsed.a2) parsed.a2 = stored.a2;
+              if (CLICK_ID.test(stored.fbclid || "") && !parsed.fbclid) parsed.fbclid = stored.fbclid;
+            }
+            var ids = metaIds();
+            if (ids.fbc && !parsed.fbc) parsed.fbc = ids.fbc;
+            if (ids.fbp && !parsed.fbp) parsed.fbp = ids.fbp;
             next = {};
             for (var k in opt) next[k] = opt[k];
             next.body = JSON.stringify(parsed);
@@ -118,18 +165,6 @@
   function emailOk(v) {
     return v.length <= 160 && /^[a-z0-9.!#$%&'*+\/=?^_`{|}~-]{1,64}@(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:[a-z]{2,63}|xn--[a-z0-9-]{1,59})$/.test(v);
   }
-  function isAgent(email) {
-    if (navigator.webdriver === true) return true;
-    var ua = navigator.userAgent || "";
-    if (/HeadlessChrome|Playwright|Puppeteer|PhantomJS|Headless|bot|crawler|spider/i.test(ua)) return true;
-    email = String(email || "").trim().toLowerCase();
-    var at = email.lastIndexOf("@");
-    if (at < 1) return false;
-    var local = email.slice(0, at);
-    var domain = email.slice(at + 1);
-    if (domain === "fundhub.ai" || domain === "example.com" || domain === "example.net" || domain === "example.org") return true;
-    return /(^|[.+_-])(e2e|sim|test)([.+_-]|$)/.test(local);
-  }
   function sid() {
     var s = "";
     try { s = sessionStorage.getItem("fh_sid") || ""; } catch (e) {}
@@ -144,6 +179,10 @@
     var body = { kind: kind, session_id: sid(), webdriver: navigator.webdriver === true };
     var data = read();
     KEYS.concat(EXTRA).forEach(function (k) { if (data[k]) body[k] = data[k]; });
+    if (CLICK_ID.test(data.fbclid || "")) body.fbclid = data.fbclid;
+    var ids = metaIds();
+    if (ids.fbc) body.fbc = ids.fbc;
+    if (ids.fbp) body.fbp = ids.fbp;
     if (extra) Object.keys(extra).forEach(function (k) { if (extra[k]) body[k] = extra[k]; });
     var payload = JSON.stringify(body);
     var url = "https://fundhub.ai/api/public/slo-interest";
@@ -322,23 +361,6 @@
       sendContact(true);
       sendEngage(true);
     });
-    document.addEventListener("click", function (ev) {
-      var node = ev.target;
-      var btn = null;
-      while (node && node !== document) {
-        if (node.getAttribute && node.getAttribute("data-pay") != null) { btn = node; break; }
-        node = node.parentNode;
-      }
-      if (!btn || !widget() || !widget().contains(btn)) return;
-      var form = step1();
-      var email = form ? field(form, "email") : "";
-      if (isAgent(email)) return;
-      try { if (sessionStorage.getItem("fh_ic_sent")) return; sessionStorage.setItem("fh_ic_sent", "1"); } catch (e) {}
-      if (typeof window.fbq !== "function") return;
-      var total = widget().querySelector("[data-total]");
-      var n = total ? Number(String(total.textContent || "").replace(/[^0-9.]/g, "")) : 297;
-      window.fbq("track", "InitiateCheckout", { value: n > 0 ? n : 297, currency: "USD" });
-    }, true);
   }
 
   /* Other job owns the pixel file. Load it when present; ignore a 404. */
