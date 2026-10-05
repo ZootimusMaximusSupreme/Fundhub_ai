@@ -48,23 +48,33 @@ flowchart TD
     M --> N[src/clients/dossier.mjs → src/agents/context.mjs<br/>every answer, in full, feeds the AI]
     J --> O[meet-transcript-sweeper<br/>cron */10, pulls words off the recording]
     O --> P[(brain_files + brain_chunks<br/>for the client)]
-    O --> Q{stampCallTranscript:<br/>same recording link on a call,<br/>or a sales meeting whose time<br/>matches a logged call?}
+    O --> Q{stampCallTranscript:<br/>a sales meeting by name, and its<br/>link or start time matches a call?}
     Q -->|yes| R[(call_outcomes.transcript)]
     Q -->|"no — CSM meeting, unknown type<br/>or no call at that time"| P
+    J --> S{stampRecordingUrl:<br/>meeting type and start<br/>from the file name}
+    S -->|sales, call logged in window| T[(call_outcomes.recording_url)]
+    S -->|CSM, answer in window| U[(customer_insights.recording_url)]
+    S -->|unknown type or time| P
     P --> N
 ```
 
-**A CSM meeting's words never land on a sales call (2026-10-05, M0 step 9).**
-`stampCallTranscript` (`src/sales/recordings.mjs`) used to fall back to the
-client's latest call with no transcript, so a check-in recording could be written
-onto a closer's call. Now it stamps a call only when that call already holds the
-recording's link, or when the file name says it was a sales meeting
-(`meetKindFromName`) and gives its start time (`meetStartFromName`) and a call
-was logged from one hour before to six hours after that start. Otherwise the
-words stay on the brain file, and the client dossier (`src/clients/dossier.mjs`)
-reads them from `brain_chunks`. `UNVERIFIED` against real Drive names: the
-type and time come from the file name only, so a Meet file named without
-"(YYYY-MM-DD HH:MM GMT±H)" never stamps a call.
+**A CSM meeting's words and link never land on a sales call (2026-10-05, M0 step 9).**
+Both stamps in `src/sales/recordings.mjs` used to fall back to the client's
+latest row with nothing on it, so a check-in recording could be written onto a
+closer's call. Now both read the meeting's type (`meetKindFromName`) and start
+(`meetStartFromName`) from the file name first:
+
+- `stampRecordingUrl` puts a sales meeting's link on the call logged from one
+  hour before to six hours after the start, and a CSM meeting's link on the CSM
+  answer that occurred in that window. Unknown type or time: no row is stamped.
+- `stampCallTranscript` refuses anything that is not a sales meeting before it
+  looks at links at all. A sales meeting's words go on the call holding the
+  recording's link, or else on the call logged in the window.
+
+Otherwise the words stay on the brain file, and the client dossier
+(`src/clients/dossier.mjs`) reads them from `brain_chunks`. `UNVERIFIED` against
+real Drive names: the type and time come from the file name only, so a Meet file
+named without "(YYYY-MM-DD HH:MM GMT±H)" never stamps a row.
 
 **All three money-in events make the halfway call.** `register()` in
 `src/handlers/customer-insights.mjs` subscribes `onPaidMidCheckin` to

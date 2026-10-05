@@ -41,49 +41,95 @@ function isToday(iso, now) {
   );
 }
 
-export async function stampRecordingUrl(db, { orgId, clientId, url } = {}) {
-  const link = String(url || "").trim();
-  if (!orgId || !clientId || !link) return { stamped: 0 };
-  const call = await db.query(
-    `UPDATE call_outcomes SET recording_url = $3
-      WHERE id = (
-        SELECT id FROM call_outcomes
-         WHERE org_id = $1 AND client_id = $2 AND recording_url IS NULL
-         ORDER BY logged_at DESC NULLS LAST
-         LIMIT 1
-      )
-      RETURNING id`,
-    [orgId, clientId, link]
-  );
-  const insight = await db.query(
-    `UPDATE customer_insights SET recording_url = $3
-      WHERE id = (
-        SELECT id FROM customer_insights
-         WHERE org_id = $1 AND client_id = $2 AND recording_url IS NULL
-         ORDER BY occurred_at DESC NULLS LAST
-         LIMIT 1
-      )
-      RETURNING id`,
-    [orgId, clientId, link]
-  );
+/* How far from the meeting start a logged row may sit and still be that
+   meeting's row: up to an hour early (logged ahead, clock skew) and up to six
+   hours after the start. */
+const MATCH_BEFORE_MS = 60 * 60 * 1000;
+const MATCH_AFTER_MS = 6 * 60 * 60 * 1000;
+
+/**
+ * meetingOf({ meetingName, meetingAt }) -> { kind, startIso, from, to, reason }
+ * The meeting's type and start, read from the file name (or a given start).
+ * kind is 'sales', 'csm' or null; startIso is null when no time is known.
+ */
+export function meetingOf({ meetingName = null, meetingAt = null } = {}) {
+  const kind = meetKindFromName(meetingName);
+  let startIso = null;
+  if (meetingAt) {
+    const t = new Date(meetingAt);
+    startIso = Number.isNaN(t.getTime()) ? null : t.toISOString();
+  } else {
+    startIso = meetStartFromName(meetingName);
+  }
+  const start = startIso ? new Date(startIso).getTime() : null;
+  let reason = null;
+  if (!kind) reason = "meeting_type_unknown";
+  else if (!startIso) reason = "meeting_time_unknown";
   return {
-    stamped: (call.rows?.length || 0) + (insight.rows?.length || 0)
+    kind,
+    startIso,
+    from: start == null ? null : new Date(start - MATCH_BEFORE_MS).toISOString(),
+    to: start == null ? null : new Date(start + MATCH_AFTER_MS).toISOString(),
+    reason
   };
 }
 
-/* How far from the meeting start a closer's logged outcome may sit and still be
-   that meeting's call: logged up to an hour early (logged ahead, clock skew) and
-   up to six hours after the start. */
-const CALL_MATCH_BEFORE_MS = 60 * 60 * 1000;
-const CALL_MATCH_AFTER_MS = 6 * 60 * 60 * 1000;
+/**
+ * stampRecordingUrl — put a recording's link on the one row it belongs to.
+ *
+ * Matched by meeting type and time, never by "latest row with no link":
+ *   - a sales meeting -> the call_outcomes row logged near the meeting start;
+ *   - a CSM meeting   -> the customer_insights row that occurred near it.
+ * Unknown type or time, or no row in the window -> nothing is stamped and the
+ * recording stays on its brain file (spec M0 step 9).
+ */
+export async function stampRecordingUrl(db, {
+  orgId, clientId, url, meetingName = null, meetingAt = null
+} = {}) {
+  const link = String(url || "").trim();
+  if (!orgId || !clientId || !link) return { stamped: 0, reason: "missing_args" };
+  const m = meetingOf({ meetingName, meetingAt });
+  if (m.reason) return { stamped: 0, reason: m.reason };
+  const res = m.kind === "sales"
+    ? await db.query(
+      `UPDATE call_outcomes SET recording_url = $3
+        WHERE id = (
+          SELECT id FROM call_outcomes
+           WHERE org_id = $1 AND client_id = $2 AND recording_url IS NULL
+             AND logged_at BETWEEN $5::timestamptz AND $6::timestamptz
+           ORDER BY abs(extract(epoch FROM (logged_at - $4::timestamptz)))
+           LIMIT 1
+        )
+        RETURNING id`,
+      [orgId, clientId, link, m.startIso, m.from, m.to]
+    )
+    : await db.query(
+      `UPDATE customer_insights SET recording_url = $3
+        WHERE id = (
+          SELECT id FROM customer_insights
+           WHERE org_id = $1 AND client_id = $2 AND recording_url IS NULL
+             AND occurred_at BETWEEN $5::timestamptz AND $6::timestamptz
+           ORDER BY abs(extract(epoch FROM (occurred_at - $4::timestamptz)))
+           LIMIT 1
+        )
+        RETURNING id`,
+      [orgId, clientId, link, m.startIso, m.from, m.to]
+    );
+  const stamped = res.rows?.length || 0;
+  return stamped
+    ? { stamped, matched: m.kind === "sales" ? "call" : "csm_insight" }
+    : { stamped: 0, reason: "no_row_at_meeting_time" };
+}
 
 /**
  * stampCallTranscript — put a recording's words on the sales call it belongs to.
  *
+ * The meeting type is checked FIRST: only a sales meeting (meetKindFromName)
+ * can put words on a call, even when a call row already holds the link.
+ * Then:
  * 1. The call row that already holds this recording's link wins.
- * 2. Otherwise match by meeting time and type: the meeting must be a sales
- *    meeting (meetKindFromName) with a known start (meetingAt, or the time in
- *    meetingName), and the call's logged_at must sit near that start.
+ * 2. Otherwise the call logged near the meeting start (meetingAt, or the time
+ *    in meetingName).
  * 3. Anything else stamps nothing. The words stay on the brain file, where the
  *    client dossier reads them. It used to fall back to the client's latest
  *    empty call, so a CSM check-in could land on a sales call (spec M0 step 9).
@@ -97,10 +143,14 @@ export async function stampCallTranscript(db, {
   meetingName = null
 } = {}) {
   const words = String(transcript || "").trim();
-  if (!orgId || !clientId || !words) return { stamped: 0 };
+  if (!orgId || !clientId || !words) return { stamped: 0, reason: "missing_args" };
+  const m = meetingOf({ meetingName, meetingAt });
+  if (m.kind !== "sales") {
+    return { stamped: 0, reason: m.kind === "csm" ? "not_a_sales_meeting" : "meeting_type_unknown" };
+  }
   const link = String(url || "").trim();
-  const byUrl = link
-    ? await db.query(
+  if (link) {
+    const byUrl = await db.query(
       `UPDATE call_outcomes SET transcript = $3
         WHERE id = (
           SELECT id FROM call_outcomes
@@ -112,17 +162,10 @@ export async function stampCallTranscript(db, {
         )
         RETURNING id`,
       [orgId, clientId, words, link]
-    )
-    : { rows: [] };
-  if (byUrl.rows?.length) return { stamped: 1, matched: "recording_url" };
-
-  const kind = meetKindFromName(meetingName);
-  if (kind !== "sales") {
-    return { stamped: 0, reason: kind === "csm" ? "not_a_sales_meeting" : "meeting_type_unknown" };
+    );
+    if (byUrl.rows?.length) return { stamped: 1, matched: "recording_url" };
   }
-  const startIso = meetingAt ? new Date(meetingAt).toISOString() : meetStartFromName(meetingName);
-  if (!startIso) return { stamped: 0, reason: "meeting_time_unknown" };
-  const start = new Date(startIso).getTime();
+  if (!m.startIso) return { stamped: 0, reason: "meeting_time_unknown" };
   const byTime = await db.query(
     `UPDATE call_outcomes SET transcript = $3
       WHERE id = (
@@ -134,11 +177,7 @@ export async function stampCallTranscript(db, {
          LIMIT 1
       )
       RETURNING id`,
-    [
-      orgId, clientId, words, startIso,
-      new Date(start - CALL_MATCH_BEFORE_MS).toISOString(),
-      new Date(start + CALL_MATCH_AFTER_MS).toISOString()
-    ]
+    [orgId, clientId, words, m.startIso, m.from, m.to]
   );
   if (byTime.rows?.length) return { stamped: 1, matched: "meeting_time" };
   return { stamped: 0, reason: "no_call_at_meeting_time" };
@@ -196,8 +235,8 @@ export async function attachDriveRecording(db, {
   }
   if (!id) return { attached: false, reason: "unattached", clientId: null };
 
-  await stampRecordingUrl(db, { orgId, clientId: id, url: link });
-  return { attached: true, reason: null, clientId: id };
+  const stamp = await stampRecordingUrl(db, { orgId, clientId: id, url: link, meetingName: fileName });
+  return { attached: true, reason: null, clientId: id, stamp };
 }
 
 export async function listRecentRecordings(db, {
@@ -261,7 +300,9 @@ export async function listRecentRecordings(db, {
         WHERE id = $1 AND org_id = $3 AND client_id IS NULL`,
       [row.id, hit.id, orgId]
     );
-    await stampRecordingUrl(db, { orgId, clientId: hit.id, url: row.web_view_link });
+    await stampRecordingUrl(db, {
+      orgId, clientId: hit.id, url: row.web_view_link, meetingName: row.name
+    });
     row.client_id = hit.id;
     row.first_name = hit.first_name;
     row.last_name = hit.last_name;

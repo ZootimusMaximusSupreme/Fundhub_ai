@@ -10,7 +10,7 @@ import { db, close } from "../db.mjs";
 import { buildDossier, renderDossier } from "./dossier.mjs";
 import { refreshDossierSummary } from "./dossier-summary.mjs";
 import { fetchContext } from "../agents/context.mjs";
-import { stampCallTranscript } from "../sales/recordings.mjs";
+import { stampCallTranscript, stampRecordingUrl } from "../sales/recordings.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const STAMP = `dossier-pg-${Date.now()}-${Math.floor(Math.random() * 1e6)}`;
@@ -85,6 +85,24 @@ describe("client dossier (M0 step 9)", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
        VALUES ($1, $2, 'inbound', 'sms', 'OTHER-ORG-LEAK', 'sent')`,
       [otherOrg, client]
     );
+    // Another org's call and brain file pointing at the same client id.
+    const otherStaff = (await db.query(
+      `INSERT INTO staff (org_id, name, role, email, status)
+       VALUES ($1, 'Other Closer', 'closer', $2, 'active') RETURNING id`,
+      [otherOrg, `${STAMP}-other@example.com`])).rows[0].id;
+    await db.query(
+      `INSERT INTO call_outcomes (org_id, client_id, staff_id, outcome, notes, transcript)
+       VALUES ($1, $2, $3, 'deposit', 'OTHER-ORG-CALL-LEAK', 'OTHER-ORG-WORDS-LEAK')`,
+      [otherOrg, client, otherStaff]
+    );
+    const otherFile = (await db.query(
+      `INSERT INTO brain_files (org_id, drive_file_id, name, mime_type, client_id, source)
+       VALUES ($1, $2, 'OTHER-ORG-FILE-LEAK', 'video/mp4', $3, 'drive') RETURNING id`,
+      [otherOrg, `${STAMP}-other-drive`, client])).rows[0].id;
+    await db.query(
+      `INSERT INTO brain_chunks (org_id, file_id, chunk_index, content) VALUES ($1, $2, 0, 'OTHER-ORG-CHUNK-LEAK')`,
+      [otherOrg, otherFile]
+    );
   });
 
   after(async () => { await close(); });
@@ -104,7 +122,10 @@ describe("client dossier (M0 step 9)", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     assert.equal(d.activity.pages[0].page, "roadmap");
     assert.equal(d.profile.survey.cf_svy_your_why, "hire two people");
     assert.equal(d.ad.ad_number, null);
-    assert.ok(!JSON.stringify(d).includes("OTHER-ORG-LEAK"), "another org's row leaked in");
+    for (const leak of ["OTHER-ORG-LEAK", "OTHER-ORG-CALL-LEAK", "OTHER-ORG-WORDS-LEAK",
+      "OTHER-ORG-FILE-LEAK", "OTHER-ORG-CHUNK-LEAK"]) {
+      assert.ok(!JSON.stringify(d).includes(leak), `another org's row leaked in: ${leak}`);
+    }
 
     const r = renderDossier(d);
     assert.equal(r.mode, "full");
@@ -192,5 +213,34 @@ describe("client dossier (M0 step 9)", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
       [org, [atMeeting, latest]])).rows;
     assert.equal(got.find((r) => r.id === atMeeting).transcript, "SALES-WORDS");
     assert.equal(got.find((r) => r.id === latest).transcript, null);
+  });
+
+  test("a CSM recording's link goes on the CSM answer, and its words never follow a link onto a call", async () => {
+    const csmName = "CSM Check-in - Dana Dossier (2026-09-15 10:00 GMT-7) - Recording.mp4";
+    const link = `https://drive.google.com/file/d/${STAMP}-csm`;
+    const insight = (await db.query(
+      `INSERT INTO customer_insights (org_id, client_id, stage, channel, answers, recorded_by, occurred_at)
+       VALUES ($1, $2, 'mid', 'google_meet', '{}'::jsonb, $3, '2026-09-15T17:05:00Z') RETURNING id`,
+      [org, client, staff])).rows[0].id;
+    const emptyCall = (await db.query(
+      `INSERT INTO call_outcomes (org_id, client_id, staff_id, outcome, logged_at)
+       VALUES ($1, $2, $3, 'callback', '2026-09-15T17:30:00Z') RETURNING id`,
+      [org, client, staff])).rows[0].id;
+
+    const stamp = await stampRecordingUrl(db, { orgId: org, clientId: client, url: link, meetingName: csmName });
+    assert.equal(stamp.matched, "csm_insight");
+    const ins = (await db.query(`SELECT recording_url FROM customer_insights WHERE org_id = $1 AND id = $2`, [org, insight])).rows[0];
+    assert.equal(ins.recording_url, link);
+    const call = (await db.query(`SELECT recording_url FROM call_outcomes WHERE org_id = $1 AND id = $2`, [org, emptyCall])).rows[0];
+    assert.equal(call.recording_url, null, "a CSM recording's link landed on a sales call");
+
+    // Even if a call row holds this link (stamped wrongly before this fix), the words stay off it.
+    await db.query(`UPDATE call_outcomes SET recording_url = $3 WHERE org_id = $1 AND id = $2`, [org, emptyCall, link]);
+    const words = await stampCallTranscript(db, {
+      orgId: org, clientId: client, url: link, transcript: "CSM-CHECKIN-WORDS", meetingName: csmName
+    });
+    assert.equal(words.stamped, 0);
+    const after = (await db.query(`SELECT transcript FROM call_outcomes WHERE org_id = $1 AND id = $2`, [org, emptyCall])).rows[0];
+    assert.equal(after.transcript, null);
   });
 });

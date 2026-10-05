@@ -22,6 +22,7 @@ import {
   renderDossier,
   DEFAULT_PROMPT_BUDGET_CHARS
 } from "../clients/dossier.mjs";
+import { scrubSensitive, scrubText } from "../clients/scrub.mjs";
 
 const SURVEY_KEYS = [
   "how_much_funding_does_your_business_need",
@@ -270,8 +271,15 @@ export async function fetchContext(db, {
         summary_needed: rendered.summary_needed
       }
     : null;
-  context.as_prompt_block = formatPromptBlock(context, { dossierText: rendered?.text || null });
-  return context;
+  // The same scrubber the dossier uses runs over everything this returns and
+  // over the prompt text: no SSN, tax id, birth date, full card or account
+  // number, password or token reaches a model, the shadow log or the screen.
+  // (The dossier was scrubbed when it was built.)
+  const { dossier: built, ...rest } = context;
+  const safe = scrubSensitive(rest);
+  safe.dossier = built;
+  safe.as_prompt_block = scrubText(formatPromptBlock(safe, { dossierText: rendered?.text || null }));
+  return safe;
 }
 
 /* formatPromptBlock — the text the model reads. Nulls omitted so the model is
@@ -280,7 +288,7 @@ export async function fetchContext(db, {
    the three lists below are printed in full. */
 export function formatPromptBlock(ctx, { dossierText = null } = {}) {
   const lines = ["CLIENT CONTEXT (read-only facts; do not invent missing values)"];
-  const c = ctx.client;
+  const c = dossierText ? null : ctx.client;
   if (c) {
     const name = [c.first_name, c.last_name].filter(Boolean).join(" ");
     if (name) lines.push(`Name: ${name}`);
@@ -305,11 +313,11 @@ export function formatPromptBlock(ctx, { dossierText = null } = {}) {
   if (s.outcome_tier) lines.push(`Outcome tier: ${s.outcome_tier}`);
   if (s.analyzer_path) lines.push(`Analyzer path: ${s.analyzer_path}`);
   if (s.employee_next_action) lines.push(`Employee next action: ${s.employee_next_action}`);
-  if (s.agent_context_field) {
+  if (!dossierText && s.agent_context_field) {
     lines.push("Stored agent context:");
     lines.push(String(s.agent_context_field));
   }
-  const surveyKeys = Object.keys(ctx.survey || {});
+  const surveyKeys = dossierText ? [] : Object.keys(ctx.survey || {});
   if (surveyKeys.length) {
     lines.push("Survey answers:");
     for (const k of surveyKeys) lines.push(`  - ${k}: ${ctx.survey[k]}`);

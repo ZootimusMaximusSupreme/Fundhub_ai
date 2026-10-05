@@ -14,7 +14,8 @@
 // in turn. No transaction is held across a model call; the row is written once,
 // after every fold succeeded. Any model failure writes nothing.
 
-import { callModel } from "../agents/model.mjs";
+import { callModel, DEFAULT_MODEL } from "../agents/model.mjs";
+import { scrubText } from "./scrub.mjs";
 import {
   buildDossier,
   dossierItems,
@@ -23,9 +24,46 @@ import {
   DEFAULT_PROMPT_BUDGET_CHARS
 } from "./dossier.mjs";
 
-/** Claude only, named explicitly (spec §4 trap 8). */
-export const SUMMARY_MODEL = "claude-sonnet-4-5-20250929";
+/** Claude only, named explicitly from the repo's central default (spec §4 trap 8). */
+export const SUMMARY_MODEL = DEFAULT_MODEL;
 export const SUMMARY_MAX_TOKENS = 4000;
+/** One fold call may take this long before it is abandoned (trap 8). */
+export const SUMMARY_TIMEOUT_MS = 120_000;
+export const SUMMARY_TIMED_OUT = "timed_out";
+
+/**
+ * callWithTimeout(callModelImpl, request, { timeoutMs, fetchImpl })
+ * callModel has no timeout of its own on main, so this module adds one: the
+ * fetch it is handed carries an abort signal, and the call races a timer. A
+ * call that runs out of time comes back as an error, never as a summary.
+ */
+export async function callWithTimeout(callModelImpl, request, {
+  timeoutMs = SUMMARY_TIMEOUT_MS,
+  fetchImpl = globalThis.fetch
+} = {}) {
+  const controller = new AbortController();
+  const baseFetch = fetchImpl;
+  const fetchWithSignal = typeof baseFetch === "function"
+    ? (url, init = {}) => baseFetch(url, { ...init, signal: controller.signal })
+    : baseFetch;
+  let timer;
+  const timeout = new Promise((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve({ mode: "live", text: null, error: SUMMARY_TIMED_OUT });
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([
+      Promise.resolve(callModelImpl({ ...request, fetchImpl: fetchWithSignal })),
+      timeout
+    ]);
+  } catch (err) {
+    return { mode: "live", text: null, error: String(err?.message || err) };
+  } finally {
+    clearTimeout(timer);
+  }
+}
 /** Characters of new items per fold call. */
 export const SUMMARY_BATCH_CHARS = 60_000;
 
@@ -99,7 +137,7 @@ export function batchesOf(itemsOldestFirst, batchChars = SUMMARY_BATCH_CHARS) {
 
 /**
  * refreshDossierSummary(db, { orgId, clientId, env?, fetchImpl?, callModelImpl?,
- *   budgetChars?, keepNewestChars?, batchChars? })
+ *   budgetChars?, keepNewestChars?, batchChars?, timeoutMs? })
  * → { refreshed, reason, covers_until?, items_covered?, calls? }
  *
  * No-op when the whole dossier fits the budget, or when the summary already
@@ -113,7 +151,8 @@ export async function refreshDossierSummary(db, {
   callModelImpl = callModel,
   budgetChars = DEFAULT_PROMPT_BUDGET_CHARS,
   keepNewestChars = Math.floor(budgetChars / 2),
-  batchChars = SUMMARY_BATCH_CHARS
+  batchChars = SUMMARY_BATCH_CHARS,
+  timeoutMs = SUMMARY_TIMEOUT_MS
 } = {}) {
   if (!orgId || !clientId) return { refreshed: false, reason: "org_and_client_required" };
   const dossier = await buildDossier(db, { orgId, clientId });
@@ -138,19 +177,19 @@ export async function refreshDossierSummary(db, {
   const batches = batchesOf(toFold.slice().reverse(), batchChars);
   const anthropicOnly = { ANTHROPIC_API_KEY: env?.ANTHROPIC_API_KEY };
   for (const batch of batches) {
-    const res = await callModelImpl({
+    const res = await callWithTimeout(callModelImpl, {
       system: SUMMARY_SYSTEM,
       user: `SUMMARY SO FAR:\n${running || "(none yet)"}\n\nNEXT RECORDS (oldest first):\n${batch}`,
       env: anthropicOnly,
-      fetchImpl,
       model: SUMMARY_MODEL,
       maxTokens: SUMMARY_MAX_TOKENS
-    });
+    }, { timeoutMs, fetchImpl: fetchImpl || globalThis.fetch });
     if (res?.mode === "shadow") return { refreshed: false, reason: "no_model_key", calls: batches.length };
     if (res?.error || !res?.text || !String(res.text).trim()) {
       return { refreshed: false, reason: "model_error", detail: res?.error || "empty reply" };
     }
-    running = String(res.text).trim();
+    // The records sent were already scrubbed; the reply is scrubbed too.
+    running = scrubText(String(res.text).trim());
   }
 
   await db.query(

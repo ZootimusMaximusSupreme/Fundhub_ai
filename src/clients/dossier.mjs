@@ -15,7 +15,8 @@
 // READ ONLY. Every query filters by org_id — these tables have no row-level
 // security doing it for us. Missing pieces stay null, never invented.
 
-import { redact } from "../http/read-api.mjs";
+import { scrubSensitive } from "./scrub.mjs";
+import { bureauOf } from "../finance/crs-map.mjs";
 
 /** Prompt budget in characters (about 75k tokens). Past this the summary steps in. */
 export const DEFAULT_PROMPT_BUDGET_CHARS = 300_000;
@@ -73,13 +74,102 @@ function present(row) {
   return out;
 }
 
-/** Keys a redact() pass removed, so the dossier can say what it withheld. */
-function withheldKeys(raw, kept, prefix) {
-  const out = [];
-  for (const k of Object.keys(raw || {})) {
-    if (!Object.hasOwn(kept || {}, k)) out.push(prefix ? `${prefix}.${k}` : k);
+function asArray(v) {
+  return Array.isArray(v) ? v : [];
+}
+
+function num(v) {
+  if (v == null || v === "") return null;
+  const n = typeof v === "number" ? v : Number(String(v).replace(/[$,]/g, ""));
+  return Number.isFinite(n) ? n : null;
+}
+
+function lastFourOf(identifier) {
+  const digits = String(identifier ?? "").replace(/\D/g, "");
+  return digits.length >= 4 ? digits.slice(-4) : null;
+}
+
+// ── credit: parsed facts, never the raw report ──────────────────────────────
+
+const NEGATIVE_STATUS = /charge|collect|late|delinq|past|derog|repo|foreclos|bankrupt/i;
+
+function tradelineFact(t) {
+  const line = asObject(t);
+  const fact = present({
+    creditor: line.creditorName ?? line.creditor ?? null,
+    bureau: bureauOf(line.sourceType) || line.source || null,
+    account_type: line.accountType ?? null,
+    ownership: line.accountOwnershipType ?? null,
+    opened: line.accountOpenedDate ?? line.openedDate ?? null,
+    reported: line.accountReportedDate ?? line.reportedDate ?? null,
+    closed: line.accountClosedDate ?? line.closedDate ?? null,
+    balance: num(line.currentBalanceAmount),
+    credit_limit: num(line.creditLimitAmount),
+    high_balance: num(line.highBalanceAmount ?? line.highCreditAmount),
+    past_due: num(line.pastDueAmount),
+    charge_off: num(line.chargeOffAmount),
+    monthly_payment: num(line.monthlyPaymentAmount),
+    current_rating: line.currentRatingType ?? null,
+    payment_status: line.paymentStatus ?? null,
+    account_status: line.accountStatusType ?? line.accountStatus ?? null,
+    account_last4: lastFourOf(line.accountIdentifier)
+  });
+  fact.negative = (fact.charge_off ?? 0) > 0 || (fact.past_due ?? 0) > 0
+    || NEGATIVE_STATUS.test(`${fact.current_rating || ""} ${fact.payment_status || ""} ${fact.account_status || ""}`);
+  return fact;
+}
+
+/** Top-level keys of a stored report that creditFacts turns into facts. */
+const FACT_KEYS = new Set([
+  "source", "product", "pulledAt", "bureausPulled", "bureaus_pulled", "scores", "scoreModels",
+  "tradelines", "inquiries", "publicRecords", "bureauStatus", "bureauErrors"
+]);
+
+/**
+ * creditFacts(stored report) → scores, tradelines, negatives, inquiries,
+ * public records and utilization. The raw report is never passed on: its
+ * per-bureau files carry SSNs, dates of birth and full account numbers. Keys
+ * this does not read are named in not_shown, so nothing is dropped silently.
+ */
+export function creditFacts(result) {
+  const r = asObject(result);
+  const tradelines = asArray(r.tradelines).map(tradelineFact);
+  let balance = 0;
+  let limit = 0;
+  for (const t of tradelines) {
+    if ((t.credit_limit ?? 0) > 0 && t.balance != null) {
+      balance += t.balance;
+      limit += t.credit_limit;
+    }
   }
-  return out;
+  const scores = asObject(r.scores);
+  return present({
+    source: r.source ?? null,
+    pulled_at: r.pulledAt ?? null,
+    bureaus_pulled: asArray(r.bureausPulled).length ? r.bureausPulled : (r.bureaus_pulled ?? null),
+    bureau_status: Object.keys(asObject(r.bureauStatus)).length ? r.bureauStatus : null,
+    scores: Object.keys(scores).length ? scores : null,
+    score_models: Object.keys(asObject(r.scoreModels)).length ? r.scoreModels : null,
+    tradeline_count: tradelines.length,
+    negative_count: tradelines.filter((t) => t.negative).length,
+    utilization_pct: limit > 0 ? Math.round((balance / limit) * 1000) / 10 : null,
+    utilization_basis: limit > 0 ? `balance ${balance} / limit ${limit} across tradelines with a credit limit` : null,
+    tradelines,
+    inquiries: asArray(r.inquiries).map((i) => present({
+      creditor: i?.creditorName ?? i?.creditor ?? null,
+      date: i?.date ?? i?.inquiryDate ?? null,
+      bureau: i?.source ?? i?.bureau ?? null,
+      business_type: i?.businessType ?? null
+    })),
+    public_records: asArray(r.publicRecords).map((p) => present({
+      type: p?.publicRecordType ?? p?.type ?? p?.recordType ?? null,
+      filed: p?.filedDate ?? p?.dateFiled ?? null,
+      status: p?.status ?? p?.dispositionType ?? null,
+      amount: num(p?.amount ?? p?.liabilityAmount),
+      bureau: p?.source ?? null
+    })),
+    not_shown: Object.keys(r).filter((k) => !FACT_KEYS.has(k)).sort()
+  });
 }
 
 function asObject(v) {
@@ -365,17 +455,11 @@ export async function buildDossier(db, { orgId, clientId } = {}) {
 
   // ── profile: the client row and every custom field ──
   const { custom_fields: cfJson, ...clientCols } = clientRaw;
-  const client = redact(present(clientCols));
-  const customFields = redact(asObject(cfJson));
-  const cfRaw = present(rows(cfRes)[0] || {});
-  delete cfRaw.org_id;
-  delete cfRaw.client_id;
-  const cfTable = redact(cfRaw);
-  const withheld = [
-    ...withheldKeys(present(clientCols), client, "clients"),
-    ...withheldKeys(asObject(cfJson), customFields, "clients.custom_fields"),
-    ...withheldKeys(cfRaw, cfTable, "client_custom_fields")
-  ];
+  const client = present(clientCols);
+  const customFields = asObject(cfJson);
+  const cfTable = present(rows(cfRes)[0] || {});
+  delete cfTable.org_id;
+  delete cfTable.client_id;
   const survey = {};
   for (const src of [customFields, cfTable]) {
     for (const [k, v] of Object.entries(src)) {
@@ -428,7 +512,7 @@ export async function buildDossier(db, { orgId, clientId } = {}) {
       custom_fields: customFields,
       custom_field_table: cfTable,
       survey,
-      withheld_keys: withheld
+      withheld_keys: []
     },
     ad: adLink,
     attribution: rows(attributionRes)[0] ? present(rows(attributionRes)[0]) : null,
@@ -458,16 +542,21 @@ export async function buildDossier(db, { orgId, clientId } = {}) {
     applications: rows(appRes).map(present),
     credit: {
       pulls: rows(pullRes).map(present),
-      results: rows(crsRes).map(present),
-      snapshots: rows(snapshotRes).map(present)
+      results: rows(crsRes).map(({ result, ...row }) => ({ ...present(row), facts: creditFacts(result) })),
+      snapshots: rows(snapshotRes).map(({ data, ...row }) => ({ ...present(row), facts: creditFacts(data) }))
     },
     brain,
     activity: rollUpFunnel(funnel),
     funnel_event_count: funnel.length,
     events: otherEvents.map(present)
   };
-  dossier.counts = countDossier(dossier);
-  return dossier;
+  // ONE scrubber over everything handed out: SSNs and tax ids, dates of birth,
+  // full card and account numbers, passwords and tokens, by key and by value.
+  const withheld = [];
+  const safe = scrubSensitive(dossier, { withheld });
+  safe.profile.withheld_keys = withheld;
+  safe.counts = countDossier(safe);
+  return safe;
 }
 
 export function countDossier(d) {
@@ -600,11 +689,12 @@ export function dossierHeader(d) {
   const lines = ["CLIENT DOSSIER (every record Fundhub holds on this client; do not invent missing values)"];
   const p = d.profile || {};
   if (p.client && Object.keys(p.client).length) lines.push(`Profile: ${kv(p.client)}`);
-  if (p.survey && Object.keys(p.survey).length) lines.push(`Survey answers: ${kv(p.survey)}`);
-  if (p.custom_fields && Object.keys(p.custom_fields).length) lines.push(`Custom fields: ${kv(p.custom_fields)}`);
-  if (p.custom_field_table && Object.keys(p.custom_field_table).length) {
-    lines.push(`Custom field table: ${kv(p.custom_field_table)}`);
-  }
+  const surveyKeys = Object.keys(p.survey || {});
+  if (surveyKeys.length) lines.push(`Survey answers: ${kv(p.survey)}`);
+  const cf = kv(p.custom_fields, surveyKeys);
+  if (cf) lines.push(`Custom fields: ${cf}`);
+  const cft = kv(p.custom_field_table, surveyKeys);
+  if (cft) lines.push(`Custom field table: ${cft}`);
   if (p.withheld_keys?.length) lines.push(`Withheld (sensitive, never sent to a model): ${p.withheld_keys.join(", ")}`);
   const ad = d.ad || {};
   lines.push(
