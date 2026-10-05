@@ -71,6 +71,7 @@ export async function syncSloClickfunnelsContact(input, { env = process.env, fet
   if (!apiKey || !subdomain) return { ok: false, skipped: true, reason: "no_credentials" };
   const ctx = {};
   if (typeof fetchImpl === "function") ctx.fetch = fetchImpl;
+  ctx.env = env; // the ADAPTERS fence reads the same env this call was given
   const workspaceId = clean(env?.CLICKFUNNELS_WORKSPACE_ID);
   if (workspaceId) ctx.workspaceId = workspaceId;
   try {

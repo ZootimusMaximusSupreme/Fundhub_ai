@@ -582,6 +582,7 @@ export async function syncApplySurveyClickfunnelsContact(body, { env = process.e
   if (!contact || !apiKey || !subdomain) return { ok: false, skipped: true };
   const ctx = {};
   if (typeof fetchImpl === "function") ctx.fetch = fetchImpl;
+  ctx.env = env; // the ADAPTERS fence reads the same env this call was given
   const workspaceId = String(env?.CLICKFUNNELS_WORKSPACE_ID || "").trim();
   if (workspaceId) ctx.workspaceId = workspaceId;
   try {
