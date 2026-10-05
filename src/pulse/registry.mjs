@@ -281,6 +281,7 @@ const API_KEYS = [
   "read/money-map",
   "read/my-numbers",
   "read/ops-pulse",
+  "read/ops-suggestions",
   "read/partners",
   "read/partner-home-tiles",
   "read/partner-production",
