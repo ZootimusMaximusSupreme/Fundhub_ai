@@ -107,6 +107,7 @@ import readFinanceAsk from "../../api/read/finance-ask.mjs";
 import readCompanyBrain from "../../api/read/company-brain.mjs";
 import readCompanyBrainAffiliate from "../../api/read/company-brain-affiliate.mjs";
 import readOpsPulse from "../../api/read/ops-pulse.mjs";
+import readOpsSuggestions from "../../api/read/ops-suggestions.mjs";
 import opsHireCloser from "../../api/ops/hire-closer.mjs";
 import companyBrainReviews from "../../api/company-brain/reviews.mjs";
 import companyBrainSync from "../../api/company-brain/sync.mjs";
@@ -573,6 +574,8 @@ export const ROUTES = {
   // Ops / AI COO v1. GET is read-only pulse + briefs. POST creates the
   // hire-closer task and LinkedIn post when packed. ROLE_SETS.OPS.
   "read/ops-pulse": readOpsPulse,
+  // AI ops suggestions for one morning (MB4, 432). Read only. ROLE_SETS.OPS.
+  "read/ops-suggestions": readOpsSuggestions,
   "ops/hire-closer": opsHireCloser,
 
   // Owner-only classification review queue (H-3). Also carries staff uploads
