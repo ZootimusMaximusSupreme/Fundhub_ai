@@ -23,10 +23,15 @@
 // (src/workflows/daily-pulse.mjs passes sendPulseText: false). While it is
 // false the old pulse text still goes, unchanged.
 //
-// WINDOWS. Morning: team over the last 24 hours, ad spend and money for
-// yesterday (Arizona). Evening: "today so far" — since local midnight in
-// Arizona — and its systems line reads the check stored this morning; it
-// never runs the full pulse a second time (MB2 owns the checks).
+// SAME CONTENT, MORNING AND EVENING (owner-set 2026-10-05): systems first,
+// then sales team, money, and ads — ads and sales organized per offer and per
+// funnel (src/ops/brief-offers.mjs). The stored row is the full report; the
+// text is a short summary that points to it.
+//
+// WINDOWS. Morning: yesterday, Arizona midnight to midnight. Evening: "today
+// so far", Arizona midnight to now. The evening's systems line reads the check
+// stored this morning; it never runs the full pulse a second time (MB2 owns
+// the checks).
 //
 // AUDIT ONLY. It never fixes, sends money, pulls credit, or changes an ad.
 
@@ -37,6 +42,7 @@ import { loadCashflowByDay } from "../finance/cashflow.mjs";
 import { fromCents } from "../commissions/money.mjs";
 import { textMorningBrief } from "../pulse/notify.mjs";
 import { buildSuggestions } from "./suggestions.mjs";
+import { groupByOfferFunnel, groupClosers, loadOfferNumbers, readClosersByOffer, OFFER_NOTES, NO_OFFER } from "./brief-offers.mjs";
 
 export const MORNING_BRIEF_LIVE = false;
 export const BRIEF_TZ = "America/Phoenix";
@@ -49,10 +55,9 @@ export const BRIEF_KINDS = Object.freeze(["morning", "evening"]);
 export const EVENING_BRIEF_CRON = "0 4 * * *";
 
 export const LINES = {
-  marketingWaiting:
-    "Booked calls, shows, sales and return on ad spend: waiting on the marketing numbers (marketing machine M5).",
+  adsUnread: "Ads and sales: could not be read.",
   dashboardWaiting: "Marketing dashboard: not built yet.",
-  dyingAdsWaiting: "Dying ads: waiting on the marketing numbers (marketing machine M5).",
+  reportPointer: "Full detail by offer, funnel and closer is in the report.",
   moneyNotConnected: "Money: not connected yet.",
   accountsWaiting: "Per account (Fundhub LLC, Fundhub Credit Solutions, FH Consulting): no record yet of which bank account is which company.",
   creditLineWaiting: "Ad money left on the credit line: no source yet.",
@@ -100,9 +105,11 @@ export function phoenixMidnight(dateStr) {
 }
 
 /**
- * The window each kind covers.
- *   morning: team = last 24 hours ending now; ad spend and money = yesterday.
- *   evening: team = since Arizona midnight; ad spend and money = today so far.
+ * The one window each kind covers — ads, sales, team and money all use it, so
+ * every number in a brief is about the same stretch of time.
+ *   morning: yesterday, Arizona midnight to midnight.
+ *   evening: today so far, Arizona midnight to now.
+ * (Company 8 from computePulse is always the last 24 hours and says so.)
  */
 export function briefWindow(kind, now = new Date()) {
   assertKind(kind);
@@ -122,11 +129,11 @@ export function briefWindow(kind, now = new Date()) {
   return {
     kind,
     brief_date: briefDate,
-    label: "last 24 hours",
-    from: new Date(now.getTime() - 86400000).toISOString(),
-    to: now.toISOString(),
+    label: `yesterday (${yesterday})`,
+    from: phoenixMidnight(yesterday).toISOString(),
+    to: phoenixMidnight(briefDate).toISOString(),
     day: yesterday,
-    day_label: yesterday
+    day_label: `yesterday (${yesterday})`
   };
 }
 
@@ -251,35 +258,60 @@ export function summarizeStoredSystems(scorecard) {
   return { ...s, source: scorecard ? "stored_morning_check" : "none_stored_today" };
 }
 
-/* ---------- marketing ---------- */
+/* ---------- marketing: ads and sales per offer and per funnel ---------- */
 
-/* Spend comes from ad_metrics_daily — the same table the marketing machine's
-   numbers (M5, docs/specs/marketing-machine-2026-10-04.md §11.1) count spend
-   from. Everything else waits for M5; it is not rebuilt here. */
-export async function loadMarketing(db, { orgId, briefDate, day = dayBefore(briefDate), dayLabel = day }) {
+/* Spend comes from ad_metrics_daily, people and money from clients, bookings,
+   call_outcomes, sales and transactions — the tables the marketing machine's
+   numbers (M5, docs/specs/marketing-machine-2026-10-04.md §11.1) count from.
+   Grouped per offer → funnel by src/ops/brief-offers.mjs. The M5 dashboard
+   itself is not rebuilt here. */
+export function marketingFromOfferNumbers(nums, { window }) {
+  const grouped = groupByOfferFunnel(nums?.spend || [], nums?.activity || []);
+  const t = grouped.totals;
+  const dying = Array.isArray(nums?.dying) ? nums.dying : [];
+  const roasText = t.roas == null ? "return on ad spend unknown" : `return on ad spend ${t.roas}`;
+  const cpb = t.cost_per_booked?.cost_cents == null ? "cost per booked person: too few to say" : `${money(t.cost_per_booked.cost_cents)} per booked person`;
+  const top = grouped.by_offer.find((o) => o.spend_cents);
+  const topText = top ? ` Most spend: ${offerName(top.offer)} (${money(top.spend_cents)}).` : "";
+  return {
+    status: "ok",
+    window: window.label,
+    from: window.from,
+    to: window.to,
+    spend_day: window.day,
+    spend_cents: t.spend_cents,
+    spend_source: "ad_metrics_daily",
+    totals: t,
+    by_offer: grouped.by_offer,
+    dying_ads: dying,
+    notes: OFFER_NOTES,
+    spend_line: t.spend_cents == null
+      ? `Ad spend ${window.day_label}: no spend rows synced.`
+      : `Ad spend ${window.day_label}: ${money(t.spend_cents)}.`,
+    ads_line:
+      `Ads and sales ${window.day_label}, all offers: ${money(t.spend_cents ?? 0)} spend, ${t.leads} new people, ` +
+      `${t.booked} booked, ${t.showed} showed, ${t.sales} sales, ${money(t.cash_cents)} cash; ${cpb}; ${roasText}.${topText}`,
+    dying_line: dying.length
+      ? `Dying ads: ${dying.length} — ${dying.slice(0, 2).map((d) => `${d.ad_name} (${offerName(d.offer)})`).join(", ")}${dying.length > 2 ? ", and more in the report" : ""}. Change the opening line.`
+      : "Dying ads: none flagged.",
+    dashboard_url: null,
+    dashboard_line: LINES.dashboardWaiting
+  };
+}
+
+export function offerName(offer) {
+  if (offer === NO_OFFER) return "no offer label";
+  return offer;
+}
+
+export async function loadMarketing(db, { orgId, window, briefDate, staffScope, nums = null }) {
   try {
-    const r = await db.query(
-      `SELECT COUNT(*)::int AS n, COALESCE(SUM(spend_cents), 0)::bigint AS cents
-         FROM ad_metrics_daily
-        WHERE org_id = $1 AND date = $2::date`,
-      [orgId, day]
-    );
-    const n = Number(r.rows[0]?.n || 0);
-    const cents = n ? Number(r.rows[0].cents) : null;
-    return {
-      status: "partial",
-      spend_day: day,
-      spend_cents: cents,
-      spend_source: "ad_metrics_daily",
-      spend_line: cents == null
-        ? `Ad spend ${dayLabel}: no spend rows synced.`
-        : `Ad spend ${dayLabel}: ${money(cents)}.`,
-      waiting: [LINES.marketingWaiting, LINES.dyingAdsWaiting],
-      dashboard_url: null,
-      dashboard_line: LINES.dashboardWaiting
-    };
+    const data = nums || await loadOfferNumbers(db, {
+      orgId, day: window.day, from: window.from, to: window.to, briefDate, ...(staffScope ? { staffScope } : {})
+    });
+    return marketingFromOfferNumbers(data, { window });
   } catch (err) {
-    return { ...errLine("Ad spend", err), waiting: [LINES.marketingWaiting], dashboard_url: null };
+    return { ...errLine("Ads and sales", err), by_offer: [], dying_ads: [], notes: OFFER_NOTES, dashboard_url: null };
   }
 }
 
@@ -309,6 +341,31 @@ export async function loadMoney(db, { orgId, briefDate, env = process.env, day =
     const sum = (rows, k) => rows.reduce((n, r) => n + Number(r[k] || 0), 0);
     const inY = sum(dayRows, "inflow_cents");
     const outY = sum(dayRows, "outflow_cents");
+    // By account, when the bank account is known. Same table and sign rule as
+    // src/finance/cashflow.mjs; only the grouping is added.
+    let accounts = null;
+    try {
+      const r = await db.query(
+        `SELECT t.bank_account_id, a.name, a.mask,
+                SUM(CASE WHEN t.amount_cents > 0 THEN t.amount_cents ELSE 0 END)::bigint AS inflow_cents,
+                SUM(CASE WHEN t.amount_cents < 0 THEN -t.amount_cents ELSE 0 END)::bigint AS outflow_cents
+           FROM bank_transactions t
+           LEFT JOIN bank_accounts a ON a.id = t.bank_account_id
+          WHERE t.org_id = $1 AND t.posted_on BETWEEN $2 AND $2
+          GROUP BY t.bank_account_id, a.name, a.mask
+          ORDER BY a.name NULLS LAST`,
+        [orgId, day]
+      );
+      accounts = r.rows.map((x) => ({
+        bank_account_id: x.bank_account_id,
+        name: x.name || "account not known",
+        mask: x.mask || null,
+        in_cents: Number(x.inflow_cents || 0),
+        out_cents: Number(x.outflow_cents || 0)
+      }));
+    } catch (err) {
+      accounts = null;
+    }
     return {
       status: "ok",
       source: "bank_transactions via src/finance/cashflow.mjs (same read as Finance OS)",
@@ -317,6 +374,7 @@ export async function loadMoney(db, { orgId, briefDate, env = process.env, day =
       out_cents: outY,
       mtd_in_cents: sum(mtdRows, "inflow_cents"),
       mtd_out_cents: sum(mtdRows, "outflow_cents"),
+      by_account: accounts,
       line: `Money posted ${dayLabel}: ${money(inY)} in, ${money(outY)} out.`,
       waiting: [LINES.accountsWaiting, LINES.creditLineWaiting]
     };
@@ -327,9 +385,10 @@ export async function loadMoney(db, { orgId, briefDate, env = process.env, day =
 
 /* ---------- team and company ---------- */
 
-export async function loadTeam(db, { orgId, now, window = briefWindow("morning", now) }) {
-  // company_8 (computePulse "today") always covers the last 24 hours; only the
-  // per-closer, CSM and unrecorded reads follow the window.
+export async function loadTeam(db, { orgId, now, window = briefWindow("morning", now), closerRows = null }) {
+  // company_8 (computePulse "today") always covers the last 24 hours; the
+  // per-closer read follows the brief's window. CSM overdue and unrecorded
+  // calls are "right now" counts.
   const out = { status: "ok", window: window.label, from: window.from, to: window.to, company_window: "last 24 hours", waiting: [LINES.advisorWaiting] };
 
   try {
@@ -343,24 +402,11 @@ export async function loadTeam(db, { orgId, now, window = briefWindow("morning",
     out.company_error = errLine("Company numbers", err).line;
   }
 
+  // Per closer: calls held, no-shows, sales (deposits, as src/sales/metrics.mjs
+  // counts them), close rate = deposits ÷ held — each split per offer → funnel.
   try {
-    const r = await db.query(
-      `SELECT o.staff_id, s.name,
-              count(*) FILTER (WHERE o.outcome <> 'no_show')::int AS calls_held,
-              count(*) FILTER (WHERE o.outcome = 'no_show')::int AS no_shows,
-              count(*) FILTER (WHERE o.outcome = 'deposit')::int AS deposits,
-              count(*) FILTER (WHERE o.outcome = 'downsell')::int AS downsells
-         FROM call_outcomes o
-         JOIN staff s ON s.id = o.staff_id AND s.org_id = o.org_id
-        WHERE o.org_id = $1
-          AND COALESCE(o.is_demo, false) = false
-          AND o.logged_at >= $2::timestamptz
-          AND o.logged_at < $3::timestamptz
-        GROUP BY o.staff_id, s.name
-        ORDER BY s.name`,
-      [orgId, window.from, window.to]
-    );
-    out.closers = r.rows;
+    const rows = closerRows || await readClosersByOffer(db, { orgId, from: window.from, to: window.to });
+    out.closers = groupClosers(rows);
   } catch (err) {
     out.closers = null;
     out.closers_error = errLine("Closer calls", err).line;
@@ -391,13 +437,20 @@ export async function loadTeam(db, { orgId, now, window = briefWindow("morning",
     out.unrecorded_error = errLine("Unrecorded calls", err).line;
   }
 
-  const held = Array.isArray(out.closers) ? out.closers.reduce((n, r) => n + r.calls_held, 0) : null;
-  const noShows = Array.isArray(out.closers) ? out.closers.reduce((n, r) => n + r.no_shows, 0) : null;
+  const sumOf = (k) => (Array.isArray(out.closers) ? out.closers.reduce((n, r) => n + r[k], 0) : null);
+  const held = sumOf("calls_held");
+  const noShows = sumOf("no_shows");
+  const deposits = sumOf("deposits");
   const funded = out.company_8?.funded_count?.value;
   const part = (v, word) => (v == null ? `${word} unknown` : `${v} ${word}`);
-  out.line = window.label === out.company_window
-    ? `Team, ${window.label}: ${part(held, "calls held")}, ${part(noShows, "no-shows")}, ${part(funded, "files funded")}.`
-    : `Team, ${window.label}: ${part(held, "calls held")}, ${part(noShows, "no-shows")}. Last 24 hours: ${part(funded, "files funded")}.`;
+  const closeRate = held ? `${Math.round((deposits / held) * 100)}% close rate` : "close rate: no calls held";
+  const extras = [
+    out.csm_overdue == null ? "CSM overdue unknown" : `${out.csm_overdue} CSM tasks overdue`,
+    out.unrecorded_calls == null ? "unrecorded calls unknown" : `${out.unrecorded_calls} calls not recorded`
+  ].join(", ");
+  out.line =
+    `Team, ${window.label}: ${part(held, "calls held")}, ${part(noShows, "no-shows")}, ${part(deposits, "sales")}, ${closeRate}. ` +
+    `Now: ${extras}. Last 24 hours: ${part(funded, "files funded")}.`;
   return out;
 }
 
@@ -439,20 +492,24 @@ export async function loadSuggestions(db, { orgId, briefDate, env = process.env,
 export function formatMorningText({ kind = "morning", now = new Date(), systems, marketing, money: m, team, suggestions } = {}) {
   assertKind(kind);
   const lines = [`${GREETINGS[kind]} ${phoenixLongDate(now)}.`, ""];
+  // The text is the short summary: systems first, headline numbers, the dying
+  // ads, one suggestion. The full detail per offer, funnel and closer is the
+  // stored report.
   lines.push(systems?.line || (kind === "evening" ? LINES.systemsNotStoredToday : LINES.systemsMissing));
   const cash = team?.company_8?.cash_cents?.value;
   lines.push(`Last 24 hours: ${cash == null ? "cash collected unknown" : `${money(cash)} cash collected`}.`);
-  if (marketing?.spend_line || marketing?.line) lines.push(marketing.spend_line || marketing.line);
-  lines.push(LINES.marketingWaiting);
-  lines.push(m?.line || LINES.moneyNotConnected);
   lines.push(team?.line || "Team: could not be read.");
+  lines.push(m?.line || LINES.moneyNotConnected);
+  lines.push(marketing?.ads_line || marketing?.line || LINES.adsUnread);
+  if (marketing?.dying_line) lines.push(marketing.dying_line);
   lines.push(suggestions?.line || LINES.suggestionsNone);
+  lines.push(LINES.reportPointer);
   return lines.join("\n");
 }
 
 /* ---------- build, save, send ---------- */
 
-export async function buildMorningBrief(db, { orgId, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null, suggest = buildSuggestions } = {}) {
+export async function buildMorningBrief(db, { orgId, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null, suggest = buildSuggestions, staffScope = null } = {}) {
   if (!orgId) throw new TypeError("buildMorningBrief: orgId required");
   assertKind(kind);
   const window = briefWindow(kind, now);
@@ -471,10 +528,24 @@ export async function buildMorningBrief(db, { orgId, kind = "morning", env = pro
   } else {
     systems = summarizeSystems(scorecard || scorecardFromPulse(pulse, { now }));
   }
+  // One staff-scoped read for ads, sales, closers and dying ads, shared by the
+  // marketing and team sections so both split by the same offer and funnel.
+  let nums = null;
+  let numsError = null;
+  try {
+    nums = await loadOfferNumbers(db, {
+      orgId, day: window.day, from: window.from, to: window.to, briefDate,
+      ...(staffScope ? { staffScope } : {})
+    });
+  } catch (err) {
+    numsError = err;
+  }
   const [marketing, moneySection, team, suggestions] = await Promise.all([
-    loadMarketing(db, { orgId, briefDate, day: window.day, dayLabel: window.day_label }),
+    numsError
+      ? Promise.resolve({ ...errLine("Ads and sales", numsError), by_offer: [], dying_ads: [], notes: OFFER_NOTES, dashboard_url: null })
+      : loadMarketing(db, { orgId, window, briefDate, nums }),
     loadMoney(db, { orgId, briefDate, env, day: window.day, dayLabel: window.day_label }),
-    loadTeam(db, { orgId, now, window }),
+    loadTeam(db, { orgId, now, window, closerRows: nums ? nums.closers : null }),
     loadSuggestions(db, { orgId, briefDate, env, suggest })
   ]);
   const text = formatMorningText({ kind, now, systems, marketing, money: moneySection, team, suggestions });
@@ -550,7 +621,7 @@ export async function saveMorningBrief(db, brief, delivery, { dryRun = true } = 
  */
 export async function runMorningBrief({
   db, orgId = null, kind = "morning", env = process.env, now = new Date(), pulse = null, scorecard = null,
-  live = MORNING_BRIEF_LIVE, sendImpl, suggest = buildSuggestions
+  live = MORNING_BRIEF_LIVE, sendImpl, suggest = buildSuggestions, staffScope = null
 } = {}) {
   assertKind(kind);
   if (!db) return { ok: false, reason: "no_db" };
@@ -561,7 +632,7 @@ export async function runMorningBrief({
   }
   if (!org) return { ok: false, reason: "no_org" };
 
-  const brief = await buildMorningBrief(db, { orgId: org, kind, env, now, pulse, scorecard, suggest });
+  const brief = await buildMorningBrief(db, { orgId: org, kind, env, now, pulse, scorecard, suggest, staffScope });
 
   const existing = await readMorningBrief(db, { orgId: org, date: brief.brief_date, kind });
   if (existing && existing.delivery_status === "sent") {

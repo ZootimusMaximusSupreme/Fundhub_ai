@@ -91,7 +91,8 @@ test("the text starts Good morning, Chris. and prints waiting lines, not numbers
   assert.ok(text.startsWith("Good morning, Chris. Monday, October 5."));
   assert.match(text, /Money: not connected yet\./);
   assert.match(text, /cash collected unknown/);
-  assert.match(text, /waiting on the marketing numbers/);
+  assert.match(text, /Ads and sales: could not be read\./);
+  assert.match(text, /Full detail by offer, funnel and closer is in the report\./);
 });
 
 test("money is whole cents in, dollars out", () => {
@@ -153,11 +154,12 @@ test("evening cron is one constant and lands at 9:00 p.m. Arizona", () => {
   assert.equal(phoenixDateStamp(fire), "2026-10-05");
 });
 
-test("windows: morning keeps last 24 hours and yesterday; evening is since Arizona midnight", () => {
+test("windows: morning is yesterday midnight to midnight; evening is since Arizona midnight", () => {
   const m = briefWindow("morning", SIX_AM_AZ);
   assert.equal(m.brief_date, "2026-10-05");
-  assert.equal(m.label, "last 24 hours");
-  assert.equal(m.from, "2026-10-04T13:00:00.000Z");
+  assert.equal(m.label, "yesterday (2026-10-04)");
+  assert.equal(m.to, "2026-10-05T07:00:00.000Z");
+  assert.equal(m.from, "2026-10-04T07:00:00.000Z");
   assert.equal(m.day, "2026-10-04");
 
   const e = briefWindow("evening", NINE_PM_AZ);
@@ -212,7 +214,8 @@ test("evening build reads this morning's stored check, never a pulse, and counts
     now: NINE_PM_AZ,
     env: { PLAID_ENV: "sandbox" },
     pulse: { checks: [{ id: "login", status: "FAIL", detail: "must be ignored" }] },
-    suggest: async () => ({ ok: true, suggestions: [] })
+    suggest: async () => ({ ok: true, suggestions: [] }),
+    staffScope: (fn) => fn(db)
   });
   assert.equal(brief.kind, "evening");
   assert.equal(brief.brief_date, "2026-10-05");
@@ -273,7 +276,7 @@ test("a failed buildSuggestions never stops the brief: it says none today", asyn
   const db = { query: async () => ({ rows: [] }) };
   const brief = await quietErr(() => buildMorningBrief(db, {
     orgId: "00000000-0000-0000-0000-000000000001", now: SIX_AM_AZ, env: { PLAID_ENV: "sandbox" },
-    pulse: { checks: [] }, suggest: async () => { throw new Error("boom"); }
+    pulse: { checks: [] }, suggest: async () => { throw new Error("boom"); }, staffScope: (fn) => fn(db)
   }));
   assert.ok(brief.text_body.startsWith("Good morning, Chris."));
   assert.match(brief.text_body, /Suggestions: none today\./);
