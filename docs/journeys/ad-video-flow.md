@@ -276,3 +276,86 @@ which is the only kind of proof available on a machine with no Postgres.
 local Postgres on this Mac. Nothing about migration 389, migration 390, the
 constraints, the row-level security policies, or any SQL statement in
 `store.mjs` or `token.mjs` has been executed even once.
+
+---
+
+## Animations, always last (spec 9.4) — built, NOT WIRED
+
+Written from `src/ad-videos/animation-plan.mjs` and
+`src/ad-videos/animation-overlay.mjs` on 2026-10-05. Both are pure: no network,
+no database, no Remotion, no ffmpeg. Nothing calls them yet. The worker (9.5) is
+being built in parallel, so every arrow into or out of these two files is
+UNVERIFIED. The ffmpeg arguments were run once by hand against real ffmpeg 6.1
+(a gray base with sound, one opaque clip, one see-through VP9 clip): the opaque
+clip covered the frame only for its 3 s, the see-through clip blended over the
+base for its 2 s, the audio stream and the length were unchanged.
+
+The order never changes: cut, then Submagic captions, then animations, then
+finalize (law: `.claude/rules/animations-last.md`). The master Submagic sees
+never has animations in it.
+
+```mermaid
+flowchart TD
+    R["rendered<br/>Submagic export copied to R2"] --> P["plan the animations<br/>animation-plan.mjs"]
+    P -->|"anchor line was cut"| S1["skip that animation, flag it"]
+    P -->|"export length within 0.1 s of master"| T["keep the cut-plan times"]
+    P -->|"export length off by more than 0.1 s"| M["re-map anchors using Submagic's words"]
+    M --> T
+    T --> L{"animation_mode"}
+    L -->|"fullframe"| F["limits: none in first 3 s or on the CTA,<br/>4 s of face between clips, 3 s max per clip<br/>(ProofWall 4, ProofFlood 6), 35% of runtime max"]
+    L -->|"overlay"| O["see-through clips: only no-overlap and end of video"]
+    F --> K["renderSpec: cache key by template + props"]
+    O --> K
+    K -->|"clip already in R2"| V["reuse it"]
+    K -->|"new or changed"| W["worker renders it (UNVERIFIED: 9.5)"]
+    V --> X["overlayArgs: one ffmpeg call, audio copied,<br/>video re-encoded once with FINAL_VIDEO_ARGS"]
+    W --> X
+    X --> A["animated (UNVERIFIED: the move is in 9.1, the call is in 9.5)"]
+    A --> Z["finalize, then awaiting_approval"]
+```
+
+**What the plan decides, in plain words**
+
+| Question | Answer |
+|---|---|
+| Where does an animation go? | At the cut-plan time of its anchor (`anchorTime` from `align.mjs`, passed in as `resolveAnchor`), snapped to a frame. |
+| How far may it drift? | At most 0.3 s later than its anchor. Anything that needs more is skipped and flagged, never moved far. |
+| Its anchor's line was cut? | Skipped, reason `line_cut`, flag `anchor_cut`. |
+| Not in the catalog? | Skipped, reason `unknown_template`. Nothing unknown is ever rendered. |
+| How long? | Clamped to the template's own min and max frames, and in fullframe to 3 s (ProofWall 4, ProofFlood 6). |
+| Too close to the start, another clip, or the CTA? | Nudged later by up to 0.3 s for the first two; at the CTA or the end it is shortened to stop there if the template's minimum still fits, otherwise skipped. |
+| Over 35% of the runtime? | The clip latest in the writer's list is dropped first. |
+| No clip left? | Flag `no_animation`. Every ad needs at least one. |
+| CTA start unknown? | Flag `cta_unknown`. The rule cannot run, and it is not guessed. |
+| Data-tied template (QualifyToday, LettersWritten, ProofWall, ApprovalCarousel and ProofFlood families)? | Any data props the writer sent are dropped. These read only their own sample or approval files. |
+
+**Output shape** (what `animation_items` holds, with `skipped` and `flags` beside
+it for the approval screen): each item is `{ index, template, props, anchor,
+match_text, anchor_found, cut_time, start, end, seconds, frames }`.
+
+**Cache.** A clip is keyed by a hash of template, props (with length and the
+`transparent` switch), container and a kit revision. Moving a clip in time does
+not change its key, so a timing-only edit re-renders nothing (spec 9.6).
+
+**Where this meets other work, all UNVERIFIED until those PRs merge**
+- `resolveAnchor` is `anchorTime(cutPlan, anchor)` from 9.2 (PR #32).
+- `finalVideoArgs` is `FINAL_VIDEO_ARGS` from `ffmpeg-plan.mjs` (9.3, PR #34).
+- The catalog is `marketing/broll/catalog.json` (7.3, lane A). Until it exists
+  the planner takes any array of `{ id, minFrames, maxFrames }`.
+- The `transparent` switch on the Remotion templates, and alpha renders, are the
+  see-through step of the 2026-10-02 plan. Not built. `animation_mode` stays
+  `fullframe` until they ship. Templates were not touched.
+- Chris's own B-roll clips from `DRIVE_BROLL_FOLDER_ID` (off by default) are not
+  built.
+- `caption_position_y` (so captions sit where overlays never draw) is a Submagic
+  create-project field in 9.1 step 8, not planned here.
+
+**Gaps found (not reconciled)**
+- Spec 9.4 says overlays go "at its anchor time" and the approval check says
+  "within 0.3 s"; it does not say which way to move a clip that collides. Moving
+  later was chosen, because a clip that appears before its words is worse than
+  one that lands a beat after.
+- Numbers spoken as words ("three hundred thousand") will not match digits in
+  Submagic's words when anchors are re-mapped; the item then keeps its old time
+  and is flagged `retime_unmatched`. The aligner's number normalizer is not
+  reused here.
