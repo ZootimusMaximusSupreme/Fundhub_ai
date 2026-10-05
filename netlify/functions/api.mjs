@@ -100,6 +100,7 @@ import readFinanceOsSuggestions from "../../api/read/finance-os-suggestions.mjs"
 import readBankingSurface from "../../api/read/banking-surface.mjs";
 import readUnderwrite from "../../api/read/underwrite.mjs";
 import readMoneyMap from "../../api/read/money-map.mjs";
+import readMorningBrief from "../../api/read/morning-brief.mjs";
 import readFinanceCommand from "../../api/read/finance-command.mjs";
 import readFinanceAsk from "../../api/read/finance-ask.mjs";
 import readCompanyBrain from "../../api/read/company-brain.mjs";
@@ -542,6 +543,8 @@ export const ROUTES = {
   // handler and the screen: a screen whose endpoint 404s is the exact failure
   // this map exists to prevent, and it has shipped twice.
   "read/money-map": readMoneyMap,
+  // The stored "Good morning, Chris" brief, one row per Arizona morning. Owner/admin.
+  "read/morning-brief": readMorningBrief,
 
   // read/finance-command is the roll-up: money-map answers "one client's whole
   // picture", this answers "every client's, folded into one number, or narrowed
