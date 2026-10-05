@@ -162,6 +162,13 @@
 [functions."ad-video-sweeper"]
   schedule = "*/5 * * * *"
 
+# The marketing machine's clock (spec M0 step 4). Reads the database, queues the
+# weekly batch job and wakes the background worker (marketing-worker-background).
+# It does nothing while the machine's `enabled` setting is false. SWEEP_CRON in
+# netlify/functions/marketing-clock.mjs must match.
+[functions."marketing-clock"]
+  schedule = "*/15 * * * *"
+
 # Every minute, not every five. This one drains the Commas payment queue: the
 # webhook only stores the bytes and answers, so nothing a client pays reaches
 # the money chain until a pass runs. That delay is visible to a human.

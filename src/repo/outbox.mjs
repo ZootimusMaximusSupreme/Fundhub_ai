@@ -7,8 +7,8 @@
 //                                   row commits or rolls back with the database
 //                                   change. It never calls GitHub.
 //
-//   drainOutbox({ pool, env })      Called by the worker (M0 step 4, not built
-//                                   yet) at most once a minute. It takes one
+//   drainOutbox({ pool, env })      Called by the worker (M0 step 4:
+//                                   src/marketing/worker.mjs) at most once a minute. It takes one
 //                                   advisory lock so only one drain runs at a
 //                                   time, claims the waiting rows and makes ONE
 //                                   commit for all of them:
@@ -35,8 +35,8 @@
 //                         are read. Any row id already inside an `Outbox:`
 //                         trailer is marked done and not committed again.
 //
-// The worker hookup (wake the worker after enqueue, call drainOutbox once a
-// minute) is PENDING on M0 step 4. Until then nothing calls drainOutbox.
+// The worker hookup (a save wakes the worker, the worker calls drainOutbox once a
+// minute) is built in M0 step 4: src/marketing/repo-writes.mjs and worker.mjs.
 
 import { randomUUID } from "node:crypto";
 import { assertAllowedPath, PathRefused } from "./allow-list.mjs";
