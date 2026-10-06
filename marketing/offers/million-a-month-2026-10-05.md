@@ -46,6 +46,17 @@ Ranked by how fast each one gets there. Every figure comes from Chris, the repo,
 - $1,000,000 a month means hundreds of signed leases a month in one metro. This is the slowest of the six.
 - Best use: every renter the soft pull says no to is a Fundhub credit optimization lead.
 
+## Chris's order (owner-set 2026-10-05)
+
+1. Fundhub to $1M a month first. "I don't want to divert yet."
+2. The 60 Minute Offer as an advisory that starts from what already sells in the market.
+3. Yesdoor.
+4. A marketing consulting firm.
+5. Trading, once Fundhub hits the big figure: about an hour a day, on prop-firm capital.
+6. Other projects after that.
+
+Note: FH Consulting already does marketing consulting, and it is where the 60 Minute Offer would sell. Steps 2 and 4 can run as one company.
+
 ## Recommendation
 
 Put the next 90 days into offers 1 and 2. Both already sell, both run on the same fulfillment, and white label only needs two numbers set.
