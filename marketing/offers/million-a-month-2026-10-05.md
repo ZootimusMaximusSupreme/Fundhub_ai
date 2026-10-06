@@ -48,14 +48,13 @@ Ranked by how fast each one gets there. Every figure comes from Chris, the repo,
 
 ## Chris's order (owner-set 2026-10-05)
 
-1. Fundhub to $1M a month first. "I don't want to divert yet."
-2. The 60 Minute Offer as an advisory that starts from what already sells in the market.
-3. Yesdoor.
-4. A marketing consulting firm.
-5. Trading, once Fundhub hits the big figure: about an hour a day, on prop-firm capital.
-6. Other projects after that.
+Three companies, and maybe a fourth later.
 
-Note: FH Consulting already does marketing consulting, and it is where the 60 Minute Offer would sell. Steps 2 and 4 can run as one company.
+1. Fundhub to $1M a month first. "I don't want to divert yet."
+2. The 60 Minute Offer. It gets people's companies off the ground, and it gives Chris a pulse on the other industries he wants to be in. The marketing consulting work lives here.
+3. Yesdoor.
+4. Maybe one more company, picked later from what the 60 Minute Offer shows.
+5. Trading, once Fundhub hits the big figure: about an hour a day, on prop-firm capital.
 
 ## Recommendation
 
