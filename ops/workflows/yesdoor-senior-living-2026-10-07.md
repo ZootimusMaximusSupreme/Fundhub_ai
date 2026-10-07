@@ -17,9 +17,9 @@ Chris said "go" — this session runs lanes 1–3 with research agents, and runs
 | Lane | What | Owner | Status |
 |---|---|---|---|
 | 1 | The law: state referral-agency rules, Medicaid limits, Medicaid planning vs practicing law | this session (agent) | done |
-| 2 | Market + money check: launch city, communities, fees, competitors, data for the check | this session (agent) | claimed |
+| 2 | Market + money check: launch city, communities, fees, competitors, data for the check | this session (agent) | done |
 | 3 | Yesdoor reuse map (read-only) | this session (agent) | done |
-| 4 | Workflow questions to Chris, then the spec | this session | claimed — questions now, spec waits on 1–3 |
+| 4 | Workflow questions to Chris, then the spec | this session | draft workflow up — waiting on Chris |
 
 ## Lane 1 — the law (done)
 
@@ -48,9 +48,25 @@ No specific law found in most other states (MN, IL, NY and others). VA has bills
 
 **Launch states:** (1) Arizona — Yesdoor's home market, clear 2026 law, no license, no cap. (2) Texas — no license, clear rules, big market. (3) Florida — no registration, statute allows private-pay fees, but a Medicaid slip is a felony.
 
-## Lane 2 — market and money check
+## Lane 2 — market and money check (done)
 
-_pending_
+**Launch: Phoenix.** Second: Las Vegas (most empty units — 87.0% occupancy, among the lowest 3, [NIC MAP](https://www.nicmap.com/news/senior-living-occupancy-grows-amid-construction-slowdown-limiting-options-for-older-adults/)).
+- Maricopa + Pinal: **213 assisted living centers (20,222 beds) + 1,320 small homes of 10 beds or fewer (10,539 beds)**. 192 centers and 1,304 homes are licensed for memory care ([ADHS data](https://services6.arcgis.com/clPWQMwZfdWn4MQZ/ArcGIS/rest/services/Public_Access_Features_WFL1/FeatureServer/11)). Small homes have no sales team.
+- Arizona median assisted living: **$6,370/month** (US $5,900) ([CareScout 2024](https://assets.carescout.com/55da049c1f/282102.pdf)).
+
+**Fees:** A Place for Mom charges the community first month's rent and care; in WA about $3,500 per move-in ([ElderLawAnswers](https://attorney.elderlawanswers.com/elder-care-referral-services-attracting-increased-scrutiny-9119)). Industry: up to 100% of the first month. Agreements are per agency; communities push to leave care charges out and to put an expiry on each lead ([SHN](https://seniorhousingnews.com/2017/03/20/ace-contract-process-senior-housing-referral-agencies/)). "Who referred first": Caring.com gives the community 5 business days to flag a duplicate ([Caring.com](https://partners.caring.com/avoid-paying-multiple-referral-sources-senior-living-lead/)).
+
+**Competitors (correction to round 1):** **SilverAssist** owns Caring.com (bought 2026-01-12), Oasis Senior Advisors (130 franchises), ElderLife Financial (bridge loans) and AidandAttendance.com — referral bundled with bridge loans and VA help ([Pulse 2.0](https://pulse2.com/silverassist-acquires-caring-com-to-expand-national-senior-housing-referral-network/)). CarePatrol (HQ Gilbert, AZ, 153 offices) and Assisted Living Locators (HQ Scottsdale) are local franchises. Olera (NIH-funded) is building AI family profiles that surface benefits; beta 2026. **No public sign any of them runs an affordability + acceptance check before referring.**
+Lead sites convert badly: Sonida got 11,000 leads from one site in 2024 and 200 move-ins (~1.8%) ([SHN](https://seniorhousingnews.com/?p=50237)).
+
+**Data for the money check:**
+- Arizona care levels: supervisory, personal, directed (memory) ([ADHS](https://hsapps.azdhs.gov/ls/sod/alprovtypes.aspx)).
+- VA Aid & Attendance (from 2025-12-01): veteran $2,424/mo; with spouse $2,874/mo; surviving spouse $1,558/mo; net worth limit $163,699 ([VA](https://www.va.gov/pension/veterans-pension-rates/)). Decisions now ~57–73 days.
+- Phoenix homes: 78 days on market, median $483,000 ([AZ Big Media](https://azbigmedia.com/real-estate/metro-phoenix-home-sales-gain-momentum-as-fall-approaches/)).
+- Bridge loans: ElderLife $5k–$500k, up to 12 months, interest-only, paid to 3,500+ communities; rate not published ([ElderLife](https://www.elderlifefinancial.com/bridge-loans/)). Owned by the competitor above.
+- ALTCS (Arizona Medicaid long-term care): income cap $2,982/mo, assets under $2,000, 5-year look-back, 60–90 days to decide ([Jackson White](https://www.jacksonwhitelaw.com/altcs/altcs-eligibility/)). How many communities accept it: not found.
+- Speed: **56% of assisted living and 62% of memory care move-ins happen within 30 days of the first inquiry** ([Ziegler/Aline](https://www.ziegler.com/media/dtten4z3/sl_znews_090423.pdf)).
+- Long-term-care insurance daily benefit norms today: not found.
 
 ## Lane 3 — Yesdoor reuse map (done)
 
@@ -80,3 +96,20 @@ Read from `origin/yesdoor/i1` (PR #55) and `origin/yesdoor-3m-scale`. Verdicts a
 | # | Question | Answer | Set by |
 |---|---|---|---|
 | 1 | After the free check, who walks the family to a move-in? | **Online first, advisor after** — the family runs the check and sees matches online; an advisor calls the ones ready to move and books tours (same concierge model as Yesdoor apartments) | Agent default — Chris said "idk" (2026-10-07). Change any time |
+
+### Draft workflow — defaults from the research (Chris marks what is wrong)
+
+Nothing below is decided until Chris says so. Each line is a default.
+
+1. **Where:** Phoenix first (Yesdoor's home market). Las Vegas next (needs Nevada registration).
+2. **Who:** the shopper is usually the adult child; the resident is the parent (or a couple). One search, several people, one login each.
+3. **The free check (about 3 minutes):** who is moving, care level (Arizona's three: supervisory, personal, memory care), area, how soon. Then money: monthly income, savings, VA service (yes/no), long-term-care insurance, a house (value, selling or not).
+4. **No credit pull by default.** Communities decide on care needs and money runway, not credit score. A soft pull happens only if the family wants a bridge loan, with the senior's e-signature or a copy of a financial power of attorney. Credit data never goes to a community — only our answer.
+5. **The answer:** a monthly budget, how many years the money lasts, and flags — "VA benefit likely (+$2,424/mo)", "Medicaid (ALTCS) likely", "bridge loan until the house sells". Then the communities that fit the care level and budget, each marked approved / likely / no / unknown, with the full price (base rate + care fee + community fee).
+6. **Arizona disclosure:** before any referral the family e-signs the state-required disclosure (who pays us, how much, any business ties). The community cannot pay without it.
+7. **Advisor:** online first; an advisor calls families who are ready to move and books tours.
+8. **Community steps:** tour → the community's own care assessment → accepted or declined → deposit or room hold → (waiting on house sale, if any) → move-in. A "we said yes, they said no" is counted against the community's rules, same as Yesdoor.
+9. **Getting paid:** the community tells us of the move-in (Arizona: within 14 days). We invoice; the fee is set in each community's agreement (flat or % of first month). Fee is earned at move-in.
+10. **Hard stops, built into the database:** no fee ever on a Medicaid (ALTCS) resident — that is a felony in Arizona. Staff never hold a power of attorney. No Medicaid planning advice — Medicaid families go to an elder-law attorney, VA claims go to an accredited veterans service officer (free), house questions go to a realtor.
+11. **Refund:** prorated refund to the community if the resident leaves, dies or goes to hospital within 30 days of move-in (required in Washington; offered everywhere as a trust point).
+12. **Before launch:** two insurance policies ($1M/$3M general and professional liability), background checks on every advisor, and the exact Arizona disclosure wording.
