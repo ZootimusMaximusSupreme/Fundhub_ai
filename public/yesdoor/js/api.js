@@ -330,6 +330,14 @@
       toReal: function (query, body) { return { body: { renterToken: getToken("renter") || body.renterToken, buildingId: body.buildingId, listingId: body.listingId, startsAt: body.startsAt } }; }
     });
   };
+  /* The agreement signing page (I2). The signed link is the credential: id, exp and sig
+     go to the read, and to the signing call with the typed name. No session. */
+  api.agreement = function (q) {
+    return call("GET", "public/agreement", { id: q.id, exp: q.exp, sig: q.sig });
+  };
+  api.signAgreement = function (b) {
+    return call("POST", "webhooks/esign", null, { id: b.id, exp: b.exp, sig: b.sig, signerName: b.signerName });
+  };
   api.authLink = function (b) { return call("POST", "auth/link", null, b, { toReal: function (q, body) { return { body: { email: body.email } }; } }); };
   // Real mode POSTs the token (a mail scanner that follows every link cannot spend it
   // by GET) and keeps the session for that portal. Demo mode reads its sample session.
@@ -531,6 +539,21 @@
       toReal: function (q, body) { return { body: { partyKind: "building", partyId: body.buildingId, action: body.action || "send" } }; }
     });
   };
+  /* Brokers and logins (I2). The real API nests the licence; the page reads it flat. */
+  function brokerFlat(b) {
+    var lic = b.licence || {};
+    return { id: b.id, name: b.name, company: b.company, email: b.email, plan: b.plan, splitPercent: b.splitPercent,
+      licenceState: lic.state || b.licenceState || null, licenceNumber: lic.number || b.licenceNumber || null,
+      licenceVerified: lic.verifiedAt ? true : !!b.licenceVerified, trackingCode: b.trackingCode, status: b.status, hasAccount: !!b.hasAccount };
+  }
+  api.staffBrokers = function () {
+    return call("GET", "staff/brokers", null, null, { fromReal: function (d) { return { brokers: (d.brokers || []).map(brokerFlat) }; } });
+  };
+  api.staffAddBroker = function (b) {
+    return call("POST", "staff/brokers", null, b, { fromReal: function (d) { return { broker: brokerFlat(d.broker) }; } });
+  };
+  // {kind: "building_user", email, buildingIds, role?} or {kind: "broker", brokerId, email?}
+  api.staffCreateAccount = function (b) { return call("POST", "staff/accounts", null, b); };
   api.staffLedger = function () {
     return call("GET", "staff/ledger", null, null, {
       fromReal: function (d) {

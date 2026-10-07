@@ -857,6 +857,82 @@
         b.status = "agreement_sent"; b.agreementStatus = "sent"; event(db, "agreement.sent", "building", b.id); save();
         return ok({ buildingId: b.id, status: b.status, agreementStatus: b.agreementStatus });
       }
+      /* Brokers and logins (I2) */
+      case "GET staff/brokers": {
+        s = needSession("staff");
+        if (!s) return err(401, "Sign in with your staff account.");
+        return ok({ brokers: db.brokers.map(function (k) {
+          return { id: k.id, name: k.name, company: k.company, email: k.email, plan: k.plan, splitPercent: k.splitPercent, licenceState: k.licenceState, licenceNumber: k.licenceNumber || null,
+            licenceVerified: !!k.licenceVerified, trackingCode: k.trackingCode, status: k.status, hasAccount: k.id === "brk-1" || !!k.hasAccount };
+        }) });
+      }
+      case "POST staff/brokers": {
+        s = needSession("staff");
+        if (!s) return err(401, "Sign in with your staff account.");
+        if (!String(body.name || "").trim()) return err(400, "Add the broker's name.");
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(body.email || ""))) return err(400, "The broker's email address does not look right.");
+        var bplan = body.plan || "split";
+        if (["split", "software"].indexOf(bplan) === -1) return err(400, "The plan must be split or software.");
+        if (bplan === "split" && (!body.licenceState || !String(body.licenceNumber || "").trim())) return err(400, "A split partner needs a licence state and licence number.");
+        if (body.licenceState && ["AZ", "CA", "FL"].indexOf(String(body.licenceState).toUpperCase()) === -1) return err(400, "The licence state must be one of: AZ, CA, FL.");
+        if (body.licenceVerified && (!body.licenceState || !String(body.licenceNumber || "").trim())) return err(400, "Add the licence state and number before marking the licence verified.");
+        var bem = String(body.email).trim().toLowerCase();
+        if (db.brokers.some(function (k) { return String(k.email).toLowerCase() === bem; })) return err(409, "A broker with that email address is already on the list.");
+        db.counters.brk = (db.counters.brk || 0) + 1;
+        var nk = { id: "brk-new-" + db.counters.brk, name: String(body.name).trim(), company: String(body.company || "").trim() || null, email: bem,
+          licenceState: body.licenceState ? String(body.licenceState).toUpperCase() : null, licenceNumber: String(body.licenceNumber || "").trim() || null, licenceVerified: !!body.licenceVerified,
+          plan: bplan, splitPercent: bplan === "split" ? (body.splitPercent === undefined || body.splitPercent === null || body.splitPercent === "" ? 25 : Number(body.splitPercent)) : null,
+          trackingCode: "YD-" + String(700000 + db.counters.brk * 37), status: "applied", hasAccount: false };
+        db.brokers.push(nk); event(db, "broker.created", "broker", nk.id); save();
+        return ok({ broker: clone(nk) });
+      }
+      case "POST staff/accounts": {
+        s = needSession("staff");
+        if (!s) return err(401, "Sign in with your staff account.");
+        if (["building_user", "broker"].indexOf(body.kind) === -1) return err(400, "Choose the kind of login: building_user or broker.");
+        db.accounts = db.accounts || [];
+        var aem = String(body.email || "").trim().toLowerCase();
+        var abld = [];
+        if (body.kind === "building_user") {
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(aem)) return err(400, "Add the email address this person signs in with.");
+          if (!Array.isArray(body.buildingIds) || !body.buildingIds.length) return err(400, "Choose at least one building for this login.");
+          for (i = 0; i < body.buildingIds.length; i++) {
+            b = byId(db.buildings, body.buildingIds[i]);
+            if (!b) return err(404, "We could not find one of those buildings.");
+            abld.push({ id: b.id, name: b.name, role: body.role || "leasing" });
+          }
+        } else {
+          var abk = byId(db.brokers, body.brokerId);
+          if (!abk) return err(404, "We could not find that broker.");
+          if (abk.id === "brk-1" || abk.hasAccount) return err(409, "That broker already has a login.");
+          aem = aem || String(abk.email).toLowerCase();
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(aem)) return err(400, "The email address does not look right.");
+        }
+        if (db.accounts.some(function (x) { return x.email === aem; })) return err(409, "That email address already has a Yesdoor login.");
+        db.counters.acct = (db.counters.acct || 0) + 1;
+        var na = { id: "acct-new-" + db.counters.acct, kind: body.kind, email: aem, status: "active", brokerId: body.kind === "broker" ? body.brokerId : null, buildings: abld };
+        db.accounts.push(na);
+        if (body.kind === "broker") byId(db.brokers, body.brokerId).hasAccount = true;
+        event(db, "account.created", "account", na.id, { kind: na.kind }); save();
+        return ok({ account: clone(na), signIn: { queued: true, expiresMinutes: 15 } });
+      }
+      /* The agreement signing page (I2): a sample link works in demo mode. */
+      case "GET public/agreement": {
+        if (!q.id || !q.exp || !q.sig) return err(404, "That signing link is not valid.");
+        var sg = db.signedAgreements || {};
+        return ok({ agreement: { id: q.id, kind: "building_fee", partyKind: "building", partyName: "Palo Verde Flats", status: sg[q.id] ? "signed" : "sent", signedAt: sg[q.id] || null,
+          expiresAt: iso(Date.now() + 30 * DAY),
+          terms: { feeKind: "percent_first_month", feePercent: 50, feeFlatCents: null, refundDays: 60, paymentTermsDays: 30 } } });
+      }
+      case "POST webhooks/esign": {
+        if (!body.url && !(body.id && body.exp && body.sig)) return err(404, "That signing link is not valid.");
+        if (!String(body.signerName || "").trim()) return err(400, "Type your full name to sign.");
+        db.signedAgreements = db.signedAgreements || {};
+        var sid = body.id || "demo-agreement";
+        var already = !!db.signedAgreements[sid];
+        db.signedAgreements[sid] = db.signedAgreements[sid] || iso(Date.now()); save();
+        return ok({ status: "signed", agreementId: sid, alreadySigned: already });
+      }
       case "GET staff/ledger": {
         s = needSession("staff");
         if (!s) return err(401, "Sign in with your staff account.");

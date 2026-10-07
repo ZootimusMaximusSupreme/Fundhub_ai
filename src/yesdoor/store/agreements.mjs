@@ -14,7 +14,8 @@
 // The signer is not signed in and never will be: the HMAC link is the credential,
 // so every bad link (forged, expired, unknown id) answers the same 404.
 
-import { YdError } from "../http.mjs";
+import { YdError, isUuid } from "../http.mjs";
+import { verifyAgreementRequest } from "../agreements/signed-link.mjs";
 import { withTransaction } from "../tx.mjs";
 import { actorOf, queueOutbox, recordEvent, setActor } from "../events.mjs";
 import { createSigningLink, completeSigning, SANDBOX } from "../providers/esign-sandbox.mjs";
@@ -298,5 +299,48 @@ export async function completeSigningByLink(db, { orgId, url, signerName, signer
     });
     return { ok: true, status: "signed", alreadySigned: false, agreementId: a.id };
   });
+}
+
+/* ── the signing page's read ──────────────────────────────────────────── */
+
+const num = (v) => (v === null || v === undefined ? null : Number(v));
+
+/** The frozen terms as the page shows them. Missing numbers stay null (unknown is not 0). */
+function termsForPage(kind, t) {
+  const terms = t && typeof t === "object" ? t : {};
+  if (kind === "broker_partner") {
+    return { plan: terms.plan ?? null, splitPercent: num(terms.split_percent) };
+  }
+  return {
+    feeKind: terms.fee_kind ?? null, feePercent: num(terms.fee_percent), feeFlatCents: num(terms.fee_flat_cents),
+    refundDays: num(terms.refund_days), paymentTermsDays: num(terms.payment_terms_days)
+  };
+}
+
+/**
+ * GET public/agreement. The signed link is the credential, exactly as for signing
+ * (completeSigningByLink): a bad, expired or forged link, an unknown agreement, another
+ * company's agreement and a draft that was never sent are ALL the same `null`, so this
+ * door cannot be used to find out which agreements exist. It changes nothing.
+ *
+ * Returns null, or { id, kind, partyKind, partyName, status, signedAt, expiresAt, sandbox, terms }.
+ * `status` is sent | signed | void; a void agreement shows no terms (there is nothing left
+ * to sign). Terms only: no signer name, no address, no email, no ids beyond the agreement's own.
+ */
+export async function readAgreementForSigning(db, { orgId, url, now = Date.now }) {
+  const check = verifyAgreementRequest(url, { now });
+  if (!check.valid || !isUuid(check.agreementId)) return null;
+  const a = (await db.query(
+    `SELECT ${AGREEMENT_COLS} FROM yd_agreements WHERE id = $1 AND org_id = $2`, [check.agreementId, orgId])).rows[0];
+  if (!a || a.status === "draft") return null;
+  const party = (await db.query(
+    `SELECT name FROM ${{ company: "yd_companies", building: "yd_buildings", broker: "yd_brokers" }[a.party_kind]}
+      WHERE id = $1 AND org_id = $2`, [a.party_id, orgId])).rows[0];
+  if (!party) return null;
+  return {
+    id: a.id, kind: a.kind, partyKind: a.party_kind, partyName: party.name, status: a.status,
+    signedAt: a.signed_at, expiresAt: new Date(check.expiresAt * 1000).toISOString(), sandbox: SANDBOX,
+    terms: a.status === "void" ? null : termsForPage(a.kind, a.terms)
+  };
 }
 

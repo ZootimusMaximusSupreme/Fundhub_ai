@@ -302,6 +302,7 @@ import ydAuthLogout from "../../api/yesdoor/auth/logout.mjs";
 import ydPublicListings from "../../api/yesdoor/public/listings.mjs";
 import ydPublicListing from "../../api/yesdoor/public/listing.mjs";
 import ydPublicLead from "../../api/yesdoor/public/lead.mjs";
+import ydPublicAgreement from "../../api/yesdoor/public/agreement.mjs";
 import ydPublicPrescreen from "../../api/yesdoor/public/prescreen.mjs";
 import ydMe from "../../api/yesdoor/me.mjs";
 import ydMeIncome from "../../api/yesdoor/me/income.mjs";
@@ -752,6 +753,7 @@ export const ROUTES = {
   "yesdoor/public/listings": ydPublicListings,
   "yesdoor/public/listing": ydPublicListing,
   "yesdoor/public/lead": ydPublicLead,
+  "yesdoor/public/agreement": ydPublicAgreement,
   "yesdoor/public/prescreen": ydPublicPrescreen,
   "yesdoor/me": ydMe,
   "yesdoor/me/income": ydMeIncome,
