@@ -26,6 +26,7 @@ Source docs (read these, don't re-research):
 | M1 | Marketing: 4 avatars (prime renter, Second Chance renter, leasing manager/regional VP, broker), then the marketing-machine copy for Yesdoor | Sonnet | agent | avatars done — waiting on Chris | — |
 | F1 | Front end: Zillow-style site, Arizona sample listings, lead funnel, renter / building / broker logins | Sonnet | yesdoor/f1-frontend | done (reconciled in I1) | B3, B4 |
 | I1 | Integration: merge B3b + B4, one transaction and event helper, front end on the real API, proof | Opus | yesdoor/i1 | done (not merged to main, not shipped) | B3, B4, F1 |
+| I2 | Close the I1 gaps: seeded criminal keys, staff-made brokers and logins, sign-out, the agreement signing page, the matcher's Second Chance rule | Opus | yesdoor/i2-gaps (off yesdoor/i1) | done (not merged to main, not shipped) | I1 |
 
 Runs at the same time: **B1 and M1** (no shared files). After B2: **B3 and B4** in parallel. F1 is last.
 
@@ -249,16 +250,45 @@ Manifest: added the 4 files above and this section. No code, routes or journeys 
 4. The whole path: `DATABASE_URL=<scratch owner> YD_STAFF_PASSWORD=... CHROME=<chromium> node docs/yesdoor-screens/click-path.mjs` on a fresh scratch database.
 Run every command with production variables removed (`env -i PATH="$PATH" HOME="$HOME" ...`).
 
+## I2
+
+**Done** (branch `yesdoor/i2-gaps`, off `yesdoor/i1`; not merged to main, not shipped, no PR). Scratch Postgres 16 on 127.0.0.1:55436 only; every command ran in a wiped environment (`env -i`), so no production variable was in reach. The scratch cluster was stopped at the end.
+
+### What changed (manifest)
+1. **Seeded criminal keys.** `db/seed/297_yesdoor_criminal_policy_keys.sql` (new; `db/migrate.mjs` records applied seeds, and rules are versioned and never edited, so a new file adds each sample building's NEXT rules version with `felony` to `felony_property`, `misdemeanor` to `misdemeanor_nonviolent`, `violent` to `felony_violent`, values kept). `CRIMINAL_CATEGORIES` exported from `src/yesdoor/match/rules.mjs`. `src/http/yesdoor-seed.pg.test.mjs` (6 tests): every key of every latest policy is a known category; a seeded policy is applied (never "unknown"); 297 is safe to run again; version 1 kept. `db/expected-migrations.mjs` regenerated (340). `yesdoor-core.pg.test.mjs` seed test now expects two versions.
+2. **Staff doors and forms.** `api/yesdoor/staff/brokers.mjs` (GET every staff role; POST ops, sales) and `api/yesdoor/staff/accounts.mjs` (POST ops only: new `YD_ROLES.accounts`), `src/yesdoor/store/people-writes.mjs`; `issueMagicLink` split out of `requestMagicLink` (`src/yesdoor/auth/magic-link.mjs`) so the invitation is the same single-use link, written in the same transaction as the account. Routed in `netlify/functions/api.mjs`; pulse: `staff/brokers` is monitored, `staff/accounts` is in `ALLOWED_UNMONITORED` with a reason. `src/http/yesdoor-people.pg.test.mjs` (23 tests): wrong principal, another company's building or broker (same 404 as a missing one, nothing half-created), duplicate email (any casing, against renter and broker logins too, other company may reuse), duplicate broker login, split partner needs licence details, tracking code minted, the emailed link signs the new person in once and shows only their buildings, the link is never in a response. Desk: "Brokers and logins" tab in `public/yesdoor/js/pages/staff.js` (Add a broker, Add a building login, Give a login), `api.js` calls, demo handlers in `demo-data.js`.
+3. **Sign-out.** `api/yesdoor/auth/logout.mjs` (`POST yesdoor/auth/logout`): revokes the `yd_sessions` row named by the request, other sessions of the account kept, always a 200, staff token matches nothing and keeps working. `public/yesdoor/js/api.js` logout calls it (staff path unchanged). `src/http/yesdoor-logout.pg.test.mjs` (8 tests). Pulse reason added.
+4. **Agreement signing page.** `public/yesdoor/agreement.html` + `js/pages/agreement.js`; `api/yesdoor/public/agreement.mjs` and `readAgreementForSigning` in `src/yesdoor/store/agreements.mjs`: terms only; one 404 for every bad link. Pulse: unmonitored reason for the GET, and a `public_static` row for the page. `src/http/yesdoor-agreement-page.pg.test.mjs` (9 tests).
+5. **Matcher.** `evaluateSecondChance` (`src/yesdoor/match/rules.mjs`) used by `matchBuilding`; `store/matching.mjs` now selects and passes `accepts_second_chance`. Unit tests in `match.test.mjs` and `rules.test.mjs`.
+6. **Journeys.** `docs/journeys/yesdoor-flow.md` (sections 2, 11, 15 and new 21), generated actual journeys and README regenerated, changelog line added.
+7. **Click path.** `docs/yesdoor-screens/click-path.mjs` extended (below), screenshots and `click-path-result.txt` replaced.
+
+### Proof (scratch database, as `fundhub_app`, 0 skipped)
+- Yesdoor pure tests: 492/492. Yesdoor pg suites (17 files): 489/489 on a FRESH scratch database, run at default concurrency and twice at concurrency 1.
+- Guards (routes, pulse registry, heartbeats, auth-gate, cross-org-guard, workflows index, journey runner, health-migrations, journeys and diagrams generators, daily pulse, scorecard): 133/133; `pulse/heartbeats.pg` 4/4. `journeys:check` and `diagrams:check` up to date. Boundary, no-transmit and import tests are inside the 492.
+- `npm run lint` clean (2585 files). `npx tsc --noEmit` clean.
+- Click path on `scripts/dev-server.mjs` over a fresh scratch database: 39/39 steps (was 27). New: staff sign in, staff add a broker on the desk, send the partner agreement, the broker signs on the agreement page (refused with no name and no tick, signed with a typed name, broker becomes active, the same link then shows "Signed", a tampered link shows the one "did not work" page), staff give the broker a login, staff give the booked building's leasing office a login and that person signs in with the invitation, then the old hand-inserted broker, broker login and building login are gone from the script; sign-out of the broker, building and renter portals (token worked before, 401 after, session row revoked). Marked screenshots: 39 PNGs in `docs/yesdoor-screens/`.
+
+### How the I2 pieces fit together
+- A broker added by staff starts `applied`. It becomes `active` when the partner agreement is signed and (split plan) the licence is verified. `licenceVerified: true` when adding the broker stamps the time (staff checked it); without it a split broker stays applied after signing. There is no way yet to verify a licence later (see "New in I2").
+- `POST staff/accounts` queues the first sign-in email only. Nothing is sent: the sandbox dispatcher marks it sent.
+
 ## Leftovers
 
-Leftover cards from I1 (found, not fixed; each is its own task):
-- **No door creates building-user or broker logins, and no staff door adds a broker.** `yd_accounts` rows for `building_user` and `broker` are only ever inserted by hand; the click path inserted them on the scratch database.
-- **`/yesdoor/agreement.html` does not exist.** The signing link in the agreement email points there; today an agreement is signed only by calling `POST webhooks/esign`.
-- **Seeded criminal rules never match.** `db/seed/296` writes `criminal_policy` keys `felony`, `misdemeanor`, `violent`; the screenings and the matcher use `felony_violent`, `felony_property`, `misdemeanor_nonviolent`, so a seeded policy is never applied. (The building portal's Rules form writes the matcher's keys.)
-- **No sign-out door.** Sign-out forgets the session in that browser; the session stays valid until it expires.
-- **Tour hours with a midday gap** show as one window (first opening to last closing); a slot inside the gap is refused by the booking door with its message.
-- **Staff Buildings columns the API does not carry:** company tier, leases, pays-on-time (shown as blank, "Not counted yet", "No history").
+Leftover cards from I1 (found, not fixed; each is its own task). **I2 closed the first five (marked below); the last two are still open.**
+- **CLOSED in I2 (staff doors + desk forms).** ~~No door creates building-user or broker logins, and no staff door adds a broker.~~ `POST staff/brokers` and `POST staff/accounts` now exist, with forms on the staff desk ("Brokers and logins" tab). See the I2 section.
+- **CLOSED in I2 (page + read).** ~~`/yesdoor/agreement.html` does not exist.~~ The page, `GET public/agreement` and the pulse row exist; the page signs through `POST webhooks/esign`.
+- **CLOSED in I2 (seed 297).** ~~Seeded criminal rules never match.~~ `db/seed/297` adds each sample building's next rules version with the keys renamed; a Postgres test pins every latest policy to `CRIMINAL_CATEGORIES`.
+- **CLOSED in I2 (`POST auth/logout`).** ~~No sign-out door.~~ Sign-out revokes the session on the server.
+- **CLOSED in I2 (matcher).** ~~`accepts_second_chance` is stored but the matcher does not read it~~ (found while building the I2 gap list; the flow doc carried it as UNVERIFIED). A Second Chance renter at a building that says false is at best `likely`.
+- **Tour hours with a midday gap** show as one window (first opening to last closing); a slot inside the gap is refused by the booking door with its message. (Still open.)
+- **Staff Buildings columns the API does not carry:** company tier, leases, pays-on-time (shown as blank, "Not counted yet", "No history"). (Still open.)
 
+New in I2 (found, not fixed):
+- **No desk button to send a broker's partner agreement.** `POST staff/agreement` takes `partyKind: "broker"`, but the desk only has "Send agreement" on buildings. The click path sends the broker's agreement through the door.
+- **No door to remove a login, move a building user to another building, or verify a broker's licence after the broker was added.** (`licenceVerified` can only be set when the broker is added.)
+- **The invited person's sign-in link lasts 15 minutes** (the same single-use link as any sign-in). A late invitee asks for a new link from the portal page; there is no "resend invitation" button on the desk.
+- **One Postgres test failed once and did not fail again** (`yesdoor-crons.pg.test.mjs`, "an open application whose building now says no produces a staff event", first run on a scratch database that had been used all session). Re-run more than ten times since (alone, with the other files, concurrency 1 and default, a fresh database and the old one): 0 failures. Not explained; recorded, not chased.
 
 **Incident (2026-10-07, found by the parent session):** the cloud shell carries the production `DATABASE_URL` and live vendor keys. Several plain `npm test` runs today ran with them:
 - one by the parent session around 02:xx UTC
