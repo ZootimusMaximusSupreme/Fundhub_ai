@@ -20,7 +20,7 @@ Source docs (read these, don't re-research):
 | # | Unit | Model | Owner | Status | Waits on |
 |---|---|---|---|---|---|
 | B1 | Detailed build spec: entities, states, events, endpoints, integrations, tests, Fundhub modules to copy | Opus | this session | done | — |
-| B2 | Backend 1: database tables and migrations (Yesdoor-prefixed, own org) + read endpoints + tests | Sonnet | yesdoor/b2-database | claimed | B1 |
+| B2 | Backend 1: database tables and migrations (Yesdoor-prefixed, own org) + read endpoints + tests | Sonnet | yesdoor/b2-database | done | B1 |
 | B3 | Backend 2: pre-screen + matching (CRS and Plaid sandbox stubs, rules, risk tiers, approved/likely/no, backups) | Sonnet | open | pending | B2 |
 | B4 | Backend 3: buildings, tours, money (portal API, spreadsheet + listing-feed import, registration emails, invoices, fee ledger, broker ledger, disputes) | Sonnet | open | pending | B2 |
 | M1 | Marketing: 4 avatars (prime renter, Second Chance renter, leasing manager/regional VP, broker), then the marketing-machine copy for Yesdoor | Sonnet | agent | avatars done — waiting on Chris | — |
@@ -96,6 +96,65 @@ Owner notes (2026-10-07): sales runs on about 5 commission-based closers working
 
 ## B2
 
+Status: **done** (branch `yesdoor/b2-database`, not merged, not shipped, no PR opened). Migrations were applied to a scratch Postgres only, never to production.
+
+### What was built
+
+**Migrations** (`npm run migrations:manifest` run; 338 entries)
+- `db/migrations/434_yesdoor_core.sql`: helper `yd_harden()`; `yd_companies`, `yd_buildings`, `yd_brokers`, `yd_renters`, `yd_accounts`, `yd_account_buildings`, `yd_sessions`, `yd_magic_links`, `yd_consents`, `yd_screenings`, `yd_screening_raw`, `yd_income_checks`, `yd_building_rules`, `yd_listings`, `yd_state_rules`, `yd_events`, `yd_outbox`.
+- `db/migrations/435_yesdoor_pipeline.sql`: `yd_agreements`, `yd_matches`, `yd_applications`, `yd_tours`, `yd_disputes`, `yd_touches`; functions `yd_building_is_matchable(uuid)` and `yd_stage_move_ok(from, to)`.
+- `db/migrations/436_yesdoor_money.sql`: `yd_invoices` (+ sequence `yd_invoice_number_seq`), `yd_fee_ledger`, `yd_broker_ledger`, `yd_renter_refunds`; function `yd_fee_move_ok(kind, from, to)`.
+- `db/seed/296_yesdoor_org_and_samples.sql` (the repo runs `db/seed` after migrations): org `yesdoor`; `yd_state_rules` (CA screening-fee cap about $66 flagged approximate, CA background-check notice, AZ "none on file"); Arizona SAMPLE data, all `is_sample = true`: 3 companies, 8 buildings (Phoenix 2, Tempe, Scottsdale, Mesa 2, Chandler 2; 5 standard rules, 3 second-chance), 8 rules versions, 24 listings $1,200 to $2,400 (mean about $1,611). One building has `app_fee_cents = NULL` on purpose (unknown stays NULL). All names are made up; no sample building is `signed`.
+
+**Database guards** (all proved by tests)
+- Every `yd_` table: RLS enabled + forced, `<t>_app_all` policy, `set_updated_at` trigger, DELETE/TRUNCATE revoked from `fundhub_app`. Consents, screenings, raw payloads, income checks, matches, rules, agreements, applications, tours, disputes, events, invoices, both ledgers and renter refunds also carry `fundhub_no_delete()`.
+- Every foreign key between `yd_` tables is composite with `org_id`, so a row can never point at another company's row. The only foreign key into a Fundhub table is `orgs(id)`.
+- First touch on `yd_renters` is write-once (trigger). Open-application cap of 3 (trigger, race-safe: six parallel bookings, exactly three get in). Stage moves only along the spec §3 arrows; each move stamps its timestamp and writes one `yd_events` row `application.<stage>` (creation writes `application.booked`).
+- A building is matchable/bookable only if `signed`/`live` with a signed `building_fee` agreement (its own or its company's), or flagged `is_sample` (demo only).
+- Ledger: amount frozen once not `earned`; refund = new negative row reversing the original in full, once; stamped invoiced/paid/safe times never change; `safe` only `refund_days` after `paid_at`; broker `payable`/`paid` only when the fee is `safe` and the hold has passed, and only for the placement that broker first-touched; a refund voids an unpaid broker share.
+- Spec §5b additions (coordinator, 2026-10-07): `yd_applications.known_prospect_at` + `known_prospect_evidence` (evidence required), `YD_DEFAULTS.registrationValidDays: 90, knownProspectDays: 3`, and `yd_buildings.allows_renter_incentive boolean NOT NULL DEFAULT false`.
+
+**Code**
+- `src/yesdoor/config.mjs`: `YD_DEFAULTS` (spec §9 exactly, frozen; a test compares it to the spec block), plus `YD_AUTH`, `YD_API`, `YD_ROLES`.
+- `src/yesdoor/auth/`: `session.mjs`, `magic-link.mjs` (copied pattern, `yd_` tables, queues into `yd_outbox`), `principal.mjs` (`requireYdStaff` over `requireAuth`+`requireRole`, `requireYdAccount`).
+- `src/yesdoor/store/`: `org.mjs`, `listings.mjs`, `renters.mjs`, `buildings.mjs`, `brokers.mjs`, `staff.mjs`. `src/yesdoor/http.mjs`: helpers.
+- `src/yesdoor/testing/fixture.mjs`: shared pg-test fixture (two fresh orgs per run).
+- `src/yesdoor/boundary.test.mjs`: fails on any import outside the §0 allowlist (also checks `api/yesdoor` imports only `src/yesdoor` and `src/db.mjs`).
+- `scripts/journeys/extract.mjs`: now recognises `requireYdStaff` / `requireYdAccount` (otherwise the generated journeys drew every Yesdoor route as open to anyone). Journeys regenerated (`npm run journeys`).
+
+### Endpoints (all in `ROUTES` and `PULSE_REGISTRY`; no `ALLOWED_UNMONITORED` rows needed)
+- Public: `GET yesdoor/public/listings`, `GET yesdoor/public/listing`.
+- Auth: `POST yesdoor/auth/link`, `GET|POST yesdoor/auth/verify`.
+- Renter: `GET yesdoor/me`.
+- Building user: `GET yesdoor/building/renters`, `/rules`, `/invoices`.
+- Broker: `GET yesdoor/broker/renters`, `/money`, `/link`.
+- Staff (ops/sales/collections, owner always): `GET yesdoor/staff/pipeline`, `/companies`, `/buildings`, `/disputes`, `/scoreboard`. Money (ops/collections/owner): `/ledger`. Credit (ops/owner only): `/renter?id`, `/screening?id`.
+- Every other method on these doors answers 405 with an `allow` header. The POSTs in spec §8 are B3/B4.
+
+### Tests (scratch Postgres 16 + pgvector, as `fundhub_app`, and again as the owner, both 0 skipped)
+- `src/http/yesdoor-core.pg.test.mjs` 104, `yesdoor-public.pg.test.mjs` 11, `yesdoor-auth.pg.test.mjs` 21, `yesdoor-accounts.pg.test.mjs` 21, `yesdoor-staff.pg.test.mjs` 26. Total 183 pass.
+- Pure: `src/yesdoor/boundary.test.mjs` 4, `src/yesdoor/config.test.mjs` 5.
+- Every endpoint test proves: wrong principal 401/403, another org's rows never returned, building/broker (and renter) responses contain no credit keys (deep key scan plus planted marker values).
+
+### For B3 / B4 / F1: things that are not obvious from the spec
+- JSON responses are **camelCase**; money is an integer `*Cents` Number; dates are `YYYY-MM-DD` strings; timestamps are ISO. Query `maxRent` is **whole dollars**; `beds` is an exact match (0 = studio).
+- pg returns `bigint` as a string. The stores convert with `cents()`; do the same in new code.
+- `yd_screenings.consent_id` is **NOT NULL** (and must belong to the same renter): write the consent row first. A finished screening is frozen; a re-check is a new row.
+- A placement must be inserted at `booked`; `registered` needs `registration_sent_at` and `registration_outbox_id` set together (queue the `yd_outbox` row first). Strict §3: `registered -> cancelled` is not an arrow.
+- Set `yd.actor_kind` / `yd.actor_id` with `set_config(..., true)` inside the transaction to put the actor on the automatic stage events. The cap default lives in the setting `yd.max_open_applications` (default 3, matches `YD_DEFAULTS`; a test fails if they drift).
+- One open application per renter per building. One placement fee per application. Refunds reverse in full only.
+- Sample buildings (`is_sample`) pass the matchable check so the demo funnel can run; flip `is_sample` to false when a building really signs.
+- Login link email: `yd_outbox` row, `template_key 'yd-magic-link'`, `context.magic_link.{url, expires_minutes}`, status `queued`. Nothing sends it until the B4 sandbox dispatcher. Link page path: `/yesdoor/login.html?t=<token>` (F1 builds it; it should POST the token to `auth/verify`). Session carriers: `Authorization: Bearer`, `x-session-token`, or cookie `yesdoor_session`.
+- Public endpoints take their company from env `YD_ORG_SLUG` (default `yesdoor`), never from a parameter.
+- Tests cannot clean up (nothing deletes), so each run creates fresh `yesdoor-test-<random>-a/-b` orgs. Harmless on a scratch database.
+
+### Left undone / not in B2
+- All POST writes (B3/B4), the matcher and sandbox providers (B3), crons and heartbeats (none exist yet, so no `INNGEST_JOBS` rows), `webhooks/esign` (B4).
+- **No staff user exists in the `yesdoor` org.** The staff doors need a `staff` row (role owner/ops/...) in org `yesdoor` with a login; creating real logins was not done here.
+- `building/update` and the dispute POSTs are where `known_prospect` becomes an attribution dispute (B4). The 90-day `registrationValidDays` rule is config only; no fee guard in the database for a lease signed after it.
+- Not run: `npm run ship`, any merge, any production migration. `docs/journeys/yesdoor-flow.md` marks the renter-stage and building-status order as UNVERIFIED (the database checks the values, not the order).
+- Process note: this cloud session's shell had a **production** `DATABASE_URL` and live vendor keys in its environment. One `npm test` ran with them before it was caught: see Leftovers.
+
 ## B3
 
 ## B4
@@ -130,3 +189,5 @@ Manifest: added the 4 files above and this section. No code, routes or journeys 
 ## F1
 
 ## Leftovers
+
+- **B2, 2026-10-07: production credentials in the cloud session's shell.** The shell for this task carries the PRODUCTION `DATABASE_URL` (Supabase pooler, as `fundhub_app`) plus live Netlify, Supabase, Commas, Twilio, CRS and other keys. Every Yesdoor database command was given an explicit scratch `DATABASE_URL` (Postgres on 127.0.0.1), but one full `npm test` was started without clearing the environment before this was noticed. What ran: the unit phase only (780 files). It stopped with 15 failures, so the `*.pg.test.mjs` phase never started and the Yesdoor pg tests never ran (production has no `yd_` tables). The 15 are tests that expect no database or no keys: journeys-stale (real, fixed in this branch), push-credit netlify-blobs, CRS_ALLOW_LIVE host check, welcome-video, four in `payment-links-endpoints.test.mjs` (got 502, which means they tried a live Commas checkout call that failed), two default-org message routing checks, the db-handle shape check, the live row-lock catalog check, the app-role superuser guard, and one "pass that cannot run". None of these is a write test; the database ones are read-only catalog or routing reads. Not verified from here: whether any Commas checkout session was created, and whether the stubbed-database tests touched the real pool. Suggested check for whoever owns production: Commas for stray sessions between 07:33 and 07:40 UTC on 2026-10-07, and `orgs` for slugs `yesdoor-test-*` (there should be none). The clean rerun used `env -i` and a scratch database.

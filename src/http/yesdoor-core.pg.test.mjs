@@ -43,6 +43,20 @@ describe("yesdoor schema guards", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
   let fx, A, B, orgA, orgB;
   const q = (sql, params) => db.query(sql, params);
   const one = async (sql, params) => (await q(sql, params)).rows[0];
+  // Run a statement AS the app role. CI runs the main suite as the database owner, so
+  // privilege checks switch to fundhub_app first (SET LOCAL ROLE, rolled back): the
+  // refusal is the privilege check, which comes before any row is touched.
+  const asApp = async (sql, params) => {
+    const client = await pool().connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SET LOCAL ROLE fundhub_app");
+      return await client.query(sql, params);
+    } finally {
+      await client.query("ROLLBACK").catch(() => {});
+      client.release();
+    }
+  };
   let seq = 0;
   const uniq = (p) => `${p}${++seq}-${fx.rand}`;
 
@@ -143,8 +157,13 @@ describe("yesdoor schema guards", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
           assert.equal((await one(`SELECT has_table_privilege('fundhub_app', $1, $2) AS ok`, [`public.${t.relname}`, priv])).ok, false, `${t.relname} still grants ${priv}`);
         }
       }
-      await rejects(q(`DELETE FROM yd_events WHERE org_id = $1`, [orgA]), DENIED);
-      await rejects(q(`TRUNCATE yd_fee_ledger`), DENIED);
+      // Try it AS the app role. CI runs the main suite as the database owner, so the
+      // attempt switches to fundhub_app first (SET LOCAL ROLE, rolled back): the
+      // refusal is the privilege check, which comes before any row is touched.
+      await rejects(asApp(`DELETE FROM yd_events WHERE org_id = $1`, [orgA]), DENIED);
+      await rejects(asApp(`DELETE FROM yd_fee_ledger WHERE org_id = $1`, [orgA]), DENIED);
+      await rejects(asApp(`TRUNCATE yd_fee_ledger`), DENIED);
+      await rejects(asApp(`TRUNCATE yd_events`), DENIED);
     });
 
     test("every table has org_id NOT NULL referencing orgs, an id uuid key, and the updated_at trigger", async () => {
@@ -796,7 +815,7 @@ describe("yesdoor schema guards", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
     test("applications are never deleted, and cancelled ones stay as history", async () => {
       const app = await mkApp(await mkRenter(), await mkBuilding());
       await q(`UPDATE yd_applications SET stage='cancelled' WHERE id=$1`, [app]);
-      await rejects(q(`DELETE FROM yd_applications WHERE id=$1`, [app]), DENIED);
+      await rejects(asApp(`DELETE FROM yd_applications WHERE id=$1`, [app]), DENIED);
       assert.equal((await one(`SELECT stage FROM yd_applications WHERE id=$1`, [app])).stage, "cancelled");
     });
   });
