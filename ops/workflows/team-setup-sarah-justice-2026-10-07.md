@@ -151,17 +151,20 @@ The setter flow is built (the "Josh" AI setter):
 
 - Moved or cancelled ClickFunnels calls may not match the original booking. `src/adapters/clickfunnels.mjs:358-365` saves the booking under the webhook id, not the call id. Already noted in `db/migrations/225_bookings.sql:239-243` and `ops/workflows/cf-calendar-switch-plan-2026-09-22.md`.
 
-## Mac step — paste into one Mac agent session (after PR #57 is merged to main)
+## Mac step — paste into one Mac agent session (PRs #57, #63, #64, #65 are merged to main)
 
 ```
 Repo ~/Fundhub_ai. Follow CLAUDE.md. Do these in order and report each result:
 1. git checkout main && git pull origin main
-2. node --env-file=.env scripts/google-oauth-mint.mjs --calendar --set-netlify
+2. Set the two lead-alert settings (Chris gave the values in chat on 2026-10-07; they never go in the repo):
+   netlify env:set LEAD_ALERT_SMS_TO "<Chris's business cell>" --context production --context deploy-preview --context branch-deploy --secret
+   netlify env:set LEAD_ALERT_EMAIL_TO "<Chris's alert email>" --context production --context deploy-preview --context branch-deploy --secret
+3. node --env-file=.env scripts/google-oauth-mint.mjs --calendar --set-netlify
    (a browser opens: Chris signs in as stanbridgejchris@gmail.com and presses Allow. That is his only step.
     It sets GOOGLE_CALENDAR_OAUTH_TOKEN_JSON on Netlify as a secret, and refuses if that var already exists.)
-3. npm run ship   (one deploy; applies migration 434; confirms /api/health pending 0)
-4. Open https://fundhub.ai/app/calendar.html as a staff login and confirm the "Connect your calendar" box shows.
-5. Write the results on ops/workflows/team-setup-sarah-justice-2026-10-07.md and commit + push.
+4. npm run ship   (one deploy; applies migration 434; confirms /api/health pending 0)
+5. Open https://fundhub.ai/app/calendar.html as a staff login and confirm the "Connect your calendar" box shows.
+6. Write the results on ops/workflows/team-setup-sarah-justice-2026-10-07.md and commit + push.
 If ship says Netlify "Unauthorized", report that error in one line and stop.
 ```
 
