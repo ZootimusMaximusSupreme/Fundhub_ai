@@ -102,11 +102,11 @@ Two patterns to clone:
 
 | Lane | Angle | Status |
 |---|---|---|
-| R1 | Where consumers get denied, stuck or give up (complaints, forums, surveys) | claimed |
-| R2 | Where providers bleed money (acquisition cost, consults that never buy, legal referral fees) | claimed |
-| R3 | Where the tech is missing (funding, startups, journeys still run by phone, fax and paper) | claimed |
-| R4 | Where new rules or new money create millions of new eligibility decisions (2025–2026) | claimed |
-| R5 | Rank what surfaced | pending |
+| R1 | Where consumers get denied, stuck or give up (complaints, forums, surveys) | done |
+| R2 | Where providers bleed money (acquisition cost, consults that never buy, legal referral fees) | done |
+| R3 | Where the tech is missing (funding, startups, journeys still run by phone, fax and paper) | done |
+| R4 | Where new rules or new money create millions of new eligibility decisions (2025–2026) | done |
+| R5 | Rank what surfaced | done |
 
 ## R4 — new rules and new money (done)
 
@@ -158,3 +158,41 @@ Surprises:
 - Fertility is not underserved. Future Family has a $400M financing program.
 - Medicare Advantage extra benefits go unused. Only 54% of enrollees know they have dental or vision coverage.
 - Benefits Data Trust ran data-driven benefits sign-up on grants and shut down in Aug 2024. It had no supply-side payer.
+
+## R1 — where consumers get stuck (done)
+
+Top surfaced: (1) medical collections blocking a mortgage or credit — 15M people, $49B, average $3,100 ([CFPB](https://files.consumerfinance.gov/f/documents/cfpb_recent-changes-medical-collections-on-consumer-credit-reports_2024-03.pdf)); (2) dental implants and full-mouth work — dental is the most-skipped care, 72M adults have no dental insurance ([CareQuest](https://carequest.org/new-report-72-million-adults-in-the-us-lack-dental-insurance-nearly-three-times-the-number-without-health-insurance-2/)), 9.6M went abroad for dental work ([BusinessWire](https://www.businesswire.com/news/home/20260616651388/en/New-Report-Nearly-9.6-Million-Adults-Have-Traveled-Outside-the-US-to-Receive-Dental-Treatment)); (3) vet bills — 52% of pet owners skipped or declined care, 71% because of cost ([PetSmart Charities–Gallup](https://petsmartcharities.org/press-releases/new-study-finds-more-than-half-of-u-s-pet-parents-skip-or-decline-needed-veterinary-care)); (4) senior living and the Medicaid five-year look-back; (5) getting paid to care for a family member — 600k+ on waitlists; (6) IVF; (7) Medicaid work rules — 69% of the 25M dropped in the last cleanup lost coverage over paperwork ([KFF](https://www.kff.org/medicaid/issue-brief/medicaid-enrollment-and-unwinding-tracker/)); (8) Medicare Savings Program — 6.6M eligible but not enrolled ([NCOA](https://ncoa.org/article/how-one-68-year-old-found-more-than-7000-dollars-in-life-changing-benefits)); (9) bariatric readiness; (10) disability denials; (11) GLP-1; (12) insurance appeals.
+
+## R2 — where providers lose money (done)
+
+Top surfaced: (1) full-arch implants — the deal dies at the financing application; one-third of offices approve under 59% of financing applicants ([DrBicuspid](https://www.drbicuspid.com/dental-practice/article/15378707/is-it-time-to-offer-more-financing-options-to-dental-patients)); one practice went from 50% to 95% acceptance with a higher-approval lender ([Sunbit](https://sunbit.com/knowledge-center/dental/convert-treatment-plans/)); practices budget up to ~$3k of marketing per arch sold ([Delmain](https://delmain.co/blog/dental-implant-marketing-report)); (2) assisted living — $3,500–12,000 per move-in through referral agencies ([Webtonic](https://www.webtonic.io/industry/senior-living)); (3) IVF; (4) cosmetic surgery ($610 per patient, the highest of 18 specialties); (5) addiction (EKRA caps it); (6) clinical trials; (7) hearing aids — only 2.4% of Medicare Advantage members buy aids in a year; (8) vet; (9) private-duty home care ($14,830 lifetime value); (10) Medicare Advantage; (11) TMS.
+Surprise: CareCredit dental and cosmetic volume fell in 2025 after Synchrony tightened credit ([10-K](https://www.sec.gov/Archives/edgar/data/1601712/000160171226000006/syf-20251231.htm)). More people declined means more people who need "get approved, then go".
+
+## R5 — final ranking (done)
+
+How many of the four angles each niche surfaced in, without being given a list:
+
+| Niche | Stuck | Lose money | Tech gap | New rules | Count |
+|---|---|---|---|---|---|
+| Senior living / Medicaid long-term care spend-down | ✓ | ✓ | ✓ | ✓ | 4 |
+| Dental implants / full-mouth | ✓ | ✓ | ✓ (dental travel) | ✓ (out-of-pocket financing) | 4 |
+| Medicaid work requirements | ✓ | | ✓ | ✓ | 3 |
+| Medical collections / charity care | ✓ | | ✓ | ✓ | 3 |
+| Paid family caregiving / home care | ✓ | ✓ | ✓ | | 3 |
+| Medicare Savings Program / Extra Help | ✓ | ✓ (MA) | ✓ | | 3 |
+| Vet bills | ✓ | ✓ | | | 2 |
+| IVF | ✓ | ✓ | | | 2 |
+| Bariatric readiness | ✓ | | ✓ | | 2 |
+| Clinical trials | | ✓ | ✓ | | 2 |
+| GLP-1 | ✓ | | | ✓ | 2 |
+
+Ranking (who pays legally × Fundhub reuse × size × weak competition):
+
+1. **Full-arch dental implants — "get approved, then get your teeth."** Free soft pull → which lender approves you → matched implant center. Declined → credit-fix program → monthly re-pull → "ready" → handed to the center. That is Fundhub + Capital Blueprint with a new label. $15k–38k per arch. Paid by: flat fee from centers + lender money. Avoid per-patient fees (FL, TX, CA, NY, OR).
+2. **Senior living + Medicaid long-term care spend-down.** Free affordability check (income, assets, VA, long-term-care policy, soft pull for bridge loans) → which communities fit → move-in. The community pays $3.5k–12k per move-in (private pay only). The paid program is the spend-down/look-back plan, which families now pay a lawyer about $10k for. Blocker: Medicaid beds fall under the federal anti-kickback law; planning advice can cross into practicing law.
+3. **Medical collections → mortgage-ready.** 15M people, $49B. Fundhub's repair arm already does the letters; add the medical rules (paid, under $500, under 1 year, 15 ban states plus DC) and the charity-care check. Fastest to launch. Consumer pays after the work is done (CROA). A mortgage lender cannot pay for the referral (RESPA §8).
+4. **Vet bills (surprise).** No health-privacy law, no anti-kickback law. 52% of owners skip care. Lenders pay (Scratchpay approves 81% of fair-credit applicants). Catch: the decision is made in hours at the clinic.
+
+Big but slow: **Medicaid work rules** (18.5M people, starts Jan 1, 2027). The payers are Medicaid health plans and states, on long contract cycles. Fortuna Health already raised $18M.
+Off the list: addiction (crime), VA claims (illegal to charge), disability (Atticus), therapy (Headway), fertility financing (Future Family), clinical trials (medical gate), appeals (free competitors).
+Caveat: all four agents hit the shared web-search cap. "Not found" cells may exist.
