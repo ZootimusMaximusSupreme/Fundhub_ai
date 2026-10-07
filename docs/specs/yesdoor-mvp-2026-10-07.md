@@ -92,9 +92,17 @@ The renter portal holds their status, bookings and results. Upsells plug in late
 - Income is verified, not typed. The renter links a bank account (Plaid) or uploads bank statements. Fake paystubs are common, especially from self-employed renters.
 - Reuse: Fundhub already has Plaid and income tools in `src/banking/` (`plaid.mjs`, `recurring.mjs` for repeat deposits, `cashflow.mjs`, `import.mjs` for statements).
 - Result shown to the renter: "Approved up to $X rent," from verified income plus credit plus background. Buildings see "income verified" on every Yesdoor renter.
-- Two lanes, one engine (draft):
-  - **Yesdoor Verified:** prime renters.
-  - **Yesdoor Second Chance:** renters with credit or eviction problems.
+- Two lanes, one engine (owner-approved 2026-10-07):
+  - **Yesdoor Verified (prime):** sold on speed and deals.
+    1. Verify once, apply anywhere.
+    2. Application fee waived by buildings for verified renters.
+    3. First pick of specials and units.
+    4. Fast tour booking, including evenings and weekends.
+    5. Move-in reward (check each state's rules first).
+  - **Yesdoor Second Chance:** renters with credit or eviction problems. Sold on approval, with the back end behind it (denial help, repair, lawyers). Sign second-chance buildings and buildings with empty units first.
+  - Same building contracts and tracking. Only the ads and the promise change.
+  - Market note (owner, 2026-10-07): most demand skews subprime, like credit repair. The building pays, so renter spending power matters only for the back end. Track 60-day refunds from week one.
+  - Open: launch both lanes together, or Second Chance first.
 
 ## 8. Brand
 
