@@ -146,10 +146,10 @@ the law in Arizona, California and Florida allows, and every legal way to get pa
 |---|---|---|
 | L1 | Senior living (assisted living, memory care), independent living / 55+, skilled nursing | done |
 | L2 | Home care (private pay), home health, hospice | done |
-| L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | claimed (agent) |
+| L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | done |
 | L4 | Creative ways to get paid across all lines (who else pays besides the provider) | done |
 | L6 | Big referral opportunities, any industry: supplier legally pays $1,000+ per placement (Chris: "find big referral opps") | done |
-| L5 | Rank lines and payment models | pending (this session) |
+| L5 | Rank lines and payment models | done |
 
 ## L4 — creative ways to get paid (done)
 
@@ -211,3 +211,36 @@ Closed: health referrals in FL (§817.505), EKRA lines, CA B&P 650; colleges on 
 
 Other ways to earn on these lines: flat fee meeting the federal referral-services safe harbor (same for every place, cost-based, five family disclosures — [42 CFR 1001.952(f)](https://www.ecfr.gov/current/title-42/chapter-V/subchapter-B/part-1001/subpart-C/section-1001.952)); per-click or per-tour-booking fee at fair market value (OIG AO 19-04, 23-04); family-paid concierge (AZ yes); employer benefit (all three); real estate license for independent living; be the licensed operator.
 Florida caution: §817.505(3)(i) forbids steering and "assessments of illness" — Yesdoor's care-needs check and "who says yes" match press on that line.
+
+## L3 — behavioral health (done)
+
+**Schena correction:** the 2025 Ninth Circuit ruling ([opinion](https://cdn.ca9.uscourts.gov/datastore/opinions/2025/07/11/23-2989.pdf)) was about marketers influencing **doctors**, and read only one part of EKRA. A per-start fee to Yesdoor falls under the parts it did not read. Supreme Court denied review 3/23/2026. It does not open a paid addiction line.
+
+| Line | AZ | CA | FL |
+|---|---|---|---|
+| Residential addiction | Flat only (EKRA (b)(4)); no Meta / Google ads | Flat at best; [H&S §11831.6](https://california.public.law/codes/health_and_safety_code_section_11831.6) + §445 risk | Flat only (EKRA (b)(4) + §817.505(3)(i)) |
+| Sober living | **No** ([§13-3730](https://www.azleg.gov/ars/13/03730.htm), all payers) | Flat; no ads | Flat; no ads |
+| Outpatient therapy / psychiatry | Flat; per-booking gray (board rules) | **Per-booking OK for therapists** under [B&P §650(h)](https://california.public.law/codes/business_and_professions_code_section_650) if neutral; psychiatry gray (§445) | Flat; per-booking gray |
+| Eating disorder / teen residential (no substance use) | Paid for commercial or cash patients; flat for AHCCCS | Flat (§445) | Flat |
+| Ketamine / TMS / cash clinics | Flat; per-booking gray | **Per-booking OK** under §650(h) if neutral; §445 caveat | Flat |
+
+Ad platforms: LegitScript bars lead generators and can deny providers who work with them; Google and Meta require LegitScript for addiction and sober living ([LegitScript](https://www.legitscript.com/service/certification/addiction-treatment/standards/)).
+
+## L5 — ranking (done)
+
+**Yesdoor lines, best first:**
+
+| # | Line | How we get paid | AZ / CA / FL |
+|---|---|---|---|
+| 1 | **Assisted living + memory care (private pay)** | Community pays per move-in, ~$3.5k–$6.4k | ✅ AZ (disclosure, insurance, background check) / ✅ CA (no rules) / ✅ FL (non-Medicaid only) |
+| 2 | **Independent living / 55+** | Per move-in under a real estate license — the same license basis Yesdoor apartments already uses for its broker partners | ✅ with license in all three |
+| 3 | **Private-pay home care** | Agency pays per client start | ✅ AZ / ⚠️ CA (probably; §445 question) / FL only as a licensed nurse registry |
+| 4 | **Cash-pay mental health** (therapy, ketamine, TMS) | Per-booking at fair market value, neutral ranking | ✅ CA (§650(h)) / ⚠️ AZ, FL flat only |
+| 5 | **Hospice, home health, addiction treatment, skilled nursing** | **Never per patient.** Employers, health plans, or equal cost-based flat listings | Flat listings AZ, FL; CA hospice bans any payment to referral sources |
+| ✖ | Sober living (AZ), nursing homes (FL) | — | No |
+
+**Payment models, best first:** (1) per-move-in fee on private pay; (2) employer caregiving benefit — legal in all three, covers the medical lines too (Wellthy lists at $450/mo per employee); (3) health plan per-member contracts (CA exempts prepaid plans); (4) equal, cost-based flat listings; (5) family-paid concierge (AZ only for medical lines).
+
+**Hard rules for every line:** gate every fee by payer (no fee on Medicare / Medicaid / ALTCS / Medi-Cal residents); ranking is never for sale; never take a per-patient fee from a hospice, home health agency, or addiction provider.
+
+**Outside Yesdoor — biggest referral opportunity found:** franchise placement, $20k–$25k per deal, no license in AZ and FL. Fits Fundhub (credit and cash check + funding) better than Yesdoor.
