@@ -97,7 +97,7 @@ export function violationsIn(file, src, { insideDir, allow }) {
 
 test("boundary: src/yesdoor imports nothing outside the §0.2 allowlist", () => {
   // This file holds deliberate bad-import examples in strings, so it is not scanned.
-  const files = walk(YD_DIR).filter((f) => path.basename(f) !== "boundary.test.mjs");
+  const files = walk(YD_DIR).filter((f) => !/^boundary(\.[a-z]+)?\.test\.mjs$/.test(path.basename(f)));
   assert.ok(files.length > 0, "found no files under src/yesdoor");
   const problems = [];
   for (const file of files) {
