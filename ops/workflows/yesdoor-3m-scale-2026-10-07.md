@@ -13,15 +13,16 @@ Ask (Chris): "Yes door ai scale to 3m/mo insights."
 - Planned sequence: launch the free demand side first, run ads two weeks, then sign properties holding a list of pre-qualified renters.
 - Source: `marketing/offers/yesdoor/README.md`, page `marketing/offers/yesdoor/yesdoor.dc.html`.
 - Target: $3,000,000 revenue per month.
+- **Owner-set 2026-10-07 — revenue is not only placement fees.** The soft pull is the front door. Lifetime value comes from: buyers guides, tools that help renters overcome apartment denials, lawyer referrals, credit repair, and more. Y1 models placement fees plus these back-end streams.
 
 ## Tasks
 
 | # | Unit | Owner | Status |
 |---|---|---|---|
-| Y1 | Unit economics: fee per lease, leases/mo needed, metros needed, margin, cash timing | this session | pending go |
-| Y2 | Market + competitors: Nestra, big locators (Smart City etc.), their revenue, how they scaled | open | pending go |
-| Y3 | Demand: renter ad channels, cost per qualified renter, lead→tour→lease rates | open | pending go |
-| Y4 | Supply + licence: signing communities and management companies, fee terms, broker licence by state, listing data feeds | open | pending go |
+| Y1 | Unit economics: placement fee + back-end LTV (guides, denial tools, lawyers, repair), fee per lease, leases/mo needed, metros needed, margin, cash timing | this session | claimed |
+| Y2 | Market + competitors: Nestra, big locators (Smart City etc.), their revenue, how they scaled | open | claimed |
+| Y3 | Demand: renter ad channels, cost per qualified renter, lead→tour→lease rates | open | claimed |
+| Y4 | Supply + licence: signing communities and management companies, fee terms, broker licence by state, listing data feeds | open | claimed |
 | Y5 | Merge Y1–Y4, write report, commit | this session | waits on Y1–Y4 |
 
 Y1–Y4 run at the same time. No dependencies between them. Y1 uses ranges and Y5 swaps in Y2–Y4's real numbers. Y5 waits on all four.
