@@ -101,7 +101,7 @@ The brand identity is new and not set yet. Approach (owner-set): take the struct
 ## 10. Open questions (one at a time, Chris answers)
 
 1. ~~What does the renter type at the pre-screen?~~ **Answered (owner-set):** name, email and address (no SSN), through the CRS screening product.
-2. Does the background check run with every pull, or only when a renter books?
+2. ~~Background check every time?~~ **Answered (owner-set):** yes. Every pre-screen checks credit, past evictions and background. The result sets the renter's risk tier, and the tier decides which buildings they can be placed in. Background check cost on top of the $9 pull: not known yet. California background checks need the ICRAA notice and free-copy box.
 3. Who confirms "toured" and "applied": the building, the renter, or both?
 4. What does a broker see about their renters: stage only, or also approved / not approved?
 5. First market and first buildings: Phoenix, starting with buildings that already pay locators?
