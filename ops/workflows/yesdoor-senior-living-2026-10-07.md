@@ -244,3 +244,29 @@ Ad platforms: LegitScript bars lead generators and can deny providers who work w
 **Hard rules for every line:** gate every fee by payer (no fee on Medicare / Medicaid / ALTCS / Medi-Cal residents); ranking is never for sale; never take a per-patient fee from a hospice, home health agency, or addiction provider.
 
 **Outside Yesdoor — biggest referral opportunity found:** franchise placement, $20k–$25k per deal, no license in AZ and FL. Fits Fundhub (credit and cash check + funding) better than Yesdoor.
+
+---
+
+# Add-on layer: insurance and protection products (2026-10-07)
+
+Chris: "insurance, renters insurance and shit is a good layer for Yesdoor. Add-ons. Add please." (owner-set)
+
+Checked `origin/yesdoor/i1` and `origin/yesdoor-3m-scale`: no add-on layer exists in the Yesdoor plans yet. The only mention is Rhino and Jetty unit counts in `marketing/offers/yesdoor/sales-cycle-research.md`.
+
+| Add-on | Who buys | Price to the renter | How Yesdoor gets paid | Why it fits |
+|---|---|---|---|---|
+| **Renters insurance** | Renter (most buildings require it) | Lemonade from ~$5/mo ([GrowSurf](https://growsurf.com/examples/renters-insurance-referral-programs/)) | Commission as a licensed agency; or a flat referral fee not tied to the sale | Every move-in needs it; small per policy, every renter |
+| **Deposit alternative** (Jetty, Rhino) | Renter | Jetty: one-time ~17.5% of the deposit ($510 on a $3,000 deposit); Rhino: often under $20/mo ([Brick Underground](https://www.brickunderground.com/rent/security-deposit-alternatives-nyc)) | Rhino is paid by insurers for policies it places — a licensed agency model | Lowers move-in cash |
+| **Lease guarantor** (TheGuarantors, Insurent, Leap) | Renter | TheGuarantors 40–130% of one month's rent; Insurent 70–90% (US), up to 110% non-citizens ([REsimpli](https://resimpli.com/blog/best-lease-guarantor-companies/)) | Partner revenue share: not found | **Turns a "no" or "likely" into a "yes"** for second-chance renters — the core Yesdoor promise |
+
+**Legal shape:**
+- **Florida:** an agent may pay an unlicensed person a referral fee only if it does not depend on whether the person buys ([§626.112(8)](https://www.radeylaw.com/2016/10/05/dfs-summarizes-referral-fee-restrictions/)).
+- **Arizona:** insurers and agents may not pay an unlicensed person for selling or soliciting ([A.R.S. §20-298](https://syfert.com/arizona/sections/20-298.html)).
+- **California:** statute not pulled yet.
+- **Cleanest path:** Yesdoor holds a property & casualty agency license in AZ, CA and FL and earns commission directly. Rhino's model works this way. Without a license, only flat fees not tied to sales.
+
+**Design idea for the spec:** the match engine can return "approved with a guarantor" or "approved with a deposit alternative" when a building accepts those products. The add-on is then part of the yes, not an upsell after it.
+
+**Not found yet:** commission rates on renters insurance in the US, guarantor partner revenue share, Arizona and California rules on flat referral fees.
+
+**Leftover card for the Yesdoor MVP owners (PR #55):** add an add-on layer (renters insurance, deposit alternative, lease guarantor) to the Yesdoor spec. Not touched from this session.
