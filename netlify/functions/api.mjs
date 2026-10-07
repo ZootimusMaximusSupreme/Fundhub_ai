@@ -296,6 +296,25 @@ import readProxySessions from "../../api/read/proxy-sessions.mjs";
 import climate from "../../api/climate.mjs";
 import climateGeocode from "../../api/climate/geocode.mjs";
 import climateConfig from "../../api/climate/config.mjs";
+import ydAuthLink from "../../api/yesdoor/auth/link.mjs";
+import ydAuthVerify from "../../api/yesdoor/auth/verify.mjs";
+import ydPublicListings from "../../api/yesdoor/public/listings.mjs";
+import ydPublicListing from "../../api/yesdoor/public/listing.mjs";
+import ydMe from "../../api/yesdoor/me.mjs";
+import ydBuildingRenters from "../../api/yesdoor/building/renters.mjs";
+import ydBuildingRules from "../../api/yesdoor/building/rules.mjs";
+import ydBuildingInvoices from "../../api/yesdoor/building/invoices.mjs";
+import ydBrokerRenters from "../../api/yesdoor/broker/renters.mjs";
+import ydBrokerMoney from "../../api/yesdoor/broker/money.mjs";
+import ydBrokerLink from "../../api/yesdoor/broker/link.mjs";
+import ydStaffPipeline from "../../api/yesdoor/staff/pipeline.mjs";
+import ydStaffCompanies from "../../api/yesdoor/staff/companies.mjs";
+import ydStaffBuildings from "../../api/yesdoor/staff/buildings.mjs";
+import ydStaffLedger from "../../api/yesdoor/staff/ledger.mjs";
+import ydStaffRenter from "../../api/yesdoor/staff/renter.mjs";
+import ydStaffScreening from "../../api/yesdoor/staff/screening.mjs";
+import ydStaffDisputes from "../../api/yesdoor/staff/disputes.mjs";
+import ydStaffScoreboard from "../../api/yesdoor/staff/scoreboard.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -706,6 +725,29 @@ export const ROUTES = {
      the store and migration 225 — a handler file is not a route, and an
      unrouted api/bookings.mjs 404s locally and deployed. */
   "bookings": bookings,
+
+  /* Yesdoor MVP (spec docs/specs/yesdoor-mvp-build-spec.md §8). Routed in the same
+     commit as the handlers, the migrations (434-436) and the pulse rows. B2 ships the
+     GET doors and the sign-in link; the POST writes arrive in B3/B4. */
+  "yesdoor/auth/link": ydAuthLink,
+  "yesdoor/auth/verify": ydAuthVerify,
+  "yesdoor/public/listings": ydPublicListings,
+  "yesdoor/public/listing": ydPublicListing,
+  "yesdoor/me": ydMe,
+  "yesdoor/building/renters": ydBuildingRenters,
+  "yesdoor/building/rules": ydBuildingRules,
+  "yesdoor/building/invoices": ydBuildingInvoices,
+  "yesdoor/broker/renters": ydBrokerRenters,
+  "yesdoor/broker/money": ydBrokerMoney,
+  "yesdoor/broker/link": ydBrokerLink,
+  "yesdoor/staff/pipeline": ydStaffPipeline,
+  "yesdoor/staff/companies": ydStaffCompanies,
+  "yesdoor/staff/buildings": ydStaffBuildings,
+  "yesdoor/staff/ledger": ydStaffLedger,
+  "yesdoor/staff/renter": ydStaffRenter,
+  "yesdoor/staff/screening": ydStaffScreening,
+  "yesdoor/staff/disputes": ydStaffDisputes,
+  "yesdoor/staff/scoreboard": ydStaffScoreboard,
 
   // Creative Factory. All ten go through src/http/partner-read-api.mjs, which is
   // requirePrincipal(["partner","staff"]) + withPartnerScope, so a partner sees

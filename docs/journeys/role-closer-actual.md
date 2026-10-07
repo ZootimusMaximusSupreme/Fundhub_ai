@@ -44,7 +44,8 @@ flowchart TD
     CAN --> A_top_level[Everything else — 27 routes]
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    WHO -->|Yes| CANT[Blocked — 96 routes]
+    CAN --> A_yesdoor[yesdoor — 11 routes]
+    WHO -->|Yes| CANT[Blocked — 104 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 8 blocked]
     CANT --> B_banking[banking — 2 blocked]
@@ -71,11 +72,12 @@ flowchart TD
     CANT --> B_staff[staff — 2 blocked]
     CANT --> B_top_level[Everything else — 17 blocked]
     CANT --> B_trials[trials — 2 blocked]
+    CANT --> B_yesdoor[yesdoor — 8 blocked]
 ```
 
 ## What they can reach
 
-**166 of 262 routes.**
+**177 of 281 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -245,17 +247,28 @@ flowchart TD
 | `/api/trials/dashboard` | GET | partner, staff |
 | `/api/trials/eligibility` | POST | anyone |
 | `/api/webhooks/:provider` | OPTIONS | **not a sign-in** — provider signature |
+| `/api/yesdoor/auth/link` | — | anyone |
+| `/api/yesdoor/auth/verify` | POST | anyone |
+| `/api/yesdoor/broker/link` | — | **not a sign-in** — Yesdoor broker session |
+| `/api/yesdoor/broker/money` | — | **not a sign-in** — Yesdoor broker session |
+| `/api/yesdoor/broker/renters` | — | **not a sign-in** — Yesdoor broker session |
+| `/api/yesdoor/building/invoices` | — | **not a sign-in** — Yesdoor building_user session |
+| `/api/yesdoor/building/renters` | — | **not a sign-in** — Yesdoor building_user session |
+| `/api/yesdoor/building/rules` | — | **not a sign-in** — Yesdoor building_user session |
+| `/api/yesdoor/me` | — | **not a sign-in** — Yesdoor renter session |
+| `/api/yesdoor/public/listing` | — | anyone |
+| `/api/yesdoor/public/listings` | — | anyone |
 
 ### Worth knowing
 
 - **1 route is open to any signed-in employee, whatever their role.** That is not a gate on this journey specifically — anyone who can sign in reaches it: `/api/staff/avatar`.
 - **6 routes also accept a shared secret instead of a sign-in** (`DASHBOARD_SECRET`), so a caller holding that value reaches them without being anybody in particular: `/api/dashboard/client`, `/api/dashboard/client-archive`, `/api/dashboard/clients`, `/api/dashboard/kpis`, `/api/dashboard/pipeline`, `/api/dashboard/pipeline-counts`.
-- **29 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/rb2b-webhook`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`. These are the sign-in routes and the health check.
-- **6 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature). Anyone can call these, but a caller without the right signature is refused.
+- **33 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/rb2b-webhook`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`, `/api/yesdoor/auth/link`, `/api/yesdoor/auth/verify`, `/api/yesdoor/public/listing`, `/api/yesdoor/public/listings`. These are the sign-in routes and the health check.
+- **13 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature), `/api/yesdoor/broker/link` (Yesdoor broker session), `/api/yesdoor/broker/money` (Yesdoor broker session), `/api/yesdoor/broker/renters` (Yesdoor broker session), `/api/yesdoor/building/invoices` (Yesdoor building_user session), `/api/yesdoor/building/renters` (Yesdoor building_user session), `/api/yesdoor/building/rules` (Yesdoor building_user session), `/api/yesdoor/me` (Yesdoor renter session). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**96 of 262 routes.**
+**104 of 281 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -355,6 +368,14 @@ flowchart TD
 | `/api/trials/convert` | POST | owner, admin |
 | `/api/trials/provision` | POST | owner, admin |
 | `/api/waypoint-tick` | POST | client |
+| `/api/yesdoor/staff/buildings` | — | ops, sales, collections, owner |
+| `/api/yesdoor/staff/companies` | — | ops, sales, collections, owner |
+| `/api/yesdoor/staff/disputes` | — | ops, sales, collections, owner |
+| `/api/yesdoor/staff/ledger` | — | ops, collections, owner |
+| `/api/yesdoor/staff/pipeline` | — | ops, sales, collections, owner |
+| `/api/yesdoor/staff/renter` | — | ops, owner |
+| `/api/yesdoor/staff/scoreboard` | — | ops, sales, collections, owner |
+| `/api/yesdoor/staff/screening` | — | ops, owner |
 
 ## UNVERIFIED
 

@@ -338,7 +338,28 @@ const API_KEYS = [
      paid $297 to watch for seven days; an outage there is the product missing.
      Its two write siblings are not pingable — see ALLOWED_UNMONITORED. */
   "trials/dashboard",
-  "trials/eligibility"
+  "trials/eligibility",
+  /* Yesdoor (B2). Public doors answer GET 200; session doors answer a JSON 401, and
+     auth/link is POST-only so a ping gets a JSON 405. All three count as up (isUp). */
+  "yesdoor/auth/link",
+  "yesdoor/auth/verify",
+  "yesdoor/public/listings",
+  "yesdoor/public/listing",
+  "yesdoor/me",
+  "yesdoor/building/renters",
+  "yesdoor/building/rules",
+  "yesdoor/building/invoices",
+  "yesdoor/broker/renters",
+  "yesdoor/broker/money",
+  "yesdoor/broker/link",
+  "yesdoor/staff/pipeline",
+  "yesdoor/staff/companies",
+  "yesdoor/staff/buildings",
+  "yesdoor/staff/ledger",
+  "yesdoor/staff/renter",
+  "yesdoor/staff/screening",
+  "yesdoor/staff/disputes",
+  "yesdoor/staff/scoreboard"
 ];
 
 const DESK_FILES = [
