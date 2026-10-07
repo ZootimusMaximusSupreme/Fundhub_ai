@@ -8,7 +8,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { staffCalendarBusySync, handle as syncHandle, SYNC_CRON } from "./staff-calendar-busy-sync.mjs";
+import { NonRetriableError } from "inngest";
+import {
+  staffCalendarBusySync, handle as syncHandle, SYNC_CRON, DEAD_TOKEN_MESSAGE
+} from "./staff-calendar-busy-sync.mjs";
+import { heartbeatHooks, checkJobHeartbeats, SCHEDULED_EVENT, JOBS } from "../pulse/heartbeats.mjs";
 import {
   s04dCloserCalendarInvite, handle as inviteHandle, MAX_ATTEMPTS, RETRY_SLEEP
 } from "./s-04d-closer-calendar-invite.mjs";
@@ -105,4 +109,51 @@ test("S-04D: already on the call counts as done", async () => {
   const out = await inviteHandle({ event: { orgId: "org", payload: {} }, db: {}, step, env: {}, invite: async () => ({ status: "already", added: 0, already: 1 }) });
   assert.equal(out.done, true);
   assert.equal(step.runs.length, 1);
+});
+
+/* ── a dead Google token reaches Chris through the 7 a.m. pulse ─────────── */
+
+test("busy sync: a dead token fails the run (non-retriable) with a plain reason", async () => {
+  const step = fakeStep();
+  await assert.rejects(
+    syncHandle({ db: {}, step, env: {}, sync: async () => ({ ok: false, tokenDead: true, note: "invalid_grant" }) }),
+    (err) => err instanceof NonRetriableError && err.message === DEAD_TOKEN_MESSAGE
+  );
+  assert.deepEqual(step.runs, ["sync-busy-blocks"], "the pass ran once, inside its step");
+});
+
+test("busy sync: a blip does not fail the run", async () => {
+  const out = await syncHandle({ db: {}, step: fakeStep(), env: {}, sync: async () => ({ ok: false, tokenDead: false, note: "HTTP 503" }) });
+  assert.equal(out.ok, false);
+});
+
+test("busy sync: that failed run is recorded as an error heartbeat, and the pulse shows the job red", async () => {
+  // 1. The heartbeat add-on on the Inngest client records the thrown error.
+  const rows = [];
+  const fakeDb = { query: async (sql, params) => { if (/INSERT INTO job_heartbeats/.test(sql)) rows.push(params); return { rows: [] }; } };
+  const t0 = new Date("2026-10-08T13:55:00Z");
+  const hooks = heartbeatHooks({ getDb: () => fakeDb, nowFn: () => t0 });
+  const run = hooks.onFunctionRun({ fn: { opts: { id: "staff-calendar-busy-sync" } }, ctx: { event: { name: SCHEDULED_EVENT } } });
+  let thrown;
+  try {
+    await syncHandle({ db: {}, step: fakeStep(), env: {}, sync: async () => ({ ok: false, tokenDead: true }) });
+  } catch (err) { thrown = err; }
+  await run.finished({ result: { error: thrown } });
+  assert.equal(rows.length, 1);
+  const [job, , , , outcome, , error] = rows[0];
+  assert.equal(job, "staff-calendar-busy-sync");
+  assert.equal(outcome, "error");
+  assert.equal(error, DEAD_TOKEN_MESSAGE);
+
+  // 2. The 7 a.m. pulse reads that newest heartbeat and marks the job FAIL.
+  const pulseDb = { query: async () => ({ rows: [{
+    job: "staff-calendar-busy-sync", last_at: t0.toISOString(), last_outcome: "error",
+    last_error: error, first_ever: "2026-10-05T00:00:00Z"
+  }] }) };
+  const job_ = JOBS.filter((j) => j.job === "staff-calendar-busy-sync");
+  assert.equal(job_.length, 1, "the job is on the pulse's list");
+  const [check] = await checkJobHeartbeats({ db: pulseDb, now: new Date("2026-10-08T14:00:00Z"), jobs: job_ });
+  assert.equal(check.id, "job:staff-calendar-busy-sync");
+  assert.equal(check.status, "FAIL");
+  assert.match(check.detail, /approval stopped working/);
 });
