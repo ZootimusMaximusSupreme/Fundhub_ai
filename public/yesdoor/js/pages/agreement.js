@@ -40,7 +40,7 @@
   function titleOf(a) { return a.kind === "broker_partner" ? "Yesdoor partner agreement" : "Yesdoor placement fee agreement"; }
 
   function signedView(a, name) {
-    card("Signed", '<div class="notice" role="status"><p><strong>' + ui.esc(a.partyName) + "</strong> has signed the " + ui.esc(titleOf(a).toLowerCase()) +
+    card("Signed", '<div class="notice" role="status"><p><strong>' + ui.esc(a.partyName) + "</strong> has signed the " + ui.esc(titleOf(a)) +
       (a.signedAt ? " on " + ui.esc(ui.date(a.signedAt)) : "") + (name ? ". Thank you, " + ui.esc(name) : "") + ".</p></div>" +
       "<p>You can close this page. If anything about the terms below looks wrong, tell your Yesdoor contact.</p>" + termsHtml(a));
   }

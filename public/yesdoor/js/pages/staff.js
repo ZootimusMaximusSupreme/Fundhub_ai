@@ -182,7 +182,7 @@
         if (!EMAIL_OK.test(email)) { err.textContent = "Add the email address this person signs in with."; err.hidden = false; return; }
         var go = dlg.querySelector("#l-go"); ui.busy(go, true);
         YD.api.staffCreateAccount({ kind: "broker", brokerId: k.id, email: email }).then(function (res) {
-          close(); ui.toast("Login made. Sign-in link sent to " + res.account.email + "."); people(el, ctx);
+          close(); ui.toast("Login made. Sign-in email queued for " + res.account.email + "."); people(el, ctx);
         }, function (e2) { ui.busy(go, false); err.textContent = ui.errMessage(e2); err.hidden = false; });
       });
     });
@@ -209,7 +209,7 @@
         if (!ids.length) { err.textContent = "Choose at least one building."; err.hidden = false; return; }
         var go = dlg.querySelector("#bu-go"); ui.busy(go, true);
         YD.api.staffCreateAccount({ kind: "building_user", email: email, buildingIds: ids, role: dlg.querySelector("#bu-role").value }).then(function (res) {
-          close(); ui.toast("Login made. Sign-in link sent to " + res.account.email + "."); people(el, ctx);
+          close(); ui.toast("Login made. Sign-in email queued for " + res.account.email + "."); people(el, ctx);
         }, function (e2) { ui.busy(go, false); err.textContent = ui.errMessage(e2); err.hidden = false; });
       });
     });
