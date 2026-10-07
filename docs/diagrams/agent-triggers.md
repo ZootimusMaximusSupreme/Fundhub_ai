@@ -3,7 +3,7 @@
 # Agent trigger map
 
 Which canonical event wakes which automation. "Agent" here means a registered Inngest function —
-the 97 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
+the 98 workflow ports in `src/workflows/`, read off their real `createFunction` triggers.
 (The AG-xx prompt-driven agents in `wireframes/agent-editor.html` are a UI mock with no code behind
 them yet, and are deliberately not drawn here.)
 
@@ -27,6 +27,7 @@ flowchart LR
   e_booking_created --> w_bs_01_precall_launcher["bs-01-precall-launcher"]
   e_booking_created --> w_dpc_02_call_outcome_enforcement["dpc-02-call-outcome-enforcement"]
   e_booking_created --> w_dpc_05_no_progress_escalation["dpc-05-no-progress-escalation"]
+  e_booking_created --> w_lead_alert_owner["lead-alert-owner"]
   e_booking_created --> w_s_04_call_booked["s-04-call-booked"]
   e_booking_created --> w_s_04b_booking_reminders["s-04b-booking-reminders"]
   e_booking_created --> w_s_04c_staff_booked_alert["s-04c-staff-booked-alert"]
@@ -56,6 +57,7 @@ flowchart LR
   e_entry_captured(["entry.captured"])
   e_entry_captured --> w_af_02_referral_ownership_capture["af-02-referral-ownership-capture"]
   e_entry_captured --> w_at_01_first_touch_capture["at-01-first-touch-capture"]
+  e_entry_captured --> w_lead_alert_owner["lead-alert-owner"]
   e_entry_captured --> w_s_00_welcome["s-00-welcome"]
   e_entry_captured --> w_s_01_new_lead_intake["s-01-new-lead-intake"]
   e_entry_captured --> w_s_02_incomplete_survey_nudge["s-02-incomplete-survey-nudge"]
@@ -109,14 +111,14 @@ flowchart LR
 | event | functions | triggered |
 |---|---|---|
 | `analysis.completed` | 9 | `af-02-referral-ownership-capture`, `c-02-inquiry-created`, `c-06-crs-results-router`, `dpc-01-analyzer-lock`, `slo-pack-delivery`, `u-02-analyzer-complete-delivery`, `u-03-crs-snapshot-sync`, `u-04-promote-crs-primary`, `u-05-data-health-monitor` |
-| `booking.created` | 10 | `ai-set-01-josh-setter`, `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `s-04-call-booked`, `s-04b-booking-reminders`, `s-04c-staff-booked-alert`, `s-04d-closer-calendar-invite`, `s-portal-invite` |
+| `booking.created` | 11 | `ai-set-01-josh-setter`, `ai-set-04-3way-handoff`, `bs-01-precall-launcher`, `dpc-02-call-outcome-enforcement`, `dpc-05-no-progress-escalation`, `lead-alert-owner`, `s-04-call-booked`, `s-04b-booking-reminders`, `s-04c-staff-booked-alert`, `s-04d-closer-calendar-invite`, `s-portal-invite` |
 | `booking.noshow` | 1 | `s-05a-no-show-recovery` |
 | `booking.rescheduled` | 2 | `bs-01-precall-launcher`, `s-04b-booking-reminders` |
 | `call.completed` | 4 | `ai-set-03-no-answer-cadence`, `ds-01-repair-referral`, `s-08-post-call-funding-declined`, `s-offer-bucket` |
 | `deposit.paid` | 3 | `c-02b-inquiry-removal-requested`, `s-06-post-call-funding-purchased`, `s-doc-collection` |
 | `diagnostic.paid` | 2 | `af-02-referral-ownership-capture`, `c-00-crs-soft-pull-request` |
 | `docs.received` | 3 | `doc-check`, `f-06-funding-conditions-missing-docs`, `repair-bureau-response-reader` |
-| `entry.captured` | 5 | `af-02-referral-ownership-capture`, `at-01-first-touch-capture`, `s-00-welcome`, `s-01-new-lead-intake`, `s-02-incomplete-survey-nudge` |
+| `entry.captured` | 6 | `af-02-referral-ownership-capture`, `at-01-first-touch-capture`, `lead-alert-owner`, `s-00-welcome`, `s-01-new-lead-intake`, `s-02-incomplete-survey-nudge` |
 | `inquiry.removed` | 1 | `c-03-inquiry-removed-resume-or-hold` |
 | `invoice.sent` | 1 | `ar-collections` |
 | `mail.response` | 3 | `f-06-funding-conditions-missing-docs`, `f-09-funding-declined-no-path`, `f-11-bank-email-event-router` |
@@ -204,4 +206,5 @@ commission and billing events are proposed-but-unbuilt. Either way, nothing dura
 | `ar-collections` | `invoice.sent`, `payment.received` |
 | `bs-01-precall-launcher` | `booking.created`, `booking.rescheduled` |
 | `f-06-funding-conditions-missing-docs` | `mail.response`, `docs.received` |
+| `lead-alert-owner` | `entry.captured`, `booking.created` |
 | `s-04b-booking-reminders` | `booking.created`, `booking.rescheduled` |

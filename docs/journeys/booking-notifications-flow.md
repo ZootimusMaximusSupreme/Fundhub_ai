@@ -61,9 +61,9 @@ slot-level dedupe, and a second booking is a real second appointment.
 
 | Event | Workflows woken | File |
 |---|---|---|
-| `entry.captured` | welcome text, new-lead intake, incomplete-survey nudge, first-touch capture, referral ownership | `s-00-welcome`, `s-01`, `s-02`, `at-01`, `af-02` |
+| `entry.captured` | welcome text, new-lead intake, incomplete-survey nudge, first-touch capture, referral ownership, the lead alert to Chris | `s-00-welcome`, `s-01`, `s-02`, `at-01`, `af-02`, `lead-alert-owner` |
 | `survey.submitted` | the never-booked chase, and nothing else | `s-nobook-chase` |
-| `booking.created` | confirm + reminders, the AI setter, the 15-minute handoff, staff alert, closer calendar invite, pre-call launcher, call-outcome enforcement, portal invite, no-show recovery | `s-04b`, `ai-set-01`, `ai-set-04`, `s-04c`, `s-04d`, `bs-01`, `dpc-02`, `s-portal-invite`, `s-05a` |
+| `booking.created` | confirm + reminders, the AI setter, the 15-minute handoff, staff alert, closer calendar invite, pre-call launcher, call-outcome enforcement, portal invite, no-show recovery, the lead alert to Chris (only for a brand-new person) | `s-04b`, `ai-set-01`, `ai-set-04`, `s-04c`, `s-04d`, `bs-01`, `dpc-02`, `s-portal-invite`, `s-05a`, `lead-alert-owner` |
 
 ## 3. The never-booked chase
 
@@ -248,6 +248,23 @@ the booking page stops offering those times.
 **Not handled:** `booking.rescheduled` and `booking.cancelled` do not touch the
 closer's guest entry. If the booking page moves the same Google event, the
 closer stays on it; if it makes a new one, nothing adds the closer to it.
+
+## 5c. The lead alert to Chris (added 2026-10-07)
+
+`src/workflows/lead-alert-owner.mjs` → `src/staff/lead-alert.mjs` → the Twilio and Resend providers
+
+One text and one email to Chris the first time a new lead shows up, on
+`entry.captured` and on `booking.created`. A person who books with no survey
+fires only `booking.created`, so that event covers them; a person who surveys
+and then books is alerted once, at the survey, because each channel keeps its
+own once-only stamp on the client's file. Only a client made in the last 24
+hours is alerted about, and never a test file.
+
+It goes straight to the providers behind the messaging fence. It does not use
+`sendTemplated` or the queue in section 6, because it is for Chris, not for the
+lead: the lead's consent and quiet hours do not apply, and a five-minute sweeper
+would make it late. The full flow, the stamps and the watch on it are in
+`docs/journeys/lead-alert-flow.md`.
 
 ## 6. Where a message actually goes out
 

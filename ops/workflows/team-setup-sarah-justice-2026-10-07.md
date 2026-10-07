@@ -81,7 +81,7 @@ The setter flow is built (the "Josh" AI setter):
 | # | Workflow | Owner | Status | Output |
 |---|---|---|---|---|
 | W1 | Calendar — research, plan, access request draft | agent (Opus) | done (plan) — build waits on Chris | `team-setup-sarah-justice-2026-10-07/w1-calendar-plan.md` |
-| W2 | Lead alerts — find intake paths, spec | agent (Sonnet) | done (spec) — build waits on Chris | `team-setup-sarah-justice-2026-10-07/w2-lead-alerts-spec.md` |
+| W2 | Lead alerts — find intake paths, spec, build | agent (spec, then build) | built on branch `claude/ecstatic-galileo-h9suqe`, not shipped — sends nothing until the two settings are set at go-live | `team-setup-sarah-justice-2026-10-07/w2-lead-alerts-spec.md` |
 | W3 | Setter script — Drive sources, script, video intro, handoff | agent (Sonnet) | done — ready for Chris's review | `docs/sops/setter/` + `team-setup-sarah-justice-2026-10-07/w3-setter-sources.md` |
 
 ## Dependencies
@@ -105,6 +105,17 @@ The setter flow is built (the "Josh" AI setter):
 - Written: `team-setup-sarah-justice-2026-10-07/w2-lead-alerts-spec.md`
 - Nothing sent. No code, route, migration, or env changes.
 - Findings: 10 lead-in paths. 6 should alert in the first build (ClickFunnels webhook, apply survey, booking-first for brand-new people, homepage survey, climate match, staff New Client). No new-lead alert to Chris exists today. Recommended build: one Inngest job on `entry.captured` and `booking.created` that sends one text (Twilio) and one email (Resend) per person, ever. It skips demo clients and anyone older than 24 hours. New env vars `LEAD_ALERT_SMS_TO` and `LEAD_ALERT_EMAIL_TO`, with no fallback to `PULSE_SMS_TO`. No migration, no screen.
+
+#### W2 build manifest (2026-10-07, Chris approved the build: "Please complete the task")
+
+- **Owner answers (2026-10-07):** the business cell and the alert email are set as settings at go-live and are written nowhere in the repo. The $297 contact, the $297 buyer and the education enrollment stay out. Texting runs 24 hours a day.
+- **Added:** `src/workflows/lead-alert-owner.mjs` (the Inngest job, id `lead-alert-owner`, on `entry.captured` and `booking.created`), `src/staff/lead-alert.mjs` (the words, the recipients, the two provider sends), `docs/journeys/lead-alert-flow.md`, and tests: `src/workflows/lead-alert-owner.test.mjs`, `src/workflows/lead-alert-owner.pg.test.mjs`, `src/staff/lead-alert.test.mjs`, `src/pulse/lead-alerts-check.test.mjs`.
+- **Changed:** `src/workflows/index.mjs` (registered, 97 to 98), `src/workflows/index.test.mjs` (`EXPECTED_WORKFLOW_IDS`), `src/journeys/runner/index.test.mjs` (`REGISTERED` 97 to 98), `src/pulse/system-checks.mjs` (`checkLeadAlerts`), `src/pulse/system-checks.pg.test.mjs` (one new test), `src/pulse/daily-pulse.mjs` (runs the check), `netlify.toml` (both settings added to `SECRETS_SCAN_OMIT_KEYS`), `docs/journeys/booking-notifications-flow.md` (section 5c), `docs/journeys/CHANGELOG.md`, `docs/diagrams/*` (regenerated).
+- **Not changed:** no migration, no route, no screen, no `resolveClient`, no intake handler, no `*-intended.md`. `.env.example` was NOT edited: the environment denies reading it, so the two names were not added there (add `LEAD_ALERT_SMS_TO=` and `LEAD_ALERT_EMAIL_TO=`, names only, when convenient).
+- **Journeys affected:** the lead-in doors listed in `docs/journeys/lead-alert-flow.md`. Client-facing behaviour is unchanged: the lead still gets the same welcome.
+- **Settings needed at go-live (names only):** `LEAD_ALERT_SMS_TO`, `LEAD_ALERT_EMAIL_TO` (new, no fallback). Already set and used: `TWILIO_SEND_ACCOUNT_SID`, `TWILIO_SEND_AUTH_TOKEN`, `TWILIO_SEND_FROM`, `RESEND_API_KEY`, `RESEND_FROM`, `MESSAGING_DRY_RUN` (must be `0`). Set with `--secret`, then ship once.
+- **Pulse:** new check `lead-alerts` (group `messages`). It is RED until both settings are set, by design. No row in `src/pulse/registry.mjs` (no page or `api/` file) and none in `heartbeats.mjs` (not a cron).
+- **Proof still to do after the settings are set and it ships:** the 8-step sim-lead proof in the spec (section 7, "Proof"). Not done here: nothing was sent and nothing was shipped.
 
 ### W3 — Setter script (2026-10-07)
 
