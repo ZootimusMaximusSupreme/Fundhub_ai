@@ -175,3 +175,12 @@ Things only Chris has (can come tomorrow):
 - The worst part is **not knowing**: "Will they accept this?" Renters apply, pay the fee, and find out after.
 - Many buildings weigh a background item above income. Rules vary by building, so a renter can't tell in advance.
 - Product fit: Yesdoor answers "will this building accept me, record and all?" before the renter applies. Second Chance buildings get matched to those renters.
+
+## 14. CRS, Greystar payment, refunds (research 2026-10-07)
+
+- **CRS:** the tenant screening product needs full name, date of birth, **SSN**, previous address and past landlords ([CRS tenant screening](https://crscreditapi.com/tenant-screening/)). It includes criminal and eviction records ([CRS public records](https://crscreditapi.com/public-record-data/)). The no-SSN soft pull (name, current address, date of birth; "85%+" match on their OffersIQ product) is sold for pre-qualification. It is not stated for tenant screening ([CRS no-SSN](https://crscreditapi.com/soft-pull-without-ssn/)). Prices are not published. API docs: https://crscreditapi.redoc.ly/
+  - **Draft design:** step 1, pre-qualify with no SSN (name, email, address, date of birth): "approved up to $X." Step 2, full screening with SSN only when the renter books a building. Needs Chris's OK, because Chris set "no SSN."
+- **Greystar pays vendors** by check or ACH through Paymode-X (preferred, about 10 days faster). Vendors are checked through NetVendor. Invoices go through RealPage Spend Management ([Greystar suppliers](https://greystar.com/contact-us/supplier-and-vendor-opportunities/us-supplier-partnerships)). Payment terms: not found.
+- **Locator invoice fields** (secondhand): locator, tenant, property, unit, move-in date, lease term, commission, invoice number and date.
+- **When fees arrive:** often 30–45 days after the lease starts; some pay at move-in, some at 60–90 days ([HAR](https://www.har.com/question/26830_commission-payments-on-leases)).
+- **Refund window:** 60 days is confirmed (skip or eviction, [Stake/uMoveFree](https://www.umovefree.com/property-relations)). 90 days is reported for the National Association of Apartment Locators but not confirmed. Default stays 60.
