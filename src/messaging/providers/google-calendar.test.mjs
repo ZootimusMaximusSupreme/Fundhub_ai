@@ -5,7 +5,7 @@ import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  TOKEN_ENV_KEY, CALENDAR_SCOPES, MIRROR_KEY,
+  TOKEN_ENV_KEY, CALENDAR_SCOPES, MIRROR_KEY, TOKEN_TIMEOUT_MS,
   calendarTokenConfig, calendarTokenPresent, calendarAccessToken, resetTokenCache,
   freeBusy, listMirrorEvents, insertEvent, deleteEvent, findEventAt, addAttendees, isMirrorEvent
 } from "./google-calendar.mjs";
@@ -70,6 +70,26 @@ test("token: refresh goes to Google's token endpoint with the stored refresh tok
   const body = new URLSearchParams(g.calls[0].body);
   assert.equal(body.get("grant_type"), "refresh_token");
   assert.equal(body.get("refresh_token"), "r-fixture");
+});
+
+test("token: a refresh that never answers is cut off, never hangs the pass", async () => {
+  assert.equal(TOKEN_TIMEOUT_MS, 6_000);
+  let sawSignal = false;
+  /* A socket that never answers. A real one keeps the process alive while it
+     waits; this stand-in does the same with a timer, and lets go on abort. */
+  const hang = (url, init = {}) => new Promise((_, reject) => {
+    sawSignal = !!init.signal;
+    const alive = setTimeout(() => reject(new Error("the timeout never fired")), 5_000);
+    init.signal?.addEventListener("abort", () => { clearTimeout(alive); reject(init.signal.reason); });
+  });
+  const started = Date.now();
+  const tok = await calendarAccessToken({ env: LIVE, fetchImpl: hang, tokenTimeoutMs: 30 });
+  assert.equal(sawSignal, true, "the refresh carries an abort signal");
+  assert.equal(tok.ok, false);
+  assert.equal(tok.waiting, false);
+  assert.match(tok.error, /token refresh failed/i);
+  assert.match(tok.error, /timeout|abort/i);
+  assert.ok(Date.now() - started < 2_000, "it gave up on its own clock");
 });
 
 test("scopes are calendar.events and calendar.freebusy", () => {

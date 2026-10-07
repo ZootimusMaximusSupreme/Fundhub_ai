@@ -88,6 +88,17 @@ export function calendarTokenPresent(env = process.env) {
   return calendarTokenConfig(env).ready;
 }
 
+/* The token refresh goes through src/company-brain/auth.mjs (already allowed a
+   plain fetch for exactly this exchange), not through the chokepoint, so it has
+   no clock of its own. It is handed a fetch that carries an abort signal — the
+   same way src/pulse/registry.mjs bounds its pings — so a stuck connection
+   ends in TOKEN_TIMEOUT_MS instead of holding the whole pass. */
+export const TOKEN_TIMEOUT_MS = 6_000;
+function withTimeout(fetchImpl, timeoutMs) {
+  const doFetch = fetchImpl || globalThis.fetch;
+  return (url, init = {}) => doFetch(url, { ...init, signal: AbortSignal.timeout(timeoutMs) });
+}
+
 let cachedToken = null; // { accessToken, expiresAtMs }
 
 /** Drop the cached access token. For tests, and after a 401. */
@@ -97,7 +108,9 @@ export function resetTokenCache() { cachedToken = null; }
  * Refresh the owner's token into a short-lived access token.
  * @returns {Promise<{ok:true, accessToken:string} | {ok:false, waiting:boolean, error:string}>}
  */
-export async function calendarAccessToken({ env = process.env, fetchImpl, now = Date.now } = {}) {
+export async function calendarAccessToken({
+  env = process.env, fetchImpl, now = Date.now, tokenTimeoutMs = TOKEN_TIMEOUT_MS
+} = {}) {
   if (cachedToken && cachedToken.expiresAtMs - 60_000 > now()) {
     return { ok: true, accessToken: cachedToken.accessToken };
   }
@@ -112,7 +125,7 @@ export async function calendarAccessToken({ env = process.env, fetchImpl, now = 
     };
   }
   try {
-    const tok = await fetchOAuthAccessToken({ ...cfg.credentials, fetchImpl });
+    const tok = await fetchOAuthAccessToken({ ...cfg.credentials, fetchImpl: withTimeout(fetchImpl, tokenTimeoutMs) });
     cachedToken = { accessToken: tok.accessToken, expiresAtMs: now() + (tok.expiresIn || 3600) * 1000 };
     return { ok: true, accessToken: tok.accessToken };
   } catch (err) {
