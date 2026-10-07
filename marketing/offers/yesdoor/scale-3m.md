@@ -171,7 +171,7 @@ Draft design (not built):
 - **Outreach:** reuse the senders already in `src/messaging/providers/`: email (Mailgun, Resend), text (Twilio), AI calls (Bland), physical mail (`mail-letter`), Meta ads (`meta-capi`).
 - **The hook:** "We have N pre-approved renters who want [Building]." N comes from real renter demand.
 - **Signup in 3 taps, no login (magic link: `src/auth/magic-link.mjs`):** (1) check the pre-filled building page and rental criteria the agent already read, (2) pick a fee preset and sign, (3) type the leasing-office email where renters get registered. Connecting Entrata or Yardi is optional, later.
-- E-signature: no e-sign tool found in this repo.
+- E-signature: correction (2026-10-07). Fundhub already has e-sign in `src/contracts/` (templates, send, sign, signed link, PDF). The building fee agreement reuses it.
 
 ## $10M a month (owner-set goal, 2026-10-07)
 
