@@ -348,8 +348,19 @@ describe("yesdoor staff doors", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
     });
   });
 
-  test("every staff door is GET only for now", async () => {
+  test("every staff read door refuses the wrong method; the doors that also write say so", async () => {
+    // B4 made companies, buildings and disputes writable (their POST tests are in the
+    // yesdoor-supply and yesdoor-money suites); they answer an empty POST with a 400.
+    const writable = ["companies", "buildings", "disputes"];
     for (const door of Object.keys(h)) {
+      if (writable.includes(door)) {
+        const bad = await call(h[door], { token: t().ownerA, method: "POST", body: {} });
+        assert.equal(bad.code, 400, `${door}: an empty POST is a plain 400`);
+        const del = await call(h[door], { token: t().ownerA, method: "DELETE" });
+        assert.equal(del.code, 405, door);
+        assert.equal(del.headers.allow, "GET, POST");
+        continue;
+      }
       const r = await call(h[door], { token: t().ownerA, method: "POST", body: {}, query: { id: fx.A.renter1 } });
       assert.equal(r.code, 405, door);
       assert.equal(r.headers.allow, "GET");

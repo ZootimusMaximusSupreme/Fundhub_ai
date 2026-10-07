@@ -310,6 +310,7 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/434_yesdoor_core.sql",
   "migrations/435_yesdoor_pipeline.sql",
   "migrations/436_yesdoor_money.sql",
+  "migrations/437_yesdoor_cancel_after_registration.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",

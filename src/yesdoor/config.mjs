@@ -44,7 +44,9 @@ export const YD_AUTH = Object.freeze({
 export const YD_API = Object.freeze({
   listingsPageSize: 24,
   listLimitDefault: 100,
-  listLimitMax: 500
+  listLimitMax: 500,
+  // Most units one spreadsheet or feed import may carry.
+  importMaxRows: 2000
 });
 
 /** Staff role sets. `owner` passes every gate (requireRole SUPER_ROLES). Only
@@ -52,5 +54,33 @@ export const YD_API = Object.freeze({
 export const YD_ROLES = Object.freeze({
   staff: Object.freeze(["ops", "sales", "collections"]),
   money: Object.freeze(["ops", "collections"]),
-  credit: Object.freeze(["ops"])
+  credit: Object.freeze(["ops"]),
+  // B4 writes. Onboarding companies, buildings and agreements is sales and ops work.
+  supply: Object.freeze(["ops", "sales"]),
+  // Anyone on the desk may open a dispute; only ops (and the owner) decide one.
+  disputeOpen: Object.freeze(["ops", "sales", "collections"]),
+  disputeDecide: Object.freeze(["ops"])
+});
+
+/** Tour booking (B4). Not in the spec §9 block, so kept apart from YD_DEFAULTS. */
+export const YD_BOOKING = Object.freeze({
+  tourMinutes: 30,          // length of a booked tour
+  minLeadMinutes: 60,       // a tour cannot start sooner than this from now
+  maxDaysAhead: 60,         // ...or later than this
+  // The time zone a building's tour hours are read in, by its state.
+  stateTimeZones: Object.freeze({
+    AZ: "America/Phoenix", CA: "America/Los_Angeles", FL: "America/New_York"
+  }),
+  defaultTimeZone: "America/Phoenix"
+});
+
+/** Money endpoint limits (B4). Fee days, hold days and split come from
+ *  YD_DEFAULTS and the building row; these are only the limits of the writes. */
+export const YD_MONEY = Object.freeze({
+  // Most fee rows one run of the daily yd-fee-safe job moves.
+  feeSafeBatch: 200,
+  // Payment methods, as the database CHECK allows them.
+  paymentMethods: Object.freeze(["ach", "wire", "check", "paymode"]),
+  // Longest free-text field a write accepts (reasons, notes, evidence).
+  maxTextChars: 2000
 });

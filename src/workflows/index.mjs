@@ -82,6 +82,7 @@ import { sloGenuineFollowup, sloGenuineReply, sloGenuineCheckoutSms } from './sl
 import { sloPaidFormNudge } from './slo-paid-form-nudge.mjs';
 import { sloNoReply197 } from './slo-no-reply-197.mjs';
 import { sloInfiniteDrip } from './slo-infinite-drip.mjs';
+import { ydFeeSafe } from '../yesdoor/workflows/yd-fee-safe.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
 import { sys01LtvCalculator } from './sys-01-ltv-calculator.mjs';
 import { u02AnalyzerCompleteDelivery } from './u-02-analyzer-complete-delivery.mjs';
@@ -467,4 +468,6 @@ export const functions = [
   u03CrsSnapshotSync,
   u04PromoteCrsPrimary,
   u05DataHealthMonitor,
+  /* Yesdoor B4: the daily job that turns a paid fee safe after its refund window. */
+  ydFeeSafe,
 ];

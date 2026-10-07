@@ -31,7 +31,7 @@ export async function listBuildingsFor(db, { orgId, buildingIds }) {
   }));
 }
 
-export async function listBuildingRenters(db, { orgId, buildingIds, limit }) {
+export async function listBuildingRenters(db, { orgId, buildingIds, limit, applicationId = null }) {
   if (!buildingIds.length) return [];
   const r = await db.query(
     `SELECT a.id AS application_id, a.building_id, b.name AS building_name, a.stage,
@@ -56,8 +56,9 @@ export async function listBuildingRenters(db, { orgId, buildingIds, limit }) {
           ORDER BY created_at DESC, id DESC LIMIT 1
        ) t ON true
       WHERE a.org_id = $1 AND a.building_id = ANY($2)
+        AND ($4::uuid IS NULL OR a.id = $4)
       ORDER BY a.updated_at DESC, a.id DESC
-      LIMIT $3`, [orgId, buildingIds, limit]);
+      LIMIT $3`, [orgId, buildingIds, limit, applicationId]);
 
   return r.rows.map((x) => ({
     applicationId: x.application_id,
