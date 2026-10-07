@@ -106,3 +106,77 @@ Left over, harmless: two "Invitation: Funding Strategy Meeting - VERIFY TEST (de
 3. The real `events.patch` with the whole guest list (above), and the real `events.list` filter on the private property. Both match the docs and the unit tests.
 4. Reschedules (M8).
 5. Whether `ADAPTERS_DRY_RUN` is `0` in production for the new calls. Boards of 09-23 and 10-02 say it is. If not, every row shows "Google calls are switched off on this site right now (ADAPTERS_DRY_RUN)".
+
+---
+
+## Re-check of fixes
+
+Date: 2026-10-07. Checked by: a different tester than the builder and than the first verifier. Branch `claude/ecstatic-galileo-h9suqe`, HEAD `e0035bf`, diffed against `17087b2` (commits `17a6d66`, `3f56b28`, `e0035bf`; 7 files, all under `src/`).
+Rules I followed: no code changed, nothing committed, nothing pushed, nothing sent to Google (every Google call was a fake or a local test server). The shell's `DATABASE_URL` pointed at the live database, so every test ran with it removed (`env -u DATABASE_URL`) or pointed at my own private scratch Postgres (16.x, port 55433, all 341 migrations applied). The live database was never touched. The only file I wrote is this section.
+
+### Verdicts
+
+| Fix | Verdict | One line |
+|---|---|---|
+| S1 | **PASS** | No blip path changes a row or deletes a block. Only a per-calendar `notFound` or `forbidden` moves a row. A booking right after a blip still invites the connected closer. |
+| S2 | **PASS** | A dead token (`invalid_grant`, `invalid_client`, `unauthorized_client`) fails the run non-retriably, the heartbeat records an error, and the pulse shows `job:staff-calendar-busy-sync` FAIL. Blips and a hung token call do not fail the run. |
+| M1 | **PASS** | A pass in which any insert failed deletes nothing. The next healthy pass writes the new block first and then removes the old one. |
+| M2 | **PASS** | The token refresh carries `AbortSignal.timeout(6000)`. A token endpoint that never answers ended the pass in 6.0 seconds on the real `fetch`. |
+| M4 | **PASS** | The window starts at the current minute. A block already under way is not rewritten (0 writes on every later pass, 9 passes followed through a whole meeting, with Google's busy answer both clipped and unclipped). No gap, no churn. |
+| "Never touch a non-mirror event" | **PASS, no regression** | 4,000 random diffs with the new clipped compare: 0 non-mirror events in `toDelete`. A stateful run with 4 decoys on the fake calendar: none touched. |
+
+### How I tried to break each one
+
+**S1.** I ran the real sync pass, the real provider and the real token code against a fake Google that I could make fail at each layer. For each case I checked three things: no `UPDATE staff_calendar_links`, no insert or delete sent to Google, and the run result.
+- freeBusy answered 503, 500 (HTML body), 429, 401, 403 (API not enabled), and a thrown network error: rows untouched, no writes. Run `ok:false`, `tokenDead:false`.
+- Token endpoint answered 503 (HTML), 500 (JSON), 429, and threw: same result.
+- `events.list` answered 503: no writes, `tokenDead:false`.
+- Per-calendar answers inside a good freeBusy: `backendError`, `internalError`, `groupTooBig`, `tooManyCalendarsRequested`, an empty reason, and a calendar missing from the answer all left Sarah's row untouched and her existing block undeleted. `notFound`, `forbidden`, and `backendError` plus `notFound` moved her row to `pending` and still did not delete her block (it is in `leaveAlone`). A healthy neighbour (Justice) was still handled normally in the same pass.
+- "Save and check" (`checkMyCalendar`) during a 503, a thrown error, and a dead token returned `result:"error"` and left the row exactly as it was.
+- A booking right after a blip: ran one real sync pass into a 503, then `inviteClosersToBooking` through the real provider. The connected closer was added to the guest list. The new pg test (`a Google blip during a sync pass leaves the closer connected...`) passes on a real database, as owner and as `fundhub_app`.
+- Only two other writers of a row status remain, and neither is a blip: the "that is the booking calendar itself" error (`calendar-sync.mjs:332`, `:443`) and "waiting on approval" when the env var is missing or unusable (`:322`, `:447`).
+
+**S2.** The builder's own test calls `heartbeatHooks().finished()` by hand. I wanted the real thing, so I drove the real route `api/inngest.mjs` (the `serveEdge` handler the site uses) with the real Inngest SDK 3.54.2 in dev mode, in two requests, the way Inngest does it (step run, then replay with the step result). The real `staff-calendar-busy-sync` function ran against a local test server standing in for Google's token endpoint, and the heartbeat row landed in the scratch database. Then I called the real `checkJobHeartbeats`.
+- Token endpoint answers 400 `invalid_grant` (the real shape): step returned `tokenDead:true` (206), the second request ended 400 with `x-inngest-no-retry: true`, exactly one heartbeat row was written for the whole run (the step request writes none), `outcome='error'`, `error` = the plain sentence. The pulse row read: `FAIL - last run ... ended in an error: Chris's Google calendar approval stopped working (Google refused the stored token), so busy times are not being copied to the booking calendar.`
+- Same result with no staff links at all (the token is reached through the existing-blocks list) and with a connected link (reached through freeBusy). In both, the link row stayed `connected` with no error text.
+- Token endpoint 503 (HTML) and 500 (JSON), and a hung endpoint: run succeeded (HTTP 200), heartbeat `ok`, pulse row PASS. A blip never fails the run, so it cannot page every five minutes.
+- Nothing else in the repo reacts to a failed Inngest run (I searched for `function.failed` and `onFailure`), so a dead token shows up once, at the 7 a.m. pulse, not every five minutes. The pulse reads only the newest heartbeat, so a single odd `invalid_grant` that is followed by a good run clears itself.
+- The `finished` hook fires only on the last request of a run (SDK `v1.js:694` skips step requests), so the thrown error after the step is the one that is recorded.
+
+**M1.** Stateful fake calendar, real provider. A meeting grew from 13:00-14:00 to 13:00-14:30; the new block's insert returned 500. That pass sent 0 deletes, the old block stayed on the calendar, `ok:false`, `failures:1`, `deferred:1`, note ends "removals held until the new blocks are in". The next healthy pass sent `insert, delete` in that order and left one block. A pass with no inserts still deletes stale blocks. A pass that hit the 25-write cap (30 blocks) did the inserts only; the second pass finished the rest.
+
+**M2.** Real `fetch` against a local server that never answers: `calendarAccessToken` came back `ok:false` with "Google token refresh failed: The operation was aborted due to timeout" after 6,016 ms, inside the full sync pass (the pass returned, not failed). Not a dead token, so no pulse failure. The unit test passes too. The wrapper passes a fresh `AbortSignal.timeout` on every call, so a retry gets a new clock.
+
+**M4.** A fake calendar that keeps events and answers `events.list` the way Google does (overlap with the window, private-property filter). Meeting 09:00-10:00 followed through passes at 08:50, 08:55, 09:00, 09:05, 09:10, 09:30, 09:55, 10:00, 10:05: one insert at 08:50, then nothing, ever. First seen at 09:20: one insert 09:20-10:00, then nothing. Meetings that ended this morning: never written. Cancelled at 09:25: block deleted (slot not stuck closed). Extended to 10:30 at 09:25: new block in first, old out second, then quiet. Shortened: old replaced. All of that was run twice, once with Google's busy answer clipped to the window and once with whole intervals, and it came out the same.
+
+### Gates (run by me, 2026-10-07)
+
+| Gate | Result |
+|---|---|
+| `env -u DATABASE_URL npx tsc --noEmit` | exit 0, no output |
+| `npm run lint` | exit 0, "2595 file(s) and inline script(s) parse clean" |
+| The seven requested unit groups, run together, `DATABASE_URL` unset | **145 tests, 145 pass, 0 fail, 0 cancelled, 0 skipped** |
+| ...per file | `calendar-sync.test.mjs` 36/36, `staff-calendar.test.mjs` 12/12, `google-calendar.test.mjs` 18/18, `staff-calendar-link.test.mjs` 10/10, `src/pulse/*.test.mjs` 39/39 (3 database suites in that folder show SKIP with no database), `workflows/index.test.mjs` 13/13, `journeys/runner/index.test.mjs` 17/17 |
+| `staff-calendar-link.pg.test.mjs`, scratch DB, as owner | 15 tests: 14 pass, 0 fail, 1 skipped (the app-role test) |
+| Same file with `APP_DATABASE_URL` as `fundhub_app` | **15/15 pass, 0 skipped** |
+| `src/pulse/heartbeats.pg.test.mjs`, scratch DB | 4/4 pass |
+
+I did not re-run the full 12,000-test suite or the full pg suite; the diff touches only the seven files above and the files that import them are in the groups I ran.
+
+### New findings
+
+None blocks. In order of how much I would care:
+
+1. **Low to medium: a long-lasting setup problem is now invisible.** Because only `notFound` and `forbidden` may touch a row and only a dead token fails the run, these now leave no trace anywhere a person looks: the adapters fence closed (`ADAPTERS_DRY_RUN` not `0`), the Google Calendar API not switched on for the project, a 403 on the scope. I ran each: the sync returns `ok:false` with a good note, but writes no row text, the heartbeat says `ok`, the pulse is PASS, and Sarah's "Save and check" answers `result:"error"` with `last_error: null`, which the screen turns into "Saved, but Google did not answer. Try again in a few minutes." forever (`src/staff/calendar-sync.mjs:349-353` for the pass, `:457-458` for the check; `public/app/calendar.html:1685`). Before this change those cases wrote a plain reason on the row ("Google calls are switched off on this site right now (ADAPTERS_DRY_RUN)"). This matters on day one, because item 5 of "Still not proved by anyone" above is exactly the fence. It is not damage and it is not a failure of S1 or S2 as worded. A way to keep S1 and still say it: write `last_error` without changing `status` (the status stays `connected`, only the words change), or fail the run for the "not switched on" and fence cases the same way as a dead token.
+2. **Low: `deleted_client` and `disabled_client` are not in the dead-token list** (`src/staff/calendar-sync.mjs:66`). Those are the codes Google gives when the OAuth client itself was deleted or disabled. I ran `deleted_client` through the real chain: `tokenDead:false`, run succeeds, pulse PASS, nothing shown. That is the same silence S2 set out to remove, for a rarer cause.
+3. **Low: one stuck insert holds every delete, indefinitely** (`src/staff/calendar-sync.mjs:399`, the M1 guard). I ran a block whose insert always fails: 3 passes in a row, 0 deletes, and the stale block from a cancelled meeting stays on the calendar, so that slot stays closed. The run is `ok:false` every pass but is not failed, so nothing tells anyone. Likewise one delete that fails stops every later delete in that pass, because the guard counts delete failures too (`out.failures > 0`, checked before each delete). This is the safe direction (a slot stays closed rather than opens), and it is what M1 asked for. It just has no exit.
+4. **Nit: a token that dies in the middle of a pass is not flagged that pass** (`src/staff/calendar-sync.mjs:412-419` does not set `tokenDead` from an insert or delete failure). The next pass catches it at freeBusy or the list, so the delay is at most five minutes.
+5. **Nit: "Save and check" after a blip shows the previous message** (for example "Not shared yet") in red, because the row keeps its last real answer. True as of the last real check, just not new.
+
+None of these touches the "never touch a non-mirror event" guarantee, and I found no path where a blip changes a row, deletes a block, or fails the run, and no dead-token path that stays off the heartbeat.
+
+### Not proved
+
+- A real Google `freeBusy` answer was not used. I ran both shapes it could take (intervals clipped to the window, and whole intervals) and M4 holds either way.
+- Inngest Cloud's own orchestration was not used. I used the real SDK execution engine and the real route, which is where the heartbeat hook and the non-retriable flag are decided.
+- The pre-existing S3 (merge conflicts with `origin/main`) and the minor items M3, M5 to M9 above were out of scope for this re-check and are unchanged by these commits, except M3, which the new rule makes moot (a token-refresh blip no longer reaches the staff row at all).
