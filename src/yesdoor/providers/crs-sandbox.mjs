@@ -89,3 +89,54 @@ export async function screen({ firstName = null, lastName = null, email, address
     }
   };
 }
+
+/**
+ * A re-check under the recheck consent stored at sign-up (spec §6): it never asks
+ * the renter for anything. A date of birth is never stored, so a re-check cannot
+ * send one; a real bureau would be asked by the reference it already holds. The
+ * sandbox has no bureau, so the file does not move: the prior finished screening
+ * comes back as a fresh result with a new reference. (A test, or a later real
+ * adapter, can return different numbers; the cron only reads the shape.)
+ *
+ *   rescreen({ email, prior })
+ *   prior  the last finished yd_screenings row: { id, status, result_at, credit_score,
+ *          collections_count, eviction_count, eviction_last_at, criminal_flags }
+ */
+export async function rescreen({ email, prior = null } = {}) {
+  const cleanEmail = String(email ?? "").trim().toLowerCase();
+  if (!cleanEmail) throw new Error("rescreen needs an email");
+  const stamp = `${cleanEmail}|${prior?.id ?? ""}|${prior?.result_at ? new Date(prior.result_at).toISOString() : ""}`;
+  const ref = `crs-sandbox:recheck:${hashOf(stamp).toString("hex").slice(0, 12)}`;
+
+  if (!prior || prior.status !== "complete") {
+    return {
+      provider: PROVIDER, sandbox: true, status: "no_match", ...EMPTY, raw_ref: ref,
+      raw: { sandbox: true, status: "no_match", needs: "prior_screening", subject: { email: cleanEmail } }
+    };
+  }
+  const flags = Array.isArray(prior.criminal_flags) ? prior.criminal_flags.map((f) => ({ ...f })) : [];
+  return {
+    provider: PROVIDER,
+    sandbox: true,
+    status: "complete",
+    credit_score: prior.credit_score,
+    collections_count: prior.collections_count,
+    eviction_count: prior.eviction_count,
+    eviction_last_at: prior.eviction_last_at ?? null,
+    criminal_flags: flags,
+    raw_ref: ref,
+    raw: {
+      sandbox: true,
+      status: "complete",
+      subject: { email: cleanEmail },
+      summary: {
+        score: prior.credit_score,
+        collections: prior.collections_count,
+        evictions: prior.eviction_count,
+        lastEvictionOn: prior.eviction_last_at ?? null,
+        criminalRecords: flags.length
+      },
+      note: "Sandbox re-check: the prior file, unchanged."
+    }
+  };
+}

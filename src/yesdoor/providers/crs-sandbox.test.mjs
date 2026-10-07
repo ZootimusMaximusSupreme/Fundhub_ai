@@ -1,6 +1,6 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
-import { PROVIDER, SANDBOX, generatedFile, screen } from "./crs-sandbox.mjs";
+import { PROVIDER, SANDBOX, generatedFile, rescreen, screen } from "./crs-sandbox.mjs";
 import { SAMPLE_RENTERS, fixtureByKey } from "../fixtures/renters.mjs";
 
 const CREDIT_FIELDS = ["credit_score", "collections_count", "eviction_count", "eviction_last_at", "criminal_flags"];
@@ -110,5 +110,39 @@ describe("determinism and safety", () => {
   test("an email is required", async () => {
     await assert.rejects(() => screen({}), /needs an email/);
     await assert.rejects(() => screen({ email: "  " }), /needs an email/);
+  });
+});
+
+describe("rescreen (a re-check under the stored recheck consent)", () => {
+  const prior = {
+    id: "00000000-0000-4000-8000-000000000001", status: "complete", result_at: "2026-09-01T10:00:00Z",
+    credit_score: 655, collections_count: 1, eviction_count: 0, eviction_last_at: null,
+    criminal_flags: [{ category: "misdemeanor_theft", years_ago: 6 }]
+  };
+
+  test("returns the prior file unchanged with a new reference, and needs no date of birth", async () => {
+    const out = await rescreen({ email: "x@example.test", prior });
+    assert.equal(out.status, "complete");
+    assert.equal(out.provider, "crs_sandbox");
+    assert.equal(out.sandbox, true);
+    for (const f of CREDIT_FIELDS) assert.deepEqual(out[f], prior[f], f);
+    assert.notEqual(out.criminal_flags, prior.criminal_flags, "a copy, not the same array");
+    assert.match(out.raw_ref, /^crs-sandbox:recheck:[0-9a-f]{12}$/);
+    assert.doesNotMatch(JSON.stringify(out.raw), /ssn|dob/i);
+  });
+  test("the same input gives the same reference", async () => {
+    const a = await rescreen({ email: "x@example.test", prior });
+    const b = await rescreen({ email: " X@Example.test ", prior });
+    assert.equal(a.raw_ref, b.raw_ref);
+  });
+  test("with no finished prior screening there is nothing to re-check: no_match, no numbers", async () => {
+    const out = await rescreen({ email: "x@example.test", prior: null });
+    assert.equal(out.status, "no_match");
+    for (const f of CREDIT_FIELDS) assert.equal(out[f], null, f);
+    const failed = await rescreen({ email: "x@example.test", prior: { ...prior, status: "no_match" } });
+    assert.equal(failed.status, "no_match");
+  });
+  test("an email is required", async () => {
+    await assert.rejects(() => rescreen({ prior }), /needs an email/);
   });
 });
