@@ -115,6 +115,7 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
   <button role="tab" id="t-plan" aria-selected="true" aria-controls="plan">Money plan</button>
   <button role="tab" id="t-onboard" aria-selected="false" aria-controls="onboard">Onboarding paths</button>
   <button role="tab" id="t-score" aria-selected="false" aria-controls="score">Weekly scoreboard</button>
+  <button role="tab" id="t-fish" aria-selected="false" aria-controls="fish">Big fish first</button>
   <button role="tab" id="t-phases" aria-selected="false" aria-controls="phases">Launch phases</button>
 </nav>
 
@@ -135,7 +136,7 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
         <div class="mk"><b>AZ</b><input type="number" id="az_share" aria-label="Arizona share"><input type="number" id="az_rent" aria-label="Arizona rent"><input type="number" id="az_fee" aria-label="Arizona fee"></div>
         <div class="mk"><b>CA</b><input type="number" id="ca_share" aria-label="California share"><input type="number" id="ca_rent" aria-label="California rent"><input type="number" id="ca_fee" aria-label="California fee"></div>
         <div class="mk"><b>FL</b><input type="number" id="fl_share" aria-label="Florida share"><input type="number" id="fl_rent" aria-label="Florida rent"><input type="number" id="fl_fee" aria-label="Florida fee"></div>
-        <p class="src">Phoenix $1,550 and LA/San Diego ~$2,800 rent: city averages, 2026. Fee: 100% of first month is typical, CA 48–100%. Florida not researched yet: enter rent and fee before giving it a share.</p>
+        <p class="src">Phoenix $1,550 and LA/San Diego ~$2,800 rent: city averages, 2026. Fee: 100% of first month is typical, CA 48–100%. Florida $2,035 = average of Miami, Tampa, Orlando, Jacksonville (RentCafe, Oct 2026); FL fee not found, national typical used.</p>
       </fieldset>
       <fieldset><legend>Renter ads</legend>
         <label class="f">Cost per lead $<em>US range $17–38</em><input type="number" id="cpl" step="1"></label>
@@ -149,11 +150,13 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
         <label class="f">Software $ per partner a month<em>office tier</em><input type="number" id="software" step="10"></label>
       </fieldset>
       <fieldset><legend>Repeat renters (lease ends)</legend>
-        <label class="f">Renters who move at lease end %<em>assumed</em><input type="number" id="moveRate" step="5"></label>
+        <label class="f">Renters who move at lease end %<em>US renewal 55.1% (RealPage)</em><input type="number" id="moveRate" step="5"></label>
         <label class="f">Of those, book with Yesdoor again %<em>assumed: renewal outreach drives it</em><input type="number" id="rebook" step="5"></label>
       </fieldset>
       <fieldset><legend>Buildings</legend>
         <label class="f">Leases per building a month<em>assumed</em><input type="number" id="perBuilding" step="1"></label>
+        <label class="f">Units that turn over a year %<em>~45% move out</em><input type="number" id="turnover" step="1"></label>
+        <label class="f">Share of their move-ins Yesdoor fills %<em>assumed</em><input type="number" id="capture" step="1"></label>
       </fieldset>
       <fieldset><legend>Renter back end (clients)</legend>
         <label class="f">Non-leasing leads who buy %<em>assumed: measure in Phoenix</em><input type="number" id="take" step="0.5"></label>
@@ -234,6 +237,16 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
   </div>
 </section>
 
+<!-- BIG FISH -->
+<section class="panel" id="fish" role="tabpanel" aria-labelledby="t-fish" hidden>
+  <div>
+    <h2>Sign the biggest landlords first</h2>
+    <p class="note" id="fishNote"></p>
+  </div>
+  <div class="tracks" id="fishList"></div>
+  <p class="src">Units: NMHC 2026 Top Managers (Dunn Report summary), 2025 NMHC list, Camden 10-K (Dec 2025), MAA filing (Jun 2025), Commercial Observer (Irvine). Which of these pay locators: not found in public pages. ALN locator data lists the commission per property for AZ, CA and FL.</p>
+</section>
+
 <!-- PHASES -->
 <section class="panel" id="phases" role="tabpanel" aria-labelledby="t-phases" hidden>
   <div>
@@ -249,12 +262,12 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
 const DEFAULTS={leaseTarget:2000,
   az_share:50,az_rent:1550,az_fee:100,
   ca_share:50,ca_rent:2800,ca_fee:75,
-  fl_share:0,fl_rent:0,fl_fee:100,
+  fl_share:0,fl_rent:2035,fl_fee:100,
   cpl:27,conv:7.5,pull:9,
   pShare:30,perPartner:3,payout:25,software:499,
   perBuilding:4,take:2.5,backPrice:1000,
   revStaff:18000,staffCost:6000,payback:3,
-  goal:10000000,moveRate:50,rebook:40};
+  goal:10000000,moveRate:45,rebook:40,turnover:45,capture:15};
 const KEYS=Object.keys(DEFAULTS);
 let plan={...DEFAULTS};
 let savedPlan=null;
@@ -280,12 +293,13 @@ function compute(p){
   const partners=(+p.perPartner||0)>0?Lp/p.perPartner:0;
   const soft=partners*(+p.software||0);
   const buildings=(+p.perBuilding||0)>0?L/p.perBuilding:0;
+  const units=(+p.turnover||0)>0&&(+p.capture||0)>0?L*12/((+p.turnover/100)*(+p.capture/100)):0;
   const rev=placeD+placeP+back+soft;
   const staff=(+p.revStaff||0)>0?rev/p.revStaff:0;
   const staffCost=staff*(+p.staffCost||0);
   const profit=rev-payout-ad-pulls-staffCost;
   const cash=(ad+pulls+staffCost)*(+p.payback||0);
-  return {avgFee,L,Ld,Lp,Lr,repeat,leadsD,leadsP,leads,ad,pulls,placeD,placeP,payout,back,partners,soft,buildings,rev,staff,staffCost,profit,cash,
+  return {avgFee,L,Ld,Lp,Lr,repeat,leadsD,leadsP,leads,ad,pulls,placeD,placeP,payout,back,partners,soft,buildings,units,rev,staff,staffCost,profit,cash,
     cpLease:Ld>0?ad/Ld:0, margin:rev>0?profit/rev:0, revPerLease:L>0?rev/L:0};
 }
 
@@ -316,7 +330,7 @@ function renderPlan(){
     row("Team",`<span class=neg>${usd(-r.staffCost)}</span>`,n(r.staff)+" people × "+usd(+plan.staffCost))+
     row("Profit",usd(r.profit),Math.round(r.margin*100)+"% of revenue","total");
   $("needs").innerHTML="<tr><th>What</th><th class=r>Month</th><th class=r>Week</th></tr>"+
-    [["Repeat renters placed (no ad cost)",r.Lr],["Renter leads (yours)",r.leadsD],["Renter leads (from partners)",r.leadsP],["Credit pulls",r.leads],["Leases signed",r.L],["Buildings live",r.buildings,1],["Active partners",r.partners,1],["Team",r.staff,1]]
+    [["Repeat renters placed (no ad cost)",r.Lr],["Renter leads (yours)",r.leadsD],["Renter leads (from partners)",r.leadsP],["Credit pulls",r.leads],["Leases signed",r.L],["Buildings live",r.buildings,1],["Units under contract",r.units,1],["Active partners",r.partners,1],["Team",r.staff,1]]
     .map(([a,v,flat])=>`<tr><td>${a}</td><td class="r num">${n(v)}</td><td class="r num">${flat?"—":n(v/4.33)}</td></tr>`).join("");
   const base=r.profit;
   const tries=[
@@ -329,7 +343,7 @@ function renderPlan(){
     ["Shift 10 points of mix from AZ to CA",{az_share:Math.max(0,+plan.az_share-10),ca_share:+plan.ca_share+10}]
   ].map(([label,ch])=>[label,compute({...plan,...ch}).profit-base]).sort((a,b)=>b[1]-a[1]);
   $("levers").innerHTML=tries.map(([l,d])=>`<div class="lever"><span>${l}</span><span class="num ${d<0?"neg":""}">${d>=0?"<b>+"+usd(d)+"</b>":usd(d)}</span></div>`).join("");
-  renderPhases(); renderWeeks();
+  renderPhases(); renderWeeks(); renderFish();
 }
 
 /* ---------- Onboarding paths ---------- */
@@ -391,6 +405,20 @@ function renderTracks(){
     return `<div class="box track"><h2>${t.name}<small>${autoN}/${t.steps.length} auto</small></h2>
       <ol class="steps">${t.steps.map(s=>`<li><strong>${s[0]}${chip[s[2]]}</strong><p>${s[1]}</p></li>`).join("")}</ol>
       ${t.loop?`<div class="loop">↻ ${t.loop}</div>`:""}</div>`}).join("");
+}
+
+/* ---------- Big fish ---------- */
+const FISH=[
+ {t:"Tier 1 · National managers",offer:"One portfolio contract covers every building. Free to list. They pay only when a lease is signed, at their own fee.",how:"Founder-led meeting with the regional VP. Agents prepare a renter-demand report for their buildings.",rows:[["Greystar","1,014,091"],["Asset Living","446,427"],["Willow Bridge","244,457"],["RPM Living","241,479"],["AMC","156,223"],["Avenue5","153,968"],["Cushman & Wakefield","135,892"],["Bozzuto","133,117"],["WinnCompanies","122,183"],["ZRS (Orlando)","113,953"]]},
+ {t:"Tier 2 · Owners with in-house leasing",offer:"Same deal, pitched as filling vacant units faster with pre-approved renters. Some may refuse locators; their policy is not public.",how:"Pitch on their own vacancies in our markets.",rows:[["Irvine Company","~65,000 (Orange County)"],["Equity Residential","84,249"],["AvalonBay","83,753"],["Essex","62,510 · 41% of revenue in SoCal"],["MAA","FL 15,129 · Phoenix 3,291"],["Camden","Phoenix 4,094 · FL 10,790 · SoCal 3,609"]]},
+ {t:"Tier 3 · Regional managers",offer:"Free listing, pay on lease. Priority placement for a higher fee %.",how:"Agents build the list from ALN data ($50 per market a month). Email, AI calls and mail.",rows:[["List source","ALN locator data, by market"],["Count","not researched yet"]]},
+ {t:"Tier 4 · Small owners",offer:"Free listing. 3-tap signup from a phone. Pay on lease.",how:"Fully agentic: mail, email, ads to owners, AI call follow-up.",rows:[["List source","ALN + county records"],["Count","not researched yet"]]}
+];
+function renderFish(){
+  const r=compute(savedPlan||plan);
+  $("fishNote").textContent="The plan needs about "+n(r.units)+" units under contract ("+n(r.L)+" leases a month, "+plan.turnover+"% yearly turnover, Yesdoor filling "+plan.capture+"% of their move-ins). The top 10 managers alone run about 2.76 million units.";
+  $("fishList").innerHTML=FISH.map(f=>`<div class="box"><h2>${f.t}</h2><p style="margin:6px 0 4px;font-size:14px">${f.offer}</p><p class="note">${f.how}</p>
+    <div class="scroll" style="margin-top:10px"><table><tr><th>Who</th><th class=r>Units</th></tr>${f.rows.map(x=>`<tr><td>${x[0]}</td><td class="r num">${x[1]}</td></tr>`).join("")}</table></div></div>`).join("");
 }
 
 /* ---------- Phases ---------- */
@@ -469,7 +497,7 @@ $("solveGoal").addEventListener("click",()=>{readInputs();const r=compute({...pl
 $("resetPlan").addEventListener("click",()=>{plan={...DEFAULTS};writeInputs(plan);renderPlan();});
 
 /* ---------- Tabs ---------- */
-const tabs=[["t-plan","plan"],["t-onboard","onboard"],["t-score","score"],["t-phases","phases"]];
+const tabs=[["t-plan","plan"],["t-onboard","onboard"],["t-score","score"],["t-fish","fish"],["t-phases","phases"]];
 function show(id){tabs.forEach(([t,p])=>{const on=p===id;$(t).setAttribute("aria-selected",on);$(p).hidden=!on;});}
 tabs.forEach(([t,p])=>$(t).addEventListener("click",()=>{show(p);try{history.replaceState(null,"","#"+p)}catch(e){}}));
 const h=(location.hash||"").slice(1); if(tabs.some(x=>x[1]===h))show(h);

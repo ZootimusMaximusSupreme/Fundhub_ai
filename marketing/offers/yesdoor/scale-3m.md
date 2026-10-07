@@ -172,3 +172,14 @@ Draft design (not built):
 - **The hook:** "We have N pre-approved renters who want [Building]." N comes from real renter demand.
 - **Signup in 3 taps, no login (magic link: `src/auth/magic-link.mjs`):** (1) check the pre-filled building page and rental criteria the agent already read, (2) pick a fee preset and sign, (3) type the leasing-office email where renters get registered. Connecting Entrata or Yardi is optional, later.
 - E-signature: no e-sign tool found in this repo.
+
+## $10M a month (owner-set goal, 2026-10-07)
+
+Owner-set model: automated placement company. Renters search, pre-qualify with an email, see only contracted buildings, book the tour. Buildings list free and pay only when a lease is signed. Every lease end is tracked: check-ins, reviews, upsells, and a re-placement when the renter moves. Expansion later: any rental, including commercial.
+
+Model (Scale Engine page, research defaults, CRS $9):
+- 4,750 leases a month → ~$10.06M revenue, ~$4.72M profit (47%).
+- ~855 of those are repeat renters at lease end (US renewal rate 55.1%, [RealPage](https://www.realpage.com/analytics/2q-2025-data-update/); 40% rebook is assumed).
+- ~1,188 buildings, ~844,000 units under contract (45% yearly turnover, Yesdoor fills 15% of their move-ins, assumed). The top 10 managers run ~2.76M units ([NMHC 2026 via Dunn Report](https://thedunnreport.beehiiv.com/p/2026-nmhc-top-owners-managers-and-developers)).
+- Florida rent: Miami $2,761, Tampa $2,025, Orlando $1,838, Jacksonville $1,522 ([RentCafe](https://www.rentcafe.com/average-rent-market-trends/us/fl/miami/)).
+- Who pays locators among the big managers: not found publicly. ALN locator data lists commission per property in AZ, CA, FL.
