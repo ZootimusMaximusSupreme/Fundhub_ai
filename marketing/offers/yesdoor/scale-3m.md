@@ -18,6 +18,8 @@ Board and sources: `ops/workflows/yesdoor-3m-scale-2026-10-07.md`. Every number 
 
 Why the third line matters: a brokerage's agents already hold the licence and the building relationships. Each partner brings leases without Yesdoor adding staff or a licence in that city.
 
+**Owner-set 2026-10-07 (licences):** Yesdoor holds real estate licences in Arizona, Florida and California. Placement fees and licensed-partner splits run under them. Florida is a third market; its fees and rents were not researched yet.
+
 ## The answer
 
 - $3M a month = $36M a year. No locator found has confirmed that much. The biggest confirmed one is Smart City at about $22M a year (~$1.8M a month) across 8+ cities. UMoveFree is estimated at ~$2.6M a month.
