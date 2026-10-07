@@ -114,3 +114,20 @@ What the market charges:
 | Office | $499/mo, up to 50 checks | Same as a 10-seat Follow Up Boss plan |
 | Placement split | Yesdoor keeps 25% of the fee on leases a partner's renter signs through Yesdoor buildings | Standard referral split |
 | White-label | $10,000 entry (Fundhub's partner price) + $499/mo | Matches the existing Fundhub ladder |
+
+## California + Arizona (research 2026-10-07)
+
+Rent, 2026, city level ([keepingupwithinflation](https://keepingupwithinflation.com/statistics/rent-by-city/)): Phoenix $1,550 · Sacramento $2,015 · Riverside $2,369 · Los Angeles $2,750 · San Diego $2,893 · San Francisco $3,723.
+
+California fees: buildings usually pay one month's rent or more ([Smart City blog](https://smartcitylocating.com/?p=14070), weak source). LA tenant-placement fees run 48–100% of first month ([Utopia](https://utopiamanagement.com/how-much-does-property-management-cost-in-los-angeles)); San Diego 50–100% or flat $595 ([TenantCloud](https://www.tenantcloud.com/blog/property-management-fees-in-california)). Bay Area, Sacramento, Inland Empire fees: not found.
+
+**The 2,000-lease math with real rents (fee = 100% of first month):**
+| Mix | Revenue a month |
+|---|---|
+| 1,000 Phoenix ($1,550) + 1,000 LA/San Diego (~$2,800) | ~$4.35M |
+| Same mix, California fee at 50% | ~$2.95M |
+| 2,000 Phoenix only | ~$3.1M |
+
+So 2,000 leases across CA and AZ clears $3M from placements alone in every mix above, before renter back end and partner revenue.
+
+Other findings: California referral fees pass through a licensed broker ([ACME](https://support.acmehouseco.com/knowledge-base-internal/realtor-referrals)). The prepaid rental listing law (broker licence + $10,000 bond) covers selling lists to renters ([DRE](https://www.dre.ca.gov/files/pdf/ca/2012/ConsumerAlert_PRLS.pdf)). Yesdoor charges buildings. California background checks follow ICRAA notice steps ([RentSpree](https://support.rentspree.com/en/icraa-regulations)). Owner-set: Chris navigates licensing and screening rules. California locator company sizes and Arizona screening rules: not found.
