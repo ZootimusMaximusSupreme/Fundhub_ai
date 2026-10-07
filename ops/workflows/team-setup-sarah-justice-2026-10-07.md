@@ -135,3 +135,19 @@ The setter flow is built (the "Josh" AI setter):
 - `ops/workflows/morning-brief-2026-10-05.md:240` prints the full morning-text number, though line 23 of the same board says the full number stays out of the repo.
 
 - Moved or cancelled ClickFunnels calls may not match the original booking. `src/adapters/clickfunnels.mjs:358-365` saves the booking under the webhook id, not the call id. Already noted in `db/migrations/225_bookings.sql:239-243` and `ops/workflows/cf-calendar-switch-plan-2026-09-22.md`.
+
+## Mac step — paste into one Mac agent session (after PR #57 is merged to main)
+
+```
+Repo ~/Fundhub_ai. Follow CLAUDE.md. Do these in order and report each result:
+1. git checkout main && git pull origin main
+2. node --env-file=.env scripts/google-oauth-mint.mjs --calendar --set-netlify
+   (a browser opens: Chris signs in as stanbridgejchris@gmail.com and presses Allow. That is his only step.
+    It sets GOOGLE_CALENDAR_OAUTH_TOKEN_JSON on Netlify as a secret, and refuses if that var already exists.)
+3. npm run ship   (one deploy; applies migration 434; confirms /api/health pending 0)
+4. Open https://fundhub.ai/app/calendar.html as a staff login and confirm the "Connect your calendar" box shows.
+5. Write the results on ops/workflows/team-setup-sarah-justice-2026-10-07.md and commit + push.
+If ship says Netlify "Unauthorized", report that error in one line and stop.
+```
+
+After that: the email to Sarah and Justice goes out (share at "See only free/busy" with stanbridgejchris@gmail.com, then type their address into the box), and the first real share proves the free/busy read.
