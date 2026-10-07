@@ -59,7 +59,15 @@ export const SESSIONLESS_ALLOWLIST = new Set([
   "public/slo-checkout.mjs",
   "public/slo-pull.mjs",
   "public/slo-status.mjs",
-  "public/slo-repair-checkout.mjs"
+  "public/slo-repair-checkout.mjs",
+  /* Yesdoor's sandbox e-sign callback. SESSIONLESS BY DESIGN: the signer is a
+     building or broker contact with no login, and the credential is the HMAC
+     signing link (agreement id + expiry, signed with YD_LINK_SECRET). The org is
+     the deployment's own (YD_ORG_SLUG), never a request field, and the store
+     binds it on every statement (src/yesdoor/store/agreements.mjs:
+     `WHERE id = $1 AND org_id = $2`); a link for another company's agreement
+     answers the same 404 as a forged one (src/http/yesdoor-supply.pg.test.mjs). */
+  "yesdoor/webhooks/esign.mjs"
 ]);
 
 /** Markers that prove the handler binds tenancy to the session (or partner

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Yesdoor | Apartments that will approve you</title>
+<meta name="description" content="Search apartments in the Phoenix area and see which buildings will approve you before you apply. Free for renters.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='8' fill='%230b7a5c'/%3E%3Cpath d='M11 25V13a5 5 0 0 1 10 0v12z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/yesdoor.css">
+</head>
+<body>
+<div id="yd-banner"></div>
+<div id="yd-header"></div>
+<main id="main">
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="wrap">
+      <p class="eyebrow">Phoenix, Tempe, Scottsdale, Mesa, Chandler</p>
+      <h1 id="hero-h">See every apartment that will approve you &mdash; in 60 seconds.</h1>
+      <p class="lead">Know before you apply. We check your credit and background once, then show you the buildings that will say yes. Free for renters.</p>
+      <form class="card search-bar" id="search-form" action="search.html" method="get" role="search" aria-label="Search apartments">
+        <div class="field">
+          <label for="q-city">City or ZIP code</label>
+          <input class="input" id="q-city" name="city" type="text" list="q-cities" placeholder="Tempe" autocomplete="off">
+          <datalist id="q-cities"></datalist>
+        </div>
+        <div class="field">
+          <label for="q-beds">Bedrooms</label>
+          <select class="input" id="q-beds" name="beds">
+            <option value="">Any</option><option value="0">Studio</option><option value="1">1 bed</option><option value="2">2 beds</option><option value="3">3 beds</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="q-rent">Highest rent per month</label>
+          <input class="input num" id="q-rent" name="maxRent" type="number" inputmode="numeric" min="500" step="50" placeholder="1600">
+        </div>
+        <button class="btn" type="submit">Search apartments</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="section tight" aria-labelledby="lanes-h">
+    <div class="wrap">
+      <h2 id="lanes-h">Two ways in. Same promise.</h2>
+      <p class="muted prose">Both paths use the same 60-second check. Yesdoor works out which one fits you.</p>
+      <div class="lanes">
+        <article class="card stack" aria-labelledby="lane-v">
+          <span class="tag lane">Good credit and steady income</span>
+          <h3 id="lane-v">Yesdoor Verified</h3>
+          <p><strong>See every apartment that will approve you &mdash; in 60 seconds.</strong></p>
+          <ul>
+            <li>Verify once, apply anywhere.</li>
+            <li>Buildings waive the application fee for verified renters where they can.</li>
+            <li>First pick of specials and units.</li>
+            <li>Fast tours, including evenings and weekends.</li>
+          </ul>
+          <a class="btn-secondary" href="prescreen.html">Start the 60-second check</a>
+        </article>
+        <article class="card stack" aria-labelledby="lane-s">
+          <span class="tag lane">Past evictions, credit dings or a record</span>
+          <h3 id="lane-s">Yesdoor Second Chance</h3>
+          <p><strong>See every apartment that will approve you &mdash; in 60 seconds.</strong></p>
+          <ul>
+            <li>We only show buildings whose rules fit your whole story.</li>
+            <li>No paying application fees just to hear no.</li>
+            <li>If a building says no after we said yes, we find you another one right away.</li>
+            <li>Extra help is built in if you get denied.</li>
+          </ul>
+          <a class="btn-secondary" href="prescreen.html">Start the 60-second check</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section tight" aria-labelledby="how-h">
+    <div class="wrap">
+      <h2 id="how-h">How it works</h2>
+      <ol class="steps-list">
+        <li><h3>Tell us who you are</h3><p>Name, email and your current address. No Social Security number.</p></li>
+        <li><h3>See where you are approved</h3><p>We show every building that will approve you, likely approve you, or not this one, with the reasons in plain words.</p></li>
+        <li><h3>Book a tour</h3><p>Pick a time. We register you with the building before you arrive, so the tour counts.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section tight" aria-labelledby="new-h">
+    <div class="wrap">
+      <div class="row between"><h2 id="new-h">Apartments to start with</h2><a href="search.html">See all apartments</a></div>
+      <div id="featured" aria-live="polite"></div>
+    </div>
+  </section>
+</main>
+<div id="yd-footer"></div>
+<script src="js/ui.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/pages/home.js"></script>
+</body>
+</html>

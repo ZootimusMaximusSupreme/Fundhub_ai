@@ -37,7 +37,14 @@ export const INNGEST_JOBS = Object.freeze([
   ["doc-check-retry-sweeper", "*/20 * * * *"],
   ["inquiry-call-sweeper", "*/15 * * * *"],
   ["next-action-catch-up", "*/5 * * * *"],
-  ["slo-infinite-drip", "0 15 * * *"]
+  ["slo-infinite-drip", "0 15 * * *"],
+  /* Yesdoor (B3b). Sandbox only; none of them sends anything. */
+  ["yd-recheck", "20 10 * * *"],
+  ["yd-touches", "10 * * * *"],
+  ["yd-rules-stale", "40 10 * * *"],
+  ["yd-outbox-dispatch", "*/5 * * * *"],
+  // Yesdoor B4: paid fees go safe after the refund window; the broker share is released.
+  ["yd-fee-safe", "0 8 * * *"]
 ]);
 
 export const NETLIFY_JOBS = Object.freeze([

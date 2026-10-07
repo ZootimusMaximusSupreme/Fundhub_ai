@@ -82,12 +82,17 @@ import { sloGenuineFollowup, sloGenuineReply, sloGenuineCheckoutSms } from './sl
 import { sloPaidFormNudge } from './slo-paid-form-nudge.mjs';
 import { sloNoReply197 } from './slo-no-reply-197.mjs';
 import { sloInfiniteDrip } from './slo-infinite-drip.mjs';
+import { ydFeeSafe } from './yd-fee-safe.mjs';
 import { sys01ClientValueCalculator } from './sys-01-client-value-calculator.mjs';
 import { sys01LtvCalculator } from './sys-01-ltv-calculator.mjs';
 import { u02AnalyzerCompleteDelivery } from './u-02-analyzer-complete-delivery.mjs';
 import { u03CrsSnapshotSync } from './u-03-crs-snapshot-sync.mjs';
 import { u04PromoteCrsPrimary } from './u-04-promote-crs-primary.mjs';
 import { u05DataHealthMonitor } from './u-05-data-health-monitor.mjs';
+import { ydRecheck } from './yd-recheck.mjs';
+import { ydTouches } from './yd-touches.mjs';
+import { ydRulesStale } from './yd-rules-stale.mjs';
+import { ydOutboxDispatch } from './yd-outbox-dispatch.mjs';
 
 export const functions = [
   af01AffiliateDrip,
@@ -467,4 +472,17 @@ export const functions = [
   u03CrsSnapshotSync,
   u04PromoteCrsPrimary,
   u05DataHealthMonitor,
+  /* Yesdoor (a separate app built in this repo for now; spec
+     docs/specs/yesdoor-mvp-build-spec.md §6, §7). All four read and write only yd_*
+     tables and SEND NOTHING: the screening and the outbox are sandbox stubs.
+       yd-recheck          daily   new sandbox screening under the stored consent
+       yd-touches          hourly  queues due lifetime touches (yd_outbox rows)
+       yd-rules-stale      daily   flags stale building rules, one re-confirm email
+       yd-outbox-dispatch  5 min   marks queued yd_outbox rows sent (sandbox) */
+  ydRecheck,
+  ydTouches,
+  ydRulesStale,
+  ydOutboxDispatch,
+  /* Yesdoor B4: the daily job that turns a paid fee safe after its refund window. */
+  ydFeeSafe,
 ];

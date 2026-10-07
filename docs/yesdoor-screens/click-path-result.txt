@@ -1,0 +1,41 @@
+PASS  staff password login (POST /api/auth/login)  (HTTP 200)
+PASS  staff add a broker: link code made, starts applied, plan and split saved  (applied, YD-973106, 25%)
+PASS  staff send the partner agreement (email queued, signing link handed back)  (HTTP 201)
+PASS  the agreement page shows this partner's terms (plan and 25% split)  (Plan: placement split. / You earn 25% of each placement fee Yesdoor collects for a renter you sent. Your share is held u)
+PASS  signing with no name and no tick is refused on the page
+PASS  the broker signs on the page: agreement signed with the typed name, broker active  (signed by Harper Partner; broker active)
+PASS  opening the same link again shows it signed, with no form
+PASS  a tampered link shows the one 'did not work' page
+PASS  staff give the broker a login: account made, sign-in link queued  (account + queued link)
+PASS  the broker link (?b=) is remembered as the first touch  ({"kind":"broker","brokerCode":"YD-973106"})
+PASS  home loads real listings (not demo mode)  (6 cards)
+PASS  search filters by city  (6 apartments)
+PASS  listing shows the building's rules and tour hours  (6 rules; Tour hours: Mon 9am–5pm, Tue 9am–5pm, Wed 9am–5pm, Thu 9am–5pm, Fri 9am–5pm, Sat 10am–4pm (Arizona time))
+PASS  pre-screen answers and hands back a renter session  (Likely approved at 2 buildings)
+PASS  income check (sandbox) updates the answer  (Approved up to $2,400 rent)
+PASS  tour booked through public/book with the pre-screen's renterToken  (You are booked at The Larkspur)
+PASS  database: application registered with the building  (The Larkspur, registered)
+PASS  renter portal opens on the same session  (Priya Raman-Sample)
+PASS  database: the renter's first touch is the broker  (broker)
+PASS  staff give the building a login: account, one building link, sign-in link queued  (1 building, leasing)
+PASS  the emailed invitation points at /yesdoor/login.html  (http://127.0.0.1:8899/yesdoor/login.html?t=…)
+PASS  building marks toured
+PASS  building marks applied
+PASS  building marks approved
+PASS  building marks lease signed (dates and rent)
+PASS  moved in earns the fee and issues the invoice  (invoiced)
+PASS  building saves its rules as a new version  (v2 -> v3)
+PASS  building adds a listing  ($1500)
+PASS  staff onboard a building  (target)
+PASS  staff send the fee agreement  (agreement_sent)
+PASS  sandbox e-sign webhook signs it  (HTTP 200 signed; building signed)
+PASS  staff log payment: invoice paid, placement paid  (paid)
+PASS  broker share is held after the building paid  (held $250)
+PASS  broker link page shows the shareable ?b= link  (http://127.0.0.1:8899/yesdoor/?b=YD-973106)
+PASS  broker signs out: the token worked before (200), is refused after (401), the session row is revoked  (revoked rows 1, live 0)
+PASS  building signs out: the token worked before (200), is refused after (401), the session row is revoked  (revoked rows 1, live 0)
+PASS  renter signs out: the token worked before (200), is refused after (401), the session row is revoked  (revoked rows 1, live 0)
+PASS  demo mode still renders (?demo=1)
+PASS  no page errors in the browser
+
+39/39 steps passed
