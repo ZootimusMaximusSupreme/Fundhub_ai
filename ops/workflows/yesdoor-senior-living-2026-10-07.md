@@ -148,7 +148,7 @@ the law in Arizona, California and Florida allows, and every legal way to get pa
 | L2 | Home care (private pay), home health, hospice | done |
 | L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | claimed (agent) |
 | L4 | Creative ways to get paid across all lines (who else pays besides the provider) | done |
-| L6 | Big referral opportunities, any industry: supplier legally pays $1,000+ per placement (Chris: "find big referral opps") | claimed (agent) |
+| L6 | Big referral opportunities, any industry: supplier legally pays $1,000+ per placement (Chris: "find big referral opps") | done |
 | L5 | Rank lines and payment models | pending (this session) |
 
 ## L4 — creative ways to get paid (done)
@@ -184,3 +184,19 @@ Agent's top 5: flat provider subscription → private-pay move-in fee → employ
 - Florida: a "who will say yes" match may count as steering under the (3)(i) exception.
 
 **Legal money for home health and hospice:** health plans (Medicare Advantage; CA exempts prepaid plans), employers (AZ, FL), hospitals paying for software, or equal cost-based flat listings in AZ and FL. **Never** the provider per patient.
+
+## L6 — big referral opportunities, any industry (done)
+
+| # | Opportunity | Fee per placement | Legal in AZ / CA / FL | Fit with "free check → who says yes" | Tech carryover |
+|---|---|---|---|---|---|
+| 1 | **Franchise placement** (franchisor pays) | 40–50% of the franchise fee ≈ **$20k–$25k** ([franzy](https://franzy.com/blog/franchise-broker/)) | AZ, FL: no broker registration; CA: registration from **July 1, 2027** (SB 919, [UBG Law](https://www.ubglaw.com/news-and-media/california-franchise-broker-registration-law-takes-effect-july-1-2027-what-franchisors-franchise-brokers-and-franchise-sales-organizations-need-to-know)) | High — credit, cash and net-worth check → which franchisors approve → Fundhub funds the buy-in | High |
+| 2 | **Life insurance and annuities** (licensed agency) | Life 40–115% of first-year premium ([NerdWallet](https://www.nerdwallet.com/insurance/life/learn/life-insurance-agent-commissions)); annuities 3–7% (~$4k on $100k) | Insurance license per state; unlicensed referrers can't be paid per sale (AZ [§20-298](https://syfert.com/arizona/sections/20-298.html); FL) | High — the insurer's health check is the "yes" | Medium-high |
+| 3 | **SBA business and acquisition loans** (lender pays) | 0.5–3% of loan, disclosed on Form 159 ([sba7a.loans](https://www.sba7a.loans/sba-7a-loans-small-business-blog/what-is-the-sba-form-159/)) | Form 159 disclosure; state lending licenses not checked | High | High — Fundhub's lane |
+| 4 | **SSDI representation** | Up to 25% of back pay, capped at **$9,200** ([20 CFR 404.1717](https://www.ssa.gov/OP_Home/cfr20/404/404-1717.htm)) | Federal, same in all 3; we become the representative (not a referral) | High | Medium |
+| 5 | **Wealth advisor matching** | 15–25% of the advisor's fee, ongoing | Advisor-rep registration (Series 65) in FL, CA | Medium-high | Medium |
+| 6 | **Yesdoor renters → home buyers** | 25–33% of agent commission ([Luxury Presence](https://www.luxurypresence.com/blogs/real-estate-referral-fees/)) | Real estate license needed | High | High |
+| 7 | **Arizona-only legal referrals** (injury, mass tort) | Signed cases ~$2k (car accident) to $2.5k–$15k (mass tort) | **AZ:** lawyers may pay anyone a referral fee since 2021 ([State Bar of AZ](https://www.azbar.org/media/1qykhcnm/ethical-marketing-tips.pdf)); ABS rules tightening (Feb 2026). CA: certified services only. FL: flat lead fees only | Medium | Medium |
+
+Also: business-for-sale buyer side (10–15%, real estate license); surrogate matching ($1k–$5k bounties; paying a company at scale not found).
+Closed: health referrals in FL (§817.505), EKRA lines, CA B&P 650; colleges on federal aid (per-student pay banned); mortgages (RESPA §8). Under $1,000: Medicare Advantage, solar, card processing, debt relief.
+**Yesdoor note:** in Florida an unlicensed person who refers an apartment tenant can get at most **$50** per deal; more needs a real estate license ([Daytona Realtors](https://daytonarealtors-92158.groovehq.com/help/pay-referral-fee-to-unlicensed-person)).
