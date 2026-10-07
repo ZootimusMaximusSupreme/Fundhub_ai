@@ -33,6 +33,7 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
 - [ ] $50K ad credit line from your friend. 4 closers absorb about $24K–$40K of ads a month, so it lasts about 2 months (projection doc above)
 - [ ] Saving work: every Mac session pushes to GitHub when it ends, not on the weekend. GitHub `main` is the one home; cloud sessions already save straight to it
 - [ ] Apply for the Meta Marketing API, Google Ads API and Partner API
+- [ ] Not urgent (Bland is off): send one real "call finished" webhook from Bland, so setter-call transcripts can save into the client dossier (marketing machine M0 step 9, PR #28)
 - [ ] Submagic: get the Business + API plan (repo law is API only, and there is no key yet)
 - [ ] Apple developer account ($99/year) so the teleprompter goes on your phone through TestFlight
 - [ ] Find the app someone sent you that breaks down Hormozi's ad creatives and storytelling (texts, Instagram, Facebook, or the 99ads Skool group)
