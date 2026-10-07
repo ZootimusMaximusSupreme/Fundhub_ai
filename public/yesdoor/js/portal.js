@@ -48,7 +48,7 @@
 
     if (isStaff) {
       if (demo) demoButton("Open the sample staff desk");
-      else out.innerHTML = '<a class="btn" href="/login.html">Sign in with your staff account</a><p class="caption" style="margin-top:16px"><button class="link-btn" type="button" id="use-sample">Use sample data instead</button></p>';
+      else out.innerHTML = '<a class="btn" href="/login.html?next=' + encodeURIComponent("/yesdoor/staff.html") + '">Sign in with your staff account</a><p class="caption" style="margin-top:16px"><button class="link-btn" type="button" id="use-sample">Use sample data instead</button></p>';
       var us = document.getElementById("use-sample");
       if (us) us.addEventListener("click", function () { YD.api.setMode("demo"); window.location.reload(); });
       return;
@@ -132,7 +132,8 @@
     ui.mountChrome({ portal: true });
     var el = main();
     el.innerHTML = '<div class="portal-main">' + ui.skeletonLines(4) + "</div>";
-    var token = ui.params().token;
+    // ?t= is the emailed sign-in link (the backend's login path); ?token= is the older form.
+    var token = ui.params().t || ui.params().token;
     var begin = token
       ? YD.api.authVerify(token).then(function () {
         try { window.history.replaceState(null, "", window.location.pathname + window.location.hash); } catch (e) { /* ignore */ }

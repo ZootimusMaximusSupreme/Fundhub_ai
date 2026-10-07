@@ -536,7 +536,7 @@
           var bd = byId(db.buildings, l.buildingId);
           if (!l.active || (bd.status !== "live" && bd.status !== "signed")) return false;
           if (q.city && bd.city.toLowerCase().indexOf(String(q.city).toLowerCase().trim()) === -1 && bd.zip !== String(q.city).trim()) return false;
-          if (q.beds !== undefined && q.beds !== "" && l.beds < Number(q.beds)) return false;
+          if (q.beds !== undefined && q.beds !== "" && l.beds !== Number(q.beds)) return false;
           if (q.maxRent && l.rentCents > Number(q.maxRent) * 100) return false;
           if (q.buildingId && l.buildingId !== q.buildingId) return false;
           return true;
@@ -835,6 +835,18 @@
             rulesStale: bd.rules ? Math.floor((NOW - new Date(bd.rules.confirmedAt).getTime()) / DAY) > D.staleDays : null, payerScore: bd.payerScore, isSample: true,
             leases: db.applications.filter(function (a) { return a.buildingId === bd.id && ["lease_signed", "moved_in", "invoiced", "paid", "safe"].indexOf(a.stage) !== -1; }).length };
         }) });
+      }
+      case "POST staff/buildings": {
+        s = needSession("staff");
+        if (!s) return err(401, "Sign in with your staff account.");
+        if (!String(body.name || "").trim() || !String(body.address || "").trim() || !String(body.city || "").trim()) return err(400, "Add the name, street and city.");
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(body.leasingEmail || ""))) return err(400, "Add the leasing office email.");
+        db.counters.bld = (db.counters.bld || 0) + 1;
+        var nb = { id: "bld-new-" + db.counters.bld, companyId: null, name: String(body.name).trim(), address: String(body.address).trim(), city: String(body.city).trim(), state: body.state || "AZ", zip: body.zip || "",
+          status: "target", software: "", connection: "manual", agreementStatus: null, mismatchCount: 0, payerScore: null, rules: null, rulesHistory: [], tourHours: {}, secondChance: false,
+          appFeeCents: null, appFeeWaived: false, feePercent: 50 };
+        db.buildings.push(nb); event(db, "building.created", "building", nb.id); save();
+        return ok({ building: { id: nb.id, name: nb.name, status: nb.status } });
       }
       case "POST staff/agreement": {
         s = needSession("staff");

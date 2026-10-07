@@ -389,7 +389,8 @@
     try { cur = JSON.parse(ui.store.get("yd-source") || "null"); } catch (e) { cur = null; }
     if (!cur) {
       var p = ui.params();
-      if (p.broker) cur = { kind: "broker", brokerCode: p.broker };
+      // The broker portal hands out /yesdoor/?b=<code>; older links used ?broker=.
+      if (p.b || p.broker) cur = { kind: "broker", brokerCode: p.b || p.broker };
       else if (p.ad || p.utm_content) cur = { kind: "ad", adId: p.ad || p.utm_content };
       if (cur) ui.store.set("yd-source", JSON.stringify(cur));
     }

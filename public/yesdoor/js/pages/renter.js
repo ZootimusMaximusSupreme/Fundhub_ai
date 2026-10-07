@@ -7,7 +7,7 @@
 
   function overview(el, ctx) {
     var d = ctx.data; var r = d.renter;
-    var next = (d.tours || []).filter(function (t) { return t.status === "booked" && new Date(t.startsAt) > new Date(); })[0];
+    var next = (d.tours || []).filter(function (t) { return (t.status === "booked" || t.status === "rescheduled") && new Date(t.startsAt) > new Date(); })[0];
     var money = r.incomeVerified && r.approvedMaxRentCents ? ui.money(r.approvedMaxRentCents) : "Link your bank";
     var html = '<div class="page-head"><div><h1>Hi, ' + ui.esc(r.firstName) + "</h1><p class=\"muted\">Here is where you stand.</p></div></div>" +
       '<div class="kpis">' + ui.kpi("Approved up to (rent a month)", r.incomeVerified && r.approvedMaxRentCents ? ui.esc(money) : '<span style="font-size:20px">' + ui.esc(money) + "</span>", r.incomeVerified ? "From your verified income, credit and background" : "Your top rent shows once income is verified") +
@@ -74,7 +74,7 @@
         { label: "When", render: function (t) { return ui.esc(ui.dateTime(t.startsAt)); } },
         { label: "Status", render: function (t) { return '<span class="tag">' + ui.esc({ booked: "Booked", rescheduled: "Rescheduled", cancelled: "Cancelled", noshow: "No-show", completed: "Done" }[t.status] || t.status) + "</span>"; } },
         { label: "", cls: "actions", render: function (t) {
-          return t.status === "booked" && new Date(t.startsAt) > new Date()
+          return (t.status === "booked" || t.status === "rescheduled") && new Date(t.startsAt) > new Date()
             ? '<button class="btn-secondary sm" type="button" data-resched="' + ui.esc(t.id) + '">Reschedule</button> <button class="btn-secondary sm btn-danger" type="button" data-cancel="' + ui.esc(t.id) + '" style="margin-left:16px">Cancel tour</button>' : "";
         } }
       ],

@@ -417,7 +417,22 @@ const DESK_FILES = [
 ];
 
 /** Static HTML under public/ (not public/app desks). */
-const PUBLIC_STATIC_FILES = ["climate/index.html"];
+const PUBLIC_STATIC_FILES = [
+  "climate/index.html",
+  /* Yesdoor (a separate app built in this repo for now; spec
+     docs/specs/yesdoor-mvp-build-spec.md, F1). The site, the funnel, the sign-in
+     link page and the four portals. */
+  "yesdoor/index.html",
+  "yesdoor/search.html",
+  "yesdoor/listing.html",
+  "yesdoor/prescreen.html",
+  "yesdoor/book.html",
+  "yesdoor/login.html",
+  "yesdoor/renter.html",
+  "yesdoor/building.html",
+  "yesdoor/broker.html",
+  "yesdoor/staff.html"
+];
 
 export const PULSE_REGISTRY = [
   ...API_KEYS.map((key) => ({
@@ -434,7 +449,7 @@ export const PULSE_REGISTRY = [
     id: file.replace(/\.html$/, "").replace(/\//g, "-"),
     kind: "public_static",
     file,
-    path: file === "climate/index.html" ? "/climate/" : `/${file}`
+    path: /(^|\/)index\.html$/.test(file) ? `/${file.replace(/index\.html$/, "")}` : `/${file}`
   }))
 ];
 

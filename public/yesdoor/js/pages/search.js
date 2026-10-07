@@ -39,7 +39,7 @@
         return;
       }
       results.innerHTML = '<div class="grid cols-3">' + res.listings.map(ui.listingCard).join("") + "</div>";
-      pager.innerHTML = ui.pager(res.total, res.page || state.page, PER);
+      pager.innerHTML = ui.pager(res.total, res.page || state.page, res.pageSize || PER);
     }, function (e) {
       count.textContent = "";
       results.innerHTML = ui.errorState(ui.errMessage(e));

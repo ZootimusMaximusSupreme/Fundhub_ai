@@ -53,7 +53,9 @@
       var n = function (s) { return list.filter(function (b) { return b.status === s; }).length; };
       var root = document.getElementById("b");
       root.innerHTML = '<div class="kpis">' + ui.kpi("Live", ui.esc(n("live")), "Taking renters now") + ui.kpi("Signed", ui.esc(n("signed")), "Agreement signed") +
-        ui.kpi("In talks", ui.esc(n("target") + n("pitched") + n("agreement_sent")), "Target, pitched or agreement sent") + ui.kpi("Paused", ui.esc(n("paused")), "Rules stale or too many mismatches") + '</div><div id="bt"></div>';
+        ui.kpi("In talks", ui.esc(n("target") + n("pitched") + n("agreement_sent")), "Target, pitched or agreement sent") + ui.kpi("Paused", ui.esc(n("paused")), "Rules stale or too many mismatches") + '</div>' +
+        '<div class="row" style="margin-bottom:16px"><button class="btn" type="button" id="add-b">Add a building</button></div><div id="bt"></div>';
+      document.getElementById("add-b").addEventListener("click", function () { addBuilding(el, ctx); });
       ui.paged(document.getElementById("bt"), { caption: "Buildings", rows: list,
         cols: [
           { label: "Building", render: function (b) { return "<strong>" + ui.esc(b.name) + "</strong>" + (b.isSample ? " " + ui.sampleTag("Sample data") : "") + '<div class="caption">' + ui.esc(b.company) + (b.companyTier ? ", tier " + ui.esc(b.companyTier) : "") + "</div>"; } },
@@ -61,7 +63,7 @@
           { label: "Status", render: function (b) { return '<span class="tag">' + ui.esc(SUPPLY[b.status] || b.status) + "</span>"; } },
           { label: "Connection", render: function (b) { return ui.esc(b.software) + ' <span class="caption">' + ui.esc(String(b.connection).replace(/_/g, " ")) + "</span>"; } },
           { label: "Listings", n: true, render: function (b) { return ui.esc(b.listingsCount); } },
-          { label: "Leases", n: true, render: function (b) { return ui.esc(b.leases); } },
+          { label: "Leases", n: true, render: function (b) { return b.leases === null || b.leases === undefined ? "Not counted yet" : ui.esc(b.leases); } },
           { label: "We said yes, they said no", n: true, render: function (b) { return ui.esc(b.mismatchCount) + (b.mismatchCount >= 3 ? " (paused)" : ""); } },
           { label: "Rules", render: function (b) { return b.rulesConfirmedAt ? ui.esc(ui.date(b.rulesConfirmedAt)) + (b.rulesStale ? ' <span class="tag">Stale</span>' : "") : "None on file"; } },
           { label: "Pays on time", n: true, render: function (b) { return b.payerScore === null || b.payerScore === undefined ? "No history" : ui.esc(b.payerScore) + " / 100"; } },
@@ -77,6 +79,27 @@
             YD.api.staffAgreement({ buildingId: b.id, action: "send" }).then(function () { close(); ui.toast("Agreement sent to " + b.name + "."); buildings(el, ctx); }, function (er) { ui.busy(go, false); ui.toast(ui.errMessage(er)); });
           });
         });
+      });
+    });
+  }
+
+  /* A new building starts as a target. It gets renters only after it signs. */
+  function addBuilding(el, ctx) {
+    var f = function (id, label, attrs) { return '<div class="field"><label for="' + id + '">' + label + '</label><input class="input" id="' + id + '" ' + (attrs || "") + "></div>"; };
+    ui.openDialog("Add a building", '<form id="ab" class="stack" novalidate>' + f("ab-name", "Building name", 'required') + f("ab-addr", "Street address", 'required') +
+      '<div class="form-grid three">' + f("ab-city", "City", 'required') + f("ab-state", "State", 'maxlength="2" value="AZ" required') + f("ab-zip", "ZIP code", 'inputmode="numeric" maxlength="5"') + "</div>" +
+      f("ab-email", "Leasing office email", 'type="email" required') + '<p class="caption">The fee agreement and renter registrations go to this address.</p>' +
+      '<div class="field-error" id="ab-err" role="alert" hidden></div><div class="actions"><button class="btn-secondary" type="button" data-close>Cancel</button><button class="btn" type="submit" id="ab-go">Add building</button></div></form>', function (dlg, close) {
+      dlg.querySelector("#ab").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var v = function (id) { return dlg.querySelector("#" + id).value.trim(); };
+        var err = dlg.querySelector("#ab-err"); err.hidden = true;
+        var body = { name: v("ab-name"), address: v("ab-addr"), city: v("ab-city"), state: v("ab-state").toUpperCase(), zip: v("ab-zip") || undefined, leasingEmail: v("ab-email") };
+        if (!body.name || !body.address || !body.city || !/^[A-Z]{2}$/.test(body.state) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(body.leasingEmail)) {
+          err.textContent = "Add the name, street, city, 2-letter state and the leasing office email."; err.hidden = false; return;
+        }
+        var go = dlg.querySelector("#ab-go"); ui.busy(go, true);
+        YD.api.staffAddBuilding(body).then(function () { close(); ui.toast(body.name + " added as a target."); buildings(el, ctx); }, function (e2) { ui.busy(go, false); err.textContent = ui.errMessage(e2); err.hidden = false; });
       });
     });
   }
@@ -129,20 +152,25 @@
         var v = (res.invoices || []).filter(function (x) { return x.id === btn.getAttribute("data-pay"); })[0];
         ui.openDialog("Log a payment", '<form id="pf" class="stack"><p>' + ui.esc(v.number) + " from " + ui.esc(v.buildingName) + ": <strong>" + ui.money(v.totalCents) + '</strong></p>' +
           '<div class="field"><label for="pm">How did they pay?</label><select class="input" id="pm">' + METHODS.map(function (m) { return '<option value="' + m[0] + '">' + m[1] + "</option>"; }).join("") + "</select></div>" +
-          '<div class="field"><label for="pr">Reference (optional)</label><input class="input" id="pr"></div><div class="actions"><button class="btn-secondary" type="button" data-close>Cancel</button><button class="btn" type="submit" id="pgo">Log payment</button></div></form>', function (dlg, close) {
+          '<div class="field"><label for="pr">Reference (check number, wire or ACH id)</label><input class="input" id="pr" required></div><div class="field-error" id="pe" role="alert" hidden></div><div class="actions"><button class="btn-secondary" type="button" data-close>Cancel</button><button class="btn" type="submit" id="pgo">Log payment</button></div></form>', function (dlg, close) {
           dlg.querySelector("#pf").addEventListener("submit", function (ev) {
-            ev.preventDefault(); var go = dlg.querySelector("#pgo"); ui.busy(go, true);
-            YD.api.staffPayment({ invoiceId: v.id, method: dlg.querySelector("#pm").value, ref: dlg.querySelector("#pr").value }).then(function () { close(); ui.toast("Payment logged for " + v.number + "."); money(el, ctx); }, function (er) { ui.busy(go, false); ui.toast(ui.errMessage(er)); });
+            ev.preventDefault(); var pe = dlg.querySelector("#pe"); var ref = dlg.querySelector("#pr").value.trim();
+            if (!ref) { pe.textContent = "Add the reference so the record shows which payment this was."; pe.hidden = false; dlg.querySelector("#pr").focus(); return; }
+            var go = dlg.querySelector("#pgo"); ui.busy(go, true);
+            YD.api.staffPayment({ invoiceId: v.id, method: dlg.querySelector("#pm").value, ref: ref }).then(function () { close(); ui.toast("Payment logged for " + v.number + "."); money(el, ctx); }, function (er) { ui.busy(go, false); pe.textContent = ui.errMessage(er); pe.hidden = false; });
           });
         });
       });
       ui.on(root, "click", "[data-payout]", function (e, btn) {
         var x = (res.brokerLedger || []).filter(function (y) { return y.id === btn.getAttribute("data-payout"); })[0];
         ui.openDialog("Mark payout paid?", "<p>Mark " + ui.money(x.amountCents) + " to " + ui.esc(x.brokerName) + " as paid? Do this only after you have sent the money.</p>" +
+          '<div class="field"><label for="po-ref">Transfer or check number</label><input class="input" id="po-ref" required></div><div class="field-error" id="po-err" role="alert" hidden></div>' +
           '<div class="actions"><button class="btn-secondary" type="button" data-close>Not yet</button><button class="btn" type="button" id="po-go">Mark paid</button></div>', function (dlg, close) {
           dlg.querySelector("#po-go").addEventListener("click", function () {
+            var ref = dlg.querySelector("#po-ref").value.trim(); var perr = dlg.querySelector("#po-err");
+            if (!ref) { perr.textContent = "Add the transfer or check number."; perr.hidden = false; dlg.querySelector("#po-ref").focus(); return; }
             var go = this; ui.busy(go, true);
-            YD.api.staffBrokerPayout({ brokerLedgerId: x.id }).then(function () { close(); ui.toast("Payout marked paid."); money(el, ctx); }, function (er) { ui.busy(go, false); ui.toast(ui.errMessage(er)); });
+            YD.api.staffBrokerPayout({ brokerLedgerId: x.id, brokerId: x.brokerId, ref: ref }).then(function () { close(); ui.toast("Payout marked paid."); money(el, ctx); }, function (er) { ui.busy(go, false); perr.textContent = ui.errMessage(er); perr.hidden = false; });
           });
         });
       });
@@ -167,14 +195,16 @@
         empty: ["No disputes", "A dispute opens when a building claims it already knew a renter, or a renter says a denial was wrong.", ""] });
       ui.on(document.getElementById("d"), "click", "[data-decide]", function (e, btn) {
         var x = list.filter(function (y) { return y.id === btn.getAttribute("data-decide"); })[0];
-        ui.openDialog("Decide this dispute", '<form id="df" class="stack"><p>' + ui.esc(x.subject) + '</p><div class="field"><label for="dd">Your decision and why</label><textarea class="input" id="dd" required></textarea>' +
+        ui.openDialog("Decide this dispute", '<form id="df" class="stack"><p>' + ui.esc(x.subject) + '</p>' +
+          '<div class="field"><label for="do">Decision</label><select class="input" id="do"><option value="upheld">Upheld: the person who opened it was right</option><option value="rejected">Rejected: it stays as it was</option></select></div>' +
+          '<div class="field"><label for="dd">Why</label><textarea class="input" id="dd" required></textarea>' +
           '<span class="hint">This is saved with the record and cannot be changed later.</span></div><div class="field-error" id="de" role="alert" hidden></div>' +
           '<div class="actions"><button class="btn-secondary" type="button" data-close>Cancel</button><button class="btn" type="submit" id="dgo">Record decision</button></div></form>', function (dlg, close) {
           dlg.querySelector("#df").addEventListener("submit", function (ev) {
             ev.preventDefault(); var txt = dlg.querySelector("#dd").value.trim(); var er = dlg.querySelector("#de");
             if (!txt) { er.textContent = "Write the decision so the record says why."; er.hidden = false; return; }
             var go = dlg.querySelector("#dgo"); ui.busy(go, true);
-            YD.api.staffDecideDispute({ id: x.id, decision: txt }).then(function () { close(); ui.toast("Decision recorded."); disputes(el, ctx); }, function (e2) { ui.busy(go, false); er.textContent = ui.errMessage(e2); er.hidden = false; });
+            YD.api.staffDecideDispute({ id: x.id, outcome: dlg.querySelector("#do").value, decision: txt }).then(function () { close(); ui.toast("Decision recorded."); disputes(el, ctx); }, function (e2) { ui.busy(go, false); er.textContent = ui.errMessage(e2); er.hidden = false; });
           });
         });
       });
