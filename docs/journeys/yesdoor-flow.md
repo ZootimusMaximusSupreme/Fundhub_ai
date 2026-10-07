@@ -1,6 +1,6 @@
 # Yesdoor flow (what the database enforces today)
 
-Status: **B2 (database + reads), B3b (the pre-screen funnel and the crons) and B4 (buildings, tours, money), merged in I1.** Written from the migrations and the code, not from the spec. Sections 1 to 9 are written from the migrations: every arrow is a rule the database holds in `db/migrations/434_yesdoor_core.sql`, `435_yesdoor_pipeline.sql`, `436_yesdoor_money.sql` or `437_yesdoor_cancel_after_registration.sql`, or a move that code in `src/yesdoor/store/` makes (named in the section). Sections 10 to 14 are written from the B3b code (`api/yesdoor/public/lead.mjs`, `public/prescreen.mjs`, `me/income.mjs`, `src/yesdoor/store/*`, `src/yesdoor/crons/*`, `src/workflows/yd-*.mjs`). Sections 15 to 20 are written from the B4 code. An arrow that only the spec draws, and nothing builds yet, is marked **NOT BUILT YET**.
+Status: **B2 (database + reads), B3b (the pre-screen funnel and the crons) and B4 (buildings, tours, money), merged in I1, plus the I2 gap closers (sign-out, staff-made logins and brokers, the agreement signing page, the matcher's Second Chance rule, the seeded criminal rules).** Written from the migrations and the code, not from the spec. Sections 1 to 9 are written from the migrations: every arrow is a rule the database holds in `db/migrations/434_yesdoor_core.sql`, `435_yesdoor_pipeline.sql`, `436_yesdoor_money.sql` or `437_yesdoor_cancel_after_registration.sql`, or a move that code in `src/yesdoor/store/` makes (named in the section). Sections 10 to 14 are written from the B3b code (`api/yesdoor/public/lead.mjs`, `public/prescreen.mjs`, `me/income.mjs`, `src/yesdoor/store/*`, `src/yesdoor/crons/*`, `src/workflows/yd-*.mjs`). Sections 15 to 20 are written from the B4 code. Section 21 and the additions to sections 2, 11 and 15 are written from the I2 code (`api/yesdoor/auth/logout.mjs`, `staff/brokers.mjs`, `staff/accounts.mjs`, `public/agreement.mjs`, `src/yesdoor/store/people-writes.mjs`, `src/yesdoor/match/`). An arrow that only the spec draws, and nothing builds yet, is marked **NOT BUILT YET**.
 
 Spec: `docs/specs/yesdoor-mvp-build-spec.md` (§3 draws these). Board: `ops/workflows/yesdoor-mvp-build-2026-10-07.md`.
 
@@ -8,7 +8,7 @@ Built in B3b (sections 10 to 14): the lead, pre-screen and income doors, the mat
 
 Built in B4 (sections 15 to 20): onboarding companies and buildings, agreements and the signing link, the building portal writes (rules, units, spreadsheet and feed import, stage updates), booking and changing a tour, the move-in fee and invoice, payments, refunds, broker payouts, disputes, and the daily job that turns a paid fee safe.
 
-Not built yet: a broker sign-up door does not exist, so brokers are added by staff for now. No real email, text, bureau, bank or e-sign call exists anywhere: everything that would leave the building is a sandbox stub.
+Not built yet: a broker sign-up door does not exist, so brokers are added by staff (section 21). No real email, text, bureau, bank or e-sign call exists anywhere: everything that would leave the building is a sandbox stub.
 
 Deviation from spec §3 (migration 437, owner-approved: Claude decided, the owner said use best judgment): a renter who cancels after the building has been registered can now leave from `registered` and `toured`, not only from `booked`. Without that arrow a renter's cancelled tour kept holding one of their 3 open places.
 
@@ -49,10 +49,13 @@ flowchart TD
     I --> E[Email queued in yd_outbox, nothing is sent]
     E --> V[GET or POST auth/verify with the token]
     V -->|first use, inside 15 minutes| T[Session, 30 days, slides on use]
+    T --> O[POST auth/logout: THIS session is revoked at once, others of the same account stay]
     V -->|forged, expired, spent, suspended since| F[401 invalid_link, always the same]
 ```
 
-Staff do not use this. Staff sign in with the existing staff login and are checked by role.
+Staff do not use this. Staff sign in with the existing staff login and are checked by role. Sign-out is the same: `POST auth/logout` revokes the `yd_sessions` row named by the request (Bearer, header or cookie) and is a harmless 200 when there is nothing to revoke; a staff token sent to it matches no row and keeps working.
+
+Who gets an account to sign in to: a renter's account is made at verify (above); a building user's and a broker's are made by staff (section 21), which also queues their first sign-in link.
 
 ## 3. Renter stage (`yd_renters.stage`)
 
@@ -226,11 +229,11 @@ flowchart TD
     A -->|yes| AR[Result for the renter: best unit, then lowest rent]
     A -->|no, same state| PO[Backup pool: kept only if APPROVED, top 5 by rent fit, payer score, distance]
     OA[Building of an open application, even with no live unit, if it can still take renters] --> AR
-    AR --> RULE[score, income, evictions, criminal, rules freshness]
+    AR --> RULE[score, income, evictions, criminal, Second Chance, rules freshness]
     RULE --> RES{Any rule fails?}
     RES -->|yes| NO[no]
     RES -->|no, all pass, rules fresh| AP[approved]
-    RES -->|otherwise: close, unknown, stale rules| LI[likely]
+    RES -->|otherwise: close, unknown, stale rules, Second Chance renter at a building that says no| LI[likely]
     NO --> ST[Every run inserts new yd_matches rows; the newest per building is current]
     AP --> ST
     LI --> ST
@@ -240,7 +243,8 @@ flowchart TD
 - Income unverified means the income rule is unknown, so nothing can be `approved` before income is verified: a prime file shows `likely` until the bank link, then `approved`.
 - Max rent and tier: monthly income divided by the building's multiple (3 if none) is each building's max rent; "approved up to" is the highest of those among approved results in the searched city. Tier A needs verified income, so a prime file is B until then.
 - The renter's answer carries per-rule reasons (their own file and the building's rules, in plain words). A building user only ever gets `buildingView`: answer, income verified, tier, max rent. A test reads both sides.
-- **UNVERIFIED (not built):** `accepts_second_chance` on a building's rules is stored but the matcher does not read it yet, so a Second Chance renter can be approved on the numbers alone.
+- Second Chance (I2): a renter in the Second Chance lane (tier C or D) at a building whose rules say `accepts_second_chance = false` is at best `likely`, with a plain reason, and never `no` by that alone: the numbers may still pass and the building decides. A Verified-lane renter, a building that says true and a missing value are untouched. The flag is read from the building's latest rules row.
+- Criminal rules (I2): a building's `criminal_policy` keys are `felony_violent`, `felony_property` and `misdemeanor_nonviolent` (`CRIMINAL_CATEGORIES`), the categories the screening speaks. The sample buildings' rules were first seeded under other names and never applied; `db/seed/297` added each sample building's next rules version with the keys renamed, and a Postgres test pins every latest policy to the list.
 
 ## 12. Re-check and lifetime touches (crons)
 
@@ -319,7 +323,8 @@ flowchart TD
     D --> S[Send: a signing link is made and ONE email is queued. Nothing is sent]
     S --> AS[Building agreement_sent. For a company agreement: the company and its buildings still onboarding]
     S --> LK[Staff also get the link back]
-    LK --> SG[Signer opens the link and POSTs webhooks/esign with a name]
+    LK --> PG[Signer opens /yesdoor/agreement.html: GET public/agreement shows the terms, the same 404 for any bad link]
+    PG --> SG[Signer types a name, ticks agree, and the page POSTs webhooks/esign]
     SG -->|link forged, expired, wrong secret or unknown id| N[One answer: 404 not_found]
     SG -->|genuine| OK[Agreement signed, signer and time recorded]
     OK --> BS[Building signed. A company signature signs its buildings still onboarding]
@@ -327,6 +332,7 @@ flowchart TD
     OK -.->|void later| V[Agreement void: its buildings are paused unless another signed agreement covers them]
 ```
 
+- The signing page (I2) reads `GET public/agreement?id&exp&sig`: terms only (party name, status, fee terms or partner plan, expiry), no signer, address or email, and changing nothing. A forged, tampered, expired, incomplete, unknown, other-company or draft link all answer the same 404; a void agreement shows as withdrawn with no terms. Signing is the same `POST webhooks/esign` as before, and the page says the signature is a practice stand-in.
 - Sample buildings and companies cannot be sent an agreement.
 - Without `YD_LINK_SECRET` (32 characters or more) sending fails closed with a 503 and changes nothing.
 - A broker partner agreement is signed the same way; the broker becomes `active` once signed, and (for a split partner) once the licence is verified.
@@ -439,3 +445,30 @@ flowchart TD
     DC -->|denial| NT[Recorded only]
     DC -->|decided once| FZ[Never re-decided: the same answer is a 200, another is a 409]
 ```
+
+## 21. Brokers and logins, made by staff (I2)
+
+Code: `src/yesdoor/store/people-writes.mjs`. Doors: `GET|POST staff/brokers` (ops and sales write, every staff role reads; the owner always), `POST staff/accounts` (ops only, the owner always).
+
+```mermaid
+flowchart TD
+    B[POST staff/brokers: name, email, plan, split percent, licence state and number] -->|split plan with no licence details| R400[400 licence_required]
+    B -->|same email already in this company| R409[409 broker_exists]
+    B --> AP[Broker applied: tracking code YD-nnnnnn made by the database, event broker.created]
+    AP --> AG[POST staff/agreement for the broker: send the partner agreement]
+    AG --> SG[Broker signs on the signing page]
+    SG -->|plan software, or licence already marked verified| AC[Broker active: their link now credits renters]
+    SG -->|split plan, licence not verified| AP
+    AP --> L[POST staff/accounts kind broker: one login per broker]
+    BU[POST staff/accounts kind building_user: one or more of this company's buildings] --> L2
+    L --> L2{Building or broker in this company? Email free in this company?}
+    L2 -->|no building or broker found, or it is another company's| N404[404, the same answer for both]
+    L2 -->|email already has a login, or the broker already has one| C409[409 account_exists]
+    L2 -->|yes| MK[ONE transaction: account, building links, event account.created, one sign-in link, one queued email]
+    MK --> SI[The person signs in with that link: section 2. The link is in the email only, never in the answer]
+```
+
+- Until I2 these rows were only ever inserted by hand. Every query takes the company from the staff session; nothing takes it from the request.
+- A split partner needs a licence state (AZ, CA or FL) and a licence number. `licenceVerified: true` means staff checked it: it stamps the time, and it needs the state and number. A broker starts `applied` and becomes `active` when the partner agreement is signed and (split plan) the licence is verified.
+- The sign-in link is the same single-use, 15-minute link as section 2 (`issueMagicLink`); the invited person can ask for a new one from the portal page.
+- **UNVERIFIED (not built):** removing a login, moving a building user to another building, resending an invitation from the desk (the person asks for a new link themselves), and a broker sign-up door.

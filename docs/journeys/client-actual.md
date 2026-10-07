@@ -32,8 +32,8 @@ flowchart TD
     CAN --> A_top_level[Everything else — 9 routes]
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
-    CAN --> A_yesdoor[yesdoor — 23 routes]
-    WHO -->|Yes| CANT[Blocked — 217 routes]
+    CAN --> A_yesdoor[yesdoor — 26 routes]
+    WHO -->|Yes| CANT[Blocked — 218 routes]
     CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_analytics[analytics — 4 blocked]
     CANT --> B_auth[Signing in and out — 7 blocked]
@@ -65,12 +65,12 @@ flowchart TD
     CANT --> B_staff[staff — 3 blocked]
     CANT --> B_top_level[Everything else — 35 blocked]
     CANT --> B_trials[trials — 3 blocked]
-    CANT --> B_yesdoor[yesdoor — 9 blocked]
+    CANT --> B_yesdoor[yesdoor — 10 blocked]
 ```
 
 ## What they can reach
 
-**77 of 294 routes.**
+**80 of 298 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -129,6 +129,7 @@ flowchart TD
 | `/api/waypoint-tick` | POST | client |
 | `/api/webhooks/:provider` | OPTIONS | **not a sign-in** — provider signature |
 | `/api/yesdoor/auth/link` | — | anyone |
+| `/api/yesdoor/auth/logout` | — | anyone |
 | `/api/yesdoor/auth/verify` | POST | anyone |
 | `/api/yesdoor/broker/link` | — | **not a sign-in** — Yesdoor broker session |
 | `/api/yesdoor/broker/money` | — | **not a sign-in** — Yesdoor broker session |
@@ -142,11 +143,13 @@ flowchart TD
 | `/api/yesdoor/me` | — | **not a sign-in** — Yesdoor renter session |
 | `/api/yesdoor/me/income` | — | **not a sign-in** — Yesdoor renter session |
 | `/api/yesdoor/me/tour` | — | **not a sign-in** — Yesdoor renter session |
+| `/api/yesdoor/public/agreement` | — | anyone |
 | `/api/yesdoor/public/book` | — | anyone |
 | `/api/yesdoor/public/lead` | — | anyone |
 | `/api/yesdoor/public/listing` | — | anyone |
 | `/api/yesdoor/public/listings` | — | anyone |
 | `/api/yesdoor/public/prescreen` | — | anyone |
+| `/api/yesdoor/staff/brokers` | POST | anyone |
 | `/api/yesdoor/staff/buildings` | POST | anyone |
 | `/api/yesdoor/staff/companies` | POST | anyone |
 | `/api/yesdoor/staff/disputes` | POST | anyone |
@@ -154,12 +157,12 @@ flowchart TD
 
 ### Worth knowing
 
-- **40 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/rb2b-webhook`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`, `/api/yesdoor/auth/link`, `/api/yesdoor/auth/verify`, `/api/yesdoor/public/book`, `/api/yesdoor/public/lead`, `/api/yesdoor/public/listing`, `/api/yesdoor/public/listings`, `/api/yesdoor/public/prescreen`, `/api/yesdoor/staff/buildings`, `/api/yesdoor/staff/companies`, `/api/yesdoor/staff/disputes`, `/api/yesdoor/webhooks/esign`. These are the sign-in routes and the health check.
+- **43 routes are genuinely open** — no sign-in needed, reachable by anyone and not by this journey in particular: `/api/auth/login`, `/api/auth/logout`, `/api/auth/magic-link`, `/api/auth/magic-link-verify`, `/api/auth/reset`, `/api/auth/session`, `/api/climate`, `/api/climate/config`, `/api/climate/geocode`, `/api/health`, `/api/hiring/apply`, `/api/public/ad-video-approve`, `/api/public/affiliate-click`, `/api/public/climate-match`, `/api/public/education-enroll`, `/api/public/eeo-survey`, `/api/public/funnel-checkout`, `/api/public/optimize`, `/api/public/partner-apply`, `/api/public/partner-page`, `/api/public/rb2b-webhook`, `/api/public/slo-checkout`, `/api/public/slo-interest`, `/api/public/slo-pull`, `/api/public/slo-repair-checkout`, `/api/public/slo-status`, `/api/public/survey-submit`, `/api/public/vsl-watch`, `/api/trials/eligibility`, `/api/yesdoor/auth/link`, `/api/yesdoor/auth/logout`, `/api/yesdoor/auth/verify`, `/api/yesdoor/public/agreement`, `/api/yesdoor/public/book`, `/api/yesdoor/public/lead`, `/api/yesdoor/public/listing`, `/api/yesdoor/public/listings`, `/api/yesdoor/public/prescreen`, `/api/yesdoor/staff/brokers`, `/api/yesdoor/staff/buildings`, `/api/yesdoor/staff/companies`, `/api/yesdoor/staff/disputes`, `/api/yesdoor/webhooks/esign`. These are the sign-in routes and the health check.
 - **18 routes need no sign-in but are NOT open.** `/api/contracts/sign` (signed link), `/api/documents/:id` (signed link), `/api/inngest` (Inngest request signing), `/api/public/unsubscribe` (signed link), `/api/soft-pull-approve` (signed link), `/api/webhooks/:provider` (provider signature), `/api/yesdoor/broker/link` (Yesdoor broker session), `/api/yesdoor/broker/money` (Yesdoor broker session), `/api/yesdoor/broker/renters` (Yesdoor broker session), `/api/yesdoor/building/import` (Yesdoor building_user session), `/api/yesdoor/building/invoices` (Yesdoor building_user session), `/api/yesdoor/building/listings` (Yesdoor building_user session), `/api/yesdoor/building/renters` (Yesdoor building_user session), `/api/yesdoor/building/rules` (Yesdoor building_user session), `/api/yesdoor/building/update` (Yesdoor building_user session), `/api/yesdoor/me` (Yesdoor renter session), `/api/yesdoor/me/income` (Yesdoor renter session), `/api/yesdoor/me/tour` (Yesdoor renter session). Anyone can call these, but a caller without the right signature is refused.
 
 ## What they are blocked from
 
-**217 of 294 routes.**
+**218 of 298 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -371,6 +374,7 @@ flowchart TD
 | `/api/trials/convert` | POST | owner, admin |
 | `/api/trials/dashboard` | GET | partner, staff |
 | `/api/trials/provision` | POST | owner, admin |
+| `/api/yesdoor/staff/accounts` | — | ops, owner |
 | `/api/yesdoor/staff/agreement` | — | ops, sales, owner |
 | `/api/yesdoor/staff/broker-payout` | — | ops, collections, owner |
 | `/api/yesdoor/staff/ledger` | — | ops, collections, owner |
