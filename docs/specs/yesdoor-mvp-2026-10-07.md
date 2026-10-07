@@ -199,3 +199,16 @@ Things only Chris has (can come tomorrow):
 10. Lease-end re-check: open. Owner wants a full follow-up sequence.
 
 Goal (owner): dominate rentals, then expand into mortgages.
+
+## 16. Sharing results, accuracy, re-checks (owner-set, 2026-10-07)
+
+- **No raw credit report to buildings** (owner: likely not allowed; a third party may do their underwriting). Buildings get what their underwriting needs to push the approval through. Yesdoor does the application work for them, which saves them money.
+- **Legal path found, California:** AB 2559 (2022) created the *reusable tenant screening report*. It is prepared within the last 30 days by a consumer reporting agency, at the applicant's request and expense, and given to the landlord free, directly or through a third-party website. Landlords may accept it but don't have to ([Gov. press release](https://ward.asmdc.org/press-releases/20220914-governor-newsom-signs-bill-standardize-reusable-screening-reports-rental), [Senate analysis](https://sjud.senate.ca.gov/sites/sjud.senate.ca.gov/files/ab_2559_ward_sjud_analysis.pdf)). Washington (2019) and Maryland (2021) have similar laws. Arizona and Florida: not found.
+- **Approval accuracy is on Yesdoor and the building:** a renter told "approved" who then gets denied is the worst outcome. Draft fixes:
+  - Every building confirms its rules on a schedule. Stale rules pause that building's matches.
+  - Every result shows the date of the rules it used.
+  - Track a "we said yes, they said no" rate per building.
+  - Open: refund the renter's application fee when that happens.
+- **Re-checks:** Yesdoor re-checks on its own **and** asks the renter for updates. Owner believes asking is legally required; to confirm.
+- **V2** comes later; it should be "really amazing."
+- How many buildings one renter can apply to: still open.
