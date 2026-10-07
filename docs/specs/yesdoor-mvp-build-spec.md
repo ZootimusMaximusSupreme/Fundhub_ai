@@ -230,6 +230,13 @@ Only `signed`/`live` buildings with fresh rules are ever matched (owner-set: ren
 3. When `mismatch_count` within 90 days reaches `YD_DEFAULTS.mismatchPause` (3), the building goes to `paused` and staff get a rules-review task (a `yd_events` row plus the staff desk filter).
 4. The denial reason is stored for staff to update rules. Rules never change automatically.
 
+## 5b. Referral credit rules (added 2026-10-07 from analog research)
+
+- **First touch:** `yd_applications.registration_sent_at` is the proof.
+- **Expiry:** a registration counts for `YD_DEFAULTS.registrationValidDays` (90) from registration. A lease signed after that earns no fee unless the building re-registers the renter.
+- **Known renter, no fee:** a building may mark a registration `known_prospect` within `YD_DEFAULTS.knownProspectDays` (3) of receiving it. It must give evidence: its own visitor-record date, earlier than Yesdoor's. That opens a `yd_disputes` row (kind `attribution`). Ops decides within 14 days. If the building wins, no fee row is earned.
+- **Invoice proof:** every invoice line carries the registration timestamp, the renter name, the unit, the move-in date and the lease term. That matches how locators bill.
+
 ## 6. Re-checks and the lifetime path (B3 crons)
 
 - `yd-recheck` (daily): renters in `screened|matched|booked` whose last screening is older than `recheckDays` (30), and renters 90 days before `lease_end`. It runs a new screening under the stored `recheck` consent and never asks the renter. Results recompute the matches. A renter who drops from approved to `no` on an open application produces a staff event.
@@ -250,6 +257,7 @@ Interface modules in `src/yesdoor/providers/`. Each exports `{ PROVIDER, SANDBOX
   - `csv`: import parser with column mapping and per-row errors.
   - `mits-feed`: parses a MITS XML listing file into listings.
   - `entrata-sandbox`: fixture responses.
+  - Later: AppFolio's partner stack (Apartment List onboards customers inside AppFolio).
 
   Registration email = `pushGuestCard` for `manual|csv|feed`.
 
@@ -314,6 +322,7 @@ margins: { score: 20, income: 0.10 },
 defaultIncomeMultiple: 3,
 rulesStaleDays: 30, recheckDays: 30, leaseEndRecheckDays: 90,
 refundDays: 60, disputeDays: 14, mismatchPause: 3, mismatchWindowDays: 90,
+registrationValidDays: 90, knownProspectDays: 3,
 brokerSplitPercent: 25,
 tiers: { A: {minScore: 700, evictionYears: 7, criminal: false},
          B: {minScore: 640, evictionYears: 5},
