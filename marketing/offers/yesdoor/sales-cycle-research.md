@@ -27,3 +27,30 @@
 4. **Invoices checked line by line against their software.** → integration (visitor record pushed in, lease status pulled back) before billing at scale.
 5. **"Free to renters" draws scrutiny.** → plain disclosure of who pays Yesdoor.
 6. **Fastest path seen: being inside software the operator already uses** (Apartment List in AppFolio). → add AppFolio's partner stack to the integration list.
+
+## What could block or slow onboarding (research 2026-10-07)
+
+- **Vendor credentialing:**
+  - Greystar requires NetVendor "compliant" status first: background, insurance and licences. About $49–$149 a year per company; review in about 24 hours; a bad insurance certificate is the top delay ([Greystar](https://greystar.com/contact-us/supplier-and-vendor-opportunities/us-supplier-partnerships), [NetVendor](https://www.netvendor.com/vendor-support), [FAQ](https://faq.netvendor.com/article/167-how-long-does-approval-take)).
+  - RealPage Vendor Credentialing: W-9, vendor agreement, background check, fee $80–$99, up to 10 days ([BH packet](https://livebh.com/?p=13156)).
+  - Sample general liability ask: $1M per claim / $2M total ([Redstone](https://redstoneresidential.com/wp-content/uploads/2023/01/Redstone-Residential-Vendor-Enrollment-3-1.docx.pdf)). E&O and cyber limits: not found.
+- **Security:** big operators increasingly require SOC 2 ([Swifty](https://beswifty.com/blog/why-soc-2-certification-matters-in-multifamily-marketing/)). SOC 2 Type II takes 10–18 months, with a 3–12 month observation window that can't be skipped ([Bastion](https://bastion.tech/learn/soc2/how-long-does-soc2-take)). California privacy law (CCPA) vendor clauses apply ([MRI](https://www.mrisoftware.com/ca/blog/ccpa-for-multifamily-properties-what-you-need-to-know/)).
+- **Who approves the fee:** the locator fee is an operating expense the owner pays back, so it must fit the owner's budget ([sample agreement](https://www.lawinsider.com/contracts/6OixcPek4ev)).
+- **Irvine Company's real broker rules** ([PDF](https://irvinecompanyapartments.com/content/dam/apartments/3-readytopublish/graphics/BrokerReferralProgramRequirements_Customer-Facing_effective2.6.25.pdf)):
+  - The referrer must be a California-licensed broker.
+  - **$500 flat** per lease of 6+ months; the form is due within 90 days of lease start; paid 15–20 business days after move-in.
+  - **No gifts or incentives to renters**, and no fee for past residents.
+- **Software access:**
+  - Yardi: 2 years in business, 3 live Voyager clients, $25K for the first 2 connections, 2–4 months ([Propexo](https://docs.propexo.com/pms-guidance/yardi/approval-qa-process)).
+  - RealPage: a free "Registered Vendor" path, with security review and a shared client ([Propexo](https://docs.propexo.com/pms-guidance/real-page/important-notes)).
+  - Entrata: a shared client requests access; 1–2 months; $5K/$25K/$60K a year by data use ([Propexo](https://docs.propexo.com/pms-guidance/entrata/approval-qa-process)).
+- **Antitrust heat:** RealPage–DOJ settlement approved May 20, 2026; Greystar's final March 2, 2026, which bars sharing data with other landlords ([MassLandlords](https://masslandlords.net/realpage-greystar-other-landlords-agree-to-settlement-in-doj-antitrust-lawsuit/)). California AB 325 limits shared pricing tools ([Sheppard](https://www.sheppard.com/insights/blogs/california-passes-broad-limits-on-common-pricing-algorithms)). Expect "what do you do with our rent data?"
+- **Screening liability:** SafeRent ~$2.3M ([Cohen Milstein](https://www.cohenmilstein.com/class-action-lawsuit-on-ai-related-discrimination-reaches-final-settlement/)); RealPage $3M to the FTC under the credit reporting law ([AGG](https://www.agg.com/news-insights/publications/ftc-reaches-3-million-settlement-with-a-tenant-screening-10-22-2018/)). HUD withdrew its 2022 criminal-records guidance in Sept 2025 ([LeadingAge](https://leadingage.org/hud-withdraws-wide-ranging-fair-housing-policies/)).
+
+## Ready before the first big-operator meeting
+
+1. **Security packet:** a SOC 2 plan with dates (start the Type II clock now), standard security questionnaire answers, a data processing agreement, a CCPA clause, and a one-line answer on rent data (Yesdoor never shares one operator's rents or data with another).
+2. **Credentialing kit:** W-9, $1M/$2M general liability with additional-insured wording, E&O and cyber quotes, owner background checks ready (NetVendor, RealPage).
+3. **Written policy:** fair housing, no steering, how criminal records are used per state law, and exactly how screening data flows (CRS as the credit bureau; what buildings see).
+4. **Fee terms:** licences (AZ, CA, FL); fee after signed lease and move-in; flat-fee option (Irvine pays $500 flat); a one-page fit to the owner budget.
+5. **Software plan:** one pilot client per system. RealPage Registered Vendor and Entrata first; Yardi after 2 years and 3 clients (or a client sponsor).

@@ -94,7 +94,7 @@ All tables have `id uuid pk`, `org_id uuid not null references orgs(id)`, `creat
   - Place: company_id, name, address, city, state, zip, lat, lng, units_count.
   - Connection: software, connection (`manual|csv|feed|entrata_api`), leasing_email, tour_hours jsonb.
   - Application fee: app_fee_cents, app_fee_waived bool.
-  - second_chance bool.
+  - second_chance bool, allows_renter_incentive bool (default false; e.g. Irvine bans renter gifts).
   - Fee terms: fee_kind (`percent_first_month|flat`), fee_percent, fee_flat_cents, refund_days (default 60), payment_terms_days.
   - status (`target|pitched|agreement_sent|signed|live|paused|churned`), mismatch_count, is_sample bool.
 - `yd_building_rules` (versioned; a new row each change, never edited):

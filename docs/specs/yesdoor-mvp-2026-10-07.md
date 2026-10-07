@@ -98,7 +98,7 @@ The renter portal holds their status, bookings and results. Upsells plug in late
     2. Application fee waived by buildings for verified renters.
     3. First pick of specials and units.
     4. Fast tour booking, including evenings and weekends.
-    5. Move-in reward (check each state's rules first).
+    5. Move-in reward only where the building allows it. Some forbid renter gifts (e.g. Irvine Company), so it's a per-building flag `allows_renter_incentive`.
   - **Yesdoor Second Chance:** renters with credit or eviction problems. Sold on approval, with the back end behind it (denial help, repair, lawyers). Sign second-chance buildings and buildings with empty units first.
   - Same building contracts and tracking. Only the ads and the promise change.
   - Market note (owner, 2026-10-07): most demand skews subprime, like credit repair. The building pays, so renter spending power matters only for the back end. Track 60-day refunds from week one.
