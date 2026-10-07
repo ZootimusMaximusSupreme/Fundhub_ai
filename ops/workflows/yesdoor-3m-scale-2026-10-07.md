@@ -23,7 +23,7 @@ Ask (Chris): "Yes door ai scale to 3m/mo insights."
 | Y2 | Market + competitors: Nestra, big locators (Smart City etc.), their revenue, how they scaled | open | done |
 | Y3 | Demand: renter ad channels, cost per qualified renter, lead→tour→lease rates | agent | done |
 | Y4 | Supply + licence: signing communities and management companies, fee terms, broker licence by state, listing data feeds | open | done |
-| Y5 | Merge Y1–Y4, write report, commit | this session | waits on Y1–Y4 |
+| Y5 | Merge Y1–Y4, write report, commit | this session | done |
 
 Y1–Y4 run at the same time. No dependencies between them. Y1 uses ranges and Y5 swaps in Y2–Y4's real numbers. Y5 waits on all four.
 
