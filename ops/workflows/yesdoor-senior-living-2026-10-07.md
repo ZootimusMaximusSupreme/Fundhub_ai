@@ -145,7 +145,7 @@ the law in Arizona, California and Florida allows, and every legal way to get pa
 | Lane | Lines | Status |
 |---|---|---|
 | L1 | Senior living (assisted living, memory care), independent living / 55+, skilled nursing | claimed (agent) |
-| L2 | Home care (private pay), home health, hospice | claimed (agent) |
+| L2 | Home care (private pay), home health, hospice | done |
 | L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | claimed (agent) |
 | L4 | Creative ways to get paid across all lines (who else pays besides the provider) | done |
 | L6 | Big referral opportunities, any industry: supplier legally pays $1,000+ per placement (Chris: "find big referral opps") | claimed (agent) |
@@ -168,3 +168,19 @@ the law in Arizona, California and Florida allows, and every legal way to get pa
 Rules that matter most: (1) gate every fee by payer — per-move-in fees only on private pay; Medicare/Medicaid lanes switch to flat fees or employer/plan/family money; (2) **ranking is never for sale** — the "who says yes" answer comes from the family's facts only.
 
 Agent's top 5: flat provider subscription → private-pay move-in fee → employer benefit → health plan contracts → family concierge. Also: Florida nurse registry for home care; Arizona $17M care-coordination grant.
+
+## L2 — home care, home health, hospice (done)
+
+| Line | AZ | CA | FL |
+|---|---|---|---|
+| **Private-pay non-medical home care** — per-client fee? | **Yes**, private pay only; leave out AHCCCS/ALTCS (A.R.S. [§13-3713](https://www.azleg.gov/ars/13/03713.htm)). No state license for non-medical home care (secondary source) | **Probably yes**; open risk: H&S [§445](https://codes.findlaw.com/ca/health-and-safety-code/hsc-sect-445/) bans referral "for profit" to medical care (unclear if it reaches non-medical); leave out Medi-Cal / IHSS | **No**, unless Yesdoor **is** a licensed nurse registry — [§817.505(3)(h)](https://www.flsenate.gov/Laws/Statutes/2025/817.505) protects fees paid *to* a registry ([§400.506](https://www.flsenate.gov/Laws/Statutes/2025/400.506); license fee ≤ $2,000 / 2 years) |
+| **Home health** (mostly Medicare) | **No** (federal Anti-Kickback Statute) | **No** (AKS + §445 + Medi-Cal) | **No** (§817.505; [§400.474(6)(e)](https://www.flsenate.gov/Laws/Statutes/2025/400.474) $5,000 fine for paying discharge-planning vendors) |
+| **Hospice** | **No** per-patient fee (AKS). New AZ hospices under extra CMS review since 2023 ([CMS](https://www.cms.gov/files/document/mln7867599-period-enhanced-oversight-new-hospices-arizona-california-nevada-texas.pdf)) | **No — spelled out:** H&S [§1746.50](https://california.public.law/codes/health_and_safety_code_section_1746.50) (AB 1280): a hospice "shall not give payment to referral sources", including non-medical ones. Heavy LA County enforcement ([OIG](https://oig.hhs.gov/fraud/enforcement/glendale-woman-sentenced-to-9-years-in-federal-prison-for-106-million-hospice-fraud-scheme-involving-kickbacks-for-patients)) | **No** (§817.505, AKS) |
+
+**Correction to L4:** flat provider fees are not a clean pass for the medical lines.
+- They must be the same for everyone and based on what the service costs to run (federal referral-service safe harbor, [42 CFR 1001.952](https://www.law.cornell.edu/cfr/text/42/1001.952)).
+- Tiered or access-based fees fail: OIG [AO 11-06](https://www.oig.hhs.gov/documents/advisory-opinions/619/AO-11-06.pdf) and **AO 26-15 (July 2026)**, which rejected a home health subscription to referral software ([Barnes & Thornburg](https://btlaw.com/en/insights/alerts/2026/hhs-oig-issues-unfavorable-advisory-opinion-on-pay-to-play-referral-software-platform-arrangement)).
+- California: the Attorney General held that even a **patient-paid** provider list is a "recommendation" under §445 ([AG opinion 01-107](https://www.oag.ca.gov/system/files/opinions/pdfs/01-107.pdf)); §445 exempts prepaid health plans.
+- Florida: a "who will say yes" match may count as steering under the (3)(i) exception.
+
+**Legal money for home health and hospice:** health plans (Medicare Advantage; CA exempts prepaid plans), employers (AZ, FL), hospitals paying for software, or equal cost-based flat listings in AZ and FL. **Never** the provider per patient.
