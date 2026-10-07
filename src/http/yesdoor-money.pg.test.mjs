@@ -19,7 +19,8 @@ import { buildYdFixture, call, creditLeaks } from "../yesdoor/testing/fixture.mj
 import { useFixtureEnv, mkSignedBuilding, mkPlacement, mkPaidFee, one, rows } from "../yesdoor/testing/b4.mjs";
 import { releaseSafeFees } from "../yesdoor/store/money.mjs";
 import { createAccountSession } from "../yesdoor/auth/session.mjs";
-import { runFeeSafe, FEE_SAFE_JOB, FEE_SAFE_CRON, ydFeeSafe } from "../yesdoor/workflows/yd-fee-safe.mjs";
+import { runFeeSafe, FEE_SAFE_JOB, FEE_SAFE_CRON } from "../yesdoor/workflows/yd-fee-safe.mjs";
+import { ydFeeSafe, SWEEP_CRON } from "../workflows/yd-fee-safe.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const NOWHERE = "11111111-1111-4111-8111-111111111111";
@@ -226,6 +227,7 @@ describe("yesdoor money", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => 
       assert.equal(ydFeeSafe.opts.id, FEE_SAFE_JOB);
       assert.equal(FEE_SAFE_JOB, "yd-fee-safe");
       assert.equal(FEE_SAFE_CRON, "0 8 * * *");
+      assert.equal(SWEEP_CRON, FEE_SAFE_CRON);
       const { functions } = await import("../workflows/index.mjs");
       assert.ok(functions.some((f) => f.opts?.id === "yd-fee-safe"));
       const { INNGEST_JOBS } = await import("../pulse/heartbeats.mjs");

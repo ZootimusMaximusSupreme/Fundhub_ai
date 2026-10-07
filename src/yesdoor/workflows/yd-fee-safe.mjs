@@ -7,10 +7,11 @@
 // allows, so a fee that is not 60 days old is untouched, and a fee that was
 // reversed (refunded) is skipped.
 //
-// One Inngest function, registered in src/workflows/index.mjs and watched by the
-// daily pulse (INNGEST_JOBS in src/pulse/heartbeats.mjs, the same id and cron).
+// This file is the logic. The Inngest function that runs it daily is registered on
+// the Fundhub side, in src/workflows/yd-fee-safe.mjs (the workflow index and the
+// journey runner read that folder), and is watched by the daily pulse
+// (INNGEST_JOBS in src/pulse/heartbeats.mjs, the same id and cron).
 
-import { inngest } from "../../workflows/client.mjs";
 import { db } from "../../db.mjs";
 import { releaseSafeFees } from "../store/money.mjs";
 
@@ -22,9 +23,3 @@ export async function runFeeSafe(handle = db, opts = {}) {
   const out = await releaseSafeFees(handle, opts);
   return { ok: out.errors.length === 0, ...out };
 }
-
-export const ydFeeSafe = inngest.createFunction(
-  { id: FEE_SAFE_JOB, name: "Yesdoor — paid fees go safe" },
-  { cron: FEE_SAFE_CRON },
-  () => runFeeSafe(db)
-);

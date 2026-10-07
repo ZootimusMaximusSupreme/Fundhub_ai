@@ -138,7 +138,8 @@ describe("yesdoor booking", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () =
       assert.equal(new Date(t.starts_at).toISOString(), startsAt);
 
       assert.equal((await one(db, `SELECT stage FROM yd_renters WHERE id = $1`, [renter.renterId])).stage, "booked");
-      assert.deepEqual(await eventNames(app.id), ["application.booked", "application.registered"]);
+      // Both happen in one transaction, so they share a timestamp: compare as a set.
+      assert.deepEqual((await eventNames(app.id)).sort(), ["application.booked", "application.registered"]);
       assert.ok((await eventNames(t.id)).includes("tour.booked"));
       const ev = await one(db, `SELECT actor_kind, actor_id FROM yd_events WHERE entity_id = $1 AND name = 'application.registered'`, [app.id]);
       assert.equal(ev.actor_kind, "renter");
