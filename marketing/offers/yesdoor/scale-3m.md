@@ -163,3 +163,12 @@ Cash: search ~27 days; fee paid at move-in or 30–90 days later; 60-day refund 
 - **Sharing renter results with buildings:** the FTC treats a business that gives tenant data to owners to judge applicants as a credit reporting agency (same report). Accuracy duties apply: TransUnion paid $15M ([FTC](https://www.ftc.gov/news-events/news/press-releases/2023/10/ftc-cfpb-settlement-require-trans-union-pay-15-million-over-charges-it-failed-ensure-accuracy-tenant)), AppFolio $4.25M, RealPage $3M.
 - **Background checks:** California ICRAA requires notice within 3 days and a box to get a free copy ([Civ. 1786.16](https://california.public.law/codes/ca_civ_code_section_1786.16)). California bars blanket criminal-record bans ([CRD](https://calcivilrights.ca.gov/2023/11/16/civil-rights-department-secures-settlement-over-alleged-discriminatory-blanket-ban-on-renting-to-individuals-with-criminal-history-in-inglewood/)).
 - Not found: Arizona tenant screening rules beyond federal, and whether steering a renter away before they apply counts as a denial.
+
+## Owner-set 2026-10-07: mostly agentic. Apartment signup must be caveman-easy
+
+Draft design (not built):
+- **Lead list:** ALN Apartment Data sells locator data at $50 per market per month ([ALN](https://alndata.com/locator)). Agents build the building list from it plus each building's posted rental criteria.
+- **Outreach:** reuse the senders already in `src/messaging/providers/`: email (Mailgun, Resend), text (Twilio), AI calls (Bland), physical mail (`mail-letter`), Meta ads (`meta-capi`).
+- **The hook:** "We have N pre-approved renters who want [Building]." N comes from real renter demand.
+- **Signup in 3 taps, no login (magic link: `src/auth/magic-link.mjs`):** (1) check the pre-filled building page and rental criteria the agent already read, (2) pick a fee preset and sign, (3) type the leasing-office email where renters get registered. Connecting Entrata or Yardi is optional, later.
+- E-signature: no e-sign tool found in this repo.
