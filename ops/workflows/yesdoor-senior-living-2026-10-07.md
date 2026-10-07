@@ -148,4 +148,5 @@ the law in Arizona, California and Florida allows, and every legal way to get pa
 | L2 | Home care (private pay), home health, hospice | claimed (agent) |
 | L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | claimed (agent) |
 | L4 | Creative ways to get paid across all lines (who else pays besides the provider) | claimed (agent) |
+| L6 | Big referral opportunities, any industry: supplier legally pays $1,000+ per placement (Chris: "find big referral opps") | claimed (agent) |
 | L5 | Rank lines and payment models | pending (this session) |
