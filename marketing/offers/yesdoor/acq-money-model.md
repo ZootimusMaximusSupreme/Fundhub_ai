@@ -69,6 +69,57 @@ Lead getters (Leads core four):
 - **5 Star Service:** every renter check-in on the lifetime path is graded 1–5. Concern, Courtesy, One & Done, Educate & Empower, Timeliness.
 - **Monday Hour One:** look back, look forward, set priorities, schedule them.
 
+## 5. Grand Slam stack: ideas for a human to pick (2026-10-07)
+
+Ideas only. A person picks, prices and approves each one before it goes live. Built on $100M Offers: guarantees, bonuses, scarcity, urgency and naming. Each guarantee is one option to choose from, not a promise already made.
+
+### Renters
+
+- **Name ideas:** "Approved-First Match", "The 60-Second Yes", "No-Denial Apartment Hunt".
+- **Guarantee options (pick one):**
+  - Conditional: if Yesdoor says approved and the building says no, Yesdoor refunds the application fee and finds the next building the same day. (The build already tracks this refund.)
+  - Implied: free to the renter, so nothing to lose.
+  - Repair, outcome-based: if no new building approves them after the repair rounds, the next round is free.
+- **Bonuses (each solves the next problem they hit):**
+  - A move-in checklist and a budget sheet.
+  - A lease red-flag checker.
+  - First pick of building specials.
+  - A free new match at lease end.
+- **Scarcity:** a limited number of tours per building each week (true, from tour hours). Specials while units last.
+- **Urgency:** the approval answer is good for 30 days, the same as the re-check window. Move-in specials end on the building's date.
+
+### Buildings
+
+- **Name ideas:** "Pre-Approved Renters, Pay on Lease", "The Zero-Risk Lease-Up".
+- **Guarantee options (pick one):**
+  - Implied, performance: pay only when a lease is signed (already the core).
+  - Conditional: if a placed renter leaves within 60 days, the fee is refunded (already the rule).
+  - Conditional: no lease in the first 30 days live means the first fee is cut (amount for Chris to set).
+  - Anti-guarantee: none. The point is that the building risks nothing.
+- **Bonuses:**
+  - A free renter-demand report each month.
+  - Help syncing listings from their software.
+  - A score showing why renters were turned away (no credit data shared).
+- **Scarcity:** a set number of founding buildings per city get the founding fee rate.
+- **Urgency:** the founding rate holds only if signed by a date Chris sets.
+
+### Brokers
+
+- **Name ideas:** "Prequal With Just an Email", "The Broker Yes-Engine".
+- **Guarantee options (pick one):**
+  - Conditional: if the first 25 renters don't save them time, the office plan's first month is free.
+  - Implied: a free run on 25 of their own leads before paying anything.
+- **Bonuses:**
+  - Their branded renter link.
+  - A shared tracker showing each renter's stage.
+  - A monthly payout statement.
+- **Scarcity:** a limited number of white-label partners per city.
+- **Urgency:** setup fee waived only on annual plans signed this quarter.
+
+### For the person reviewing
+
+For each idea, mark keep, change or kill. Then add the real price and the real limit numbers. Nothing here is live until it's marked keep.
+
 ## Order to build (one stage at a time)
 
 1. Renter attraction (free approval odds) plus building attraction (renter-demand report). This is the Phoenix test.
