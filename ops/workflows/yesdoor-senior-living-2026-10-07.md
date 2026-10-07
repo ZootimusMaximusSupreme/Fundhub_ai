@@ -19,7 +19,7 @@ Chris said "go" — this session runs lanes 1–3 with research agents, and runs
 | 1 | The law: state referral-agency rules, Medicaid limits, Medicaid planning vs practicing law | this session (agent) | done |
 | 2 | Market + money check: launch city, communities, fees, competitors, data for the check | this session (agent) | done |
 | 3 | Yesdoor reuse map (read-only) | this session (agent) | done |
-| 4 | Workflow questions to Chris, then the spec | this session | draft workflow up — waiting on Chris |
+| 4 | Workflow questions to Chris, then the spec | this session | done — spec at `docs/specs/yesdoor-senior-living-2026-10-07.md`, waiting on Chris review |
 
 ## Lane 1 — the law (done)
 
