@@ -1,5 +1,15 @@
 # Yesdoor: selling and onboarding big operators (research 2026-10-07)
 
+## How fast big operators actually sign (research 2026-10-07)
+
+- **EliseAI:** first customer Stonehenge tested about 5 properties; within 3 weeks it asked for all of them. Research started 2016–17; seed round 2019 ([Thesis Driven](https://www.thesisdriven.com/letters/elise-ais-minna-song-on-building/)). Now with 70% of the top 50 operators ([BusinessWire](https://www.businesswire.com/news/home/20240814601656/en/EliseAI-World-Leader-in-AI-Enabled-Solutions-for-Housing-Raises-75-Million-Series-D-Round-Valuing-Company-in-Excess-of-1-Billion)).
+- **SmartRent:** Aimco's test started May 2018, full portfolio September 2018. UDR's started July, decided December. So **4–5 months from test to portfolio** ([SEC](https://www.sec.gov/Archives/edgar/data/1837014/000110465921053449/tm2113393d1_ex99-2.htm)).
+- **Bilt** (free to owners): "I'd been pitching for two years, and within a month or two, everyone called back" once COVID hit ([Unicorner](https://read.unicorner.news/p/this-is-how-bilt-got-built-part-ii)). Launched June 2021 with 2M+ units ([C&W](https://www.cushmanwakefield.com/en/united-states/news/2021/06/cw-and-bilt-rewards-introduce-first-program-for-rental-property-managers-and-residents)).
+- **Rhino** (free to operator): founded 2017; 200K → 1M+ homes by Jan 2021 ([PYMNTS](https://www.pymnts.com/news/investment-tracker/2021/rhino-raises-95m-to-grow-rental-deposit-insurance-offering/)). **Jetty**: 2.2M units under agreement by Sept 2021 ([TechCrunch](https://techcrunch.com/2021/09/07/jetty-raises-23m/)). Free products took **about 3–5 years to pass 2M units**.
+- **Zillow pay-per-lease:** apartment properties went 35K → 69K from Q3 2023 to Q3 2025 ([SEC](https://www.sec.gov/Archives/edgar/data/1617640/000161764025000149/exhibit993.htm)).
+- **Locators already matter to the biggest operator:** 6.5% of Greystar's leases at its Dallas, Houston and Austin properties came from locators in 2026 ([Bisnow](https://www.bisnow.com/dallas-ft-worth/news/multifamily/apartment-locators-balance-transparency-with-tiktok-trends-as-their-influence-expands-135286)).
+- **Takeaway:** a test can become a whole-portfolio deal in weeks to 5 months. Getting the first test is the slow part. Year one realistically means a few signed tests and one or two portfolio wins.
+
 ## Analogs: pay-only-on-success offers
 
 - **Contingency recruiting** (paid only on hire):
