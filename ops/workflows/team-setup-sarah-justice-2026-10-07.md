@@ -48,6 +48,23 @@ Known limit: Chris's own busy times keep blocking slots while Chris is the host 
 
 Correction drafts with the old "share your calendar" steps are on hold and will be replaced with the CRM steps once the box is live.
 
+## Calendar — plan v3, approved build (2026-10-07)
+
+Chris: "Sounds good... double-check it first, build it, then double-check it again... simulate it with my own Google Calendar... then send the email."
+
+What changed from v2: their plug-in is now **share at "See only free/busy" + type the address in the CRM box**, not the iCal secret link. Why:
+- Google works out repeating events itself, so no new library is needed.
+- The system only sees busy times, not event details.
+- Booked calls reach Justice as a normal Google invite: he's added as a guest on the ClickFunnels event, Meet link included.
+
+| Step | Owner | Status |
+|---|---|---|
+| Pre-check: does a busy event on Chris's calendar hide that slot on the funnel? Does main auto-deploy? Google API facts | agent (Sonnet) | claimed |
+| Build: CRM box, API, migration, 5-minute busy sync, booking → Justice invite, mint script `--calendar`, pulse, journeys | agent (Opus) | claimed |
+| Verify again: independent review + live checks after deploy | agent (Sonnet) | pending (after build) |
+| Chris's one Allow: a Mac agent runs the mint script with `--calendar`, Chris presses Allow | Chris (one tap) | pending |
+| Email Sarah and Justice the CRM steps | orchestrator | pending (after verify) |
+
 ## Setter — the flow is already in code
 
 The setter flow is built (the "Josh" AI setter):
