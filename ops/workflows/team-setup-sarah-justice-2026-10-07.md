@@ -32,7 +32,7 @@
 ### W1 — Calendar (2026-10-07)
 
 - Written: `team-setup-sarah-justice-2026-10-07/w1-calendar-plan.md`
-- Gmail draft to Justice and Sarah (not sent): asks which Google calendar they work from, plus their call hours and time zone.
+- Calendar request emails sent 2026-10-07, one each to Justice and Sarah, on Chris's go. Each asks which Google calendar they work from, plus their call hours and time zone, and says a ClickFunnels invite is coming. Includes Chris's line: "Please upload this or provide whatever you need, and then we can plug you into the system." The old combined draft was deleted so it can't be sent twice.
 - No code, route, migration, env var, or ClickFunnels changes.
 - Findings: ClickFunnels lets each team member connect their own Google calendar, and busy times hide open slots. It supports One-on-One, Collective, and Round Robin hosts. The API can only read booked calls; it cannot set up hosts, calendars, or team members. Booking webhooks carry no host field. Today `/funding-book-call` ("Funding Strategy Meeting") and `/schedule/phonecall` are both hosted by Chris. To route calls to Justice, change the host. The page itself does not change.
 
