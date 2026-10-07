@@ -79,10 +79,19 @@ export async function runSecurityJourney(db, ctx, collector) {
     expected: true, actual: allowsRole(FINANCE, "sales_manager"),
     file: "src/http/read-api.mjs", p0: true
   });
+  // Owner's word 2026-10-07: the sales manager takes the hiring calls, so she
+  // reads the hiring screens. Hire / reject (api/hiring/decide.mjs) and the
+  // bias-audit aggregate (ROLE_SETS.COMPLIANCE) stay owner/admin.
   collector.assertEq({
-    section, journey, role: "sales_manager", id: "sec-hiring-sm-refused",
-    claim: "sales_manager is NOT in HIRING",
-    expected: false, actual: allowsRole(HIRING, "sales_manager"),
+    section, journey, role: "sales_manager", id: "sec-hiring-sm-allowed",
+    claim: "sales_manager IS in HIRING (reads the hiring screens)",
+    expected: true, actual: allowsRole(HIRING, "sales_manager"),
+    file: "src/http/read-api.mjs", p0: true
+  });
+  collector.assertEq({
+    section, journey, role: "sales_manager", id: "sec-eeo-sm-refused",
+    claim: "sales_manager is NOT in COMPLIANCE (bias-audit aggregate)",
+    expected: false, actual: allowsRole(ROLE_SETS.COMPLIANCE, "sales_manager"),
     file: "src/http/read-api.mjs", p0: true
   });
   collector.assertEq({

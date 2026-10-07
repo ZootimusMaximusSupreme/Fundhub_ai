@@ -995,9 +995,10 @@ export const ROUTES = {
      credential, exactly as api/documents/[id].mjs does it. */
   "content/welcome-video": contentWelcomeVideo,
 
-  // Hiring. ROLE_SETS.HIRING is {owner, admin} — NOT the STAFF set, because
-  // these carry applicant PII and the scoring trail of an automated employment
-  // decision tool. Routing them changes nothing about that gate.
+  // Hiring. ROLE_SETS.HIRING is {owner, admin, sales_manager} — NOT the STAFF
+  // set, because these carry applicant PII and the scoring trail of an automated
+  // employment decision tool. Routing them changes nothing about that gate.
+  // hiring/decide is the exception inside this block: it is owner/admin only.
   "hiring/candidates": hiringCandidates,
   "hiring/application": hiringApplication,
   "hiring/postings": hiringPostings,

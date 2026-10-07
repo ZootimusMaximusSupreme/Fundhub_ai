@@ -177,10 +177,19 @@ export const ROLE_SETS = {
   // PII and the scoring trail of an automated employment decision tool, which is
   // material a closer has no reason to see and real exposure if it circulates.
   // Widen this only by naming a recruiting role, never by reusing STAFF.
-  HIRING: new Set(["owner", "admin"]),
-  /* Bias-audit aggregates — v_eeo_aggregate only. Same people as HIRING today but
-     a separate gate from api/hiring/* so demographic summaries never ride alongside
-     applicant PII and scoring trails (053_eeo_selfid.sql). */
+  //
+  // sales_manager added 2026-10-07 by the owner's word ("link Sarah up so she
+  // can start taking hiring calls"): hiring_roles.owner_role is sales_manager
+  // for all four live roles, and src/hiring/owner.mjs routes sales and CSM
+  // hiring to the sales manager. READS ONLY. This set gates the six GET
+  // endpoints under api/hiring/ and nothing else. api/hiring/decide.mjs (hire /
+  // reject) writes its own owner/admin gate out in full and does NOT read this
+  // set, so a sales manager sees candidates but cannot decide them.
+  HIRING: new Set(["owner", "admin", "sales_manager"]),
+  /* Bias-audit aggregates — v_eeo_aggregate only. A separate gate from
+     api/hiring/* so demographic summaries never ride alongside applicant PII and
+     scoring trails (053_eeo_selfid.sql). It was the same people as HIRING until
+     2026-10-07; it stays owner/admin when HIRING gained sales_manager. */
   COMPLIANCE: new Set(["owner", "admin"]),
   /* The marketing machine (docs/specs/marketing-machine-2026-10-04.md §4 trap 2):
      settings, offers, scripts and videos. Only Chris turns ads on, so only the

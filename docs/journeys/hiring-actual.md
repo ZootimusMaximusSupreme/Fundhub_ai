@@ -75,12 +75,12 @@ flowchart TD
 |---|---|---|
 | `GET /api/hiring/apply` | Open roles list (key, name, brief) | **No auth** — public careers door |
 | `POST /api/hiring/apply` | One application → `apply()`, stage `applied` | **No auth** — public careers door |
-| `GET /api/hiring/candidates` | The board — every application, filtered by stage | `owner`, `admin` (`ROLE_SETS.HIRING`) |
-| `GET /api/hiring/application?id=` | One candidate's full record: answers, every score, interviews, every decision | `owner`, `admin` |
-| `GET /api/hiring/decisions` | The decision log — who decided what, and whether a person decided it | `owner`, `admin` |
-| `GET /api/hiring/funnel` | Counts by stage and by where the candidate came from | `owner`, `admin` |
-| `GET /api/hiring/bench` | How many warm candidates each role has against its target | `owner`, `admin` |
-| `GET /api/hiring/postings` | Job adverts, without the description or the external id | `owner`, `admin` |
+| `GET /api/hiring/candidates` | The board — every application, filtered by stage | `owner`, `admin`, `sales_manager` (`ROLE_SETS.HIRING`; sales_manager added 2026-10-07) |
+| `GET /api/hiring/application?id=` | One candidate's full record: answers, every score, interviews, every decision | `owner`, `admin`, `sales_manager` |
+| `GET /api/hiring/decisions` | The decision log — who decided what, and whether a person decided it | `owner`, `admin`, `sales_manager` |
+| `GET /api/hiring/funnel` | Counts by stage and by where the candidate came from | `owner`, `admin`, `sales_manager` |
+| `GET /api/hiring/bench` | How many warm candidates each role has against its target | `owner`, `admin`, `sales_manager` |
+| `GET /api/hiring/postings` | Job adverts, without the description or the external id | `owner`, `admin`, `sales_manager` |
 | **`POST /api/hiring/decide`** | **The only staff write.** Advance or reject | `owner`, `admin`, gate written out in full at `api/hiring/decide.mjs:44` |
 | `POST /api/ops/hire-closer` | Packed-calendar task + LinkedIn closer job via `linkedin.mjs postJob` | `owner`, `admin` |
 
@@ -120,7 +120,7 @@ before storage, not merely ignored — `scoreable()` at `grading.mjs:87`.
 3. **The outreach sweeper runs every 30 minutes**
    (`src/workflows/hiring-outreach-cadence.mjs`). It drains `candidate_outreach` rows
    that are due. **No production path creates those rows** — see finding 1.
-4. **An owner or admin opens the hiring screen** and reads the application.
+4. **An owner, admin or sales manager opens the hiring screen** and reads the application (sales manager added 2026-10-07; only owner and admin see Advance and Reject).
 5. **They press Advance,** picking the next stage from a dropdown. The dropdown only
    moves forward and stops at Hired.
 6. **Or they press Reject** and type a reason. A to-do lands in the admin queue saying
@@ -231,7 +231,7 @@ Per-email and org-wide limits are durable.
   candidate message.
 * **Whether the hiring screen is reachable from the live navigation for an admin.**
   `public/app/sidebar.fragment.html` lists `hiring.html` under Admin.
-  `src/http/app-nav-reachability.test.mjs` pins it to owner/admin. I did not sign in
+  `src/http/app-nav-reachability.test.mjs` pins it to owner, admin and sales_manager (since 2026-10-07; the menu row itself is hidden for everyone, NAV_HIDDEN). I did not sign in
   and click.
 * **LinkedIn posting through `POST /api/ops/hire-closer`.** `postCloserLinkedIn()`
   returns `not_configured` when no connection row exists. Owner-set: LinkedIn API access

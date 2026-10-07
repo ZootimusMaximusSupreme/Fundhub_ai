@@ -2200,6 +2200,17 @@ function decisionPanel(decisions){
 var DECIDE_STAGES = ['applied','screening','group_interview','one_on_one',
                      'offer','hired','onboarding','ramp','performing'];
 
+/* viewerMayDecide — hire and reject (POST /api/hiring/decide) are owner and admin
+   only. The sales manager READS this whole screen (owner-set 2026-10-07: Sarah
+   takes the hiring calls) but must not be offered buttons the server will
+   refuse (UI-STANDARDS: no controls the role lacks permission for). The server
+   gate is still the authority. A role the cache does not know keeps the
+   controls, because the server answers for it. */
+function viewerMayDecide(){
+  var r=''; try{ r=String(localStorage.getItem('fh_role')||'').trim().toLowerCase(); }catch(e){}
+  return r==='' || r==='owner' || r==='admin';
+}
+
 /* decideSection — the Advance / Reject controls.
    A rejection needs a written reason: the endpoint requires it, and so does the
    database. The box is right here so nobody has to go looking for it. */
@@ -2207,6 +2218,10 @@ function decideSection(a){
   if(a.is_demo_row){
     return '<div class="dw-sec"><div class="note">This is a Demo Mode row. '+
       'Decisions are not recorded for demo candidates.</div></div>';
+  }
+  if(!viewerMayDecide()){
+    return '<div class="dw-sec"><div class="note">Hiring and rejecting are done by the owner '+
+      'or an admin. You can read everything on this screen.</div></div>';
   }
   if(a.status!=='open'){
     return '<div class="dw-sec"><div class="note">This application is '+esc(a.status)+
@@ -2479,7 +2494,7 @@ function apiGet(path){
     return Promise.resolve({ ok:false, source:'offline', data:null, error:(e && e.message) || 'fetch unavailable' });
   }
   return Promise.resolve(started).then(function(r){
-    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'not signed in, or role is not owner/admin' };
+    if(r.status === 401 || r.status === 403) return { ok:false, source:'unauthorized', data:null, error:'not signed in, or this role cannot open hiring' };
     if(r.status === 404){
       return r.json().then(function(d){
         return (d && d.error === 'not_found' && typeof d.path === 'string')
