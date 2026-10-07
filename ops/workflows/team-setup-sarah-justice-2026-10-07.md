@@ -60,9 +60,9 @@ What changed from v2: their plug-in is now **share at "See only free/busy" + typ
 | Step | Owner | Status |
 |---|---|---|
 | Pre-check: does a busy event on Chris's calendar hide that slot on the funnel? Does main auto-deploy? Google API facts | agent (Sonnet) | **done: PASS.** A busy event on Chris's calendar hid the Oct 9 3:00 PM slot within about 3 minutes and came back about 50 seconds after the delete. ClickFunnels reads availability through Cronofy. Merging to main does NOT deploy; shipping needs `npm run ship` from the Mac. See `team-setup-sarah-justice-2026-10-07/precheck.md` |
-| Build: CRM box, API, migration, 5-minute busy sync, booking → Justice invite, mint script `--calendar`, pulse, journeys | agent (Opus) | claimed |
-| Verify again: independent review + live checks after deploy | agent (Sonnet) | pending (after build) |
-| Chris's one Allow: a Mac agent runs the mint script with `--calendar`, Chris presses Allow | Chris (one tap) | pending |
+| Build: CRM box, API, migration, 5-minute busy sync, booking → Justice invite, mint script `--calendar`, pulse, journeys | agent (Opus) | **done.** Commits a46d1d9, 8628907, 5f24505, 44a4a32. Migration 434 (`staff_calendar_links`). Lint clean, tsc 0. No-DB suite 12429 tests, same 8 machine-only failures as before. pg files 3235 tests, same 59 baseline failures, 0 new; the 14 new pg tests pass (including as `fundhub_app`). Playwright calendar-connect 8/8. Not run against real Google (no token yet). |
+| Verify again: independent review, re-run of every gate, simulation on Chris's real Google calendar (private busy block hides the slot; adding a closer keeps guests and the Meet link) | agent (Sonnet) | claimed |
+| Chris's one Allow + ship, from the Mac: `cd ~/Fundhub_ai && git pull && node --env-file=.env scripts/google-oauth-mint.mjs --calendar --set-netlify`, then `npm run ship`. Chris signs in as stanbridgejchris@gmail.com and presses Allow | Mac agent + Chris (one tap) | pending (after merge) |
 | Email Sarah and Justice the CRM steps | orchestrator | pending (after verify) |
 
 ## Setter — the flow is already in code
