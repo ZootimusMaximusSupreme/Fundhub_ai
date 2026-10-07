@@ -113,3 +113,17 @@ Nothing below is decided until Chris says so. Each line is a default.
 10. **Hard stops, built into the database:** no fee ever on a Medicaid (ALTCS) resident — that is a felony in Arizona. Staff never hold a power of attorney. No Medicaid planning advice — Medicaid families go to an elder-law attorney, VA claims go to an accredited veterans service officer (free), house questions go to a realtor.
 11. **Refund:** prorated refund to the community if the resident leaves, dies or goes to hospital within 30 days of move-in (required in Washington; offered everywhere as a trust point).
 12. **Before launch:** two insurance policies ($1M/$3M general and professional liability), background checks on every advisor, and the exact Arizona disclosure wording.
+
+## Size at scale (2026-10-07, Chris asked "how much a month at scale")
+
+Inputs (sourced): Phoenix 30,761 licensed beds (lane 2, ADHS); assisted living occupancy 88.4% ([NIC](https://www.nic.org/blog/senior-housing-occupancy-climbs-in-second-quarter-2026/)); median stay ~22 months (NCAL, via [Senior Services of America](https://seniorservicesofamerica.com/what-is-the-average-length-of-stay-in-assisted-living/) — weak, secondary); ~18% of residents rely on Medicaid, no fee on those ([NCOA](https://www.ncoa.org/article/does-medicaid-pay-for-assisted-living/)); A Place for Mom ~$442M revenue and ~130,000 moves in FY2025 (company-profile sites, weak: [bitscale](https://bitscale.ai/directory/a-place-for-mom), [canvasbusinessmodel](https://canvasbusinessmodel.com/products/a-place-for-mom-business-model-canvas)) → about $3,400 per move.
+
+Arithmetic (agent's, not sourced): 30,761 × 88.4% ≈ 27,200 residents ÷ 22 months ≈ **1,236 move-ins a month in Phoenix**, ~1,014 private pay.
+
+| Our share of Phoenix private-pay move-ins | Move-ins / month | At $3,500 each | At $5,000 each |
+|---|---|---|---|
+| 5% | 51 | $177k | $253k |
+| 15% | 152 | $532k | $760k |
+| 25% | 253 | $887k | $1.27M |
+
+National ceiling: A Place for Mom ≈ $37M a month. 10% of its volume ≈ $3.7M a month.
