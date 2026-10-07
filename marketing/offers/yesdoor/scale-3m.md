@@ -61,3 +61,40 @@ The back-end take rate is the most important number nobody has measured. Measure
 ## Next
 
 Run Phoenix demand-side only, as the README already plans, and measure three numbers: cost per lead, lead → lease, and back-end take rate. Those three decide everything above.
+
+## Ascension funnel — three avatars (owner-set 2026-10-07)
+
+Owner-set: Yesdoor runs prequal **and** a background check from just an email, so placements come from that. Ads run to all three avatars. Prices marked TBD are Chris's call. Prices shown come from Fundhub's own catalog (`src/config/offers.mjs`) and are reference points only.
+
+### 1. Renters
+| Step | Offer | Price |
+|---|---|---|
+| Ad | "See which apartments will approve you — just your email, no score hit" | — |
+| Front door | Email-only prequal + background check, approval odds per building | Free |
+| Core | Shortlist, tour booking, placement | Free (building pays) |
+| Denied or low odds | Denial breakdown (like Fundhub's Decline Autopsy, $27) | TBD |
+| Fix it | Repair first round (Fundhub: $200) → credit repair done-for-you (Fundhub: $1,000) | TBD |
+| Hard cases | Lawyer referral (evictions, collections) | referral fee TBD |
+| Later | Buyers guide (renting → buying a home) | TBD |
+
+### 2. Apartments (buildings and management companies)
+| Step | Offer | Price |
+|---|---|---|
+| Ad | "Pre-qualified, background-checked renters who want your building" | — |
+| Front door | Free list of pre-qualified renters matching their units | Free |
+| Core | Placement, paid per that building's own fee structure | their terms |
+| Upsell | Priority placement / featured listing | TBD |
+| Portfolio | One deal covering every building a management company runs | TBD |
+
+### 3. Affiliates and brokerage companies
+| Step | Offer | Price |
+|---|---|---|
+| Ad | "Pre-qualify every renter lead with just an email" | — |
+| Front door | Free run on their own renter leads | Free |
+| Core | Prequal + background check per renter, or monthly | TBD (see partner pricing research) |
+| Top | White-label under their brand (Fundhub partner entry: $10,000) | TBD |
+
+### Order to launch
+1. Renter ads first. They create the list every other avatar buys.
+2. Apartment ads once there is a renter list to show.
+3. Partner ads once placements are proven. Proof of results sells partners.
