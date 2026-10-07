@@ -362,7 +362,7 @@
   .callink-note{color:var(--text-dim);line-height:1.45;margin:0;}
   .callink-steps{margin:0;padding-left:16px;color:var(--text);line-height:1.5;}
   .callink-steps li{margin-bottom:8px;}
-  .callink-steps b{font-weight:700;word-break:break-all;}
+  .callink-steps b{font-weight:700;overflow-wrap:anywhere;}
   .callink label{color:var(--text-dim);margin-top:8px;}
   .callink-input{width:100%;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:6px;
     font:inherit;color:var(--text);background:#fff;}
@@ -1734,7 +1734,10 @@ function loadCalendarLink() {
     var note = document.getElementById("calLinkNote");
     if (chip) chip.className = "chip bad";
     if (chipText) chipText.textContent = "Not loaded";
-    if (note) note.textContent = calLinkFailureText(res) + " Your calendar link could not be read, so its status is unknown.";
+    var why = res.status === 503 ? "The database is not reachable right now."
+      : res.status === 0 ? "Could not reach the server."
+      : "Your calendar link could not be loaded.";
+    if (note) note.textContent = why + " Reload the page to try again. Until then its status is unknown.";
   });
 }
 
