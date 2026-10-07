@@ -18,7 +18,7 @@
 |---|---|---|---|---|
 | W1 | Calendar — research, plan, access request draft | agent (Opus) | done (plan) — build waits on Chris | `team-setup-sarah-justice-2026-10-07/w1-calendar-plan.md` |
 | W2 | Lead alerts — find intake paths, spec | agent (Sonnet) | done (spec) — build waits on Chris | `team-setup-sarah-justice-2026-10-07/w2-lead-alerts-spec.md` |
-| W3 | Setter script — Drive sources, script, video intro, handoff | agent (Sonnet) | claimed | `docs/sops/setter/` + `team-setup-sarah-justice-2026-10-07/w3-setter-sources.md` |
+| W3 | Setter script — Drive sources, script, video intro, handoff | agent (Sonnet) | done — ready for Chris's review | `docs/sops/setter/` + `team-setup-sarah-justice-2026-10-07/w3-setter-sources.md` |
 
 ## Dependencies
 
@@ -42,6 +42,13 @@
 - Nothing sent. No code, route, migration, or env changes.
 - Findings: 10 lead-in paths. 6 should alert in the first build (ClickFunnels webhook, apply survey, booking-first for brand-new people, homepage survey, climate match, staff New Client). No new-lead alert to Chris exists today. Recommended build: one Inngest job on `entry.captured` and `booking.created` that sends one text (Twilio) and one email (Resend) per person, ever. It skips demo clients and anyone older than 24 hours. New env vars `LEAD_ALERT_SMS_TO` and `LEAD_ALERT_EMAIL_TO`, with no fallback to `PULSE_SMS_TO`. No migration, no screen.
 
+### W3 — Setter script (2026-10-07)
+
+- Written: `docs/sops/setter/` (README, setter-call-script, video-intro-script, closer-handoff) and `team-setup-sarah-justice-2026-10-07/w3-setter-sources.md`
+- Built from 34 Drive files (Cole Gordon Triage Call and setter systems, Haynes setter SOP, Vann show-rate course, Chris's Fundhub AI Setter SOP, June 2026 Voice Agents SOT) and the repo (offers, closer playbook, Sarah's objection sheet). Every block is tagged by source, as "adapted", or as MISSING FROM SOURCES.
+- Where the Drive docs disagree with the repo, the repo wins: the soft pull is $32, not $50, and the banned proof numbers are left out.
+- No code or journey changes. Drive was read only.
+
 ## Blockers and open questions
 
 - W1: every ClickFunnels setup step (add Sarah and Justice, connect calendars, set hours, change host) is in the ClickFunnels admin. The API cannot do it.
@@ -51,7 +58,12 @@
 - W2 decisions for Chris: (1) business cell for lead texts (repo only knows the morning-text number ending 6457; it is not stated as the business cell); (2) email address for alerts; (3) should the unpaid $297 contact, the $297 buyer, or an education enrollment also count as a lead (default: none); (4) text 24 hours a day (default: yes).
 - W2 risk: a text from our Twilio number to Chris has never been proven to arrive. Email is the backup channel.
 
+- W3 decisions for Chris: (1) say the $32 soft pull out loud on setter calls (default: no, Justice covers it); (2) Justice's title on calls (the Josh prompts say "Senior Advisor"); (3) 4K video law vs texting apps that shrink video (default: film in 4K); (4) is the $297 roadmap path live for setter calls.
+- W3 missing from Drive: Cole's DM scripts, ghosted follow-ups, rebooking no-shows, Art of the Delay, and the Setter Scorecard. They are linked from Cole's docs but not in Chris's Drive.
+
 ## Leftovers (not this batch)
+
+- Older repo rules say the setter seat is AI ("we do not hire setters": closer playbook, closer ramp doc, `src/ops/hire-closer.mjs`). Chris is setting for now. Under chris-word-wins, those lines need an update.
 
 - `ops/workflows/morning-brief-2026-10-05.md:240` prints the full morning-text number, though line 23 of the same board says the full number stays out of the repo.
 
