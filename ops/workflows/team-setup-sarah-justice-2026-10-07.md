@@ -139,6 +139,9 @@ The setter flow is built (the "Josh" AI setter):
 
 ## Leftovers (not this batch)
 
+- **Hiring reads ignore the caller's company** (found in `verify-final.md`, F1, pre-existing). Five of the six hiring read endpoints (`api/hiring/candidates.mjs`, `postings.mjs`, `decisions.mjs`, `funnel.mjs`, `bench.mjs`) filter on the default org, not the caller's org. No exposure today: the only other org (`yesdoor`) has 0 active staff, checked live on 2026-10-07. It matters once Yesdoor gets staff logins.
+- `docs/journeys/role-sales-manager-intended.md:75` still says hiring "should stay blocked". Chris's word (2026-10-07) opened it; the intended file is Chris's to edit.
+
 - CI `suite (real Postgres)` is red on `main` (`bb25668`) with 59 failing tests. The Postgres log shows code reading a dropped `clients.ghl_contact_id` column. Not this batch; commented on PR #57.
 - The last ship (Yesdoor, 2026-10-07) hit "netlify deploy: Unauthorized: could not retrieve project" (`ops/workflows/yesdoor-mvp-build-2026-10-07.md:319`). Live may not be running main's tip.
 
