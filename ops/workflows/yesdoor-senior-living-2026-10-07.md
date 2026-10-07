@@ -144,7 +144,7 @@ the law in Arizona, California and Florida allows, and every legal way to get pa
 
 | Lane | Lines | Status |
 |---|---|---|
-| L1 | Senior living (assisted living, memory care), independent living / 55+, skilled nursing | claimed (agent) |
+| L1 | Senior living (assisted living, memory care), independent living / 55+, skilled nursing | done |
 | L2 | Home care (private pay), home health, hospice | done |
 | L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | claimed (agent) |
 | L4 | Creative ways to get paid across all lines (who else pays besides the provider) | done |
@@ -200,3 +200,14 @@ Agent's top 5: flat provider subscription → private-pay move-in fee → employ
 Also: business-for-sale buyer side (10–15%, real estate license); surrogate matching ($1k–$5k bounties; paying a company at scale not found).
 Closed: health referrals in FL (§817.505), EKRA lines, CA B&P 650; colleges on federal aid (per-student pay banned); mortgages (RESPA §8). Under $1,000: Medicare Advantage, solar, card processing, debt relief.
 **Yesdoor note:** in Florida an unlicensed person who refers an apartment tenant can get at most **$50** per deal; more needs a real estate license ([Daytona Realtors](https://daytonarealtors-92158.groovehq.com/help/pay-referral-fee-to-unlicensed-person)).
+
+## L1 — senior living, independent living, skilled nursing (done)
+
+| Line | AZ | CA | FL |
+|---|---|---|---|
+| **Assisted living + memory care** — per-move-in fee? | **Yes, private pay only.** [§36-446.14](https://www.azleg.gov/legtext/57leg/2R/laws/0178.htm) (SB 1477): 4 disclosures in 14-point type + family acknowledgment before the place may pay; background check; $1M/$3M general + professional liability; $1,000 fine per violation; no cap. ALTCS: felony ([§13-3713](https://www.azleg.gov/ars/13/03713.htm)) | **Yes, private pay only — no license, disclosure rule or cap.** [H&S §1569.47](https://california.public.law/codes/health_and_safety_code_section_1569.47): misdemeanor to place beyond the license, refer to unlicensed places, or not report unsafe ones. Six regulation bills failed (latest SB 875, 2024). Medi-Cal waiver residents: kickback crime ([W&I §14107.2](https://california.public.law/codes/welfare_and_institutions_code_section_14107.2)) | **Yes, only if not on Medicaid.** [§429.195(2)(b)](https://www.flsenate.gov/Laws/Statutes/2025/429.195). Violation = patient brokering felony; 1st degree ($500k) at 20+ patients. No license, disclosure or cap (SB 788 died 3/13/2026) |
+| **Independent living / 55+** | Real estate license needed ([§32-2101(51)](https://www.azleg.gov/ars/32/02101.htm), [§32-2155(C)](https://www.azleg.gov/ars/32/02155.htm)) | DRE license needed ([B&P §10131(b)](https://california.public.law/codes/business_and_professions_code_section_10131)) | License needed; unlicensed max $50 per tenant referral ([§475.011](https://www.flsenate.gov/Laws/Statutes/2025/475.011)) |
+| **Skilled nursing** | Private pay: no state bar; ALTCS felony; federal AKS risk high | Only with a CDPH referral-agency license ([H&S §1400](https://california.public.law/codes/health_and_safety_code_section_1400)) and private pay | **No, any payer** ([§400.176](https://www.flsenate.gov/Laws/Statutes/2025/400.176)) |
+
+Other ways to earn on these lines: flat fee meeting the federal referral-services safe harbor (same for every place, cost-based, five family disclosures — [42 CFR 1001.952(f)](https://www.ecfr.gov/current/title-42/chapter-V/subchapter-B/part-1001/subpart-C/section-1001.952)); per-click or per-tour-booking fee at fair market value (OIG AO 19-04, 23-04); family-paid concierge (AZ yes); employer benefit (all three); real estate license for independent living; be the licensed operator.
+Florida caution: §817.505(3)(i) forbids steering and "assessments of illness" — Yesdoor's care-needs check and "who says yes" match press on that line.
