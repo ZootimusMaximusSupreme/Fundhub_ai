@@ -147,6 +147,24 @@ the law in Arizona, California and Florida allows, and every legal way to get pa
 | L1 | Senior living (assisted living, memory care), independent living / 55+, skilled nursing | claimed (agent) |
 | L2 | Home care (private pay), home health, hospice | claimed (agent) |
 | L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | claimed (agent) |
-| L4 | Creative ways to get paid across all lines (who else pays besides the provider) | claimed (agent) |
+| L4 | Creative ways to get paid across all lines (who else pays besides the provider) | done |
 | L6 | Big referral opportunities, any industry: supplier legally pays $1,000+ per placement (Chris: "find big referral opps") | claimed (agent) |
 | L5 | Rank lines and payment models | pending (this session) |
+
+## L4 — creative ways to get paid (done)
+
+| Model | Who pays | Typical $ | Legal risk | AZ / CA / FL notes |
+|---|---|---|---|---|
+| **Flat provider subscription, set in advance at fair market value** | Providers | Psychology Today $29.95/mo ([NBCC](https://www.nbcc.org/resources/nccs/therapydirectory)); OIG opinions 19-04 and 23-04 (Zocdoc) accepted per-booking fees set in advance, at fair market value, not tied to insurance, and **paying more does not raise ranking** ([Frier Levitt](https://www.frierlevitt.com/articles/navigating-compliance-in-online-healthcare-marketplaces-insights-from-oig-opinions/)) | Low–medium | **FL §817.505(3)(i)** exception: an information service may take provider fees if it does not steer or diagnose and fees are set in advance at fair market value ([flsenate](https://m.flsenate.gov/Statutes/817.505)) |
+| **Per-move-in fee, private-pay assisted living only** | Communities | First month's rent and care | Low with disclosure | AZ §36-446.14 + SB 1477 (disclosure, no cap); CA H&S §1569.47 (disclose who pays, fines $250–$1,000); FL §429.195(2) (only if not on Medicaid) |
+| **Employer caregiving benefit** | Employers | Wellthy "starting at $450/month per employee" ([wellthy.com](https://www.wellthy.com/employers/purchase-plan)) | Low | No AZ/CA/FL buyer found yet |
+| **Health plan contracts** (Medicare Advantage, CalAIM, ALTCS) | Plans | Papa: per-member per-month, amount private ([KFF](https://kffhealthnews.org/news/article/medicare-advantage-plans-senior-companions-profits/)) | Medium (don't also take provider money for steering plan members) | CA CalAIM nursing-home-to-assisted-living transitions served only 765 people July 2023–June 2024 ([CHCF](https://www.chcf.org/resource/2025/02/21/strengthening-calaims-assisted-living-transitions-role-community-care-hubs/)) |
+| **Family-paid concierge** | Families | Care managers $100–$250/hr; first assessment $150–$750 ([Caring.com](https://www.caring.com/senior-care/geriatric-care-managers)) | Low | All three |
+| **Be the licensed provider** | Medicaid, plans, private pay | Abby Care: $15M revenue 2025, $225M valuation, in FL ([runtimewire](https://runtimewire.com/article/abby-care-havi-nguyen-paid-family-caregivers-medicaid-ai)) | Medium | **FL §817.505(3)(h):** licensed nurse registries may legally collect fees for placing caregivers |
+| Hospital discharge software | Hospitals | Prices not public; WellSky/CarePort runs 54M referrals a year ([BusinessWire](https://www.businesswire.com/news/home/20260302799514/en/WellSky-Centralizes-Post-Acute-Referral-Intake-With-Intelligent-AI-Integration)) | Low | Crowded |
+| Government grants | AHCCCS, Area Agencies on Aging | AZ Rural Health Transformation $167M; open $17M care-coordination grant ([AHCCCS](https://www.azahcccs.gov/AHCCCS/Initiatives/RHTP/index.html)) | Low | Slow |
+| Lenders, VA, life settlements | Various | VA: no fee before the first VA decision ([38 CFR 14.636](https://www.law.cornell.edu/cfr/text/38/14.636)); life settlement referral ~0.10–0.25% of face value | Medium–high | Each needs its own license |
+
+Rules that matter most: (1) gate every fee by payer — per-move-in fees only on private pay; Medicare/Medicaid lanes switch to flat fees or employer/plan/family money; (2) **ranking is never for sale** — the "who says yes" answer comes from the family's facts only.
+
+Agent's top 5: flat provider subscription → private-pay move-in fee → employer benefit → health plan contracts → family concierge. Also: Florida nurse registry for home care; Arizona $17M care-coordination grant.
