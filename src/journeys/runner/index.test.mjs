@@ -146,8 +146,14 @@ import { isSyntheticRow } from "./synthetic.mjs";
 
    Moved 91 -> 90 when PR #39 (marketing machine M0 step 5) took the Meta pull
    off Inngest (meta-campaign-sync-sweeper) and onto a Netlify scheduled
-   function, meta-sync-sweeper. */
-const REGISTERED = 90;
+   function, meta-sync-sweeper.
+
+   Moved 90 -> 92 on 2026-10-07 with the team calendar link (owner-approved,
+   ops/workflows/team-setup-sarah-justice-2026-10-07.md): staff-calendar-busy-sync,
+   a five-minute cron with no event trigger, so it always appears in neverFired;
+   and s-04d-closer-calendar-invite on booking.created, which the walk reaches
+   and which skips without a Google token. */
+const REGISTERED = 92;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

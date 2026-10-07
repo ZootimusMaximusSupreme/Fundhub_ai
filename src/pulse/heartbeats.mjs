@@ -37,6 +37,8 @@ export const INNGEST_JOBS = Object.freeze([
   ["doc-check-retry-sweeper", "*/20 * * * *"],
   ["inquiry-call-sweeper", "*/15 * * * *"],
   ["next-action-catch-up", "*/5 * * * *"],
+  /* Staff busy times onto the booking calendar (owner-approved 2026-10-07). */
+  ["staff-calendar-busy-sync", "*/5 * * * *"],
   ["slo-infinite-drip", "0 15 * * *"]
 ]);
 

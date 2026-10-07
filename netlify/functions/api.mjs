@@ -83,6 +83,7 @@ import readSystemsCheck from "../../api/read/systems-check.mjs";
 import staffTelemetry from "../../api/staff/telemetry.mjs";
 import staffMonitoringConsent from "../../api/staff/monitoring-consent.mjs";
 import staffAvatar from "../../api/staff/avatar.mjs";
+import staffCalendarLink from "../../api/staff/calendar-link.mjs";
 import readEntitlements from "../../api/read/entitlements.mjs";
 import readFailedEvents from "../../api/read/failed-events.mjs";
 import readAgents from "../../api/read/agents.mjs";
@@ -464,6 +465,9 @@ export const ROUTES = {
   "staff/telemetry": staffTelemetry,
   "staff/monitoring-consent": staffMonitoringConsent,
   "staff/avatar": staffAvatar,
+  /* My own Google calendar, plugged in on the Calendar screen (owner-approved
+     2026-10-07). Self-scoped: acts on req.staff.id only. */
+  "staff/calendar-link": staffCalendarLink,
   "read/entitlements": readEntitlements,
   "read/failed-events": readFailedEvents,
   "read/agents": readAgents,

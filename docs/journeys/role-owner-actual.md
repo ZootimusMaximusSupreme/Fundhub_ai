@@ -49,7 +49,7 @@ flowchart TD
     CAN --> A_repair[repair — 5 routes]
     CAN --> A_scripts[scripts — 2 routes]
     CAN --> A_social[social — 7 routes]
-    CAN --> A_staff[staff — 3 routes]
+    CAN --> A_staff[staff — 4 routes]
     CAN --> A_top_level[Everything else — 43 routes]
     CAN --> A_trials[trials — 4 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
@@ -64,7 +64,7 @@ flowchart TD
 
 ## What they can reach
 
-**254 of 262 routes.**
+**255 of 263 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -313,6 +313,7 @@ flowchart TD
 | `/api/social/settings` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/soft-pull-approve` | GET, POST | **not a sign-in** — signed link |
 | `/api/staff/avatar` | GET, POST | any signed-in employee |
+| `/api/staff/calendar-link` | GET, POST, PUT | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |
@@ -332,7 +333,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**8 of 262 routes.**
+**8 of 263 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
