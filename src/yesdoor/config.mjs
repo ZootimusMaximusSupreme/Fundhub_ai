@@ -47,6 +47,49 @@ export const YD_API = Object.freeze({
   listLimitMax: 500
 });
 
+/** Pre-screen limits (B3b). Input sizes, the legal minimum age, and how many
+ *  buildings one pre-screen may compare. Not tunable business numbers (those are
+ *  YD_DEFAULTS, pinned to the spec); these keep a public door from being used to
+ *  stuff the database or to run an unbounded match. */
+export const YD_PRESCREEN = Object.freeze({
+  minRenterAgeYears: 18,
+  nameMax: 100,
+  adIdMax: 64,
+  consentTextMax: 4000,
+  consentVersionMax: 64,
+  // Buildings compared in the searched city, and in the backup pool outside it.
+  areaBuildingCap: 100,
+  backupPoolCap: 100,
+  // Income statement files one request may name (metadata only; nothing is stored but names).
+  incomeFilesMax: 10,
+  // A screening is a paid pull once the provider is real, and the door is public.
+  // One source address may start this many in the window (counted from the
+  // consent rows each attempt writes). An office or a household behind one
+  // address fits well inside it.
+  ipLimit: Object.freeze({ windowMinutes: 60, maxPerIp: 10 })
+});
+
+/** What the crons do in one pass. Each pass is bounded: what it does not finish
+ *  is still due on the next pass. */
+export const YD_CRON = Object.freeze({
+  recheckBatch: 50,
+  touchBatch: 500,
+  rulesStaleBatch: 200,
+  outboxBatch: 200
+});
+
+/** yd_outbox template keys the Yesdoor crons queue. The sandbox dispatcher marks
+ *  them sent; real copy and delivery are B4/F1 and a provider module. */
+export const YD_TEMPLATES = Object.freeze({
+  touch: Object.freeze({
+    move_in_welcome: "yd-touch-move-in-welcome",
+    day_30: "yd-touch-day-30",
+    month_6: "yd-touch-month-6",
+    lease_end_90: "yd-touch-lease-end-90"
+  }),
+  rulesReconfirm: "yd-rules-reconfirm"
+});
+
 /** Staff role sets. `owner` passes every gate (requireRole SUPER_ROLES). Only
  *  ops and the owner see credit details (spec §1, §17.6). */
 export const YD_ROLES = Object.freeze({

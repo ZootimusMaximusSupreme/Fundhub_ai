@@ -300,7 +300,10 @@ import ydAuthLink from "../../api/yesdoor/auth/link.mjs";
 import ydAuthVerify from "../../api/yesdoor/auth/verify.mjs";
 import ydPublicListings from "../../api/yesdoor/public/listings.mjs";
 import ydPublicListing from "../../api/yesdoor/public/listing.mjs";
+import ydPublicLead from "../../api/yesdoor/public/lead.mjs";
+import ydPublicPrescreen from "../../api/yesdoor/public/prescreen.mjs";
 import ydMe from "../../api/yesdoor/me.mjs";
+import ydMeIncome from "../../api/yesdoor/me/income.mjs";
 import ydBuildingRenters from "../../api/yesdoor/building/renters.mjs";
 import ydBuildingRules from "../../api/yesdoor/building/rules.mjs";
 import ydBuildingInvoices from "../../api/yesdoor/building/invoices.mjs";
@@ -733,7 +736,10 @@ export const ROUTES = {
   "yesdoor/auth/verify": ydAuthVerify,
   "yesdoor/public/listings": ydPublicListings,
   "yesdoor/public/listing": ydPublicListing,
+  "yesdoor/public/lead": ydPublicLead,
+  "yesdoor/public/prescreen": ydPublicPrescreen,
   "yesdoor/me": ydMe,
+  "yesdoor/me/income": ydMeIncome,
   "yesdoor/building/renters": ydBuildingRenters,
   "yesdoor/building/rules": ydBuildingRules,
   "yesdoor/building/invoices": ydBuildingInvoices,
