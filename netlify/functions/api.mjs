@@ -298,6 +298,7 @@ import climateGeocode from "../../api/climate/geocode.mjs";
 import climateConfig from "../../api/climate/config.mjs";
 import ydAuthLink from "../../api/yesdoor/auth/link.mjs";
 import ydAuthVerify from "../../api/yesdoor/auth/verify.mjs";
+import ydAuthLogout from "../../api/yesdoor/auth/logout.mjs";
 import ydPublicListings from "../../api/yesdoor/public/listings.mjs";
 import ydPublicListing from "../../api/yesdoor/public/listing.mjs";
 import ydPublicLead from "../../api/yesdoor/public/lead.mjs";
@@ -745,6 +746,7 @@ export const ROUTES = {
      GET doors and the sign-in link; the POST writes arrive in B3/B4. */
   "yesdoor/auth/link": ydAuthLink,
   "yesdoor/auth/verify": ydAuthVerify,
+  "yesdoor/auth/logout": ydAuthLogout,
   "yesdoor/public/listings": ydPublicListings,
   "yesdoor/public/listing": ydPublicListing,
   "yesdoor/public/lead": ydPublicLead,

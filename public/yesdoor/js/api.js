@@ -345,12 +345,23 @@
       });
     });
   };
+  // Sign out. A renter, building or broker session is revoked on the server
+  // (POST auth/logout) and then forgotten in this browser, even if the call cannot
+  // be made. Staff sign in through the Fundhub staff login, which this does not touch:
+  // for staff only the desk's own token is forgotten here, as before.
   api.logout = function (kind) {
     if (forcedDemo) return demoCall("POST", "auth/logout", null, { kind: kind });
-    // There is no sign-out door: forget this portal's session in this browser.
-    setToken(kind, null);
-    if (kind === "renter" && ui()) ui().store.del(RENTER_KEY);
-    return Promise.resolve({ ok: true });
+    var token = kind === "staff" ? null : getToken(kind);
+    function forget() {
+      setToken(kind, null);
+      if (kind === "renter" && ui()) ui().store.del(RENTER_KEY);
+      return { ok: true };
+    }
+    if (!token) return Promise.resolve(forget());
+    return fetch(BASE + "auth/logout", {
+      method: "POST", credentials: "same-origin",
+      headers: { Accept: "application/json", "Content-Type": "application/json", Authorization: "Bearer " + token }, body: "{}"
+    }).then(forget, forget);
   };
 
   /* ---------------------------------------------------------- renter */
