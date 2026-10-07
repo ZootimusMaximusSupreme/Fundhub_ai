@@ -132,3 +132,29 @@ Surprises:
 - The DEA telehealth prescribing permission for controlled drugs ends Dec 31, 2026.
 - California large-group insured plans must cover IVF from Jan 1, 2026.
 - Who is already moving: Fortuna Health (raised $18M, serves plans covering 25M+ Medicaid lives). Propel (5M+ users).
+
+## R3 — where the tech is missing (done)
+
+The agent hit the shared web-search cap. The Y Combinator directory was not scanned in full.
+
+| # | Niche (what's still manual) | Size | Who pays | Free check | Blueprint |
+|---|---|---|---|---|---|
+| 1 | Medicaid long-term care spend-down (5-year look-back of assets, paper application, months "pending") | 61.8% of private-pay nursing home residents are on Medicaid within 4 years ([Skilled Nursing News](https://skillednursingnews.com/2025/12/nearly-1-in-6-nursing-home-residents-spend-down-savings-to-qualify-for-medicaid/)) | Family (an elder-law lawyer costs about $10k, [ElderLawAnswers](https://attorney.elderlawanswers.com/how-much-will-medicaid-planning-and-application-cost-12408)); private-pay facilities | Med | **High** |
+| 2 | Medicaid work requirements | 18.5M a year | Medicaid health plans | **High** | **High** |
+| 3 | Medicare "dual unlock" (Medicare Savings Program, Extra Help) | 5.8M eligible but not enrolled ([KTVU](https://www.ktvu.com/news/elderly-benefits-snap-ssi-medicare-savings-program-eligible)); 2M+ for Extra Help | Medicare Advantage carriers via broker commission ($694 cap) | **High** | Med |
+| 4 | Paid family caregiving (Medicaid home care) | 710k+ on waitlists, average 40-month wait ([KFF](https://www.kff.org/medicaid/issue-brief/a-look-at-waiting-lists-for-medicaid-home-and-community-based-services-from-2016-to-2024/)) | Home care agencies (cost to win a client: $845) | **High** | Med |
+| 5 | Bariatric surgery readiness (6-month diet, doctor letters, labs) | 44% drop out during evaluation ([PMC](https://pmc.ncbi.nlm.nih.gov/articles/PMC5469712)); 1% of eligible people get surgery | Surgery programs | Med | **High** |
+| 6 | Clinical-trial matching | $143–$11,392 per patient | Trial sponsors | **High** | Low |
+| 7 | Injury care paid from a future settlement (medical liens) | 2.44M people injured in crashes in 2023 ([NHTSA](https://crashstats.nhtsa.dot.gov/Api/Public/ViewPublication/813705)) | Lien funders, doctors, lawyers | **High** | Low |
+| 8 | Life settlements (selling a life policy) | $3.7B, about $212k average to the seller (2025) ([InsuranceNewsNet](https://insurancenewsnet.com/innarticle/what-advisors-need-to-know-about-the-life-settlement-boom)) | Policy buyers | **High** | Low |
+| 9 | Hospital charity care | $14B a year unclaimed | No natural payer | High / Low | Med |
+| 10 | Insurance denial appeals | Fewer than 1% of denials appealed ([MedCity](https://medcitynews.com/2025/01/insurance-denial-marketplace/)) | Drugmakers (own drug only) | Low | Med |
+| 11 | Medical and dental travel abroad | 780k Americans in 2019 | Foreign clinics | Med-High | Med |
+
+Surprises:
+- When Medicare or Medicaid pays for the care, the federal anti-kickback law kills Pattern 1. EKRA also covers rehab, labs and sober homes under private insurance.
+- Disability benefits are taken. Atticus raised $100M+, and lawyers pay it a share of their fee. Proof that Pattern 1 works.
+- VA claims are blocked. Unaccredited consultants cannot legally charge veterans.
+- Fertility is not underserved. Future Family has a $400M financing program.
+- Medicare Advantage extra benefits go unused. Only 54% of enrollees know they have dental or vision coverage.
+- Benefits Data Trust ran data-driven benefits sign-up on grants and shut down in Aug 2024. It had no supply-side payer.
