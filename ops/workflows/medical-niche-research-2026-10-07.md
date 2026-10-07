@@ -84,3 +84,26 @@ Scored on: how big the payment is, whether the other side pays, how much Fundhub
 | 3 | **Medical bill router + medical collections in the repair arm** | Patient (20–35% of savings, credit repair fee); later employers | High. Credit report reading + dispute letters already exist | Low-income buyers; CROA no fee until done; state bans being knocked down |
 
 Not recommended: addiction treatment (referral fees are a crime), Medicare/ACA (license, no credit angle), TRT/GLP-1 (ticket too small), clinical trials (medical gate, none of our tools carry over).
+
+---
+
+# Round 2 — open discovery (2026-10-07)
+
+Chris: round 1 was wrong. It picked the niches first and then researched that list. Round 2 picks
+no niches up front. Four agents each come at it from a different angle and report which niches
+the evidence turns up. Then this session ranks what surfaced.
+
+Two patterns to clone:
+- **Fundhub / Yesdoor:** a free data check (soft credit pull or similar) tells the customer what
+  they qualify for and who will say yes. We match them, and the other side pays.
+- **Capital Blueprint** (`docs/finance/capital-blueprint-build-spec-2026-09-29.md`): a paid program
+  that wraps a messy journey in tech. Readiness score from a data pull, step-by-step checklist,
+  monthly re-checks, a simulator, an assigned coach, and a "ready" gate that hands off to a closer.
+
+| Lane | Angle | Status |
+|---|---|---|
+| R1 | Where consumers get denied, stuck or give up (complaints, forums, surveys) | claimed |
+| R2 | Where providers bleed money (acquisition cost, consults that never buy, legal referral fees) | claimed |
+| R3 | Where the tech is missing (funding, startups, journeys still run by phone, fax and paper) | claimed |
+| R4 | Where new rules or new money create millions of new eligibility decisions (2025–2026) | claimed |
+| R5 | Rank what surfaced | pending |
