@@ -1,15 +1,23 @@
-// Yesdoor I1 click path: the real pages on the real API, over a SCRATCH database.
+// Yesdoor click path (I1, extended in I2): the real pages on the real API, over a SCRATCH database.
 //
 // Not a test in the suite (it needs a browser, a running dev server and a scratch
 // database). It clicks the path a person would, in order, and saves a marked
 // screenshot of each step next to this file:
 //
-//   broker link -> home -> search -> listing -> pre-screen (sample renter Priya) -> book a tour
-//   -> renter portal -> building portal (sign in by emailed link, move the renter
+//   staff sign in -> staff add a broker on the desk (plan, split, licence) -> send the
+//   partner agreement -> the broker signs it on /yesdoor/agreement.html (and a tampered
+//   link shows the one "did not work" page) -> staff give the broker a login
+//   -> broker link -> home -> search -> listing -> pre-screen (sample renter Priya) -> book a tour
+//   -> renter portal -> staff give the booked building's leasing office a login -> building
+//   portal (sign in with the emailed invitation, move the renter
 //   toured -> applied -> approved -> lease signed -> moved in, see the invoice)
-//   -> staff desk (sign in, add a building, send its agreement, sign it through the
+//   -> staff desk (add a building, send its agreement, sign it through the
 //   sandbox e-sign webhook, log the building's payment) -> broker portal (the
-//   renter came from the broker's link, so the broker's share is now held).
+//   renter came from the broker's link, so the broker's share is now held)
+//   -> sign out of the broker, building and renter portals (the sessions are revoked).
+//
+// Before I2 the broker, the broker's login and the building user's login were inserted by hand
+// because no door made them; now the staff desk does it.
 //
 // Run it on a FRESH scratch database: the sample renter can be pre-screened once.
 //
@@ -96,16 +104,101 @@ async function main() {
   page.on("pageerror", (e) => consoleErrors.push(String(e)));
   page.on("dialog", (d) => d.dismiss());
 
-  /* ---------------------------------------------------------- 0. a broker partner */
-  // There is no door that adds a broker or makes a broker login yet (see the board).
-  // The scratch database gets an active, licensed partner with a login.
+  /* ---------------------------------------------------------- 0. staff onboard a broker partner (I2) */
+  // Staff sign in, add a broker on the desk, send the partner agreement, the broker signs it on
+  // the signing page, and staff give the broker a login. Nothing is inserted by hand.
   const org = (await q(`SELECT id FROM orgs WHERE slug = 'yesdoor'`))[0];
-  const code = `YD-${String(Date.now()).slice(-6)}`;
+  const spage = await ctx.newPage();
+  spage.on("pageerror", (e) => consoleErrors.push(String(e)));
+  spage.on("dialog", (d) => d.dismiss());
+  await spage.goto(`${BASE}/yesdoor/staff.html`);
+  await spage.locator('a[href^="/login.html"]').waitFor();
+  await shot(spage, "staff-signin", [{ sel: 'a[href^="/login.html"]', label: "Staff use the staff login" }]);
+  // The Fundhub staff login (this local run uses DEFAULT_ORG_SLUG=yesdoor, as Yesdoor's own deploy will).
+  const login = await spage.request.post(`${BASE}/api/auth/login`, { data: { email: STAFF_EMAIL, password: STAFF_PASSWORD } });
+  const lj = await login.json();
+  step("staff password login (POST /api/auth/login)", login.ok() && !!lj.token, `HTTP ${login.status()}`);
+  const staffAuth = { authorization: `Bearer ${lj.token}` };
+  await spage.evaluate((t) => localStorage.setItem("fh_token", t), lj.token);
+  await spage.goto(`${BASE}/yesdoor/staff.html`); // same address: reloads with the token in place
+  await spage.locator("#ptbl").waitFor({ timeout: 15000 });
+  await spage.goto(`${BASE}/yesdoor/staff.html#people`);
+  await spage.locator("#add-k").waitFor({ timeout: 15000 });
+
+  // Add the broker on the desk.
+  const brName = `Harbor Test Realty ${RUN}`;
   const brEmail = `partner+${RUN}@broker.example`;
+  await spage.click("#add-k");
+  await spage.fill("#k-name", brName);
+  await spage.fill("#k-email", brEmail);
+  await spage.fill("#k-co", "Harbor Test Realty LLC");
+  await spage.selectOption("#k-lst", "AZ");
+  await spage.fill("#k-lno", "BR-TEST-1");
+  await spage.fill("#k-split", "25");
+  await spage.check("#k-ver");
+  await shot(spage, "staff-add-broker", [{ sel: "#kf", label: "Add a broker: plan, split percent, licence state and number" }, { sel: "#k-ver", label: "Staff checked the licence" }]);
+  await spage.click("#k-go");
+  await spage.locator("#kf").waitFor({ state: "detached", timeout: 15000 });
   const broker = (await q(
-    `INSERT INTO yd_brokers (org_id, name, company, email, licence_state, licence_number, licence_verified_at, plan, split_percent, tracking_code, status)
-     VALUES ($1,'Harbor Test Realty','Harbor Test Realty LLC',$2,'AZ','BR-TEST-1',now(),'split',25,$3,'active') RETURNING id`, [org.id, brEmail, code]))[0];
-  await q(`INSERT INTO yd_accounts (org_id, kind, email, broker_id) VALUES ($1,'broker',$2,$3)`, [org.id, brEmail, broker.id]);
+    `SELECT id, status, tracking_code, plan, split_percent::float8 AS split, licence_verified_at FROM yd_brokers WHERE email = $1`, [brEmail]))[0];
+  const code = broker ? broker.tracking_code : "";
+  step("staff add a broker: link code made, starts applied, plan and split saved",
+    !!broker && broker.status === "applied" && /^YD-\d{6}$/.test(code) && broker.plan === "split" && broker.split === 25 && !!broker.licence_verified_at,
+    broker ? `${broker.status}, ${code}, ${broker.split}%` : "none");
+  await spage.locator(`[data-login="${broker.id}"]`).waitFor({ timeout: 15000 });
+  await shot(spage, "staff-broker-added", [{ sel: "#pk", label: `${brName}: Applied, with its link code` }]);
+
+  // Send the partner agreement (the desk has no button for brokers yet: staff use the door).
+  const ag = await spage.request.post(`${BASE}/api/yesdoor/staff/agreement`, { data: { partyKind: "broker", partyId: broker.id, action: "send" }, headers: staffAuth });
+  const agj = await ag.json().catch(() => ({}));
+  const partnerUrl = agj.signing && agj.signing.url;
+  step("staff send the partner agreement (email queued, signing link handed back)", ag.status() === 201 && !!partnerUrl, `HTTP ${ag.status()}`);
+
+  // The broker opens the signing link: the agreement page.
+  const apage = await ctx.newPage();
+  apage.on("pageerror", (e) => consoleErrors.push(String(e)));
+  await apage.goto(partnerUrl);
+  await apage.locator("#ag-form").waitFor({ timeout: 15000 });
+  const termsText = await apage.locator("ul.stack").first().innerText();
+  step("the agreement page shows this partner's terms (plan and 25% split)", /placement split/i.test(termsText) && /25%/.test(termsText), termsText.replace(/\n+/g, " / ").slice(0, 120));
+  await shot(apage, "agreement-page", [{ sel: "#ag-h", label: "Opens from the emailed link: no login" }, { sel: "ul.stack", label: "The terms, from the agreement" }, { sel: "#ag-form", label: "Typed full name and the agree box" }]);
+  await apage.click("#ag-go");
+  const nameErrShown = await apage.locator("#ag-name-err").isVisible();
+  const agreeErrShown = await apage.locator("#ag-agree-err").isVisible();
+  step("signing with no name and no tick is refused on the page", nameErrShown && agreeErrShown);
+  await apage.fill("#ag-name", "Harper Partner");
+  await apage.check("#ag-agree");
+  await apage.click("#ag-go");
+  await waitText(apage, "has signed");
+  const signedAgreement = (await q(
+    `SELECT a.status, a.signer_name, k.status AS broker_status FROM yd_agreements a JOIN yd_brokers k ON k.id = a.party_id WHERE a.party_id = $1 AND a.kind = 'broker_partner'`, [broker.id]))[0];
+  step("the broker signs on the page: agreement signed with the typed name, broker active",
+    !!signedAgreement && signedAgreement.status === "signed" && signedAgreement.signer_name === "Harper Partner" && signedAgreement.broker_status === "active",
+    signedAgreement ? `${signedAgreement.status} by ${signedAgreement.signer_name}; broker ${signedAgreement.broker_status}` : "none");
+  await shot(apage, "agreement-signed", [{ sel: "#ag-h", label: "Signed" }, { sel: ".notice", label: "Who signed and when" }]);
+  await apage.goto(partnerUrl);
+  await apage.getByRole("heading", { name: "Signed" }).waitFor({ timeout: 15000 });
+  step("opening the same link again shows it signed, with no form", (await apage.locator("#ag-form").count()) === 0);
+  const tampered = partnerUrl.replace(/sig=[0-9a-f]+/, "sig=" + "0".repeat(64));
+  await apage.goto(tampered);
+  await waitText(apage, "did not work");
+  step("a tampered link shows the one 'did not work' page", (await apage.locator("#ag-form").count()) === 0 && /did not work/.test(await apage.locator("#ag-h").innerText()));
+  await shot(apage, "agreement-bad-link", [{ sel: "#ag-h", label: "Forged, expired and unknown links all look like this" }]);
+
+  // Staff give the broker a login.
+  await spage.reload();
+  await spage.locator(`[data-login="${broker.id}"]`).waitFor({ timeout: 15000 });
+  await spage.locator(`[data-login="${broker.id}"]`).click();
+  await spage.locator("#lf").waitFor();
+  await shot(spage, "staff-give-broker-login", [{ sel: "#lf", label: "Give the broker a login: the sign-in link goes by email" }]);
+  await spage.click("#l-go");
+  await spage.locator("#lf").waitFor({ state: "detached", timeout: 15000 });
+  const brAccount = (await q(`SELECT id, kind, broker_id FROM yd_accounts WHERE email = $1`, [brEmail]))[0];
+  const brInvite = (await q(`SELECT status FROM yd_outbox WHERE to_address = $1 AND template_key = 'yd-magic-link'`, [brEmail]))[0];
+  step("staff give the broker a login: account made, sign-in link queued",
+    !!brAccount && brAccount.kind === "broker" && brAccount.broker_id === broker.id && !!brInvite && brInvite.status === "queued", brAccount ? "account + queued link" : "none");
+  await spage.locator(`text=Has a login`).first().waitFor({ timeout: 15000 });
+  await shot(spage, "staff-broker-has-login", [{ sel: "#pk", label: "The broker now shows Has a login" }]);
 
   /* ---------------------------------------------------------- 1. home (from the broker's link) */
   await page.goto(`${BASE}/yesdoor/?b=${encodeURIComponent(code)}&demo=0`);
@@ -196,23 +289,30 @@ async function main() {
     firstTouch ? firstTouch.source_kind : "none");
 
   /* ---------------------------------------------------------- 7. building portal */
-  // There is no door that creates a building user's login yet (see the board). The
-  // scratch database gets one, linked to the building the renter booked.
+  // Staff give the booked building's leasing office a login on the desk (I2). They tick the
+  // building the renter booked and nothing else.
   const buEmail = `leasing+${RUN}@building.example`;
-  const acct = (await q(`INSERT INTO yd_accounts (org_id, kind, email) VALUES ($1,'building_user',$2) RETURNING id`, [org.id, buEmail]))[0];
-  await q(`INSERT INTO yd_account_buildings (org_id, account_id, building_id) VALUES ($1,$2,$3)`, [org.id, acct.id, app.building_id]);
+  await spage.goto(`${BASE}/yesdoor/staff.html#people`);
+  await spage.locator("#add-bu").waitFor({ timeout: 15000 });
+  await spage.click("#add-bu");
+  await spage.locator("#bu-boxes input").first().waitFor({ timeout: 15000 });
+  await spage.fill("#bu-email", buEmail);
+  await spage.locator("#bu-boxes .check", { hasText: app.name }).locator("input").check();
+  await shot(spage, "staff-add-building-login", [{ sel: "#bf", label: "A building login: email, role, and the buildings it can see" }, { sel: "#bu-boxes input:checked", label: `Only ${app.name} is ticked` }]);
+  await spage.click("#bu-go");
+  await spage.locator("#bf").waitFor({ state: "detached", timeout: 15000 });
+  const acct = (await q(`SELECT id, kind FROM yd_accounts WHERE email = $1`, [buEmail]))[0];
+  const acctLinks = acct ? await q(`SELECT building_id, role FROM yd_account_buildings WHERE account_id = $1 AND removed_at IS NULL`, [acct.id]) : [];
+  step("staff give the building a login: account, one building link, sign-in link queued",
+    !!acct && acct.kind === "building_user" && acctLinks.length === 1 && acctLinks[0].building_id === app.building_id,
+    acct ? `${acctLinks.length} building, ${acctLinks[0] ? acctLinks[0].role : ""}` : "none");
 
   const bpage = await ctx.newPage();
   bpage.on("dialog", (d) => d.dismiss());
-  await bpage.goto(`${BASE}/yesdoor/building.html`);
-  await bpage.locator("#login-email").waitFor();
-  await bpage.fill("#login-email", buEmail);
-  await bpage.click("#login-send");
-  await waitText(bpage, "Check your email");
-  await shot(bpage, "building-link-sent", [{ sel: "#login-out", label: "Sign-in link queued (yd_outbox, nothing sent)" }]);
+  // The invitation email's link (the first one queued for this address) signs the leasing office in.
   const link = (await q(
-    `SELECT context->'magic_link'->>'url' AS url FROM yd_outbox WHERE to_address = $1 AND template_key = 'yd-magic-link' ORDER BY created_at DESC LIMIT 1`, [buEmail]))[0];
-  step("the emailed link points at /yesdoor/login.html", !!link && /\/yesdoor\/login\.html\?t=/.test(link.url), link ? link.url.replace(/t=.*/, "t=…") : "none");
+    `SELECT context->'magic_link'->>'url' AS url FROM yd_outbox WHERE to_address = $1 AND template_key = 'yd-magic-link' ORDER BY created_at ASC LIMIT 1`, [buEmail]))[0];
+  step("the emailed invitation points at /yesdoor/login.html", !!link && /\/yesdoor\/login\.html\?t=/.test(link.url), link ? link.url.replace(/t=.*/, "t=…") : "none");
   await bpage.goto(link.url);
   await bpage.waitForURL(/building\.html/, { timeout: 15000 });
   await bpage.locator("#tbl").waitFor();
@@ -280,16 +380,7 @@ async function main() {
   await shot(bpage, "building-listings", [{ sel: "#ltbl", label: `Unit ${unit} added at $1,500` }]);
 
   /* ---------------------------------------------------------- 8. staff */
-  const spage = await ctx.newPage();
-  spage.on("dialog", (d) => d.dismiss());
-  await spage.goto(`${BASE}/yesdoor/staff.html`);
-  await spage.locator('a[href^="/login.html"]').waitFor();
-  await shot(spage, "staff-signin", [{ sel: 'a[href^="/login.html"]', label: "Staff use the staff login" }]);
-  // The Fundhub staff login (this local run uses DEFAULT_ORG_SLUG=yesdoor, as Yesdoor's own deploy will).
-  const login = await spage.request.post(`${BASE}/api/auth/login`, { data: { email: STAFF_EMAIL, password: STAFF_PASSWORD } });
-  const lj = await login.json();
-  step("staff password login (POST /api/auth/login)", login.ok() && !!lj.token, `HTTP ${login.status()}`);
-  await spage.evaluate((t) => localStorage.setItem("fh_token", t), lj.token);
+  // The staff page is already signed in (section 0).
   await spage.goto(`${BASE}/yesdoor/staff.html`);
   await spage.locator("#ptbl").waitFor({ timeout: 15000 });
   await shot(spage, "staff-pipeline", [{ sel: ".kpis", label: "Needs attention, open, leases, renters" }, { sel: "#ptbl", label: "Priya's application, invoiced" }]);
@@ -366,6 +457,31 @@ async function main() {
   const shareUrl = await kpage.locator("#lk-url").inputValue();
   step("broker link page shows the shareable ?b= link", shareUrl.includes(`b=${code}`), shareUrl);
   await shot(kpage, "broker-link", [{ sel: "#lk-url", label: "The link renters start from" }]);
+
+  /* ---------------------------------------------------------- 9b. sign out (I2) */
+  // Each portal's Sign out revokes THAT session on the server, not only in the browser: the old
+  // token stops working on the very next request.
+  async function signOutCheck(label, pg2, url, tokenKey, probeUrl, email) {
+    await pg2.goto(url);
+    await pg2.locator("#signout").waitFor({ timeout: 15000 });
+    const tok = await pg2.evaluate((k) => { if (k === "renter") { try { return (JSON.parse(localStorage.getItem("yd-renter") || "null") || {}).token || null; } catch (e) { return null; } } return localStorage.getItem(k); }, tokenKey);
+    const before = await pg2.request.get(`${BASE}${probeUrl}`, { headers: { authorization: `Bearer ${tok}` } });
+    await shot(pg2, `${label}-before-signout`, [{ sel: "#signout", label: "Sign out" }]);
+    await pg2.click("#signout");
+    await pg2.locator("#login-h").waitFor({ timeout: 15000 });
+    const after = await pg2.request.get(`${BASE}${probeUrl}`, { headers: { authorization: `Bearer ${tok}` } });
+    const kept = await pg2.evaluate((k) => { if (k === "renter") { try { return (JSON.parse(localStorage.getItem("yd-renter") || "null") || {}).token || null; } catch (e) { return null; } } return localStorage.getItem(k); }, tokenKey);
+    const revoked = (await q(
+      `SELECT count(*)::int AS n FROM yd_sessions s JOIN yd_accounts a ON a.id = s.account_id AND a.org_id = s.org_id WHERE a.email = $1 AND s.revoked_at IS NOT NULL`, [email]))[0].n;
+    const stillLive = (await q(
+      `SELECT count(*)::int AS n FROM yd_sessions s JOIN yd_accounts a ON a.id = s.account_id AND a.org_id = s.org_id WHERE a.email = $1 AND s.revoked_at IS NULL AND s.expires_at > now()`, [email]))[0].n;
+    step(`${label} signs out: the token worked before (${before.status()}), is refused after (${after.status()}), the session row is revoked`,
+      before.status() === 200 && after.status() === 401 && !kept && revoked >= 1 && stillLive === 0, `revoked rows ${revoked}, live ${stillLive}`);
+    await shot(pg2, `${label}-signed-out`, [{ sel: "#login-h", label: "Back at the sign-in screen" }]);
+  }
+  await signOutCheck("broker", kpage, `${BASE}/yesdoor/broker.html`, "yd-tok-broker", "/api/yesdoor/broker/link", brEmail);
+  await signOutCheck("building", bpage, `${BASE}/yesdoor/building.html`, "yd-tok-building", "/api/yesdoor/building/renters", buEmail);
+  await signOutCheck("renter", page, `${BASE}/yesdoor/renter.html`, "renter","/api/yesdoor/me", RENTER.email);
 
   /* ---------------------------------------------------------- 10. demo mode still works */
   const dpage = await ctx.newPage();
