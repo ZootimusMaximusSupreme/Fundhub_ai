@@ -85,7 +85,7 @@ The renter portal holds their status, bookings and results. Upsells plug in late
 | Separate brand and domain | `src/brand/`, `src/partners/` |
 | Monitoring | `src/pulse/registry.mjs` (every new page and route goes in) |
 
-**Owner-set 2026-10-07:** the renter gives **just name and email**. Yesdoor uses a different CRS product (the $9 screening product), not Fundhub's current pull. Fundhub's pull needs name, date of birth, SSN and address (`src/finance/crs-pull.mjs:450-482`), so the new product is a new connection. Its API docs are not in the repo yet.
+**Owner-set 2026-10-07:** the renter gives **name, email and current address, no SSN**. Yesdoor uses a different CRS product (the $9 screening product), not Fundhub's current pull. CRS documents a soft pull without SSN that matches a person from name and current address, with date of birth helping. Match rates drop without SSN, and thin files are hardest to find ([CRS](https://crscreditapi.com/soft-pull-without-ssn/)). When no file matches, the renter is asked for date of birth. Fundhub's pull needs name, date of birth, SSN and address (`src/finance/crs-pull.mjs:450-482`), so the new product is a new connection. Its API docs are not in the repo yet.
 
 ## 8. Brand
 
@@ -100,7 +100,7 @@ The brand identity is new and not set yet. Approach (owner-set): take the struct
 
 ## 10. Open questions (one at a time, Chris answers)
 
-1. ~~What does the renter type at the pre-screen?~~ **Answered (owner-set):** just name and email, through the CRS screening product.
+1. ~~What does the renter type at the pre-screen?~~ **Answered (owner-set):** name, email and address (no SSN), through the CRS screening product.
 2. Does the background check run with every pull, or only when a renter books?
 3. Who confirms "toured" and "applied": the building, the renter, or both?
 4. What does a broker see about their renters: stage only, or also approved / not approved?
