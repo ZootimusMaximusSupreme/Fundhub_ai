@@ -14,7 +14,7 @@ import { resolveDefaultOrg } from "../auth/org.mjs";
 import { createSession } from "../auth/session.mjs";
 import { rlsIsReal, rlsPool, closeRlsPool } from "../testing/rls-pool.mjs";
 import {
-  MSG_WAITING, MSG_NOT_SHARED, syncBusyBlocks, connectedClosers, inviteClosersToBooking, getLink
+  MSG_WAITING, MSG_NOT_SHARED, MSG_API_OFF, syncBusyBlocks, connectedClosers, inviteClosersToBooking, getLink
 } from "../staff/calendar-sync.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
@@ -246,6 +246,23 @@ describe("/api/staff/calendar-link + staff_calendar_links", { skip: !HAVE_DB ? "
     });
     assert.equal(inv.status, "added");
     assert.ok(provider.log.add[0].includes("justice.fixture@example.com"));
+  });
+
+  test("a setup problem (API switched off) is written on the row in plain words, and the closer stays connected", async () => {
+    await db.query(`UPDATE staff_calendar_links SET status='connected', last_error=NULL WHERE staff_id=$1`, [closerId]);
+    const off = {
+      ...fakeProvider({}),
+      freeBusy: async () => ({ ok: false, waiting: false, status: 403,
+        error: "google calendar freeBusy: the Google Calendar API is not switched on for this Google Cloud project" })
+    };
+    const out = await syncBusyBlocks(db, { orgId: org, provider: off, env: {} });
+    assert.equal(out.setupProblem, MSG_API_OFF);
+    const row = await getLink(db, { orgId: org, staffId: closerId });
+    assert.equal(row.status, "connected");
+    assert.equal(row.last_error, MSG_API_OFF);
+    const ids = (await connectedClosers(db, org)).map((c) => c.staff_id);
+    assert.ok(ids.includes(closerId), "still invited to booked calls");
+    await db.query(`UPDATE staff_calendar_links SET last_error=NULL WHERE staff_id=$1`, [closerId]);
   });
 
   test("a suspended closer is not invited and blocks nothing", async () => {

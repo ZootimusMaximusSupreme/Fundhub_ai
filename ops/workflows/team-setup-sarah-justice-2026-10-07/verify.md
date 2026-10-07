@@ -180,3 +180,82 @@ None of these touches the "never touch a non-mirror event" guarantee, and I foun
 - A real Google `freeBusy` answer was not used. I ran both shapes it could take (intervals clipped to the window, and whole intervals) and M4 holds either way.
 - Inngest Cloud's own orchestration was not used. I used the real SDK execution engine and the real route, which is where the heartbeat hook and the non-retriable flag are decided.
 - The pre-existing S3 (merge conflicts with `origin/main`) and the minor items M3, M5 to M9 above were out of scope for this re-check and are unchanged by these commits, except M3, which the new rule makes moot (a token-refresh blip no longer reaches the staff row at all).
+
+---
+
+## Re-check of day-one fix
+
+Date: 2026-10-07. Checked by: a different tester than the builder and than the two earlier testers. Branch `claude/ecstatic-galileo-h9suqe`, commit `b4b467f`, diffed against `418f124` (5 files: `src/staff/calendar-sync.mjs`, `src/workflows/staff-calendar-busy-sync.mjs`, and three test files).
+Rules I followed: no code changed, nothing committed, nothing pushed, nothing sent to Google (every Google call was a fake). The shell's `DATABASE_URL` pointed at the live database, so every command ran with it removed (`env -u DATABASE_URL`) or pointed at my own private scratch Postgres (16.15, port 55435, all 341 migrations applied, `fundhub_app` given a login). The live database was never touched. The only file I wrote in the repo is this section. My scratch scripts are outside the repo.
+
+### Verdicts
+
+| Claim | Verdict | One line |
+|---|---|---|
+| 1a. A setup problem is written on the rows as a plain sentence, status untouched | **PASS** | Fence closed, API off, scope missing: every row gets the sentence, no status changes, a connected closer stays in `connectedClosers`. "Save and check" does the same for the caller's row. |
+| 1b. The busy-sync run fails non-retriably with that sentence, so the 7 a.m. pulse shows FAIL | **PASS** | Proved through the real `/api/inngest` route and the real Inngest SDK 3.54.2: HTTP 400, `x-inngest-no-retry: true`, heartbeat `error`, pulse FAIL with the sentence. |
+| 1c. A blip writes nothing and does not fail the run | **PASS** | 22 blip shapes tried (21 plus a hung token endpoint). None was read as a setup problem, none touched a row, none failed the run. |
+| 2. `deleted_client` and `disabled_client` count as a dead token | **PASS** | Both give `tokenDead:true` through the real token code; the run fails with the dead-token words; rows untouched. |
+| "Never touch a non-mirror event" | **PASS, no regression** | `diffBlocks`, `isMirrorEvent`, `deleteEvent` are not in the diff. I re-ran decoys anyway (below). |
+
+### How I tried to break it
+
+I ran the real sync pass, the real Google Calendar provider, the real outbound chokepoint and the real token code against the scratch database. Only `fetch` was faked. Google error bodies are the documented shapes written from knowledge, not captured live. Result: 406 checks, 0 failures, run once as the table owner and once as `fundhub_app`.
+
+**Setup problems (12 cases, each started once with the closer connected and once pending).** ADAPTERS_DRY_RUN unset, set to `1`, set to `true`; the API off at freeBusy (old and new Google body), at the listing and at an insert; a missing scope at freeBusy (old and new body), at the listing, at an insert and at a delete. Every case: `setupProblem` is the right sentence, `tokenDead` is false, the sentence is on every row the pass reads, status is exactly what it was before (where freeBusy itself failed), no stale block is deleted, and the workflow throws `NonRetriableError` with the same words. The connected closer is still returned by `connectedClosers`, so a booking right after still invites them. A failing database write inside the note step does not stop the run from failing (the sentence is set before the write).
+
+**Blips (21 cases, plus a hung token endpoint).** freeBusy 503 (HTML page), 500 `backendError`, 429, 403 `rateLimitExceeded`, 403 `userRateLimitExceeded`, 403 `quotaExceeded`, 403 `forbidden`, 401 invalid credentials, a thrown `fetch failed`, `ECONNRESET`; token endpoint 503 (HTML), 500, 429 and a throw (and, separately, a hang: the 6 second clock fired, no setup problem); listing 503 and 403 `rateLimitExceeded`; insert 500, 429, 403 `userRateLimitExceeded`; delete 500; per-calendar `backendError` and `internalError`. Every case: no setup problem, `tokenDead` false, workflow does not throw. For every blip at freeBusy or the token step: rows byte-for-byte identical (status and last_error) and zero writes to Google.
+
+**Dead tokens.** 400 `invalid_grant`, 401 `deleted_client`, 401 `disabled_client`, 401 `invalid_client`, 400 `unauthorized_client`: all `tokenDead:true`, no setup problem, rows untouched, zero writes, workflow throws the dead-token sentence. Also with zero staff links (the token is reached through the listing).
+
+**Save and check.** Fence closed, API off and scope missing, each on a connected row and a pending row: result `error`, status untouched, sentence on the row and in the reply. 503, a thrown error, a 403 rate limit and a dead token: result `error`, rows untouched.
+
+**Recovery.** After a setup problem, the next healthy pass clears the sentence on a connected row, keeps it connected, and puts "Not shared yet" back on the pending row.
+
+**The real chain.** I drove the real route `api/inngest.mjs` (the `serveEdge` handler) in two requests per run, the way Inngest does, with the real heartbeat middleware writing to the scratch database and the real `checkJobHeartbeats`:
+
+| Case | 2nd request | Heartbeat | Pulse |
+|---|---|---|---|
+| healthy | 200 | ok | PASS |
+| 503 blip | 200 | ok | PASS |
+| 429 on listing | 200 | ok | PASS |
+| fence closed (zero links) | 400, no-retry true | error | **FAIL**, "Google calls are switched off on this site (ADAPTERS_DRY_RUN is not 0)..." |
+| API off at listing | 400, no-retry true | error | **FAIL**, "The Google Calendar API is not switched on for Chris's Google project..." |
+| scope missing at listing | 400, no-retry true | error | **FAIL**, "Chris's Google approval does not include the calendar permission..." |
+| `deleted_client` | 400, no-retry true | error | **FAIL**, the dead-token words |
+
+Only the heartbeat table and the 7 a.m. pulse read these heartbeats (I searched `src`, `api`, `netlify`, `scripts` for other readers and for `function.failed` / `onFailure`). So a failing run is read once a day, not every five minutes. A blip cannot page anyone.
+
+**Non-mirror events.** A fake calendar that ignores Google's own filter and returns everything: a real booking, a human-made "Busy - Justice", an event with the property under `shared` instead of `private`, an event with `fundhubMirror: "0"`, and another person's mirror block. Healthy pass: only the stale mirror block of the person whose busy time is gone is deleted. Scope refused at the insert: zero deletes. Scope refused at a delete: the pass stops. No decoy was ever deleted.
+
+### Gates (run by me, 2026-10-07)
+
+| Gate | Result |
+|---|---|
+| `npm run lint` | exit 0, "2595 file(s) and inline script(s) parse clean" |
+| `env -u DATABASE_URL npx tsc --noEmit` | exit 0, no output |
+| `src/staff/calendar-sync.test.mjs` | **43 tests, 43 pass**, 0 fail, 0 skipped |
+| `src/workflows/staff-calendar.test.mjs` | **13 tests, 13 pass** |
+| `src/messaging/providers/google-calendar.test.mjs` | **18 tests, 18 pass** |
+| `src/pulse/*.test.mjs`, no database | **39 tests, 39 pass** (3 suites; the database suites skip) |
+| `src/pulse/*.test.mjs`, scratch DB | **53 tests, 53 pass**, 0 skipped |
+| Neighbours: `staff-calendar-link.test.mjs` 10/10, `workflows/index.test.mjs` 13/13, `lib/no-unfenced-transmit.test.mjs` 5/5, `http/routes.test.mjs` 15/15 | all pass |
+| `src/http/staff-calendar-link.pg.test.mjs`, scratch DB, as owner | 16 tests: 15 pass, 0 fail, 1 skipped (the app-role test) |
+| Same file with `APP_DATABASE_URL` as `fundhub_app` | **16/16 pass, 0 skipped** (includes the new "setup problem written on the row, closer stays connected" test) |
+
+The new tests add 7 + 1 + 1 over the earlier counts (36, 12, 15), which matches the diff. I did not re-run the full 12,000-test suite or the full pg suite: the diff touches only these files and the groups above import them.
+
+### New findings
+
+None blocks. Nothing here can change a status, delete a block, or stop an invite.
+
+1. **Low, by design: a connected closer does not see the sentence on their own panel after a reload.** `public/app/calendar.html:1656-1658` paints a connected row with the generic "Your busy times close slots on the booking page. It checks again every five minutes." and ignores `last_error`. The sentence shows only in the "Save and check" reply (`:1682-1685`) and on pending or error rows. This is the S1 trade-off (connected stays connected), and the pulse is the way to Chris. The page was not changed by this commit.
+2. **Info: `/is disabled/i` in `verdictOf` (`src/messaging/providers/google-calendar.mjs:142`) is the one broad pattern.** It is not in the diff. Any 403 whose text contains "is disabled" now reads as "API not switched on" and fails the run. None of the Google blip bodies I tried contains it.
+3. **Info, theoretical: "Save and check" on a non-production deploy where `ADAPTERS_DRY_RUN` is not 0 would write the fence sentence onto the shared row** (one database behind every context, CLAUDE.md §11). Status is untouched and the next healthy production pass overwrites it.
+4. **Info, day one:** once the token is set, if `ADAPTERS_DRY_RUN` is not `0` on production, the very next run fails (even with nobody linked yet) and the next 7 a.m. pulse shows it. That is the intended behaviour and it settles item 5 of "Still not proved by anyone" within a day of the token going in.
+
+### Not proved
+
+- Real Google bodies were not captured; I used the documented shapes. The matched phrases ("has not been used in project", "insufficient authentication scopes", `accessNotConfigured`, `insufficientPermissions`, `SERVICE_DISABLED`) sit in the first 100 characters of those bodies, well inside the 300 characters the chokepoint keeps.
+- Inngest Cloud's own orchestration was not used; I used the real SDK and the real route, which is where the heartbeat hook and the no-retry flag are decided.
+- The earlier open items (S3 merge conflicts, M5 to M9, "Still not proved" 1 to 4) are outside this commit and unchanged.
