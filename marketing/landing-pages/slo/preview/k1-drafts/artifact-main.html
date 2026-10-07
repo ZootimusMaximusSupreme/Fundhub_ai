@@ -1,0 +1,126 @@
+<title>Fundhub Page Drafts</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+:root{--bg:#FCFCFC;--fg:#111113;--muted:#52525B;--line:#E4E4E7;--card:#FFFFFF;--red:#B00020;--red-bg:#FFF1F1;--blue:#2F6FEB;--blue-bg:#EEF4FF;--green:#0B5D1E;--green-bg:#EAF6EE;--amber:#8A5A00;--amber-bg:#FFF6E0;--dim-bg:#F1F1F3;--mono:"JetBrains Mono",ui-monospace,Menlo,monospace;--sans:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0F1012;--fg:#EDEDEF;--muted:#A1A1AA;--line:#2A2B30;--card:#17181B;--red:#FF6B7F;--red-bg:#2A1317;--blue:#7FA8FF;--blue-bg:#14203A;--green:#6FD08C;--green-bg:#11261A;--amber:#F2C265;--amber-bg:#2B2210;--dim-bg:#1D1E22;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0F1012;--fg:#EDEDEF;--muted:#A1A1AA;--line:#2A2B30;--card:#17181B;--red:#FF6B7F;--red-bg:#2A1317;--blue:#7FA8FF;--blue-bg:#14203A;--green:#6FD08C;--green-bg:#11261A;--amber:#F2C265;--amber-bg:#2B2210;--dim-bg:#1D1E22;color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--sans);font-size:15px;line-height:1.55;margin:0}
+.k1{max-width:920px;margin:0 auto;padding-inline:16px;padding-block:28px 56px}
+.k1 *{box-sizing:border-box}
+.k1 .pill{display:inline-block;font:700 11px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--red);border-radius:4px;padding:6px 8px}
+.k1 h1{font-size:30px;line-height:1.15;letter-spacing:-.02em;margin:14px 0 8px;text-wrap:balance}
+.k1 .lede{color:var(--muted);max-width:62ch;margin:0}
+.k1 .legend{display:flex;flex-wrap:wrap;gap:8px 18px;margin:18px 0 0;padding:0;list-style:none;font-size:13px}
+.k1 .legend li{display:flex;align-items:center;gap:8px}
+.k1 .sw{width:16px;height:16px;border-radius:3px;flex:0 0 auto}
+.k1 .sw.b{outline:2px dashed var(--blue);outline-offset:-2px}
+.k1 .sw.g{background:var(--green-bg);box-shadow:0 0 0 2px var(--green) inset}
+.k1 .sw.h{background:var(--fg)}
+.k1 h2{font:700 11px/1.3 var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:40px 0 12px}
+.k1 .list{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.k1 .list li{display:grid;grid-template-columns:minmax(0,1fr);gap:2px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--green);border-radius:10px;padding:11px 14px}
+.k1 .list b{font-weight:600}
+.k1 .list span{color:var(--muted);font-size:14px;overflow-wrap:anywhere}
+.k1 .left{margin:10px 0 0;padding:11px 14px;border:1px solid var(--line);border-radius:10px;background:var(--dim-bg);color:var(--muted);font-size:14px}
+.k1 .push{margin:0;padding:0;list-style:none;display:grid;gap:10px;counter-reset:p}
+.k1 .push li{counter-increment:p;display:grid;grid-template-columns:28px minmax(0,1fr);gap:12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}
+.k1 .push li::before{content:counter(p);font:700 13px/28px var(--mono);text-align:center;width:28px;height:28px;border-radius:50%;background:var(--blue-bg);color:var(--blue)}
+.k1 .after{margin:14px 0 0;color:var(--muted);font-size:14px;max-width:70ch}
+.k1 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,400px),1fr));gap:12px}
+.k1 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;display:grid;gap:10px;align-content:start;min-width:0}
+.k1 .card .u{font:600 15px/1.3 var(--mono);word-break:break-all}
+.k1 .card .c{margin:0;color:var(--muted);font-size:14px}
+.k1 .card .n{font:600 12px/1 var(--mono);color:var(--green)}
+.k1 .open{display:inline-block;justify-self:start;background:var(--fg);color:var(--bg);text-decoration:none;font-weight:600;font-size:14px;padding:10px 14px;border-radius:8px}
+.k1 .open:focus-visible,.k1 summary:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.k1 details{border-top:1px solid var(--line);padding-top:8px}
+.k1 summary{cursor:pointer;font-size:13px;color:var(--muted)}
+.k1 .m{margin:10px 0 0;padding:10px 12px;border-left:4px solid var(--green);background:var(--green-bg);border-radius:4px;font-size:13.5px}
+.k1 .m b{font-weight:600}
+.k1 .sum{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px;font-size:13px}
+.k1 .sum span{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:5px 10px}
+.k1 .fixes{margin:0;padding:0;list-style:none;display:grid;gap:8px}
+.k1 .fixes li{display:grid;grid-template-columns:30px minmax(0,1fr);gap:4px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.k1 .fixes .no{font:700 12px/22px var(--mono);color:var(--muted)}
+.k1 .fixes .what{font-weight:600;display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center}
+.k1 .fixes .why{grid-column:2;color:var(--muted);font-size:13.5px;overflow-wrap:anywhere}
+.k1 .chip{font:700 10.5px/1 var(--mono);letter-spacing:.08em;border-radius:4px;padding:4px 6px;white-space:nowrap}
+.k1 .chip.ok{background:var(--green-bg);color:var(--green)}
+.k1 .chip.bad{background:var(--red-bg);color:var(--red)}
+.k1 .chip.mid{background:var(--amber-bg);color:var(--amber)}
+.k1 .chip.dim{background:var(--dim-bg);color:var(--muted)}
+</style>
+
+<div class="k1">
+  <span class="pill">Draft · not live</span>
+  <h1>Fundhub page drafts</h1>
+  <p class="lede">Round 2 of 2, 2026-10-05. Your five picks are written into the six drafts. Every new or changed line is green. Open a draft and press "Hide the marks" at the top to read it clean. Nothing here is on a live page, and nothing was pushed.</p>
+  <ul class="legend">
+    <li><span class="sw g"></span>Green: new or changed</li>
+    <li><span class="sw b"></span>Blue: new section, and old words moved word for word</li>
+    <li><span class="sw h"></span>"Hide the marks" button: reads the page clean</li>
+  </ul>
+
+  <h2>What changed, in green</h2>
+  <ul class="list">
+    <li><b>/roadmap · How It Works</b><span>The 5 steps are now the 7 steps of your 10/2 note, in its order: Check your credit, Open your businesses (if needed), Optimize your personal and business information, Remove negative items and pay down balances, Find the banks that approve files like yours, Apply in the right order, Remove inquiries and repeat.</span></li>
+    <li><b>/roadmap · How It Works</b><span>Each step now opens with the note's own line, for example &quot;Pull your report and make sure everything on it is accurate and in line.&quot;</span></li>
+    <li><b>/roadmap · How It Works</b><span>Every word of the old paragraphs moved under a step, word for word (blue underline, tagged with the old step number). The 5 bold one-liners are gone.</span></li>
+    <li><b>/roadmap · Colin's picture</b><span>The big headline is now one small line near the bottom, &quot;Around $225,000 in funding.&quot; The name and business type sit above it: COLIN SCHMIDT · BUSINESS OWNER.</span></li>
+    <li><b>/roadmap · Gene's picture</b><span>The big headline is now one small line near the bottom, &quot;About $420,000 over three years.&quot; The name and business type sit above it: GENE · OWNER, THREE LLCS.</span></li>
+    <li><b>/roadmap · Sarah's picture</b><span>The big headline is now one small line near the bottom, &quot;Set to be approved for around $80,000.&quot; The name and business type sit above it: SARAH · SALES TEAM AT FUNDHUB. Her strip sits lower than the other two because her video has a caption burned in at that height on every frame I checked, and the strip has to cover it.</span></li>
+    <li><b>/watch · The scrolling bar</b><span>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</span></li>
+    <li><b>/thank-you · The scrolling bar</b><span>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</span></li>
+    <li><b>/funding-book-call · The scrolling bar</b><span>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</span></li>
+    <li><b>/roadmap-book · The scrolling bar</b><span>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</span></li>
+    <li><b>/roadmap-thank-you · The scrolling bar</b><span>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</span></li>
+  </ul>
+  <p class="left">Not changed, your pick: Gene's caption stays as it is.</p>
+
+  <h2>When you say "push it"</h2>
+  <ol class="push">
+    <li><div>I strip every mark. The clean pages come from this same script. The script proves that each clean page is its draft with only the marks removed, and that it differs from today's live page only by the changes on this page.</div></li>
+    <li><div>The three new pictures go live first: copied to the site's picture folder and shipped from the Mac, because the /roadmap page points to them. The picture links in the testimonial data file change at the same time.</div></li>
+    <li><div>Then the pages go to ClickFunnels by API, never by hand. /roadmap, /roadmap-book and /roadmap-thank-you are full custom pages (keys slo-297-sales, slo-297-booking, slo-297-thank-you). /watch, /thank-you and /funding-book-call are builder pages: the push script cannot replace their body, so each gets a small marked head block that swaps the words as the page loads, the way the /watch line under the headline was changed (three new keys, not written yet). Never a full replace of a builder page.</div></li>
+    <li><div>I check each live page and write one new row in the change log with the real push time. The push saves a copy of each old page first.</div></li>
+  </ol>
+  <p class="after">Until you say it, nothing is live, the pull request stays a draft, and the live pages are untouched.</p>
+
+  <h2>The drafts</h2>
+  <div class="grid">
+    <div class="card"><div class="u">/roadmap</div><p class="c">How It Works is now the 7 steps of your 10/2 note. The three testimonial pictures carry their headline on one small line.</p><div class="n">6 green changes</div><a class="open" href="roadmap-draft.html">Open the draft</a><details><summary>The green changes, in words</summary><div class="m"><b>How It Works</b><div>The 5 steps are now the 7 steps of your 10/2 note, in its order: Check your credit, Open your businesses (if needed), Optimize your personal and business information, Remove negative items and pay down balances, Find the banks that approve files like yours, Apply in the right order, Remove inquiries and repeat.</div></div><div class="m"><b>How It Works</b><div>Each step now opens with the note's own line, for example &quot;Pull your report and make sure everything on it is accurate and in line.&quot;</div></div><div class="m"><b>How It Works</b><div>Every word of the old paragraphs moved under a step, word for word (blue underline, tagged with the old step number). The 5 bold one-liners are gone.</div></div><div class="m"><b>Colin's picture</b><div>The big headline is now one small line near the bottom, &quot;Around $225,000 in funding.&quot; The name and business type sit above it: COLIN SCHMIDT · BUSINESS OWNER.</div></div><div class="m"><b>Gene's picture</b><div>The big headline is now one small line near the bottom, &quot;About $420,000 over three years.&quot; The name and business type sit above it: GENE · OWNER, THREE LLCS.</div></div><div class="m"><b>Sarah's picture</b><div>The big headline is now one small line near the bottom, &quot;Set to be approved for around $80,000.&quot; The name and business type sit above it: SARAH · SALES TEAM AT FUNDHUB. Her strip sits lower than the other two because her video has a caption burned in at that height on every frame I checked, and the strip has to cover it.</div></div></details></div>
+    <div class="card"><div class="u">/watch</div><p class="c">&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</p><div class="n">1 green change</div><a class="open" href="watch-draft.html">Open the draft</a><details><summary>The green changes, in words</summary><div class="m"><b>The scrolling bar</b><div>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</div></div></details></div>
+    <div class="card"><div class="u">/thank-you</div><p class="c">&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</p><div class="n">1 green change</div><a class="open" href="thank-you-draft.html">Open the draft</a><details><summary>The green changes, in words</summary><div class="m"><b>The scrolling bar</b><div>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</div></div></details></div>
+    <div class="card"><div class="u">/funding-book-call</div><p class="c">&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</p><div class="n">1 green change</div><a class="open" href="funding-book-call-draft.html">Open the draft</a><details><summary>The green changes, in words</summary><div class="m"><b>The scrolling bar</b><div>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</div></div></details></div>
+    <div class="card"><div class="u">/roadmap-book</div><p class="c">&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</p><div class="n">1 green change</div><a class="open" href="roadmap-book-draft.html">Open the draft</a><details><summary>The green changes, in words</summary><div class="m"><b>The scrolling bar</b><div>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</div></div></details></div>
+    <div class="card"><div class="u">/roadmap-thank-you</div><p class="c">&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</p><div class="n">1 green change</div><a class="open" href="roadmap-thank-you-draft.html">Open the draft</a><details><summary>The green changes, in words</summary><div class="m"><b>The scrolling bar</b><div>&quot;Up to 12 funding rounds&quot; now reads &quot;3 to 6 funding rounds.&quot;</div></div></details></div>
+  </div>
+
+  <h2>The 23 /roadmap fixes, checked against the page today</h2>
+  <div class="sum"><span>12 done</span><span>1 in the draft</span><span>1 left as is</span><span>1 partly</span><span>8 no longer true</span></div>
+  <ol class="fixes">
+    <li><span class="no">1</span><div class="what">Move What You Get under the testimonials <span class="chip dim">NO LONGER TRUE</span></div><div class="why">You cut it on 2026-10-01 (What You Get). The page is now headline, video, How It Works, testimonials, guarantee, FAQ, checkout.</div></li>
+    <li><span class="no">2</span><div class="what">Cut the good-credit section and fold its points into the 800-score answer <span class="chip ok">DONE</span></div><div class="why">The section was cut 2026-10-01. The first FAQ answer now covers the 800-score question.</div></li>
+    <li><span class="no">3</span><div class="what">Gene's &quot;over three years&quot; on screen one <span class="chip mid">LEFT AS IS</span></div><div class="why">You said leave Gene's caption as it is. The screen-one line was cut 2026-10-01. &quot;Over three years&quot; stays in his caption and in the small line on his picture, because the repo has no number for how soon his first approval came.</div></li>
+    <li><span class="no">4</span><div class="what">Show a first win within a month <span class="chip dim">NO LONGER TRUE</span></div><div class="why">You cut it on 2026-10-01 (&quot;Your fastest first win&quot;).</div></li>
+    <li><span class="no">5</span><div class="what">Checklist of the buyer's work, with times <span class="chip dim">NO LONGER TRUE</span></div><div class="why">You cut it on 2026-10-01 (&quot;What Happens Next&quot;).</div></li>
+    <li><span class="no">6</span><div class="what">Business Duplication Map: a sample and a real example <span class="chip ok">DONE</span></div><div class="why">The sample is under &quot;See a sample&quot; in the order summary. The real document was built 2026-10-02. A real client's file cannot go on a public page (your 2026-10-02 sample rule).</div></li>
+    <li><span class="no">7</span><div class="what">Tag each approval and testimonial with its product <span class="chip ok">DONE</span></div><div class="why">Each of the 3 testimonials has a product line above its caption. The approvals deck was cut 2026-10-01.</div></li>
+    <li><span class="no">8</span><div class="what">Funding Snapshot today-and-after table, as an image on the page <span class="chip dim">NO LONGER TRUE</span></div><div class="why">You cut it on 2026-10-01 (&quot;Your fastest first win&quot;). The table is in the sample for How Much You Qualify For.</div></li>
+    <li><span class="no">9</span><div class="what">Samples show only what each document adds <span class="chip dim">NO LONGER TRUE</span></div><div class="why">The samples were rebuilt on 2026-10-02 from one UnderwriteIQ file. The same number showing in two documents is what &quot;one file, one story&quot; gives, and your sample rule says never hand-edit a number (.claude/rules/sample-clients-consistent.md).</div></li>
+    <li><span class="no">10</span><div class="what">Renumber the sample sections <span class="chip ok">DONE</span></div><div class="why">The old numbered tabs (01 to 06, then 08) are gone. The new samples have no section numbers.</div></li>
+    <li><span class="no">11</span><div class="what">Discover it line ($210 balance, pay down to $350) <span class="chip dim">NO LONGER TRUE</span></div><div class="why">There is no Discover card in the new sample. Its cards are Chase Sapphire Preferred, American Express Blue Business Cash and Capital One Spark (same rule).</div></li>
+    <li><span class="no">12</span><div class="what">One dispute round count <span class="chip ok">DONE</span></div><div class="why">Six. The order summary says &quot;all six rounds&quot; and the sample lists rounds 1 to 6.</div></li>
+    <li><span class="no">13</span><div class="what">One-line label on the dispute letter sample <span class="chip ok">DONE</span></div><div class="why">&quot;Why you need this: the items costing you money come off, and no credit repair company gets paid to do it.&quot;</div></li>
+    <li><span class="no">14</span><div class="what">One disclaimer line on every sample <span class="chip ok">DONE</span></div><div class="why">One line shows under every sample: &quot;Sample file for a made-up client. Yours is built from your own credit file. Estimates, not an offer of credit.&quot;</div></li>
+    <li><span class="no">15</span><div class="what">Change the DIRTY bureau labels <span class="chip ok">DONE</span></div><div class="why">The word is gone. The Duplication Map sample says what to do, for example &quot;Pay it down before you apply.&quot;</div></li>
+    <li><span class="no">16</span><div class="what">List what the soft-pull form asks, in What Happens Next <span class="chip dim">NO LONGER TRUE</span></div><div class="why">You cut it on 2026-10-01 (What Happens Next). Step 3 of the checkout lists everything the soft pull asks for.</div></li>
+    <li><span class="no">17</span><div class="what">&quot;Can you do the work for me?&quot; says what help is available later <span class="chip ok">DONE</span></div><div class="why">The answer now ends: &quot;If you want help later, every document has a button to book a call with my team.&quot;</div></li>
+    <li><span class="no">18</span><div class="what">&quot;the way a bank's underwriter does&quot; becomes &quot;the way a lender does&quot; <span class="chip dim">NO LONGER TRUE</span></div><div class="why">The line was cut with &quot;Why this works&quot; on 2026-10-01. The word underwriter is not on the page.</div></li>
+    <li><span class="no">19</span><div class="what">Good-credit header and first FAQ answer say what a funding-ready file is <span class="chip ok">DONE</span></div><div class="why">The header went with the section. The first FAQ answer says a high score is not a file set up for max funding, and names the 13 hidden data points.</div></li>
+    <li><span class="no">20</span><div class="what">&quot;All five&quot; does not match the six items <span class="chip ok">DONE</span></div><div class="why">&quot;All five&quot; is gone. The order summary lists five documents plus a free bonus, and the bonus has its own sample.</div></li>
+    <li><span class="no">21</span><div class="what">Remove &quot;systems nominal · fundhub.ai&quot; from the footer <span class="chip ok">DONE</span></div><div class="why">It is not on the page. The footer reads: Fundhub.ai | Copyright © 2026 Fundhub LLC | All Rights Reserved.</div></li>
+    <li><span class="no">22</span><div class="what">Tone down the big headlines on the testimonial videos <span class="chip ok">IN THE DRAFT</span></div><div class="why">The three cover pictures now carry the same words on one small line near the bottom, with the name and business type above it. Green outlines on /roadmap.</div></li>
+    <li><span class="no">23</span><div class="what">Write down the change time <span class="chip mid">PARTLY</span></div><div class="why">The change log (marketing/ads/roadmap-page-changes.md) has the 2026-09-29 and 2026-10-01 pushes. It is missing 2026-10-02 (guarantee back, new buy box; I found no push time in the repo) and 2026-10-04 (price to $147, live 3:07 p.m. Pacific, per ops/workflows/roadmap-marketing-2026-10-04.md). The push for these drafts writes its own row.</div></li>
+  </ol>
+</div>

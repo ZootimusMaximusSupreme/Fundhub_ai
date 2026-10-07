@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fundhub testimonial poster, small headline</title>
+<style>
+/* The quiet version of thumbnail.html (K1 round 2, owner pick 2026-10-05: shrink the three
+   testimonial headlines to one small line at the bottom, same words).
+
+   What stays the same as thumbnail.html: the frame, the Inter 800 headline, the mono
+   kicker, the mint accent on the amount, the white fundhub wordmark, and 1rem = 1% of the
+   canvas width so one template serves any size.
+
+   What changes: no tall dark band and no three-line headline. One slim bar, set exactly over
+   the caption the video has burned into that frame (that caption has to stay buried, see
+   .cursor/skills/fundhub-testimonial-thumbnails/SKILL.md step 4), with the name and
+   business type on a small line and the headline on one line under it.
+
+   Fonts come from assets/fonts so the render does not need the network. Inter ExtraBold is
+   Inter 800 and JetBrains Mono Medium is 500. */
+@font-face{font-family:'Inter';font-weight:800;src:url('../../assets/fonts/Inter-ExtraBold.ttf') format('truetype')}
+@font-face{font-family:'JetBrains Mono';font-weight:500;src:url('../../assets/fonts/JetBrainsMono-Medium.ttf') format('truetype')}
+:root{
+  --sans:'Inter',system-ui,-apple-system,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,monospace;
+  --accent:#A8D8B0;
+  /* Set per render, measured from the burned-in caption on that frame. */
+  --bar-top:81%;
+  --bar-bottom:92%;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{font-size:calc(100vw / 100)}
+body{width:100vw;height:100vh;overflow:hidden;background:#000;font-family:var(--sans)}
+.stage{position:relative;width:100vw;height:100vh;overflow:hidden}
+.frame{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+
+/* The bar is feathered 7% at each end so it never reads as a panel. The plateau between the
+   feathers is what buries the caption, so it has to cover the caption's full height, and it is
+   fully opaque: at .985 the white caption letters still ghost through (seen in the first render). */
+.bar{
+  position:absolute;left:0;right:0;
+  top:var(--bar-top);
+  bottom:calc(100% - var(--bar-bottom));
+  background:linear-gradient(180deg,
+    rgba(10,10,10,0)   0%,
+    rgba(10,10,10,1)   7%,
+    rgba(10,10,10,1)  93%,
+    rgba(10,10,10,0) 100%);
+}
+/* A light wash at the very bottom, only to seat the wordmark. */
+.foot{
+  position:absolute;left:0;right:0;bottom:0;height:9%;
+  background:linear-gradient(180deg,rgba(10,10,10,0) 0%,rgba(10,10,10,.6) 100%);
+}
+.text{
+  position:absolute;left:5.5rem;right:5.5rem;
+  top:var(--bar-top);
+  height:calc(var(--bar-bottom) - var(--bar-top));
+  display:flex;flex-direction:column;justify-content:center;gap:1.3rem;
+}
+.kicker{
+  font-family:var(--mono);font-size:2.3rem;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;white-space:nowrap;
+  color:rgba(255,255,255,.80);
+}
+.headline{
+  font-family:var(--sans);font-weight:800;
+  font-size:4.6rem;line-height:1.05;letter-spacing:-.02em;white-space:nowrap;
+  color:#fff;text-shadow:0 .3rem 1.6rem rgba(0,0,0,.5);
+  align-self:flex-start;
+}
+.headline .accent{color:var(--accent)}
+.mark{position:absolute;left:5.5rem;bottom:3.4rem}
+.mark img{height:3.6rem;width:auto;display:block;filter:brightness(0) invert(1);opacity:.93}
+</style>
+</head>
+<body>
+<div class="stage" id="stage">
+  <img class="frame" id="frame" alt="">
+  <div class="foot"></div>
+  <div class="bar"></div>
+  <div class="text" id="text">
+    <span class="kicker" id="kicker"></span>
+    <h1 class="headline" id="headline"></h1>
+  </div>
+  <div class="mark"><img src="fundhub-wordmark.svg" alt="Fundhub"></div>
+</div>
+<script>
+// Params ride in on the query string, same as thumbnail.html.
+const q = new URLSearchParams(location.search);
+const d = JSON.parse(q.get("data") || "{}");
+const stage = document.getElementById("stage");
+stage.style.setProperty("--bar-top", d.barTop || "81%");
+stage.style.setProperty("--bar-bottom", d.barBottom || "92%");
+document.getElementById("frame").src = d.frame || "";
+document.getElementById("kicker").textContent = d.kicker || "";
+
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const h = d.headline || "";
+const a = d.accent || "";
+const i = a ? h.indexOf(a) : -1;
+document.getElementById("headline").innerHTML =
+  i === -1 ? esc(h) : esc(h.slice(0, i)) + '<span class="accent">' + esc(a) + "</span>" + esc(h.slice(i + a.length));
+
+// One line, always. Start at 4.6rem and shrink only as far as it takes to fit the width.
+// The renderer reads data-fs and data-fits and refuses to ship a line that does not fit.
+function fit() {
+  const head = document.getElementById("headline");
+  const avail = document.getElementById("text").clientWidth;
+  let fs = 4.6;
+  head.style.fontSize = fs + "rem";
+  if (head.scrollWidth > avail) {
+    fs = Math.max(3.2, fs * (avail / head.scrollWidth) * 0.99);
+    head.style.fontSize = fs + "rem";
+  }
+  document.body.dataset.fs = fs.toFixed(2);
+  document.body.dataset.fits = String(head.scrollWidth <= avail + 1 && document.getElementById("kicker").scrollWidth <= avail + 1);
+}
+document.fonts.ready.then(() => { fit(); document.body.dataset.ready = "1"; });
+</script>
+</body>
+</html>
