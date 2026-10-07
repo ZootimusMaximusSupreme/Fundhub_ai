@@ -22,6 +22,10 @@
 // pulse (src/pulse/heartbeats.mjs checkJobHeartbeats) shows this job red with
 // the reason — the existing path to Chris. Non-retriable: a retry would only
 // hit the same refusal. A blip (5xx, dropped connection) does not fail the run.
+//
+// A SETUP PROBLEM fails the run the same way, with its own plain sentence as
+// the reason: the adapters fence closed, the Google Calendar API switched off,
+// or a missing calendar scope (`setupProblem`, src/staff/calendar-sync.mjs).
 
 import { NonRetriableError } from "inngest";
 import { inngest } from "./client.mjs";
@@ -38,6 +42,7 @@ export const DEAD_TOKEN_MESSAGE =
 export async function handle({ db, step, env = process.env, sync = syncBusyBlocks }) {
   const out = await step.run("sync-busy-blocks", () => sync(db, { env }));
   if (out?.tokenDead) throw new NonRetriableError(DEAD_TOKEN_MESSAGE);
+  if (out?.setupProblem) throw new NonRetriableError(out.setupProblem);
   return out;
 }
 

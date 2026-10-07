@@ -61,11 +61,32 @@ export const MSG_OWNER_CALENDAR =
   "That is the booking calendar itself. Type the address of your own Google calendar.";
 
 /* Google's own words for a refresh token it will never take again (revoked,
-   expired, or a client that no longer exists). A dropped connection or a 5xx
-   is NOT one of these: that is a blip, and the next pass is the retry. */
-const DEAD_TOKEN_RE = /invalid_grant|invalid_client|unauthorized_client/i;
+   expired, or a client that no longer exists, deleted or disabled). A dropped
+   connection or a 5xx is NOT one of these: that is a blip, and the next pass
+   is the retry. */
+const DEAD_TOKEN_RE = /invalid_grant|invalid_client|unauthorized_client|deleted_client|disabled_client/i;
 export function isDeadTokenError(text) {
   return DEAD_TOKEN_RE.test(String(text || ""));
+}
+
+/* SETUP PROBLEMS. Unlike a blip, these never clear on a retry: someone has to
+   change a setting. Each one is written on the affected rows in plain words
+   (status left exactly as it is, so S1 holds) and fails the run, so the 7 a.m.
+   pulse shows the job red with the same words. A blip still does neither. */
+export const MSG_FENCE_CLOSED =
+  "Google calls are switched off on this site (ADAPTERS_DRY_RUN is not 0), so busy times are not being copied to the booking calendar.";
+export const MSG_API_OFF =
+  "The Google Calendar API is not switched on for Chris's Google project, so busy times are not being copied to the booking calendar.";
+export const MSG_SCOPE_MISSING =
+  "Chris's Google approval does not include the calendar permission, so busy times are not being copied to the booking calendar.";
+
+/** The plain-words setup problem behind a failed Google call, or null for a blip. */
+export function setupProblemOf(text) {
+  const t = String(text || "");
+  if (/ADAPTERS_DRY_RUN/.test(t)) return MSG_FENCE_CLOSED;
+  if (/not switched on|accessNotConfigured|SERVICE_DISABLED|has not been used in project/i.test(t)) return MSG_API_OFF;
+  if (/insufficient authentication scopes|insufficientPermissions|ACCESS_TOKEN_SCOPE_INSUFFICIENT/i.test(t)) return MSG_SCOPE_MISSING;
+  return null;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -119,6 +140,18 @@ export async function setLinkStatus(db, { orgId, staffId, status, lastError = nu
       WHERE l.org_id = $1 AND l.staff_id = $2
       RETURNING ${LINK_COLUMNS}`,
     [orgId, staffId, status, lastError ? String(lastError).slice(0, 500) : null]
+  );
+  return rows[0] || null;
+}
+
+/** Write the plain words on a row and leave its status exactly as it is. */
+export async function setLinkNote(db, { orgId, staffId, lastError }) {
+  const { rows } = await db.query(
+    `UPDATE staff_calendar_links l
+        SET last_error = $3
+      WHERE l.org_id = $1 AND l.staff_id = $2
+      RETURNING ${LINK_COLUMNS}`,
+    [orgId, staffId, String(lastError || "").slice(0, 500) || null]
   );
   return rows[0] || null;
 }
@@ -295,12 +328,27 @@ async function markAll(db, orgId, links, status, lastError) {
   }
 }
 
+/* A setup problem found in this pass: say it on every row the pass reads,
+   status untouched, and hand it to the workflow to fail the run. */
+async function noteSetupProblem(db, orgId, links, out, errorText) {
+  if (out.setupProblem) return;
+  const problem = setupProblemOf(errorText);
+  if (!problem) return;
+  out.setupProblem = problem;
+  for (const link of links) {
+    await setLinkNote(db, { orgId, staffId: link.staff_id, lastError: problem });
+  }
+}
+
 /**
  * One pass. Returns counts; never throws.
  * `provider` defaults to src/messaging/providers/google-calendar.mjs.
  * `tokenDead: true` means Google refused the stored token for good
  * (invalid_grant). The pass itself does not touch any row for that; the
  * workflow turns it into a failed run, so the 7 a.m. pulse shows the job red.
+ * `setupProblem` is the plain sentence for a setting that a retry will never
+ * fix (the fence, the API switched off, a missing scope). It is also written
+ * on the rows, status untouched, and the workflow fails the run with it.
  */
 export async function syncBusyBlocks(db, {
   env = process.env, fetchImpl, now = Date.now(), orgId = null,
@@ -310,7 +358,7 @@ export async function syncBusyBlocks(db, {
   const out = {
     ok: true, links: 0, connected: 0, notShared: 0, errored: 0, skippedOwner: 0,
     desired: 0, existing: 0, inserted: 0, deleted: 0, deferred: 0, failures: 0, note: null,
-    tokenDead: false
+    tokenDead: false, setupProblem: null
   };
   const started = clock();
   try {
@@ -350,6 +398,7 @@ export async function syncBusyBlocks(db, {
       out.ok = false;
       out.tokenDead = isDeadTokenError(fb.error);
       out.note = `Google did not answer the busy-time read: ${String(fb.error || "no reason given").slice(0, 200)}`;
+      await noteSetupProblem(db, org, readableLinks, out, fb.error);
       return out;
     }
 
@@ -375,6 +424,7 @@ export async function syncBusyBlocks(db, {
       out.ok = false;
       out.tokenDead = isDeadTokenError(listed.error);
       out.note = `could not list existing busy blocks: ${String(listed.error || "").slice(0, 200)}`;
+      await noteSetupProblem(db, org, readableLinks, out, listed.error);
       return out;
     }
 
@@ -412,6 +462,7 @@ export async function syncBusyBlocks(db, {
       out.failures += 1;
       out.ok = false;
       out.note = `${item.kind} failed: ${String(res.error || "").slice(0, 200)}`;
+      await noteSetupProblem(db, org, readableLinks, out, res.error);
       // A refusal on the token or the scope will refuse every write after it.
       if (res.status === 401 || res.status === 403 || res.waiting) {
         out.deferred = work.length - writes;
@@ -455,7 +506,13 @@ export async function checkMyCalendar(db, {
     env, fetchImpl, timeoutMs: CALL_TIMEOUT_MS
   });
   // A failed call or a blip is not an answer: the row is left as it was.
-  if (!fb.ok) return { result: "error", link };
+  // A setup problem is said on the row in plain words, status untouched.
+  if (!fb.ok) {
+    const problem = setupProblemOf(fb.error);
+    if (!problem) return { result: "error", link };
+    const noted = await setLinkNote(db, { orgId, staffId, lastError: problem });
+    return { result: "error", link: noted || link };
+  }
   const c = classifyCalendar(fb.calendars[normalizeCalendarEmail(link.calendar_email)]);
   if (!c.status) return { result: "error", link };
   const saved = await setLinkStatus(db, { orgId, staffId, status: c.status, lastError: c.lastError });

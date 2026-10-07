@@ -157,3 +157,29 @@ test("busy sync: that failed run is recorded as an error heartbeat, and the puls
   assert.equal(check.status, "FAIL");
   assert.match(check.detail, /approval stopped working/);
 });
+
+test("busy sync: a setup problem fails the run (non-retriable) with its own plain words, and the pulse shows them", async () => {
+  const words = "Google calls are switched off on this site (ADAPTERS_DRY_RUN is not 0), so busy times are not being copied to the booking calendar.";
+  let thrown;
+  try {
+    await syncHandle({ db: {}, step: fakeStep(), env: {}, sync: async () => ({ ok: false, tokenDead: false, setupProblem: words }) });
+  } catch (err) { thrown = err; }
+  assert.ok(thrown instanceof NonRetriableError);
+  assert.equal(thrown.message, words);
+
+  const rows = [];
+  const fakeDb = { query: async (sql, params) => { if (/INSERT INTO job_heartbeats/.test(sql)) rows.push(params); return { rows: [] }; } };
+  const t0 = new Date("2026-10-08T13:55:00Z");
+  const run = heartbeatHooks({ getDb: () => fakeDb, nowFn: () => t0 })
+    .onFunctionRun({ fn: { opts: { id: "staff-calendar-busy-sync" } }, ctx: { event: { name: SCHEDULED_EVENT } } });
+  await run.finished({ result: { error: thrown } });
+  assert.equal(rows[0][4], "error");
+  const pulseDb = { query: async () => ({ rows: [{
+    job: "staff-calendar-busy-sync", last_at: t0.toISOString(), last_outcome: "error",
+    last_error: rows[0][6], first_ever: "2026-10-05T00:00:00Z"
+  }] }) };
+  const [check] = await checkJobHeartbeats({ db: pulseDb, now: new Date("2026-10-08T14:00:00Z"),
+    jobs: JOBS.filter((j) => j.job === "staff-calendar-busy-sync") });
+  assert.equal(check.status, "FAIL");
+  assert.match(check.detail, /switched off on this site/);
+});

@@ -7,11 +7,13 @@ import assert from "node:assert/strict";
 
 import {
   CALENDAR_OWNER_EMAIL_DEFAULT, MSG_NOT_SHARED, MSG_WAITING, MSG_OWNER_CALENDAR, isDeadTokenError,
+  MSG_FENCE_CLOSED, MSG_API_OFF, MSG_SCOPE_MISSING, setupProblemOf,
   SYNC_WINDOW_DAYS, MAX_WRITES_PER_RUN, CALL_TIMEOUT_MS,
   calendarOwnerEmail, isValidCalendarEmail, syncWindow, firstName, blockKey, classifyCalendar,
   desiredBlocks, diffBlocks, mirrorEventBody, syncBusyBlocks, checkMyCalendar, inviteClosersToBooking
 } from "./calendar-sync.mjs";
 import { _resetOrgCache } from "../auth/org.mjs";
+import { resetTokenCache, TOKEN_ENV_KEY } from "../messaging/providers/google-calendar.mjs";
 
 const ORG = "00000000-0000-0000-0000-00000000000a";
 const JUSTICE = "11111111-1111-1111-1111-111111111111";
@@ -23,10 +25,19 @@ const WINDOW = syncWindow(NOW);
    sends, and records every status write. */
 function fakeDb({ links = [], closers = [], orgId = ORG } = {}) {
   const updates = [];
+  const notes = [];
   return {
     updates,
+    notes,
     async query(sql, params = []) {
       if (/FROM orgs/.test(sql)) return { rows: [{ id: orgId }] };
+      // A note: plain words written, status left alone.
+      if (/UPDATE staff_calendar_links/.test(sql) && !/SET status/.test(sql)) {
+        const [org, staffId, lastError] = params;
+        notes.push({ org, staffId, lastError });
+        const link = links.find((l) => l.staff_id === staffId) || {};
+        return { rows: [{ ...link, last_error: lastError }] };
+      }
       if (/UPDATE staff_calendar_links/.test(sql)) {
         const [org, staffId, status, lastError] = params;
         updates.push({ org, staffId, status, lastError });
@@ -132,6 +143,8 @@ test("classify: only notFound / forbidden = Not shared yet; any other error is a
 test("dead token: only Google's own 'never again' answers count, not a blip", () => {
   assert.equal(isDeadTokenError("Google token refresh failed: oauth token refresh failed (400): invalid_grant"), true);
   assert.equal(isDeadTokenError("oauth token refresh failed (401): invalid_client"), true);
+  assert.equal(isDeadTokenError("oauth token refresh failed (401): deleted_client"), true);
+  assert.equal(isDeadTokenError("oauth token refresh failed (401): disabled_client"), true);
   assert.equal(isDeadTokenError("Google token refresh failed: The operation was aborted due to timeout"), false);
   assert.equal(isDeadTokenError("google calendar freeBusy returned HTTP 503"), false);
   assert.equal(isDeadTokenError(""), false);
@@ -500,4 +513,114 @@ test("invite: Google not answering = error (the workflow retries), never a throw
   provider.findResult = { ok: false, error: "HTTP 503" };
   const out = await inviteClosersToBooking(fakeDb({ closers: [CLOSER] }), { orgId: ORG, payload: BOOKING, env: {}, provider });
   assert.equal(out.status, "error");
+});
+
+/* ── setup problems: said on the rows, status untouched, run fails ───────── */
+
+test("setup problem: the fence, the API switched off, a missing scope — and never a blip", () => {
+  assert.equal(setupProblemOf("ADAPTERS_DRY_RUN is not set. The dry-run fence defaults to BLOCKED (google calendar freeBusy)"), MSG_FENCE_CLOSED);
+  assert.equal(setupProblemOf("google calendar freeBusy: the Google Calendar API is not switched on for this Google Cloud project"), MSG_API_OFF);
+  assert.equal(setupProblemOf('{"error":{"code":403,"message":"Request had insufficient authentication scopes.","status":"PERMISSION_DENIED"}}'), MSG_SCOPE_MISSING);
+  for (const blip of ["google calendar freeBusy returned HTTP 503", "fetch failed", "timed out after 6000ms",
+    "Google token refresh failed: The operation was aborted due to timeout", "Google token refresh failed: invalid_grant", "", null]) {
+    assert.equal(setupProblemOf(blip), null, String(blip));
+  }
+});
+
+test("sync: a setup problem on the busy-time read is written on every row in plain words, status untouched", async () => {
+  for (const [error, words] of [
+    ["ADAPTERS_DRY_RUN is not set. The dry-run fence defaults to BLOCKED", MSG_FENCE_CLOSED],
+    ["google calendar freeBusy: the Google Calendar API is not switched on for this Google Cloud project", MSG_API_OFF]
+  ]) {
+    const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" }), link(SARAH, "Sarah B", "s@x.com")] });
+    const provider = fakeProvider({ fbFails: { waiting: false, status: 403, error } });
+    const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+    assert.equal(out.ok, false);
+    assert.equal(out.setupProblem, words);
+    assert.equal(out.tokenDead, false);
+    assert.deepEqual(db.updates, [], "no status changes — a connected closer stays connected");
+    assert.deepEqual(db.notes.map((n) => [n.staffId, n.lastError]), [[JUSTICE, words], [SARAH, words]]);
+    assert.equal(provider.log.inserted.length + provider.log.deleted.length, 0);
+  }
+});
+
+test("sync: a missing scope on the list or on a write is a setup problem too", async () => {
+  const scope = "Request had insufficient authentication scopes.";
+  let db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+  let provider = fakeProvider({ calendars: { "j@x.com": { busy: [], errors: [] } } });
+  provider.listMirrorEvents = async () => ({ ok: false, status: 403, error: scope });
+  let out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+  assert.equal(out.setupProblem, MSG_SCOPE_MISSING);
+  assert.deepEqual(db.notes.map((n) => n.lastError), [MSG_SCOPE_MISSING]);
+
+  db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+  provider = fakeProvider({
+    calendars: { "j@x.com": { busy: [{ start: "2026-10-08T15:00:00Z", end: "2026-10-08T16:00:00Z" }], errors: [] } },
+    insertFails: { status: 403, error: scope }
+  });
+  out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+  assert.equal(out.setupProblem, MSG_SCOPE_MISSING);
+  assert.deepEqual(db.notes.map((n) => n.lastError), [MSG_SCOPE_MISSING]);
+});
+
+test("sync: a blip still writes no note and names no setup problem", async () => {
+  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+  const provider = fakeProvider({ fbFails: { waiting: false, status: 503, error: "google calendar freeBusy returned HTTP 503" } });
+  const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+  assert.equal(out.setupProblem, null);
+  assert.deepEqual(db.notes, []);
+  assert.deepEqual(db.updates, []);
+});
+
+test("sync, real provider: the fence closed on this site is caught end to end", async () => {
+  resetTokenCache();
+  const fetchImpl = async (url) => {
+    if (String(url).startsWith("https://oauth2.googleapis.com/token")) {
+      return { ok: true, status: 200, headers: new Headers(), text: async () => JSON.stringify({ access_token: "at", expires_in: 3600 }) };
+    }
+    throw new Error("nothing past the fence should be sent");
+  };
+  const env = { [TOKEN_ENV_KEY]: JSON.stringify({ refresh_token: "r", client_id: "c", client_secret: "s" }) }; // ADAPTERS_DRY_RUN unset
+  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+  const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, env, fetchImpl });
+  assert.equal(out.setupProblem, MSG_FENCE_CLOSED);
+  assert.deepEqual(db.updates, []);
+  assert.deepEqual(db.notes.map((n) => n.lastError), [MSG_FENCE_CLOSED]);
+  resetTokenCache();
+});
+
+test("sync, real provider: the Calendar API switched off is caught end to end", async () => {
+  resetTokenCache();
+  const fetchImpl = async (url) => {
+    if (String(url).startsWith("https://oauth2.googleapis.com/token")) {
+      return { ok: true, status: 200, headers: new Headers(), text: async () => JSON.stringify({ access_token: "at", expires_in: 3600 }) };
+    }
+    return { ok: false, status: 403, headers: new Headers(), text: async () => JSON.stringify({ error: {
+      code: 403, status: "PERMISSION_DENIED",
+      message: "Google Calendar API has not been used in project 123 before or it is disabled."
+    } }) };
+  };
+  const env = { [TOKEN_ENV_KEY]: JSON.stringify({ refresh_token: "r", client_id: "c", client_secret: "s" }), ADAPTERS_DRY_RUN: "0" };
+  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+  const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, env, fetchImpl });
+  assert.equal(out.setupProblem, MSG_API_OFF);
+  assert.deepEqual(db.updates, []);
+  assert.deepEqual(db.notes.map((n) => n.lastError), [MSG_API_OFF]);
+  resetTokenCache();
+});
+
+test("check: a setup problem is said on my row (status untouched); a blip says nothing new", async () => {
+  const j = link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" });
+  let db = fakeDb({ links: [j] });
+  let out = await checkMyCalendar(db, { orgId: ORG, staffId: JUSTICE, env: {}, now: NOW,
+    provider: fakeProvider({ fbFails: { status: 0, error: "ADAPTERS_DRY_RUN is not set. The dry-run fence defaults to BLOCKED" } }) });
+  assert.equal(out.result, "error");
+  assert.equal(out.link.status, "connected");
+  assert.equal(out.link.last_error, MSG_FENCE_CLOSED);
+  assert.deepEqual(db.updates, []);
+  db = fakeDb({ links: [j] });
+  out = await checkMyCalendar(db, { orgId: ORG, staffId: JUSTICE, env: {}, now: NOW,
+    provider: fakeProvider({ fbFails: { status: 503, error: "HTTP 503" } }) });
+  assert.equal(out.result, "error");
+  assert.deepEqual(db.notes, []);
 });
