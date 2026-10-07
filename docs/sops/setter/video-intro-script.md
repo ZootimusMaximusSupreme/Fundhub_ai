@@ -13,7 +13,7 @@ A short personal video. Chris films it on his business cell and texts it to a ne
 | 3. The sequence | Chris's three texts if no answer. | The video comes first. Do not stack a "following up" text on top of it. |
 | 4. The 3-way text | The system texts the lead 15 minutes before the call. | The video already told the lead who you are and who Justice is. |
 
-**NOT IN SOURCES:** how many minutes after the lead comes in the video should go. The board says "the moment any lead comes in."
+**When:** as soon as the lead comes in. Chris's words: "I need to be notified immediately when leads come in... I'll respond via my business cell phone with personalized video messages... Goal: Warm up leads before passing them to closers."
 
 ## Rules
 

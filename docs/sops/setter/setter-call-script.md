@@ -2,7 +2,7 @@
 
 For Chris, calling from the business cell. About 5 minutes. Say it your way. Keep the order.
 
-**Sources:** the Josh prompt (`vendor/inquiry-remover/src/agents/setter-prompt.js`, same words as live row AG-04) and Cole Gordon's Triage Call (Drive: "4. Setter Crash Course doc.docx"). Each block says which one.
+**Sources:** Josh's programmed setting logic (`vendor/inquiry-remover/src/agents/setter-prompt.js`) and Cole Gordon's Triage Call (Drive: "4. Setter Crash Course doc.docx"). Each block says which one.
 
 ## Before you dial
 
@@ -50,7 +50,7 @@ Do not dig into their credit score. If they bring it up: "Got it. That's what yo
 > "Anything that would stop you from making [day, time]?"
 > "Awesome. See you then."
 
-Not booked yet: "I have Justice's calendar open. Does [time A] or [time B] work?" Then get them to accept the invite. (Cole: book and confirm.) **NOT IN SOURCES:** how Chris books the time for them.
+Not booked yet: "I have Justice's calendar open. Does [time A] or [time B] work?" Or text them the booking link and stay on while they pick: https://apply.fundhub.ai/funding-book-call. Then get them to accept the invite. (Cole: book and confirm.)
 
 **Voicemail.** (Josh, name changed)
 
@@ -60,9 +60,9 @@ Not booked yet: "I have Justice's calendar open. Does [time A] or [time B] work?
 
 Live rows `SMS-AISET03-MSG1` to `MSG3`, name changed from Josh to Chris. Stop when they reply or book. If they reply STOP, stop.
 
-1. Right away: "Hey [Name], it's Chris from Fundhub. Just tried you. Still good for your call? Reply YES or grab a new time: [booking link]"
-2. 30 minutes later: "Hey [Name], Chris again from Fundhub. Wanted to make sure we connect. Reply YES or reschedule here: [booking link]"
-3. 2 hours after that: "Last try from Chris at Fundhub, [Name]. Happy to hold a spot when you're ready: [booking link]"
+1. Right away: "Hey [Name], it's Chris from Fundhub. Just tried you. Still good for your call? Reply YES or grab a new time: https://apply.fundhub.ai/funding-book-call"
+2. 30 minutes later: "Hey [Name], Chris again from Fundhub. Wanted to make sure we connect. Reply YES or reschedule here: https://apply.fundhub.ai/funding-book-call"
+3. 2 hours after that: "Last try from Chris at Fundhub, [Name]. Happy to hold a spot when you're ready: https://apply.fundhub.ai/funding-book-call"
 
 ## Top objections
 

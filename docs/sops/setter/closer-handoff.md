@@ -16,7 +16,6 @@ Plain facts about it:
 
 - It is one text to the lead. There is no group thread with Justice.
 - The link is the booking's meeting link. If the booking has none, the code sends the portal sign-in page. ClickFunnels bookings often carry no meeting link. (`meetingLinkFor` in the workflow file)
-- It does not need AG-04. It runs while AG-04 is retired.
 - It is signed Josh.
 
 ## What Chris does by hand
