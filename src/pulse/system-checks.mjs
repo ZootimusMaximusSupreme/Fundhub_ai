@@ -84,7 +84,17 @@ export async function checkMessageQueue({ db, orgId, now = new Date(), channels 
        name. The values are never read into the detail line.
 
    A lead made in the last 15 minutes is not counted yet: its alert may still be
-   on the way. Plain reads. No network, no writes. */
+   on the way. Plain reads. No network, no writes.
+
+   A LEAD WHOSE EVENT HAS NO CLIENT ON IT IS STILL A LEAD. When the client step
+   fails at intake, the event is kept with client_id NULL on purpose
+   (src/adapters/clickfunnels.mjs, api/public/survey-submit.mjs). Reading stamps
+   only through client_id made the check blind to exactly that failure and it
+   said PASS. So the event's own email is used to find the client when the id is
+   missing, and an event in the window that no client row matches at all is
+   counted as a lead with no text and no email ("unresolved"). One lead is one
+   count: a client is counted once however many events it has, and unresolved
+   events are counted once per email. */
 export const LEAD_ALERT_GRACE_MS = 15 * MIN;
 
 export async function checkLeadAlerts({ db, orgId, now = new Date(), env = process.env } = {}) {
@@ -98,26 +108,56 @@ export async function checkLeadAlerts({ db, orgId, now = new Date(), env = proce
   const since = new Date(now.getTime() - DAY_MS);
   const until = new Date(now.getTime() - LEAD_ALERT_GRACE_MS);
   const { rows } = await db.query(
-    `SELECT count(*)::int AS expected,
-            count(*) FILTER (WHERE COALESCE(c.custom_fields->>$4, '') = '')::int AS no_sms,
-            count(*) FILTER (WHERE COALESCE(c.custom_fields->>$5, '') = '')::int AS no_email
-       FROM clients c
-      WHERE c.org_id = $1
-        AND c.is_demo IS NOT TRUE
-        AND COALESCE(c.custom_fields->>'synthetic', '') <> 'true'
-        AND c.created_at >= $2::timestamptz
-        AND c.created_at <= $3::timestamptz
-        AND EXISTS (SELECT 1 FROM events e
+    `WITH real_leads AS (
+       SELECT c.custom_fields
+         FROM clients c
+        WHERE c.org_id = $1
+          AND c.is_demo IS NOT TRUE
+          AND COALESCE(c.custom_fields->>'synthetic', '') <> 'true'
+          AND c.created_at >= $2::timestamptz
+          AND c.created_at <= $3::timestamptz
+          AND (
+            EXISTS (SELECT 1 FROM events e
                      WHERE e.org_id = c.org_id AND e.client_id = c.id
-                       AND e.name IN ('entry.captured', 'booking.created'))`,
+                       AND e.name IN ('entry.captured', 'booking.created'))
+            OR EXISTS (SELECT 1 FROM events e
+                        WHERE e.org_id = c.org_id AND e.client_id IS NULL
+                          AND e.name IN ('entry.captured', 'booking.created')
+                          AND NULLIF(btrim(e.payload->>'email'), '') IS NOT NULL
+                          AND lower(btrim(e.payload->>'email')) = lower(c.email))
+          )
+     ),
+     unresolved AS (
+       SELECT count(DISTINCT COALESCE(NULLIF(lower(btrim(e.payload->>'email')), ''), e.id::text))::int AS n
+         FROM events e
+        WHERE e.org_id = $1
+          AND e.client_id IS NULL
+          AND e.is_demo IS NOT TRUE
+          AND e.name IN ('entry.captured', 'booking.created')
+          AND e.created_at >= $2::timestamptz
+          AND e.created_at <= $3::timestamptz
+          AND NOT EXISTS (SELECT 1 FROM clients c2
+                           WHERE c2.org_id = e.org_id
+                             AND NULLIF(btrim(e.payload->>'email'), '') IS NOT NULL
+                             AND lower(c2.email) = lower(btrim(e.payload->>'email')))
+     )
+     SELECT (SELECT count(*) FROM real_leads)::int + u.n AS expected,
+            (SELECT count(*) FILTER (WHERE COALESCE(custom_fields->>$4, '') = '') FROM real_leads)::int + u.n AS no_sms,
+            (SELECT count(*) FILTER (WHERE COALESCE(custom_fields->>$5, '') = '') FROM real_leads)::int + u.n AS no_email,
+            u.n AS unresolved
+       FROM unresolved u`,
     [orgId, since, until, SMS_STAMP, EMAIL_STAMP]
   );
-  const r = rows[0] || { expected: 0, no_sms: 0, no_email: 0 };
+  const r = rows[0] || { expected: 0, no_sms: 0, no_email: 0, unresolved: 0 };
+  const unresolved = Number(r.unresolved) || 0;
 
   const problems = [];
   if (unset.length) problems.push(`${unset.join(" and ")} ${unset.length > 1 ? "have" : "has"} no usable value, so that alert cannot go out`);
   if (r.no_sms > 0 || r.no_email > 0) {
-    problems.push(`${r.no_sms} of ${r.expected} new lead(s) in the last 24 hours have no text alert and ${r.no_email} have no email alert`);
+    problems.push(
+      `${r.no_sms} of ${r.expected} new lead(s) in the last 24 hours have no text alert and ${r.no_email} have no email alert` +
+      (unresolved > 0 ? ` (${unresolved} of them have no client record at all, so no alert could have gone)` : "")
+    );
   }
   if (problems.length) {
     return row("lead-alerts", "messages", "FAIL", problems.join("; "),

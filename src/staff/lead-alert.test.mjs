@@ -23,6 +23,7 @@ import {
   sendLeadAlertSms,
   sendLeadAlertEmail
 } from "./lead-alert.mjs";
+import { send as resendSend } from "../messaging/providers/resend.mjs";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE = fs.readFileSync(path.join(HERE, "lead-alert.mjs"), "utf8");
@@ -163,6 +164,87 @@ test("the company name is spelled Fundhub, never FundHub", () => {
     assert.ok(!/FundHub|FUNDHUB|Fund Hub/.test(s), "wrong spelling of the company name");
   }
   assert.ok(/Fundhub/.test(text) && /Fundhub/.test(subject));
+});
+
+// ── words typed by a stranger cannot turn the email into HTML ─────────────
+
+/* The phishing demo from the verifier's report: a name that is a table holding a
+   link made to look like the CRM link. */
+const EVIL = '<table><tr><td><a href="https://evil.example/x">Open the lead in the CRM</a>';
+
+const RESEND_ENV = {
+  MESSAGING_DRY_RUN: "0",
+  RESEND_API_KEY: "re_fake_key_for_tests_only",
+  RESEND_FROM: "Fundhub <noreply@example.test>",
+  LEAD_ALERT_EMAIL_TO: "owner@example.test"
+};
+
+/* A fetch stand-in that records what the real Resend provider would have sent. */
+function recorder() {
+  const requests = [];
+  return {
+    requests,
+    fetchImpl: async (url, init) => {
+      requests.push({ url: String(url), payload: JSON.parse(init.body) });
+      return new Response(JSON.stringify({ id: "em_test_1" }), { status: 200, headers: { "content-type": "application/json" } });
+    }
+  };
+}
+
+test("CONTROL: the Resend provider does send a body with a <table as live HTML, which is why the words are cleaned first", async () => {
+  const r = recorder();
+  const out = await resendSend({ to: "owner@example.test", subject: "s", body: "hi <table><tr><td>x</td></tr></table>" },
+    { env: RESEND_ENV, fetchImpl: r.fetchImpl });
+  assert.equal(out.status, "sent");
+  assert.ok("html" in r.requests[0].payload, "the provider reads this body as HTML");
+});
+
+test("a name that is HTML never reaches the email as HTML: the provider sends plain text", async () => {
+  const r = recorder();
+  const mail = buildLeadAlertEmail({ ...LEAD, firstName: EVIL, lastName: "" }, { attribution: AD, env: ENV });
+  const out = await sendLeadAlertEmail({ ...mail, env: RESEND_ENV, fetchImpl: r.fetchImpl });
+  assert.equal(out.status, "sent");
+  const { payload } = r.requests[0];
+  assert.ok(!("html" in payload), "no html part");
+  assert.equal(typeof payload.text, "string");
+  assert.ok(!/[<>]/.test(payload.text), "no angle bracket in the body");
+  assert.ok(!/[<>]/.test(payload.subject), "none in the subject either");
+  /* What is left of the name is plain words on the Name line. It is not a link
+     with chosen link text any more, so "Open the lead in the CRM" cannot be made
+     to look like a button; the real CRM link is still the last line. */
+  const lines = payload.text.split("\n");
+  assert.equal(lines[lines.length - 1], LINK);
+});
+
+test("every word a stranger can supply is cleaned: name, email, phone, channel, and the ad tag", async () => {
+  for (const trigger of ['<table class="x">', "<html>", "<!DOCTYPE html>", "<TABLE ", "<table\n"]) {
+    const lead = {
+      id: "c-1",
+      firstName: trigger, lastName: trigger,
+      email: `a${trigger}@example.com`,
+      phone: trigger,
+      channelSource: trigger
+    };
+    const attribution = { ad_id: "42", utm_content: `42-${trigger}` };
+    const mail = buildLeadAlertEmail(lead, { attribution, env: ENV });
+    const sms = buildLeadAlertText(lead, { attribution, env: ENV });
+    const noAd = buildLeadAlertEmail(lead, { attribution: null, env: ENV });
+    for (const [label, text] of [["body", mail.body], ["subject", mail.subject], ["sms", sms], ["body without ad row", noAd.body]]) {
+      assert.ok(!/[<>]/.test(text), `${label} still holds an angle bracket for ${JSON.stringify(trigger)}`);
+    }
+    const r = recorder();
+    await sendLeadAlertEmail({ ...mail, env: RESEND_ENV, fetchImpl: r.fetchImpl });
+    await sendLeadAlertEmail({ ...noAd, env: RESEND_ENV, fetchImpl: r.fetchImpl });
+    for (const req of r.requests) {
+      assert.ok(!("html" in req.payload), `sent as HTML for ${JSON.stringify(trigger)}`);
+    }
+  }
+});
+
+test("cleaning the words keeps them readable: a name with brackets in it still shows", () => {
+  const text = buildLeadAlertText({ id: "c-1", firstName: "Jane <Boss>", lastName: "Smith" }, { env: ENV });
+  assert.equal(text.split("\n")[1], "Jane Boss Smith");
+  assert.equal(leadName({ firstName: "<b>Jane</b>" }), "b Jane /b");
 });
 
 // ── who it goes to ────────────────────────────────────────────────────────

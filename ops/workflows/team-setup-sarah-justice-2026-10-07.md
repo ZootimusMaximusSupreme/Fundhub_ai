@@ -115,6 +115,7 @@ The setter flow is built (the "Josh" AI setter):
 - **Journeys affected:** the lead-in doors listed in `docs/journeys/lead-alert-flow.md`. Client-facing behaviour is unchanged: the lead still gets the same welcome.
 - **Settings needed at go-live (names only):** `LEAD_ALERT_SMS_TO`, `LEAD_ALERT_EMAIL_TO` (new, no fallback). Already set and used: `TWILIO_SEND_ACCOUNT_SID`, `TWILIO_SEND_AUTH_TOKEN`, `TWILIO_SEND_FROM`, `RESEND_API_KEY`, `RESEND_FROM`, `MESSAGING_DRY_RUN` (must be `0`). Set with `--secret`, then ship once.
 - **Pulse:** new check `lead-alerts` (group `messages`). It is RED until both settings are set, by design. No row in `src/pulse/registry.mjs` (no page or `api/` file) and none in `heartbeats.mjs` (not a cron).
+- **Fixes after the second tester (verify-lead-alerts.md), same branch:** bug 3 (the alert email is always plain text: `<` and `>` removed from every lead-supplied word), bug 2 (the `lead-alerts` pulse check also reads events with `client_id` NULL, by the event's email, and counts an event no client matches as an unalerted lead), bug 4 (a partial failure with two or more recipients is logged, scrubbed). Bug 1 is NOT fixed here: the coordinator checked read-only and the live `clients` table still has `ghl_contact_id`. Bugs 5 to 12 left alone.
 - **Proof still to do after the settings are set and it ships:** the 8-step sim-lead proof in the spec (section 7, "Proof"). Not done here: nothing was sent and nothing was shipped.
 
 ### W3 — Setter script (2026-10-07)

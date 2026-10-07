@@ -143,8 +143,19 @@ async function alertChannel({ db, orgId, clientId, channel, env, now, fetchImpl,
   }
 
   if (out.status === "sent") {
-    console.log(`[lead-alert] ${channel} sent for client ${clientId}`);
-    return { channel, status: "sent", accepted: out.accepted };
+    /* With two or more recipients one can be accepted while another fails. The
+       channel still counts as sent and is NOT retried (a retry would send to the
+       person who already has it), but the miss is written down: how many, and the
+       scrubbed reason. The reason never holds a number or an address. */
+    if (out.failed > 0) {
+      console.warn(
+        `[lead-alert] ${channel} PARTLY sent for client ${clientId}: ` +
+        `${out.accepted} accepted, ${out.failed} failed (${out.error || "no reason given"})`
+      );
+    } else {
+      console.log(`[lead-alert] ${channel} sent for client ${clientId}`);
+    }
+    return { channel, status: "sent", accepted: out.accepted, failed: out.failed || 0 };
   }
 
   await releaseStamp(db, clientId, field);

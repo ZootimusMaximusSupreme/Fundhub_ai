@@ -73,13 +73,16 @@ The stamp lives on `clients.custom_fields`: `lead_alert_sms_at` for the text, `l
 * Both sends sit behind the messaging fence (`MESSAGING_DRY_RUN` must be an explicit off value). A context that is not live sends nothing.
 * The words (`buildLeadAlertText`, `buildLeadAlertEmail`): the lead's name, phone, email, the source (`Ad <ad id> (<utm_content>)` from `client_ad_attribution`, else the channel such as `clickfunnels`, else "not tagged"; a Pipeline-board lead says "added by staff on the Pipeline board"), the time in Arizona (email only), and the link `<APP_BASE_URL | URL | https://fundhub.ai>/app/client-control-panel.html?id=<client id>`.
 * A missing phone, email or name does not hold the alert back; the line says "not given yet" (or "not given").
+* **The email is always plain text.** Name, email, phone, ad tag and channel come off a public form or URL, and the Resend provider sends any body that holds a `<table`, `<html` or `<!DOCTYPE html` as live HTML with no way to say "plain text". So `<` and `>` are removed from every lead-supplied word before it goes into the text, the subject or the email. A name typed as a table holding a link can no longer become a clickable look-alike of the CRM link. (What the stranger typed still shows as plain words on the Name line; a raw web address in it may be auto-linked by a mail app, but it is no longer dressed up as the CRM link.)
+* **Two or more recipients:** one accepting is enough for the channel to count as sent, and a failed one is not retried (a retry would send to the person who already has it). The miss is logged: `[lead-alert] <channel> PARTLY sent for client <id>: N accepted, M failed (<reason>)`, with any number or address in the reason scrubbed.
 * Nothing personal is stored in Inngest: each step returns a status word, and the details are read again inside the step that sends them. Logs carry the client id only. An error from a provider is scrubbed of numbers and addresses before it is logged or thrown.
 
 ## What watches it
 
 `checkLeadAlerts` (`src/pulse/system-checks.mjs`), id `lead-alerts`, group `messages`, run by `runDailyPulse` next to the message-queue check. It reads and never writes. **Red** when:
 
-* a real client (not `is_demo`, not synthetic) made between 24 hours and 15 minutes ago, with an `entry.captured` or `booking.created` event, is missing `lead_alert_sms_at` or `lead_alert_email_at`; or
+* a real client (not `is_demo`, not synthetic) made between 24 hours and 15 minutes ago, with an `entry.captured` or `booking.created` event, is missing `lead_alert_sms_at` or `lead_alert_email_at`. The event may name the client by id, or (when the intake kept it with `client_id` NULL because the client step failed) by the email in its payload; or
+* an `entry.captured` or `booking.created` event in that window has no client id **and** no client row has its email. That lead has no file to stamp, so no alert could have gone: it counts as a lead with no text and no email, once per email, and the line says how many "have no client record at all"; or
 * `LEAD_ALERT_SMS_TO` or `LEAD_ALERT_EMAIL_TO` has no usable value. Named by setting name only; the value is never read into the line.
 
 There is no row in `src/pulse/registry.mjs` (this adds no page and no `api/` file) and none in `src/pulse/heartbeats.mjs` (it is not a cron).

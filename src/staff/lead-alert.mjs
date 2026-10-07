@@ -78,12 +78,21 @@ export function leadAlertConfigured(env = process.env) {
   };
 }
 
-/* One line of plain text. The name, email and source come off a public form, so
-   anyone can type anything there: newlines and control characters are removed
-   and the length is capped before the words reach Chris's phone or inbox. */
+/* One line of plain text. The name, email and source come off a public form (and
+   the ad tag off a public URL), so anyone can type anything there: newlines and
+   control characters are removed and the length is capped before the words reach
+   Chris's phone or inbox.
+
+   `<` AND `>` ARE REMOVED TOO, AND THAT IS A SECURITY RULE. The Resend provider
+   decides by looking at the body whether to send it as HTML (a `<table`, `<html`
+   or `<!DOCTYPE html` anywhere in it) and has no way to be told "this is plain
+   text". A name typed as `<table><a href=...>Open the lead in the CRM</a>` would
+   therefore go to Chris as a live HTML email with a link a stranger chose, made
+   to look like the CRM link. With no angle bracket in any lead-supplied word the
+   body can never look like HTML, whatever the lead types. */
 function oneLine(value, max = 120) {
   return String(value == null ? "" : value)
-    .replace(/[\u0000-\u001f\u007f\u2028\u2029]+/g, " ")
+    .replace(/[\u0000-\u001f\u007f\u2028\u2029<>]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, max);

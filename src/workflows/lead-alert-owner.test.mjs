@@ -389,6 +389,69 @@ test("a read of the ad row that fails only changes the Source line", async () =>
   assert.match(s.calls.sms[0].body, /Source: clickfunnels/);
 });
 
+// ── two recipients, one of them failing ───────────────────────────────────
+
+const TWO = { ...ENV, LEAD_ALERT_SMS_TO: "+15555550100,+15555550101", LEAD_ALERT_EMAIL_TO: "owner@example.test,second@example.test" };
+
+test("a partial failure with two recipients is counted as sent, not retried, and written down (scrubbed)", async (t) => {
+  const warns = [];
+  const logs = [];
+  t.mock.method(console, "warn", (line) => { warns.push(String(line)); });
+  t.mock.method(console, "log", (line) => { logs.push(String(line)); });
+  t.mock.method(console, "error", () => {});
+
+  const db = leadDb({ clients: [client()] });
+  let n = 0;
+  const s = senders({
+    sms: async () => (++n === 1 ? sent : { status: "failed", retryable: true, error: "The 'To' number +15555550101 is unreachable" })
+  });
+  const res = await run(db, entry(), s, { env: TWO });
+  assert.equal(res.done, true, "no throw, no retry");
+  assert.equal(res.sms.status, "sent");
+  assert.equal(res.sms.accepted, 1);
+  assert.equal(res.sms.failed, 1);
+  assert.equal(s.calls.sms.length, 2, "each recipient tried once, none twice");
+  assert.ok(db.clients[0].custom_fields[SMS_STAMP], "the stamp stays: the first person has it");
+
+  const partly = warns.filter((w) => /PARTLY sent/.test(w));
+  assert.equal(partly.length, 1, "exactly one warning for the partial text");
+  assert.match(partly[0], /sms PARTLY sent for client cl-1: 1 accepted, 1 failed/);
+  assert.ok(!partly[0].includes("5555550101") && !partly[0].includes("5555550100"), "no number in the log line");
+  assert.match(partly[0], /\[number\]/);
+  assert.ok(!logs.some((l) => /sms sent for client/.test(l)), "it is not logged as a plain success");
+  assert.ok(logs.some((l) => /email sent for client cl-1/.test(l)), "a fully delivered channel is still a plain success");
+});
+
+test("a fully delivered two-recipient channel logs no warning", async (t) => {
+  const warns = [];
+  t.mock.method(console, "warn", (line) => { warns.push(String(line)); });
+  t.mock.method(console, "log", () => {});
+  const db = leadDb({ clients: [client()] });
+  const s = senders();
+  const res = await run(db, entry(), s, { env: TWO });
+  assert.equal(res.sms.failed, 0);
+  assert.equal(res.email.failed, 0);
+  assert.deepEqual(warns, []);
+});
+
+// ── a lead who types HTML ─────────────────────────────────────────────────
+
+test("a lead whose name is HTML gets an alert with no angle bracket in the email, text or subject", async () => {
+  const evil = '<table><tr><td><a href="https://evil.example/x">Open the lead in the CRM</a>';
+  const db = leadDb({
+    clients: [client({ first_name: evil, last_name: "<html>", email: "x<table >@example.com", channel_source: "<!DOCTYPE html>" })],
+    attribution: [{ client_id: "cl-1", org_id: "org-1", ad_id: "42", utm_content: "42-<table " }]
+  });
+  const s = senders();
+  const res = await run(db, entry(), s);
+  assert.equal(res.done, true);
+  const mail = s.calls.email[0];
+  for (const text of [mail.subject, mail.body, s.calls.sms[0].body]) {
+    assert.ok(!/[<>]/.test(text), text);
+  }
+  assert.match(mail.body, /\nhttps:\/\/fundhub\.ai\/app\/client-control-panel\.html\?id=cl-1$/, "the real CRM link is still the last line");
+});
+
 // ── what Inngest is allowed to keep ───────────────────────────────────────
 
 test("no step hands back the lead's name, number or address", async () => {

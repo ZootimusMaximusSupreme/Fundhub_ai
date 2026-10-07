@@ -24,7 +24,7 @@ flowchart TD
     LATE -->|no| JGREEN[green]
     LATE -->|"no heartbeats long enough to judge"| JNC[not checked]
     RUN --> MSG["messages: oldest due queued per channel (> 30 min = red), failed in 24 h"]
-    RUN --> LA["lead-alerts (2026-10-07): real clients made 15 min to 24 h ago with an entry.captured or booking.created event and no lead_alert_sms_at / lead_alert_email_at stamp = red; LEAD_ALERT_SMS_TO or LEAD_ALERT_EMAIL_TO unusable = red (by name only)"]
+    RUN --> LA["lead-alerts (2026-10-07): real clients made 15 min to 24 h ago with an entry.captured or booking.created event and no lead_alert_sms_at / lead_alert_email_at stamp = red (an event with no client id is matched to its client by email; one no client matches is counted as a lead with no alert); LEAD_ALERT_SMS_TO or LEAD_ALERT_EMAIL_TO unusable = red (by name only)"]
     RUN --> FE["failed_events: open (pending/exhausted) and new in 24 h"]
     RUN --> MONEY["commas_inbox: newest received_at (> 72 h = red). ClickFunnels orders and ClarityPay: not checked"]
     RUN --> META["events.payload.meta in 24 h: accepted > 0 and errors 0 (off unless META_CAPI_ENABLED=1)"]

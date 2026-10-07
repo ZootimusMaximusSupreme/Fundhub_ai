@@ -104,6 +104,36 @@ test("the read leaves out test files and synthetic clients, and only counts real
   assert.doesNotMatch(sql, /\b(INSERT|UPDATE|DELETE)\b/i, "a check only reads");
 });
 
+test("a lead event with no client record at all is red and said out loud, without a second count", async () => {
+  const r = await checkLeadAlerts({
+    db: dbWith({ expected: 4, no_sms: 3, no_email: 3, unresolved: 2 }), orgId: "org-1", now: NOW, env: BOTH
+  });
+  assert.equal(r.status, "FAIL");
+  assert.match(r.detail, /3 of 4 new lead\(s\) in the last 24 hours have no text alert and 3 have no email alert/);
+  assert.match(r.detail, /\(2 of them have no client record at all, so no alert could have gone\)/);
+});
+
+test("nothing unresolved adds nothing to the line", async () => {
+  const r = await checkLeadAlerts({
+    db: dbWith({ expected: 4, no_sms: 1, no_email: 0, unresolved: 0 }), orgId: "org-1", now: NOW, env: BOTH
+  });
+  assert.equal(r.status, "FAIL");
+  assert.doesNotMatch(r.detail, /no client record/);
+});
+
+test("the read finds a lead whose event has no client id: by the event's email, or as unresolved", async () => {
+  const db = dbWith({ expected: 0, no_sms: 0, no_email: 0, unresolved: 0 });
+  await checkLeadAlerts({ db, orgId: "org-1", now: NOW, env: BOTH });
+  const sql = db.calls[0].sql;
+  assert.match(sql, /e\.client_id IS NULL/, "events with no client are read");
+  assert.match(sql, /payload->>'email'/, "matched to a client by the event's own email");
+  assert.match(sql, /e\.is_demo IS NOT TRUE/, "test events are not counted");
+  assert.match(sql, /count\(DISTINCT COALESCE\(NULLIF\(lower\(btrim\(e\.payload->>'email'\)\), ''\), e\.id::text\)\)/,
+    "unresolved events are counted once per email");
+  assert.match(sql, /NOT EXISTS \(SELECT 1 FROM clients c2/, "an event that matches a client is never also counted as unresolved");
+  assert.equal(db.calls[0].params.length, 5, "the bound values are unchanged");
+});
+
 test("the daily pulse runs the check and shows it on the scorecard", async () => {
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "pulse-"));
   const db = {
