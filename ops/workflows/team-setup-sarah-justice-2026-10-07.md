@@ -27,6 +27,27 @@
 - Checked 2026-10-07: Chris's Google calendar list holds only his own calendar and US Holidays. Nothing is shared yet.
 - Correction drafts (not sent, waiting on Chris): one to Justice, one to Sarah, each as a reply on its first email thread.
 
+## Calendar — plan v2: they plug it into the CRM (2026-10-07, waiting on Chris's go)
+
+Chris: "Tell them to plug it into the CRM. It should just be something they plug in." Chris does nothing (owner-set 2026-10-07).
+
+Facts checked 2026-10-07:
+- ClickFunnels writes booked calls onto `stanbridgejchris@gmail.com` (Chris is the organizer on every "Funding Strategy Meeting" event). That is the calendar the booking page reads.
+- Sarah (`sarah.b@fundhub.ai`, sales_manager) and Justice (`justice.nikkel@fundhub.ai`, closer) already have active CRM logins.
+- No token in the repo can write to any Google calendar. The only Google scopes in the repo are gmail.modify, drive, and calendar.readonly (the hiring service account).
+- The existing Google sign-in client is a Desktop type (`scripts/google-oauth-mint.mjs`). A web "Sign in with Google" button would need a new Google Cloud client.
+- Owner rule in that script: personal Gmail with per-user sign-in, never Workspace domain-wide delegation.
+
+Plan:
+1. **CRM "Connect your calendar" box** for staff. Sarah and Justice paste their Google Calendar private link (Google Calendar → Settings → their calendar → "Secret address in iCal format"). No Google Cloud setup needed.
+2. **Busy-time sync, every few minutes:** read each connected calendar's busy times and write "Busy" blocks onto Chris's Google calendar, which ClickFunnels already checks. The booking page then hides those times. No ClickFunnels change.
+3. **Booked call to Justice:** on `booking.created` (already received), email Justice a calendar invite with the Meet link, so the call lands on his calendar.
+
+The floor that can't be avoided: step 2 writes to Chris's Google calendar, and Google only lets the owner approve that. Chris taps Allow once; an agent runs the rest (`scripts/google-oauth-mint.mjs` with the calendar scope added).
+Known limit: Chris's own busy times keep blocking slots while Chris is the host in ClickFunnels.
+
+Correction drafts with the old "share your calendar" steps are on hold and will be replaced with the CRM steps once the box is live.
+
 ## Setter — the flow is already in code
 
 The setter flow is built (the "Josh" AI setter):
