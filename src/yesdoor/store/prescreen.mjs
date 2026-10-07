@@ -28,11 +28,11 @@ import { YdError } from "../http.mjs";
 import { createAccountSession } from "../auth/session.mjs";
 import { requestMagicLink } from "../auth/magic-link.mjs";
 import { toDate } from "../util.mjs";
-import { recordEvent } from "./events.mjs";
+import { recordEvent } from "../events.mjs";
 import { cleanText, findOrCreateLead, requireEmail } from "./leads.mjs";
 import { latestCompleteScreening, renterAnswer, runMatching } from "./matching.mjs";
 import { captureConsents, DEFAULT_PROVIDERS, runScreening } from "./screenings.mjs";
-import { withTransaction } from "./tx.mjs";
+import { withTransaction } from "../tx.mjs";
 
 /* ------------------------------------------------------------ validation */
 

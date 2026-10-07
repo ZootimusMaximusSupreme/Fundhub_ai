@@ -15,7 +15,7 @@
 import { YD_PRESCREEN } from "../config.mjs";
 import { normalizeEmail } from "../auth/magic-link.mjs";
 import { YdError } from "../http.mjs";
-import { recordEvent } from "./events.mjs";
+import { recordEvent } from "../events.mjs";
 
 export const LOOKS_LIKE_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 

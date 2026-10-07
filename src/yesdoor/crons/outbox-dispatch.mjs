@@ -14,8 +14,8 @@
 
 import { YD_CRON } from "../config.mjs";
 import * as outboxSandbox from "../providers/outbox-sandbox.mjs";
-import { recordEvent } from "../store/events.mjs";
-import { withTransaction } from "../store/tx.mjs";
+import { recordEvent } from "../events.mjs";
+import { withTransaction } from "../tx.mjs";
 
 export const DEFAULT_DISPATCHER = outboxSandbox;
 

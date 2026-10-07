@@ -14,10 +14,10 @@
 import { YD_PRESCREEN } from "../config.mjs";
 import * as plaidSandbox from "../providers/plaid-sandbox.mjs";
 import { cents, YdError } from "../http.mjs";
-import { recordEvent } from "./events.mjs";
+import { recordEvent } from "../events.mjs";
 import { cleanText } from "./leads.mjs";
 import { latestCompleteScreening, renterAnswer, runMatching } from "./matching.mjs";
-import { withTransaction } from "./tx.mjs";
+import { withTransaction } from "../tx.mjs";
 
 export const DEFAULT_INCOME_PROVIDERS = Object.freeze({ plaid: plaidSandbox });
 

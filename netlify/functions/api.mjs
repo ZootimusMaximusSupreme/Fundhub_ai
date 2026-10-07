@@ -318,6 +318,17 @@ import ydStaffRenter from "../../api/yesdoor/staff/renter.mjs";
 import ydStaffScreening from "../../api/yesdoor/staff/screening.mjs";
 import ydStaffDisputes from "../../api/yesdoor/staff/disputes.mjs";
 import ydStaffScoreboard from "../../api/yesdoor/staff/scoreboard.mjs";
+// Yesdoor B4: the writes (staff onboarding and money, building portal, booking, signing).
+import ydStaffAgreement from "../../api/yesdoor/staff/agreement.mjs";
+import ydStaffPayment from "../../api/yesdoor/staff/payment.mjs";
+import ydStaffRefund from "../../api/yesdoor/staff/refund.mjs";
+import ydStaffBrokerPayout from "../../api/yesdoor/staff/broker-payout.mjs";
+import ydBuildingListings from "../../api/yesdoor/building/listings.mjs";
+import ydBuildingImport from "../../api/yesdoor/building/import.mjs";
+import ydBuildingUpdate from "../../api/yesdoor/building/update.mjs";
+import ydPublicBook from "../../api/yesdoor/public/book.mjs";
+import ydMeTour from "../../api/yesdoor/me/tour.mjs";
+import ydWebhookEsign from "../../api/yesdoor/webhooks/esign.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -754,6 +765,17 @@ export const ROUTES = {
   "yesdoor/staff/screening": ydStaffScreening,
   "yesdoor/staff/disputes": ydStaffDisputes,
   "yesdoor/staff/scoreboard": ydStaffScoreboard,
+  // B4 writes (POST; staff/companies, staff/buildings, staff/disputes and building/rules above also take POST now).
+  "yesdoor/staff/agreement": ydStaffAgreement,
+  "yesdoor/staff/payment": ydStaffPayment,
+  "yesdoor/staff/refund": ydStaffRefund,
+  "yesdoor/staff/broker-payout": ydStaffBrokerPayout,
+  "yesdoor/building/listings": ydBuildingListings,
+  "yesdoor/building/import": ydBuildingImport,
+  "yesdoor/building/update": ydBuildingUpdate,
+  "yesdoor/public/book": ydPublicBook,
+  "yesdoor/me/tour": ydMeTour,
+  "yesdoor/webhooks/esign": ydWebhookEsign,
 
   // Creative Factory. All ten go through src/http/partner-read-api.mjs, which is
   // requirePrincipal(["partner","staff"]) + withPartnerScope, so a partner sees

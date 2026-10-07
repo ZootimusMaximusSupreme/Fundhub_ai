@@ -27,7 +27,7 @@ import { YD_DEFAULTS, YD_PRESCREEN } from "../config.mjs";
 import { cents } from "../http.mjs";
 import { matchCandidates, rankBackups, riskTier, lane as laneOf } from "../match/match.mjs";
 import { centroid, milesBetween } from "../match/geo.mjs";
-import { recordEvent } from "./events.mjs";
+import { recordEvent } from "../events.mjs";
 
 const RESULT_RANK = { approved: 0, likely: 1, no: 2 };
 

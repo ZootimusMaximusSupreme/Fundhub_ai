@@ -325,9 +325,9 @@ describe("yesdoor account doors", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
     });
   });
 
-  test("every account door is GET only for now", async () => {
+  test("every account read door is GET only; building/rules also takes a POST (B4)", async () => {
     const doors = [
-      [h.bRenters, fx.tokens.buildingA], [h.bRules, fx.tokens.buildingA], [h.bInvoices, fx.tokens.buildingA],
+      [h.bRenters, fx.tokens.buildingA], [h.bInvoices, fx.tokens.buildingA],
       [h.kRenters, fx.tokens.brokerA], [h.kMoney, fx.tokens.brokerA], [h.kLink, fx.tokens.brokerA]
     ];
     for (const [door, token] of doors) {
@@ -335,5 +335,9 @@ describe("yesdoor account doors", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
       assert.equal(r.code, 405);
       assert.equal(r.headers.allow, "GET");
     }
+    const rules = await call(h.bRules, { token: fx.tokens.buildingA, method: "DELETE" });
+    assert.equal(rules.code, 405);
+    assert.equal(rules.headers.allow, "GET, POST");
+    assert.equal((await call(h.bRules, { token: fx.tokens.buildingA, method: "POST", body: {} })).code, 400);
   });
 });

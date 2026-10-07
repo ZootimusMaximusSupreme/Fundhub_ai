@@ -702,7 +702,6 @@ describe("yesdoor schema guards", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
       await walk(app, "registered");
       await rejects(move(app, "booked"), CHECK, /yd_stage_move/);         // never backward
       await rejects(move(app, "applied"), CHECK, /yd_stage_move/);
-      await rejects(move(app, "cancelled"), CHECK, /yd_stage_move/);      // §3 cancels from booked only
       await move(app, "no_show");
       for (const to of ["toured", "booked", "registered", "applied", "cancelled"]) {
         await rejects(move(app, to), CHECK, /yd_stage_move/);             // no_show is final
@@ -710,8 +709,9 @@ describe("yesdoor schema guards", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
     });
 
     test("the full arrow table, checked against the function the trigger uses", async () => {
+      // 437 added registered -> cancelled and toured -> cancelled (a renter who withdraws frees a place in the cap).
       const arrows = [["booked", "registered"], ["booked", "cancelled"], ["registered", "toured"], ["registered", "no_show"],
-        ["toured", "applied"], ["applied", "approved"], ["applied", "denied"], ["approved", "lease_signed"],
+        ["registered", "cancelled"], ["toured", "cancelled"], ["toured", "applied"], ["applied", "approved"], ["applied", "denied"], ["approved", "lease_signed"],
         ["lease_signed", "moved_in"], ["moved_in", "invoiced"], ["invoiced", "paid"], ["paid", "safe"], ["paid", "refunded"]];
       const stages = ["booked", "registered", "toured", "no_show", "applied", "approved", "denied", "lease_signed", "moved_in", "invoiced", "paid", "safe", "refunded", "cancelled"];
       for (const from of stages) {

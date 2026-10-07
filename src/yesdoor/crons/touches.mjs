@@ -19,8 +19,8 @@
 
 import { YD_CRON, YD_TEMPLATES } from "../config.mjs";
 import { touchesDue } from "../schedule.mjs";
-import { recordEvent } from "../store/events.mjs";
-import { withTransaction } from "../store/tx.mjs";
+import { recordEvent } from "../events.mjs";
+import { withTransaction } from "../tx.mjs";
 
 const PLACED_STAGES = ["moved_in", "invoiced", "paid", "safe"];
 

@@ -20,10 +20,10 @@
 
 import { YD_CRON } from "../config.mjs";
 import { rentersDueForRecheck } from "../schedule.mjs";
-import { recordEvent } from "../store/events.mjs";
+import { recordEvent } from "../events.mjs";
 import { latestCompleteScreening, runMatching } from "../store/matching.mjs";
 import { DEFAULT_PROVIDERS, latestRecheckConsent, runScreening } from "../store/screenings.mjs";
-import { withTransaction } from "../store/tx.mjs";
+import { withTransaction } from "../tx.mjs";
 
 /** Renters the schedule must look at, in the shape schedule.mjs reads. Narrowed to
  *  one renter when `renterId` is given (the in-lock re-check). */

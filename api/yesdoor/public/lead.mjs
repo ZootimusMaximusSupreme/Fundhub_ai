@@ -16,7 +16,7 @@ import { db } from "../../../src/db.mjs";
 import { allowMethods, sendError } from "../../../src/yesdoor/http.mjs";
 import { resolveYdOrgId } from "../../../src/yesdoor/store/org.mjs";
 import { findOrCreateLead } from "../../../src/yesdoor/store/leads.mjs";
-import { withTransaction } from "../../../src/yesdoor/store/tx.mjs";
+import { withTransaction } from "../../../src/yesdoor/tx.mjs";
 
 export default async function handler(req, res) {
   if (!allowMethods(req, res, ["POST"])) return;

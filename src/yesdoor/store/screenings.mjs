@@ -18,7 +18,7 @@
 
 import { normalizeIp } from "../../auth/session.mjs";
 import * as crsSandbox from "../providers/crs-sandbox.mjs";
-import { recordEvent } from "./events.mjs";
+import { recordEvent } from "../events.mjs";
 
 export const DEFAULT_PROVIDERS = Object.freeze({ crs: crsSandbox });
 

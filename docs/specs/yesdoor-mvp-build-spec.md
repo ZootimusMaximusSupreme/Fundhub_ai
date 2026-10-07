@@ -175,8 +175,12 @@ flowchart TD
     P -->|refund_days pass, no skip/eviction| S[safe]
     P -->|renter leaves inside refund_days| RF[refunded]
     B --> X[cancelled]
+    R -.->|renter cancels: migration 437| X
+    T -.->|renter cancels: migration 437| X
     D -->|auto re-match to backups| RM[(new application)]
 ```
+
+**Owner-approved deviation (migration 437, 2026-10-07).** The two dotted arrows were not in the first draft of this diagram. B4 added them in `db/migrations/437_yesdoor_cancel_after_registration.sql`: a renter who cancels after the building was registered can leave from `registered` and `toured`, not only from `booked`. Without them a cancelled tour kept holding one of the renter's 3 open places. Claude decided; the owner said use best judgment.
 
 Rules:
 - Stages only move forward along these arrows; a DB function checks each move.

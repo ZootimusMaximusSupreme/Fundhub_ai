@@ -18,8 +18,8 @@
 
 import { YD_CRON, YD_TEMPLATES } from "../config.mjs";
 import { buildingsWithStaleRules } from "../schedule.mjs";
-import { recordEvent } from "../store/events.mjs";
-import { withTransaction } from "../store/tx.mjs";
+import { recordEvent } from "../events.mjs";
+import { withTransaction } from "../tx.mjs";
 
 /** Signed/live buildings with their CURRENT (newest version) rules. */
 async function loadBuildings(db, orgId) {
