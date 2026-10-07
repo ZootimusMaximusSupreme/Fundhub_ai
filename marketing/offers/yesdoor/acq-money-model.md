@@ -120,6 +120,20 @@ Ideas only. A person picks, prices and approves each one before it goes live. Bu
 
 For each idea, mark keep, change or kill. Then add the real price and the real limit numbers. Nothing here is live until it's marked keep.
 
+## 6. Upsells in the Scale Engine model (2026-10-07)
+
+The Scale Engine page (`marketing/offers/yesdoor/scale-engine.html`) now prices the full ladder instead of one back-end line. Each one is its own input, so a person can set the real numbers.
+
+| Line | Who | Default price | Default take | Where the default comes from |
+|---|---|---|---|---|
+| Denial breakdown | Non-leasing renters | $27 | 10% | Price: Fundhub Decline Autopsy. Take: assumed, measure in Phoenix |
+| Done-for-you repair | Non-leasing renters | $1,000 | 2.5% | Price: Fundhub catalog. Take: the plan's existing figure |
+| First repair round (downsell) | Non-leasing renters | $200 | 2% | Price: Fundhub catalog. Take: assumed |
+| Monthly plan (continuity) | Renters | not set | 0 members | Price is Chris's call |
+| Priority placement | Buildings | not set | 0% | Price is Chris's call |
+
+The page shows "set a price" next to any line whose price is still 0. At the default numbers the renter upsells come to about $641K a month at 2,000 leases a month.
+
 ## Order to build (one stage at a time)
 
 1. Renter attraction (free approval odds) plus building attraction (renter-demand report). This is the Phoenix test.

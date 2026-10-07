@@ -158,9 +158,21 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
         <label class="f">Units that turn over a year %<em>~45% move out</em><input type="number" id="turnover" step="1"></label>
         <label class="f">Share of their move-ins Yesdoor fills %<em>assumed</em><input type="number" id="capture" step="1"></label>
       </fieldset>
-      <fieldset><legend>Renter back end (clients)</legend>
-        <label class="f">Non-leasing leads who buy %<em>assumed: measure in Phoenix</em><input type="number" id="take" step="0.5"></label>
-        <label class="f">Revenue per buyer $<em>repair done-for-you $1,000</em><input type="number" id="backPrice" step="50"></label>
+      <fieldset><legend>Renter upsells (non-leasing leads)</legend>
+        <label class="f">Buy the denial breakdown %<em>assumed: measure in Phoenix</em><input type="number" id="takeBreak" step="1"></label>
+        <label class="f">Denial breakdown $<em>Fundhub Decline Autopsy $27</em><input type="number" id="breakPrice" step="1"></label>
+        <label class="f">Buy done-for-you repair %<em>assumed: measure in Phoenix</em><input type="number" id="take" step="0.5"></label>
+        <label class="f">Done-for-you repair $<em>Fundhub catalog $1,000</em><input type="number" id="backPrice" step="50"></label>
+        <label class="f">Take the first-round downsell %<em>assumed: measure in Phoenix</em><input type="number" id="takeRound" step="0.5"></label>
+        <label class="f">First repair round $<em>Fundhub catalog $200</em><input type="number" id="roundPrice" step="10"></label>
+      </fieldset>
+      <fieldset><legend>Monthly plans (continuity)</legend>
+        <label class="f">Renters on the monthly plan<em>credit building + renewal concierge</em><input type="number" id="members" step="50"></label>
+        <label class="f">Monthly plan $ a month<em>price not set yet</em><input type="number" id="memberPrice" step="5"></label>
+      </fieldset>
+      <fieldset><legend>Building upsells</legend>
+        <label class="f">Buildings buying priority placement %<em>assumed</em><input type="number" id="priorityShare" step="5"></label>
+        <label class="f">Extra fee for priority, % of rent<em>price not set yet</em><input type="number" id="priorityFee" step="5"></label>
       </fieldset>
       <fieldset><legend>Team and cash</legend>
         <label class="f">Revenue per staff a month $<em>Smart City ≈ $18K</em><input type="number" id="revStaff" step="1000"></label>
@@ -266,6 +278,7 @@ const DEFAULTS={leaseTarget:2000,
   cpl:27,conv:7.5,pull:9,
   pShare:30,perPartner:3,payout:25,software:499,
   perBuilding:4,take:2.5,backPrice:1000,
+  takeBreak:10,breakPrice:27,takeRound:2,roundPrice:200,members:0,memberPrice:0,priorityShare:0,priorityFee:0,
   revStaff:18000,staffCost:6000,payback:3,
   goal:10000000,moveRate:45,rebook:40,turnover:45,capture:15};
 const KEYS=Object.keys(DEFAULTS);
@@ -289,17 +302,24 @@ function compute(p){
   const pulls=leads*(+p.pull||0);
   const placeD=(Ld+Lr)*avgFee, placeP=Lp*avgFee;
   const payout=placeP*(+p.payout||0)/100;
-  const back=Math.max(0,leads-L)*(+p.take||0)/100*(+p.backPrice||0);
+  const nonLease=Math.max(0,leads-L);
+  const upBreak=nonLease*(+p.takeBreak||0)/100*(+p.breakPrice||0);
+  const upRepair=nonLease*(+p.take||0)/100*(+p.backPrice||0);
+  const upRound=nonLease*(+p.takeRound||0)/100*(+p.roundPrice||0);
+  const cont=(+p.members||0)*(+p.memberPrice||0);
+  const back=upBreak+upRepair+upRound;
+  const avgRent=mk.reduce((a,m)=>a+m.share/tot*m.rent,0);
+  const priority=L*Math.min(100,Math.max(0,+p.priorityShare||0))/100*avgRent*(+p.priorityFee||0)/100;
   const partners=(+p.perPartner||0)>0?Lp/p.perPartner:0;
   const soft=partners*(+p.software||0);
   const buildings=(+p.perBuilding||0)>0?L/p.perBuilding:0;
   const units=(+p.turnover||0)>0&&(+p.capture||0)>0?L*12/((+p.turnover/100)*(+p.capture/100)):0;
-  const rev=placeD+placeP+back+soft;
+  const rev=placeD+placeP+back+cont+priority+soft;
   const staff=(+p.revStaff||0)>0?rev/p.revStaff:0;
   const staffCost=staff*(+p.staffCost||0);
   const profit=rev-payout-ad-pulls-staffCost;
   const cash=(ad+pulls+staffCost)*(+p.payback||0);
-  return {avgFee,L,Ld,Lp,Lr,repeat,leadsD,leadsP,leads,ad,pulls,placeD,placeP,payout,back,partners,soft,buildings,units,rev,staff,staffCost,profit,cash,
+  return {avgFee,L,Ld,Lp,Lr,repeat,leadsD,leadsP,leads,ad,pulls,placeD,placeP,payout,back,nonLease,upBreak,upRepair,upRound,cont,priority,partners,soft,buildings,units,rev,staff,staffCost,profit,cash,
     cpLease:Ld>0?ad/Ld:0, margin:rev>0?profit/rev:0, revPerLease:L>0?rev/L:0};
 }
 
@@ -321,7 +341,11 @@ function renderPlan(){
   $("pnl").innerHTML="<tr><th>Line</th><th class=r>Month</th><th>How</th></tr>"+
     row("Placement fees, your renters",usd(r.placeD),n(r.Ld)+" new + "+n(r.Lr)+" repeat leases × "+usd(r.avgFee)+" avg fee")+
     row("Placement fees, partner renters",usd(r.placeP),n(r.Lp)+" leases × "+usd(r.avgFee))+
-    row("Back end (guides, denial help, repair, lawyers)",usd(r.back),n(Math.max(0,r.leads-r.L))+" non-leasing leads × "+plan.take+"% × "+usd(+plan.backPrice))+
+    row("Upsell: denial breakdown",usd(r.upBreak),n(r.nonLease)+" non-leasing leads × "+plan.takeBreak+"% × "+usd(+plan.breakPrice))+
+    row("Upsell: done-for-you repair",usd(r.upRepair),n(r.nonLease)+" × "+plan.take+"% × "+usd(+plan.backPrice))+
+    row("Downsell: first repair round",usd(r.upRound),n(r.nonLease)+" × "+plan.takeRound+"% × "+usd(+plan.roundPrice))+
+    row("Monthly plans",usd(r.cont),n(+plan.members)+" renters × "+usd(+plan.memberPrice)+(+plan.memberPrice?"":" (set a price)"))+
+    row("Building upsell: priority placement",usd(r.priority),plan.priorityShare+"% of leases × "+plan.priorityFee+"% of rent extra"+(+plan.priorityFee?"":" (set a price)"))+
     row("Partner software",usd(r.soft),n(r.partners)+" partners × "+usd(+plan.software))+
     row("Revenue",usd(r.rev),"","total")+
     row("Partner payouts",`<span class=neg>${usd(-r.payout)}</span>`,plan.payout+"% of partner placement fees")+
@@ -338,7 +362,8 @@ function renderPlan(){
     ["Pull cost −$10 (volume price)",{pull:Math.max(0,+plan.pull-10)}],
     ["Cost per lead −$5",{cpl:Math.max(0,+plan.cpl-5)}],
     ["+10 points of leases from partners",{pShare:Math.min(100,+plan.pShare+10)}],
-    ["Back-end buyers +1 point",{take:+plan.take+1}],
+    ["Repair buyers +1 point",{take:+plan.take+1}],
+    ["Denial breakdown buyers +10 points",{takeBreak:+plan.takeBreak+10}],
     ["Repeat rebook +10 points",{rebook:Math.min(100,+plan.rebook+10)}],
     ["Shift 10 points of mix from AZ to CA",{az_share:Math.max(0,+plan.az_share-10),ca_share:+plan.ca_share+10}]
   ].map(([label,ch])=>[label,compute({...plan,...ch}).profit-base]).sort((a,b)=>b[1]-a[1]);
