@@ -141,8 +141,8 @@ Other findings: California referral fees pass through a licensed broker ([ACME](
 |---|---|---|
 | Fee (100% of first month) | $1,550 | ~$2,800 |
 | Ads (CPL $17–38 ÷ 5–10% lead→lease) | $166–$760, mid ~$400 | same |
-| Pulls + checks (10–20 per lease × **assumed** $15) | ~$150–$300 | same |
-| Left before staff | ~$900 | ~$2,150 |
+| Pulls + checks (10–20 per lease × $9 CRS screening, owner-set) | ~$90–$180 | same |
+| Left before staff | ~$1,000 | ~$2,250 |
 
 Staff: Smart City runs ~99 people at ~$1.8M/month (~$18K revenue per person). Same ratio at $3M ≈ 165 people.
 Cash: search ~27 days; fee paid at move-in or 30–90 days later; 60-day refund if the renter leaves. An ad dollar returns in 2–4 months.
