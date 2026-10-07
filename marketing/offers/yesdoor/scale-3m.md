@@ -98,3 +98,19 @@ Owner-set: Yesdoor runs prequal **and** a background check from just an email, s
 1. Renter ads first. They create the list every other avatar buys.
 2. Apartment ads once there is a renter list to show.
 3. Partner ads once placements are proven. Proof of results sells partners.
+
+## Partner pricing (research 2026-10-07)
+
+What the market charges:
+- Renter screening: TransUnion SmartMove $25 / $40 / $49 per report ([SmartMove](https://www.mysmartmove.com/pricing)); RentPrep from $21 ([review](https://fitsmallbusiness.com/rentprep-review)); RentSpree report $39.99–$49.99, PRO $19.99/mo ([saasworthy](https://www.saasworthy.com/product/rentspree/pricing)). All per report. None needs only an email.
+- Referral splits between agents: 20–35%, 25% is the usual start ([AgentFire](https://agentfire.com/?p=131904), [CFA](https://consumerfed.org/wp-content/uploads/2020/09/Real-Estate-Referral-Fees-Report-9-21-20.pdf)). Locators often split 50/50 with their brokerage ([AptAmigo](https://blog.aptamigo.com/locator-commission/)).
+- Brokerage CRM: Follow Up Boss $69/user/mo, $499/mo for 10, $1,000/mo for 30 ([LuxuryPresence](https://www.luxurypresence.com/?p=43368)); kvCORE ~$500+/mo.
+- White-label pricing and apartment-locator franchise fees: not found.
+
+**Recommended partner price (Chris decides):**
+| Tier | Price | Why |
+|---|---|---|
+| Pay per renter | $29 per prequal + background check | Under SmartMove's $40 Plus, and email-only is easier for the renter |
+| Office | $499/mo, up to 50 checks | Same as a 10-seat Follow Up Boss plan |
+| Placement split | Yesdoor keeps 25% of the fee on leases a partner's renter signs through Yesdoor buildings | Standard referral split |
+| White-label | $10,000 entry (Fundhub's partner price) + $499/mo | Matches the existing Fundhub ladder |
