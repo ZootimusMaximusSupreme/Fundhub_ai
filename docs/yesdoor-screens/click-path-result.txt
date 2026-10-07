@@ -1,0 +1,29 @@
+PASS  the broker link (?b=) is remembered as the first touch  ({"kind":"broker","brokerCode":"YD-406203"})
+PASS  home loads real listings (not demo mode)  (6 cards)
+PASS  search filters by city  (6 apartments)
+PASS  listing shows the building's rules and tour hours  (6 rules; Tour hours: Mon 9am–5pm, Tue 9am–5pm, Wed 9am–5pm, Thu 9am–5pm, Fri 9am–5pm, Sat 10am–4pm (Arizona time))
+PASS  pre-screen answers and hands back a renter session  (Likely approved at 2 buildings)
+PASS  income check (sandbox) updates the answer  (Approved up to $2,400 rent)
+PASS  tour booked through public/book with the pre-screen's renterToken  (You are booked at Alder Row Lofts)
+PASS  database: application registered with the building  (Alder Row Lofts, registered)
+PASS  renter portal opens on the same session  (Priya Raman-Sample)
+PASS  database: the renter's first touch is the broker  (broker)
+PASS  the emailed link points at /yesdoor/login.html  (http://127.0.0.1:8899/yesdoor/login.html?t=…)
+PASS  building marks toured
+PASS  building marks applied
+PASS  building marks approved
+PASS  building marks lease signed (dates and rent)
+PASS  moved in earns the fee and issues the invoice  (invoiced)
+PASS  building saves its rules as a new version  (v1 -> v2)
+PASS  building adds a listing  ($1500)
+PASS  staff password login (POST /api/auth/login)  (HTTP 200)
+PASS  staff onboard a building  (target)
+PASS  staff send the fee agreement  (agreement_sent)
+PASS  sandbox e-sign webhook signs it  (HTTP 200 signed; building signed)
+PASS  staff log payment: invoice paid, placement paid  (paid)
+PASS  broker share is held after the building paid  (held $412.5)
+PASS  broker link page shows the shareable ?b= link  (http://127.0.0.1:8899/yesdoor/?b=YD-406203)
+PASS  demo mode still renders (?demo=1)
+PASS  no page errors in the browser
+
+27/27 steps passed
