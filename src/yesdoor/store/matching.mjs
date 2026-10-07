@@ -92,8 +92,8 @@ const CANDIDATE_SELECT = `
          r.eviction_lookback_years, r.criminal_policy, r.confirmed_at,
          l.id AS listing_id, l.unit_label, l.beds, l.rent_cents`;
 
-/* Buildings that may take renters, have rules, and (unless `anyListing`) a listing
-   that passes the renter's filters. `where` and `params` add the area. */
+/* Buildings that may take renters, have rules, and a live listing that passes the
+   renter's filters. `where` and `params` add the area. */
 async function queryCandidates(db, { orgId, where = [], params = [], cap, listingFilters = [], listingParams = [] }) {
   const all = [orgId, ...params, ...listingParams];
   const idx = (n) => `$${n}`;
@@ -169,13 +169,34 @@ export async function loadCandidates(db, { orgId, area, extraBuildingIds = [] })
 
   const have = new Set([...areaRows, ...poolRows].map((r) => r.building_id));
   const missing = [...new Set(extraBuildingIds)].filter((id) => !have.has(id));
-  let extraRows = [];
-  if (missing.length) {
-    extraRows = await queryCandidates(db, {
-      orgId, where: [`b.id = ANY($2::uuid[])`], params: [missing], cap: missing.length
-    });
-  }
+  const extraRows = missing.length ? await queryExtraCandidates(db, { orgId, buildingIds: missing }) : [];
   return { areaRows, poolRows, extraRows };
+}
+
+/* The buildings of a renter's open applications that the searched area did not
+   bring in. They are matched even when they have no live unit right now (the
+   rent is then unknown, so the answer is at best "likely"): a renter with an
+   application there must never silently drop out of the re-check. A building
+   that has since been paused or churned, or can no longer take renters, is not
+   matched at all. */
+async function queryExtraCandidates(db, { orgId, buildingIds }) {
+  return (await db.query(
+    `${CANDIDATE_SELECT}
+       FROM yd_buildings b
+       JOIN LATERAL (
+         SELECT * FROM yd_building_rules x
+          WHERE x.building_id = b.id AND x.org_id = b.org_id
+          ORDER BY x.version DESC LIMIT 1
+       ) r ON true
+       LEFT JOIN LATERAL (
+         SELECT * FROM yd_listings m
+          WHERE m.building_id = b.id AND m.org_id = b.org_id AND m.active
+          ORDER BY m.rent_cents, m.id LIMIT 1
+       ) l ON true
+      WHERE b.org_id = $1 AND b.id = ANY($2::uuid[])
+        AND b.status NOT IN ('paused', 'churned')
+        AND yd_building_is_matchable(b.id)
+      ORDER BY b.id`, [orgId, buildingIds])).rows;
 }
 
 /** yd_state_rules for the org as { STATE: { key: value } }. */
@@ -247,7 +268,7 @@ export function computeMatches({ screening, income, rows, stateRules = {}, now =
     rulesOf.set(r.building_id, r.rules_id);
     infoOf.set(`${r.building_id}|${r.listing_id}`, {
       building: { id: r.building_id, name: r.building_name, address: r.address, city: r.city, state: r.state, isSample: r.is_sample },
-      listing: { id: r.listing_id, unit: r.unit_label, beds: r.beds, rentCents: cents(r.rent_cents) }
+      listing: r.listing_id ? { id: r.listing_id, unit: r.unit_label, beds: r.beds, rentCents: cents(r.rent_cents) } : null
     });
   }
 

@@ -23,6 +23,7 @@
 
 import { YD_PRESCREEN } from "../config.mjs";
 import { toCents } from "../../commissions/money.mjs";
+import { normalizeIp } from "../../auth/session.mjs";
 import { YdError } from "../http.mjs";
 import { createAccountSession } from "../auth/session.mjs";
 import { requestMagicLink } from "../auth/magic-link.mjs";
@@ -141,6 +142,20 @@ async function issueRenterToken(db, { orgId, renter, ip, userAgent }) {
   return { token: s.token, expiresAt: s.expiresAt };
 }
 
+/** How many pre-screens this source address started in the window. Each attempt
+ *  writes its consent rows with the address, so the count needs no new table.
+ *  An unknown address cannot be counted and is not limited. */
+export async function recentPrescreensFrom(db, { orgId, ip, limits = YD_PRESCREEN.ipLimit }) {
+  const addr = normalizeIp(ip);
+  if (!addr) return 0;
+  const r = await db.query(
+    `SELECT count(*)::int AS n FROM yd_consents
+      WHERE org_id = $1 AND kind = 'screening' AND ip = $2::inet
+        AND captured_at > now() - ($3::int * interval '1 minute')`,
+    [orgId, addr, limits.windowMinutes]);
+  return Number(r.rows[0].n);
+}
+
 /** The HTTP answer for a pre-screen outcome: { code, body }. Kept here, next to the
  *  outcomes it maps, so it is tested without a request. */
 export function prescreenResponse(out) {
@@ -165,11 +180,12 @@ export function prescreenResponse(out) {
  * @param {object} p
  * @param {string} p.orgId
  * @param {object} p.body { email, firstName?, lastName?, address, search?, consent, dob?, source? }
+ * @param {string|null} p.sessionRenterId the renter the caller is signed in as, if any
  * @returns {Promise<
  *   | { status: "complete", answer: object, renterToken: string|null, renterTokenExpiresAt: string|null }
  *   | { status: "needs_dob" | "no_match" | "signin_required" | "failed", message: string }>}
  */
-export async function runPrescreen(db, { orgId, body, ip = null, userAgent = null, now = new Date(), providers = DEFAULT_PROVIDERS }) {
+export async function runPrescreen(db, { orgId, body, ip = null, userAgent = null, now = new Date(), providers = DEFAULT_PROVIDERS, sessionRenterId = null }) {
   const b = body && typeof body === "object" ? body : {};
   // Everything is validated before anything is written.
   const email = requireEmail(b.email);
@@ -177,6 +193,10 @@ export async function runPrescreen(db, { orgId, body, ip = null, userAgent = nul
   const address = parseAddress(b.address);
   const dob = parseDob(b.dob, now);
   const search = parseSearch(b.search, address);
+
+  if (await recentPrescreensFrom(db, { orgId, ip }) >= YD_PRESCREEN.ipLimit.maxPerIp) {
+    throw new YdError(429, "too_many_requests", "too many credit checks started from this address; try again later");
+  }
 
   const out = await withTransaction(db, async (tx) => {
     const { renter: found } = await findOrCreateLead(tx, {
@@ -187,8 +207,11 @@ export async function runPrescreen(db, { orgId, body, ip = null, userAgent = nul
       `SELECT * FROM yd_renters WHERE id = $1 AND org_id = $2 FOR UPDATE`, [found.id, orgId])).rows[0];
 
     const acct = await renterAccount(tx, { orgId, renterId: renter.id, email });
+    // A renter who has signed in (or an email that is a building's or a broker's) is
+    // not for a stranger to screen, unless the caller IS that renter, signed in.
     const signedIn = acct && (acct.kind !== "renter" || acct.last_login_at);
-    if (signedIn || await latestCompleteScreening(tx, { orgId, renterId: renter.id })) {
+    const isOwner = Boolean(sessionRenterId) && sessionRenterId === renter.id;
+    if ((signedIn && !isOwner) || await latestCompleteScreening(tx, { orgId, renterId: renter.id })) {
       return { status: "signin_required", message: MESSAGES.signIn };
     }
 

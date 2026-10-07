@@ -572,6 +572,25 @@ describe("yd-recheck (daily)", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, (
     assert.equal(await count("yd_events", "entity_id=$1 AND name='application.match_dropped'", [app]), 1);
   });
 
+  test("an open application at a building with no live unit right now is still re-matched (never silently dropped)", async () => {
+    const b = (await one(
+      `INSERT INTO yd_buildings (org_id, company_id, name, city, state, status) VALUES ($1,$2,'Bare Court','Surprise','AZ','signed') RETURNING id`,
+      [fx.orgA, fx.A.company])).id;
+    await db.query(`INSERT INTO yd_building_rules (org_id, building_id, confirmed_at, min_score, income_multiple, max_evictions, eviction_lookback_years)
+                    VALUES ($1,$2,now(),600,3,1,5)`, [fx.orgA, b]);
+    const a = (await one(`INSERT INTO yd_agreements (org_id, party_kind, party_id, kind, status, terms) VALUES ($1,'building',$2,'building_fee','draft','{}') RETURNING id`, [fx.orgA, b])).id;
+    await db.query(`UPDATE yd_agreements SET status='sent', sent_at=now() WHERE id=$1`, [a]);
+    await db.query(`UPDATE yd_agreements SET status='signed', signed_at=now(), signer_name='Test Signer' WHERE id=$1`, [a]);
+
+    const r = await mkRenter(fx, { ageDays: 40, stage: "booked" });
+    await db.query(`INSERT INTO yd_applications (org_id, renter_id, building_id) VALUES ($1,$2,$3)`, [fx.orgA, r.renter, b]);
+    await recheckSweep(db, { orgId: fx.orgA });
+    const m = await one(`SELECT result, listing_id FROM yd_matches WHERE renter_id=$1 AND building_id=$2`, [r.renter, b]);
+    assert.ok(m, "the booked building was re-matched even with no live unit");
+    assert.equal(m.listing_id, null);
+    assert.equal(m.result, "likely", "rent unknown, so at best likely");
+  });
+
   test("an answer that stays good raises no event", async () => {
     const r = await mkRenter(fx, { ageDays: 40, stage: "booked" });
     const match = (await one(

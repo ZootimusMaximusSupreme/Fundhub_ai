@@ -14,7 +14,12 @@ test("config: the B3b groups are frozen", () => {
 
 test("config: renters must be 18, and the limits are sane", () => {
   assert.equal(YD_PRESCREEN.minRenterAgeYears, 18);
-  for (const v of Object.values(YD_PRESCREEN)) assert.ok(Number.isInteger(v) && v > 0);
+  for (const [k, v] of Object.entries(YD_PRESCREEN)) {
+    if (typeof v === "object") continue;
+    assert.ok(Number.isInteger(v) && v > 0, k);
+  }
+  assert.ok(Object.isFrozen(YD_PRESCREEN.ipLimit));
+  assert.deepEqual(YD_PRESCREEN.ipLimit, { windowMinutes: 60, maxPerIp: 10 });
   for (const v of Object.values(YD_CRON)) assert.ok(Number.isInteger(v) && v > 0);
 });
 

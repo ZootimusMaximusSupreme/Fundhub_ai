@@ -61,7 +61,12 @@ export const YD_PRESCREEN = Object.freeze({
   areaBuildingCap: 100,
   backupPoolCap: 100,
   // Income statement files one request may name (metadata only; nothing is stored but names).
-  incomeFilesMax: 10
+  incomeFilesMax: 10,
+  // A screening is a paid pull once the provider is real, and the door is public.
+  // One source address may start this many in the window (counted from the
+  // consent rows each attempt writes). An office or a household behind one
+  // address fits well inside it.
+  ipLimit: Object.freeze({ windowMinutes: 60, maxPerIp: 10 })
 });
 
 /** What the crons do in one pass. Each pass is bounded: what it does not finish

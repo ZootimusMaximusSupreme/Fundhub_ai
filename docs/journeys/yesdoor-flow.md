@@ -200,6 +200,8 @@ flowchart TD
 - The company is always the deployment's own (`YD_ORG_SLUG`), never a request field. The renter on `me/income` is read off the session, never the body.
 - `public/lead` and `public/prescreen` are public. `me/income` needs a renter session (a staff, building or broker token is refused).
 - A pre-screen is one transaction: consent, screening, matches and the renter's new stage and profile land together or not at all. Two at the same instant for one email: one runs, the other gets `signin_required`.
+- A screening is a paid pull once the provider is real and the door is public, so one source address may start 10 pre-screens an hour (counted from the consent rows, each of which carries the address); the 11th is a 429 and writes nothing. A request that fails validation does not use one up.
+- A renter who has already signed in, or whose email belongs to a building user or broker, cannot be screened by a stranger through this door. The one exception is the renter themselves, signed in and not yet screened, who sends their own session as `Authorization: Bearer`.
 - The date of birth goes to the provider and nowhere else. No table holds it (a test scans every `yd_` table for a planted one).
 - The `renterToken` is a session minted by `src/yesdoor/auth/session.mjs`, returned once, and only after a finished screening. `GET me`, `POST me/income` and (B4) `POST public/book` take it as `Authorization: Bearer`.
 - First touch (an ad id, or an ACTIVE broker's tracking code) is written when the renter row is created. A second visit through another ad or broker changes nothing; the database also refuses an edit. A code that matches no active broker, a stated "broker" with no code, an "ad" with no id, or an unknown kind all become `direct`.
@@ -214,7 +216,7 @@ flowchart TD
     Q -->|yes| A{In the searched city?}
     A -->|yes| AR[Result for the renter: best unit, then lowest rent]
     A -->|no, same state| PO[Backup pool: kept only if APPROVED, top 5 by rent fit, payer score, distance]
-    OA[Building of an open application] --> AR
+    OA[Building of an open application, even with no live unit, if it can still take renters] --> AR
     AR --> RULE[score, income, evictions, criminal, rules freshness]
     RULE --> RES{Any rule fails?}
     RES -->|yes| NO[no]

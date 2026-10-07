@@ -184,6 +184,23 @@ describe("backups", () => {
   });
 });
 
+describe("an open application's building with no live unit", () => {
+  test("is still matched (rent unknown, so at best likely) and shows no unit", () => {
+    const noUnit = { ...row({ building: "booked-no-unit" }), listing_id: null, unit_label: null, beds: null, rent_cents: null };
+    const out = computeMatches({
+      screening: screening(prime), income: income(prime), now: NOW,
+      rows: { areaRows: [row()], poolRows: [], extraRows: [noUnit] }
+    });
+    const m = out.area.find((x) => x.buildingId === "booked-no-unit");
+    assert.ok(m, "the booked building is still re-matched");
+    assert.equal(m.result, "likely");
+    assert.equal(m.listingId, null);
+    assert.equal(m.info.listing, null);
+    assert.equal(renterResultView(m).listing, null);
+    assert.equal(m.reasons.find((r) => r.rule === "income").result, "unknown");
+  });
+});
+
 describe("the renter's view is not a building's view", () => {
   const rows = { areaRows: [row({ name: "Alder Row Lofts" })], poolRows: [row({ city: "Mesa" })], extraRows: [] };
   const out = computeMatches({ screening: screening(prime), income: income(prime), rows, now: NOW });

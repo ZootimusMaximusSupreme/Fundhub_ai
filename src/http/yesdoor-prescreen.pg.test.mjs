@@ -31,7 +31,11 @@ import { publicTokenFor } from "../yesdoor/providers/plaid-sandbox.mjs";
 import { createAccountSession } from "../yesdoor/auth/session.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
-const HEADERS = { "x-forwarded-for": "203.0.113.9", "user-agent": "yd-test" };
+// Every call comes from its own address, so the per-address limit (tested on its own
+// below) never trips the other tests.
+let ipSeq = 0;
+const nextIp = () => `10.${(ipSeq >> 16) & 255}.${(ipSeq >> 8) & 255}.${++ipSeq & 255}`;
+const HEADERS = { "user-agent": "yd-test" };
 const CONSENT = Object.freeze({
   text: "I agree to a soft credit and background check now, and to repeat checks while I am looking.",
   version: "2026-10-07", checked: true
@@ -44,7 +48,8 @@ describe("yesdoor funnel write doors", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
   const one = async (sql, params) => (await q(sql, params))[0];
   const useOrg = (slug) => { process.env.YD_ORG_SLUG = slug; _resetYdOrgCache(); };
 
-  const post = (handler, body, extra = {}) => call(handler, { method: "POST", body, headers: HEADERS, ...extra });
+  const post = (handler, body, extra = {}) =>
+    call(handler, { method: "POST", body, headers: { ...HEADERS, "x-forwarded-for": extra.ip || nextIp() }, ...extra });
   const body = (email, extra = {}) => ({
     email, address: { line1: "1 Sample St", city: "Phoenix", state: "AZ", zip: "85004" },
     search: { city: "Phoenix" }, consent: { ...CONSENT }, ...extra
@@ -266,6 +271,30 @@ describe("yesdoor funnel write doors", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
       assert.equal((await traceOf(email)).renter, false);
     });
 
+    test("a screening is a paid pull and the door is public: one address may start 10 an hour, the 11th is a 429", async () => {
+      const ip = "198.51.100.77";
+      for (let i = 0; i < 10; i++) {
+        const r = await post(prescreen, body(`limit.${i}@example.test`), { ip });
+        assert.equal(r.code, 200, `attempt ${i + 1}: ${JSON.stringify(r.body)}`);
+      }
+      const over = await post(prescreen, body("limit.over@example.test", { dob: "1990-01-01" }), { ip });
+      assert.equal(over.code, 429);
+      assert.equal(over.body.error, "too_many_requests");
+      assert.equal(await renterRow("limit.over@example.test"), undefined, "the refused attempt wrote nothing");
+      // another address is unaffected, and an address we cannot read is not limited
+      assert.equal((await post(prescreen, body("limit.other@example.test"), { ip: "198.51.100.78" })).code, 200);
+      assert.equal((await post(prescreen, body("limit.noip@example.test"), { headers: { "x-forwarded-for": "not an address" } })).code, 200);
+    });
+
+    test("the limit counts attempts, not people: a bad request does not use one up", async () => {
+      const ip = "198.51.100.88";
+      for (let i = 0; i < 12; i++) {
+        const r = await post(prescreen, { ...body(`limit.bad.${i}@example.test`), consent: undefined }, { ip });
+        assert.equal(r.code, 400);
+      }
+      assert.equal((await post(prescreen, body("limit.good@example.test"), { ip })).code, 200);
+    });
+
     test("GET is a 405 with an allow header", async () => {
       const r = await call(prescreen, { method: "GET" });
       assert.equal(r.code, 405);
@@ -326,7 +355,7 @@ describe("yesdoor funnel write doors", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
         assert.equal(c.consent_text, CONSENT.text);
         assert.equal(c.consent_version, CONSENT.version);
         assert.equal(c.method, "checkbox");
-        assert.equal(c.ip, "203.0.113.9");
+        assert.match(c.ip, /^10\.\d+\.\d+\.\d+$/);
         assert.equal(c.user_agent, "yd-test");
       }
 
@@ -771,6 +800,29 @@ describe("yesdoor funnel write doors", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
       const r = await post(prescreen, body(omar.email, { dob: "1985-05-05" }));
       assert.equal(r.body.status, "signin_required");
       assert.equal(await count("yd_screenings", "renter_id=$1", [fx.A.renter2]), 0);
+
+      // another renter's session does not make the caller that renter
+      const other = await createAccountSession(db, { accountId: fx.A.acctRenter, orgId: fx.orgA });
+      const stranger = await post(prescreen, body(omar.email, { dob: "1985-05-05" }), { token: other.token });
+      assert.equal(stranger.body.status, "signin_required");
+      // a building user's session is not a renter's
+      const asBuilding = await post(prescreen, body(omar.email, { dob: "1985-05-05" }), { token: fx.tokens.buildingA });
+      assert.equal(asBuilding.body.status, "signin_required");
+      assert.equal(await count("yd_screenings", "renter_id=$1", [fx.A.renter2]), 0);
+    });
+
+    test("...but that renter, signed in and not screened yet, can run their own pre-screen with their session", async () => {
+      useOrg(fx.slugA);
+      const acct = await one(`SELECT id FROM yd_accounts WHERE org_id=$1 AND renter_id=$2`, [fx.orgA, fx.A.renter2]);
+      const own = await createAccountSession(db, { accountId: acct.id, orgId: fx.orgA });
+      const omar = await one(`SELECT email FROM yd_renters WHERE id=$1`, [fx.A.renter2]);
+      const r = await post(prescreen, body(omar.email, { dob: "1985-05-05" }), { token: own.token });
+      assert.equal(r.body.status, "complete", JSON.stringify(r.body));
+      assert.equal(await count("yd_screenings", "renter_id=$1 AND status='complete'", [fx.A.renter2]), 1);
+      // now there are results, so the public door will not run it a second time, even for them
+      const again = await post(prescreen, body(omar.email, { dob: "1985-05-05" }), { token: own.token });
+      assert.equal(again.body.status, "signin_required");
+      assert.equal(await count("yd_screenings", "renter_id=$1", [fx.A.renter2]), 1);
     });
   });
 
@@ -800,13 +852,19 @@ describe("yesdoor funnel write doors", { skip: !HAVE_DB ? "no DATABASE_URL" : fa
     });
 
     test("no finished screening, no income check: 409 screening_required, nothing written", async () => {
-      // Omar has no screening
-      const token = await sessionFor(fx.A.renter2);
-      const before = await count("yd_income_checks", "renter_id=$1", [fx.A.renter2]);
+      // a renter who only left their name and email: a lead, never screened
+      const lonely = (await one(`INSERT INTO yd_renters (org_id, email) VALUES ($1,'unscreened@example.test') RETURNING id`, [fx.orgA])).id;
+      const token = await sessionFor(lonely);
       const r = await post(income, { method: "plaid", publicToken: "public-sandbox-x" }, { token });
       assert.equal(r.code, 409);
       assert.equal(r.body.error, "screening_required");
-      assert.equal(await count("yd_income_checks", "renter_id=$1", [fx.A.renter2]), before);
+      assert.equal(await count("yd_income_checks", "renter_id=$1", [lonely]), 0);
+      // a no_match is not a finished screening either
+      const consent = await one(`INSERT INTO yd_consents (org_id, renter_id, kind, consent_text, consent_version, method) VALUES ($1,$2,'screening','t','v','checkbox') RETURNING id`, [fx.orgA, lonely]);
+      await db.query(`INSERT INTO yd_screenings (org_id, renter_id, consent_id, kind, provider, status, result_at) VALUES ($1,$2,$3,'initial','crs_sandbox','no_match',now())`, [fx.orgA, lonely, consent.id]);
+      const again = await post(income, { method: "plaid", publicToken: "public-sandbox-x" }, { token });
+      assert.equal(again.code, 409);
+      assert.equal(await count("yd_income_checks", "renter_id=$1", [lonely]), 0);
     });
 
     test("bad input is a 400 and writes nothing", async () => {
