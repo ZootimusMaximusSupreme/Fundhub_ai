@@ -179,7 +179,7 @@ Things only Chris has (can come tomorrow):
 ## 14. CRS, Greystar payment, refunds (research 2026-10-07)
 
 - **CRS:** the tenant screening product needs full name, date of birth, **SSN**, previous address and past landlords ([CRS tenant screening](https://crscreditapi.com/tenant-screening/)). It includes criminal and eviction records ([CRS public records](https://crscreditapi.com/public-record-data/)). The no-SSN soft pull (name, current address, date of birth; "85%+" match on their OffersIQ product) is sold for pre-qualification. It is not stated for tenant screening ([CRS no-SSN](https://crscreditapi.com/soft-pull-without-ssn/)). Prices are not published. API docs: https://crscreditapi.redoc.ly/
-  - **Draft design:** step 1, pre-qualify with no SSN (name, email, address, date of birth): "approved up to $X." Step 2, full screening with SSN only when the renter books a building. Needs Chris's OK, because Chris set "no SSN."
+  - **Owner-set (Chris has a CRS account):** CRS screening does **not** require SSN for Yesdoor's use. The website text above is out of date for this account. No SSN anywhere in the flow.
 - **Greystar pays vendors** by check or ACH through Paymode-X (preferred, about 10 days faster). Vendors are checked through NetVendor. Invoices go through RealPage Spend Management ([Greystar suppliers](https://greystar.com/contact-us/supplier-and-vendor-opportunities/us-supplier-partnerships)). Payment terms: not found.
 - **Locator invoice fields** (secondhand): locator, tenant, property, unit, move-in date, lease term, commission, invoice number and date.
 - **When fees arrive:** often 30–45 days after the lease starts; some pay at move-in, some at 60–90 days ([HAR](https://www.har.com/question/26830_commission-payments-on-leases)).
