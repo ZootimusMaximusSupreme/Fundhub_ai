@@ -69,9 +69,12 @@ What changed from v2: their plug-in is now **share at "See only free/busy" + typ
 
 The setter flow is built (the "Josh" AI setter):
 - The call: `src/workflows/ai-set-01-josh-setter.mjs`. A booking fires a call to confirm the strategy session.
-- The text sequence: `src/workflows/ai-set-03-no-answer-cadence.mjs`. If there's no answer, texts go out at 30 min, 2 hr, and 24 hr.
+- The text sequence: `src/workflows/ai-set-03-no-answer-cadence.mjs`. If there's no answer, text 1 goes right away, text 2 after 30 minutes, and text 3 two hours after that (corrected 2026-10-07 from the code).
 - The 3-way text: `src/workflows/ai-set-04-3way-handoff.mjs`. 15 minutes before the call, a text introduces the advisor (closer) with the meeting link, and a task is opened for the closer.
-- W3's `docs/sops/setter/` was written from Drive and does not start from this built flow.
+- 2026-10-07: `docs/sops/setter/` was rewritten from this built flow (README, call script, video intro, closer handoff; the call script went from 503 lines to 86).
+- **AG-04 "Setter Josh" is `retired` in the live agents table.** So `ai-set-01` does not dial, and `ai-set-03` (which starts from a finished no-answer call) does not start either. Steps 1 and 3 are Chris's by hand until AG-04 goes live again. Not changed.
+- No step in the code is called "warm-up". The nearest built steps are `s-00-welcome`, `s-04b-booking-reminders`, and `s-04c-staff-booked-alert`. The SOP puts Chris's personal video there. Open for Chris: what he means by warm-up.
+- The live text copy lives in `db/seed/015` and `db/seed/295`; the copy in `templates-seed.mjs` is older. Every built text is signed "Josh", and the "3-way text" is one text to the lead, not a group thread.
 
 ## Tasks
 
