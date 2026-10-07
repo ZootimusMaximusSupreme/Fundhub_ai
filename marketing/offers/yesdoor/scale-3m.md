@@ -10,6 +10,14 @@ Board and sources: `ops/workflows/yesdoor-3m-scale-2026-10-07.md`. Every number 
 - California rents run higher than Phoenix, so every California lease raises the fee. That makes the target easier. CA rent and fee figures were not researched yet.
 - Not researched yet: California locator fees, and whether California buildings pay locators at all.
 
+**Owner-set 2026-10-07 (3-way money):** each building pays under its own fee structure. Yesdoor makes money three ways:
+
+1. **Apartments** — placement fee, whatever that building's structure pays (100% of first month is typical; 50–125% seen; some flat).
+2. **Renters** — back end: buyers guides, denial-help tools, lawyer referrals, credit repair.
+3. **Affiliates and brokerage companies** — partners who use the email-only CRS prequal under their own deals. Fundhub's existing partner prices, for reference only (not Yesdoor prices): entry $10,000, add-ons $297/mo and $2,497 (`src/config/offers.mjs`).
+
+Why the third line matters: a brokerage's agents already hold the licence and the building relationships. Each partner brings leases without Yesdoor adding staff or a licence in that city.
+
 ## The answer
 
 - $3M a month = $36M a year. No locator found has confirmed that much. The biggest confirmed one is Smart City at about $22M a year (~$1.8M a month) across 8+ cities. UMoveFree is estimated at ~$2.6M a month.
