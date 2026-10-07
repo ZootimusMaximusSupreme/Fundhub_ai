@@ -21,7 +21,7 @@ Ask (Chris): "Yes door ai scale to 3m/mo insights."
 |---|---|---|---|
 | Y1 | Unit economics: placement fee + back-end LTV (guides, denial tools, lawyers, repair), fee per lease, leases/mo needed, metros needed, margin, cash timing | this session | claimed |
 | Y2 | Market + competitors: Nestra, big locators (Smart City etc.), their revenue, how they scaled | open | claimed |
-| Y3 | Demand: renter ad channels, cost per qualified renter, lead→tour→lease rates | open | claimed |
+| Y3 | Demand: renter ad channels, cost per qualified renter, lead→tour→lease rates | agent | done |
 | Y4 | Supply + licence: signing communities and management companies, fee terms, broker licence by state, listing data feeds | open | claimed |
 | Y5 | Merge Y1–Y4, write report, commit | this session | waits on Y1–Y4 |
 
@@ -65,6 +65,16 @@ Write under "## Y4" on the board. Plain English, numbers with links, "not found"
 ## Y2
 
 ## Y3
+
+Done (agent). Sources are mostly vendor blogs, US averages; Phoenix/Dallas/Houston/Atlanta splits not found.
+
+- Lead → lease 5–10% (best >12%) ([LetHub](https://www.lethub.co/blog/lead-to-lease-conversion-metrics), [DoorLoop](https://www.doorloop.com/blog/lead-to-lease-conversion-rate)). Lead→tour 33–55%, tour→app 46–61%, app→lease 42–80% ([Apartment List](https://www.apartmentlist.com/rental-management/how-to-measure-ai-leasing-performance)). Locator-specific rates: not found.
+- Google rentals: $35.52/lead, $3.10/click ([LuxuryPresence](https://www.luxurypresence.com/blogs/real-estate-paid-advertising-statistics/), [WordStream](https://www.wordstream.com/blog/ws/2021/08/31/real-estate-advertising-benchmarks)) → ~$355–$710 per lease.
+- Meta real estate: $16.61–$38/lead (LuxuryPresence) → ~$166–$760 per lease.
+- TikTok: $4 (one [case study](https://ads.tiktok.com/business/vi/inspiration/rent-social-lead-generation-case-study)) to $15–$45 ([Webtonic](https://www.webtonic.io/blog/real-estate-tiktok-ads-statistics)) → ~$40–$900 per lease. Weakest number.
+- Search takes ~27 days ([Off Campus Partners](https://www.offcampuspartners.com/grow/learning-center/renter-survey-highlights)); start ~2.9 months before move ([Entrata 2024](https://go.entrata.com/rs/223-FOQ-437/images/Resident_Report_2024.pdf?version=0)).
+- Locator channels: SEO, Google, Meta, chatbots; one Austin locator +1,490% leads from local SEO ([Smart Apartment Data](https://smartapartmentdata.com/?p=7854)). Per-locator channel split: not found.
+- Phoenix: 46% of renters moved within two years ([Copper Courier](https://coppercourier.com/politics/page/10)). Monthly move counts: not found.
 
 ## Y4
 
