@@ -149,3 +149,22 @@ Things only Chris has (can come tomorrow):
 12. Brand: which website's structure to start from?
 13. Sending email and text number for Yesdoor (a new domain sender and a new Twilio number)?
 14. Who works the staff queue in week one?
+
+## 12. Chris's answers (2026-10-07, late)
+
+- **Rely on buildings and systems** to confirm tours and applications, not on renters.
+- **Brokers:** an affiliate portal showing whether their renters showed up to booked tours. **No going around Yesdoor:** a signed contract plus first-touch tagging (renter registered with a timestamp before any tour) blocks a broker from cutting Yesdoor out.
+- **Lanes:** launch both together. Same engine, two offers, two avatars.
+- **First market:** Arizona or Southern California, starting with managers' headquarters.
+- **Fee:** the building sets it (usually its locator fee or one month's rent). Large institutions first, smaller ones along the way. The refund window is still open; researched norm is 60 days.
+- **Payment:** wire or ACH. Look up how Greystar pays vendors.
+- **Brand:** like Apartments.com but better. Built at the end. The system comes first.
+- **Order of work (owner-set):**
+  1. avatars
+  2. offers on ACQ
+  3. scrape the full ACQ course
+  4. an outbound strategy grounded in facts
+  5. the pitch, last
+
+  One step at a time.
+- **Sales training:** research the best outbound sales courses; an investor buys one.
