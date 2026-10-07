@@ -1225,7 +1225,7 @@ describe("yesdoor schema guards", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
       await rejects(q(`INSERT INTO yd_state_rules (org_id, state, key, value) VALUES ($1,'California','x','{}')`, [yd]), CHECK);
     });
 
-    test("3 sample companies, 8 sample buildings in the five cities, one rules version each", async () => {
+    test("3 sample companies, 8 sample buildings in the five cities, rules v1 (296) then v2 (297, criminal keys renamed)", async () => {
       const cos = (await q(`SELECT name, is_sample, status FROM yd_companies WHERE org_id=$1`, [yd])).rows;
       assert.equal(cos.length, 3);
       assert.ok(cos.every((c) => c.is_sample === true && c.status === "target"));
@@ -1237,9 +1237,15 @@ describe("yesdoor schema guards", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
       assert.deepEqual([...new Set(bs.map((b) => b.city))].sort(), ["Chandler", "Mesa", "Phoenix", "Scottsdale", "Tempe"]);
       assert.equal(bs.filter((b) => b.second_chance).length, 3);
       assert.equal(bs.filter((b) => b.app_fee_cents === null).length, 1, "one building's application fee is unknown and must stay NULL");
-      const rules = (await q(`SELECT building_id, version, accepts_second_chance, min_score, criminal_policy FROM yd_building_rules WHERE org_id=$1`, [yd])).rows;
+      // 296 wrote version 1; 297 superseded it with version 2 (same numbers, the criminal
+      // keys renamed to the matcher's). Rules are versioned, so both rows stay.
+      const all = (await q(`SELECT building_id, version FROM yd_building_rules WHERE org_id=$1`, [yd])).rows;
+      assert.equal(all.length, 16);
+      assert.ok(all.every((r) => r.version === 1 || r.version === 2));
+      const rules = (await q(`SELECT DISTINCT ON (building_id) building_id, version, accepts_second_chance, min_score, criminal_policy
+                                FROM yd_building_rules WHERE org_id=$1 ORDER BY building_id, version DESC`, [yd])).rows;
       assert.equal(rules.length, 8);
-      assert.ok(rules.every((r) => r.version === 1));
+      assert.ok(rules.every((r) => r.version === 2));
       assert.equal(new Set(rules.map((r) => r.building_id)).size, 8);
       const sc = rules.filter((r) => r.accepts_second_chance);
       assert.equal(sc.length, 3);
