@@ -183,3 +183,15 @@ Model (Scale Engine page, research defaults, CRS $9):
 - ~1,188 buildings, ~844,000 units under contract (45% yearly turnover, Yesdoor fills 15% of their move-ins, assumed). The top 10 managers run ~2.76M units ([NMHC 2026 via Dunn Report](https://thedunnreport.beehiiv.com/p/2026-nmhc-top-owners-managers-and-developers)).
 - Florida rent: Miami $2,761, Tampa $2,025, Orlando $1,838, Jacksonville $1,522 ([RentCafe](https://www.rentcafe.com/average-rent-market-trends/us/fl/miami/)).
 - Who pays locators among the big managers: not found publicly. ALN locator data lists commission per property in AZ, CA, FL.
+
+## Integration: how Yesdoor knows what's available (2026-10-07)
+
+Owner-set: Tier 1 sales led by a hired outbound salesperson ($200,000 a year), Chris closing or co-closing; target 1–2 months to close.
+
+The same pipe Apartments.com uses:
+1. **Listing feed (units, availability, price, fees, specials):** buildings already send a standard listing feed (MITS, now 5.0) from their property software (Yardi, RealPage, Entrata, MRI, AppFolio and others) to listing sites ([Apartments.com help](https://propertyhelp.apartments.com/article/1036-how-do-i-connect-my-listing-to-apartments-com-using-yardi), [apis.io](https://apis.io/providers/apartments-com/)). Yesdoor becomes one more destination; the building turns it on. Entrata verifies a new listing connection in 24–48 hours ([Apartments.com help](https://propertyhelp.apartments.com/article/1035-how-do-i-connect-my-listing-to-apartments-com-using-entrata)).
+2. **Leads back into their system:** each Yesdoor renter lands in the building's software as a guest card with Yesdoor as the source. That doubles as the referral proof.
+3. **Lease status (move-in proof, renewal date):** Entrata `getLeases`; Yardi through its partner program (2 years in business, 3 shared clients, ~$25K per interface a year, [Supergood](https://supergood.ai/api-report-card/yardi-systems)). A Tier 1 client can sponsor that access.
+4. **Small owners with no software:** agents read their website availability, or the owner fixes it in the 3-tap portal.
+
+Greystar runs all three big systems: Yardi Voyager, RealPage OneSite and Entrata Core ([Greystar job posting](https://jobs.greystar.com/job/united-states/technology-services-analyst/35302/89342046880)). So Yesdoor needs connections to all three to cover one Tier 1 client.
