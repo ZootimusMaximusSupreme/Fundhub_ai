@@ -114,7 +114,7 @@ What the market charges:
 |---|---|---|
 | Pay per renter | $29 per prequal + background check | Under SmartMove's $40 Plus, and email-only is easier for the renter |
 | Office | $499/mo, up to 50 checks | Same as a 10-seat Follow Up Boss plan |
-| Placement split | Yesdoor keeps 25% of the fee on leases a partner's renter signs through Yesdoor buildings | Standard referral split |
+| Placement split | The partner gets 25% of the fee on leases its renters sign at Yesdoor buildings; Yesdoor keeps 75% | Standard referral split (referrer gets the share) |
 | White-label | $10,000 entry (Fundhub's partner price) + $499/mo | Matches the existing Fundhub ladder |
 
 ## California + Arizona (research 2026-10-07)

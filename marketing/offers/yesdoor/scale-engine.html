@@ -1,0 +1,459 @@
+<title>Yesdoor Scale Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one operator console. Sticky tab bar, summary strip first, detail below. Front-door green + brass hardware. */
+:root{
+  --paper:#F2F4F1; --card:#FFFFFF; --ink:#17211E; --muted:#5B6964; --line:#D5DBD7;
+  --door:#1E4A43; --door-soft:#E3EDEA; --brass:#946519; --brass-soft:#F4EAD7;
+  --good:#2D7448; --warn:#9A6210; --bad:#AE372B;
+  --display:"Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body:"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --paper:#111715; --card:#18201D; --ink:#E6ECE9; --muted:#9BA8A3; --line:#2A3531;
+  --door:#86C6B9; --door-soft:#1D2D29; --brass:#D6A452; --brass-soft:#2C251A;
+  --good:#6CC28A; --warn:#E0A54A; --bad:#EE7D70; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#111715; --card:#18201D; --ink:#E6ECE9; --muted:#9BA8A3; --line:#2A3531;
+  --door:#86C6B9; --door-soft:#1D2D29; --brass:#D6A452; --brass-soft:#2C251A;
+  --good:#6CC28A; --warn:#E0A54A; --bad:#EE7D70; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--paper);color:var(--ink);font:15px/1.55 var(--body);padding-inline:16px;padding-block:0 48px}
+.wrap{max-width:1120px;margin:0 auto}
+header.top{padding-block:28px 14px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+h1{font:800 clamp(28px,4.4vw,40px)/1.05 var(--display);letter-spacing:-.02em;margin:0;text-wrap:balance}
+h1 span{color:var(--brass)}
+.sub{color:var(--muted);margin:6px 0 0;max-width:62ch}
+.target{font:500 13px var(--mono);color:var(--door);background:var(--door-soft);padding:6px 10px;border-radius:6px}
+nav.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--paper);display:flex;gap:4px;border-bottom:1px solid var(--line);overflow-x:auto;margin-bottom:22px}
+nav.tabs button{font:600 14px var(--body);color:var(--muted);background:none;border:0;border-bottom:3px solid transparent;padding:12px 14px;cursor:pointer;white-space:nowrap}
+nav.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--brass)}
+nav.tabs button:focus-visible,button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+h2{font:700 21px/1.2 var(--display);margin:0 0 4px;text-wrap:balance}
+h3{font:600 13px var(--body);text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 10px}
+.note{color:var(--muted);font-size:13px;margin:0}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+section.panel{display:grid;gap:22px}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.strip div{background:var(--card);padding:14px 16px;min-width:0}
+.strip b{display:block;font:600 22px/1.15 var(--mono);font-variant-numeric:tabular-nums}
+.strip small{color:var(--muted);font-size:12px}
+.strip .hero{background:var(--door);color:var(--paper)}
+.strip .hero small{color:var(--door-soft)}
+.cols{display:grid;grid-template-columns:minmax(0,340px) minmax(0,1fr);gap:22px;align-items:start}
+@media (max-width:860px){.cols{grid-template-columns:minmax(0,1fr)}}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+fieldset{border:0;padding:0;margin:0 0 14px;display:grid;gap:8px}
+legend{font:600 12px var(--body);text-transform:uppercase;letter-spacing:.07em;color:var(--brass);margin-bottom:6px}
+label.f{display:grid;grid-template-columns:minmax(0,1fr) 92px;gap:8px;align-items:center;font-size:13px}
+label.f em{display:block;font-style:normal;color:var(--muted);font-size:11px}
+input[type=number],input[type=week]{width:100%;font:500 14px var(--mono);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:6px 8px}
+.mk{display:grid;grid-template-columns:44px repeat(3,minmax(0,1fr));gap:6px;align-items:center;font-size:12px}
+.mk span{color:var(--muted)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 11px var(--body);text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+td.r,th.r{text-align:right}
+.scroll{overflow-x:auto}
+tr.total td{font-weight:600;border-top:2px solid var(--ink)}
+.neg{color:var(--bad)}
+.lever{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:14px}
+.lever:last-child{border-bottom:0}
+.lever b{color:var(--good)}
+.tracks{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.track h2{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.track h2 small{font:500 12px var(--mono);color:var(--brass)}
+ol.steps{list-style:none;margin:12px 0 0;padding:0;counter-reset:s}
+ol.steps li{counter-increment:s;position:relative;padding:0 0 14px 34px;min-width:0}
+ol.steps li::before{content:counter(s);position:absolute;left:0;top:0;width:22px;height:22px;border-radius:50%;background:var(--door-soft);color:var(--door);font:600 11px/22px var(--mono);text-align:center}
+ol.steps li::after{content:"";position:absolute;left:10.5px;top:24px;bottom:2px;width:1px;background:var(--line)}
+ol.steps li:last-child::after{display:none}
+ol.steps strong{display:block;font-size:14px}
+ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
+.chip{display:inline-block;font:600 10.5px var(--body);letter-spacing:.05em;text-transform:uppercase;padding:2px 7px;border-radius:999px;margin-left:6px;vertical-align:1px}
+.c-auto{background:var(--door-soft);color:var(--door)}
+.c-staff{background:var(--brass-soft);color:var(--brass)}
+.c-them{background:transparent;border:1px solid var(--line);color:var(--muted)}
+.loop{margin-top:4px;font-size:12.5px;color:var(--door);font-weight:600}
+.pill{font:600 11px var(--body);padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-good{color:var(--good);border:1px solid var(--good)}
+.p-warn{color:var(--warn);border:1px solid var(--warn)}
+.p-bad{color:var(--bad);border:1px solid var(--bad)}
+.p-none{color:var(--muted);border:1px solid var(--line)}
+.grid-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px 14px}
+.grid-form label{display:grid;gap:4px;font-size:12.5px;color:var(--muted)}
+.btn{font:600 14px var(--body);background:var(--door);color:var(--paper);border:0;border-radius:7px;padding:9px 16px;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--door);border:1px solid var(--door)}
+.btn:disabled{opacity:.5;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.status{font-size:13px;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:10px;padding:22px;text-align:center;color:var(--muted)}
+.phases{display:grid;gap:12px}
+.phase{display:grid;grid-template-columns:120px minmax(0,1fr) minmax(0,260px);gap:16px;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+@media (max-width:760px){.phase{grid-template-columns:minmax(0,1fr)}}
+.phase .when{font:600 13px var(--mono);color:var(--brass)}
+.phase .gate{background:var(--door-soft);border-radius:8px;padding:10px 12px;font-size:13px}
+.phase .gate b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--door);margin-bottom:4px}
+.phase ul{margin:6px 0 0;padding-left:18px;font-size:14px}
+.src{font-size:11px;color:var(--muted)}
+@media (prefers-reduced-motion:no-preference){.strip b{transition:color .2s}}
+</style>
+
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>Yesdoor <span>Scale Engine</span></h1>
+    <p class="sub">Every renter, client, building and broker moves through one tracked path. Change any number on the left and the whole plan recalculates.</p>
+  </div>
+  <div class="target" id="targetBadge">Target: 2,000 leases a month · AZ · CA · FL</div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button role="tab" id="t-plan" aria-selected="true" aria-controls="plan">Money plan</button>
+  <button role="tab" id="t-onboard" aria-selected="false" aria-controls="onboard">Onboarding paths</button>
+  <button role="tab" id="t-score" aria-selected="false" aria-controls="score">Weekly scoreboard</button>
+  <button role="tab" id="t-phases" aria-selected="false" aria-controls="phases">Launch phases</button>
+</nav>
+
+<!-- PLAN -->
+<section class="panel" id="plan" role="tabpanel" aria-labelledby="t-plan">
+  <div class="strip" id="strip"></div>
+  <div class="cols">
+    <form class="box" id="inputs" autocomplete="off">
+      <fieldset><legend>Target</legend>
+        <label class="f">Leases a month<input type="number" id="leaseTarget" step="50" min="0"></label>
+      </fieldset>
+      <fieldset><legend>Markets</legend>
+        <div class="mk"><span></span><span>Share %</span><span>Rent $</span><span>Fee %</span></div>
+        <div class="mk"><b>AZ</b><input type="number" id="az_share" aria-label="Arizona share"><input type="number" id="az_rent" aria-label="Arizona rent"><input type="number" id="az_fee" aria-label="Arizona fee"></div>
+        <div class="mk"><b>CA</b><input type="number" id="ca_share" aria-label="California share"><input type="number" id="ca_rent" aria-label="California rent"><input type="number" id="ca_fee" aria-label="California fee"></div>
+        <div class="mk"><b>FL</b><input type="number" id="fl_share" aria-label="Florida share"><input type="number" id="fl_rent" aria-label="Florida rent"><input type="number" id="fl_fee" aria-label="Florida fee"></div>
+        <p class="src">Phoenix $1,550 and LA/San Diego ~$2,800 rent: city averages, 2026. Fee: 100% of first month is typical, CA 48–100%. Florida not researched yet: enter rent and fee before giving it a share.</p>
+      </fieldset>
+      <fieldset><legend>Renter ads</legend>
+        <label class="f">Cost per lead $<em>US range $17–38</em><input type="number" id="cpl" step="1"></label>
+        <label class="f">Lead → lease %<em>5–10% is healthy</em><input type="number" id="conv" step="0.5"></label>
+        <label class="f">Pull + check per lead $<em>$32 = current CRS pull</em><input type="number" id="pull" step="1"></label>
+      </fieldset>
+      <fieldset><legend>Partners (brokers, affiliates)</legend>
+        <label class="f">Share of leases from partners %<em>assumed</em><input type="number" id="pShare" step="5"></label>
+        <label class="f">Leases per partner a month<em>assumed</em><input type="number" id="perPartner" step="1"></label>
+        <label class="f">Partner payout %<em>20–35% referral norm</em><input type="number" id="payout" step="1"></label>
+        <label class="f">Software $ per partner a month<em>office tier</em><input type="number" id="software" step="10"></label>
+      </fieldset>
+      <fieldset><legend>Buildings</legend>
+        <label class="f">Leases per building a month<em>assumed</em><input type="number" id="perBuilding" step="1"></label>
+      </fieldset>
+      <fieldset><legend>Renter back end (clients)</legend>
+        <label class="f">Non-leasing leads who buy %<em>assumed: measure in Phoenix</em><input type="number" id="take" step="0.5"></label>
+        <label class="f">Revenue per buyer $<em>repair done-for-you $1,000</em><input type="number" id="backPrice" step="50"></label>
+      </fieldset>
+      <fieldset><legend>Team and cash</legend>
+        <label class="f">Revenue per staff a month $<em>Smart City ≈ $18K</em><input type="number" id="revStaff" step="1000"></label>
+        <label class="f">Cost per staff a month $<em>assumed, loaded</em><input type="number" id="staffCost" step="500"></label>
+        <label class="f">Months until fees arrive<em>2–4</em><input type="number" id="payback" step="0.5"></label>
+      </fieldset>
+      <div class="row">
+        <button class="btn" type="button" id="savePlan" disabled>Save as team target</button>
+        <button class="btn ghost" type="button" id="resetPlan">Reset to research numbers</button>
+      </div>
+      <p class="status" id="planStatus">The scoreboard compares each week to the saved target.</p>
+    </form>
+
+    <div style="display:grid;gap:22px;min-width:0">
+      <div class="box">
+        <h3>Monthly profit and loss</h3>
+        <div class="scroll"><table id="pnl"></table></div>
+      </div>
+      <div class="box">
+        <h3>What it takes each month</h3>
+        <div class="scroll"><table id="needs"></table></div>
+      </div>
+      <div class="box">
+        <h3>What moves profit most</h3>
+        <div id="levers"></div>
+        <p class="note" style="margin-top:8px">Each line changes one number and leaves the rest as set.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ONBOARDING -->
+<section class="panel" id="onboard" role="tabpanel" aria-labelledby="t-onboard" hidden>
+  <div>
+    <h2>Four paths, one record each</h2>
+    <p class="note">Each step is an event the system logs, with a timestamp and the proof attached. <span class="chip c-auto">Auto</span> runs without a person. <span class="chip c-staff">Staff</span> needs a licensed agent or ops. <span class="chip c-them">Them</span> waits on the building, broker or renter.</p>
+  </div>
+  <div class="tracks" id="tracks"></div>
+</section>
+
+<!-- SCOREBOARD -->
+<section class="panel" id="score" role="tabpanel" aria-labelledby="t-score" hidden>
+  <div>
+    <h2>Weekly scoreboard</h2>
+    <p class="note">One row per week. Shared with everyone who opens this page. Targets are the saved plan divided by 4.33 weeks.</p>
+  </div>
+  <div class="box">
+    <h3>Log a week</h3>
+    <form id="weekForm" class="grid-form" autocomplete="off">
+      <label>Week<input type="week" id="w_week" required></label>
+      <label>Renter leads<input type="number" id="w_leads" min="0"></label>
+      <label>Consented + pulled<input type="number" id="w_pulled" min="0"></label>
+      <label>Registered with buildings<input type="number" id="w_registered" min="0"></label>
+      <label>Leases signed<input type="number" id="w_leases" min="0"></label>
+      <label>Moved in<input type="number" id="w_moved" min="0"></label>
+      <label>Fees collected $<input type="number" id="w_fees" min="0"></label>
+      <label>Avg days to get paid<input type="number" id="w_days" min="0"></label>
+      <label>Refunds (left inside 60 days)<input type="number" id="w_refunds" min="0"></label>
+      <label>Ad spend $<input type="number" id="w_spend" min="0"></label>
+      <label>Back-end sales $<input type="number" id="w_back" min="0"></label>
+      <label>Buildings signed<input type="number" id="w_bSigned" min="0"></label>
+      <label>Buildings live<input type="number" id="w_bLive" min="0"></label>
+      <label>Partners signed<input type="number" id="w_pSigned" min="0"></label>
+      <label>Partners active<input type="number" id="w_pActive" min="0"></label>
+    </form>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" type="button" id="saveWeek" disabled>Save week</button>
+      <span class="status" id="weekStatus">Connecting to the shared scoreboard…</span>
+    </div>
+  </div>
+  <div class="box">
+    <h3>Weeks</h3>
+    <div id="weeksOut"><div class="empty">No weeks logged yet. Log the first week above. Leads, leases, fees and ad spend are enough to start.</div></div>
+  </div>
+</section>
+
+<!-- PHASES -->
+<section class="panel" id="phases" role="tabpanel" aria-labelledby="t-phases" hidden>
+  <div>
+    <h2>Launch phases</h2>
+    <p class="note">Each phase unlocks when its gate is met on the scoreboard. Gates are starting numbers for you to tune.</p>
+  </div>
+  <div class="phases" id="phaseList"></div>
+</section>
+</div>
+
+<script>
+(function(){
+const DEFAULTS={leaseTarget:2000,
+  az_share:50,az_rent:1550,az_fee:100,
+  ca_share:50,ca_rent:2800,ca_fee:75,
+  fl_share:0,fl_rent:0,fl_fee:100,
+  cpl:27,conv:7.5,pull:32,
+  pShare:30,perPartner:3,payout:25,software:499,
+  perBuilding:4,take:2.5,backPrice:1000,
+  revStaff:18000,staffCost:6000,payback:3};
+const KEYS=Object.keys(DEFAULTS);
+let plan={...DEFAULTS};
+let savedPlan=null;
+
+const $=id=>document.getElementById(id);
+const usd=v=>{const a=Math.abs(v),s=v<0?"−":"";if(a>=1e6)return s+"$"+(a/1e6).toFixed(2)+"M";if(a>=1e4)return s+"$"+Math.round(a/1e3)+"K";return s+"$"+Math.round(a).toLocaleString()};
+const n=v=>Math.round(v).toLocaleString();
+
+function compute(p){
+  const mk=[["az"],["ca"],["fl"]].map(([k])=>({share:Math.max(0,+p[k+"_share"]||0),rent:+p[k+"_rent"]||0,fee:+p[k+"_fee"]||0}));
+  const tot=mk.reduce((a,m)=>a+m.share,0)||1;
+  const avgFee=mk.reduce((a,m)=>a+m.share/tot*m.rent*m.fee/100,0);
+  const L=Math.max(0,+p.leaseTarget||0), conv=Math.max(.1,+p.conv||0)/100;
+  const Lp=L*Math.min(100,Math.max(0,+p.pShare||0))/100, Ld=L-Lp;
+  const leadsD=Ld/conv, leadsP=Lp/conv, leads=leadsD+leadsP;
+  const ad=leadsD*(+p.cpl||0);
+  const pulls=leads*(+p.pull||0);
+  const placeD=Ld*avgFee, placeP=Lp*avgFee;
+  const payout=placeP*(+p.payout||0)/100;
+  const back=Math.max(0,leads-L)*(+p.take||0)/100*(+p.backPrice||0);
+  const partners=(+p.perPartner||0)>0?Lp/p.perPartner:0;
+  const soft=partners*(+p.software||0);
+  const buildings=(+p.perBuilding||0)>0?L/p.perBuilding:0;
+  const rev=placeD+placeP+back+soft;
+  const staff=(+p.revStaff||0)>0?rev/p.revStaff:0;
+  const staffCost=staff*(+p.staffCost||0);
+  const profit=rev-payout-ad-pulls-staffCost;
+  const cash=(ad+pulls+staffCost)*(+p.payback||0);
+  return {avgFee,L,Ld,Lp,leadsD,leadsP,leads,ad,pulls,placeD,placeP,payout,back,partners,soft,buildings,rev,staff,staffCost,profit,cash,
+    cpLease:Ld>0?ad/Ld:0, margin:rev>0?profit/rev:0};
+}
+
+function readInputs(){KEYS.forEach(k=>{const el=$(k);if(el)plan[k]=el.value===""?0:+el.value});}
+function writeInputs(p){KEYS.forEach(k=>{const el=$(k);if(el)el.value=p[k]});}
+
+function renderPlan(){
+  const r=compute(plan);
+  $("targetBadge").textContent="Target: "+n(r.L)+" leases a month · AZ · CA · FL";
+  $("strip").innerHTML=
+    `<div class="hero"><small>Revenue a month</small><b>${usd(r.rev)}</b></div>`+
+    `<div><small>Profit a month</small><b class="${r.profit<0?"neg":""}">${usd(r.profit)}</b></div>`+
+    `<div><small>Ad spend a month</small><b>${usd(r.ad)}</b></div>`+
+    `<div><small>Buildings live</small><b>${n(r.buildings)}</b></div>`+
+    `<div><small>Active partners</small><b>${n(r.partners)}</b></div>`+
+    `<div><small>Cash to carry</small><b>${usd(r.cash)}</b></div>`;
+  const row=(a,b,c,cls)=>`<tr class="${cls||""}"><td>${a}</td><td class="r num">${b}</td><td class="note">${c||""}</td></tr>`;
+  $("pnl").innerHTML="<tr><th>Line</th><th class=r>Month</th><th>How</th></tr>"+
+    row("Placement fees, your renters",usd(r.placeD),n(r.Ld)+" leases × "+usd(r.avgFee)+" avg fee")+
+    row("Placement fees, partner renters",usd(r.placeP),n(r.Lp)+" leases × "+usd(r.avgFee))+
+    row("Back end (guides, denial help, repair, lawyers)",usd(r.back),n(Math.max(0,r.leads-r.L))+" non-leasing leads × "+plan.take+"% × "+usd(+plan.backPrice))+
+    row("Partner software",usd(r.soft),n(r.partners)+" partners × "+usd(+plan.software))+
+    row("Revenue",usd(r.rev),"","total")+
+    row("Partner payouts",`<span class=neg>${usd(-r.payout)}</span>`,plan.payout+"% of partner placement fees")+
+    row("Renter ads",`<span class=neg>${usd(-r.ad)}</span>`,n(r.leadsD)+" leads × "+usd(+plan.cpl)+" · "+usd(r.cpLease)+" per lease")+
+    row("Credit pulls + background checks",`<span class=neg>${usd(-r.pulls)}</span>`,n(r.leads)+" leads × "+usd(+plan.pull))+
+    row("Team",`<span class=neg>${usd(-r.staffCost)}</span>`,n(r.staff)+" people × "+usd(+plan.staffCost))+
+    row("Profit",usd(r.profit),Math.round(r.margin*100)+"% of revenue","total");
+  $("needs").innerHTML="<tr><th>What</th><th class=r>Month</th><th class=r>Week</th></tr>"+
+    [["Renter leads (yours)",r.leadsD],["Renter leads (from partners)",r.leadsP],["Credit pulls",r.leads],["Leases signed",r.L],["Buildings live",r.buildings,1],["Active partners",r.partners,1],["Team",r.staff,1]]
+    .map(([a,v,flat])=>`<tr><td>${a}</td><td class="r num">${n(v)}</td><td class="r num">${flat?"—":n(v/4.33)}</td></tr>`).join("");
+  const base=r.profit;
+  const tries=[
+    ["Lead → lease +1 point",{conv:+plan.conv+1}],
+    ["Pull cost −$10 (volume price)",{pull:Math.max(0,+plan.pull-10)}],
+    ["Cost per lead −$5",{cpl:Math.max(0,+plan.cpl-5)}],
+    ["+10 points of leases from partners",{pShare:Math.min(100,+plan.pShare+10)}],
+    ["Back-end buyers +1 point",{take:+plan.take+1}],
+    ["Shift 10 points of mix from AZ to CA",{az_share:Math.max(0,+plan.az_share-10),ca_share:+plan.ca_share+10}]
+  ].map(([label,ch])=>[label,compute({...plan,...ch}).profit-base]).sort((a,b)=>b[1]-a[1]);
+  $("levers").innerHTML=tries.map(([l,d])=>`<div class="lever"><span>${l}</span><span class="num ${d<0?"neg":""}">${d>=0?"<b>+"+usd(d)+"</b>":usd(d)}</span></div>`).join("");
+  renderPhases(); renderWeeks();
+}
+
+/* ---------- Onboarding paths ---------- */
+const TRACKS=[
+ {name:"Renters",tag:"tenant",steps:[
+  ["Lead","Email entered. Ad id or partner link code saved with it.","auto"],
+  ["Consent and pull","Renter clicks “I authorize…”. Soft pull and background check run. Consent text and time stored.","auto"],
+  ["Matched","Approval odds per building. Shortlist sent by email and text.","auto"],
+  ["Registered with building","Renter sent to the building before any tour, with Yesdoor as the only referral source. Timestamped proof.","auto"],
+  ["Toured","Building or renter confirms the tour.","them"],
+  ["Applied","Yesdoor checked as the referral source on the application.","staff"],
+  ["Lease signed","Confirmed by the building or by Entrata lease status.","them"],
+  ["Moved in","Move-in confirmed. Invoice goes to the building the same day.","auto"],
+  ["Fee paid","Payment logged with days-to-pay. Partner commission marked earned.","staff"],
+  ["Safe at 60 days","No refund owed. Partner payout released.","auto"]],
+  loop:"Low odds or denied → Clients path"},
+ {name:"Clients",tag:"back end",steps:[
+  ["Low odds or denied","Reasons shown from their own file: score, collections, evictions.","auto"],
+  ["Denial breakdown","Plain read of what blocks them and what fixes it.","auto"],
+  ["Fix started","Buyers guide, repair first round, or lawyer referral for evictions and collections.","staff"],
+  ["Full repair","Done-for-you repair plan running.","staff"],
+  ["Re-pull","New soft pull shows the change.","auto"],
+  ["Re-matched","Back on the Renters path at Matched. A fixed client becomes a lease.","auto"]],
+  loop:"Re-matched → Renters path, step 3"},
+ {name:"Apartments",tag:"supply",steps:[
+  ["Target","On the list: units, management company, software (Yardi, Entrata, other).","staff"],
+  ["Pitched","Shown how many pre-qualified renters want this building.","staff"],
+  ["Agreement signed","Fee terms, 60-day refund, pay terms, how renters are registered.","them"],
+  ["Live","Units and availability connected. Registration email tested.","auto"],
+  ["First renter registered","First timestamped registration sent.","auto"],
+  ["First lease","First signed lease confirmed.","them"],
+  ["First invoice paid","Days-to-pay recorded.","them"],
+  ["Payer score","On time: more renters routed here. Slow: fewer, and collections follows up.","auto"],
+  ["Portfolio deal","The whole management company signs one agreement.","staff"]]},
+ {name:"Brokers and affiliates",tag:"partners",steps:[
+  ["Lead","From a partner ad or outreach.","auto"],
+  ["Free test","Run on their own renter leads. They see the approval odds.","auto"],
+  ["Plan picked","Software only ($29 per renter, $499 a month), or a licensed placement split.","them"],
+  ["Licence checked","Split partners only: AZ, CA or FL licence number verified.","staff"],
+  ["Agreement signed","Payout %, 60-day hold, link codes.","them"],
+  ["Link codes issued","Every renter they send is tagged to them.","auto"],
+  ["First renter","First tagged renter pulled.","auto"],
+  ["First lease","First tagged lease signed.","them"],
+  ["First payout","Paid after the building pays and the 60-day hold clears.","staff"],
+  ["Active","Sending renters every week.","auto"]]}
+];
+function renderTracks(){
+  const chip={auto:'<span class="chip c-auto">Auto</span>',staff:'<span class="chip c-staff">Staff</span>',them:'<span class="chip c-them">Them</span>'};
+  $("tracks").innerHTML=TRACKS.map(t=>{
+    const autoN=t.steps.filter(s=>s[2]==="auto").length;
+    return `<div class="box track"><h2>${t.name}<small>${autoN}/${t.steps.length} auto</small></h2>
+      <ol class="steps">${t.steps.map(s=>`<li><strong>${s[0]}${chip[s[2]]}</strong><p>${s[1]}</p></li>`).join("")}</ol>
+      ${t.loop?`<div class="loop">↻ ${t.loop}</div>`:""}</div>`}).join("");
+}
+
+/* ---------- Phases ---------- */
+function renderPhases(){
+  const r=compute(savedPlan||plan);
+  const P=[
+    ["Weeks 1–2","Phoenix renter test",["Renter ads only, free odds, no fee asked","Measure cost per lead, lead → lease, back-end buyers"],"500 renters pulled · cost per lead ≤ $38"],
+    ["Weeks 3–6","Sign Phoenix buildings",["Pitch with the renter list in hand","Registration + invoice running for every lease"],"40 buildings live · 25 fees paid · avg days to get paid ≤ 60"],
+    ["Months 2–3","California",["Los Angeles and San Diego first: highest fee per lease","Same paths, CA background-check notices on"],"200 leases a month across AZ + CA · cost per lease ≤ $500"],
+    ["Months 3–5","Partners",["Partner ads to brokers and affiliates","Software tiers + licensed splits"],"50 active partners"],
+    ["Months 5+","Portfolio deals and Florida",["Management companies sign once for every building","Florida after its rents and fees are researched"],`${n(r.L)} leases a month · ${n(r.buildings)} buildings · ${n(r.partners)} partners`]
+  ];
+  $("phaseList").innerHTML=P.map(p=>`<div class="phase"><div class="when">${p[0]}</div><div><h2>${p[1]}</h2><ul>${p[2].map(x=>`<li>${x}</li>`).join("")}</ul></div><div class="gate"><b>Gate</b>${p[3]}</div></div>`).join("");
+}
+
+/* ---------- Scoreboard ---------- */
+let db=null, weeks=[];
+const WF=["leads","pulled","registered","leases","moved","fees","days","refunds","spend","back","bSigned","bLive","pSigned","pActive"];
+function pill(actual,target,higherIsBetter=true){
+  if(!(target>0)||actual==null)return '<span class="pill p-none">no target</span>';
+  const ratio=higherIsBetter?actual/target:target/Math.max(actual,1e-9);
+  if(ratio>=1)return '<span class="pill p-good">on target</span>';
+  if(ratio>=.8)return '<span class="pill p-warn">close</span>';
+  return '<span class="pill p-bad">behind</span>';
+}
+function renderWeeks(){
+  if(!weeks.length)return;
+  const r=compute(savedPlan||plan), wk=v=>v/4.33;
+  const rows=weeks.map(w=>{
+    const cpl=w.leads?w.spend/w.leads:null, l2l=w.leads?w.leases/w.leads*100:null;
+    return `<tr><td class="num">${w.id}</td>
+      <td class="r num">${n(w.leads||0)}</td><td class="r num">${n(w.leases||0)} ${pill(w.leases||0,wk(r.L))}</td>
+      <td class="r num">${l2l==null?"—":l2l.toFixed(1)+"%"}</td>
+      <td class="r num">${cpl==null?"—":usd(cpl)} ${cpl==null?"":pill(cpl,+(savedPlan||plan).cpl,false)}</td>
+      <td class="r num">${usd(w.fees||0)}</td><td class="r num">${w.days?n(w.days):"—"}</td>
+      <td class="r num">${usd(w.back||0)}</td><td class="r num">${n(w.bLive||0)}</td><td class="r num">${n(w.pActive||0)}</td></tr>`}).join("");
+  $("weeksOut").innerHTML=`<div class="scroll"><table><tr><th>Week</th><th class=r>Leads</th><th class=r>Leases</th><th class=r>Lead→lease</th><th class=r>Cost/lead</th><th class=r>Fees in</th><th class=r>Days to pay</th><th class=r>Back end</th><th class=r>Bldgs live</th><th class=r>Partners</th></tr>${rows}</table></div>
+  <p class="note" style="margin-top:8px">Weekly lease target: ${n(wk(r.L))}. Pick a logged week in the form to edit it.</p>`;
+}
+function fillWeekForm(id){
+  const w=weeks.find(x=>x.id===id); WF.forEach(f=>{$("w_"+f).value=w&&w[f]!=null?w[f]:""});
+}
+async function startDb(){
+  try{ db=await window.claude?.use?.("db"); }catch(e){ db=null; }
+  if(!db){ $("weekStatus").textContent="The shared scoreboard is not available in this view. The money plan still works."; return; }
+  let canWrite=true;
+  try{ const u=await window.claude.use("user"); const c=u&&u.can?await u.can("data.write"):null; if(c===false)canWrite=false; }catch(e){}
+  $("saveWeek").disabled=!canWrite; $("savePlan").disabled=!canWrite;
+  $("weekStatus").textContent=canWrite?"Saved weeks are shared with everyone who opens this page.":"You can read the scoreboard. Ask the owner for edit access to log weeks.";
+  db.collection("weeks").orderBy("id","desc").limit(104).onSnapshot(s=>{
+    weeks=s.docs.map(d=>({...d.data()}));
+    renderWeeks();
+  },()=>{$("weekStatus").textContent="The scoreboard stopped updating. Reload the page.";});
+  db.doc("config/plan").onSnapshot(s=>{
+    if(s.exists){ savedPlan={...DEFAULTS,...s.data()}; $("planStatus").textContent="A team target is saved. The scoreboard and phases use it."; renderPhases(); renderWeeks(); }
+  },()=>{});
+}
+$("saveWeek").addEventListener("click",async()=>{
+  const id=$("w_week").value;
+  if(!/^\d{4}-W\d{2}$/.test(id)){ $("weekStatus").textContent="Pick a week first."; return; }
+  const doc={id,updatedAt:new Date().toISOString()};
+  WF.forEach(f=>{const v=$("w_"+f).value; if(v!=="")doc[f]=+v;});
+  $("saveWeek").disabled=true; $("weekStatus").textContent="Saving…";
+  try{ await db.doc("weeks/"+id).set(doc); $("weekStatus").textContent="Saved "+id+"."; }
+  catch(e){ $("weekStatus").textContent=e&&e.code==="invalid_argument"?"You don't have edit access to the scoreboard.":"Could not save. Try again in a moment."; }
+  $("saveWeek").disabled=false;
+});
+$("w_week").addEventListener("change",e=>fillWeekForm(e.target.value));
+$("savePlan").addEventListener("click",async()=>{
+  readInputs(); $("savePlan").disabled=true;
+  try{ await db.doc("config/plan").set({...plan,savedAt:new Date().toISOString()}); $("planStatus").textContent="Saved as the team target."; }
+  catch(e){ $("planStatus").textContent="Could not save the target. You may not have edit access."; }
+  $("savePlan").disabled=false;
+});
+$("resetPlan").addEventListener("click",()=>{plan={...DEFAULTS};writeInputs(plan);renderPlan();});
+
+/* ---------- Tabs ---------- */
+const tabs=[["t-plan","plan"],["t-onboard","onboard"],["t-score","score"],["t-phases","phases"]];
+function show(id){tabs.forEach(([t,p])=>{const on=p===id;$(t).setAttribute("aria-selected",on);$(p).hidden=!on;});}
+tabs.forEach(([t,p])=>$(t).addEventListener("click",()=>{show(p);try{history.replaceState(null,"","#"+p)}catch(e){}}));
+const h=(location.hash||"").slice(1); if(tabs.some(x=>x[1]===h))show(h);
+
+writeInputs(plan);
+$("inputs").addEventListener("input",()=>{readInputs();renderPlan();});
+renderTracks(); renderPlan(); startDb();
+})();
+</script>
