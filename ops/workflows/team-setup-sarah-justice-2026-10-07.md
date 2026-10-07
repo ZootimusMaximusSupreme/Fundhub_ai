@@ -59,7 +59,7 @@ What changed from v2: their plug-in is now **share at "See only free/busy" + typ
 
 | Step | Owner | Status |
 |---|---|---|
-| Pre-check: does a busy event on Chris's calendar hide that slot on the funnel? Does main auto-deploy? Google API facts | agent (Sonnet) | claimed |
+| Pre-check: does a busy event on Chris's calendar hide that slot on the funnel? Does main auto-deploy? Google API facts | agent (Sonnet) | **done: PASS.** A busy event on Chris's calendar hid the Oct 9 3:00 PM slot within about 3 minutes and came back about 50 seconds after the delete. ClickFunnels reads availability through Cronofy. Merging to main does NOT deploy; shipping needs `npm run ship` from the Mac. See `team-setup-sarah-justice-2026-10-07/precheck.md` |
 | Build: CRM box, API, migration, 5-minute busy sync, booking → Justice invite, mint script `--calendar`, pulse, journeys | agent (Opus) | claimed |
 | Verify again: independent review + live checks after deploy | agent (Sonnet) | pending (after build) |
 | Chris's one Allow: a Mac agent runs the mint script with `--calendar`, Chris presses Allow | Chris (one tap) | pending |
@@ -123,6 +123,9 @@ The setter flow is built (the "Josh" AI setter):
 - W3 missing from Drive: Cole's DM scripts, ghosted follow-ups, rebooking no-shows, Art of the Delay, and the Setter Scorecard. They are linked from Cole's docs but not in Chris's Drive.
 
 ## Leftovers (not this batch)
+
+- CI `suite (real Postgres)` is red on `main` (`bb25668`) with 59 failing tests. The Postgres log shows code reading a dropped `clients.ghl_contact_id` column. Not this batch; commented on PR #57.
+- The last ship (Yesdoor, 2026-10-07) hit "netlify deploy: Unauthorized: could not retrieve project" (`ops/workflows/yesdoor-mvp-build-2026-10-07.md:319`). Live may not be running main's tip.
 
 - Older repo rules say the setter seat is AI ("we do not hire setters": closer playbook, closer ramp doc, `src/ops/hire-closer.mjs`). Chris is setting for now. Under chris-word-wins, those lines need an update.
 
