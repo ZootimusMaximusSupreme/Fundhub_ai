@@ -52,6 +52,7 @@
       var list = res.buildings || [];
       var n = function (s) { return list.filter(function (b) { return b.status === s; }).length; };
       var root = document.getElementById("b");
+      if (!root) return; // moved to another tab before the list came back
       root.innerHTML = '<div class="kpis">' + ui.kpi("Live", ui.esc(n("live")), "Taking renters now") + ui.kpi("Signed", ui.esc(n("signed")), "Agreement signed") +
         ui.kpi("In talks", ui.esc(n("target") + n("pitched") + n("agreement_sent")), "Target, pitched or agreement sent") + ui.kpi("Paused", ui.esc(n("paused")), "Rules stale or too many mismatches") + '</div>' +
         '<div class="row" style="margin-bottom:16px"><button class="btn" type="button" id="add-b">Add a building</button></div><div id="bt"></div>';
