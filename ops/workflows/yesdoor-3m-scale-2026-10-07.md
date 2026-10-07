@@ -19,10 +19,10 @@ Ask (Chris): "Yes door ai scale to 3m/mo insights."
 
 | # | Unit | Owner | Status |
 |---|---|---|---|
-| Y1 | Unit economics: placement fee + back-end LTV (guides, denial tools, lawyers, repair), fee per lease, leases/mo needed, metros needed, margin, cash timing | this session | claimed |
-| Y2 | Market + competitors: Nestra, big locators (Smart City etc.), their revenue, how they scaled | open | claimed |
+| Y1 | Unit economics: placement fee + back-end LTV (guides, denial tools, lawyers, repair), fee per lease, leases/mo needed, metros needed, margin, cash timing | this session | done |
+| Y2 | Market + competitors: Nestra, big locators (Smart City etc.), their revenue, how they scaled | open | done |
 | Y3 | Demand: renter ad channels, cost per qualified renter, lead→tour→lease rates | agent | done |
-| Y4 | Supply + licence: signing communities and management companies, fee terms, broker licence by state, listing data feeds | open | claimed |
+| Y4 | Supply + licence: signing communities and management companies, fee terms, broker licence by state, listing data feeds | open | done |
 | Y5 | Merge Y1–Y4, write report, commit | this session | waits on Y1–Y4 |
 
 Y1–Y4 run at the same time. No dependencies between them. Y1 uses ranges and Y5 swaps in Y2–Y4's real numbers. Y5 waits on all four.
@@ -60,9 +60,11 @@ Write under "## Y4" on the board. Plain English, numbers with links, "not found"
 
 ## Y1
 
-(this session)
+Done. See `marketing/offers/yesdoor/scale-3m.md`. Owner-set: Chris handles AZ/real estate licensing.
 
 ## Y2
+
+Done (agent). nestra.ai: "Concierge Apartment Matching in Arizona"; pricing/funding/traffic not found. Smart City: $7.7M (2017) → $22M+ (2019), ~99 staff, 10+ cities ([Inc post](https://smartcitylocating.com/blog/smart-city-locating-included-on-the-inc-5000-list-of-americas-top-private-companies/)). UMoveFree ~$30.9M/yr estimate ([prospeo](https://prospeo.io/c/umovefree-apartment-locators-revenue)). Online rental services ~$1.1B (2026) ([IBISWorld](https://www.ibisworld.com/united-states/industry/online-apartment-rental-services-in-the-us/5453/)). No locator confirmed past $3M/mo.
 
 ## Y3
 
@@ -77,6 +79,8 @@ Done (agent). Sources are mostly vendor blogs, US averages; Phoenix/Dallas/Houst
 - Phoenix: 46% of renters moved within two years ([Copper Courier](https://coppercourier.com/politics/page/10)). Monthly move counts: not found.
 
 ## Y4
+
+Done (agent). Fee 100% of first month typical, 50–125% range, some flat $1,500 ([AptAmigo](https://blog.aptamigo.com/locator-commission/), [usahousinginformation](https://usahousinginformation.com/how-much-do-realtors-charge-to-find-a-rental/)). Paid on move-in, 60-day refund ([uMoveFree](https://www.umovefree.com/property-relations-old)); 30–90 days ([Rentgrata](https://help.rentgrata.com/hc/en-us/articles/1500006379821-Does-Rentgrata-or-the-Property-Manager-pay-out-move-in-bonuses)). TX licence required ([TREC](https://www.trec.texas.gov/q-real-estate-license-necessary-order-be-apartment-locator)); AZ 90 hrs + exam + sponsoring broker ([ADRE](https://azre.gov/sites/default/files/Forms/Licensing/Original_Licensing_Brochure.PDF)). Yardi RentCafe API: approved partners, pay per transaction ([Yardi](https://www.yardi.com/?p=354732)). Not found: Greystar/Mark-Taylor/Avenue5 locator policy, FL/CO/NV/NC rules, RealPage/Entrata terms.
 
 ## Leftovers
 
