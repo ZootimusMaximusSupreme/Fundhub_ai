@@ -23,7 +23,7 @@ Source docs (read these, don't re-research):
 | B2 | Backend 1: database tables and migrations (Yesdoor-prefixed, own org) + read endpoints + tests | Sonnet | open | pending | B1 |
 | B3 | Backend 2: pre-screen + matching (CRS and Plaid sandbox stubs, rules, risk tiers, approved/likely/no, backups) | Sonnet | open | pending | B2 |
 | B4 | Backend 3: buildings, tours, money (portal API, spreadsheet + listing-feed import, registration emails, invoices, fee ledger, broker ledger, disputes) | Sonnet | open | pending | B2 |
-| M1 | Marketing: 4 avatars (prime renter, Second Chance renter, leasing manager/regional VP, broker), then the marketing-machine copy for Yesdoor | Sonnet | agent | claimed | — |
+| M1 | Marketing: 4 avatars (prime renter, Second Chance renter, leasing manager/regional VP, broker), then the marketing-machine copy for Yesdoor | Sonnet | agent | avatars done — waiting on Chris | — |
 | F1 | Front end: Zillow-style site, Arizona sample listings, lead funnel, renter / building / broker logins | Sonnet | open | pending | B3, B4 |
 
 Runs at the same time: **B1 and M1** (no shared files). After B2: **B3 and B4** in parallel. F1 is last.
@@ -88,6 +88,31 @@ Commit, push, draft PR. Manifest under "## F1".
 ## B4
 
 ## M1
+
+Status: **avatars done — waiting on Chris.** Step 2 (marketing machine plan) has not started. It starts after Chris OKs the four avatars.
+
+Built with Chris's Avatar Builder SOP (`.claude/workflows/avatar-builder.js`, 7 steps). Ground truth: `marketing/offers/yesdoor/industry-research.md`, plus new web research linked in each file. Every guess is marked [ASSUMED]. No quote or number is made up.
+
+| # | Avatar | File | Core desire | Named mechanism |
+|---|---|---|---|---|
+| 1 | Sure-Thing Sam, prime renter (Yesdoor Verified) | `marketing/avatars/yesdoor/prime-renter.md` | The best unit, fast, with no wasted fees or doubt | The Yesdoor Verified Pass: verify once, apply where you're approved |
+| 2 | Braced-for-No Bree, Second Chance renter | `marketing/avatars/yesdoor/second-chance-renter.md` | A real yes, record and all, without paying to find out | The Before-You-Apply Match: the building's own rules, checked first, plus a backup building |
+| 3 | Occupancy-Gap Olivia, regional VP (AZ / SoCal) | `marketing/avatars/yesdoor/leasing-regional-vp.md` | Hit occupancy without more free rent, and stop fraud from turning into bad debt | The Verified Renter Pipeline: bank-verified income, your rules, pay on a lease that lasts 60 days |
+| 4 | Guest-Card Gabe, broker / locator | `marketing/avatars/yesdoor/broker-locator.md` | Get paid for every renter placed, without fighting for it | The First-Touch Lock: email prequal plus timestamped registration before the tour |
+
+New facts found (links in the files):
+- Phoenix: 12.1% vacancy, over half of communities discounting, 6–8 weeks free in lease-up (Matthews, Q2 2025).
+- Maricopa County: a record 87,310 eviction filings in 2024. Phoenix's filing rate is about twice the national rate (Eviction Lab, via KJZZ).
+- 73% of rental fraud is caught after move-in (NAA, 2024).
+- Texas: locator referrals were 6.5% of Greystar leases and 15% of Fogelman move-ins (CREDaily, secondhand).
+
+Gaps:
+- No first-person quotes from renters or locators. Reddit, Glassdoor and Ladders are blocked from the cloud session. Do this pass from the Mac before ads are written.
+- No regional VP interviews yet.
+
+Promises held back until true: application fee waived (no building has agreed yet), Yardi or RealPage connection, partner prices (recommended, not set), and "[N] pre-approved renters" (N must be a real count).
+
+Manifest: added the 4 files above and this section. No code, routes or journeys changed.
 
 ## F1
 
