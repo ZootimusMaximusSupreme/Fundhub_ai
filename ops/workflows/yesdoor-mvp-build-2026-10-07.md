@@ -202,5 +202,23 @@ Manifest: added the 4 files above and this section. No code, routes or journeys 
 
 ## Leftovers
 
+**Incident (2026-10-07, found by the parent session):** the cloud shell carries the production `DATABASE_URL` and live vendor keys. Several plain `npm test` runs today ran with them:
+- one by the parent session around 02:xx UTC
+- B2's unit phase, 07:33–07:40
+- at least one more (B3a or F1) around 07:05
+
+What was found:
+- Production now has **34 test clients** in the `fundhub` org, created 07:05:55–07:07:24 UTC (emails `@example.test`, e.g. "Money Chain Client", `is_demo = true`).
+- Other tables (events, ledgers, payment links) were not fully checked; the production read was blocked by the permission check.
+- B2 reports four payment-link tests got 502 from a live Commas call, so it is unknown whether any Commas sessions were created.
+
+What was done:
+- Nothing deleted (deleting data needs Chris's OK).
+- All later agents run tests with production variables removed (`env -u DATABASE_URL …`).
+
+Chris decides:
+1. Delete the 34 test clients and their child rows?
+2. Remove `DATABASE_URL` and vendor keys from this cloud environment's settings?
+
 - **B2, 2026-10-07: production credentials in the cloud session's shell.** The shell for this task carries the PRODUCTION `DATABASE_URL` (Supabase pooler, as `fundhub_app`) plus live Netlify, Supabase, Commas, Twilio, CRS and other keys. Every Yesdoor database command was given an explicit scratch `DATABASE_URL` (Postgres on 127.0.0.1), but one full `npm test` was started without clearing the environment before this was noticed. What ran: the unit phase only (780 files). It stopped with 15 failures, so the `*.pg.test.mjs` phase never started and the Yesdoor pg tests never ran (production has no `yd_` tables). The 15 are tests that expect no database or no keys: journeys-stale (real, fixed in this branch), push-credit netlify-blobs, CRS_ALLOW_LIVE host check, welcome-video, four in `payment-links-endpoints.test.mjs` (got 502, which means they tried a live Commas checkout call that failed), two default-org message routing checks, the db-handle shape check, the live row-lock catalog check, the app-role superuser guard, and one "pass that cannot run". None of these is a write test; the database ones are read-only catalog or routing reads. Not verified from here: whether any Commas checkout session was created, and whether the stubbed-database tests touched the real pool. Suggested check for whoever owns production: Commas for stray sessions between 07:33 and 07:40 UTC on 2026-10-07, and `orgs` for slugs `yesdoor-test-*` (there should be none). The clean rerun used `env -i` and a scratch database.
 - **B2, 2026-10-07: full real-Postgres suite on the scratch database (owner connection, CI shape).** 3404 pg tests ran: all five Yesdoor suites pass; 167 other tests fail and 40 are cancelled in suites B2 did not touch. The error text names things outside migrations 434 to 436: `column "ghl_contact_id" does not exist` (clients), `column "video_kind" specified more than once`, `documents_client_id_fkey`, a missing `credentials/sim-identity` file. Not compared against a baseline build of the branch without B2, so "already failing" is the reading of the error text, not a measurement. Also 12369 of 12374 no-database tests pass in a clean environment after the journeys regeneration; the one then-failing test (journeys stale) is fixed in this branch.
