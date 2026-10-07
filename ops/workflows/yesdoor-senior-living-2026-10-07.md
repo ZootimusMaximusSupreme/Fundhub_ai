@@ -127,3 +127,10 @@ Arithmetic (agent's, not sourced): 30,761 × 88.4% ≈ 27,200 residents ÷ 22 mo
 | 25% | 253 | $887k | $1.27M |
 
 National ceiling: A Place for Mom ≈ $37M a month. 10% of its volume ≈ $3.7M a month.
+
+## Can it all merge into Yesdoor? (2026-10-07)
+
+Chris asked whether senior living, behavioral health, etc. can all merge into Yesdoor.
+
+- **Yes, as "lines" on one Yesdoor:** apartments (live build), senior living (this board), next private-pay home care (not researched for Arizona yet). Same engine: free check → which places say yes → the place pays on move-in or start. Tech: lane 3 found each Yesdoor deployment is one org (`YD_ORG_SLUG`); lines need a line marker on the `yd_` tables or one org per line.
+- **Behavioral health cannot be a paid line.** Paying for referrals to addiction treatment, recovery homes or labs is a federal crime even with private insurance (EKRA, [Foley](https://www.foley.com/insights/publications/2020/02/ekra-floridas-patient-brokering-act/)); Florida §817.505 and Arizona §13-3730 (sober-living homes) too. Meta requires LegitScript, which excludes lead generators ([LegitScript](https://www.legitscript.com/certification/addiction-treatment-certification/faq/)). Therapy matching is insurance-paid and owned by Headway and Rula. Only a free listing with no fee would be legal — no revenue.
