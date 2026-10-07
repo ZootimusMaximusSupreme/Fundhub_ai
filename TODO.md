@@ -1,5 +1,9 @@
 # TODO
 
+## Yesdoor — 2026-10-07
+
+Yesdoor's full to-do list lives in `marketing/offers/yesdoor/TODO.md`. Goal: $10M a month in 1 year (2 is OK); all profit goes back into the company.
+
 ## Now — 2026-10-05 (Monday)
 
 Updated from the 10/4 list. Checked against the repo and the live site on 10/5. Everything agents finished today is merged to `main` on GitHub and goes live on the next ship. Business only.
