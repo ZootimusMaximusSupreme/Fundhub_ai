@@ -107,3 +107,28 @@ Two patterns to clone:
 | R3 | Where the tech is missing (funding, startups, journeys still run by phone, fax and paper) | claimed |
 | R4 | Where new rules or new money create millions of new eligibility decisions (2025–2026) | claimed |
 | R5 | Rank what surfaced | pending |
+
+## R4 — new rules and new money (done)
+
+The agent hit the shared web-search cap before it finished. Anything marked "not found" may still exist.
+
+| # | Niche | What changed, and when | People hit | Who pays us | Fit |
+|---|---|---|---|---|---|
+| 1 | Medicaid "prove it": work hours, exemptions, and re-checks every 6 months | Starts Jan 1, 2027. CMS rule out June 1, 2026. Nebraska started May 2026 | 18.5M people subject each year; ~2.3M lose coverage in budget year 2027 ([KFF](https://www.kff.org/medicaid/a-closer-look-at-the-work-requirement-provisions-in-the-2025-federal-budget-reconciliation-law/)) | Medicaid health plans (~$6,417 a year lost per adult who drops off), hospitals, states | Free check: High. Blueprint: High (monthly hours = a monthly re-check) |
+| 2 | ACA subsidy cliff: re-shopping, and paying back extra subsidy at tax time | Extra subsidies ended Dec 31, 2025. 2027 premiums up a median 15%. No cap on paying back for 2026 | 19.2M paying enrollees; keeping the same plan costs +114% ([KFF](https://www.kff.org/quick-insights/aca-marketplace-enrollment-is-down-by-3-million-after-big-jump-in-premium-payments/)) | Insurers (broker model) | Free check: High, but crowded |
+| 3 | Big out-of-pocket bills → patient financing | Same cliff | Bronze plans 7.3M → 9.2M; average bronze deductible ~$7,500 ([healthinsurance.org](https://www.healthinsurance.org/newsroom/press-releases/higher-aca-premiums-push-more-marketplace-consumers-toward-bronze-health-plans/)) | Lenders, providers | Free check: High (Fundhub's core) |
+| 4 | Hospitals: get the patient covered before the window shuts | Medicaid back-coverage cut to 1–2 months on Jan 1, 2027. CA charity screening (AB 1312) starts July 2027 | Ohio hospitals: $2.5B over 5 years ([Families USA](https://familiesusa.org/wp-content/uploads/2026/05/HR-1-Retroactive-Coverage.pdf)) | Hospitals | Free check: High |
+| 5 | GLP-1 coverage maze | Medicare GLP-1 Bridge at $50 a month, July 2026 – Dec 2027. Employers dropping coverage | 3.8M Medicare eligible ([KFF](https://connect.kff.org/nearly-4-million-medicare-beneficiaries-could-be-eligible-for-the-medicare-glp-1-bridge-program)); large employers covering: 72% → 60% | Prescribers, clinics | Free check: High. Watch the federal anti-kickback law |
+| 6 | Medicare Advantage plan exits | Plans end Dec 31, 2026 | Humana exits hit ~600k members | Carriers | Medium; saturated |
+| 7 | HSA + flat-fee doctor | Allowed from Jan 1, 2026 (up to $150 a month single / $300 family) | 9.2M bronze enrollees | Flat-fee doctors, HSA banks | Medium |
+| 8 | Immigrant coverage cutoffs | Oct 1, 2026 and Jan 1, 2027 | 1.4M ([KFF](https://www.kff.org/immigrant-health/1-4-million-lawfully-present-immigrants-are-expected-to-lose-health-coverage-due-to-the-2025-tax-and-budget-law/)) | Weak payers | Low |
+| 9 | ICHRA (employer gives cash to buy your own plan) | Growth | 500k+ people, doubled | Employers | Medium |
+| 10 | Long-term care: WA Cares + Medicaid home-equity cap | WA Cares paying July 2026. $1M home-equity cap from Jan 1, 2028 | WA Cares: 113 applications vs 25k–35k eligible | Providers, reverse-mortgage lenders | Medium |
+
+Surprises:
+- Paperwork, not work, is what kills coverage. In Nebraska, 84% of denials came from people who never answered ([KFF](https://www.kff.org/medicaid/early-medicaid-work-requirement-insights-from-nebraska/)).
+- From 2027, anyone denied Medicaid under the work rule is also barred from marketplace subsidies.
+- The Rural Health Transformation fund is $10B a year to states (2026–2030), and consumer tech is an allowed use.
+- The DEA telehealth prescribing permission for controlled drugs ends Dec 31, 2026.
+- California large-group insured plans must cover IVF from Jan 1, 2026.
+- Who is already moving: Fortuna Health (raised $18M, serves plans covering 25M+ Medicaid lives). Propel (5M+ users).
