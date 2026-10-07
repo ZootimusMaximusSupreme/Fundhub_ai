@@ -195,3 +195,13 @@ The same pipe Apartments.com uses:
 4. **Small owners with no software:** agents read their website availability, or the owner fixes it in the 3-tap portal.
 
 Greystar runs all three big systems: Yardi Voyager, RealPage OneSite and Entrata Core ([Greystar job posting](https://jobs.greystar.com/job/united-states/technology-services-analyst/35302/89342046880)). So Yesdoor needs connections to all three to cover one Tier 1 client.
+
+## Owner-set 2026-10-07: nothing to close
+
+Buildings get free pre-qualified renters, so it's a yes. There's no hard sale. The only step that matters is a **signed fee agreement before the first renter is sent**; without one, a free renter can't be billed. Least resistance: buildings that already pay locators (ALN lists the commission per property) already have a locator sign-up. Yesdoor signs up as an approved locator, and that's the whole onboarding.
+
+MVP (agent build estimate, about 20–28 hours, or about 1–2 days with parallel agents):
+1. Renter page: email, soft-pull consent, $9 pull (reuses Fundhub's pull).
+2. Matcher: each building's posted rules (score, income, evictions) checked against the pull. Approved / likely / no.
+3. Tour booking plus a registration email to the leasing office (the referral proof).
+4. Tracking on the Scale Engine scoreboard.
