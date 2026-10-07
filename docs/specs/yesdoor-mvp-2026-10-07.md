@@ -87,6 +87,15 @@ The renter portal holds their status, bookings and results. Upsells plug in late
 
 **Owner-set 2026-10-07:** the renter gives **name, email and current address, no SSN**. Yesdoor uses a different CRS product (the $9 screening product), not Fundhub's current pull. CRS documents a soft pull without SSN that matches a person from name and current address, with date of birth helping. Match rates drop without SSN, and thin files are hardest to find ([CRS](https://crscreditapi.com/soft-pull-without-ssn/)). When no file matches, the renter is asked for date of birth. Fundhub's pull needs name, date of birth, SSN and address (`src/finance/crs-pull.mjs:450-482`), so the new product is a new connection. Its API docs are not in the repo yet.
 
+## 7b. Income check (owner-set 2026-10-07)
+
+- Income is verified, not typed. The renter links a bank account (Plaid) or uploads bank statements. Fake paystubs are common, especially from self-employed renters.
+- Reuse: Fundhub already has Plaid and income tools in `src/banking/` (`plaid.mjs`, `recurring.mjs` for repeat deposits, `cashflow.mjs`, `import.mjs` for statements).
+- Result shown to the renter: "Approved up to $X rent," from verified income plus credit plus background. Buildings see "income verified" on every Yesdoor renter.
+- Two lanes, one engine (draft):
+  - **Yesdoor Verified:** prime renters.
+  - **Yesdoor Second Chance:** renters with credit or eviction problems.
+
 ## 8. Brand
 
 The brand identity is new and not set yet. Approach (owner-set): take the structure of an existing site and give it Yesdoor's own spin. Starting point: `marketing/offers/yesdoor/yesdoor.dc.html`. Use its structure only; every word, image and the logo are Yesdoor's own.
