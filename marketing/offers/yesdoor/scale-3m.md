@@ -205,3 +205,26 @@ MVP (agent build estimate, about 20–28 hours, or about 1–2 days with paralle
 2. Matcher: each building's posted rules (score, income, evictions) checked against the pull. Approved / likely / no.
 3. Tour booking plus a registration email to the leasing office (the referral proof).
 4. Tracking on the Scale Engine scoreboard.
+
+## $10M check, complexes needed, valuation (2026-10-07)
+
+- **$10M a month is still possible on the model:** ~4,750 leases a month, ~$4.7M profit (Scale Engine defaults).
+- **Large complexes needed (300 units each, assumed size):** a 300-unit complex has ~135 move-outs a year at 45% turnover (~11 a month).
+  - If Yesdoor fills 15% of its move-ins: ~1.7 leases a month per complex, so **~2,800 complexes**.
+  - If Yesdoor fills 30%: **~1,400 complexes**.
+  - The top 10 managers run ~2.76M units, about 9,200 complexes of this size.
+- **Valuation at $120M a year revenue and ~$56M a year profit (rough, not a quote):**
+  - All-industry private median, ~3.5–3.8x EBITDA ([DealStats](https://www.bvresources.com/articles/bvwire/dealstats-value-index-ebitda-multiples-ease-in-late-2025)): ~$200M.
+  - Zillow trades at ~3.6x revenue ([multiples.vc](https://multiples.vc/public-comps/zillow-valuation-multiples)): ~$430M.
+  - Information sector private median, 14.6x EBITDA ([Kreischer Miller](https://www.kmco.com/insights/private-company-ma-valuation-trends-through-q4-2025)): ~$820M.
+  - Range: **~$200M–$800M.** Recurring revenue, signed portfolio contracts and the renter data push it up.
+- **Avatars to build (avatar-builder skill):** prime renter, Second Chance renter, leasing manager or regional VP, broker.
+- **Still needed to stand up the company:**
+  - brand and domain (yesdoor.ai was open on 2026-09-24)
+  - the CRS screening contract and its API docs
+  - Plaid for Yesdoor
+  - the ALN data subscription
+  - the fee agreement template
+  - the MVP build (spec: `docs/specs/yesdoor-mvp-2026-10-07.md`)
+  - hires: outbound salesperson, plus one ops person for collections and building onboarding
+  - the Phoenix test ad budget
