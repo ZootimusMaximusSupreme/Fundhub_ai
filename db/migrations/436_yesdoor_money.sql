@@ -54,7 +54,8 @@ CREATE TABLE IF NOT EXISTS public.yd_invoices (
   CONSTRAINT yd_invoices_method_ck
     CHECK (payment_method IS NULL OR payment_method IN ('ach', 'wire', 'check', 'paymode')),
   CONSTRAINT yd_invoices_paid_ck
-    CHECK (status <> 'paid' OR (paid_at IS NOT NULL AND payment_method IS NOT NULL))
+    CHECK (status <> 'paid' OR (paid_at IS NOT NULL AND payment_method IS NOT NULL)),
+  CONSTRAINT yd_invoices_paid_after_issue_ck CHECK (paid_at IS NULL OR paid_at >= issued_at)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS yd_invoices_number_uniq ON public.yd_invoices (org_id, number);
 CREATE INDEX IF NOT EXISTS yd_invoices_building_idx ON public.yd_invoices (building_id, issued_at DESC);
@@ -183,7 +184,12 @@ CREATE TABLE IF NOT EXISTS public.yd_fee_ledger (
   CONSTRAINT yd_fee_ledger_paid_ck CHECK (
     status NOT IN ('paid', 'safe') OR paid_at IS NOT NULL
   ),
-  CONSTRAINT yd_fee_ledger_safe_ck CHECK (status <> 'safe' OR safe_at IS NOT NULL)
+  CONSTRAINT yd_fee_ledger_safe_ck CHECK (status <> 'safe' OR safe_at IS NOT NULL),
+  -- Time only runs forward: billed, then paid, then safe.
+  CONSTRAINT yd_fee_ledger_order_ck CHECK (
+    (paid_at IS NULL OR invoiced_at IS NULL OR paid_at >= invoiced_at)
+    AND (safe_at IS NULL OR paid_at IS NULL OR safe_at >= paid_at)
+  )
 );
 CREATE UNIQUE INDEX IF NOT EXISTS yd_fee_ledger_idem_uniq ON public.yd_fee_ledger (org_id, idempotency_key);
 -- A placement row is reversed once, in full.
