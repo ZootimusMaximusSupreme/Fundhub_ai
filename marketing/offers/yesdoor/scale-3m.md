@@ -228,3 +228,12 @@ MVP (agent build estimate, about 20–28 hours, or about 1–2 days with paralle
   - the MVP build (spec: `docs/specs/yesdoor-mvp-2026-10-07.md`)
   - hires: outbound salesperson, plus one ops person for collections and building onboarding
   - the Phoenix test ad budget
+
+## Outbound sales courses (research 2026-10-07)
+
+Top 3 for a salesperson booking regional VPs at big managers and getting a fee agreement signed:
+1. **Josh Braun, Badass B2B Growth Guide**: $197, self-paced, honest cold outreach ([catalog](https://joshbraun.teachable.com/courses), [review](https://thefastlaneforum.com/community/threads/josh-braun-the-badass-b2b-growth-guide-worth-it.104783/)). Add "Poke the Bear" for cold calls.
+2. **NAA Certified Apartment Supplier (CAS)**: $650 for National Apartment Association members, $810 for others ([NAA](https://www.naahq.org/cas-online)). Teaches the apartment manager's money and problems, and builds an industry network.
+3. **Winning by Design**: ~$1,500 per rep (third-party figure, [oliv.ai](https://oliv.ai/blog/winning-by-design-training)). For long deals with many approvers.
+
+Left out: Cole Gordon (built for inbound coaching sales, not business-to-business) and Pavilion (leaders only).
