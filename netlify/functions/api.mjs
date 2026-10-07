@@ -297,6 +297,43 @@ import readProxySessions from "../../api/read/proxy-sessions.mjs";
 import climate from "../../api/climate.mjs";
 import climateGeocode from "../../api/climate/geocode.mjs";
 import climateConfig from "../../api/climate/config.mjs";
+import ydAuthLink from "../../api/yesdoor/auth/link.mjs";
+import ydAuthVerify from "../../api/yesdoor/auth/verify.mjs";
+import ydAuthLogout from "../../api/yesdoor/auth/logout.mjs";
+import ydPublicListings from "../../api/yesdoor/public/listings.mjs";
+import ydPublicListing from "../../api/yesdoor/public/listing.mjs";
+import ydPublicLead from "../../api/yesdoor/public/lead.mjs";
+import ydPublicAgreement from "../../api/yesdoor/public/agreement.mjs";
+import ydPublicPrescreen from "../../api/yesdoor/public/prescreen.mjs";
+import ydMe from "../../api/yesdoor/me.mjs";
+import ydMeIncome from "../../api/yesdoor/me/income.mjs";
+import ydBuildingRenters from "../../api/yesdoor/building/renters.mjs";
+import ydBuildingRules from "../../api/yesdoor/building/rules.mjs";
+import ydBuildingInvoices from "../../api/yesdoor/building/invoices.mjs";
+import ydBrokerRenters from "../../api/yesdoor/broker/renters.mjs";
+import ydBrokerMoney from "../../api/yesdoor/broker/money.mjs";
+import ydBrokerLink from "../../api/yesdoor/broker/link.mjs";
+import ydStaffPipeline from "../../api/yesdoor/staff/pipeline.mjs";
+import ydStaffCompanies from "../../api/yesdoor/staff/companies.mjs";
+import ydStaffBuildings from "../../api/yesdoor/staff/buildings.mjs";
+import ydStaffBrokers from "../../api/yesdoor/staff/brokers.mjs";
+import ydStaffAccounts from "../../api/yesdoor/staff/accounts.mjs";
+import ydStaffLedger from "../../api/yesdoor/staff/ledger.mjs";
+import ydStaffRenter from "../../api/yesdoor/staff/renter.mjs";
+import ydStaffScreening from "../../api/yesdoor/staff/screening.mjs";
+import ydStaffDisputes from "../../api/yesdoor/staff/disputes.mjs";
+import ydStaffScoreboard from "../../api/yesdoor/staff/scoreboard.mjs";
+// Yesdoor B4: the writes (staff onboarding and money, building portal, booking, signing).
+import ydStaffAgreement from "../../api/yesdoor/staff/agreement.mjs";
+import ydStaffPayment from "../../api/yesdoor/staff/payment.mjs";
+import ydStaffRefund from "../../api/yesdoor/staff/refund.mjs";
+import ydStaffBrokerPayout from "../../api/yesdoor/staff/broker-payout.mjs";
+import ydBuildingListings from "../../api/yesdoor/building/listings.mjs";
+import ydBuildingImport from "../../api/yesdoor/building/import.mjs";
+import ydBuildingUpdate from "../../api/yesdoor/building/update.mjs";
+import ydPublicBook from "../../api/yesdoor/public/book.mjs";
+import ydMeTour from "../../api/yesdoor/me/tour.mjs";
+import ydWebhookEsign from "../../api/yesdoor/webhooks/esign.mjs";
 
 export const config = { path: "/api/*" };
 
@@ -710,6 +747,47 @@ export const ROUTES = {
      the store and migration 225 — a handler file is not a route, and an
      unrouted api/bookings.mjs 404s locally and deployed. */
   "bookings": bookings,
+
+  /* Yesdoor MVP (spec docs/specs/yesdoor-mvp-build-spec.md §8). Routed in the same
+     commit as the handlers, the migrations (434-436) and the pulse rows. B2 ships the
+     GET doors and the sign-in link; the POST writes arrive in B3/B4. */
+  "yesdoor/auth/link": ydAuthLink,
+  "yesdoor/auth/verify": ydAuthVerify,
+  "yesdoor/auth/logout": ydAuthLogout,
+  "yesdoor/public/listings": ydPublicListings,
+  "yesdoor/public/listing": ydPublicListing,
+  "yesdoor/public/lead": ydPublicLead,
+  "yesdoor/public/agreement": ydPublicAgreement,
+  "yesdoor/public/prescreen": ydPublicPrescreen,
+  "yesdoor/me": ydMe,
+  "yesdoor/me/income": ydMeIncome,
+  "yesdoor/building/renters": ydBuildingRenters,
+  "yesdoor/building/rules": ydBuildingRules,
+  "yesdoor/building/invoices": ydBuildingInvoices,
+  "yesdoor/broker/renters": ydBrokerRenters,
+  "yesdoor/broker/money": ydBrokerMoney,
+  "yesdoor/broker/link": ydBrokerLink,
+  "yesdoor/staff/pipeline": ydStaffPipeline,
+  "yesdoor/staff/companies": ydStaffCompanies,
+  "yesdoor/staff/buildings": ydStaffBuildings,
+  "yesdoor/staff/brokers": ydStaffBrokers,
+  "yesdoor/staff/accounts": ydStaffAccounts,
+  "yesdoor/staff/ledger": ydStaffLedger,
+  "yesdoor/staff/renter": ydStaffRenter,
+  "yesdoor/staff/screening": ydStaffScreening,
+  "yesdoor/staff/disputes": ydStaffDisputes,
+  "yesdoor/staff/scoreboard": ydStaffScoreboard,
+  // B4 writes (POST; staff/companies, staff/buildings, staff/disputes and building/rules above also take POST now).
+  "yesdoor/staff/agreement": ydStaffAgreement,
+  "yesdoor/staff/payment": ydStaffPayment,
+  "yesdoor/staff/refund": ydStaffRefund,
+  "yesdoor/staff/broker-payout": ydStaffBrokerPayout,
+  "yesdoor/building/listings": ydBuildingListings,
+  "yesdoor/building/import": ydBuildingImport,
+  "yesdoor/building/update": ydBuildingUpdate,
+  "yesdoor/public/book": ydPublicBook,
+  "yesdoor/me/tour": ydMeTour,
+  "yesdoor/webhooks/esign": ydWebhookEsign,
 
   // Creative Factory. All ten go through src/http/partner-read-api.mjs, which is
   // requirePrincipal(["partner","staff"]) + withPartnerScope, so a partner sees

@@ -308,6 +308,10 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "migrations/432_ops_suggestions.sql",
   "migrations/433_morning_briefs_kind.sql",
   "migrations/434_staff_calendar_links.sql",
+  "migrations/434_yesdoor_core.sql",
+  "migrations/435_yesdoor_pipeline.sql",
+  "migrations/436_yesdoor_money.sql",
+  "migrations/437_yesdoor_cancel_after_registration.sql",
   "seed/002_pipelines.sql",
   "seed/006_message_templates_source_doc.sql",
   "seed/007_contract_templates.sql",
@@ -342,7 +346,9 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/034_slo_first5_reply.sql",
   "seed/035_slo_no_reply_147.sql",
   "seed/036_slo_followups_147.sql",
-  "seed/295_sms_copy_2026_09.sql"
+  "seed/295_sms_copy_2026_09.sql",
+  "seed/296_yesdoor_org_and_samples.sql",
+  "seed/297_yesdoor_criminal_policy_keys.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;

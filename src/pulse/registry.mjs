@@ -17,6 +17,11 @@ export const ALLOWED_UNMONITORED = {
   "training-progress": "POST only, owner/admin. A GET answers 405 by design, and pinging it with a body would stamp a compliance certification against a partner nobody assessed. The monitored door for the training is read/partner-training, which is what a partner actually opens.",
   "push/unsubscribe": "POST or DELETE only — it is the control that switches a client's notifications off. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would retire a real device. Its read sibling push/subscribe answers GET and is the monitored door for this pair.",
   "sidebar.fragment.html": "Shared chrome fragment mounted into other pages. Not a live desk.",
+  "yesdoor/auth/logout": "POST only. A GET answers 405 by design, and pinging it with a body or a token would revoke a real person's session and sign them out. The monitored doors for sign-in are yesdoor/auth/link and yesdoor/auth/verify.",
+  "yesdoor/public/agreement": "Signed-link GET only: the HMAC link is the whole credential, so a GET without id, exp and sig answers 404 on purpose, and answers it identically for a forged, expired or unknown link. A ping would read that correct refusal as an outage every time. It reads nothing but the one agreement the link names. The monitored door for this surface is yesdoor/staff/buildings.",
+  "yesdoor/public/lead": "POST only. A GET answers 405 by design, and pinging it with a body would create a renter and write a first touch that can never be changed. The monitored doors for the Yesdoor funnel are yesdoor/public/listings and yesdoor/public/listing, which answer GET.",
+  "yesdoor/public/prescreen": "POST only. A GET answers 405 by design, and pinging it with a body would record a consent, run a credit and background screening and store matches for a person who never asked. The monitored doors for the Yesdoor funnel are yesdoor/public/listings and yesdoor/public/listing, which answer GET.",
+  "yesdoor/me/income": "POST only, renter session. A GET answers 405 by design, and pinging it with a body would verify income for a renter and recompute their matches. The monitored door for the renter's own screen is yesdoor/me, which answers a JSON 401 without a session.",
   "analytics/clickfunnels-connect": "POST only. A GET answers 405 by design, and pinging it with a body would try to save an org's ClickFunnels credential from whatever junk the pinger sent, and validates by calling the real ClickFunnels API before saving — a scheduled ping would burn a real API call against Chris's account every time it ran. The monitored door for this surface is read/funnel-pages, which reports the connection's real state.",
   "analytics/clickfunnels-sync": "POST only. A GET answers 405 by design, and pinging it with a body would trigger a real sync against ClickFunnels' API on a schedule nobody asked for, and updates last_synced_at/last_error whether or not anyone wanted a sync to run right then. The monitored door is read/funnel-pages.",
   "analytics/youtube-connect": "POST only, same reasoning as analytics/clickfunnels-connect — it exchanges a real OAuth refresh token with Google before saving, so a scheduled ping would spend a real Google API call. The monitored door is read/video-stats.",
@@ -27,7 +32,18 @@ export const ALLOWED_UNMONITORED = {
   "public/slo-pull": "POST only. A GET answers 405 by design, and pinging it with a body would store identity (including SSN) against a paid SLO file and emit diagnostic.paid, which starts C-00. The monitored door for this offer is public/slo-checkout, which answers GET with the price.",
   "public/eeo-survey": "The survey token in the applicant's link is the whole credential, so a GET without one answers 400 on purpose — a ping would read that correct refusal as an outage every time. A POST is the applicant's own voluntary answer, and pinging it with a body would file a made-up demographic response into the bias-audit counts. The monitored door for this data is read/eeo-aggregate.",
   "waypoint-tick": "POST only, client session. A GET answers 405 by design, which a ping would read as an outage, and pinging it with a body would tick a step on a real client's checklist. The client's checklist itself is what a client opens; this is the checkbox behind it.",
-  "public/ad-video-approve": "The approval token in Chris's phone notification is the whole credential, so a GET without one answers 404 on purpose — and it answers that identically for a made-up token, an expired one and a spent one, so the door cannot be used to find out which tokens exist. A ping would read that correct refusal as an outage every single time. Pinging it with a body is worse: a POST is the decision, and it would approve or reject a filmed take that nobody watched. The monitored door for this surface is ad-videos, the staff queue, which answers GET and reports how many takes are waiting."
+  "public/ad-video-approve": "The approval token in Chris's phone notification is the whole credential, so a GET without one answers 404 on purpose — and it answers that identically for a made-up token, an expired one and a spent one, so the door cannot be used to find out which tokens exist. A ping would read that correct refusal as an outage every single time. Pinging it with a body is worse: a POST is the decision, and it would approve or reject a filmed take that nobody watched. The monitored door for this surface is ad-videos, the staff queue, which answers GET and reports how many takes are waiting.",
+  "yesdoor/public/book": "POST only, renter session token. A GET answers 405 by design, and pinging it with a body would book a tour, register a renter with a building and queue real emails for a person who is not there. The monitored doors for this surface are yesdoor/public/listings and yesdoor/me.",
+  "yesdoor/me/tour": "POST only, renter session. A GET answers 405 by design, and pinging it with a body would cancel or move a real renter's tour and notify a building. The monitored door for a renter's tours is yesdoor/me.",
+  "yesdoor/building/update": "POST only, building session. A GET answers 405 by design, and pinging it with a body would move a real renter along the placement stages, or earn a fee and issue an invoice. The monitored door for this surface is yesdoor/building/renters.",
+  "yesdoor/building/listings": "POST only, building session. A GET answers 405 by design, and pinging it with a body would write a unit onto a real building's list. The monitored door for the units is yesdoor/public/listings.",
+  "yesdoor/building/import": "POST only, building session. A GET answers 405 by design, and pinging it with a body would load or switch off a building's units. The monitored door for the units is yesdoor/public/listings.",
+  "yesdoor/staff/accounts": "POST only, staff ops. A GET answers 405 by design, and pinging it with a body would create a real login for a stranger and queue a sign-in link email to them. The monitored door for the people on this side is yesdoor/staff/brokers, which answers GET.",
+  "yesdoor/staff/agreement": "POST only, staff. A GET answers 405 by design, and pinging it with a body would draft or send a real fee agreement and queue a signing email. The monitored door for the building book is yesdoor/staff/buildings, which reports whether each can take renters.",
+  "yesdoor/staff/payment": "POST only, staff money roles. A GET answers 405 by design, and pinging it with a body would mark an invoice paid and start the 60-day refund clock on a fee that was never paid. The monitored door for the money is yesdoor/staff/ledger.",
+  "yesdoor/staff/refund": "POST only, staff money roles. A GET answers 405 by design, and pinging it with a body would reverse a paid fee and void a broker's share. The monitored door for the money is yesdoor/staff/ledger.",
+  "yesdoor/staff/broker-payout": "POST only, staff money roles. A GET answers 405 by design, and pinging it with a body would mark a broker's payable shares paid. The monitored door for the money is yesdoor/staff/ledger.",
+  "yesdoor/webhooks/esign": "Signed-link POST only: the HMAC link is the whole credential, and a bad, expired or forged link answers 404 on purpose, identically to an unknown agreement. A ping would read that correct refusal as an outage, and a ping with a body could sign an agreement. The monitored door for this surface is yesdoor/staff/buildings."
 };
 
 const API_KEYS = [
@@ -346,7 +362,29 @@ const API_KEYS = [
      paid $297 to watch for seven days; an outage there is the product missing.
      Its two write siblings are not pingable — see ALLOWED_UNMONITORED. */
   "trials/dashboard",
-  "trials/eligibility"
+  "trials/eligibility",
+  /* Yesdoor (B2). Public doors answer GET 200; session doors answer a JSON 401, and
+     auth/link is POST-only so a ping gets a JSON 405. All three count as up (isUp). */
+  "yesdoor/auth/link",
+  "yesdoor/auth/verify",
+  "yesdoor/public/listings",
+  "yesdoor/public/listing",
+  "yesdoor/me",
+  "yesdoor/building/renters",
+  "yesdoor/building/rules",
+  "yesdoor/building/invoices",
+  "yesdoor/broker/renters",
+  "yesdoor/broker/money",
+  "yesdoor/broker/link",
+  "yesdoor/staff/pipeline",
+  "yesdoor/staff/companies",
+  "yesdoor/staff/buildings",
+  "yesdoor/staff/brokers",
+  "yesdoor/staff/ledger",
+  "yesdoor/staff/renter",
+  "yesdoor/staff/screening",
+  "yesdoor/staff/disputes",
+  "yesdoor/staff/scoreboard"
 ];
 
 const DESK_FILES = [
@@ -391,7 +429,23 @@ const DESK_FILES = [
 ];
 
 /** Static HTML under public/ (not public/app desks). */
-const PUBLIC_STATIC_FILES = ["climate/index.html"];
+const PUBLIC_STATIC_FILES = [
+  "climate/index.html",
+  /* Yesdoor (a separate app built in this repo for now; spec
+     docs/specs/yesdoor-mvp-build-spec.md, F1). The site, the funnel, the sign-in
+     link page and the four portals. */
+  "yesdoor/index.html",
+  "yesdoor/search.html",
+  "yesdoor/listing.html",
+  "yesdoor/prescreen.html",
+  "yesdoor/book.html",
+  "yesdoor/login.html",
+  "yesdoor/agreement.html",
+  "yesdoor/renter.html",
+  "yesdoor/building.html",
+  "yesdoor/broker.html",
+  "yesdoor/staff.html"
+];
 
 export const PULSE_REGISTRY = [
   ...API_KEYS.map((key) => ({
@@ -408,7 +462,7 @@ export const PULSE_REGISTRY = [
     id: file.replace(/\.html$/, "").replace(/\//g, "-"),
     kind: "public_static",
     file,
-    path: file === "climate/index.html" ? "/climate/" : `/${file}`
+    path: /(^|\/)index\.html$/.test(file) ? `/${file.replace(/index\.html$/, "")}` : `/${file}`
   }))
 ];
 

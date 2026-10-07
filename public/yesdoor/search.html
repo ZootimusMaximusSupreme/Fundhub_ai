@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Find apartments | Yesdoor</title>
+<meta name="description" content="Apartments at buildings that work with Yesdoor. Filter by city, bedrooms and rent.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='8' fill='%230b7a5c'/%3E%3Cpath d='M11 25V13a5 5 0 0 1 10 0v12z' fill='%23fff'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/yesdoor.css">
+</head>
+<body>
+<div id="yd-banner"></div>
+<div id="yd-header"></div>
+<main id="main">
+  <div class="wrap section tight">
+    <h1>Find apartments</h1>
+    <p class="muted">Every building here works with Yesdoor. Not sure which ones will approve you? <a id="approval-link" href="prescreen.html">See in 60 seconds</a>.</p>
+    <form class="card search-bar" id="filters" role="search" aria-label="Filter apartments">
+      <div class="field">
+        <label for="f-city">City or ZIP code</label>
+        <input class="input" id="f-city" name="city" type="text" list="f-cities" autocomplete="off">
+        <datalist id="f-cities"></datalist>
+      </div>
+      <div class="field">
+        <label for="f-beds">Bedrooms</label>
+        <select class="input" id="f-beds" name="beds">
+          <option value="">Any</option><option value="0">Studio</option><option value="1">1 bed</option><option value="2">2 beds</option><option value="3">3 beds</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="f-rent">Highest rent per month</label>
+        <input class="input num" id="f-rent" name="maxRent" type="number" inputmode="numeric" min="500" step="50">
+      </div>
+      <button class="btn" type="submit">Show apartments</button>
+    </form>
+    <p class="caption" id="count" role="status" aria-live="polite" style="margin-top:24px"></p>
+    <div id="results"></div>
+    <div id="pager"></div>
+  </div>
+</main>
+<div id="yd-footer"></div>
+<script src="js/ui.js"></script>
+<script src="js/demo-data.js"></script>
+<script src="js/api.js"></script>
+<script src="js/pages/search.js"></script>
+</body>
+</html>

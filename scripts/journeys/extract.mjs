@@ -203,6 +203,42 @@ function primaryGate(file, { sets, wrappers }) {
     }
   }
 
+  /* YESDOOR GATES (src/yesdoor/auth/principal.mjs). Yesdoor is a separate app that
+     lives in this repo for now, and its handlers gate through two wrappers of its
+     own. Without this branch every Yesdoor route fell through to "no session gate
+     in this handler" and the journeys drew all of them as open to anyone, which is
+     a false claim in the dangerous direction (the same hazard the signed-link and
+     provider-signature branches below exist for).
+       requireYdStaff(req, res, YD_ROLES.X)  staff, limited to the roles in
+                                             src/yesdoor/config.mjs YD_ROLES.X (+ owner)
+       requireYdAccount(req, res, ["kind"])  a Yesdoor renter, building user or broker
+                                             session: NOT a Fundhub sign-in */
+  const ydStaff = /requireYdStaff\(\s*req\s*,\s*res\s*,\s*YD_ROLES\.(\w+)/.exec(src);
+  if (ydStaff) {
+    const cfg = code(read("src/yesdoor/config.mjs"));
+    const list = new RegExp(`\\b${ydStaff[1]}:\\s*Object\\.freeze\\(\\[([^\\]]*)\\]\\)`).exec(cfg);
+    if (!list) {
+      return { kind: "unverified", roles: null, principals: null, note: `requireYdStaff with an unresolvable set: YD_ROLES.${ydStaff[1]}` };
+    }
+    const named = [...list[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+    const supers = middlewareSuperRoles();
+    return {
+      kind: "role-set", roles: [...new Set([...named, ...supers])], principals: ["staff"],
+      note: `requireYdStaff(YD_ROLES.${ydStaff[1]}) from src/yesdoor/auth/principal.mjs` +
+            (supers.length ? ` — plus ${supers.join(", ")} via SUPER_ROLES` : "")
+    };
+  }
+  const ydAccount = /requireYdAccount\(\s*req\s*,\s*res\s*,\s*\[([^\]]*)\]/.exec(src);
+  if (ydAccount) {
+    const kinds = [...ydAccount[1].matchAll(/"([^"]+)"/g)].map((x) => x[1]);
+    return {
+      kind: "verified-other", roles: null, principals: null,
+      verifiedBy: `Yesdoor ${kinds.join(" / ")} session`,
+      note: `no Fundhub sign-in — needs a Yesdoor ${kinds.join(" / ")} session (yd_sessions, from an emailed link); ` +
+            "a Fundhub client, affiliate, partner or employee session is refused"
+    };
+  }
+
   const resolveSet = (expr) => {
     const named = /^ROLE_SETS\.(\w+)$/.exec(expr);
     if (named) return sets[named[1]] ? { roles: sets[named[1]], label: `ROLE_SETS.${named[1]}` } : null;

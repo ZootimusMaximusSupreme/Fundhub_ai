@@ -148,12 +148,22 @@ import { isSyntheticRow } from "./synthetic.mjs";
    off Inngest (meta-campaign-sync-sweeper) and onto a Netlify scheduled
    function, meta-sync-sweeper.
 
-   Moved 90 -> 92 on 2026-10-07 with the team calendar link (owner-approved,
+   Moved 90 -> 94 with Yesdoor B3b: yd-recheck, yd-touches, yd-rules-stale and
+   yd-outbox-dispatch. Four crons with no event trigger, so like every sweeper
+   here they always appear in neverFired. All four are sandbox-only.
+
+   Moved 94 -> 95 with Yesdoor B4's daily yd-fee-safe job (90 -> 91 on its own
+   branch; I1 merged it after B3b's four). A paid fee goes safe after the
+   building's refund window. A cron with no event trigger, so it
+   always appears in neverFired. Its handle() is exported by
+   src/workflows/yd-fee-safe.mjs.
+
+   Moved 95 -> 97 on 2026-10-07 with the team calendar link (owner-approved,
    ops/workflows/team-setup-sarah-justice-2026-10-07.md): staff-calendar-busy-sync,
    a five-minute cron with no event trigger, so it always appears in neverFired;
    and s-04d-closer-calendar-invite on booking.created, which the walk reaches
    and which skips without a Google token. */
-const REGISTERED = 92;
+const REGISTERED = 97;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
