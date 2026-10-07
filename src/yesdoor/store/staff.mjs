@@ -44,7 +44,8 @@ export async function getPipeline(db, { orgId, stage, limit }) {
 
   const applications = (await db.query(
     `SELECT a.id, a.stage, a.rent_cents, a.registration_sent_at, a.updated_at,
-            r.first_name, r.last_name, b.name AS building_name, l.unit_label
+            r.first_name, r.last_name, r.lane, r.risk_tier, r.source_kind,
+            b.name AS building_name, l.unit_label
        FROM yd_applications a
        JOIN yd_renters r ON r.id = a.renter_id AND r.org_id = a.org_id
        JOIN yd_buildings b ON b.id = a.building_id AND b.org_id = a.org_id
@@ -63,6 +64,8 @@ export async function getPipeline(db, { orgId, stage, limit }) {
     })),
     applications: applications.map((a) => ({
       id: a.id, stage: a.stage, renterName: fullName(a.first_name, a.last_name),
+      // The renter's path, tier and source, so the desk row says who this is (I1).
+      lane: a.lane, riskTier: a.risk_tier, source: a.source_kind,
       buildingName: a.building_name, unit: a.unit_label,
       rentCents: cents(a.rent_cents), registeredAt: a.registration_sent_at, updatedAt: a.updated_at
     }))

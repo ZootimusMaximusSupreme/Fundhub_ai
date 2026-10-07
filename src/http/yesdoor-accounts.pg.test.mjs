@@ -69,6 +69,11 @@ describe("yesdoor account doors", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
       assert.ok(b.applications[0].registeredAt);
       assert.match(b.applications[0].leaseStart, /^\d{4}-\d{2}-\d{2}$/);
       assert.equal(b.applications[0].tour.status, "booked");
+      // I1: what the renter portal needs to show a tour and offer new times.
+      assert.equal(b.applications[0].building.address, "1 Test Way");
+      assert.deepEqual(b.applications[0].building.tourHours, {});
+      if (b.applications[0].listing) assert.ok(Number.isInteger(b.applications[0].listing.beds));
+      if (b.matches[0].listing) assert.ok(Number.isInteger(b.matches[0].listing.beds));
     });
 
     test("a renter sees only their own file, never another renter's", async () => {

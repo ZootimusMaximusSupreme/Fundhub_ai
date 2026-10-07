@@ -75,6 +75,11 @@ describe("yesdoor staff doors", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, 
       const all = await call(h.pipeline, { token: t().salesA });
       assert.equal(all.body.renters.length, 2);
       assert.equal(all.body.applications.length, 2);
+      // I1: each row names the renter's path, tier and source for the desk.
+      for (const a of all.body.applications) {
+        assert.ok(["verified", "second_chance", null].includes(a.lane));
+        assert.ok("riskTier" in a && "source" in a);
+      }
       const text = JSON.stringify(all.body);
       for (const id of [fx.B.renter1, fx.B.app1, fx.B.bSigned]) assert.ok(!text.includes(id), "org B data in org A's pipeline");
 

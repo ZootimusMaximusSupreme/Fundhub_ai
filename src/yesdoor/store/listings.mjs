@@ -5,10 +5,16 @@
 // show before any building signs. Samples are never hidden inside the real set:
 // every row carries isSample, and the site must label it "Sample listing".
 //
-// Nothing about rules, fees, application fees or who is screened leaves here.
+// The search (many listings) carries nothing about rules, fees, application fees
+// or who is screened. The single-listing door (GET public/listing) adds two things
+// the listing and booking pages need (I1, 2026-10-07): the building's tour hours,
+// so the tour picker offers times the booking door will accept, and the building's
+// CURRENT rules in the building's own terms (what it looks for, never a number
+// about any renter), so the page can say "what this building looks for". Fees and
+// leasing contacts still never leave here.
 
 import { toCents } from "../../commissions/money.mjs";
-import { YD_API } from "../config.mjs";
+import { YD_API, YD_DEFAULTS } from "../config.mjs";
 import { YdError, cents, num } from "../http.mjs";
 
 /** A listing is public when it is active and its building is signed/live, or it
@@ -86,12 +92,40 @@ export async function searchListings(db, { orgId, city, beds, maxRent, page }) {
 }
 
 /** getListing — one public listing, or null. A listing that is inactive, at an
- *  unsigned building (and not a sample), or in another company is simply not found. */
+ *  unsigned building (and not a sample), or in another company is simply not found.
+ *  Adds the building's tour hours and its current rules (see the header). */
 export async function getListing(db, { orgId, id }) {
   const r = await db.query(
-    `${SELECT}
+    `${SELECT}, b.tour_hours,
+            ru.version AS rules_version, ru.confirmed_at AS rules_confirmed_at,
+            ru.min_score, ru.income_multiple::float8 AS income_multiple, ru.max_evictions,
+            ru.eviction_lookback_years, ru.criminal_policy, ru.accepts_second_chance,
+            (ru.confirmed_at IS NULL OR ru.confirmed_at < now() - ($3::int * interval '1 day')) AS rules_stale
        FROM yd_listings l
        JOIN yd_buildings b ON b.id = l.building_id AND b.org_id = l.org_id
-      WHERE ${PUBLIC_WHERE} AND l.id = $2`, [orgId, id]);
-  return r.rows[0] ? shapeListing(r.rows[0]) : null;
+       LEFT JOIN LATERAL (
+         SELECT version, confirmed_at, min_score, income_multiple, max_evictions,
+                eviction_lookback_years, criminal_policy, accepts_second_chance
+           FROM yd_building_rules
+          WHERE building_id = b.id AND org_id = b.org_id
+          ORDER BY version DESC LIMIT 1
+       ) ru ON true
+      WHERE ${PUBLIC_WHERE} AND l.id = $2`, [orgId, id, YD_DEFAULTS.rulesStaleDays]);
+  const row = r.rows[0];
+  if (!row) return null;
+  return {
+    ...shapeListing(row),
+    tourHours: row.tour_hours || {},
+    rules: row.rules_version === null ? null : {
+      version: row.rules_version,
+      confirmedAt: row.rules_confirmed_at,
+      stale: row.rules_stale,
+      minScore: row.min_score,
+      incomeMultiple: row.income_multiple,
+      maxEvictions: row.max_evictions,
+      evictionLookbackYears: row.eviction_lookback_years,
+      criminalPolicy: row.criminal_policy || {},
+      acceptsSecondChance: row.accepts_second_chance
+    }
+  };
 }

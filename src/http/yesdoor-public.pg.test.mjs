@@ -109,6 +109,25 @@ describe("yesdoor public listings", { skip: !HAVE_DB ? "no DATABASE_URL" : false
     assert.equal((await call(listing, { query: { id: "11111111-1111-4111-8111-111111111111" } })).code, 404);
   });
 
+  test("the single-listing door adds tour hours and the building's current rules, never fees or contacts", async () => {
+    useOrg(fx.slugA);
+    const l = (await call(listing, { query: { id: fx.A.lPublic2 } })).body.listing;
+    assert.deepEqual(l.tourHours, {}, "a building with no hours on file answers an empty object");
+    assert.equal(l.rules.version, 1);
+    assert.equal(l.rules.minScore, 600);
+    assert.equal(l.rules.incomeMultiple, 3);
+    assert.equal(l.rules.maxEvictions, 1);
+    assert.equal(l.rules.evictionLookbackYears, 5);
+    assert.equal(l.rules.acceptsSecondChance, false);
+    assert.equal(l.rules.stale, false, "rules confirmed today are not stale");
+    assert.ok(l.rules.confirmedAt);
+    const text = JSON.stringify(l);
+    for (const k of ["app_fee", "appFee", "fee_percent", "feePercent", "leasing", "refund"]) {
+      assert.ok(!text.includes(k), `the listing detail leaked ${k}`);
+    }
+    assert.deepEqual(creditLeaks(l), []);
+  });
+
   test("filters: city, beds, maxRent in whole dollars", async () => {
     useOrg(fx.slugA);
     const phx = await call(listings, { query: { city: "phoenix" } });
