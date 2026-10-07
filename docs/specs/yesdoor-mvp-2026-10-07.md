@@ -168,3 +168,10 @@ Things only Chris has (can come tomorrow):
 
   One step at a time.
 - **Sales training:** research the best outbound sales courses; an investor buys one.
+
+## 13. Renter pain, from the owner's own experience (2026-10-07)
+
+- Denials often come from **one surprise item**: a background record, or a negative credit item that shows up right at application time. This happens even with good credit and verified income.
+- The worst part is **not knowing**: "Will they accept this?" Renters apply, pay the fee, and find out after.
+- Many buildings weigh a background item above income. Rules vary by building, so a renter can't tell in advance.
+- Product fit: Yesdoor answers "will this building accept me, record and all?" before the renter applies. Second Chance buildings get matched to those renters.
