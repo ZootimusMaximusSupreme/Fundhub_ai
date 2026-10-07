@@ -150,6 +150,10 @@ const EXPECTED_WORKFLOW_IDS = [
   "u-05-data-health-monitor",
   "waypoint-nudge-sweeper",
   "blueprint-closer-ready-sweeper",
+  "yd-recheck",
+  "yd-touches",
+  "yd-rules-stale",
+  "yd-outbox-dispatch",
 ];
 
 /* Every id passed to inngest.createFunction in this directory, read from the
