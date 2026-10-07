@@ -148,7 +148,7 @@ describe("matchBuilding results", () => {
   });
 
   test("the sample second-chance renter with an old eviction is approved where the rules allow it", () => {
-    const rules = { ...RULES, min_score: 580, max_evictions: 0, eviction_lookback_years: 5 };
+    const rules = { ...RULES, min_score: 580, max_evictions: 0, eviction_lookback_years: 5, accepts_second_chance: true };
     const m = matchBuilding({
       screening: screeningOf("tier-c-old-eviction"), income: incomeOf("tier-c-old-eviction"), rules, listingRentCents: 110000, now: NOW
     });
@@ -161,6 +161,68 @@ describe("matchBuilding results", () => {
       rules: { ...rules, eviction_lookback_years: 10 }, listingRentCents: 110000, now: NOW
     });
     assert.equal(strict.result, "no");
+  });
+
+  describe("accepts_second_chance", () => {
+    const tierC = () => ({
+      screening: screeningOf("tier-c-old-eviction"), income: incomeOf("tier-c-old-eviction"), listingRentCents: 110000, now: NOW
+    });
+    const base = { ...RULES, min_score: 580, max_evictions: 0, eviction_lookback_years: 5 };
+
+    test("a Second Chance renter at a building that does not take them is at best likely, with a plain reason", () => {
+      const m = matchBuilding({ ...tierC(), rules: { ...base, accepts_second_chance: false } });
+      assert.equal(m.lane, "second_chance");
+      assert.equal(m.result, "likely");
+      const r = m.reasons.find((x) => x.rule === "second_chance");
+      assert.equal(r.result, "close");
+      assert.match(r.reason, /does not say it takes Second Chance renters/);
+      assert.match(r.reason, /numbers may still pass/);
+      assert.match(r.reason, /building decides/);
+      // Every other rule still passed: the numbers were fine, the building decides.
+      assert.ok(m.reasons.filter((x) => x.rule !== "second_chance").every((x) => x.result === "pass"));
+    });
+
+    test("it is never a no by itself: numbers that fail stay a no, numbers that pass stay likely", () => {
+      const low = matchBuilding({ ...tierC(), rules: { ...base, min_score: 700, accepts_second_chance: false } });
+      assert.equal(low.result, "no");
+      const ok = matchBuilding({ ...tierC(), rules: { ...base, accepts_second_chance: false } });
+      assert.notEqual(ok.result, "no");
+    });
+
+    test("a building that takes Second Chance renters is untouched: approved, with no second_chance reason", () => {
+      const m = matchBuilding({ ...tierC(), rules: { ...base, accepts_second_chance: true } });
+      assert.equal(m.result, "approved");
+      assert.ok(!m.reasons.some((x) => x.rule === "second_chance"));
+    });
+
+    test("the Verified lane is untouched by the flag", () => {
+      const m = matchBuilding({
+        screening: screeningOf("prime-1"), income: incomeOf("prime-1"), rules: { ...RULES, accepts_second_chance: false },
+        listingRentCents: 150000, now: NOW
+      });
+      assert.equal(m.lane, "verified");
+      assert.equal(m.result, "approved");
+      assert.ok(!m.reasons.some((x) => x.rule === "second_chance"));
+    });
+
+    test("an unstated flag (missing) is not a refusal", () => {
+      const { accepts_second_chance: _drop, ...rules } = { ...base, accepts_second_chance: false };
+      const m = matchBuilding({ ...tierC(), rules });
+      assert.equal(m.result, "approved");
+    });
+
+    test("through matchCandidates: the flag reaches the answer and the likely building is never a backup", () => {
+      const { matches, backups } = matchCandidates({
+        ...tierC(), now: NOW,
+        candidates: [
+          { buildingId: "b-no-sc", listingId: "l1", status: "live", rules: { ...base, accepts_second_chance: false }, listingRentCents: 110000 },
+          { buildingId: "b-sc", listingId: "l2", status: "live", rules: { ...base, accepts_second_chance: true }, listingRentCents: 110000 }
+        ]
+      });
+      assert.equal(matches.find((x) => x.buildingId === "b-no-sc").result, "likely");
+      assert.equal(matches.find((x) => x.buildingId === "b-sc").result, "approved");
+      assert.deepEqual(backups.map((x) => x.buildingId), ["b-sc"]);
+    });
   });
 
   test("without a completed screening the answer is no, with a plain reason", () => {

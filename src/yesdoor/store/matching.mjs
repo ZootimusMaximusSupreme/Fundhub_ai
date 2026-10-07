@@ -89,7 +89,7 @@ const CANDIDATE_SELECT = `
   SELECT b.id AS building_id, b.name AS building_name, b.address, b.city, b.state, b.is_sample, b.status,
          b.lat, b.lng,
          r.id AS rules_id, r.version, r.min_score, r.income_multiple, r.max_evictions,
-         r.eviction_lookback_years, r.criminal_policy, r.confirmed_at,
+         r.eviction_lookback_years, r.criminal_policy, r.accepts_second_chance, r.confirmed_at,
          l.id AS listing_id, l.unit_label, l.beds, l.rent_cents`;
 
 /* Buildings that may take renters, have rules, and a live listing that passes the
@@ -217,7 +217,8 @@ const toCandidate = (row, stateRules, distance) => ({
   rules: {
     version: row.version, min_score: row.min_score, income_multiple: row.income_multiple,
     max_evictions: row.max_evictions, eviction_lookback_years: row.eviction_lookback_years,
-    criminal_policy: row.criminal_policy, confirmed_at: row.confirmed_at
+    criminal_policy: row.criminal_policy, accepts_second_chance: row.accepts_second_chance,
+    confirmed_at: row.confirmed_at
   },
   listingRentCents: cents(row.rent_cents),
   stateRules: stateRules[row.state] || null,

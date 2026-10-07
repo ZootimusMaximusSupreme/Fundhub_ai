@@ -18,7 +18,7 @@
 //                              eviction_lookback_years, criminal_policy, confirmed_at
 
 import { YD_DEFAULTS } from "../config.mjs";
-import { evaluateCriminal, evaluateEvictions, evaluateFreshness, evaluateIncome, evaluateScore,
+import { evaluateCriminal, evaluateEvictions, evaluateFreshness, evaluateIncome, evaluateScore, evaluateSecondChance,
   evictionsInside, FAIL, PASS, rulesAreFresh, worstResult } from "./rules.mjs";
 import { isoDate, num } from "../util.mjs";
 
@@ -110,7 +110,8 @@ function stateNotices(stateRules, screening) {
  *
  *   no        any rule fails
  *   approved  every rule passes and the rules are fresh
- *   likely    everything else (a close call, an unknown, stale rules)
+ *   likely    everything else (a close call, an unknown, stale rules, or a Second
+ *             Chance renter at a building whose rules say accepts_second_chance = false)
  *
  * maxRentCents = verified monthly income / income_multiple (3 when the building
  * states none); null while income is unverified (unknown is never 0).
@@ -143,8 +144,9 @@ export function matchBuilding({
       maxEvictions: rules.max_evictions, lookbackYears: rules.eviction_lookback_years, now
     }),
     evaluateCriminal({ flags: screening.criminal_flags, policy: rules.criminal_policy }),
+    evaluateSecondChance({ lane: base.lane, acceptsSecondChance: rules.accepts_second_chance }),
     evaluateFreshness({ confirmedAt: rules.confirmed_at, now, defaults })
-  ];
+  ].filter(Boolean);
 
   const worst = worstResult(reasons.map((r) => r.result));
   const result = worst === FAIL ? "no" : reasons.every((r) => r.result === PASS) ? "approved" : "likely";
