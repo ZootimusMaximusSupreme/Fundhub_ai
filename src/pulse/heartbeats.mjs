@@ -44,7 +44,9 @@ export const INNGEST_JOBS = Object.freeze([
   ["yd-rules-stale", "40 10 * * *"],
   ["yd-outbox-dispatch", "*/5 * * * *"],
   // Yesdoor B4: paid fees go safe after the refund window; the broker share is released.
-  ["yd-fee-safe", "0 8 * * *"]
+  ["yd-fee-safe", "0 8 * * *"],
+  /* Staff busy times onto the booking calendar (owner-approved 2026-10-07). */
+  ["staff-calendar-busy-sync", "*/5 * * * *"]
 ]);
 
 export const NETLIFY_JOBS = Object.freeze([

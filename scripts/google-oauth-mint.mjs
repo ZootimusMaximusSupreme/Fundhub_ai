@@ -44,6 +44,19 @@
  *                     for the production, deploy-preview and branch contexts,
  *                     as a secret. OFF by default: writing production config is
  *                     a deliberate act, not a side effect of minting a token.
+ *   --calendar        OPT-IN. Mint the calendar owner's token for the team
+ *                     calendar link instead (src/staff/calendar-sync.mjs):
+ *                     asks only for calendar.events + calendar.freebusy, writes
+ *                     ~/.config/fundhub/google-calendar-token.json, and names
+ *                     GOOGLE_CALENDAR_OAUTH_TOKEN_JSON — a NEW variable, so the
+ *                     Gmail and Drive tokens are never touched. With no --client
+ *                     and no GOOGLE_OAUTH_CLIENT_ID it reuses the client id and
+ *                     secret inside the Google token already in the environment
+ *                     (the same Desktop client). With --set-netlify it refuses
+ *                     to overwrite GOOGLE_CALENDAR_OAUTH_TOKEN_JSON if Netlify
+ *                     already holds one (owner law: never overwrite a key).
+ *
+ *                       node --env-file=.env scripts/google-oauth-mint.mjs --calendar --set-netlify
  *
  * WHAT IT NEVER DOES
  *   * It never prints a refresh token, a client secret or an access token. It
@@ -61,6 +74,8 @@ import { dirname, join } from "node:path";
 import { spawn, spawnSync } from "node:child_process";
 import { GMAIL_MODIFY_SCOPE } from "../src/gmail/config.mjs";
 import { DRIVE_READONLY_SCOPE } from "../src/company-brain/config.mjs";
+import { CALENDAR_SCOPES, TOKEN_ENV_KEY as CALENDAR_TOKEN_ENV_KEY } from "../src/messaging/providers/google-calendar.mjs";
+import { calendarOwnerEmail } from "../src/staff/calendar-sync.mjs";
 
 /* One consent, every Google surface this repo reads. Asking for both at once
    matters: a refresh token carries the scopes it was granted and nothing can
@@ -79,6 +94,35 @@ const DEFAULT_SCOPES = [
 const AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const DEFAULT_OUT = join(process.env.HOME || ".", ".config/fundhub/google-token.json");
+const CALENDAR_OUT = join(process.env.HOME || ".", ".config/fundhub/google-calendar-token.json");
+
+/* --calendar only: the Google tokens this repo already reads, in the order
+   src/company-brain/config.mjs reads them. Each carries the Desktop client's id
+   and secret, so the calendar consent can reuse that client without anyone
+   downloading its JSON again. Only the client pair is read; the refresh token
+   in it is never used or printed. */
+const EXISTING_TOKEN_KEYS = [
+  "GOOGLE_GMAIL_OAUTH_TOKEN_JSON", "GOOGLE_GMAIL_OAUTH_TOKEN_PATH",
+  "GOOGLE_DRIVE_OAUTH_TOKEN_JSON", "GOOGLE_DRIVE_OAUTH_TOKEN_PATH",
+  "GOOGLE_OAUTH_TOKEN_JSON", "GOOGLE_OAUTH_TOKEN_PATH"
+];
+
+function clientFromExistingToken(env = process.env) {
+  for (const key of EXISTING_TOKEN_KEYS) {
+    const value = String(env[key] || "").trim();
+    if (!value) continue;
+    try {
+      const raw = key.endsWith("_PATH")
+        ? readFileSync(value.replace(/^~(?=\/)/, process.env.HOME || "~"), "utf8")
+        : value;
+      const t = JSON.parse(raw);
+      if (t.client_id && t.client_secret) {
+        return { clientId: String(t.client_id), clientSecret: String(t.client_secret), from: key };
+      }
+    } catch { /* unreadable — try the next one */ }
+  }
+  return null;
+}
 
 function args(argv) {
   const out = { flags: new Set(), opts: {} };
@@ -220,10 +264,18 @@ async function exchange({ code, clientId, clientSecret, redirectUri, verifier })
 
 async function main() {
   const { flags, opts } = args(process.argv.slice(2));
-  const { clientId, clientSecret } = clientFrom(opts);
+  const calendar = flags.has("calendar");
+  let reused = null;
+  if (calendar && !opts.client && !(process.env.GOOGLE_OAUTH_CLIENT_ID && process.env.GOOGLE_OAUTH_CLIENT_SECRET)) {
+    reused = clientFromExistingToken();
+  }
+  const { clientId, clientSecret } = reused || clientFrom(opts);
   const port = Number(opts.port || 8477);
-  const outPath = opts.out || DEFAULT_OUT;
-  const scopes = opts.scopes ? String(opts.scopes).split(/[\s,]+/).filter(Boolean) : DEFAULT_SCOPES;
+  const outPath = opts.out || (calendar ? CALENDAR_OUT : DEFAULT_OUT);
+  const envKey = calendar ? CALENDAR_TOKEN_ENV_KEY : "GOOGLE_GMAIL_OAUTH_TOKEN_JSON";
+  const scopes = opts.scopes
+    ? String(opts.scopes).split(/[\s,]+/).filter(Boolean)
+    : (calendar ? [...CALENDAR_SCOPES] : DEFAULT_SCOPES);
   const redirectUri = `http://localhost:${port}`;
 
   if (existsSync(outPath) && !flags.has("force")) {
@@ -242,7 +294,9 @@ async function main() {
     // even when this account has approved these scopes before.
     access_type: "offline",
     prompt: "consent",
-    include_granted_scopes: "true",
+    // --calendar asks for its two scopes only, not every scope this client
+    // was ever granted, so the calendar token can do nothing else.
+    include_granted_scopes: calendar ? "false" : "true",
     state,
     code_challenge: challenge,
     code_challenge_method: "S256"
@@ -250,7 +304,10 @@ async function main() {
 
   console.log("\n  Asking Google for:");
   for (const s of scopes) console.log(`    · ${s}`);
-  console.log(`\n  Sign in as the mailbox you want read, then press Allow.\n`);
+  if (reused) console.log(`\n  Using the Google sign-in client already stored in ${reused.from}.`);
+  console.log(calendar
+    ? `\n  Sign in as ${calendarOwnerEmail()} (the calendar the booking page reads), then press Allow.\n`
+    : `\n  Sign in as the mailbox you want read, then press Allow.\n`);
 
   const waiting = waitForCode(port, state);
   if (flags.has("no-open")) {
@@ -291,12 +348,25 @@ async function main() {
     console.log("  Whatever needs them will still fail. Run again and approve everything.");
   }
 
-  console.log(`\n  Prove it locally:\n    GOOGLE_GMAIL_OAUTH_TOKEN_PATH="${outPath}" node scripts/gmail-probe.mjs`);
+  if (!calendar) {
+    console.log(`\n  Prove it locally:\n    GOOGLE_GMAIL_OAUTH_TOKEN_PATH="${outPath}" node scripts/gmail-probe.mjs`);
+  }
+
+  if (calendar && flags.has("set-netlify")) {
+    /* Never overwrite a stored key (CLAUDE.md §11). If Netlify already holds
+       one, stop here and say so; the new token stays in the file above. */
+    const existing = spawnSync("netlify", ["env:get", envKey, "--context", "production"], { encoding: "utf8" });
+    if (existing.status === 0 && String(existing.stdout || "").trim()) {
+      console.log(`\n  Netlify already holds ${envKey}. It was NOT overwritten.`);
+      console.log(`  The new token is in ${outPath}. Nothing else was changed.\n`);
+      return;
+    }
+  }
 
   if (flags.has("set-netlify")) {
     console.log("\n  Putting it on Netlify as a secret…");
     const r = spawnSync("netlify", [
-      "env:set", "GOOGLE_GMAIL_OAUTH_TOKEN_JSON", JSON.stringify(tokenFile),
+      "env:set", envKey, JSON.stringify(tokenFile),
       "--context", "production", "--context", "deploy-preview", "--context", "branch-deploy",
       "--secret"
     ], { stdio: ["ignore", "inherit", "inherit"] });
@@ -306,6 +376,17 @@ async function main() {
       console.log("  Set. It takes effect on the next deploy — batch it with any other change and ship once.");
       return;
     }
+  }
+
+  if (calendar) {
+    console.log(`\n  Put it on Netlify (ONE command, then ship once):
+
+    netlify env:set ${envKey} "$(cat ${outPath})" \\
+      --context production --context deploy-preview --context branch-deploy --secret
+
+  ${envKey} is a new variable read only by the team calendar link
+  (src/messaging/providers/google-calendar.mjs). No other key is touched.\n`);
+    return;
   }
 
   console.log(`\n  Put it on Netlify (ONE command, then ship once):

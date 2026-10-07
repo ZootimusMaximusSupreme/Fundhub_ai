@@ -70,6 +70,8 @@ import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
 import { s04bBookingReminders } from './s-04b-booking-reminders.mjs';
 import { s04cStaffBookedAlert } from './s-04c-staff-booked-alert.mjs';
+import { s04dCloserCalendarInvite } from './s-04d-closer-calendar-invite.mjs';
+import { staffCalendarBusySync } from './staff-calendar-busy-sync.mjs';
 import { sPortalInvite } from './s-portal-invite.mjs';
 import { s05aNoShowRecovery } from './s-05a-no-show-recovery.mjs';
 import { sNobookChase } from './s-nobook-chase.mjs';
@@ -449,6 +451,16 @@ export const functions = [
   s04CallBooked,
   s04bBookingReminders,
   s04cStaffBookedAlert,
+  /* A booked call onto the closer's own Google calendar (owner-approved
+     2026-10-07). Finds the call on the calendar owner's Google calendar and adds
+     every connected closer as a guest. Sends no text or email of its own;
+     Google sends the invite. Skips until GOOGLE_CALENDAR_OAUTH_TOKEN_JSON is set. */
+  s04dCloserCalendarInvite,
+  /* Every five minutes: staff busy times become private busy blocks on the
+     calendar the booking page checks (owner-approved 2026-10-07). Touches only
+     blocks it wrote itself. Waits, writing nothing to Google, until
+     GOOGLE_CALENDAR_OAUTH_TOKEN_JSON is set. */
+  staffCalendarBusySync,
   sPortalInvite,
   sNobookChase,
   s05aNoShowRecovery,

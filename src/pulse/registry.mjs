@@ -78,6 +78,14 @@ const API_KEYS = [
      serves it — so this is monitored rather than excused. Self-scoped: both
      halves act on req.staff.id and nothing else. */
   "staff/avatar",
+  /* An employee's own Google calendar link (owner-approved 2026-10-07).
+     GET is a real door: it answers the signed-out pinger with the app's own
+     401. The two things behind it are watched elsewhere: the five-minute
+     sync job (staff-calendar-busy-sync) by its heartbeat in
+     src/pulse/heartbeats.mjs, and its outbound calls to Google
+     (src/messaging/providers/google-calendar.mjs) by the status and plain
+     last_error each pass writes on every staff_calendar_links row. */
+  "staff/calendar-link",
   "campaigns/action-log",
   "campaigns/connections",
   "campaigns/detail",

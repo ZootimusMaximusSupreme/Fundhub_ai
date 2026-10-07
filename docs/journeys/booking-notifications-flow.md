@@ -63,7 +63,7 @@ slot-level dedupe, and a second booking is a real second appointment.
 |---|---|---|
 | `entry.captured` | welcome text, new-lead intake, incomplete-survey nudge, first-touch capture, referral ownership | `s-00-welcome`, `s-01`, `s-02`, `at-01`, `af-02` |
 | `survey.submitted` | the never-booked chase, and nothing else | `s-nobook-chase` |
-| `booking.created` | confirm + reminders, the AI setter, the 15-minute handoff, staff alert, pre-call launcher, call-outcome enforcement, portal invite, no-show recovery | `s-04b`, `ai-set-01`, `ai-set-04`, `s-04c`, `bs-01`, `dpc-02`, `s-portal-invite`, `s-05a` |
+| `booking.created` | confirm + reminders, the AI setter, the 15-minute handoff, staff alert, closer calendar invite, pre-call launcher, call-outcome enforcement, portal invite, no-show recovery | `s-04b`, `ai-set-01`, `ai-set-04`, `s-04c`, `s-04d`, `bs-01`, `dpc-02`, `s-portal-invite`, `s-05a` |
 
 ## 3. The never-booked chase
 
@@ -211,6 +211,43 @@ start time nothing can read, a call that has already started, and a booking
 taken inside the last fifteen minutes. The first was refused before this repair
 pass; the other two were not, so a booking carrying yesterday's start time sent
 "Your call starts in 15 minutes" the instant it arrived.
+
+## 5b. The booked call onto the closer's calendar (added 2026-10-07)
+
+`src/workflows/s-04d-closer-calendar-invite.mjs` → `src/staff/calendar-sync.mjs`
+`inviteClosersToBooking` → `src/messaging/providers/google-calendar.mjs`
+
+Sends no text and no email of its own. Google sends the calendar invite.
+
+```mermaid
+flowchart TD
+    B[booking.created] --> T{GOOGLE_CALENDAR_OAUTH_TOKEN_JSON set?}
+    T -->|No| SK0[Skipped: waiting on Chris's Google approval]
+    T -->|Yes| I{Interview booking?}
+    I -->|Yes| SK1[Skipped: interview]
+    I -->|No| E{Email and a readable start time?}
+    E -->|No| SK2[Skipped]
+    E -->|Yes| O{The default org?}
+    O -->|No| SK3[Skipped: not the booking calendar's company]
+    O -->|Yes| C{Any active closer with a connected calendar?}
+    C -->|No| SK4[Skipped: no connected closer]
+    C -->|Yes| F[Find the event on the owner's Google calendar:<br/>starts within 2 minutes, the lead is a guest]
+    F -->|Found| A[Add each closer's calendar address as a guest<br/>existing guests kept, Meet link kept,<br/>guests cannot see each other, sendUpdates=all]
+    A --> DONE[Done: added, or already on it]
+    F -->|Not there yet, or Google did not answer| W[Wait 2 minutes, try again<br/>6 tries, about 10 minutes]
+    W --> F
+    W -->|Sixth miss| GIVE[Give up with a log line]
+```
+
+The closer's calendar address comes from the Calendar screen's "Connect your
+calendar" box (`staff_calendar_links`, migration 434). The same box feeds the
+five-minute busy-time sync (`src/workflows/staff-calendar-busy-sync.mjs`),
+which writes private "Busy - <first name>" blocks onto the owner's calendar so
+the booking page stops offering those times.
+
+**Not handled:** `booking.rescheduled` and `booking.cancelled` do not touch the
+closer's guest entry. If the booking page moves the same Google event, the
+closer stays on it; if it makes a new one, nothing adds the closer to it.
 
 ## 6. Where a message actually goes out
 

@@ -33,7 +33,7 @@ flowchart TD
     CAN --> A_trials[trials — 1 route]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     CAN --> A_yesdoor[yesdoor — 26 routes]
-    WHO -->|Yes| CANT[Blocked — 218 routes]
+    WHO -->|Yes| CANT[Blocked — 219 routes]
     CANT --> B_adintel[adintel — 1 blocked]
     CANT --> B_analytics[analytics — 4 blocked]
     CANT --> B_auth[Signing in and out — 7 blocked]
@@ -62,7 +62,7 @@ flowchart TD
     CANT --> B_repair[repair — 5 blocked]
     CANT --> B_scripts[scripts — 2 blocked]
     CANT --> B_social[social — 7 blocked]
-    CANT --> B_staff[staff — 3 blocked]
+    CANT --> B_staff[staff — 4 blocked]
     CANT --> B_top_level[Everything else — 35 blocked]
     CANT --> B_trials[trials — 3 blocked]
     CANT --> B_yesdoor[yesdoor — 10 blocked]
@@ -70,7 +70,7 @@ flowchart TD
 
 ## What they can reach
 
-**80 of 298 routes.**
+**80 of 299 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -162,7 +162,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**218 of 298 routes.**
+**219 of 299 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -367,6 +367,7 @@ flowchart TD
 | `/api/social/schedule` | POST | partner, staff |
 | `/api/social/settings` | GET, POST | employees: owner, admin<br>plus: partner |
 | `/api/staff/avatar` | GET, POST | any signed-in employee |
+| `/api/staff/calendar-link` | GET, POST, PUT | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/staff/monitoring-consent` | POST | owner |
 | `/api/staff/telemetry` | GET | owner, admin, sales_manager |
 | `/api/tasks` | GET, PATCH | staff |

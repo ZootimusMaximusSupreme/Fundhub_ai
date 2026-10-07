@@ -156,8 +156,14 @@ import { isSyntheticRow } from "./synthetic.mjs";
    branch; I1 merged it after B3b's four). A paid fee goes safe after the
    building's refund window. A cron with no event trigger, so it
    always appears in neverFired. Its handle() is exported by
-   src/workflows/yd-fee-safe.mjs. */
-const REGISTERED = 95;
+   src/workflows/yd-fee-safe.mjs.
+
+   Moved 95 -> 97 on 2026-10-07 with the team calendar link (owner-approved,
+   ops/workflows/team-setup-sarah-justice-2026-10-07.md): staff-calendar-busy-sync,
+   a five-minute cron with no event trigger, so it always appears in neverFired;
+   and s-04d-closer-calendar-invite on booking.created, which the walk reaches
+   and which skips without a Google token. */
+const REGISTERED = 97;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);
