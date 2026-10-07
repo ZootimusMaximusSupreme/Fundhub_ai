@@ -17,7 +17,7 @@ import { withTransaction } from "../tx.mjs";
 import { actorOf, recordEvent, setActor } from "../events.mjs";
 import { parseTourHours } from "../tour-hours.mjs";
 import {
-  reqString, optString, optBool, optInt, optNumber, optEnum, optEmail, optUuid, optStateCode,
+  reqString, optString, optBool, optInt, optNumber, optEnum, optUuid, optStateCode,
   stateCode, emailOf
 } from "../validate.mjs";
 

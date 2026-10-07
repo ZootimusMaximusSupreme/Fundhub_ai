@@ -19,7 +19,6 @@ import { YD_MONEY } from "../config.mjs";
 import { YdError, cents, isUuid } from "../http.mjs";
 import { withTransaction } from "../tx.mjs";
 import { SYSTEM, actorOf, recordEvent, setActor } from "../events.mjs";
-import { addDays } from "../util.mjs";
 import { reqEnum, reqString, reqUuid, optUuid, optString } from "../validate.mjs";
 import { refundPaidFee } from "./fee-ledger.mjs";
 
@@ -57,14 +56,17 @@ export async function recordPayment(db, who, body, { now = new Date() } = {}) {
       if (inv.payment_ref === ref) return { invoice: shapePaid(inv), fees: [], alreadyPaid: true, brokerHeld: 0 };
       throw new YdError(409, "already_paid", `Invoice ${inv.number} is already paid (reference ${inv.payment_ref}).`);
     }
-    if (paidAt && paidAt < new Date(inv.issued_at)) {
+    // A date typed to the millisecond can land a hair before the invoice's microsecond
+    // clock; within a second of the issue time it means "the moment it was issued", so
+    // the database takes the later of the two (JS dates cannot hold the microseconds).
+    const when = paidAt || now;
+    if (inv.issued_at && new Date(inv.issued_at) - when >= 1000) {
       throw new YdError(400, "invalid_time", "The payment date cannot be before the invoice was issued.");
     }
-    const when = paidAt || now;
-
-    await tx.query(
-      `UPDATE yd_invoices SET status = 'paid', paid_at = $3, payment_method = $4, payment_ref = $5
-        WHERE id = $1 AND org_id = $2`, [inv.id, who.orgId, when, method, ref]);
+    const paidRow = (await tx.query(
+      `UPDATE yd_invoices SET status = 'paid', paid_at = GREATEST($3::timestamptz, issued_at), payment_method = $4, payment_ref = $5
+        WHERE id = $1 AND org_id = $2 RETURNING paid_at`, [inv.id, who.orgId, when, method, ref])).rows[0];
+    const paidMoment = new Date(paidRow.paid_at);
 
     const fees = (await tx.query(
       `SELECT f.id, f.application_id, f.amount_cents, b.refund_days
@@ -74,13 +76,19 @@ export async function recordPayment(db, who, body, { now = new Date() } = {}) {
 
     let brokerHeld = 0;
     for (const f of fees) {
-      await tx.query(`UPDATE yd_fee_ledger SET status = 'paid', paid_at = $3 WHERE id = $1 AND org_id = $2`, [f.id, who.orgId, when]);
+      // The fee shares the invoice's exact payment moment (copied in SQL, microseconds and all).
+      await tx.query(
+        `UPDATE yd_fee_ledger f SET status = 'paid', paid_at = i.paid_at
+           FROM yd_invoices i WHERE f.id = $1 AND f.org_id = $2 AND i.id = $3 AND i.org_id = $2`, [f.id, who.orgId, inv.id]);
       await tx.query(`UPDATE yd_applications SET stage = 'paid' WHERE id = $1 AND org_id = $2 AND stage = 'invoiced'`, [f.application_id, who.orgId]);
       // The broker's share waits for the building's refund window: held until paid + refund_days.
       const held = await tx.query(
-        `UPDATE yd_broker_ledger SET status = 'held', hold_until = $3
-          WHERE fee_ledger_id = $1 AND org_id = $2 AND status = 'earned' RETURNING id`,
-        [f.id, who.orgId, addDays(when, f.refund_days)]);
+        `UPDATE yd_broker_ledger bl
+            SET status = 'held', hold_until = i.paid_at + ($4::int * interval '1 day')
+           FROM yd_invoices i
+          WHERE bl.fee_ledger_id = $1 AND bl.org_id = $2 AND bl.status = 'earned' AND i.id = $3 AND i.org_id = $2
+          RETURNING bl.id`,
+        [f.id, who.orgId, inv.id, f.refund_days]);
       brokerHeld += held.rowCount;
       await recordEvent(tx, {
         orgId: who.orgId, name: "fee.paid", entityKind: "application", entityId: f.application_id,
@@ -90,10 +98,10 @@ export async function recordPayment(db, who, body, { now = new Date() } = {}) {
     }
     await recordEvent(tx, {
       orgId: who.orgId, name: "invoice.paid", entityKind: "invoice", entityId: inv.id,
-      payload: { number: inv.number, total_cents: Number(inv.total_cents), method, ref, paid_at: when.toISOString() }, actor
+      payload: { number: inv.number, total_cents: Number(inv.total_cents), method, ref, paid_at: paidMoment.toISOString() }, actor
     });
     return {
-      invoice: { id: inv.id, number: inv.number, totalCents: cents(inv.total_cents), status: "paid", paidAt: when.toISOString(), method, ref },
+      invoice: { id: inv.id, number: inv.number, totalCents: cents(inv.total_cents), status: "paid", paidAt: paidMoment.toISOString(), method, ref },
       fees: fees.map((f) => ({ id: f.id, applicationId: f.application_id, amountCents: cents(f.amount_cents), status: "paid" })),
       alreadyPaid: false, brokerHeld
     };

@@ -161,5 +161,40 @@ export async function mkPlacement(db, fx, building, { to = "registered", brokerI
   return { ...renter, applicationId, matchId };
 }
 
+/**
+ * A placement that moved in, was invoiced and PAID `paidDaysAgo` days ago, built with
+ * SQL because the real endpoints cannot backdate. The fee is 100% of the lease rent.
+ * With a broker, the broker's share is held until paid + the building's refund days,
+ * as POST staff/payment would have left it.
+ */
+export async function mkPaidFee(db, fx, building, {
+  paidDaysAgo = 61, brokerId = null, splitPercent = 25, rentCents = 150000, side = "A", refundDays = 60
+} = {}) {
+  const placement = await mkPlacement(db, fx, building, { to: "moved_in", brokerId, leaseRentCents: rentCents, side });
+  const { orgId } = sideOf(fx, side);
+  const q = async (sql, params) => (await db.query(sql, params)).rows;
+  const day = (n) => `now() - interval '${Number(n)} days'`;
+  const fee = (await q(
+    `INSERT INTO yd_fee_ledger (org_id, application_id, building_id, kind, amount_cents, idempotency_key, earned_at)
+     VALUES ($1,$2,$3,'placement_fee',$4,$5, ${day(paidDaysAgo + 5)}) RETURNING id`,
+    [orgId, placement.applicationId, building.buildingId, rentCents, `fee:${placement.applicationId}`]))[0].id;
+  const invoice = (await q(
+    `INSERT INTO yd_invoices (org_id, building_id, total_cents, issued_at) VALUES ($1,$2,$3, ${day(paidDaysAgo + 4)}) RETURNING id, number`,
+    [orgId, building.buildingId, rentCents]))[0];
+  await q(`UPDATE yd_fee_ledger SET status='invoiced', invoice_id=$2, invoiced_at = ${day(paidDaysAgo + 4)} WHERE id=$1`, [fee, invoice.id]);
+  await q(`UPDATE yd_applications SET stage='invoiced' WHERE id=$1`, [placement.applicationId]);
+  await q(`UPDATE yd_invoices SET status='paid', paid_at = ${day(paidDaysAgo)}, payment_method='ach', payment_ref=$2 WHERE id=$1`, [invoice.id, `ACH-OLD-${fee.slice(0, 6)}`]);
+  await q(`UPDATE yd_fee_ledger SET status='paid', paid_at = ${day(paidDaysAgo)} WHERE id=$1`, [fee]);
+  await q(`UPDATE yd_applications SET stage='paid' WHERE id=$1`, [placement.applicationId]);
+  let brokerLedgerId = null;
+  if (brokerId) {
+    brokerLedgerId = (await q(
+      `INSERT INTO yd_broker_ledger (org_id, broker_id, fee_ledger_id, amount_cents, status) VALUES ($1,$2,$3,$4,'earned') RETURNING id`,
+      [orgId, brokerId, fee, Math.round(rentCents * splitPercent / 100)]))[0].id;
+    await q(`UPDATE yd_broker_ledger SET status='held', hold_until = ${day(paidDaysAgo)} + ($2::int * interval '1 day') WHERE id=$1`, [brokerLedgerId, refundDays]);
+  }
+  return { placement, feeId: fee, invoiceId: invoice.id, invoiceNumber: invoice.number, brokerLedgerId };
+}
+
 export const one = async (db, sql, params = []) => (await db.query(sql, params)).rows[0] || null;
 export const rows = async (db, sql, params = []) => (await db.query(sql, params)).rows;
