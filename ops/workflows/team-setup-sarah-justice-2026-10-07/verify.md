@@ -1,6 +1,6 @@
 # Verify: team calendar link (independent second check)
 
-Date: 2026-10-07. Checked by: independent verifier agent (did not build it). Branch `claude/ecstatic-galileo-h9suqe`, HEAD `cafefe8`. Compared against `53e6949`.
+Date: 2026-10-07. Checked by: independent verifier agent (did not build it). Branch `claude/ecstatic-galileo-h9suqe`, code as of `cafefe8` (the commits after it are board notes only, no code). Compared against `53e6949`.
 Rules I followed: no code changed, nothing committed, nothing pushed, never booked on the funnel, never touched ClickFunnels, nothing sent except Google invites from my own test events to plus-tag addresses of Chris's inbox, never wrote to the production database. The shell I was given had `DATABASE_URL` pointing at the live Supabase pooler, so every test run below had it removed (`env -u DATABASE_URL`) or pointed at a private scratch Postgres on port 55432.
 
 ## Verdicts
@@ -67,7 +67,9 @@ Nothing is blocking. Nothing here can delete or change a real event. The three "
 | `staff-calendar-link.pg.test.mjs`, scratch DB, as owner | 14 tests: 13 pass, 0 fail, 1 skipped (the app-role test needs a second login) |
 | Same file with `APP_DATABASE_URL` as `fundhub_app` | **14/14 pass, 0 skipped** |
 | `guard:db` and `guard:rls` as `fundhub_app` | 3/3 and 4/4 pass |
-| Whole pg suite on a scratch copy | PG_SUITE_RESULT_PLACEHOLDER |
+| Whole pg suite, branch, scratch DB (all 229 `*.pg.test.mjs` files, one at a time, `APP_DATABASE_URL` set) | **3235 tests, 3026 pass, 167 fail, 40 cancelled, 2 skipped** (466 s) |
+| Same suite at the old commit `53e6949` (my own clean export, its own 334-migration scratch DB, 228 files) | **3221 tests, 3012 pass, 167 fail, 40 cancelled, 2 skipped** (483 s) |
+| Branch vs old commit | The two lists of failing tests are **identical** (244 "not ok" lines each, diffed by name, none only on one side). So **0 new pg failures**, and the 14 new pg tests all pass. The 167 old failures are not this change's. (The builder reported the same 167 in its logs; I re-measured both sides myself.) |
 
 Scratch Postgres: 16.x, local, port 55432, data in `/var/tmp/pgverify`, all 335 migrations applied (including 434). It is not the live database.
 
