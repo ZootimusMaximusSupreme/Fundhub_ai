@@ -270,3 +270,19 @@ Checked `origin/yesdoor/i1` and `origin/yesdoor-3m-scale`: no add-on layer exist
 **Not found yet:** commission rates on renters insurance in the US, guarantor partner revenue share, Arizona and California rules on flat referral fees.
 
 **Leftover card for the Yesdoor MVP owners (PR #55):** add an add-on layer (renters insurance, deposit alternative, lease guarantor) to the Yesdoor spec. Not touched from this session.
+
+---
+
+# Yesdoor scope (owner-set 2026-10-07)
+
+Chris: "Yesdoor gets people into places — seniors, prime, subprime etc. Anything else, we will merge."
+
+**Yesdoor = gets people into places.** Lines that merge in (researched above):
+- Apartments: prime renters and second-chance renters (live build, PR #55)
+- Senior living: assisted living + memory care (private pay)
+- Independent living / 55+ (real estate license)
+- Private-pay home care (helps people stay in their place)
+- Add-ons: renters insurance, deposit alternative, lease guarantor
+- Renters → home buyers (agent referral, real estate license)
+
+Kept out of Yesdoor: cash-pay mental health (not a place), franchise placement and practice funding (Fundhub), hospice / home health / addiction (no per-patient fee).
