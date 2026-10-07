@@ -156,6 +156,15 @@ export function evaluateEvictions({ count, lastAt, maxEvictions, lookbackYears, 
 /* ------------------------------------------------------------- criminal */
 
 /**
+ * The categories a criminal flag (and so a building's criminal_policy) can use.
+ * The CRS sandbox, the building portal's Rules form and the seeded sample rules
+ * all speak these, and nothing else. A policy key outside this list is never
+ * matched, so a test pins every stored policy to it (I2: the seed once wrote
+ * felony / misdemeanor / violent and no seeded policy ever applied).
+ */
+export const CRIMINAL_CATEGORIES = Object.freeze(["felony_violent", "felony_property", "misdemeanor_nonviolent"]);
+
+/**
  * criminal_policy is { category: max_years_ago | "never" | "case_by_case" }.
  *   number         a record NEWER than that many years fails; older passes
  *   "never"        any record in the category fails, whatever its age
@@ -201,6 +210,23 @@ export function evaluateCriminal({ flags, policy } = {}) {
   const worst = worstResult(parts.map((p) => p.result));
   const text = parts.filter((p) => p.result === worst).map((p) => p.text).join(" ");
   return entry("criminal", worst, text);
+}
+
+/* --------------------------------------------------------- second chance */
+
+/**
+ * A building whose rules say accepts_second_chance = false has told us it does
+ * not set out to take Second Chance renters. That is not a "no": the renter's
+ * numbers may still pass every rule, and the building decides when it sees the
+ * file. So the answer is capped at "likely" (this rule is `close`), never
+ * `fail`. Only an explicit `false` counts; a missing value is not a refusal.
+ * Returns null when the rule does not apply (the Verified lane, or a building
+ * that takes Second Chance renters), so the reasons list stays as it was.
+ */
+export function evaluateSecondChance({ lane, acceptsSecondChance } = {}) {
+  if (lane !== "second_chance" || acceptsSecondChance !== false) return null;
+  return entry("second_chance", CLOSE,
+    "This building does not say it takes Second Chance renters. Your numbers may still pass, so the best answer is likely and the building decides.");
 }
 
 /* ------------------------------------------------------------- freshness */

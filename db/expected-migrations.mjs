@@ -346,7 +346,8 @@ export const EXPECTED_MIGRATIONS = Object.freeze([
   "seed/035_slo_no_reply_147.sql",
   "seed/036_slo_followups_147.sql",
   "seed/295_sms_copy_2026_09.sql",
-  "seed/296_yesdoor_org_and_samples.sql"
+  "seed/296_yesdoor_org_and_samples.sql",
+  "seed/297_yesdoor_criminal_policy_keys.sql"
 ]);
 
 export default EXPECTED_MIGRATIONS;

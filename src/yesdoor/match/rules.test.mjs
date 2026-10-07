@@ -1,8 +1,8 @@
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
 import {
-  CLOSE, FAIL, PASS, UNKNOWN, evaluateCriminal, evaluateEvictions, evaluateFreshness, evaluateIncome,
-  evaluateScore, evictionsInside, requiredIncomeCents, rulesAreFresh, worstResult
+  CLOSE, CRIMINAL_CATEGORIES, FAIL, PASS, UNKNOWN, evaluateCriminal, evaluateEvictions, evaluateFreshness, evaluateIncome,
+  evaluateScore, evaluateSecondChance, evictionsInside, requiredIncomeCents, rulesAreFresh, worstResult
 } from "./rules.mjs";
 import { YD_DEFAULTS } from "../config.mjs";
 
@@ -200,6 +200,39 @@ describe("criminal", () => {
   test("a flag with no category is unknown, never a crash", () => {
     assert.equal(evaluateCriminal({ flags: [{}], policy: { dui: 5 } }).result, UNKNOWN);
     assert.equal(evaluateCriminal({ flags: [null], policy: { dui: 5 } }).result, UNKNOWN);
+  });
+});
+
+describe("criminal categories", () => {
+  test("the categories a policy may use are the ones the screenings speak", () => {
+    assert.deepEqual([...CRIMINAL_CATEGORIES], ["felony_violent", "felony_property", "misdemeanor_nonviolent"]);
+    assert.ok(Object.isFrozen(CRIMINAL_CATEGORIES));
+  });
+  test("every category is matched by a policy that names it, and an old seed key is not", () => {
+    for (const category of CRIMINAL_CATEGORIES) {
+      const known = evaluateCriminal({ flags: [{ category, years_ago: 20 }], policy: { [category]: 7 } });
+      assert.equal(known.result, PASS, category);
+    }
+    // The pre-I2 seed keys never matched anything: the flag came back unknown.
+    const old = evaluateCriminal({ flags: [{ category: "felony_property", years_ago: 20 }], policy: { felony: 7 } });
+    assert.equal(old.result, UNKNOWN);
+  });
+});
+
+describe("second chance", () => {
+  test("applies only to a Second Chance renter at a building that said false", () => {
+    const r = evaluateSecondChance({ lane: "second_chance", acceptsSecondChance: false });
+    assert.equal(r.rule, "second_chance");
+    assert.equal(r.result, CLOSE);
+    assert.match(r.reason, /Second Chance/);
+  });
+  test("does not apply to the Verified lane, to a building that accepts, or to an unstated flag", () => {
+    assert.equal(evaluateSecondChance({ lane: "verified", acceptsSecondChance: false }), null);
+    assert.equal(evaluateSecondChance({ lane: "second_chance", acceptsSecondChance: true }), null);
+    assert.equal(evaluateSecondChance({ lane: "second_chance", acceptsSecondChance: null }), null);
+    assert.equal(evaluateSecondChance({ lane: "second_chance" }), null);
+    assert.equal(evaluateSecondChance({ lane: null, acceptsSecondChance: false }), null);
+    assert.equal(evaluateSecondChance(), null);
   });
 });
 
