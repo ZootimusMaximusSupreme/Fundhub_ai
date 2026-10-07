@@ -125,3 +125,27 @@ The brand identity is new and not set yet. Approach (owner-set): take the struct
 6. Brand: which existing site's structure to start from?
 
 Once these are answered: database design, then the backend with tests, then the journey diagram (`docs/journeys/yesdoor-flow.md`), then screens last.
+
+## 11. MVP question list (2026-10-07, 11pm, with Claude's default for each)
+
+Chris can answer "defaults OK" and name only the ones to change.
+
+Product:
+1. Who confirms tour and application? *Default: both. The building through its software or email, the renter by tapping a text.*
+2. What does a broker see? *Default: stage only. No credit details.*
+3. Launch both lanes, or Second Chance first? *Default: Second Chance first.*
+4. First market? *Default: Phoenix.*
+5. Are brokers in the MVP? *Default: no. Add them after the first 25 paid fees.*
+
+Money:
+6. Default fee ask to buildings? *Default: the building's own locator fee, else 100% of first month.*
+7. Refund window? *Default: 60 days.*
+8. How do buildings pay? *Default: invoice by email, paid by ACH or check, logged by staff.*
+
+Things only Chris has (can come tomorrow):
+9. The CRS screening product's name, login, API docs, and the price of the background check.
+10. Plaid: reuse Fundhub's Plaid account, or a new one for Yesdoor?
+11. Buy yesdoor.ai (and yesdoor.co)?
+12. Brand: which website's structure to start from?
+13. Sending email and text number for Yesdoor (a new domain sender and a new Twilio number)?
+14. Who works the staff queue in week one?
