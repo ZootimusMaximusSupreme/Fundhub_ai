@@ -56,3 +56,9 @@ test("config: only ops (and the owner, who always passes) see credit details", (
   assert.deepEqual([...YD_ROLES.credit], ["ops"]);
   assert.ok(!YD_ROLES.credit.includes("sales") && !YD_ROLES.credit.includes("collections"));
 });
+
+test("config: only ops (and the owner) create logins; sales may add brokers but not hand out logins", () => {
+  assert.deepEqual([...YD_ROLES.accounts], ["ops"]);
+  assert.ok(Object.isFrozen(YD_ROLES.accounts));
+  assert.ok(YD_ROLES.supply.includes("sales") && !YD_ROLES.accounts.includes("sales"));
+});

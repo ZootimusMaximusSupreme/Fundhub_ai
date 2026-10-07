@@ -104,13 +104,31 @@ export async function requestMagicLink(db, { email, ip, userAgent, orgId, env = 
     return { ok: true, limited: false, outcome: subject.outcome, sent: false };
   }
 
+  const issued = await issueMagicLink(db, {
+    orgId, email: mail, accountId: subject.accountId, renterId: subject.renterId,
+    ip: addr, userAgent, env, queueEmail
+  });
+  return { ok: true, limited: false, outcome: "issued", ...issued };
+}
+
+/** issueMagicLink — mint one single-use link for an address that is already known
+ *  to reach an account (or a renter), and queue the email that carries it. No rate
+ *  limit and no lookup: the caller has decided this address may have a link.
+ *  Used by requestMagicLink (a person asked) and by staff creating a login (the
+ *  invitation). Pass a transaction client to make it land with the caller's writes.
+ *    { sent, token, linkId, expiresAt }
+ *  The cleartext token is for the email only: never put it in a response. */
+export async function issueMagicLink(db, {
+  orgId, email, accountId = null, renterId = null, ip = null, userAgent = null, env = process.env, queueEmail = true
+} = {}) {
+  const mail = normalizeEmail(email);
   const token = newToken();
   const expiresAt = new Date(Date.now() + YD_AUTH.linkTtlMinutes * 60 * 1000);
   const ins = await db.query(
     `INSERT INTO yd_magic_links
        (org_id, email, account_id, renter_id, token_hash, expires_at, outcome, requested_ip, requested_user_agent)
      VALUES ($1,$2,$3,$4,$5,$6,'issued',$7,$8) RETURNING id`,
-    [orgId, mail, subject.accountId, subject.renterId, hashToken(token), expiresAt, addr, truncate(userAgent, 512)]
+    [orgId, mail, accountId, renterId, hashToken(token), expiresAt, normalizeIp(ip), truncate(userAgent, 512)]
   );
   const linkId = ins.rows[0].id;
 
@@ -125,7 +143,7 @@ export async function requestMagicLink(db, { email, ip, userAgent, orgId, env = 
     );
     sent = true;
   }
-  return { ok: true, limited: false, outcome: "issued", sent, token, linkId, expiresAt };
+  return { sent, token, linkId, expiresAt };
 }
 
 /** verifyMagicLink — a token in, an account session out.

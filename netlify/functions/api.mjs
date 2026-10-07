@@ -314,6 +314,8 @@ import ydBrokerLink from "../../api/yesdoor/broker/link.mjs";
 import ydStaffPipeline from "../../api/yesdoor/staff/pipeline.mjs";
 import ydStaffCompanies from "../../api/yesdoor/staff/companies.mjs";
 import ydStaffBuildings from "../../api/yesdoor/staff/buildings.mjs";
+import ydStaffBrokers from "../../api/yesdoor/staff/brokers.mjs";
+import ydStaffAccounts from "../../api/yesdoor/staff/accounts.mjs";
 import ydStaffLedger from "../../api/yesdoor/staff/ledger.mjs";
 import ydStaffRenter from "../../api/yesdoor/staff/renter.mjs";
 import ydStaffScreening from "../../api/yesdoor/staff/screening.mjs";
@@ -762,6 +764,8 @@ export const ROUTES = {
   "yesdoor/staff/pipeline": ydStaffPipeline,
   "yesdoor/staff/companies": ydStaffCompanies,
   "yesdoor/staff/buildings": ydStaffBuildings,
+  "yesdoor/staff/brokers": ydStaffBrokers,
+  "yesdoor/staff/accounts": ydStaffAccounts,
   "yesdoor/staff/ledger": ydStaffLedger,
   "yesdoor/staff/renter": ydStaffRenter,
   "yesdoor/staff/screening": ydStaffScreening,

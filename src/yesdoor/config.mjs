@@ -98,6 +98,9 @@ export const YD_ROLES = Object.freeze({
   staff: Object.freeze(["ops", "sales", "collections"]),
   money: Object.freeze(["ops", "collections"]),
   credit: Object.freeze(["ops"]),
+  // Creating a login (a building user or a broker account) hands someone a way in.
+  // Ops only, and the owner who always passes (I2).
+  accounts: Object.freeze(["ops"]),
   // B4 writes. Onboarding companies, buildings and agreements is sales and ops work.
   supply: Object.freeze(["ops", "sales"]),
   // Anyone on the desk may open a dispute; only ops (and the owner) decide one.
