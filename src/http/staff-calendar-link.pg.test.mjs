@@ -226,6 +226,28 @@ describe("/api/staff/calendar-link + staff_calendar_links", { skip: !HAVE_DB ? "
     assert.ok(!provider.log.add[0].includes("sarah.fixture@example.com"));
   });
 
+  test("a Google blip during a sync pass leaves the closer connected, so a booking right after still invites him", async () => {
+    await db.query(`UPDATE staff_calendar_links SET status='connected', last_error=NULL WHERE staff_id=$1`, [closerId]);
+    const blip = {
+      ...fakeProvider({}),
+      freeBusy: async () => ({ ok: false, waiting: false, status: 503, error: "google calendar freeBusy returned HTTP 503" })
+    };
+    const out = await syncBusyBlocks(db, { orgId: org, provider: blip, env: {} });
+    assert.equal(out.ok, false);
+    assert.equal(out.tokenDead, false);
+    const row = await getLink(db, { orgId: org, staffId: closerId });
+    assert.equal(row.status, "connected");
+    assert.equal(row.last_error, null);
+
+    const provider = fakeProvider({});
+    const inv = await inviteClosersToBooking(db, {
+      orgId: org, env: {}, provider,
+      payload: { email: "lead.fixture@example.com", startTime: "2026-10-08T17:00:00.000Z" }
+    });
+    assert.equal(inv.status, "added");
+    assert.ok(provider.log.add[0].includes("justice.fixture@example.com"));
+  });
+
   test("a suspended closer is not invited and blocks nothing", async () => {
     await db.query(`UPDATE staff SET status='suspended' WHERE id=$1`, [closerId]);
     try {

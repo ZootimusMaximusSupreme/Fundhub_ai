@@ -25,8 +25,10 @@
 // the invite only act for the default org (src/auth/org.mjs). The API refuses
 // staff of any other org the same way (api/staff/calendar-link.mjs).
 //
-// NEVER THROWS. A failed pass is recorded on the rows and the next pass is the
-// recovery. Outbound calls are all in src/messaging/providers/google-calendar.mjs.
+// NEVER THROWS. A failed Google call changes no row (only Google saying
+// notFound or forbidden does), and the next pass is the recovery. A dead token
+// comes back as `tokenDead` for the workflow to report. Outbound calls are all
+// in src/messaging/providers/google-calendar.mjs.
 
 import * as googleCalendar from "../messaging/providers/google-calendar.mjs";
 import { resolveDefaultOrg } from "../auth/org.mjs";
@@ -57,8 +59,14 @@ export const MSG_NOT_SHARED = "Not shared yet";
 export const MSG_WAITING = "Waiting on Chris's Google approval";
 export const MSG_OWNER_CALENDAR =
   "That is the booking calendar itself. Type the address of your own Google calendar.";
-export const MSG_SIGN_IN_FAILED =
-  "Could not sign in to Chris's Google calendar. Chris's Google approval needs doing again.";
+
+/* Google's own words for a refresh token it will never take again (revoked,
+   expired, or a client that no longer exists). A dropped connection or a 5xx
+   is NOT one of these: that is a blip, and the next pass is the retry. */
+const DEAD_TOKEN_RE = /invalid_grant|invalid_client|unauthorized_client/i;
+export function isDeadTokenError(text) {
+  return DEAD_TOKEN_RE.test(String(text || ""));
+}
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
@@ -150,16 +158,18 @@ export async function connectedClosers(db, orgId) {
 
 /* ── pure pieces ──────────────────────────────────────────────────────────── */
 
-/** [start of today UTC, +SYNC_WINDOW_DAYS). A whole-day start, so an interval
-    that began earlier today does not come back clipped to a new start time on
-    every pass — which would delete and rewrite the same block every five
-    minutes. The edge only moves once a day. */
+/** [now, end of the SYNC_WINDOW_DAYS-th day UTC). Starts at the current
+    minute, so a busy time that is already over is never written. The far edge
+    stays on a whole day, so it only moves once a day. An interval that is
+    already under way is clipped to `now` on both sides of the compare
+    (desiredBlocks and diffBlocks), so it is not rewritten every pass. */
 export function syncWindow(now = Date.now(), days = SYNC_WINDOW_DAYS) {
   const d = new Date(now);
-  const start = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const dayStart = Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
+  const minute = Math.floor(Number(now) / 60_000) * 60_000;
   return {
-    timeMin: new Date(start).toISOString(),
-    timeMax: new Date(start + days * DAY_MS).toISOString()
+    timeMin: new Date(minute).toISOString(),
+    timeMax: new Date(dayStart + days * DAY_MS).toISOString()
   };
 }
 
@@ -174,20 +184,19 @@ export function blockKey({ staffId, start, end }) {
   return `${staffId}|${ms(start)}|${ms(end)}`;
 }
 
-/** What Google said about one calendar, in the words its owner sees. */
+/** What Google said about one calendar, in the words its owner sees.
+    Only notFound or forbidden — Google saying "not shared with you" — moves a
+    row off connected. Anything else (a calendar left out of the answer, a
+    backendError) is a blip: `status` is null, the row is left exactly as it
+    was, and a booking in that minute still reaches a connected closer. */
 export function classifyCalendar(cal) {
-  if (!cal) return { readable: false, status: "pending", lastError: MSG_NOT_SHARED };
-  const errors = Array.isArray(cal.errors) ? cal.errors : [];
-  if (!errors.length) return { readable: true, status: "connected", lastError: null };
+  const errors = Array.isArray(cal?.errors) ? cal.errors : [];
+  if (cal && !errors.length) return { readable: true, status: "connected", lastError: null };
   const reasons = errors.map((e) => String(e?.reason || "unknown"));
-  if (reasons.some((r) => /^(notFound|forbidden|missing_from_response)$/.test(r))) {
+  if (reasons.some((r) => r === "notFound" || r === "forbidden")) {
     return { readable: false, status: "pending", lastError: MSG_NOT_SHARED };
   }
-  return {
-    readable: false,
-    status: "error",
-    lastError: `Google could not read this calendar right now (${reasons.join(", ")}). It will try again in five minutes.`
-  };
+  return { readable: false, status: null, lastError: null };
 }
 
 /** One block per busy time on each readable calendar, clipped to the window. */
@@ -250,17 +259,26 @@ function eventBlock(ev) {
  *   leaveAlone   — staff ids whose calendar could not be read this pass; their
  *                  existing blocks stay exactly as they are (better to keep a
  *                  slot closed than to open one we cannot check)
+ *   window       — when given, an existing block is compared clipped to it,
+ *                  the same way desiredBlocks clips, so a block already under
+ *                  way matches its busy time instead of being rewritten
  * Anything that is not a mirror event is never in `toDelete`.
  */
-export function diffBlocks({ desired, existing, leaveAlone = new Set() }) {
+export function diffBlocks({ desired, existing, leaveAlone = new Set(), window = null }) {
   const want = new Map(desired.map((b) => [blockKey(b), b]));
   const have = new Set();
   const toDelete = [];
+  const lo = window ? ms(window.timeMin) : -Infinity;
+  const hi = window ? ms(window.timeMax) : Infinity;
   for (const ev of existing) {
     if (!googleCalendar.isMirrorEvent(ev) || !ev?.id) continue;
     const b = eventBlock(ev);
     if (leaveAlone.has(b.staffId)) continue;
-    const key = blockKey(b);
+    const s = Math.max(ms(b.start), lo);
+    const e = Math.min(ms(b.end), hi);
+    const key = Number.isFinite(s) && Number.isFinite(e)
+      ? blockKey({ staffId: b.staffId, start: new Date(s).toISOString(), end: new Date(e).toISOString() })
+      : blockKey(b);
     if (want.has(key) && !have.has(key)) { have.add(key); continue; }
     toDelete.push({ eventId: ev.id, ...b }); // stale, or a duplicate of one kept
   }
@@ -271,19 +289,6 @@ export function diffBlocks({ desired, existing, leaveAlone = new Set() }) {
 
 /* ── the sync pass ────────────────────────────────────────────────────────── */
 
-function readFailure(res) {
-  if (res?.waiting) return { status: "pending", lastError: MSG_WAITING };
-  const err = String(res?.error || "");
-  if (/token refresh failed/i.test(err)) return { status: "error", lastError: MSG_SIGN_IN_FAILED };
-  if (/fence|ADAPTERS_DRY_RUN/i.test(err)) {
-    return { status: "error", lastError: "Google calls are switched off on this site right now (ADAPTERS_DRY_RUN)." };
-  }
-  if (/not switched on/i.test(err)) {
-    return { status: "error", lastError: "The Google Calendar API is not switched on for Chris's Google project yet." };
-  }
-  return { status: "error", lastError: `Google did not answer: ${err.slice(0, 200) || "no reason given"}` };
-}
-
 async function markAll(db, orgId, links, status, lastError) {
   for (const link of links) {
     await setLinkStatus(db, { orgId, staffId: link.staff_id, status, lastError });
@@ -293,6 +298,9 @@ async function markAll(db, orgId, links, status, lastError) {
 /**
  * One pass. Returns counts; never throws.
  * `provider` defaults to src/messaging/providers/google-calendar.mjs.
+ * `tokenDead: true` means Google refused the stored token for good
+ * (invalid_grant). The pass itself does not touch any row for that; the
+ * workflow turns it into a failed run, so the 7 a.m. pulse shows the job red.
  */
 export async function syncBusyBlocks(db, {
   env = process.env, fetchImpl, now = Date.now(), orgId = null,
@@ -301,7 +309,8 @@ export async function syncBusyBlocks(db, {
 } = {}) {
   const out = {
     ok: true, links: 0, connected: 0, notShared: 0, errored: 0, skippedOwner: 0,
-    desired: 0, existing: 0, inserted: 0, deleted: 0, deferred: 0, failures: 0, note: null
+    desired: 0, existing: 0, inserted: 0, deleted: 0, deferred: 0, failures: 0, note: null,
+    tokenDead: false
   };
   const started = clock();
   try {
@@ -333,11 +342,14 @@ export async function syncBusyBlocks(db, {
     const fb = readableLinks.length
       ? await provider.freeBusy({ ids: readableLinks.map((l) => l.calendar_email), ...window, env, fetchImpl, timeoutMs: CALL_TIMEOUT_MS })
       : { ok: true, calendars: {} };
+    /* A failed call is not an answer about anyone's calendar. Every row is
+       left exactly as it was — a connected closer stays connected through a
+       Google 5xx, a dropped connection or a token-refresh blip — and no block
+       is written or removed. The next pass is the retry. */
     if (!fb.ok) {
-      const f = readFailure(fb);
-      await markAll(db, org, readableLinks, f.status, f.lastError);
       out.ok = false;
-      out.note = f.lastError;
+      out.tokenDead = isDeadTokenError(fb.error);
+      out.note = `Google did not answer the busy-time read: ${String(fb.error || "no reason given").slice(0, 200)}`;
       return out;
     }
 
@@ -346,7 +358,9 @@ export async function syncBusyBlocks(db, {
     for (const link of readableLinks) {
       const cal = fb.calendars[normalizeCalendarEmail(link.calendar_email)];
       const c = classifyCalendar(cal);
-      await setLinkStatus(db, { orgId: org, staffId: link.staff_id, status: c.status, lastError: c.lastError });
+      if (c.status) {
+        await setLinkStatus(db, { orgId: org, staffId: link.staff_id, status: c.status, lastError: c.lastError });
+      }
       if (c.readable) {
         out.connected += 1;
         readable.push({ link, busy: cal.busy });
@@ -359,6 +373,7 @@ export async function syncBusyBlocks(db, {
     const listed = await provider.listMirrorEvents({ ...window, env, fetchImpl, timeoutMs: CALL_TIMEOUT_MS });
     if (!listed.ok) {
       out.ok = false;
+      out.tokenDead = isDeadTokenError(listed.error);
       out.note = `could not list existing busy blocks: ${String(listed.error || "").slice(0, 200)}`;
       return out;
     }
@@ -366,7 +381,7 @@ export async function syncBusyBlocks(db, {
     const desired = desiredBlocks(readable, window);
     out.desired = desired.length;
     out.existing = listed.events.length;
-    const { toInsert, toDelete } = diffBlocks({ desired, existing: listed.events, leaveAlone });
+    const { toInsert, toDelete } = diffBlocks({ desired, existing: listed.events, leaveAlone, window });
 
     // Closing a slot that should be closed comes first; opening a stale one second.
     const work = [
@@ -377,6 +392,13 @@ export async function syncBusyBlocks(db, {
     for (const item of work) {
       if (writes >= maxWrites || clock() - started > budgetMs) {
         out.deferred = work.length - writes;
+        break;
+      }
+      /* A block is never removed before its replacement exists. If any new
+         block failed to go in this pass, every removal waits for the next. */
+      if (item.kind === "delete" && out.failures > 0) {
+        out.deferred = work.length - writes;
+        out.note = `${out.note}; removals held until the new blocks are in`;
         break;
       }
       writes += 1;
@@ -432,15 +454,13 @@ export async function checkMyCalendar(db, {
     timeMax: new Date(now + DAY_MS).toISOString(),
     env, fetchImpl, timeoutMs: CALL_TIMEOUT_MS
   });
-  if (!fb.ok) {
-    const f = readFailure(fb);
-    const saved = await setLinkStatus(db, { orgId, staffId, status: f.status, lastError: f.lastError });
-    return { result: f.lastError === MSG_WAITING ? "waiting_on_approval" : "error", link: saved };
-  }
+  // A failed call or a blip is not an answer: the row is left as it was.
+  if (!fb.ok) return { result: "error", link };
   const c = classifyCalendar(fb.calendars[normalizeCalendarEmail(link.calendar_email)]);
+  if (!c.status) return { result: "error", link };
   const saved = await setLinkStatus(db, { orgId, staffId, status: c.status, lastError: c.lastError });
   if (c.readable) return { result: "connected", link: saved };
-  return { result: c.lastError === MSG_NOT_SHARED ? "not_shared" : "error", link: saved };
+  return { result: "not_shared", link: saved };
 }
 
 /* ── booked call → closer ─────────────────────────────────────────────────── */

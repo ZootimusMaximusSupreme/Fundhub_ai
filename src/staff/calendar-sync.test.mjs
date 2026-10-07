@@ -6,7 +6,7 @@ import { test, beforeEach } from "node:test";
 import assert from "node:assert/strict";
 
 import {
-  CALENDAR_OWNER_EMAIL_DEFAULT, MSG_NOT_SHARED, MSG_WAITING, MSG_OWNER_CALENDAR, MSG_SIGN_IN_FAILED,
+  CALENDAR_OWNER_EMAIL_DEFAULT, MSG_NOT_SHARED, MSG_WAITING, MSG_OWNER_CALENDAR, isDeadTokenError,
   SYNC_WINDOW_DAYS, MAX_WRITES_PER_RUN, CALL_TIMEOUT_MS,
   calendarOwnerEmail, isValidCalendarEmail, syncWindow, firstName, blockKey, classifyCalendar,
   desiredBlocks, diffBlocks, mirrorEventBody, syncBusyBlocks, checkMyCalendar, inviteClosersToBooking
@@ -104,11 +104,12 @@ test("email check", () => {
   }
 });
 
-test("window: whole-day start, two weeks long, so in-progress blocks are not rewritten every pass", () => {
-  assert.equal(WINDOW.timeMin, "2026-10-07T00:00:00.000Z");
+test("window: starts now (to the minute), ends on a whole day two weeks out", () => {
+  assert.equal(WINDOW.timeMin, "2026-10-07T18:30:00.000Z");
+  assert.equal(syncWindow(NOW + 42_123).timeMin, "2026-10-07T18:30:00.000Z", "floored to the minute");
   assert.equal(SYNC_WINDOW_DAYS, 14);
   assert.equal(WINDOW.timeMax, "2026-10-21T00:00:00.000Z");
-  assert.deepEqual(syncWindow(NOW + 60 * 60 * 1000), WINDOW, "an hour later the window is the same");
+  assert.equal(syncWindow(NOW + 60 * 60 * 1000).timeMax, WINDOW.timeMax, "the far edge only moves once a day");
 });
 
 test("first name", () => {
@@ -117,29 +118,38 @@ test("first name", () => {
   assert.equal(firstName(""), "Team");
 });
 
-test("classify: notFound / forbidden / left out = Not shared yet; other errors = error; none = connected", () => {
+test("classify: only notFound / forbidden = Not shared yet; any other error is a blip that changes nothing", () => {
   assert.deepEqual(classifyCalendar({ busy: [], errors: [] }), { readable: true, status: "connected", lastError: null });
-  for (const reason of ["notFound", "forbidden", "missing_from_response"]) {
+  for (const reason of ["notFound", "forbidden"]) {
     assert.deepEqual(classifyCalendar({ errors: [{ reason }] }), { readable: false, status: "pending", lastError: MSG_NOT_SHARED });
   }
-  assert.deepEqual(classifyCalendar(undefined), { readable: false, status: "pending", lastError: MSG_NOT_SHARED });
-  const other = classifyCalendar({ errors: [{ reason: "backendError" }] });
-  assert.equal(other.status, "error");
-  assert.match(other.lastError, /backendError/);
+  const blip = { readable: false, status: null, lastError: null };
+  assert.deepEqual(classifyCalendar({ errors: [{ reason: "backendError" }] }), blip);
+  assert.deepEqual(classifyCalendar({ errors: [{ reason: "missing_from_response" }] }), blip);
+  assert.deepEqual(classifyCalendar(undefined), blip);
 });
 
-test("desired blocks: one per busy time, clipped to the window, first name in the title", () => {
+test("dead token: only Google's own 'never again' answers count, not a blip", () => {
+  assert.equal(isDeadTokenError("Google token refresh failed: oauth token refresh failed (400): invalid_grant"), true);
+  assert.equal(isDeadTokenError("oauth token refresh failed (401): invalid_client"), true);
+  assert.equal(isDeadTokenError("Google token refresh failed: The operation was aborted due to timeout"), false);
+  assert.equal(isDeadTokenError("google calendar freeBusy returned HTTP 503"), false);
+  assert.equal(isDeadTokenError(""), false);
+});
+
+test("desired blocks: one per busy time, clipped to the window, first name in the title; finished ones dropped", () => {
   const blocks = desiredBlocks([{
     link: link(JUSTICE, "Justice Nikkel", "j@x.com"),
     busy: [
-      { start: "2026-10-06T23:00:00Z", end: "2026-10-07T01:00:00Z" },  // starts before the window
+      { start: "2026-10-07T09:00:00Z", end: "2026-10-07T10:00:00Z" },  // already over: never written
+      { start: "2026-10-07T18:00:00Z", end: "2026-10-07T19:00:00Z" },  // under way: clipped to now
       { start: "2026-10-08T15:00:00Z", end: "2026-10-08T16:00:00Z" },
       { start: "2026-10-08T15:00:00Z", end: "2026-10-08T16:00:00Z" },  // duplicate
       { start: "2026-10-09T15:00:00Z", end: "2026-10-09T15:00:00Z" }   // empty
     ]
   }], WINDOW);
   assert.deepEqual(blocks, [
-    { staffId: JUSTICE, start: "2026-10-07T00:00:00.000Z", end: "2026-10-07T01:00:00.000Z", summary: "Busy - Justice" },
+    { staffId: JUSTICE, start: "2026-10-07T18:30:00.000Z", end: "2026-10-07T19:00:00.000Z", summary: "Busy - Justice" },
     { staffId: JUSTICE, start: "2026-10-08T15:00:00.000Z", end: "2026-10-08T16:00:00.000Z", summary: "Busy - Justice" }
   ]);
 });
@@ -174,6 +184,21 @@ test("diff: idempotent — run it on its own output and there is nothing to do",
   const existing = [mirror("e1", JUSTICE, "2026-10-08T15:00:00.000Z", "2026-10-08T16:00:00.000Z")];
   assert.deepEqual(diffBlocks({ desired, existing }), { toInsert: [], toDelete: [] });
   assert.equal(blockKey(desired[0]), blockKey({ staffId: JUSTICE, start: "2026-10-08T15:00:00Z", end: "2026-10-08T16:00:00Z" }));
+});
+
+test("diff: a block already under way matches its clipped busy time on the next pass — no rewrite", () => {
+  // Written at 18:30 as 18:30–19:00; five minutes later freeBusy clips it to 18:35–19:00.
+  const later = syncWindow(NOW + 5 * 60_000);
+  const desired = desiredBlocks([{ link: link(JUSTICE, "Justice Nikkel", "j@x.com"),
+    busy: [{ start: "2026-10-07T18:00:00Z", end: "2026-10-07T19:00:00Z" }] }], later);
+  const existing = [mirror("e1", JUSTICE, "2026-10-07T18:30:00Z", "2026-10-07T19:00:00Z")];
+  assert.deepEqual(diffBlocks({ desired, existing, window: later }), { toInsert: [], toDelete: [] });
+  // A real change still shows: the busy time now ends earlier.
+  const shorter = desiredBlocks([{ link: link(JUSTICE, "Justice Nikkel", "j@x.com"),
+    busy: [{ start: "2026-10-07T18:00:00Z", end: "2026-10-07T18:45:00Z" }] }], later);
+  const d = diffBlocks({ desired: shorter, existing, window: later });
+  assert.equal(d.toInsert.length, 1);
+  assert.deepEqual(d.toDelete.map((x) => x.eventId), ["e1"]);
 });
 
 test("diff: a calendar that could not be read keeps its blocks", () => {
@@ -274,13 +299,73 @@ test("sync: the owner's own calendar is never read back into itself", async () =
   assert.deepEqual(db.updates.map((u) => [u.status, u.lastError]), [["error", MSG_OWNER_CALENDAR]]);
 });
 
-test("sync: Google refusing the token marks the rows in plain words and writes no events", async () => {
-  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com")] });
-  const provider = fakeProvider({ fbFails: { waiting: false, error: "Google token refresh failed: invalid_grant" } });
+test("sync: a dead token leaves every row alone, writes no events, and says tokenDead", async () => {
+  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+  const provider = fakeProvider({ fbFails: { waiting: false, error: "Google token refresh failed: oauth token refresh failed (400): invalid_grant" } });
   const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
   assert.equal(out.ok, false);
-  assert.deepEqual(db.updates.map((u) => [u.status, u.lastError]), [["error", MSG_SIGN_IN_FAILED]]);
+  assert.equal(out.tokenDead, true);
+  assert.deepEqual(db.updates, [], "a connected closer stays connected");
   assert.equal(provider.log.listed, 0);
+  assert.equal(provider.log.inserted.length, 0);
+});
+
+test("sync: a Google 503, a dropped connection or a refresh blip changes no row and is not a dead token", async () => {
+  for (const error of ["google calendar freeBusy returned HTTP 503", "fetch failed",
+    "Google token refresh failed: The operation was aborted due to timeout"]) {
+    const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+    const provider = fakeProvider({ fbFails: { waiting: false, status: 503, error } });
+    const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+    assert.equal(out.ok, false, error);
+    assert.equal(out.tokenDead, false, error);
+    assert.deepEqual(db.updates, [], error);
+  }
+});
+
+test("sync: a per-calendar backendError leaves that row and its blocks alone", async () => {
+  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" })] });
+  const provider = fakeProvider({
+    calendars: { "j@x.com": { busy: [], errors: [{ reason: "backendError" }] } },
+    events: [mirror("keep-me", JUSTICE, "2026-10-08T15:00:00Z", "2026-10-08T16:00:00Z")]
+  });
+  const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+  assert.deepEqual(db.updates, []);
+  assert.equal(out.errored, 1);
+  assert.deepEqual(provider.log.deleted, []);
+});
+
+test("sync: when a new block fails to go in, no old block is removed that pass", async () => {
+  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com")] });
+  const provider = fakeProvider({
+    // Justice's meeting grew: the old block must go, the longer one must go in.
+    calendars: { "j@x.com": { busy: [{ start: "2026-10-08T15:00:00Z", end: "2026-10-08T17:00:00Z" }], errors: [] } },
+    events: [mirror("old", JUSTICE, "2026-10-08T15:00:00Z", "2026-10-08T16:00:00Z")],
+    insertFails: { status: 500, error: "backendError" }
+  });
+  const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+  assert.equal(out.failures, 1);
+  assert.deepEqual(provider.log.deleted, [], "the old block stays until its replacement exists");
+  assert.equal(out.deferred, 1);
+  assert.match(out.note, /removals held/);
+});
+
+test("sync: with every insert in, the stale block is removed in the same pass", async () => {
+  const db = fakeDb({ links: [link(JUSTICE, "Justice Nikkel", "j@x.com")] });
+  const provider = fakeProvider({
+    calendars: { "j@x.com": { busy: [{ start: "2026-10-08T15:00:00Z", end: "2026-10-08T17:00:00Z" }], errors: [] } },
+    events: [mirror("old", JUSTICE, "2026-10-08T15:00:00Z", "2026-10-08T16:00:00Z")]
+  });
+  const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+  assert.equal(out.inserted, 1);
+  assert.deepEqual(provider.log.deleted, ["old"]);
+});
+
+test("sync: a dead token on the list call (nobody linked) also says tokenDead", async () => {
+  const db = fakeDb({ links: [] });
+  const provider = fakeProvider();
+  provider.listMirrorEvents = async () => ({ ok: false, waiting: false, error: "Google token refresh failed: invalid_grant" });
+  const out = await syncBusyBlocks(db, { orgId: ORG, now: NOW, provider, env: {} });
+  assert.equal(out.tokenDead, true);
 });
 
 test("sync: a 403 on a write stops the pass instead of failing every write after it", async () => {
@@ -325,6 +410,21 @@ test("check: connected / not shared / waiting / owner calendar", async () => {
   assert.equal(out.result, "owner_calendar");
   out = await checkMyCalendar(fakeDb({ links: [] }), { orgId: ORG, staffId: JUSTICE, env: {}, provider: fakeProvider() });
   assert.equal(out.result, "no_link");
+});
+
+test("check: a failed call or a blip answers 'error' and leaves the row as it was", async () => {
+  const j = link(JUSTICE, "Justice Nikkel", "j@x.com", { status: "connected" });
+  let db = fakeDb({ links: [j] });
+  let out = await checkMyCalendar(db, { orgId: ORG, staffId: JUSTICE, env: {}, now: NOW,
+    provider: fakeProvider({ fbFails: { status: 503, error: "HTTP 503" } }) });
+  assert.equal(out.result, "error");
+  assert.equal(out.link.status, "connected");
+  assert.deepEqual(db.updates, []);
+  db = fakeDb({ links: [j] });
+  out = await checkMyCalendar(db, { orgId: ORG, staffId: JUSTICE, env: {}, now: NOW,
+    provider: fakeProvider({ calendars: { "j@x.com": { busy: [], errors: [{ reason: "backendError" }] } } }) });
+  assert.equal(out.result, "error");
+  assert.deepEqual(db.updates, []);
 });
 
 test("check: asks Google about this one calendar only, for the next day", async () => {
