@@ -184,3 +184,18 @@ Things only Chris has (can come tomorrow):
 - **Locator invoice fields** (secondhand): locator, tenant, property, unit, move-in date, lease term, commission, invoice number and date.
 - **When fees arrive:** often 30–45 days after the lease starts; some pay at move-in, some at 60–90 days ([HAR](https://www.har.com/question/26830_commission-payments-on-leases)).
 - **Refund window:** 60 days is confirmed (skip or eviction, [Stake/uMoveFree](https://www.umovefree.com/property-relations)). 90 days is reported for the National Association of Apartment Locators but not confirmed. Default stays 60.
+
+## 15. System design answers (owner-set, 2026-10-07)
+
+1. **Separate app.** It is built here first, then split into its own repo. No data overlap with Fundhub. Fundhub modules are copied in as starting code, not shared live.
+2. **Renter login:** yes, with their tours. **Top priority: seamless integrations** with building software.
+3. **Building login:** yes.
+4. **Broker login:** yes. They see their renters and their money: earned, when the building paid, when the broker gets paid.
+5. What a building sees: open.
+6. **One renter, many buildings:** probably not many. Renters pay an application fee per building. Limit open.
+7. **Credit:** first touch wins, timestamped. Special cases exist, so add a **dispute** step.
+8. **Old results:** keep every result, forever.
+9. **Retention:** keep forever (overrides the default retention for this app).
+10. Lease-end re-check: open. Owner wants a full follow-up sequence.
+
+Goal (owner): dominate rentals, then expand into mortgages.
