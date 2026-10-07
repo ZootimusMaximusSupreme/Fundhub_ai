@@ -98,6 +98,18 @@ Owner notes (2026-10-07): sales runs on about 5 commission-based closers working
 
 ## B3
 
+**B3a done** (pure half, branch `yesdoor/b3-matcher`, tip 41aa610): 18 modules + 18 test files under `src/yesdoor/`.
+- Tests: 385/385 pass; lint and tsc clean.
+- Built: config (with the §5b keys), util, match/rules, match/match (`matchBuilding`, `riskTier`, `lane`, `rankBackups`, `matchCandidates`, `buildingView`), match/mismatch, match/attribution (`feeEligible`), schedule, agreements/signed-link, fixtures (7 sample renters), sandbox providers (CRS, Plaid, e-sign, outbox, building connectors: manual, csv, mits-feed, entrata-sandbox), and the boundary test.
+- Decisions accepted (Claude, owner said best judgment):
+  - Tier C reading.
+  - A listing at exactly max rent shows "likely."
+  - Backup order: rent fit, then payer score, then distance.
+  - The refund is owed only when our match said approved.
+  - State rule keys: `background_check_notice_required` and `screening_fee_cap_cents`.
+  - `buildingView()` is the only shape buildings ever get.
+- Left for B3b: database wiring, the crons, the public endpoints, pulse rows, and the B2 config merge (keep the B3a copy).
+
 ## B4
 
 ## M1
