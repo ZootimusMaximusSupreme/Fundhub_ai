@@ -196,3 +196,18 @@ Ranking (who pays legally × Fundhub reuse × size × weak competition):
 Big but slow: **Medicaid work rules** (18.5M people, starts Jan 1, 2027). The payers are Medicaid health plans and states, on long contract cycles. Fortuna Health already raised $18M.
 Off the list: addiction (crime), VA claims (illegal to charge), disability (Atticus), therapy (Headway), fertility financing (Future Family), clinical trials (medical gate), appeals (free competitors).
 Caveat: all four agents hit the shared web-search cap. "Not found" cells may exist.
+
+---
+
+# Round 3 — medical ideas at ~$20k per deal (2026-10-07)
+
+Chris: "something where I can make a shit ton of money in the medical space, financing or placements … AOV like $20k would be cool, not required."
+
+| # | Idea | Who pays us | Per deal (math is the agent's, inputs sourced) | Legal shape |
+|---|---|---|---|---|
+| 1 | **Life settlements to pay for senior care** (plugs into Yesdoor senior living) | Policy buyer, via broker commission | Average seller got ~$212k in 2025 ([InsuranceNewsNet](https://insurancenewsnet.com/innarticle/what-advisors-need-to-know-about-the-life-settlement-boom)); broker commission ~25% of the settlement or ~6% of face, most states cap at 30% ([PayingForSeniorCare](https://PayingForSeniorCare.com/legal/life_settlements), [Glenn Daily](https://glenndaily.com/wmpwrb5a.htm)) → **~$50k** at 25% of $212k | Life settlement broker license per state (AZ life producer + Form L-LSB; CA license; FL appointed agent) |
+| 2 | **Practice funding for dentists, vets, med spas** (Fundhub, niched) | Lender, via SBA referral fee (Form 159) | Average dental SBA loan **$911k**; $739M across 811 dental practices in 2025 ([gosbaloans](https://gosbaloans.com/ranking/best-dental-sba-lenders/)); lender fee 0.5–3% ([sba7a.loans](https://www.sba7a.loans/sba-7a-loans-small-business-blog/what-is-the-sba-form-159/)) → **$4.6k–$27k** | Form 159 disclosure; not a patient referral, so no kickback law |
+| 3 | **Healthcare franchise placement + fund the buy-in** (home care, senior placement, med spa) | Franchisor (40–50% of the franchise fee, [franzy](https://franzy.com/blog/franchise-broker/)), plus the SBA lender fee | Home Instead fee $54k, Visiting Angels $45k ([Home Instead](https://franchises.homeinstead.com/franchise-fees), [Senior Care Authority](https://www.seniorcareauthority.com/blog/in-home-care-franchise-investment-cost-requirements-pros-cons/)) → **~$18k–$27k** | No broker license in AZ, FL; CA registration from July 1, 2027 |
+| 4 | **Physician recruiting** | Hospital or practice | 20–35% of first-year pay ([ICGI](https://www.icgi.org/?p=421031)); one program: $14k primary care, $19k specialist ([UW CHARGE](https://charge.wisc.edu/ruralhealth/RecruitingServices.aspx)) | Staffing, not a patient referral; crowded |
+
+Not a $20k-per-deal business for us: patient financing matches (full-arch implants, IVF) — the patient spends $15k–$30k, but legal fees to us are small or flat.
