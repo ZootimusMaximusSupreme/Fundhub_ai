@@ -51,7 +51,8 @@ describe("yesdoor money", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => 
     h = {};
     for (const [name, file] of [
       ["payment", "staff/payment"], ["refund", "staff/refund"], ["payout", "staff/broker-payout"], ["disputes", "staff/disputes"],
-      ["update", "building/update"], ["ledger", "staff/ledger"], ["brokerMoney", "broker/money"]
+      ["update", "building/update"], ["ledger", "staff/ledger"], ["brokerMoney", "broker/money"],
+      ["bRenters", "building/renters"], ["bInvoices", "building/invoices"], ["bRules", "building/rules"], ["kRenters", "broker/renters"]
     ]) h[name] = (await import(`../../api/yesdoor/${file}.mjs`)).default;
   });
   after(async () => { await close(); });
@@ -408,6 +409,18 @@ describe("yesdoor money", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => 
       assert.equal((await rows(db, `SELECT id FROM yd_fee_ledger WHERE application_id = $1 AND kind = 'refund'`, [old.placement.applicationId])).length, 0);
     });
 
+    test("a fee the daily job already made safe cannot be refunded either, and the answer says the window closed", async () => {
+      const b = await mkSignedBuilding(db, fx);
+      const x = await mkPaidFee(db, fx, b, { paidDaysAgo: 61 });
+      await releaseSafeFees(db, { orgId: fx.orgA });
+      assert.equal((await one(db, `SELECT status FROM yd_fee_ledger WHERE id = $1`, [x.feeId])).status, "safe");
+      const r = await post("refund", t().opsA, { applicationId: x.placement.applicationId, reason: "too late" });
+      assert.equal(r.code, 409);
+      assert.equal(r.body.error, "refund_window_closed");
+      const viaBuilding = await call(h.update, { method: "POST", token: b.token, body: { applicationId: x.placement.applicationId, stage: "refunded" } });
+      assert.equal(viaBuilding.code, 409, "safe -> refunded is not an arrow");
+    });
+
     test("no paid fee, unknown placement, another company's placement, no reason: each is refused", async () => {
       const { p } = await invoicedFee();                              // invoiced, not yet paid
       const unpaid = await post("refund", t().opsA, { applicationId: p.applicationId, reason: "x" });
@@ -457,6 +470,28 @@ describe("yesdoor money", { skip: !HAVE_DB ? "no DATABASE_URL" : false }, () => 
       ];
       for (const body of bodies) assert.deepEqual(creditLeaks(body), []);
     });
+  });
+
+  /* ── the credit wall ──────────────────────────────────────────────────── */
+
+  test("after every write above, the building and broker doors still carry no credit data (the fixture renter's file is full of markers)", async () => {
+    // The fixture's placement belongs to a renter with a score, evictions, a criminal flag and a raw report.
+    // Replaying its moves and reading every building and broker door must never surface any of it.
+    const replay = await call(h.update, { method: "POST", token: t().buildingA, body: { applicationId: fx.A.app1, stage: "applied" } });
+    assert.equal(replay.code, 200);
+    const doors = [
+      [h.bRenters, t().buildingA], [h.bInvoices, t().buildingA], [h.bRules, t().buildingA],
+      [h.kRenters, t().brokerA], [h.brokerMoney, t().brokerA]
+    ];
+    for (const [door, token] of doors) {
+      const r = await call(door, { token });
+      assert.equal(r.code, 200);
+      assert.deepEqual(creditLeaks(r.body), []);
+    }
+    assert.deepEqual(creditLeaks(replay.body), []);
+    const text = JSON.stringify(replay.body);
+    assert.ok(!/credit|eviction|criminal|collections|raw/i.test(Object.keys(replay.body.application).join(" ")), "no credit-shaped key on the application");
+    assert.ok(text.length > 20);
   });
 
   /* ── disputes ─────────────────────────────────────────────────────────── */

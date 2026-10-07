@@ -207,10 +207,15 @@ export async function reversePlacementFee(tx, { orgId, applicationId, actor, why
  */
 export async function refundPaidFee(tx, { orgId, applicationId, actor, why, now = new Date() }) {
   const fee = await liveFeeFor(tx, orgId, applicationId);
+  const b0 = fee ? (await tx.query(`SELECT refund_days FROM yd_buildings WHERE id = $1 AND org_id = $2`, [fee.building_id, orgId])).rows[0] : null;
+  if (fee && fee.status === "safe") {
+    throw new YdError(409, "refund_window_closed",
+      `The ${b0.refund_days}-day refund window has closed: the fee is safe, so no refund is owed.`);
+  }
   if (!fee || fee.status !== "paid") {
     throw new YdError(409, "no_paid_fee", "There is no paid fee on this placement to refund.");
   }
-  const b = (await tx.query(`SELECT refund_days FROM yd_buildings WHERE id = $1 AND org_id = $2`, [fee.building_id, orgId])).rows[0];
+  const b = b0;
   if (!refundWindowOpen({ paidAt: fee.paid_at, refundDays: b.refund_days, now })) {
     throw new YdError(409, "refund_window_closed",
       `The ${b.refund_days}-day refund window has closed: the fee is safe, so no refund is owed.`);
