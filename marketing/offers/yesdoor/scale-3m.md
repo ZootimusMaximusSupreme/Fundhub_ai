@@ -4,6 +4,12 @@ Board and sources: `ops/workflows/yesdoor-3m-scale-2026-10-07.md`. Every number 
 
 **Owner-set 2026-10-07:** Chris handles Arizona and real estate licensing. The soft pull is the front door. Lifetime value comes from buyers guides, denial-help tools, lawyer referrals and credit repair, not only placement fees.
 
+**Owner-set 2026-10-07 (target):** 2,000 leases a month, across California and Arizona. The edge: Yesdoor is the only platform that pre-qualifies with a CRS soft pull from just an email.
+
+- 2,000 leases × 100% of first month at an **assumed** $1,500 = **$3M from placement alone**, before any back-end sales.
+- California rents run higher than Phoenix, so every California lease raises the fee. That makes the target easier. CA rent and fee figures were not researched yet.
+- Not researched yet: California locator fees, and whether California buildings pay locators at all.
+
 ## The answer
 
 - $3M a month = $36M a year. No locator found has confirmed that much. The biggest confirmed one is Smart City at about $22M a year (~$1.8M a month) across 8+ cities. UMoveFree is estimated at ~$2.6M a month.
