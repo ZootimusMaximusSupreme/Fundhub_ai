@@ -32,7 +32,7 @@ flowchart TD
     CAN --> A_documents[Documents — 1 route]
     CAN --> A_finance[Finance — 10 routes]
     CAN --> A_gifts[gifts — 1 route]
-    CAN --> A_hiring[Hiring — 1 route]
+    CAN --> A_hiring[Hiring — 7 routes]
     CAN --> A_journeys[journeys — 1 route]
     CAN --> A_ops[ops — 1 route]
     CAN --> A_public[public — 18 routes]
@@ -45,7 +45,7 @@ flowchart TD
     CAN --> A_trials[trials — 2 routes]
     CAN --> A_webhooks[Incoming webhooks — 1 route]
     CAN --> A_yesdoor[yesdoor — 26 routes]
-    WHO -->|Yes| CANT[Blocked — 92 routes]
+    WHO -->|Yes| CANT[Blocked — 86 routes]
     CANT --> B_affiliates[affiliates — 1 blocked]
     CANT --> B_auth[Signing in and out — 8 blocked]
     CANT --> B_banking[banking — 1 blocked]
@@ -57,7 +57,7 @@ flowchart TD
     CANT --> B_dashboard[The dashboard — 1 blocked]
     CANT --> B_demo[demo — 2 blocked]
     CANT --> B_finance[Finance — 2 blocked]
-    CANT --> B_hiring[Hiring — 7 blocked]
+    CANT --> B_hiring[Hiring — 1 blocked]
     CANT --> B_journeys[journeys — 1 blocked]
     CANT --> B_marketing[marketing — 3 blocked]
     CANT --> B_ops[ops — 1 blocked]
@@ -78,7 +78,7 @@ flowchart TD
 
 ## What they can reach
 
-**207 of 299 routes.**
+**213 of 299 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -156,7 +156,13 @@ flowchart TD
 | `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
 | `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
+| `/api/hiring/application` | GET | owner, admin, sales_manager |
 | `/api/hiring/apply` | GET, POST | anyone |
+| `/api/hiring/bench` | GET | owner, admin, sales_manager |
+| `/api/hiring/candidates` | GET | owner, admin, sales_manager |
+| `/api/hiring/decisions` | GET | owner, admin, sales_manager |
+| `/api/hiring/funnel` | GET | owner, admin, sales_manager |
+| `/api/hiring/postings` | GET | owner, admin, sales_manager |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
 | `/api/inquiry-cases` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
@@ -299,7 +305,7 @@ flowchart TD
 
 ## What they are blocked from
 
-**92 of 299 routes.**
+**86 of 299 routes.**
 
 | Route | Methods | Who the code lets in |
 |---|---|---|
@@ -326,13 +332,7 @@ flowchart TD
 | `/api/demo/simulate` | DELETE, POST | owner, admin |
 | `/api/finance/crs-pull` | POST | owner, admin, closer, funding_advisor |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
-| `/api/hiring/application` | GET | owner, admin |
-| `/api/hiring/bench` | GET | owner, admin |
-| `/api/hiring/candidates` | GET | owner, admin |
 | `/api/hiring/decide` | POST | owner, admin |
-| `/api/hiring/decisions` | GET | owner, admin |
-| `/api/hiring/funnel` | GET | owner, admin |
-| `/api/hiring/postings` | GET | owner, admin |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/journeys` | GET, PUT | owner, admin |
 | `/api/journeys/ask` | POST | owner, admin |

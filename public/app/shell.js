@@ -204,8 +204,12 @@
      .affiliate name the only openers; staffTabs() drops them. */
   var PORTAL_ONLY = ["client-portal.html", "affiliate.html"];
 
-  /* ROLE_SETS.HIRING — applicant PII. owner/admin only (via "*" or this list
-     added for those roles — "*" already covers owner/admin). */
+  /* ROLE_SETS.HIRING — applicant PII. owner, admin and sales_manager (owner-set
+     2026-10-07: Sarah takes the hiring calls). "*" and the admin branch already
+     cover owner/admin; sales_manager gets it added in allowedFor(). Move the
+     gate and move the row: ROLE_SETS.HIRING in src/http/read-api.mjs is the
+     source. Hire / reject (api/hiring/decide.mjs) stays owner/admin, so a sales
+     manager reads this screen and cannot decide on it. */
   var HIRING_ONLY = ["hiring.html"];
 
   /* Lender database — the funding advisor's maintenance surface. Same pattern:
@@ -368,9 +372,10 @@
     closer: "closer",
     inquiry_specialist: "staff",
     setter: "staff",
-    /* Sales manager gets the shared staff surface plus the sales floor
-       and the finance-gated screens (staff-teams, agent-editor,
-       products-commissions). "sales_manager" resolves in allowedFor(). */
+    /* Sales manager gets the shared staff surface plus the sales floor,
+       the finance-gated screens (staff-teams, agent-editor,
+       products-commissions) and the hiring screen (read-only for them; see
+       HIRING_ONLY). "sales_manager" resolves in allowedFor(). */
     sales_manager: "sales_manager",
     /* Client Success Manager gets the shared staff surface plus the consent
        desk. They run recorded check-in and interview calls, so capturing
@@ -497,7 +502,7 @@
     }
     if (m === "closer") return staffTabs().concat(CLOSER_DESK_ONLY).concat(CONSENT_DESK_ONLY);
     if (m === "funding_advisor") return staffTabs().concat(ADVISOR_ONLY).concat(CONSENT_DESK_ONLY);
-    if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY).concat(FINANCE_ONLY);
+    if (m === "sales_manager") return staffTabs().concat(SALES_FLOOR_ONLY).concat(FINANCE_ONLY).concat(HIRING_ONLY);
     if (m === "csm") return staffTabs().concat(CONSENT_DESK_ONLY);
     if (m === "staff" || !m) return staffTabs();
     return m.slice();

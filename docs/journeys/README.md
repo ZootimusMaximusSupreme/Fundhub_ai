@@ -41,7 +41,7 @@ have no automation tree at all. See `src/journeys/seed-journeys.mjs`'s header.
 |---|---|---|
 | [client](./client-actual.md) ([intended](./client-intended.md)) | `client` | reaches 80 of 299 routes |
 | [role-owner](./role-owner-actual.md) ([intended](./role-owner-intended.md)) | `owner` | reaches 291 of 299 routes |
-| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 207 of 299 routes |
+| [role-sales-manager](./role-sales-manager-actual.md) ([intended](./role-sales-manager-intended.md)) | `sales_manager` | reaches 213 of 299 routes |
 | [role-closer](./role-closer-actual.md) ([intended](./role-closer-intended.md)) | `closer` | reaches 193 of 299 routes |
 | [role-funding-advisor](./role-funding-advisor-actual.md) ([intended](./role-funding-advisor-intended.md)) | `funding_advisor` | reaches 195 of 299 routes |
 | [role-inquiry-remover](./role-inquiry-remover-actual.md) ([intended](./role-inquiry-remover-intended.md)) | `inquiry_specialist` | reaches 190 of 299 routes |
@@ -68,7 +68,7 @@ Endpoints name a set like `ROLE_SETS.FINANCE`. Those names mean:
 | `FINANCE` | owner, admin, sales_manager |
 | `STAFF` | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `OPS` | owner, admin |
-| `HIRING` | owner, admin |
+| `HIRING` | owner, admin, sales_manager |
 | `COMPLIANCE` | owner, admin |
 | `MARKETING` | owner, admin |
 | `LENDERS` | owner, admin, funding_advisor |
