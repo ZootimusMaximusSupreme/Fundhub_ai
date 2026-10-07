@@ -12,6 +12,29 @@
 2. Chris gets a text and an email the moment any lead comes in. He answers from his business cell with a personal video, then hands warm leads to Justice.
 3. Setter script built from the Cole Gordon setter method already in Chris's Google Drive.
 
+## Owner decisions (2026-10-07)
+
+- **No one is in Chris's ClickFunnels except Chris** (owner-set 2026-10-07). Sarah and Justice are never added as ClickFunnels collaborators. This replaces W1's "add them to ClickFunnels" path.
+- Chris plugs their Google calendars in himself, so their availability shows on the funnel.
+- No email goes to Sarah or Justice without Chris's explicit send. (The 2026-10-07 first emails went out too early. The agent read "when you're done" as now.)
+
+## Calendar — corrected path (2026-10-07)
+
+1. Sarah and Justice each share their Google calendar with `stanbridgejchris@gmail.com`. Justice: "Make changes to events", so booked calls can land on his calendar. Sarah: "See all event details", for busy times only.
+2. Chris's existing Google connection in ClickFunnels then shows their calendars. Justice's calendar: Default Calendar ON + Check For Conflicts ON. Sarah's calendar: Check For Conflicts ON only.
+3. The availability hours on the booking page match the call hours they send back.
+- Not in the ClickFunnels docs: whether calendars shared into the connected Google account show up there. Check it the moment the shares land.
+- Checked 2026-10-07: Chris's Google calendar list holds only his own calendar and US Holidays. Nothing is shared yet.
+- Correction drafts (not sent, waiting on Chris): one to Justice, one to Sarah, each as a reply on its first email thread.
+
+## Setter — the flow is already in code
+
+The setter flow is built (the "Josh" AI setter):
+- The call: `src/workflows/ai-set-01-josh-setter.mjs`. A booking fires a call to confirm the strategy session.
+- The text sequence: `src/workflows/ai-set-03-no-answer-cadence.mjs`. If there's no answer, texts go out at 30 min, 2 hr, and 24 hr.
+- The 3-way text: `src/workflows/ai-set-04-3way-handoff.mjs`. 15 minutes before the call, a text introduces the advisor (closer) with the meeting link, and a task is opened for the closer.
+- W3's `docs/sops/setter/` was written from Drive and does not start from this built flow.
+
 ## Tasks
 
 | # | Workflow | Owner | Status | Output |
