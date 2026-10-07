@@ -96,7 +96,9 @@ const STAFF_TABS = ALL.filter(
 );
 
 const CLOSER_TABS = [...STAFF_TABS, ...CLOSER_DESK_ONLY, ...CONSENT_DESK_ONLY];
-const SALES_MANAGER_TABS = [...STAFF_TABS, ...SALES_FLOOR_ONLY, ...FINANCE_ONLY];
+/* hiring.html joined the sales manager on 2026-10-07 (owner's word: Sarah takes
+   the hiring calls). ROLE_SETS.HIRING gained sales_manager in the same change. */
+const SALES_MANAGER_TABS = [...STAFF_TABS, ...SALES_FLOOR_ONLY, ...FINANCE_ONLY, ...HIRING_ONLY];
 const ADVISOR_TABS = [...STAFF_TABS, ...ADVISOR_ONLY, ...CONSENT_DESK_ONLY];
 
 /* Owner still gets everything ("*"); admin does not. allowedFor() subtracts
@@ -335,6 +337,34 @@ describe("app shell — the chip's tab count matches what the sidebar shows", ()
     assert.ok(!visible.includes("ops-admin.html"));
     assert.ok(!visible.includes("lenders.html"));
     assert.ok(!visible.includes("consent-capture.html"));
+  });
+
+  /* The menu cases above cannot see hiring.html: it is on NAV_HIDDEN (the
+     2026-08-19 kill pass), so it is off every role's rail and a menu comparison
+     passes whether or not a role may open it by address. This case reads the
+     gate itself, straight off shell.js allowedFor(), so the sales manager's
+     access to the hiring screen, and every other staff role's lack of it, is
+     pinned where it is decided. The API side of the same decision is pinned in
+     src/hiring/hiring-endpoints.pg.test.mjs. */
+  test("only a sales manager (beyond owner and admin) may open hiring.html", () => {
+    const returnsFor = (role) => {
+      const m = SHELL_SRC.match(new RegExp('m === "' + role + '"\\) return ([^;]*);'));
+      assert.ok(m, `allowedFor() no longer has a branch for ${role}`);
+      return m[1];
+    };
+    assert.match(returnsFor("sales_manager"), /HIRING_ONLY/,
+      "a sales manager must be able to open the hiring screen (owner-set 2026-10-07)");
+    for (const role of ["closer", "funding_advisor", "csm"]) {
+      assert.doesNotMatch(returnsFor(role), /HIRING_ONLY/,
+        `${role} must not be offered the hiring screen — its reads would 403`);
+    }
+    assert.ok(!STAFF_TABS.includes("hiring.html"),
+      "generic staff (setter, inquiry_specialist) must not reach the hiring screen");
+    assert.ok(SALES_MANAGER_TABS.includes("hiring.html"));
+    assert.ok(OWNER_TABS.includes("hiring.html"));
+    assert.ok(ADMIN_TABS.includes("hiring.html"));
+    // Still off the menu for everyone: reachable by address, not offered.
+    assert.ok(NAV_HIDDEN.includes("hiring.html"));
   });
 
   test("the owner menu is every allowed sidebar row except the kill list", () => {

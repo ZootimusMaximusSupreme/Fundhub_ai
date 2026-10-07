@@ -163,14 +163,14 @@ flowchart TD
 | `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
 | `/api/gifts/message-blaster` | GET, HEAD | staff, affiliate, partner |
 | `/api/health` | — | anyone |
-| `/api/hiring/application` | GET | owner, admin |
+| `/api/hiring/application` | GET | owner, admin, sales_manager |
 | `/api/hiring/apply` | GET, POST | anyone |
-| `/api/hiring/bench` | GET | owner, admin |
-| `/api/hiring/candidates` | GET | owner, admin |
+| `/api/hiring/bench` | GET | owner, admin, sales_manager |
+| `/api/hiring/candidates` | GET | owner, admin, sales_manager |
 | `/api/hiring/decide` | POST | owner, admin |
-| `/api/hiring/decisions` | GET | owner, admin |
-| `/api/hiring/funnel` | GET | owner, admin |
-| `/api/hiring/postings` | GET | owner, admin |
+| `/api/hiring/decisions` | GET | owner, admin, sales_manager |
+| `/api/hiring/funnel` | GET | owner, admin, sales_manager |
+| `/api/hiring/postings` | GET | owner, admin, sales_manager |
 | `/api/inngest` | — | **not a sign-in** — Inngest request signing |
 | `/api/inquiries` | GET, POST | staff |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |

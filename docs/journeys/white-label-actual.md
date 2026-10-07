@@ -252,13 +252,13 @@ flowchart TD
 | `/api/finance/paydown-simulator` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |
 | `/api/finance/soft-pull` | GET, POST | employees: owner, admin, closer, funding_advisor<br>plus: client |
 | `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
-| `/api/hiring/application` | GET | owner, admin |
-| `/api/hiring/bench` | GET | owner, admin |
-| `/api/hiring/candidates` | GET | owner, admin |
+| `/api/hiring/application` | GET | owner, admin, sales_manager |
+| `/api/hiring/bench` | GET | owner, admin, sales_manager |
+| `/api/hiring/candidates` | GET | owner, admin, sales_manager |
 | `/api/hiring/decide` | POST | owner, admin |
-| `/api/hiring/decisions` | GET | owner, admin |
-| `/api/hiring/funnel` | GET | owner, admin |
-| `/api/hiring/postings` | GET | owner, admin |
+| `/api/hiring/decisions` | GET | owner, admin, sales_manager |
+| `/api/hiring/funnel` | GET | owner, admin, sales_manager |
+| `/api/hiring/postings` | GET | owner, admin, sales_manager |
 | `/api/inquiries` | GET, POST | staff |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/inquiry-cases` | POST | owner, admin, funding_advisor, closer, inquiry_specialist, setter, sales_manager, csm |

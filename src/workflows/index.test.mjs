@@ -108,6 +108,7 @@ const EXPECTED_WORKFLOW_IDS = [
   "hiring-bench-sweeper",
   "hiring-outreach-cadence",
   "inquiry-call-sweeper",
+  "lead-alert-owner",
   "meet-transcript-sweeper",
   "message-dispatch-sweeper",
   "clickfunnels-analytics-sweeper",
@@ -208,6 +209,16 @@ test("index serves exactly the workflows on disk, and the count is pinned", asyn
      added, in the words of the person who added it. The counts named in it are
      the historical record of what the pin said at the time; the pin itself is
      EXPECTED_WORKFLOW_IDS at the top of this file now, not a number.
+
+     Added the lead alert to Chris (2026-10-07, owner-approved) — "I need to be
+     notified immediately when leads come in (text/email)." On entry.captured and
+     booking.created it sends ONE text and ONE email to LEAD_ALERT_SMS_TO and
+     LEAD_ALERT_EMAIL_TO, the first time it sees a client made in the last 24
+     hours. Registering it texts and emails nobody until both settings are set and
+     MESSAGING_DRY_RUN is explicitly off. It writes two once-only stamps on the
+     client's file (lead_alert_sms_at, lead_alert_email_at) and nothing else. It
+     sends straight through the Twilio and Resend providers, not the message
+     queue, because the message is for Chris and not for the lead.
 
      Added the evening brief (2026-10-05, MB6) — Chris asked for a
      "Good evening, Chris." text at 9:00 p.m. Arizona so he knows what came in

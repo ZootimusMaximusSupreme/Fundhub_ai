@@ -17,7 +17,7 @@ import { textChris, ticketDarwin } from "./notify.mjs";
 import { checkRegistry } from "./registry.mjs";
 import { listUnrecordedCalls } from "../sales/unrecorded.mjs";
 import { checkJobHeartbeats } from "./heartbeats.mjs";
-import { checkMessageQueue, checkFailedEvents, checkMoneyIn, checkMetaTracking } from "./system-checks.mjs";
+import { checkMessageQueue, checkLeadAlerts, checkFailedEvents, checkMoneyIn, checkMetaTracking } from "./system-checks.mjs";
 import { buildScorecard, countChecks, loadPreviousScorecard, saveScorecard } from "./scorecard.mjs";
 import { runProbes } from "../messaging/providers/pulse-probes.mjs";
 
@@ -495,6 +495,7 @@ export async function runDailyPulse({
   checks.push(...await guarded("vsl", "front_doors", () => checkVslFiles({ fetchImpl, baseUrl: origin })));
   checks.push(...await guarded("jobs", "jobs", () => checkJobHeartbeats({ db, now })));
   checks.push(...await guarded("msg-queue", "messages", () => checkMessageQueue({ db, orgId: resolvedOrg, now })));
+  checks.push(...await guarded("lead-alerts", "messages", () => checkLeadAlerts({ db, orgId: resolvedOrg, now, env })));
   checks.push(...await guarded("failed-events", "backend", () => checkFailedEvents({ db, orgId: resolvedOrg, now })));
   checks.push(...await guarded("money-in", "money_in", () => checkMoneyIn({ db, orgId: resolvedOrg, now })));
   checks.push(...await guarded("meta-capi", "tracking", () => checkMetaTracking({ db, orgId: resolvedOrg, now, env })));

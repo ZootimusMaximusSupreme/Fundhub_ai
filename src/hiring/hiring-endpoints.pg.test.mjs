@@ -174,10 +174,114 @@ describe("hiring read endpoints", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
 
   test("hiring reads are gated to HIRING, not the whole staff set", async () => {
     // Applicant PII plus an AEDT scoring trail is not material a closer needs.
-    assert.deepStrictEqual([...ROLE_SETS.HIRING].sort(), ["admin", "owner"]);
-    for (const role of ["closer", "setter", "funding_advisor", "inquiry_specialist"]) {
+    // sales_manager joined on 2026-10-07 (owner's word: Sarah takes the hiring
+    // calls). Nobody else was added.
+    assert.deepStrictEqual([...ROLE_SETS.HIRING].sort(), ["admin", "owner", "sales_manager"]);
+    for (const role of ["closer", "setter", "funding_advisor", "inquiry_specialist", "csm"]) {
       assert.strictEqual(ROLE_SETS.HIRING.has(role), false, `${role} must not read hiring`);
     }
+  });
+
+  /* THE LINK-UP, DRIVEN FOR REAL (owner's word 2026-10-07: "Sarah does not
+     currently take any calls due to role gates ... link her up so she can start
+     taking hiring calls"). Real staff rows, real sessions, the real handlers.
+     A sales manager reads every hiring screen endpoint. A sales manager still
+     cannot hire or reject (decide), and still cannot read the bias-audit
+     aggregate. */
+  describe("who may call the hiring endpoints — real sessions", () => {
+    const tokens = {};
+    const ROLES = ["sales_manager", "admin", "owner", "closer", "setter", "csm"];
+
+    const fakeRes = () => {
+      const r = { code: null, body: null };
+      r.setHeader = () => r;
+      r.status = (c) => { r.code = c; return r; };
+      r.json = (b) => { r.body = b; return r; };
+      return r;
+    };
+    async function get(mod, token, query = {}) {
+      const { default: handler } = await import(mod);
+      const res = fakeRes();
+      await handler({ method: "GET", query, headers: { authorization: `Bearer ${token}` } }, res);
+      return res;
+    }
+    async function post(mod, token, body) {
+      const { default: handler } = await import(mod);
+      const res = fakeRes();
+      await handler({ method: "POST", body, headers: { authorization: `Bearer ${token}` } }, res);
+      return res;
+    }
+
+    before(async () => {
+      const { createSession } = await import("../auth/session.mjs");
+      for (const role of ROLES) {
+        const id = (await db.query(
+          `INSERT INTO staff (org_id, name, email, role, status, active)
+           VALUES ($1,$2,$3,$4,'active',true) RETURNING id`,
+          [org, `${TAG} ${role}`, `${TAG}-who-${role}@example.test`, role])).rows[0].id;
+        tokens[role] = (await createSession(db, { staffId: id, orgId: org })).token;
+      }
+    });
+
+    const READS = [
+      ["candidates", "../../api/hiring/candidates.mjs", () => ({})],
+      ["application", "../../api/hiring/application.mjs", () => ({ id: applicationId })],
+      ["postings", "../../api/hiring/postings.mjs", () => ({})],
+      ["decisions", "../../api/hiring/decisions.mjs", () => ({})],
+      ["funnel", "../../api/hiring/funnel.mjs", () => ({})],
+      ["bench", "../../api/hiring/bench.mjs", () => ({})]
+    ];
+
+    for (const [name, mod, query] of READS) {
+      test(`a sales manager gets 200 on GET hiring/${name}`, async () => {
+        const res = await get(mod, tokens.sales_manager, query());
+        assert.strictEqual(res.code, 200, JSON.stringify(res.body));
+        assert.strictEqual(res.body.ok, true);
+      });
+      test(`owner and admin still get 200 on GET hiring/${name}`, async () => {
+        for (const role of ["owner", "admin"]) {
+          const res = await get(mod, tokens[role], query());
+          assert.strictEqual(res.code, 200, `${role}: ${JSON.stringify(res.body)}`);
+        }
+      });
+      test(`closer, setter and csm still get 403 on GET hiring/${name}`, async () => {
+        for (const role of ["closer", "setter", "csm"]) {
+          const res = await get(mod, tokens[role], query());
+          assert.strictEqual(res.code, 403, `${role} must not read hiring/${name}`);
+        }
+      });
+    }
+
+    test("a sales manager gets 403 on POST hiring/decide and nothing is written", async () => {
+      const before = (await db.query(
+        `SELECT count(*)::int AS n FROM hiring_decisions WHERE application_id = $1`,
+        [applicationId])).rows[0].n;
+      const res = await post("../../api/hiring/decide.mjs", tokens.sales_manager,
+        { application_id: applicationId, action: "reject", reason: "should never be written" });
+      assert.strictEqual(res.code, 403, JSON.stringify(res.body));
+      assert.strictEqual(res.body.error, "forbidden");
+      const after = (await db.query(
+        `SELECT count(*)::int AS n FROM hiring_decisions WHERE application_id = $1`,
+        [applicationId])).rows[0].n;
+      assert.strictEqual(after, before, "a refused decision must not write a row");
+    });
+
+    test("admin and owner still pass the decide gate", async () => {
+      // An empty body stops at application_id_required (400) AFTER the role gate,
+      // so this proves the gate admits them without deciding anybody.
+      for (const role of ["admin", "owner"]) {
+        const res = await post("../../api/hiring/decide.mjs", tokens[role], {});
+        assert.strictEqual(res.code, 400, `${role}: ${JSON.stringify(res.body)}`);
+        assert.strictEqual(res.body.error, "application_id_required");
+      }
+    });
+
+    test("a sales manager still gets 403 on the bias-audit aggregate", async () => {
+      const refused = await get("../../api/read/eeo-aggregate.mjs", tokens.sales_manager);
+      assert.strictEqual(refused.code, 403, JSON.stringify(refused.body));
+      const admitted = await get("../../api/read/eeo-aggregate.mjs", tokens.admin);
+      assert.strictEqual(admitted.code, 200, JSON.stringify(admitted.body));
+    });
   });
 
   const full = (n) => ({
@@ -280,7 +384,47 @@ describe("POST /api/hiring/decide — the HTTP shell", () => {
     const gate = /requireRole\(([^)]*)\)\(\s*req/.exec(src);
     assert.ok(gate, "the gate must be literal so the journey generator can read it");
     const named = gate[1].split(",").map((x) => x.trim().replace(/^"|"$/g, ""));
-    assert.deepStrictEqual(named.sort(), [...ROLE_SETS.HIRING].sort(),
-      "the written-out gate has drifted from ROLE_SETS.HIRING");
+    /* Hire and reject stay owner/admin. ROLE_SETS.HIRING gained sales_manager on
+       2026-10-07 for READING the hiring screens; decide.mjs writes its own gate
+       out in full and must NOT follow that set. This used to assert the two
+       were equal, which would have forced the write gate open the moment the
+       read set widened. The intent is unchanged (the written gate is pinned);
+       the expected list is now stated, not borrowed. */
+    assert.deepStrictEqual(named.sort(), ["admin", "owner"],
+      "hire / reject must stay owner and admin only");
+    assert.ok(!named.includes("sales_manager"),
+      "a sales manager reads hiring but must not decide on it");
+    for (const role of named) {
+      assert.ok(ROLE_SETS.HIRING.has(role),
+        `${role} can decide but cannot read hiring — the two gates have drifted`);
+    }
+  });
+
+  /* The screen must not offer a sales manager buttons the server will refuse
+     (UI-STANDARDS: no controls the role lacks permission for). The function is
+     lifted out of hiring.html and run against a fake localStorage, so this
+     checks what the page actually does, not what it says it does. */
+  test("hiring.html offers Advance / Reject to owner and admin only, never a sales manager", () => {
+    const src = fs.readFileSync(
+      new URL("../../public/app/hiring.html", import.meta.url), "utf8");
+    const m = /function viewerMayDecide\(\)\{[\s\S]*?\n\}/.exec(src);
+    assert.ok(m, "hiring.html lost viewerMayDecide()");
+    const may = (role) => new Function("localStorage",
+      `${m[0]}; return viewerMayDecide();`)({ getItem: () => role });
+    assert.strictEqual(may("owner"), true);
+    assert.strictEqual(may("Admin "), true, "the role is folded like shell.js folds it");
+    assert.strictEqual(may("sales_manager"), false, "a sales manager must not be offered Advance / Reject");
+    assert.strictEqual(may("closer"), false);
+    assert.ok(/if\(!viewerMayDecide\(\)\)\{\s*return/.test(src),
+      "decideSection() must consult viewerMayDecide() before drawing the buttons");
+  });
+
+  /* Pure checks on the two sets. No database, so these run in the default suite
+     (the describe above that drives real sessions needs DATABASE_URL). */
+  test("sales_manager reads hiring; the bias-audit aggregate stays owner/admin", () => {
+    assert.ok(ROLE_SETS.HIRING.has("sales_manager"), "Sarah must be able to read hiring");
+    assert.deepStrictEqual([...ROLE_SETS.COMPLIANCE].sort(), ["admin", "owner"],
+      "the bias-audit aggregate (ROLE_SETS.COMPLIANCE) must not widen with HIRING");
+    assert.strictEqual(ROLE_SETS.COMPLIANCE.has("sales_manager"), false);
   });
 });

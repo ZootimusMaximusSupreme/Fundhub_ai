@@ -317,13 +317,13 @@ flowchart TD
 | `/api/finance/cards` | GET, POST | owner, admin, sales_manager |
 | `/api/finance/cashflow` | GET, POST | owner, admin, sales_manager |
 | `/api/finance/subscriptions` | GET, POST | owner, admin, sales_manager |
-| `/api/hiring/application` | GET | owner, admin |
-| `/api/hiring/bench` | GET | owner, admin |
-| `/api/hiring/candidates` | GET | owner, admin |
+| `/api/hiring/application` | GET | owner, admin, sales_manager |
+| `/api/hiring/bench` | GET | owner, admin, sales_manager |
+| `/api/hiring/candidates` | GET | owner, admin, sales_manager |
 | `/api/hiring/decide` | POST | owner, admin |
-| `/api/hiring/decisions` | GET | owner, admin |
-| `/api/hiring/funnel` | GET | owner, admin |
-| `/api/hiring/postings` | GET | owner, admin |
+| `/api/hiring/decisions` | GET | owner, admin, sales_manager |
+| `/api/hiring/funnel` | GET | owner, admin, sales_manager |
+| `/api/hiring/postings` | GET | owner, admin, sales_manager |
 | `/api/inquiry` | — | inquiry_specialist, admin, owner |
 | `/api/journeys` | GET, PUT | owner, admin |
 | `/api/journeys/ask` | POST | owner, admin |

@@ -162,8 +162,12 @@ import { isSyntheticRow } from "./synthetic.mjs";
    ops/workflows/team-setup-sarah-justice-2026-10-07.md): staff-calendar-busy-sync,
    a five-minute cron with no event trigger, so it always appears in neverFired;
    and s-04d-closer-calendar-invite on booking.created, which the walk reaches
-   and which skips without a Google token. */
-const REGISTERED = 97;
+   and which skips without a Google token.
+
+   Moved 97 -> 98 on 2026-10-07 with the lead alert to Chris (lead-alert-owner,
+   owner-approved): it runs on entry.captured and booking.created, so the walk
+   reaches it. It skips a synthetic client, so a journey run alerts nobody. */
+const REGISTERED = 98;
 
 const N = (id, type, cfg = {}, branches) => ({ id, type, title: id, cfg, touches: [], branches });
 const cond = (id, lanes) => N(id, "condition", { field: "f", op: "is true" }, lanes);

@@ -66,6 +66,7 @@ import { repairBureauResponseReader } from './repair-bureau-response.mjs';
 import { roundStartedClientNotify } from './round-started-client-notify.mjs';
 import { s01NewLeadIntake } from './s-01-new-lead-intake.mjs';
 import { s00Welcome } from './s-00-welcome.mjs';
+import { leadAlertOwner } from './lead-alert-owner.mjs';
 import { s02IncompleteSurveyNudge } from './s-02-incomplete-survey-nudge.mjs';
 import { s04CallBooked } from './s-04-call-booked.mjs';
 import { s04bBookingReminders } from './s-04b-booking-reminders.mjs';
@@ -443,6 +444,15 @@ export const functions = [
   roundStartedClientNotify,
   s01NewLeadIntake,
   s00Welcome,
+  /* Lead alert to Chris (owner-approved 2026-10-07). On entry.captured and
+     booking.created it sends ONE text and ONE email to LEAD_ALERT_SMS_TO and
+     LEAD_ALERT_EMAIL_TO the first time it sees a new lead (a client made in the
+     last 24 hours, never a test file). It writes only two once-only stamps on
+     the client's file, and sends straight through the Twilio and Resend
+     providers behind the messaging fence: it does not use the lead's consent or
+     the message queue, because the message is for Chris, not for the lead.
+     With either setting unset, that channel is skipped with a log line. */
+  leadAlertOwner,
   /* Chases a lead who started an application and stopped: 20-minute sleep, then
      one nudge email if survey.submitted has not fired. entry.captured has 400
      rows and nothing was listening. Owner enabled it 2026-08-19. It emails real
