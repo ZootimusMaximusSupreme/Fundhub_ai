@@ -208,7 +208,18 @@ Goal (owner): dominate rentals, then expand into mortgages.
   - Every building confirms its rules on a schedule. Stale rules pause that building's matches.
   - Every result shows the date of the rules it used.
   - Track a "we said yes, they said no" rate per building.
-  - Open: refund the renter's application fee when that happens.
-- **Re-checks:** Yesdoor re-checks on its own **and** asks the renter for updates. Owner believes asking is legally required; to confirm.
+  - **Handling "we said approved, the building said no" (Claude's design; Chris asked Claude to decide):**
+    1. **Prevent:**
+       - Rules come from the building's own system or feed, are versioned and dated, and are re-confirmed monthly.
+       - "Approved" only when the renter clears every rule with room to spare. Close calls show "likely."
+       - The contract says the building approves renters who meet its stated rules, or gives a reason. That matches how buildings must apply their own criteria anyway, and California's first-qualified-applicant rule (AB 2493).
+    2. **Detect:** a denial needs a reason, entered in the building portal or sent by integration.
+    3. **Recover in minutes:** the renter is re-matched to a backup list of buildings they already clear, and the tour is rebooked. The renter is never left with nothing.
+    4. **Application fee:** the contract asks buildings to waive it for Yesdoor-screened renters, so a mismatch costs the renter nothing. Where it isn't waived, Yesdoor refunds the fee (typical $50; California cap ~$66).
+    5. **Learn:**
+       - The denial reason updates that building's rules in the system.
+       - Each building gets a mismatch rate.
+       - Too many mismatches pause the building until its rules are reviewed.
+- **Re-checks (owner-set, corrected):** Yesdoor **never asks the renter for updates**. Yesdoor runs the situation: it knows first, or at the same time as everyone else. Re-checks run on a schedule, using consent captured once at sign-up, plus building data feeds. The sign-up consent wording must cover repeat checks; confirm that wording with CRS.
 - **V2** comes later; it should be "really amazing."
 - How many buildings one renter can apply to: still open.
