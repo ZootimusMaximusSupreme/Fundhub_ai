@@ -131,3 +131,33 @@ California fees: buildings usually pay one month's rent or more ([Smart City blo
 So 2,000 leases across CA and AZ clears $3M from placements alone in every mix above, before renter back end and partner revenue.
 
 Other findings: California referral fees pass through a licensed broker ([ACME](https://support.acmehouseco.com/knowledge-base-internal/realtor-referrals)). The prepaid rental listing law (broker licence + $10,000 bond) covers selling lists to renters ([DRE](https://www.dre.ca.gov/files/pdf/ca/2012/ConsumerAlert_PRLS.pdf)). Yesdoor charges buildings. California background checks follow ICRAA notice steps ([RentSpree](https://support.rentspree.com/en/icraa-regulations)). Owner-set: Chris navigates licensing and screening rules. California locator company sizes and Arizona screening rules: not found.
+
+## Unit economics, tracking, accountability, legal (research 2026-10-07)
+
+### Per lease
+| | Arizona | California (LA/SD) |
+|---|---|---|
+| Fee (100% of first month) | $1,550 | ~$2,800 |
+| Ads (CPL $17–38 ÷ 5–10% lead→lease) | $166–$760, mid ~$400 | same |
+| Pulls + checks (10–20 per lease × **assumed** $15) | ~$150–$300 | same |
+| Left before staff | ~$900 | ~$2,150 |
+
+Staff: Smart City runs ~99 people at ~$1.8M/month (~$18K revenue per person). Same ratio at $3M ≈ 165 people.
+Cash: search ~27 days; fee paid at move-in or 30–90 days later; 60-day refund if the renter leaves. An ad dollar returns in 2–4 months.
+
+### Tracking and accountability
+- Written referral agreement per building or per management company: fee, 60-day refund, payment terms ([NAAL](https://apartmentlocatorassociation.org/)).
+- Register every renter with the building before the tour: Yesdoor on the guest card and as the only referral source on the application ([Lifetime Locators](https://lifetimelocators.com/how-it-works/)). The system sends it automatically, so every renter has a timestamped proof.
+- Confirm move-in: Entrata `getLeases` filters by lease status and move-in date ([Entrata](https://docs.entrata.com/api/v1/documentation/getLeases)); Yardi needs its partner program (2 years in business, 3 shared clients, ~$25K per interface per year) ([Supergood](https://supergood.ai/api-report-card/yardi-systems)); otherwise the building or the renter confirms.
+- Invoice on move-in, track unpaid balances, rate buildings on how fast they pay ([Smart Apartment Data](https://smartapartmentdata.com/?p=7140)). Leverage: buildings that pay slowly get fewer renters.
+- Ledger: reuse Fundhub's `src/commissions/` (earned → approved → paid, with reversal for the 60-day refund).
+- Affiliates: link code plus server-side confirmation. Commission earned when the building pays, held 60 days.
+
+### Legal (research findings)
+- **Arizona:** referring renters to a building for a fee is broker work (A.R.S. [32-2101](https://www.azleg.gov/ars/32/02101.htm)). No locator exemption found ([32-2121](https://www.azleg.gov/ars/32/02121.htm)). Paying anyone unlicensed for broker work is unlawful ([32-2155](https://www.azleg.gov/ars/32/02155.htm)).
+- **California:** same. Soliciting tenants for pay is broker work ([B&P 10131](https://california.public.law/codes/business_and_professions_code_section_10131)). Paying unlicensed people is barred ([10137](https://california.public.law/codes/business_and_professions_code_section_10137)). The prepaid rental listing law covers only renter-paid fees ([10167](https://california.public.law/codes/business_and_professions_code_section_10167)).
+- **What that means for the 3-way model:** Yesdoor runs as a licensed brokerage in AZ and CA. A partner gets a share of the placement fee only if licensed, paid through the broker. An unlicensed affiliate pays for the software tiers ($29 per renter / $499 a month) instead.
+- **Credit pull from an email:** the renter's written authorization is a permissible purpose ([15 U.S.C. 1681b(a)(2)](https://www.law.cornell.edu/uscode/text/15/1681b)). The law needs no specific unit first. The FTC accepts clear electronic consent ("I authorize you to procure a consumer report on me") ([FTC report](https://www.ftc.gov/sites/default/files/documents/reports/40-years-experience-fair-credit-reporting-act-ftc-staff-report-summary-interpretations/110720fcrareport.pdf)).
+- **Sharing renter results with buildings:** the FTC treats a business that gives tenant data to owners to judge applicants as a credit reporting agency (same report). Accuracy duties apply: TransUnion paid $15M ([FTC](https://www.ftc.gov/news-events/news/press-releases/2023/10/ftc-cfpb-settlement-require-trans-union-pay-15-million-over-charges-it-failed-ensure-accuracy-tenant)), AppFolio $4.25M, RealPage $3M.
+- **Background checks:** California ICRAA requires notice within 3 days and a box to get a free copy ([Civ. 1786.16](https://california.public.law/codes/ca_civ_code_section_1786.16)). California bars blanket criminal-record bans ([CRD](https://calcivilrights.ca.gov/2023/11/16/civil-rights-department-secures-settlement-over-alleged-discriminatory-blanket-ban-on-renting-to-individuals-with-criminal-history-in-inglewood/)).
+- Not found: Arizona tenant screening rules beyond federal, and whether steering a renter away before they apply counts as a denial.
