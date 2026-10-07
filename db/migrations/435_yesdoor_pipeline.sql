@@ -80,6 +80,15 @@ BEGIN
       RAISE EXCEPTION 'yd_agreement_signed: a signed agreement is never edited — void it and draft a new one'
         USING ERRCODE = '23514';
     END IF;
+    -- Terms, party and kind are fixed from the moment it is sent, whatever the status does.
+    IF OLD.status <> 'draft'
+       AND (NEW.terms IS DISTINCT FROM OLD.terms
+            OR NEW.party_id IS DISTINCT FROM OLD.party_id
+            OR NEW.party_kind IS DISTINCT FROM OLD.party_kind
+            OR NEW.kind IS DISTINCT FROM OLD.kind) THEN
+      RAISE EXCEPTION 'yd_agreement_terms_fixed: terms are fixed once an agreement is sent'
+        USING ERRCODE = '23514';
+    END IF;
     RETURN NEW;
   END IF;
   -- draft -> sent -> signed; draft/sent/signed -> void. Nothing else.

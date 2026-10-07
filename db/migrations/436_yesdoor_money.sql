@@ -252,6 +252,13 @@ BEGIN
     RAISE EXCEPTION 'yd_ledger_frozen: a ledger row''s identity never changes'
       USING ERRCODE = '23514';
   END IF;
+  -- A stamped time is evidence: once set it never moves (NULL -> value is fine).
+  IF (OLD.invoiced_at IS NOT NULL AND NEW.invoiced_at IS DISTINCT FROM OLD.invoiced_at)
+     OR (OLD.paid_at IS NOT NULL AND NEW.paid_at IS DISTINCT FROM OLD.paid_at)
+     OR (OLD.safe_at IS NOT NULL AND NEW.safe_at IS DISTINCT FROM OLD.safe_at) THEN
+    RAISE EXCEPTION 'yd_ledger_time_fixed: a stamped invoiced / paid / safe time never changes'
+      USING ERRCODE = '23514';
+  END IF;
   -- Amounts may be corrected while a fee is still only 'earned'.
   IF OLD.status <> 'earned' AND NEW.amount_cents IS DISTINCT FROM OLD.amount_cents THEN
     RAISE EXCEPTION 'yd_ledger_amount_frozen: the amount is frozen once the row has left earned — reverse it with a refund row'
