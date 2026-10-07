@@ -13,7 +13,7 @@
 import { test, describe, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { db, close } from "../db.mjs";
-import { checkMessageQueue, checkFailedEvents, checkMoneyIn, checkMetaTracking } from "./system-checks.mjs";
+import { checkMessageQueue, checkLeadAlerts, checkFailedEvents, checkMoneyIn, checkMetaTracking } from "./system-checks.mjs";
 
 const HAVE_DB = !!process.env.DATABASE_URL;
 const NONCE = `pulsechk-${process.pid}-${Date.now()}`;
@@ -34,6 +34,7 @@ describe("pulse database checks", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
     await db.query(`DELETE FROM messages WHERE org_id = $1`, [org]).catch(() => {});
     await db.query(`DELETE FROM commas_inbox WHERE org_id = $1`, [org]).catch(() => {});
     await db.query(`DELETE FROM events WHERE org_id = $1`, [org]).catch(() => {});
+    await db.query(`DELETE FROM clients WHERE org_id = $1`, [org]).catch(() => {});
     await close();
   });
 
@@ -116,5 +117,50 @@ describe("pulse database checks", { skip: !HAVE_DB ? "no DATABASE_URL" : false }
     const bad = await checkMetaTracking({ db, orgId: org, now, env });
     assert.equal(bad.status, "FAIL");
     assert.match(bad.detail, /1 error/);
+  });
+
+  test("lead alerts: only a real recent lead with no stamp is red; test, old, quiet, brand-new and non-lead clients are not counted", async () => {
+    const env = { LEAD_ALERT_SMS_TO: "+15555550100", LEAD_ALERT_EMAIL_TO: "owner@example.test" };
+    const stamped = { lead_alert_sms_at: "2026-10-07T12:00:00Z", lead_alert_email_at: "2026-10-07T12:00:00Z" };
+    let k = 0;
+    const client = async ({ age, demo = false, custom = {}, event = "entry.captured" }) => {
+      k += 1;
+      const id = (await db.query(
+        `INSERT INTO clients (org_id, email, first_name, is_demo, custom_fields, created_at)
+         VALUES ($1, $2, 'Lead', $3, $4::jsonb, $5) RETURNING id`,
+        [org, `la${k}.${NONCE}@example.test`, demo, JSON.stringify(custom), ago(age)])).rows[0].id;
+      if (event) {
+        await db.query(
+          `INSERT INTO events (org_id, name, client_id, payload, created_at) VALUES ($1, $2, $3, '{}'::jsonb, $4)`,
+          [org, event, id, ago(age)]);
+      }
+      return id;
+    };
+
+    const empty = await checkLeadAlerts({ db, orgId: org, now, env });
+    assert.equal(empty.status, "PASS", empty.detail);
+    assert.match(empty.detail, /^0 new lead/);
+
+    await client({ age: 2 * HOUR, custom: stamped });                                  // alerted: fine
+    const missing = await client({ age: 1 * HOUR, event: "booking.created" });          // booked first, never alerted
+    await client({ age: 5 * MIN });                                                     // inside the 15 minute grace
+    await client({ age: 1 * HOUR, demo: true });                                        // test file
+    await client({ age: 30 * HOUR });                                                   // older than 24 hours
+    await client({ age: 1 * HOUR, event: null });                                       // a client no lead event made (a sale, say)
+    await client({ age: 1 * HOUR, custom: { synthetic: true } });                       // journey-runner client
+
+    const red = await checkLeadAlerts({ db, orgId: org, now, env });
+    assert.equal(red.status, "FAIL", red.detail);
+    assert.match(red.detail, /1 of 2 new lead\(s\) in the last 24 hours have no text alert and 1 have no email alert/);
+
+    await db.query(
+      `UPDATE clients SET custom_fields = custom_fields || $2::jsonb WHERE id = $1`, [missing, JSON.stringify(stamped)]);
+    const green = await checkLeadAlerts({ db, orgId: org, now, env });
+    assert.equal(green.status, "PASS", green.detail);
+    assert.match(green.detail, /^2 new lead\(s\) in the last 24 hours, all alerted/);
+
+    const noSettings = await checkLeadAlerts({ db, orgId: org, now, env: {} });
+    assert.equal(noSettings.status, "FAIL");
+    assert.match(noSettings.detail, /LEAD_ALERT_SMS_TO and LEAD_ALERT_EMAIL_TO have no usable value/);
   });
 });

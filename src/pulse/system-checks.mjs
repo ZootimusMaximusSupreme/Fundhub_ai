@@ -5,6 +5,14 @@
 //   { id, group, status: PASS | FAIL | skip, detail, suggestedFix, customerSees }
 // "skip" becomes "not_checked" on the scorecard and is never counted as a pass.
 
+import {
+  SMS_STAMP,
+  EMAIL_STAMP,
+  LEAD_ALERT_SMS_TO_ENV,
+  LEAD_ALERT_EMAIL_TO_ENV,
+  leadAlertConfigured
+} from "../staff/lead-alert.mjs";
+
 const MIN = 60 * 1000;
 const HOUR = 60 * MIN;
 
@@ -61,6 +69,63 @@ export async function checkMessageQueue({ db, orgId, now = new Date(), channels 
     return row(id, "messages", "PASS",
       `${r.due} ${channel} waiting${r.oldest_due ? `, oldest ${minutes(age)}` : ""}; 0 failed in 24 hours`);
   });
+}
+
+/* Lead alerts to Chris (W2, 2026-10-07). Every new lead is supposed to text and
+   email Chris the moment it lands (src/workflows/lead-alert-owner.mjs). That
+   workflow leaves one once-only stamp per channel on the client's file, so this
+   check can tell a lead that was alerted from one that was not.
+
+   Red when either is true:
+     * a lead made in the last 24 hours (a real person, not a test file) came in
+       through entry.captured or booking.created and is missing a text stamp or
+       an email stamp; or
+     * LEAD_ALERT_SMS_TO or LEAD_ALERT_EMAIL_TO has no usable value. Checked by
+       name. The values are never read into the detail line.
+
+   A lead made in the last 15 minutes is not counted yet: its alert may still be
+   on the way. Plain reads. No network, no writes. */
+export const LEAD_ALERT_GRACE_MS = 15 * MIN;
+
+export async function checkLeadAlerts({ db, orgId, now = new Date(), env = process.env } = {}) {
+  if (!db || !orgId) return row("lead-alerts", "messages", "skip", "no database in this run — new-lead alert stamps not read");
+
+  const configured = leadAlertConfigured(env);
+  const unset = [];
+  if (!configured.sms) unset.push(LEAD_ALERT_SMS_TO_ENV);
+  if (!configured.email) unset.push(LEAD_ALERT_EMAIL_TO_ENV);
+
+  const since = new Date(now.getTime() - DAY_MS);
+  const until = new Date(now.getTime() - LEAD_ALERT_GRACE_MS);
+  const { rows } = await db.query(
+    `SELECT count(*)::int AS expected,
+            count(*) FILTER (WHERE COALESCE(c.custom_fields->>$4, '') = '')::int AS no_sms,
+            count(*) FILTER (WHERE COALESCE(c.custom_fields->>$5, '') = '')::int AS no_email
+       FROM clients c
+      WHERE c.org_id = $1
+        AND c.is_demo IS NOT TRUE
+        AND COALESCE(c.custom_fields->>'synthetic', '') <> 'true'
+        AND c.created_at >= $2::timestamptz
+        AND c.created_at <= $3::timestamptz
+        AND EXISTS (SELECT 1 FROM events e
+                     WHERE e.org_id = c.org_id AND e.client_id = c.id
+                       AND e.name IN ('entry.captured', 'booking.created'))`,
+    [orgId, since, until, SMS_STAMP, EMAIL_STAMP]
+  );
+  const r = rows[0] || { expected: 0, no_sms: 0, no_email: 0 };
+
+  const problems = [];
+  if (unset.length) problems.push(`${unset.join(" and ")} ${unset.length > 1 ? "have" : "has"} no usable value, so that alert cannot go out`);
+  if (r.no_sms > 0 || r.no_email > 0) {
+    problems.push(`${r.no_sms} of ${r.expected} new lead(s) in the last 24 hours have no text alert and ${r.no_email} have no email alert`);
+  }
+  if (problems.length) {
+    return row("lead-alerts", "messages", "FAIL", problems.join("; "),
+      "Set LEAD_ALERT_SMS_TO and LEAD_ALERT_EMAIL_TO in Netlify (by name only), ship once, then read the lead-alert-owner runs and the Twilio and Resend delivery logs. Do not resend from this pulse.",
+      "Chris is not being told right away when a new lead comes in.");
+  }
+  return row("lead-alerts", "messages", "PASS",
+    `${r.expected} new lead(s) in the last 24 hours, all alerted by text and email`);
 }
 
 /* Dead letters. failed_events rows still open ('pending' retrying, 'exhausted'
