@@ -21,10 +21,11 @@ Source docs (read these, don't re-research):
 |---|---|---|---|---|---|
 | B1 | Detailed build spec: entities, states, events, endpoints, integrations, tests, Fundhub modules to copy | Opus | this session | done | — |
 | B2 | Backend 1: database tables and migrations (Yesdoor-prefixed, own org) + read endpoints + tests | Sonnet | yesdoor/b2-database | done | B1 |
-| B3 | Backend 2: pre-screen + matching (CRS and Plaid sandbox stubs, rules, risk tiers, approved/likely/no, backups) | Sonnet | open | pending | B2 |
-| B4 | Backend 3: buildings, tours, money (portal API, spreadsheet + listing-feed import, registration emails, invoices, fee ledger, broker ledger, disputes) | Sonnet | open | pending | B2 |
+| B3 | Backend 2: pre-screen + matching (CRS and Plaid sandbox stubs, rules, risk tiers, approved/likely/no, backups) | Sonnet | yesdoor/b3-matcher + yesdoor/b3b-prescreen | done | B2 |
+| B4 | Backend 3: buildings, tours, money (portal API, spreadsheet + listing-feed import, registration emails, invoices, fee ledger, broker ledger, disputes) | Sonnet | yesdoor/b4-money | done | B2 |
 | M1 | Marketing: 4 avatars (prime renter, Second Chance renter, leasing manager/regional VP, broker), then the marketing-machine copy for Yesdoor | Sonnet | agent | avatars done — waiting on Chris | — |
-| F1 | Front end: Zillow-style site, Arizona sample listings, lead funnel, renter / building / broker logins | Sonnet | open | pending | B3, B4 |
+| F1 | Front end: Zillow-style site, Arizona sample listings, lead funnel, renter / building / broker logins | Sonnet | yesdoor/f1-frontend | done (reconciled in I1) | B3, B4 |
+| I1 | Integration: merge B3b + B4, one transaction and event helper, front end on the real API, proof | Opus | yesdoor/i1 | done (not merged to main, not shipped) | B3, B4, F1 |
 
 Runs at the same time: **B1 and M1** (no shared files). After B2: **B3 and B4** in parallel. F1 is last.
 
@@ -169,7 +170,21 @@ Status: **done** (branch `yesdoor/b2-database`, not merged, not shipped, no PR o
   - `buildingView()` is the only shape buildings ever get.
 - Left for B3b: database wiring, the crons, the public endpoints, pulse rows, and the B2 config merge (keep the B3a copy).
 
+**B3b done** (database half, branch `yesdoor/b3b-prescreen`, tip 6ca1ad7; manifest written by I1 from the commits).
+- Doors: `POST public/lead` (first touch written once: ad id or an active broker's tracking code), `POST public/prescreen` (consent, sandbox credit and background check, matches for the searched city, renter-safe reasons, returns `renterToken` = a renter session), `POST me/income` (sandbox bank link or statements; recomputes matches from the same screening, no second pull).
+- Limits: one source address may start 10 pre-screens an hour (429). A signed-in renter not yet screened may screen themselves; a stranger cannot screen a signed-in renter's email.
+- Four sandbox-only crons, registered in `src/workflows/index.mjs` and `INNGEST_JOBS`: `yd-recheck` (daily), `yd-touches` (hourly), `yd-rules-stale` (daily, flags only, never pauses), `yd-outbox-dispatch` (5 min, marks queued rows sent; nothing transmits).
+- Config: `YD_PRESCREEN`, `YD_CRON`, `YD_TEMPLATES`. Journey doc sections 10 to 14. Tests: `src/http/yesdoor-prescreen.pg.test.mjs`, `yesdoor-crons.pg.test.mjs`, store and config unit tests.
+
 ## B4
+
+**Done** (branch `yesdoor/b4-money`, tip 783712b; manifest written by I1 from the commits).
+- Supply: `POST staff/companies`, `POST staff/buildings` (onboard; fee terms, refund days, tour hours, leasing email; an unknown application fee stays NULL), `POST staff/agreement` (draft / send / void, signing link queued), `POST webhooks/esign` (the signed link signs the agreement and the building).
+- Building portal writes: `POST building/rules` (new dated version or re-confirm), `POST building/listings`, `POST building/import` (CSV or MITS feed, row errors reported), `POST building/update` (stage arrows; the denial-after-approved flow in one transaction; `moved_in` earns the fee and issues the invoice; known-prospect claim opens an attribution dispute).
+- Renter: `POST public/book` (one transaction: application, tour, timestamped registration email; cap of 3, one per building; must be a match that is not "no"; inside tour hours), `POST me/tour` (reschedule / cancel).
+- Money: `POST staff/payment`, `POST staff/refund`, `POST staff/broker-payout`, `GET|POST staff/disputes`; daily `yd-fee-safe` (paid to safe after the refund window, broker share released). `scripts/yesdoor/create-first-staff.mjs` (prints instructions unless `--apply`, refuses hosted databases).
+- Migration `437_yesdoor_cancel_after_registration.sql`: a renter may cancel from `registered` and `toured`, not only `booked` (owner-approved deviation; drawn in spec §3).
+- Tests: `src/http/yesdoor-supply`, `-building-writes`, `-booking`, `-placements`, `-money`, `-first-staff` pg suites, plus fees, stages, tour-hours and validate unit tests.
 
 ## M1
 
@@ -200,7 +215,50 @@ Manifest: added the 4 files above and this section. No code, routes or journeys 
 
 ## F1
 
+**Done** (branch `yesdoor/f1-frontend`, commit 4718003; manifest written by I1 from the commit). 9 pages under `public/yesdoor/` (home, search, listing, pre-screen, book, renter, building, broker, staff), one brand CSS file, `js/ui.js` and `js/portal.js` shells, `js/api.js` with a demo fallback, and `js/demo-data.js` (one consistent sample file per sample renter). It was written against guessed response shapes; I1 reconciled it with the real API (below).
+
+## I1
+
+**Done** (branch `yesdoor/i1`, not merged to main, not shipped, no PR). Work was on a scratch Postgres 16 on 127.0.0.1 only; every command ran in a wiped environment (`env -i`).
+
+### What was merged
+- `origin/yesdoor/integration` + `origin/yesdoor/b3b-prescreen` (clean) + `origin/yesdoor/b4-money`.
+- Conflicts, all additive: `src/workflows/index.mjs` and `src/pulse/heartbeats.mjs` keep B3b's four crons and B4's `yd-fee-safe`; `src/journeys/runner/index.test.mjs` REGISTERED = 95 (90 + 4 + 1, measured by the test); `src/workflows/index.test.mjs` already listed all five.
+- One transaction helper and one event helper: `src/yesdoor/tx.mjs` (takes B3b's optional `{ actor }`) and `src/yesdoor/events.mjs` (`recordEvent` takes `{ actor }` or `{ actorKind, actorId }`, returns `{ id, written }`). B3b's `src/yesdoor/store/tx.mjs` and `store/events.mjs` are deleted and every import repointed.
+- Renter token: B3b's `renterToken` is a `yd_sessions` renter session; B4's `src/yesdoor/auth/renter-token.mjs` verifies exactly that. Proved end to end in the click path (pre-screen token books the tour).
+- `docs/journeys/yesdoor-flow.md`: B3b sections 10 to 14, B4 sections renumbered 15 to 20. Spec §3 draws the two migration-437 cancel arrows as an owner-approved deviation. Migrations manifest (339), journeys and diagrams regenerated.
+
+### Front end reconciled with the real API
+- `public/yesdoor/js/api.js`: an adapter per endpoint rewrites the request and the answer into the shapes the pages read; demo mode is unchanged. One session per portal sent as `Authorization: Bearer` (renter token from the pre-screen, building and broker tokens from the emailed link, staff from the Fundhub login's `fh_token`). Errors show the API's message, not its code.
+- New `public/yesdoor/login.html`: the page the emailed sign-in link opens (`YD_AUTH.loginPath`). It did not exist, so no emailed link could sign anyone in.
+- Broker link `?b=` is now read as the first touch (only `?broker=` was read, so broker referrals were never credited). Bedrooms filter says "exact" (what the API does). Staff desk: Add a building; payment and payout references (required by the API); dispute decision upheld or rejected plus why.
+- Tiny backend read fields (tests added): `GET public/listing` detail adds the building's tour hours and current rules (the search still carries no rules or fees; fees and contacts never leave); `GET me` adds listing beds and the building's address and tour hours; `GET staff/pipeline` rows add lane, risk tier and source.
+- Pulse: ten `public_static` rows for the Yesdoor pages (`src/pulse/registry.mjs`).
+
+### Proof (scratch database, as `fundhub_app`, 0 skipped)
+- Yesdoor pure tests: 485/485. Yesdoor pg suites (13 files): 443/443 on a fresh scratch database.
+- Guards: routes, pulse registry, heartbeats, auth-gate, cross-org-guard, workflows index, journey runner, Yesdoor boundary and no-transmit tests, journeys and diagrams generators: 128/128. `journeys:check` and `diagrams:check` up to date. Pulse folder: 39/39.
+- `npm run lint` clean (2575 files). `npx tsc --noEmit` clean.
+- No-database suite (`npm test` in a wiped environment): 12,846 of 12,850 unit tests pass, 0 fail, 4 skipped (WeasyPrint missing on this machine, and one database-only suite); the pg phase skips as designed with no database.
+- Live click path, real pages on the real API (`scripts/dev-server.mjs`) over a fresh scratch database: 27/27 steps. Broker link, home, search, listing (rules and tour hours), pre-screen (sample renter Priya), sandbox bank link (approved up to $2,400), book a tour, renter portal, building portal (emailed link sign-in, toured, applied, approved, lease signed, moved in, invoice, new rules version, new listing), staff (password login, add building, send agreement, sandbox e-sign webhook signs it, log payment), broker portal (share held $412.50), demo mode still works, no page errors. Marked screenshots and the run log: `docs/yesdoor-screens/` (26 PNGs, `click-path-result.txt`). A separate demo-mode walk also passed.
+
+### How to run it locally (scratch only)
+1. Start a scratch Postgres 16 with pgvector on 127.0.0.1, create an empty database, then `DATABASE_URL=<scratch owner> MIGRATION_DATABASE_URL=<scratch owner> node db/migrate.mjs` and `ALTER ROLE fundhub_app LOGIN PASSWORD '...'`.
+2. `DATABASE_URL=<scratch, fundhub_app> YD_LINK_SECRET=<32+ random chars> YD_BASE_URL=http://127.0.0.1:8899 DEFAULT_ORG_SLUG=yesdoor node scripts/dev-server.mjs --port 8899`, then open http://127.0.0.1:8899/yesdoor/
+3. Staff owner: `YD_STAFF_PASSWORD=... DATABASE_URL=<scratch> node scripts/yesdoor/create-first-staff.mjs --apply --email you@example.com`, then sign in at http://127.0.0.1:8899/login.html?next=/yesdoor/staff.html
+4. The whole path: `DATABASE_URL=<scratch owner> YD_STAFF_PASSWORD=... CHROME=<chromium> node docs/yesdoor-screens/click-path.mjs` on a fresh scratch database.
+Run every command with production variables removed (`env -i PATH="$PATH" HOME="$HOME" ...`).
+
 ## Leftovers
+
+Leftover cards from I1 (found, not fixed; each is its own task):
+- **No door creates building-user or broker logins, and no staff door adds a broker.** `yd_accounts` rows for `building_user` and `broker` are only ever inserted by hand; the click path inserted them on the scratch database.
+- **`/yesdoor/agreement.html` does not exist.** The signing link in the agreement email points there; today an agreement is signed only by calling `POST webhooks/esign`.
+- **Seeded criminal rules never match.** `db/seed/296` writes `criminal_policy` keys `felony`, `misdemeanor`, `violent`; the screenings and the matcher use `felony_violent`, `felony_property`, `misdemeanor_nonviolent`, so a seeded policy is never applied. (The building portal's Rules form writes the matcher's keys.)
+- **No sign-out door.** Sign-out forgets the session in that browser; the session stays valid until it expires.
+- **Tour hours with a midday gap** show as one window (first opening to last closing); a slot inside the gap is refused by the booking door with its message.
+- **Staff Buildings columns the API does not carry:** company tier, leases, pays-on-time (shown as blank, "Not counted yet", "No history").
+
 
 **Incident (2026-10-07, found by the parent session):** the cloud shell carries the production `DATABASE_URL` and live vendor keys. Several plain `npm test` runs today ran with them:
 - one by the parent session around 02:xx UTC
