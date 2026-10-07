@@ -41,6 +41,15 @@ export function secretFromEnv(env = process.env) {
   return secret;
 }
 
+/** An explicit secret is held to the same 32-character floor as the env one. */
+function checkedSecret(secret) {
+  if (secret === undefined) return secretFromEnv();
+  if (!secret || String(secret).length < 32) {
+    throw new Error("the signing secret is missing or too short (need >= 32 chars)");
+  }
+  return secret;
+}
+
 // Field order is fixed and "|" cannot appear in a uuid or a decimal timestamp.
 const canonical = ({ agreementId, expiresAt }) => [SCHEME, agreementId, expiresAt].join("|");
 
@@ -61,7 +70,7 @@ export function signAgreementUrl({
   if (!Number.isFinite(ttl) || ttl <= 0) throw new Error("ttlSeconds must be a positive number");
   if (ttl > MAX_TTL_SECONDS) throw new Error(`ttlSeconds ${ttl} exceeds the ${MAX_TTL_SECONDS}s maximum`);
 
-  const key = secret ?? secretFromEnv();
+  const key = checkedSecret(secret);
   const expiresAt = Math.floor(now() / 1000) + Math.floor(ttl);
   const sig = signature({ agreementId, expiresAt, secret: key });
 
@@ -91,7 +100,7 @@ export function verifyAgreementUrl({ agreementId, expiresAt, sig, secret = undef
   if (!Number.isFinite(exp)) return fail("malformed");
 
   let key;
-  try { key = secret ?? secretFromEnv(); } catch { return fail("no_secret"); }
+  try { key = checkedSecret(secret); } catch { return fail("no_secret"); }
 
   const expected = signature({ agreementId, expiresAt: exp, secret: key });
   const a = Buffer.from(expected, "utf8");

@@ -21,7 +21,7 @@ export const FIXTURE_PROPERTIES = Object.freeze({
 });
 
 export async function listListings({ propertyId } = {}) {
-  const rows = FIXTURE_PROPERTIES[propertyId];
+  const rows = Object.hasOwn(FIXTURE_PROPERTIES, propertyId) ? FIXTURE_PROPERTIES[propertyId] : null;
   if (!rows) return { listings: [], errors: [{ message: `The sandbox has no property "${propertyId}".` }] };
   return { listings: rows.map((r) => ({ ...r })), errors: [] };
 }
