@@ -105,6 +105,116 @@
     });
   }
 
+  /* ------------------------------------------------------------ brokers and logins (I2) */
+  var PLAN = { split: "Placement split", software: "Software only" };
+  var BSTATUS_NAME = { applied: "Applied", active: "Active", paused: "Paused" };
+  var EMAIL_OK = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+  function people(el, ctx) {
+    el.innerHTML = '<div class="page-head"><div><h1>Brokers and logins</h1><p class="muted">Add a broker partner, then give them, or a building\'s leasing office, a login. Each login gets a sign-in link by email.</p></div></div>' +
+      '<div class="row" style="margin-bottom:16px;gap:8px"><button class="btn" type="button" id="add-k">Add a broker</button><button class="btn-secondary" type="button" id="add-bu">Add a building login</button></div><div id="pk">' + ui.skeletonLines(4) + "</div>";
+    document.getElementById("add-k").addEventListener("click", function () { addBroker(el, ctx); });
+    document.getElementById("add-bu").addEventListener("click", function () { addBuildingLogin(el, ctx); });
+    return YD.api.staffBrokers().then(function (res) {
+      var list = res.brokers || [];
+      var root = document.getElementById("pk");
+      if (!root) return; // moved to another tab before the list came back
+      ui.paged(root, { caption: "Brokers", rows: list,
+        cols: [
+          { label: "Broker", render: function (k) { return "<strong>" + ui.esc(k.name) + "</strong>" + (k.company ? '<div class="caption">' + ui.esc(k.company) + "</div>" : "") + '<div class="caption">' + ui.esc(k.email) + "</div>"; } },
+          { label: "Plan", render: function (k) { return ui.esc(PLAN[k.plan] || k.plan) + (k.plan === "split" && k.splitPercent !== null && k.splitPercent !== undefined ? ' <span class="caption">' + ui.esc(k.splitPercent) + "%</span>" : ""); } },
+          { label: "Licence", render: function (k) { return k.licenceState ? ui.esc(k.licenceState) + (k.licenceNumber ? ' <span class="caption">' + ui.esc(k.licenceNumber) + "</span>" : "") + (k.licenceVerified ? ' <span class="tag">✓ Checked</span>' : ' <span class="tag">Not checked</span>') : "None on file"; } },
+          { label: "Link code", render: function (k) { return "<code>" + ui.esc(k.trackingCode) + "</code>"; } },
+          { label: "Status", render: function (k) { return '<span class="tag">' + ui.esc(BSTATUS_NAME[k.status] || k.status) + "</span>"; } },
+          { label: "Login", cls: "actions", render: function (k) { return k.hasAccount ? '<span class="tag">✓ Has a login</span>' : '<button class="btn-secondary sm" type="button" data-login="' + ui.esc(k.id) + '">Give a login</button>'; } }
+        ],
+        empty: ["No brokers yet", "Add the first broker partner. They get a link code the moment they are added.", ""] });
+      ui.on(root, "click", "[data-login]", function (e, btn) {
+        var k = list.filter(function (x) { return x.id === btn.getAttribute("data-login"); })[0];
+        giveBrokerLogin(el, ctx, k);
+      });
+    });
+  }
+
+  function addBroker(el, ctx) {
+    var f = function (id, label, attrs) { return '<div class="field"><label for="' + id + '">' + label + '</label><input class="input" id="' + id + '" ' + (attrs || "") + "></div>"; };
+    ui.openDialog("Add a broker", '<form id="kf" class="stack" novalidate>' + f("k-name", "Name", "required") + f("k-email", "Email address", 'type="email" required') + f("k-co", "Brokerage (optional)") +
+      '<div class="form-grid two"><div class="field"><label for="k-plan">Plan</label><select class="input" id="k-plan"><option value="split">Placement split</option><option value="software">Software only</option></select></div>' +
+      f("k-split", "Split percent", 'type="number" min="0" max="100" value="25"') + "</div>" +
+      '<div class="form-grid two"><div class="field"><label for="k-lst">Licence state</label><select class="input" id="k-lst"><option value="">None</option><option value="AZ">AZ</option><option value="CA">CA</option><option value="FL">FL</option></select></div>' +
+      f("k-lno", "Licence number") + "</div>" +
+      '<div class="check"><input type="checkbox" id="k-ver"><label for="k-ver">I checked this licence with the state</label></div>' +
+      '<p class="caption" id="k-hint">A placement-split partner needs a licence state and number. The broker starts as Applied and becomes Active when the partner agreement is signed and the licence is checked.</p>' +
+      '<div class="field-error" id="k-err" role="alert" hidden></div><div class="actions"><button class="btn-secondary" type="button" data-close>Cancel</button><button class="btn" type="submit" id="k-go">Add broker</button></div></form>', function (dlg, close) {
+      var v = function (id) { return dlg.querySelector("#" + id).value.trim(); };
+      var plan = dlg.querySelector("#k-plan");
+      function sync() { dlg.querySelector("#k-split").disabled = plan.value !== "split"; }
+      plan.addEventListener("change", sync); sync();
+      dlg.querySelector("#kf").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var err = dlg.querySelector("#k-err"); err.hidden = true;
+        var body = { name: v("k-name"), email: v("k-email"), plan: plan.value };
+        if (v("k-co")) body.company = v("k-co");
+        if (v("k-lst")) body.licenceState = v("k-lst");
+        if (v("k-lno")) body.licenceNumber = v("k-lno");
+        if (plan.value === "split" && v("k-split") !== "") body.splitPercent = Number(v("k-split"));
+        if (dlg.querySelector("#k-ver").checked) body.licenceVerified = true;
+        var problem = !body.name ? "Add the broker's name." : !EMAIL_OK.test(body.email) ? "Add the broker's email address."
+          : plan.value === "split" && (!body.licenceState || !body.licenceNumber) ? "A placement-split partner needs a licence state and number."
+          : body.licenceVerified && (!body.licenceState || !body.licenceNumber) ? "Add the licence state and number before saying you checked it."
+          : plan.value === "split" && !(body.splitPercent >= 0 && body.splitPercent <= 100) ? "The split must be a number from 0 to 100." : "";
+        if (problem) { err.textContent = problem; err.hidden = false; return; }
+        var go = dlg.querySelector("#k-go"); ui.busy(go, true);
+        YD.api.staffAddBroker(body).then(function (res) { close(); ui.toast(body.name + " added. Link code " + res.broker.trackingCode + "."); people(el, ctx); },
+          function (e2) { ui.busy(go, false); err.textContent = ui.errMessage(e2); err.hidden = false; });
+      });
+    });
+  }
+
+  function giveBrokerLogin(el, ctx, k) {
+    ui.openDialog("Give " + k.name + " a login", '<form id="lf" class="stack" novalidate><p>We email a sign-in link to the address below. It works once and expires in 15 minutes; they can ask for a new one from the broker page.</p>' +
+      '<div class="field"><label for="l-email">Sign-in email</label><input class="input" id="l-email" type="email" value="' + ui.esc(k.email) + '" required></div>' +
+      '<div class="field-error" id="l-err" role="alert" hidden></div><div class="actions"><button class="btn-secondary" type="button" data-close>Cancel</button><button class="btn" type="submit" id="l-go">Give a login</button></div></form>', function (dlg, close) {
+      dlg.querySelector("#lf").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var err = dlg.querySelector("#l-err"); err.hidden = true;
+        var email = dlg.querySelector("#l-email").value.trim();
+        if (!EMAIL_OK.test(email)) { err.textContent = "Add the email address this person signs in with."; err.hidden = false; return; }
+        var go = dlg.querySelector("#l-go"); ui.busy(go, true);
+        YD.api.staffCreateAccount({ kind: "broker", brokerId: k.id, email: email }).then(function (res) {
+          close(); ui.toast("Login made. Sign-in link sent to " + res.account.email + "."); people(el, ctx);
+        }, function (e2) { ui.busy(go, false); err.textContent = ui.errMessage(e2); err.hidden = false; });
+      });
+    });
+  }
+
+  function addBuildingLogin(el, ctx) {
+    ui.openDialog("Add a building login", '<form id="bf" class="stack" novalidate><div class="field"><label for="bu-email">Email address</label><input class="input" id="bu-email" type="email" required></div>' +
+      '<div class="field"><label for="bu-role">Role</label><select class="input" id="bu-role"><option value="leasing">Leasing office</option><option value="manager">Manager</option></select></div>' +
+      '<fieldset class="field" id="bu-list" style="border:0;padding:0;margin:0"><legend>Buildings this login can see</legend><div id="bu-boxes">' + ui.skeletonLines(3) + "</div></fieldset>" +
+      '<div class="field-error" id="bu-err" role="alert" hidden></div><div class="actions"><button class="btn-secondary" type="button" data-close>Cancel</button><button class="btn" type="submit" id="bu-go">Add login</button></div></form>', function (dlg, close) {
+      var boxes = dlg.querySelector("#bu-boxes");
+      YD.api.staffBuildings().then(function (res) {
+        var list = res.buildings || [];
+        boxes.innerHTML = list.length ? '<div class="stack" style="max-height:220px;overflow:auto">' + list.map(function (b, i) {
+          return '<div class="check"><input type="checkbox" id="bu-b' + i + '" value="' + ui.esc(b.id) + '"><label for="bu-b' + i + '">' + ui.esc(b.name) + ' <span class="caption">' + ui.esc(b.city) + "</span></label></div>";
+        }).join("") + "</div>" : '<p class="caption">No buildings yet. Add a building first.</p>';
+      }, function (e) { boxes.innerHTML = '<p class="caption">' + ui.esc(ui.errMessage(e)) + "</p>"; });
+      dlg.querySelector("#bf").addEventListener("submit", function (ev) {
+        ev.preventDefault();
+        var err = dlg.querySelector("#bu-err"); err.hidden = true;
+        var email = dlg.querySelector("#bu-email").value.trim();
+        var ids = Array.prototype.map.call(boxes.querySelectorAll("input:checked"), function (x) { return x.value; });
+        if (!EMAIL_OK.test(email)) { err.textContent = "Add the email address this person signs in with."; err.hidden = false; return; }
+        if (!ids.length) { err.textContent = "Choose at least one building."; err.hidden = false; return; }
+        var go = dlg.querySelector("#bu-go"); ui.busy(go, true);
+        YD.api.staffCreateAccount({ kind: "building_user", email: email, buildingIds: ids, role: dlg.querySelector("#bu-role").value }).then(function (res) {
+          close(); ui.toast("Login made. Sign-in link sent to " + res.account.email + "."); people(el, ctx);
+        }, function (e2) { ui.busy(go, false); err.textContent = ui.errMessage(e2); err.hidden = false; });
+      });
+    });
+  }
+
   /* ------------------------------------------------------------ money */
   var METHODS = [["ach", "ACH"], ["wire", "Wire"], ["paymode", "Paymode-X"], ["check", "Check"]];
   var BSTATUS = { earned: "Earned", held: "Held", payable: "Payable", paid: "Paid", void: "Void" };
@@ -233,9 +343,9 @@
 
   YD.portal.start({
     kind: "staff", title: "Staff desk", intro: "For Yesdoor staff. Use your staff account.",
-    nav: [{ id: "pipeline", label: "Pipeline" }, { id: "buildings", label: "Buildings" }, { id: "money", label: "Money" }, { id: "disputes", label: "Disputes" }, { id: "scoreboard", label: "Scoreboard" }],
+    nav: [{ id: "pipeline", label: "Pipeline" }, { id: "buildings", label: "Buildings" }, { id: "people", label: "Brokers and logins" }, { id: "money", label: "Money" }, { id: "disputes", label: "Disputes" }, { id: "scoreboard", label: "Scoreboard" }],
     probe: function () { return YD.api.staffPipeline(); },
-    views: { pipeline: pipeline, buildings: buildings, money: money, disputes: disputes, scoreboard: scoreboard },
+    views: { pipeline: pipeline, buildings: buildings, people: people, money: money, disputes: disputes, scoreboard: scoreboard },
     who: function (d) { return "Staff" + (d.role ? " (" + d.role + ")" : ""); }
   });
 })();
