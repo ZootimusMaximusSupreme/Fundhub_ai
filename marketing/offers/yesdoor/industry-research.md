@@ -36,4 +36,31 @@ Ground truth for avatars and system design. Every number is linked. "Not found" 
 
 ## Brokers (broker point of view)
 
-(pending: research agent running)
+- **Fees:**
+  - Most common is 100% of a month's rent; buildings that need people pay more; full buildings ~50%; some pay flat (e.g. $1,500) ([AptAmigo](https://blog.aptamigo.com/locator-commission/)).
+  - Texas runs 50–100%; suburbs 50–75% ([TexasAptLocators](https://www.texasaptlocators.com/blog/what-is-a-locator-fee/)).
+- **Volume (recruiting claims):**
+  - Top AptAmigo locators close 15–25 leases a month; a deal takes 5–14 days ([AptAmigo](https://www.aptamigo.com/guides/apartment-locator-houston)).
+  - Smart City pays new agents a 90-day $1,500 draw and 30% of the fee up front on move-in ([Ladders](https://www.theladders.com/job/austin-apartment-locator-smart-city-locating-austin-tx_83885100)).
+  - Median locator volume: not found.
+- **Pains:**
+  - Lost guest cards and late invoices: "missed commissions and lost revenue" ([Smart Apartment Data](https://smartapartmentdata.com/apartment-locating/apartment-data-software)).
+  - Renters skipping the locator's name on the card ([Stake](https://www.umovefree.com/renting-tips)).
+  - No contract means no pay; new owners don't know old deals; pay comes only after move-in and cleared rent ([evict.com](https://evict.com/referral-fees-and-locator-services)).
+  - Slow pay, e.g. 30 days after lease start ([Treaty Oak](https://treaty-oak-property-management-llc.helpscoutdocs.com/article/172-collecting-commission-invoice-and-w9-from-the-agents)).
+  - 60-day clawbacks ([Stake](https://www.umovefree.com/property-relations)).
+  - Second-chance buildings each have their own rules ([Houston Case Managers](https://houstoncasemanagers.com/2nd-chance-apartments-houston/)).
+- **Proof:** the locator's name on the guest card, the application and the lease; Stake checks each referral before move-in and move-in before billing. Software: ALN Locator ($50 per city a month), Smart Apartment Data (billing, lease check).
+- **Splits:**
+  - Locator and brokerage: 50/50 is "really good," some firms 80/20 ([AptAmigo](https://blog.aptamigo.com/locator-commission/)).
+  - Agent-to-agent referrals: 25% (range 20–35%), paid broker to broker ([Follow Up Boss](https://www.followupboss.com/blog/real-estate-referral-fees)).
+  - Relocation companies: 35–40%+ ([Inman](https://inman.com/2007/02/13/relocation-fees-reach-breaking-point-some-agents)).
+- **What pulls brokers in** (from recruiting pitches; no survey found): steady leads, pay up front at move-in, a draw, referrals checked before billing.
+
+## What this means for the system
+
+1. Register every renter with the building automatically, timestamped, before the tour. That fixes lost guest cards and renters going around Yesdoor.
+2. Bill automatically on confirmed move-in. That fixes late invoices.
+3. Track every fee as earned, then invoiced, then paid, then safe at 60 days, with clawbacks.
+4. Store each building's own rules (second chance and standard).
+5. Show brokers a live status for each renter, and pay them fast once the building pays.
