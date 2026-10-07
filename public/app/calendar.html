@@ -348,6 +348,29 @@
   .un-join:disabled,.un-alt:disabled{opacity:.45;cursor:not-allowed;}
   .ws-day{cursor:pointer;}
 
+  /* ---------- connect your calendar (owner-approved 2026-10-07) ----------
+     A staff member's own Google calendar, plugged in. Same resting look as the
+     other rail boxes (.then, .cov, .nodate). Sizes come from the brand's
+     whitelist only — .chip, label, .note and .hint are captions already — so
+     this block writes no font-size of its own (UI-STANDARDS §12.7). The button
+     reuses .row-btn: it is a secondary action, and Join Call stays the one
+     primary on this screen. */
+  .callink{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;
+    display:flex;flex-direction:column;gap:8px;}
+  /* display:flex above would beat the hidden attribute; a hidden box stays hidden. */
+  .callink[hidden]{display:none;}
+  .callink-note{color:var(--text-dim);line-height:1.45;margin:0;}
+  .callink-steps{margin:0;padding-left:16px;color:var(--text);line-height:1.5;}
+  .callink-steps li{margin-bottom:8px;}
+  .callink-steps b{font-weight:700;word-break:break-all;}
+  .callink label{color:var(--text-dim);margin-top:8px;}
+  .callink-input{width:100%;min-height:40px;padding:8px;border:1px solid var(--line);border-radius:6px;
+    font:inherit;color:var(--text);background:#fff;}
+  .callink-input:focus{outline:2px solid var(--ink);outline-offset:1px;}
+  .callink .row-btn{align-self:flex-start;}
+  .callink-msg{color:var(--ink2);margin:0;line-height:1.45;}
+  .callink-msg.bad{background:var(--alert-bg);border-radius:4px;padding:8px;}
+
   footer.statusbar{flex-shrink:0;height:26px;background:var(--ink);display:flex;align-items:center;
     padding:0 14px;gap:16px;font-family:var(--mono);letter-spacing:.06em;
     text-transform:lowercase;color:var(--gray);position:relative;overflow:hidden;}
@@ -549,6 +572,27 @@
       <div class="rail-title eyebrow">CA-03 / Who's On Today</div>
       <div class="cov" id="covList">
         <div class="cov-row"><span class="cov-name" style="color:var(--ink2)">No coverage feed yet — shift roster is on Staff &amp; Teams.</span></div>
+      </div>
+
+      <!-- CONNECT YOUR CALENDAR (owner-approved 2026-10-07).
+           Your own Google calendar, plugged in: your busy times close slots on
+           the booking page, and a booked call is added to a closer's calendar.
+           GET/POST /api/staff/calendar-link, self-scoped. Starts as "Checking…"
+           and hides itself for a login the endpoint does not serve. -->
+      <div class="rail-title eyebrow" id="calLinkTitle">Connect your calendar</div>
+      <div class="callink" id="calLink">
+        <div><span class="chip wip" id="calLinkChip"><span class="cd"></span><span id="calLinkChipText">Checking…</span></span></div>
+        <p class="callink-note note" id="calLinkNote">Looking up your calendar link.</p>
+        <ol class="callink-steps note">
+          <li>Open Google Calendar on a computer.</li>
+          <li>Next to your calendar, open Settings and sharing.</li>
+          <li>Under Share with specific people, add <b id="calLinkOwner">the booking calendar</b>.</li>
+          <li>Pick See only free/busy, then press Send.</li>
+        </ol>
+        <label for="calLinkEmail">Your Google Calendar email</label>
+        <input class="callink-input" id="calLinkEmail" type="email" autocomplete="email" inputmode="email" placeholder="name@gmail.com">
+        <button type="button" class="row-btn" id="calLinkSave">Save and check</button>
+        <p class="callink-msg hint" id="calLinkMsg" role="status" hidden></p>
       </div>
     </aside>
 
@@ -1533,6 +1577,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   loadCoverage();
+  loadCalendarLink();
 });
 
 function loadCoverage() {
@@ -1563,6 +1608,133 @@ function loadCoverage() {
     }).join("");
   }).catch(function () {
     cov.innerHTML = '<div class="cov-row"><span class="cov-name" style="color:var(--ink2)">Coverage unavailable — clock in on Staff &amp; Teams.</span></div>';
+  });
+}
+
+/* ── CONNECT YOUR CALENDAR ─────────────────────────────────────────────────
+   GET /api/staff/calendar-link on load; "Save and check" POSTs the typed
+   address, which saves it and asks Google about it right then. Same bearer
+   header as the task writes above (FHData.write cannot GET). Every answer is
+   put in words where the person is looking; status is never colour alone. */
+var calLinkBusy = false;
+
+function calLinkCall(method, body) {
+  var started;
+  try {
+    started = fetch("/api/staff/calendar-link", {
+      method: method,
+      headers: taskAuthHeaders(),
+      body: body ? JSON.stringify(body) : undefined
+    });
+  } catch (e) {
+    return Promise.resolve({ status: 0, body: null });
+  }
+  return Promise.resolve(started).then(function (r) {
+    return r.json().catch(function () { return null; }).then(function (b) {
+      return { status: r.status, body: b };
+    });
+  }, function () { return { status: 0, body: null }; });
+}
+
+function calLinkShow(on) {
+  var title = document.getElementById("calLinkTitle");
+  var box = document.getElementById("calLink");
+  if (title) title.hidden = !on;
+  if (box) box.hidden = !on;
+}
+
+function calLinkMessage(text, bad) {
+  var el = document.getElementById("calLinkMsg");
+  if (!el) return;
+  el.textContent = text || "";
+  el.hidden = !text;
+  el.className = "callink-msg hint" + (bad ? " bad" : "");
+}
+
+function paintCalLink(link, ownerEmail) {
+  var chip = document.getElementById("calLinkChip");
+  var chipText = document.getElementById("calLinkChipText");
+  var note = document.getElementById("calLinkNote");
+  var owner = document.getElementById("calLinkOwner");
+  var input = document.getElementById("calLinkEmail");
+  if (owner && ownerEmail) owner.textContent = ownerEmail;
+  var state = "wip", label = "Not connected",
+    words = "Do the four steps, then type your Google Calendar email and press Save and check.";
+  if (link && link.status === "connected") {
+    state = "on"; label = "Connected";
+    words = "Your busy times close slots on the booking page. It checks again every five minutes.";
+  } else if (link && link.status === "error") {
+    state = "bad"; label = "Needs a fix";
+    words = link.last_error || "Something went wrong with your calendar link.";
+  } else if (link) {
+    label = "Not ready yet";
+    words = link.last_error || "Saved. Waiting for the first check.";
+  }
+  if (chip) chip.className = "chip " + state;
+  if (chipText) chipText.textContent = label;
+  if (note) note.textContent = words;
+  if (input && link && link.calendar_email && document.activeElement !== input && !input.value) {
+    input.value = link.calendar_email;
+  }
+}
+
+function calLinkResultText(result, link) {
+  if (result === "connected") return "Connected. Your busy times will close slots on the booking page within a few minutes.";
+  if (result === "not_shared") return "Saved. Google says your calendar is not shared yet. Do steps 1 to 4, then press Save and check again.";
+  if (result === "waiting_on_approval") return "Saved. Chris still has to approve Google once. Nothing else is needed from you.";
+  return (link && link.last_error) || "Saved, but Google did not answer. Try again in a few minutes.";
+}
+
+function calLinkFailureText(res) {
+  var b = res && res.body;
+  if (res.status === 400 && b && b.message) return b.message;
+  if (res.status === 401) return "You are signed out. Sign in again, then try once more.";
+  if (res.status === 503) return "The database is not reachable right now. Try again in a moment.";
+  if (res.status === 0) return "Could not reach the server. Try again in a moment.";
+  return "That did not save. Try again in a moment.";
+}
+
+function loadCalendarLink() {
+  var btn = document.getElementById("calLinkSave");
+  if (!btn) return;
+  btn.addEventListener("click", function () {
+    if (calLinkBusy) return;
+    var input = document.getElementById("calLinkEmail");
+    var value = input ? input.value.trim() : "";
+    if (!value) { calLinkMessage("Type your Google Calendar email first.", true); return; }
+    calLinkBusy = true;
+    btn.disabled = true;
+    btn.textContent = "Checking\u2026";
+    calLinkMessage("Saving and asking Google\u2026", false);
+    calLinkCall("POST", { calendar_email: value }).then(function (res) {
+      calLinkBusy = false;
+      btn.disabled = false;
+      btn.textContent = "Save and check";
+      if (res.status === 200 && res.body && res.body.ok) {
+        paintCalLink(res.body.link, res.body.owner_email);
+        calLinkMessage(calLinkResultText(res.body.result, res.body.link), res.body.result !== "connected" &&
+          res.body.result !== "not_shared" && res.body.result !== "waiting_on_approval");
+        return;
+      }
+      if (res.status === 403) { calLinkShow(false); return; }
+      calLinkMessage(calLinkFailureText(res), true);
+    });
+  });
+
+  calLinkCall("GET").then(function (res) {
+    if (res.status === 200 && res.body && res.body.ok) {
+      calLinkShow(true);
+      paintCalLink(res.body.link, res.body.owner_email);
+      return;
+    }
+    // A login this endpoint does not serve never sees the box (UI-STANDARDS §5).
+    if (res.status === 401 || res.status === 403) { calLinkShow(false); return; }
+    var chip = document.getElementById("calLinkChip");
+    var chipText = document.getElementById("calLinkChipText");
+    var note = document.getElementById("calLinkNote");
+    if (chip) chip.className = "chip bad";
+    if (chipText) chipText.textContent = "Not loaded";
+    if (note) note.textContent = calLinkFailureText(res) + " Your calendar link could not be read, so its status is unknown.";
   });
 }
 
