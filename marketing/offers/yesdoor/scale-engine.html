@@ -126,6 +126,10 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
       <fieldset><legend>Target</legend>
         <label class="f">Leases a month<input type="number" id="leaseTarget" step="50" min="0"></label>
       </fieldset>
+      <fieldset><legend>Revenue goal</legend>
+        <label class="f">Goal $ a month<input type="number" id="goal" step="500000" min="0"></label>
+        <button class="btn ghost" type="button" id="solveGoal">Set leases to hit the goal</button>
+      </fieldset>
       <fieldset><legend>Markets</legend>
         <div class="mk"><span></span><span>Share %</span><span>Rent $</span><span>Fee %</span></div>
         <div class="mk"><b>AZ</b><input type="number" id="az_share" aria-label="Arizona share"><input type="number" id="az_rent" aria-label="Arizona rent"><input type="number" id="az_fee" aria-label="Arizona fee"></div>
@@ -143,6 +147,10 @@ ol.steps p{margin:2px 0 0;font-size:12.5px;color:var(--muted)}
         <label class="f">Leases per partner a month<em>assumed</em><input type="number" id="perPartner" step="1"></label>
         <label class="f">Partner payout %<em>20–35% referral norm</em><input type="number" id="payout" step="1"></label>
         <label class="f">Software $ per partner a month<em>office tier</em><input type="number" id="software" step="10"></label>
+      </fieldset>
+      <fieldset><legend>Repeat renters (lease ends)</legend>
+        <label class="f">Renters who move at lease end %<em>assumed</em><input type="number" id="moveRate" step="5"></label>
+        <label class="f">Of those, book with Yesdoor again %<em>assumed: renewal outreach drives it</em><input type="number" id="rebook" step="5"></label>
       </fieldset>
       <fieldset><legend>Buildings</legend>
         <label class="f">Leases per building a month<em>assumed</em><input type="number" id="perBuilding" step="1"></label>
@@ -245,7 +253,8 @@ const DEFAULTS={leaseTarget:2000,
   cpl:27,conv:7.5,pull:9,
   pShare:30,perPartner:3,payout:25,software:499,
   perBuilding:4,take:2.5,backPrice:1000,
-  revStaff:18000,staffCost:6000,payback:3};
+  revStaff:18000,staffCost:6000,payback:3,
+  goal:10000000,moveRate:50,rebook:40};
 const KEYS=Object.keys(DEFAULTS);
 let plan={...DEFAULTS};
 let savedPlan=null;
@@ -259,11 +268,13 @@ function compute(p){
   const tot=mk.reduce((a,m)=>a+m.share,0)||1;
   const avgFee=mk.reduce((a,m)=>a+m.share/tot*m.rent*m.fee/100,0);
   const L=Math.max(0,+p.leaseTarget||0), conv=Math.max(.1,+p.conv||0)/100;
-  const Lp=L*Math.min(100,Math.max(0,+p.pShare||0))/100, Ld=L-Lp;
-  const leadsD=Ld/conv, leadsP=Lp/conv, leads=leadsD+leadsP;
+  const repeat=Math.min(.95,Math.max(0,(+p.moveRate||0)/100*(+p.rebook||0)/100));
+  const Lr=L*repeat, Lnew=L-Lr;
+  const Lp=Lnew*Math.min(100,Math.max(0,+p.pShare||0))/100, Ld=Lnew-Lp;
+  const leadsD=Ld/conv, leadsP=Lp/conv, leads=leadsD+leadsP+Lr;
   const ad=leadsD*(+p.cpl||0);
   const pulls=leads*(+p.pull||0);
-  const placeD=Ld*avgFee, placeP=Lp*avgFee;
+  const placeD=(Ld+Lr)*avgFee, placeP=Lp*avgFee;
   const payout=placeP*(+p.payout||0)/100;
   const back=Math.max(0,leads-L)*(+p.take||0)/100*(+p.backPrice||0);
   const partners=(+p.perPartner||0)>0?Lp/p.perPartner:0;
@@ -274,8 +285,8 @@ function compute(p){
   const staffCost=staff*(+p.staffCost||0);
   const profit=rev-payout-ad-pulls-staffCost;
   const cash=(ad+pulls+staffCost)*(+p.payback||0);
-  return {avgFee,L,Ld,Lp,leadsD,leadsP,leads,ad,pulls,placeD,placeP,payout,back,partners,soft,buildings,rev,staff,staffCost,profit,cash,
-    cpLease:Ld>0?ad/Ld:0, margin:rev>0?profit/rev:0};
+  return {avgFee,L,Ld,Lp,Lr,repeat,leadsD,leadsP,leads,ad,pulls,placeD,placeP,payout,back,partners,soft,buildings,rev,staff,staffCost,profit,cash,
+    cpLease:Ld>0?ad/Ld:0, margin:rev>0?profit/rev:0, revPerLease:L>0?rev/L:0};
 }
 
 function readInputs(){KEYS.forEach(k=>{const el=$(k);if(el)plan[k]=el.value===""?0:+el.value});}
@@ -290,10 +301,11 @@ function renderPlan(){
     `<div><small>Ad spend a month</small><b>${usd(r.ad)}</b></div>`+
     `<div><small>Buildings live</small><b>${n(r.buildings)}</b></div>`+
     `<div><small>Active partners</small><b>${n(r.partners)}</b></div>`+
-    `<div><small>Cash to carry</small><b>${usd(r.cash)}</b></div>`;
+    `<div><small>Cash to carry</small><b>${usd(r.cash)}</b></div>`+
+    `<div><small>Leases for ${usd(+plan.goal)} goal</small><b>${r.revPerLease?n(+plan.goal/r.revPerLease):"—"}</b></div>`;
   const row=(a,b,c,cls)=>`<tr class="${cls||""}"><td>${a}</td><td class="r num">${b}</td><td class="note">${c||""}</td></tr>`;
   $("pnl").innerHTML="<tr><th>Line</th><th class=r>Month</th><th>How</th></tr>"+
-    row("Placement fees, your renters",usd(r.placeD),n(r.Ld)+" leases × "+usd(r.avgFee)+" avg fee")+
+    row("Placement fees, your renters",usd(r.placeD),n(r.Ld)+" new + "+n(r.Lr)+" repeat leases × "+usd(r.avgFee)+" avg fee")+
     row("Placement fees, partner renters",usd(r.placeP),n(r.Lp)+" leases × "+usd(r.avgFee))+
     row("Back end (guides, denial help, repair, lawyers)",usd(r.back),n(Math.max(0,r.leads-r.L))+" non-leasing leads × "+plan.take+"% × "+usd(+plan.backPrice))+
     row("Partner software",usd(r.soft),n(r.partners)+" partners × "+usd(+plan.software))+
@@ -304,7 +316,7 @@ function renderPlan(){
     row("Team",`<span class=neg>${usd(-r.staffCost)}</span>`,n(r.staff)+" people × "+usd(+plan.staffCost))+
     row("Profit",usd(r.profit),Math.round(r.margin*100)+"% of revenue","total");
   $("needs").innerHTML="<tr><th>What</th><th class=r>Month</th><th class=r>Week</th></tr>"+
-    [["Renter leads (yours)",r.leadsD],["Renter leads (from partners)",r.leadsP],["Credit pulls",r.leads],["Leases signed",r.L],["Buildings live",r.buildings,1],["Active partners",r.partners,1],["Team",r.staff,1]]
+    [["Repeat renters placed (no ad cost)",r.Lr],["Renter leads (yours)",r.leadsD],["Renter leads (from partners)",r.leadsP],["Credit pulls",r.leads],["Leases signed",r.L],["Buildings live",r.buildings,1],["Active partners",r.partners,1],["Team",r.staff,1]]
     .map(([a,v,flat])=>`<tr><td>${a}</td><td class="r num">${n(v)}</td><td class="r num">${flat?"—":n(v/4.33)}</td></tr>`).join("");
   const base=r.profit;
   const tries=[
@@ -313,6 +325,7 @@ function renderPlan(){
     ["Cost per lead −$5",{cpl:Math.max(0,+plan.cpl-5)}],
     ["+10 points of leases from partners",{pShare:Math.min(100,+plan.pShare+10)}],
     ["Back-end buyers +1 point",{take:+plan.take+1}],
+    ["Repeat rebook +10 points",{rebook:Math.min(100,+plan.rebook+10)}],
     ["Shift 10 points of mix from AZ to CA",{az_share:Math.max(0,+plan.az_share-10),ca_share:+plan.ca_share+10}]
   ].map(([label,ch])=>[label,compute({...plan,...ch}).profit-base]).sort((a,b)=>b[1]-a[1]);
   $("levers").innerHTML=tries.map(([l,d])=>`<div class="lever"><span>${l}</span><span class="num ${d<0?"neg":""}">${d>=0?"<b>+"+usd(d)+"</b>":usd(d)}</span></div>`).join("");
@@ -341,6 +354,14 @@ const TRACKS=[
   ["Re-pull","New soft pull shows the change.","auto"],
   ["Re-matched","Back on the Renters path at Matched. A fixed client becomes a lease.","auto"]],
   loop:"Re-matched → Renters path, step 3"},
+ {name:"Renter lifetime",tag:"recurring",steps:[
+  ["Move-in day","Welcome message. Lease start and end dates saved.","auto"],
+  ["Day 30","How is the apartment? How was the service? Review asked.","auto"],
+  ["Month 6","Check-in. Credit building and education offers.","auto"],
+  ["90 days before lease end","Renew or move? Shows what they qualify for now.","auto"],
+  ["Renews","Stays on file. Next check-in set for the following lease end.","auto"],
+  ["Moves","Re-matched to contracted buildings. New placement fee, no ad cost.","auto"]],
+  loop:"Moves → Renters path, step 3"},
  {name:"Apartments",tag:"supply",steps:[
   ["Target","On the list: units, management company, software (Yardi, Entrata, other).","staff"],
   ["Pitched","Shown how many pre-qualified renters want this building.","staff"],
@@ -444,6 +465,7 @@ $("savePlan").addEventListener("click",async()=>{
   catch(e){ $("planStatus").textContent="Could not save the target. You may not have edit access."; }
   $("savePlan").disabled=false;
 });
+$("solveGoal").addEventListener("click",()=>{readInputs();const r=compute({...plan,leaseTarget:1000});if(r.revPerLease>0){plan.leaseTarget=Math.ceil(+plan.goal/r.revPerLease/50)*50;writeInputs(plan);renderPlan();}});
 $("resetPlan").addEventListener("click",()=>{plan={...DEFAULTS};writeInputs(plan);renderPlan();});
 
 /* ---------- Tabs ---------- */
