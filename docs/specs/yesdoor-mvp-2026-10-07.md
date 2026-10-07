@@ -223,3 +223,28 @@ Goal (owner): dominate rentals, then expand into mortgages.
 - **Re-checks (owner-set, corrected):** Yesdoor **never asks the renter for updates**. Yesdoor runs the situation: it knows first, or at the same time as everyone else. Re-checks run on a schedule, using consent captured once at sign-up, plus building data feeds. The sign-up consent wording must cover repeat checks; confirm that wording with CRS.
 - **V2** comes later; it should be "really amazing."
 - How many buildings one renter can apply to: still open.
+
+## 17. Last questions before the detailed build spec (with defaults)
+
+Owner process: settle every question → detailed build spec (Opus) → backend (Sonnet) → front end.
+
+Layout:
+1. **What a building sees:** approved / likely / no, income verified, risk tier; in California, the reusable screening report where accepted.
+2. **Max open applications per renter:** 3.
+3. **Re-check schedule:** monthly while searching, and 90 days before lease end.
+4. **Risk tiers:** 4 (A–D), set by score band, evictions, criminal flags, and rent-to-income.
+5. **Rent rule when a building doesn't state one:** rent up to one third of verified monthly income.
+6. **Staff roles:** owner, ops, sales, collections. Only ops and the owner see credit details.
+7. **Building connections, v1:** portal + spreadsheet + listing-feed import. Entrata API next.
+8. **Tours:** the building sets tour hours in its portal; Yesdoor books; synced to their system later.
+9. **Renter messages:** email + text. AI calls later.
+10. **Getting paid:** the system makes the invoice on confirmed move-in and emails it; payment (ACH, Paymode-X, check) is logged.
+11. **Broker payouts:** marked paid in the ledger after the 60-day hold, same as Fundhub's commission ledger.
+12. **Disputes:** the owner or ops decides, within 14 days.
+13. **Back-end upsells in the MVP:** no; space only.
+14. **State rules:** a per-state rules table (for example California background-check notices and the fee cap).
+
+Needed from Chris (accounts; agents can't create these from the cloud):
+15. A new Supabase project and a new Netlify site for Yesdoor (the cloud blocks both APIs).
+16. CRS API login for Yesdoor; Plaid keys; a Twilio number; an email sending domain.
+17. The domain (yesdoor.ai).
