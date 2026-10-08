@@ -195,3 +195,28 @@ What each state allows when the renter or family pays:
 | Renter pays for a rental list | No rule found | Needs a real estate or prepaid rental listing licence and a contract the state approved first. Full refund if fewer than 3 matching listings within 5 days. Refund of everything above $50 if they don't rent through us ([B&P §10167.9–.10](https://california.public.law/codes/ca_bus_and_prof_code_section_10167.9)) | Contract or receipt required. Refund of everything above 25% if they don't rent. Full refund if the list isn't accurate. Breaking this is a misdemeanor ([§475.453](https://m.flsenate.gov/Statutes/475.453)) |
 
 So in California and Florida, most of a renter's fee comes back if they don't rent. Day-1 cash from renters really holds in Arizona and in senior living.
+
+## 15. Zero circumvention — the stack (owner-set goal 2026-10-08)
+
+Full research with sources: `ops/workflows/yesdoor-zero-circumvention-2026-10-08.md`.
+
+Build these, in this order:
+1. **Register before reveal.** Names and contacts unlock only after the signed disclosure and consent. Tours and applications go through a Yesdoor link that stamps Yesdoor as the lead source.
+2. **One contract for every building and community:**
+   - first registered wins
+   - 6 months for apartments, 12 months for senior
+   - 5 business days to flag a duplicate
+   - 14-day move-in report
+   - audit rights
+   - price parity
+   - unreported placement = fee + interest + audit and collection costs (not a flat 2x, which likely fails in AZ and FL)
+3. **Monthly match** of registered names against rent rolls and move-in lists, plus a yearly audit.
+4. **Renter move-in reward,** paid only on a verified lease, and disclosed. No cash rebates to families in Florida (felony).
+5. **Re-pull consent extended** to confirm the new address for 12 months. An address change triggers an audit. Never use the Post Office change-of-address file.
+6. **Broker partners:** a tracking code per renter, 12-month protection, lease proof and a buyout fee.
+7. **Staff:** license law already bans side fees. Pay only on reconciled placements. CRM roles with export logs. Covenants by state (CA: confidentiality only; FL: non-solicit of 6 months or less; AZ: narrow non-solicit).
+8. **Add-on partners and lenders:** data used only for named purposes, a 30–45-day window, no credit data shared.
+9. **Double registration:** first registered wins, and the family gets sent back to the first agent.
+10. **In-app messaging** that hides contact info until the person commits.
+
+What can't be stopped, only caught: someone who found the place on their own first, and a building that leaves a lease off its rent roll.
