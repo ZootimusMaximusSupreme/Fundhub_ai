@@ -290,3 +290,19 @@ Kept out of Yesdoor: cash-pay mental health (not a place), franchise placement a
 ## Launch gate (owner-set 2026-10-08)
 
 Chris: Yesdoor has a $100k virtual budget; it won't start until it has $100k in cash and probably a $250k MCA for ad spend. Split-test ideas are OK. Recorded in the spec, §13.
+
+## Zero circumvention — all parties (owner-set 2026-10-08)
+
+Chris: "We just need to ensure there is zero circumnavigating — from all parties."
+
+The parties: buildings and communities, renters and families, licensed broker partners, Yesdoor's own staff and advisors, add-on partners and lenders, and competitor agencies (double registration).
+
+Already in the spec (§5a):
+- Communities sign before they're listed.
+- Families sign before they see names.
+- Yesdoor books every tour, with a timestamped registration.
+- Registration counts for 12 months.
+- 5 business days to claim "already our prospect".
+- Arizona law makes the community report a move-in within 14 days.
+
+Research agent running: how the best operators get leakage close to zero for each party, and what's legal in AZ, CA and FL. Results land here.
