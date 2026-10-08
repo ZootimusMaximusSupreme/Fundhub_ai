@@ -173,3 +173,25 @@ Fee timing:
 **Split tests (Chris: "we can split test ideas"):**
 1. Sign before seeing names **vs** see "3 communities fit you, $5,200–$6,100 a month" first, then sign to unlock names.
 2. Online first, advisor after **vs** advisor calls every family right away.
+
+## 14. Idea: paid "what you qualify for" roadmap (Chris, 2026-10-08 — not yet decided)
+
+Chris: "Give what they qualify for in our ecosystem, then they pick whatever they want, and we track it on the back end. Kind of like the paid SLO offer system."
+
+How it would work (same shape as Fundhub's $297 roadmap, `marketing/landing-pages/slo/FUNDHUB-297-FUNNEL-README.md`):
+1. The person pays up front for a roadmap of everything they qualify for across Yesdoor: apartments, senior living, add-ons and credit help.
+2. They pick whatever they want.
+3. Yesdoor tracks the pick on the back end, so the place's fee is still claimed.
+
+Why it helps:
+- **Cash on day 1**, instead of 1–4 months later.
+- **Less going around us:** the person has already paid and picked inside Yesdoor.
+
+What each state allows when the renter or family pays:
+
+| Who pays | AZ | CA | FL |
+|---|---|---|---|
+| Family pays (senior living) | The Arizona referral-agency law already covers a fee "collected from either the resident or the facility". Same disclosures apply. | Not checked | Not checked |
+| Renter pays for a rental list | No rule found | Needs a real estate or prepaid rental listing licence and a contract the state approved first. Full refund if fewer than 3 matching listings within 5 days. Refund of everything above $50 if they don't rent through us ([B&P §10167.9–.10](https://california.public.law/codes/ca_bus_and_prof_code_section_10167.9)) | Contract or receipt required. Refund of everything above 25% if they don't rent. Full refund if the list isn't accurate. Breaking this is a misdemeanor ([§475.453](https://m.flsenate.gov/Statutes/475.453)) |
+
+So in California and Florida, most of a renter's fee comes back if they don't rent. Day-1 cash from renters really holds in Arizona and in senior living.

@@ -306,3 +306,7 @@ Already in the spec (§5a):
 - Arizona law makes the community report a move-in within 14 days.
 
 Research agent running: how the best operators get leakage close to zero for each party, and what's legal in AZ, CA and FL. Results land here.
+
+## Leftover card (not this board's job): flaky RateLimiter test
+
+`scripts/marketing/lib/fetch.test.mjs:151` failed once on PR #56 with "expected >=240ms, got 239ms". It's a timer flake. The fix is proposed in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6070238964), not applied (no-extra-holes).
