@@ -277,7 +277,7 @@ Checked `origin/yesdoor/i1` and `origin/yesdoor-3m-scale`: no add-on layer exist
 
 Chris: "Yesdoor gets people into places — seniors, prime, subprime etc. Anything else, we will merge."
 
-**Yesdoor = gets people into places.** Lines that merge in (researched above):
+**Yesdoor = gets people into places.** Senior living is one niche on it, not the platform (owner-set 2026-10-08). Lines that merge in (researched above):
 - Apartments: prime renters and second-chance renters (live build, PR #55)
 - Senior living: assisted living + memory care (private pay)
 - Independent living / 55+ (real estate license)

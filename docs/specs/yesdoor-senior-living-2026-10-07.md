@@ -5,7 +5,7 @@
 
 ## 1. What it is
 
-Yesdoor gets people into places (owner-set 2026-10-07). This line does it for seniors.
+Yesdoor gets people into places (owner-set 2026-10-07). Senior living is one niche on Yesdoor, not the whole platform (owner-set 2026-10-08) — the same way dentist funding is a niche on Fundhub. This line does it for seniors.
 
 A family takes a free check. Yesdoor shows them which assisted living and memory care communities
 they can afford and that will take their parent. An advisor helps the ones who are ready. The family
