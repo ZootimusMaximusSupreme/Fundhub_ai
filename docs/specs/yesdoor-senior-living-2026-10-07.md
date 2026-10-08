@@ -164,7 +164,11 @@ Phoenix: about 1,236 move-ins a month, about 1,014 private pay (agent math from 
 | Senior living | ~$71 (assisted living, Meta) | ~3,500 | 2% / 5% | ~70 / ~175 | ~$250k–$450k / ~$615k–$1.1M |
 | Apartments | ~$36 ($27 ads + $9 pull, Yesdoor scale plan) | ~6,900 | 7.5% | ~520 | ~$780k at $1,500 each |
 
-Cash timing: placement fees arrive 2–4 months after the lead (Yesdoor scale plan), while an MCA is repaid from day one. Size the first spend so the fees land before the payback squeezes cash.
+Funding the ad spend is Chris's call (owner-set 2026-10-08).
+
+Fee timing:
+- **Apartments:** 2–4 months from the lead (Yesdoor plan, `marketing/offers/yesdoor/acq-money-model.md`).
+- **Senior living:** likely faster. 56% of assisted living move-ins happen within 30 days of the first inquiry. The community reports the move-in within 14 days (Arizona). Then the invoice is paid. That makes about 1–2 months, not yet measured.
 
 **Split tests (Chris: "we can split test ideas"):**
 1. Sign before seeing names **vs** see "3 communities fit you, $5,200–$6,100 a month" first, then sign to unlock names.
