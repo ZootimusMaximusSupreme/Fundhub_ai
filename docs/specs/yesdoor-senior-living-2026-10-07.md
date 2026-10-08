@@ -62,6 +62,25 @@ accredited veterans service officer, who is free. House questions go to a realto
 - Disputes ("who referred first", "they declined after we said yes", refunds) are decided within 14 days.
 - Typical fee: about $3,500 to $6,370 per move-in (Arizona median assisted living is $6,370 a month).
 
+## 5a. Locking the deal (Chris, 2026-10-08: "how can we get them to actually sign before")
+
+Two leaks: the family goes quiet, or the family and the community skip Yesdoor once they've met.
+
+**Signatures come first, before any names:**
+1. **Community signs first.** No community appears in results until it has signed the Yesdoor fee agreement (e-sign, same as Yesdoor apartments). The agreement says:
+   - a family Yesdoor registered counts for **12 months**
+   - the community has **5 business days** to say "already our prospect", or the fee stands (the Caring.com rule)
+   - the community must report a move-in within 14 days (Arizona law)
+2. **Family signs before seeing names.** The family e-signs the Arizona disclosure and acknowledgment **before** the matched list unlocks. The law already requires this, and it doubles as our proof that Yesdoor referred them. Under Arizona's 2026 law, if a family later cancels, the fee is still owed on any community Yesdoor already named that they move into within 12 months.
+3. **Registration on booking.** When Yesdoor books a tour, the community gets a timestamped registration (Yesdoor apartments already does this). Tours are booked through Yesdoor, not by the family calling the community.
+
+**Stop families going quiet:**
+- Speed: 56% of assisted living move-ins happen within 30 days of the first inquiry, so the advisor calls within minutes, not days.
+- Only families who can afford it and fit the care level see matches. That keeps conversion high and makes communities want our families.
+- Start with the 1,320 small Phoenix homes. They have no sales team, so they need us most and are least likely to cut us out.
+
+**What can't be done:** lock a family to Yesdoor only. Texas and Arizona give families the right to stop at any time, and Washington bans exclusive deals.
+
 ## 6. Hard rules (built into the database, not just the screens)
 
 1. **No fee, ever, on a Medicaid resident** (Arizona ALTCS, California Medi-Cal, Florida Medicaid). In Arizona that fee is a felony.
