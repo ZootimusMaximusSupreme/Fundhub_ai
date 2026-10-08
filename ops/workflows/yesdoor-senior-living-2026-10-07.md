@@ -286,3 +286,7 @@ Chris: "Yesdoor gets people into places — seniors, prime, subprime etc. Anythi
 - Renters → home buyers (agent referral, real estate license)
 
 Kept out of Yesdoor: cash-pay mental health (not a place), franchise placement and practice funding (Fundhub), hospice / home health / addiction (no per-patient fee).
+
+## Launch gate (owner-set 2026-10-08)
+
+Chris: Yesdoor has a $100k virtual budget; it won't start until it has $100k in cash and probably a $250k MCA for ad spend. Split-test ideas are OK. Recorded in the spec, §13.

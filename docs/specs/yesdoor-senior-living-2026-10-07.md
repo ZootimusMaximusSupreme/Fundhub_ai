@@ -152,3 +152,20 @@ Phoenix: about 1,236 move-ins a month, about 1,014 private pay (agent math from 
 3. Read endpoints with tests that run against a real database.
 4. Flow diagram: `docs/journeys/yesdoor-senior-flow.md`.
 5. Screens last.
+
+## 13. Launch gate and split tests (owner-set 2026-10-08)
+
+**Launch gate:** Yesdoor does not start spending until it has **$100k in cash**, and probably a **$250k MCA (merchant cash advance) for ad spend**. Until then, plan against a $100k virtual budget.
+
+**What $250k of ad spend buys (agent math, sourced inputs):**
+
+| Line | Lead cost | Leads | If this % move in | Move-ins | Fees |
+|---|---|---|---|---|---|
+| Senior living | ~$71 (assisted living, Meta) | ~3,500 | 2% / 5% | ~70 / ~175 | ~$250k–$450k / ~$615k–$1.1M |
+| Apartments | ~$36 ($27 ads + $9 pull, Yesdoor scale plan) | ~6,900 | 7.5% | ~520 | ~$780k at $1,500 each |
+
+Cash timing: placement fees arrive 2–4 months after the lead (Yesdoor scale plan), while an MCA is repaid from day one. Size the first spend so the fees land before the payback squeezes cash.
+
+**Split tests (Chris: "we can split test ideas"):**
+1. Sign before seeing names **vs** see "3 communities fit you, $5,200–$6,100 a month" first, then sign to unlock names.
+2. Online first, advisor after **vs** advisor calls every family right away.
