@@ -23,6 +23,7 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
 - [ ] Text your old-client list (40–50 people), target 10 sales
 - [ ] ClarityPay: call the rep with the questions in section 07 of the proposal, and sign up directly so you get your own checkout
 - [ ] Book the Plaid call and get the Plaid production API keys
+- [ ] Open a new Commas account for Yesdoor (added 2026-10-09; Chris: "I gotta create a new Commas account for this Yesdoor")
 - [ ] ClarityPay rep, 2 more questions before funding deposits get financed (`docs/finance/call-funnel-projection-2026-10-05.md`)
   - [ ] Does accepting the loan trigger a hard pull? On which bureau?
   - [ ] Does the loan report to the bureaus? Which ones, and how many days after it funds?
