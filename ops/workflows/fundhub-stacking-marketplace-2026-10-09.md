@@ -19,3 +19,15 @@ Chris's idea (not decided): a marketplace of up to 10 lenders. Each borrower is 
 - Verification plus disclosure fixes the "hidden" problem but not the extra risk of several accounts at once.
 - Big card issuers would likely refuse. Credit unions and smaller lenders that already buy pre-approved demand are the realistic first partners.
 - Fundhub must never look like the stacking schemes the FTC has sued.
+
+## Credit union advisor candidates (2026-10-09)
+
+| # | Who | Why | Source |
+|---|---|---|---|
+| 1 | Debbie Matz | NCUA Chairman 2009–2016. On RenoFi's advisory board, with the stated job of bringing credit unions onto a fintech lending platform. **Call first.** | https://americanbanker.com/creditunions/news/debbie-matz-joins-renofi-board-of-advisors |
+| 2 | Rodney Hood | Former NCUA Chairman. Advisor at ModernFi, a credit union deposit network (May 2024). | https://www.fintechfutures.com/press-releases/modernfi-welcomes-rodney-hood-former-ncua-chairman-to-its-board-as-it-launches-the-first-deposit-network-for-credit-unions |
+| 3 | Dan Berger | Former NAFCU CEO. Strategic advisor to Open Lending, opening credit union doors for it. | https://www.cuinsight.com/press-release/open-lending-announces-dan-berger-former-president-and-ceo-of-nafcu-as-a-strategic-advisor/ |
+| 4 | Scott Earl | Arizona Credit Union League CEO from 2007, then Mountain West Credit Union Association CEO. Retired 2022. Best Arizona door. | https://cutimes.com/2010/12/27/earl-moves-up-as-interim-ceo-of-three-leagues |
+| 5 | Diana Dykstra | Former California and Nevada Credit Union Leagues CEO. World Council of Credit Unions board chair (2024). | https://woccu.org/about/bod?id=92 |
+| 6 | Jim Nussle | Former CUNA and America's Credit Unions CEO. Retiring. | https://corridorbusiness.com/nussle-stepping-down-from-leadership-of-americas-credit-unions/ |
+| 7 | Tony Boutelle | Origence (CU Direct) CEO; its lending network has about 1,000 credit unions. Likely a partner or competitor, not an advisor. | https://www.financialcontent.com/article/gnwcq-2026-7-20-origence-announces-new-associate-board-members |
