@@ -33,7 +33,7 @@
 | 7 | **Manny Alvarez** | California's top finance regulator (DFPI Commissioner, 2019–21). CFPB enforcement lawyer. Affirm's first general counsel. | BridgeCounsel Strategies. East West Bancorp director. Advises "several venture-backed, private fintech companies." | A former official who already does this exact job. Fits California expansion and Fundhub lending. | [East West proxy 2026](https://www.sec.gov/Archives/edgar/data/1069157/000207709626000050/ea0285126-def14a_eastwest.htm) · [DFPI](https://dfpi.ca.gov/about/history/manuel-alvarez/) |
 | 8 | **Kyrsten Sinema** (stretch) | US Senator for Arizona (2019–25). Sat on Senate Banking, Housing and Urban Affairs. | CEO, Arizona Business Roundtable. Senior Advisor, Hogan Lovells. Coinbase Global Advisory Council. | The senator you asked for, and she already advises a fintech. Hard to reach. | [The Block](https://www.theblock.co/post/337664/coinbase-global-advisory-council-hires) · [Roundtable bio](https://azbrt.org/staff/sinema/) |
 | 9 | **Kathy Kraninger** | Director of the CFPB (2018–21) | CEO, Florida Bankers Association. Milken FinTech Advisory Council. | Florida expansion, and Florida banks as Fundhub lender partners | [Milken](https://milkeninstitute.org/staff/kathy-kraninger) · [HousingWire](https://www.housingwire.com/articles/florida-bankers-association-names-kathy-kraninger-as-ceo/) |
-| 10 | **Doug Ducey** (stretch) | Governor of Arizona (2015–23). Signed the first state fintech sandbox in 2018. | U-Haul advisory board. German Marshall Fund trustee. | A big Arizona name with a fintech record | [BusinessWire](https://www.businesswire.com/news/home/20240111040461/en/U-Haul-Holding-Company-Announces-Appointment-of-Former-Arizona-Governor-Doug-Ducey-as-an-Advisory-Board-Member) · [AZ AG 2018](https://www.azag.gov/press-release/arizona-becomes-first-state-us-offer-fintech-regulatory-sandbox) |
+| 10 | **Doug Ducey** (warm intro: a friend of Chris knows him, 2026-10-09) | Governor of Arizona (2015–23). Signed the first state fintech sandbox in 2018. | U-Haul advisory board. German Marshall Fund trustee. | A big Arizona name with a fintech record | [BusinessWire](https://www.businesswire.com/news/home/20240111040461/en/U-Haul-Holding-Company-Announces-Appointment-of-Former-Arizona-Governor-Doug-Ducey-as-an-Advisory-Board-Member) · [AZ AG 2018](https://www.azag.gov/press-release/arizona-becomes-first-state-us-offer-fintech-regulatory-sandbox) |
 
 ## Bench (verified, weaker fit or harder to reach)
 
@@ -92,4 +92,16 @@ Chris: "We need to find some for Fundhub as well. I don't want to give out any e
 |---|---|---|
 | D. Bank executives | Current or former bank leaders: SBA lending heads, chief credit officers, Arizona banks such as Western Alliance (Phoenix) and community banks, who advise fintechs | pending |
 | E. Other insight | Small-business finance and fintech association leaders, financial-education leaders (for the education side), and how people get advisors with no equity | pending |
+
+## Warm intro draft: Doug Ducey (2026-10-09)
+
+Chris: "my buddy knows doug ducey." His friend forwards this. It asks for a call first, not a title.
+
+> **Subject:** Intro: Chris, Arizona fintech founder
+>
+> Hi Doug, I'd like to introduce my friend Chris. He runs Fundhub, an Arizona fintech. Small business owners take one soft credit check, which doesn't touch their score, see what funding they qualify for, and get matched with lenders. He's also building Yesdoor, which does the same for renters 55 and over in Phoenix.
+>
+> With your work on Arizona's fintech sandbox and your own business background, Chris would value 20 minutes of your advice. If it's a fit, he'd like to talk about an advisory role.
+>
+> Would you be open to a short call?
 
