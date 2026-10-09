@@ -21,6 +21,7 @@ found about 40% of A Place for Mom families were placed above their budget.
 | Order | Line | Where | How Yesdoor is paid |
 |---|---|---|---|
 | 1 | 55+ (active adult) and independent living (owner-set 2026-10-09) | Phoenix, Arizona | Community pays per lease, owed at lease signing, net-30 at most (§16) |
+| Later | Regular apartments (owner-set 2026-10-09: after 55+ has cash flow) | — | Building pays per lease |
 | Parked | Assisted living + memory care, private pay (owner-set 2026-10-09) | Phoenix, Arizona | Community pays per move-in |
 | Later | Private-pay home care | Arizona first | Agency pays per new client |
 | — | Add-ons: renters insurance, deposit alternative, lease guarantor | Apartments line first | Insurance commission (licensed agency) |
@@ -242,5 +243,7 @@ Chris: "tough to compete there, lets do 55+." Assisted living is parked.
 
 **Target (Chris, 2026-10-09):** about 5:1 return on ad spend. Our math: with ads plus the pull at about $36 a lead, 5:1 needs about a 12% lease rate on a $1,500 fee, or 7.5% on a $2,400 fee. The Phoenix test measures both.
 
-**Open:** the fee size, and the competition. Competition research: `ops/workflows/yesdoor-55plus-competition-2026-10-09.md`.
+**Expansion order (owner-set 2026-10-09):** Phoenix, then California, then the areas around them, then Florida, then wider. Regular apartments and assisted living come later, once 55+ has cash flow. Chris: "niche down, then go wide … You should do two layers of niching down."
+
+**Open:** the fee size, and the second niche layer. Competition research: `ops/workflows/yesdoor-55plus-competition-2026-10-09.md`.
 

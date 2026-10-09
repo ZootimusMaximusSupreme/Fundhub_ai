@@ -312,7 +312,9 @@ Research agent running: how the best operators get leakage close to zero for eac
 Chris: "tough to compete there, lets do 55+." Assisted living is parked. 55+ goes first.
 Chris: "We just need to get paid on contract signing or whatever, net30 account max. Otherwise it can't really work. We can probably get like a 5/1 ROAS."
 
-Recorded in spec §2 and §16. Competition research is running: `ops/workflows/yesdoor-55plus-competition-2026-10-09.md`.
+Recorded in spec §2 and §16. Competition research is done: `ops/workflows/yesdoor-55plus-competition-2026-10-09.md`.
+
+Chris, 2026-10-09: start with 55+. Expand Phoenix, then California, then the areas around them, then Florida, then wider. Regular apartments and senior living come once there's cash flow. "Niche down, then go wide … two layers of niching down." Recorded in spec §16.
 
 ## Stress test and cash fix (2026-10-08)
 

@@ -6,6 +6,8 @@
 **How to read numbers:** every number has a source link, or says **(our math)**. Our math only uses sourced inputs.
 **Owner-set and not reopened here:** $100k cash before any spend. How ad spend is funded is Chris's call. Split tests are fine. Yesdoor holds real estate licences in AZ, CA and FL. Senior living is a niche on Yesdoor. Zero going-around-us from all parties. Chris's word wins.
 
+**Owner decision since this was written (2026-10-09):** 55+ goes first, paid at lease signing with net-30 at most. Regular apartments and assisted living come later (spec §16).
+
 Related files: spec `docs/specs/yesdoor-senior-living-2026-10-07.md` · board `ops/workflows/yesdoor-senior-living-2026-10-07.md` · going-around-us research `ops/workflows/yesdoor-zero-circumvention-2026-10-08.md`.
 
 ---
