@@ -325,3 +325,7 @@ Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run t
 ## Leftover card (not this board's job): browser tests never finish
 
 `screens (real browser)` stops at its 15-minute limit on `main` and on PR #56: it was cut off at test 250 of 490 on `main` (`01d5d65`), with about 42–44 browser tests failing. The proposed patch (raise `timeout-minutes` to 30 in `.github/workflows/tests.yml`) is in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6073197857). It's not applied (no-extra-holes). The failing browser tests are a separate hole.
+
+## Leftover card (not this board's job): outbox edits can apply out of order
+
+`src/repo/outbox.pg.test.mjs:106` failed once on PR #56: the ids came back as `['92', '91']` instead of `['91', '92']`. Cause: `drainLocked()` in `src/repo/outbox.mjs` re-sorts claimed rows with `byAge`. `pg` timestamps keep only milliseconds, so two rows written in the same millisecond tie and get ordered by random id. That's a real ordering bug, not just a test flake. The proposed patch is in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6074958030). It's not applied (no-extra-holes).
