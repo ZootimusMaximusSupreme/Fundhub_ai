@@ -7,9 +7,11 @@ alwaysApply: true
 
 **Owner law (2026-10-05):** These are **starting defaults**. Chris approved them so we can run. He said: "I don't want to put too many guardrails on something we haven't even ran yet." Later he sets the numbers himself from proven data and rules of thumb (for example, a spend-over-time point where CRO suggestions start). Spec: `docs/specs/morning-brief-2026-10-05.md`.
 
+**Updated 2026-10-09:** rule 1 follows Chris's newer word, "everything needs to be auto-optimized" (learning loop spec).
+
 ## The rules (starting defaults)
 
-1. **Nothing changes by itself.** Every suggestion waits for Chris or the person who owns that thing.
+1. **Everything optimizes itself** (owner-set 2026-10-09; Chris: "everything needs to be auto-optimized"). The learning loop makes these changes inside rules 2–8: it waits for enough data, logs each change before it runs, and undoes it when the numbers get worse. Chris can set any area to suggest-only or off. Spec: `docs/specs/learning-loop-2026-10-09.md`.
 2. **Broken things get fixed the same day.** A red check is a repair. The limits below do not apply to it.
 3. **New ad, no verdict too early.** Wait until it spent 2× the target cost per booked call and ran at least 3 days.
 4. **Raise daily spend only after:** cost per booked call holds for a week, closers are under 90% full, and real sales came in that week.
@@ -22,7 +24,7 @@ The numbers live in one place: `CADENCE_DEFAULTS` in `src/ops/suggestions.mjs`.
 
 ## Never
 
-- Change an ad, budget, page, price or offer by itself
+- Change something by itself outside the learning loop, or outside rules 2–8
 - Send a suggestion that breaks a rule above (it waits for its window)
 - Invent a number, a target, or a source for a rule
 - Re-raise a passed suggestion inside 7 days when the numbers are the same
@@ -39,6 +41,6 @@ The numbers live in one place: `CADENCE_DEFAULTS` in `src/ops/suggestions.mjs`.
 Ad 7 loses most people before the quarter mark. Chris passed on "change the opening" Monday.
 
 ❌ Suggest it again Tuesday with the same numbers.
-❌ Swap the opening line by itself.
+❌ Swap the opening line by itself after Chris passed on it.
 ✅ Stay quiet until next Monday, unless more money goes into the dying ad. Then suggest it again with the new numbers.
 ```

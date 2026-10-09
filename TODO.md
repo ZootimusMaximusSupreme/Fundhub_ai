@@ -13,6 +13,8 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
 - [x] Start the marketing machine build: started 2026-10-05 in a cloud session ("Do the whole thing"). 18 draft PRs so far. Board: branch `mm/board-2026-10` (PR #17).
 - [ ] Open Claude Code on the Mac and paste the MAC prompt from `ops/workflows/knockout-2026-10-05.md`: new text number, the brief goes live, /apply push, one ship, funnel walkthrough, backup database. Nothing merged since the 10/4 ship is live until it runs.
 - [ ] Financing approval
+- [ ] Calls to Content (added 10/9): read the spec and answer its section 10 ("all defaults" works). Spec: `docs/specs/calls-to-content-2026-10-09.md`. PR: https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/68
+- [ ] Learning loop (added 10/9): read the spec and answer its section 10 ("all defaults" works). Spec: `docs/specs/learning-loop-2026-10-09.md`. Same PR: https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/68
 - [ ] Delete GitLab: https://gitlab.com/fundhub-llc-group/fundhub-llc-project/edit
 - [ ] Launch book-a-call at $250/day. Server events are on; Lead and Schedule prove themselves on the first real booking.
 - [ ] Compare /roadmap conversion for one week at $147 against the last week at $297, at the same daily spend
@@ -109,6 +111,13 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
   - [ ] Make the thumbnail for the penthouse ad
   - [ ] Set it as the ad's cover in Meta
   - [ ] Compare hook rate against the same ad with the default thumbnail
+- [ ] Scroll-stopper image ads for Facebook and Instagram (added 10/9). The picture looks like a normal post on the platform, with something off that makes them stop, like the image tilted a little so the app looks broken. Inside the picture is one Easter egg that makes them curious, like a credit score popping out. It can run as a picture ad or as the thumbnail on a video ad.
+  - [ ] Pull 5 scroll-stopper image ads you like
+  - [ ] Write down the trick each one uses to make you stop (the tilt is the first one)
+  - [ ] Pick 3 Easter eggs for Fundhub (a credit score popping out is the first one)
+  - [ ] Make 3 images, one per Easter egg
+  - [ ] Run them as picture ads, and use the best one as a video ad's thumbnail
+  - [ ] Compare cost per booked call against the same week's video ads
 - [ ] Voice file: fold your go-to phrases into `marketing/ads/VOICE.md` (needs your voice-dictated messages exported from the Claude chats)
 - [ ] Reference ad (Scale without your own cash)
   - [ ] Read it through once more and mark anything to change
