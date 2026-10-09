@@ -85,6 +85,7 @@ textarea{min-height:46vh;resize:vertical}
 .pill.primary{background:var(--tally);border-color:var(--tally);color:#fff}
 .note{color:var(--ink-2);font-size:13px;line-height:1.45;margin:0}
 .keys{font-family:var(--data-face);font-size:12px;color:var(--ink-2)}
+@media (orientation:landscape) and (max-height:520px){#bar{padding:6px 14px calc(6px + env(safe-area-inset-bottom,0px));gap:4px}.btn{height:38px}#status{font-size:11px}.sheet{max-height:96%;padding-block:12px}textarea{min-height:34vh}#content p{max-width:44ch}}
 @media (prefers-reduced-motion:reduce){#content .w,#bar{transition:none}}
 </style>
 
