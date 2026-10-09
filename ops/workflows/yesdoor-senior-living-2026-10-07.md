@@ -307,6 +307,10 @@ Already in the spec (§5a):
 
 Research agent running: how the best operators get leakage close to zero for each party, and what's legal in AZ, CA and FL. Results land here.
 
+## Stress test and cash fix (2026-10-08)
+
+Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run these prompts." Draft 1 is in `ops/workflows/yesdoor-stress-test-2026-10-08.md`. The fact-check pass is still running, and the file gets updated when it finishes.
+
 ## Leftover card (not this board's job): flaky RateLimiter test
 
 `scripts/marketing/lib/fetch.test.mjs:151` failed once on PR #56 with "expected >=240ms, got 239ms". It's a timer flake. The fix is proposed in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6070238964), not applied (no-extra-holes).
