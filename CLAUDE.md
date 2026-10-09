@@ -125,10 +125,6 @@ The repo's visibility is Chris's call. Do not raise it (owner-set 2026-10-05).
 * §8's pull-request and branch rules apply. Compare against `origin/main`.
 * Still commit locally every session. Then push that commit to GitHub.
 
-### GitHub deploys to Netlify (owner-set 2026-10-09)
-
-GitHub `main` is the live site, and GitHub is what pushes it to Netlify. No deploying from a laptop. Work that lives only on the Mac gets pushed to GitHub the same day. Until the GitHub-to-Netlify wiring is done, `npm run ship` stays the only deploy path. Same law: `.cursor/rules/github-deploys-netlify.mdc` and `.claude/rules/github-deploys-netlify.md`.
-
 ### Never ask permission to run a tool (owner-set 2026-09-08)
 
 Bash is always allowed. So are Read, Write, Edit, Glob, Grep, WebFetch and WebSearch.

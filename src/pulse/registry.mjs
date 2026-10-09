@@ -425,7 +425,6 @@ const DESK_FILES = [
   "sales-floor.html",
   "social-studio.html",
   "soft-pull-approve.html",
-  "teleprompter.html",
   "staff-teams.html"
 ];
 
