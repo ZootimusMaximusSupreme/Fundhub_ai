@@ -16,9 +16,9 @@ Spec: `docs/specs/calls-to-content-2026-10-09.md`. Protocol: CLAUDE.md §5. Clai
 | 6 | `src/content/check.mjs` `checkPostText` + tests | §5.5 | W3 | Sonnet | pending | Chris's approval |
 | 7 | Add `marketing/posts/` to the outbox allow-list + test | §5.8 | W3 | Sonnet | pending | Chris's approval |
 | 8 | Name scrubber `src/content/scrub-names.mjs` + tests | §5.4 | W4 | Opus | pending | tasks 2–4 merged |
-| 9 | The miner, `content_scan` and `content_mine_call` jobs, clock hook | §5.3, §5.4 | W4 | Opus | pending | tasks 2–8 |
+| 9 | The miner, `content_scan` and `content_mine_call` jobs, clock hook | §5.3, §5.4 | W4 | Opus | pending | tasks 2–8, and the word cleaner (learning loop board task 5, workflow L2) |
 | 10 | The writer, check loop, `content_write_idea` and `content_rewrite_draft` jobs, `content_ready` buzz, cost cap | §5.3, §5.5 | W4 | Opus | pending | tasks 6, 9 |
-| 11 | Action routes, repo files, pulse rows | §5.6, §5.7 | W5 | Sonnet | pending | tasks 3–4 merged |
+| 11 | Action routes, repo files, pulse rows | §5.6, §5.7 | W5 | Sonnet | pending | tasks 3–4 merged, and the word cleaner (learning loop board task 5) for the quote route |
 | 12 | Live proof: one real call → drafts → approve → file in `marketing/posts/` | §5.9 | W4 | Opus | pending | tasks 9–11 |
 | 13 | Revise the spec if the truth moved; save §6 to `docs/journeys/calls-to-content-flow.md` | §6 | W4 | Opus | pending | task 12 |
 | 14 | The Content page | §7 | W6 | Sonnet (Claude only) | pending | task 13 |
@@ -30,6 +30,7 @@ Spec: `docs/specs/calls-to-content-2026-10-09.md`. Protocol: CLAUDE.md §5. Clai
 - **The infra is the marketing machine's M0:** `marketing_jobs` + worker + clock, `repo_outbox` + allow-list, `marketing_buzzes`, `marketing_model_usage`. Register new job kinds in `src/marketing/handlers.mjs` (`JOB_HANDLERS`).
 - **Force Claude** with `callModel({ provider: 'anthropic', ... })` (added in M0 step 4). Log every call with `recordMarketingUsage` (`src/marketing/model-usage.mjs`), passing the `job_id`.
 - **Migration numbers:** 438–441.
+- **Chris's words are cleaned before the miner sees them** (spec §2 decision 6, §5.4 step 2b). The cleaner is `src/words/clean.mjs` from the learning loop build (`ops/workflows/learning-loop-2026-10.md`, task 5, workflow L2). W4 and W5 both wait on it. Rebuild transcripts with `textFromChunks` (trap 8).
 - **Never run pg tests against the `DATABASE_URL` in `.env`.**
 
 ## Prompts (copy one into a new session)
@@ -44,11 +45,11 @@ Spec: `docs/specs/calls-to-content-2026-10-09.md`. Protocol: CLAUDE.md §5. Clai
 
 ### W4 — miner, writer, jobs, live proof (Opus)
 
-> You are W4 of Calls to Content. Spec: docs/specs/calls-to-content-2026-10-09.md. Board: ops/workflows/calls-to-content-2026-10.md. Read the board first: W2 and W3 must be merged, and W2's §5.1 answers and fixtures tell you the speaker label format. Read the spec's sections 0, 2, 3 and 4, then do §5.3, §5.4 and the writer and check loop in §5.5. Claim tasks 8–10, 12 and 13 on the board first. Build the speaker parser from W2's fixtures, never from memory. Register the four job kinds in src/marketing/handlers.mjs, add the clock hook and the content_ready buzz, force Claude in callModel, log every call in marketing_model_usage, and add the jobs to src/pulse/registry.mjs. Prove it live on one real call (§5.9). Save §6 to docs/journeys/calls-to-content-flow.md and append CHANGELOG.md. If the truth moved, revise the spec. Open one PR per task group. End with your change manifest on the board.
+> You are W4 of Calls to Content. Spec: docs/specs/calls-to-content-2026-10-09.md. Board: ops/workflows/calls-to-content-2026-10.md. Read the board first: W2 and W3 must be merged, and W2's §5.1 answers and fixtures tell you the speaker label format. Read the spec's sections 0, 2, 3 and 4, then do §5.3, §5.4 and the writer and check loop in §5.5. Claim tasks 8–10, 12 and 13 on the board first. Build the speaker parser from W2's fixtures, never from memory. Rebuild transcripts with textFromChunks and clean Chris's lines with cleanSpoken (src/words/clean.mjs; the learning loop board's L2 must be merged first), saving both quote and quote_raw. Register the four job kinds in src/marketing/handlers.mjs, add the clock hook and the content_ready buzz, force Claude in callModel, log every call in marketing_model_usage, and add the jobs to src/pulse/registry.mjs. Prove it live on one real call (§5.9). Save §6 to docs/journeys/calls-to-content-flow.md and append docs/journeys/CHANGELOG.md. If the truth moved, revise the spec. Open one PR per task group. End with your change manifest on the board.
 
 ### W5 — action routes and repo files (Sonnet)
 
-> You are W5 of Calls to Content. Spec: docs/specs/calls-to-content-2026-10-09.md. Board: ops/workflows/calls-to-content-2026-10.md. Read the board first: W2 must be merged. Read the spec's sections 0, 2, 3 and 4, then do the action routes in §5.6 and §5.7. Claim task 11 on the board first. Every write takes version and request_id and returns 409 on a stale version. Approve and posted write marketing/posts/<channel>/<date>-<slug>.md through enqueueRepoWrite; make_rule appends to Part B of marketing/posts/RULES.md through the outbox. Add every route to the ROUTES map and src/pulse/registry.mjs. Tests for each route against a scratch database. Open one PR. End with your change manifest on the board.
+> You are W5 of Calls to Content. Spec: docs/specs/calls-to-content-2026-10-09.md. Board: ops/workflows/calls-to-content-2026-10.md. Read the board first: W2 must be merged. Read the spec's sections 0, 2, 3 and 4, then do the action routes in §5.6 and §5.7. Claim task 11 on the board first. Every write takes version and request_id and returns 409 on a stale version. Approve and posted write marketing/posts/<channel>/<date>-<slug>.md through enqueueRepoWrite; POST content/ideas/quote saves quote_fixed only when isDeletionOnly(quote_raw, quote_fixed) holds; make_rule appends to Part B of marketing/posts/RULES.md through the outbox. Add every route to the ROUTES map and src/pulse/registry.mjs. Tests for each route against a scratch database. Open one PR. End with your change manifest on the board.
 
 ### W6 — the Content page (Sonnet, Claude only)
 

@@ -14,6 +14,7 @@ Updated from the 10/4 list. Checked against the repo and the live site on 10/5. 
 - [ ] Open Claude Code on the Mac and paste the MAC prompt from `ops/workflows/knockout-2026-10-05.md`: new text number, the brief goes live, /apply push, one ship, funnel walkthrough, backup database. Nothing merged since the 10/4 ship is live until it runs.
 - [ ] Financing approval
 - [ ] Calls to Content (added 10/9): read the spec and answer its section 10 ("all defaults" works). Spec: `docs/specs/calls-to-content-2026-10-09.md`. PR: https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/68
+- [ ] Learning loop (added 10/9): read the spec and answer its section 10 ("all defaults" works). Spec: `docs/specs/learning-loop-2026-10-09.md`. Same PR: https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/68
 - [ ] Delete GitLab: https://gitlab.com/fundhub-llc-group/fundhub-llc-project/edit
 - [ ] Launch book-a-call at $250/day. Server events are on; Lead and Schedule prove themselves on the first real booking.
 - [ ] Compare /roadmap conversion for one week at $147 against the last week at $297, at the same daily spend

@@ -2,6 +2,8 @@
 
 **Version 1 · 2026-10-09 · Owner: Chris · For: Claude Code**
 
+Version 1.1, same day: the miner reads Chris's cleaned words (learning loop spec `docs/specs/learning-loop-2026-10-09.md` §5.3).
+
 Chris saw Scott Oldford's "Calls to Content" (youalreadysaidit.com) in an Instagram ad on 2026-10-08 and said "build." This is Fundhub's own version, built inside this repo on top of what already runs.
 
 Two files make up this build:
@@ -57,15 +59,15 @@ Workflows stop for only three things: an item in §9 or §10, a STOP AND ASK fro
 | **W1** | This spec and the board | Opus | done (this chat) |
 | **W2** | §5.1 source proof, §5.2 migration, §5.6 read endpoint + its test | Opus | after Chris approves |
 | **W3** | §5.4 post rules file, §5.5 post checker, §5.8 allow-list line | Sonnet | after Chris approves, same time as W2 |
-| **W4** | §5.3 jobs, §5.4 the miner, §5.5 the writer, the clock hook, the buzz | Opus | after W2 and W3 merge |
+| **W4** | §5.3 jobs, §5.4 the miner, §5.5 the writer, the clock hook, the buzz | Opus | after W2, W3 and the learning loop's L2 (the word cleaner) merge |
 | **W5** | §5.6 action routes, §5.7 repo files, pulse rows | Sonnet | after W2 merges, same time as W4 |
 | **W6** | §7 the screen | Sonnet (Claude only, law: `grok-no-displays.md`) | after W4 and W5 are proven live and this spec is revised |
 
 **What runs at the same time:** W2 and W3. Then W4 and W5. Then W6.
 
 **Real dependencies:**
-- W4 needs W2's tables and W3's checker.
-- W5 needs W2's tables.
+- W4 needs W2's tables and W3's checker, and the word cleaner from the learning loop build (`docs/specs/learning-loop-2026-10-09.md` §5.3, workflow L2).
+- W5 needs W2's tables, and the word cleaner (learning loop L2) for the quote route.
 - W6 needs the back end proven (law).
 
 The copy-paste prompts for W2–W6 are on the board. Each one stands on its own.
@@ -87,7 +89,7 @@ flowchart LR
   M[Google Meet call<br/>recorded + transcript] --> D[Drive]
   D --> B[Company Brain<br/>indexes the words<br/>already runs]
   B --> S[Scan<br/>new call with Chris's lines]
-  S --> I[Miner<br/>up to 3 ideas,<br/>Chris's exact words attached]
+  S --> I[Miner<br/>up to 3 ideas,<br/>Chris's words attached,<br/>cleaned of stutters and filler]
   I --> W[Writer<br/>Facebook post, Instagram caption, email<br/>checked against Chris's rules]
   W --> Z[Buzz<br/>one a day, only when drafts wait]
   Z --> R[Chris reviews on phone<br/>approve, edit, another take, skip]
@@ -104,6 +106,8 @@ flowchart LR
 
 **Where the words come from.** Each draft is written from what Chris actually said on the call. The writer may not add a claim, a number or a story that isn't in his words from that call or in RULES.md's allowed proof. The source lines stay attached to the draft.
 
+**His words are cleaned first.** Stutters, filler and false starts come out before the miner sees them, and nothing is added (learning loop spec §5.3). The exact words are kept next to the cleaned ones so anyone can check.
+
 **How this sits next to the marketing machine.** Marketing machine §7.10 ("real words") reads what *clients* say on calls to shape ad scripts. This build reads what *Chris* says on calls to write posts and emails. Both read the same transcripts.
 
 ---
@@ -115,6 +119,7 @@ flowchart LR
 3. **Spec, then back end, then front end** (CLAUDE.md §3a, `build-spec-then-backend-then-frontend.md`).
 4. **Everything lands in the repo** (CLAUDE.md §3b). Approved drafts are saved under `marketing/posts/`.
 5. **Chris's copy rules apply to every draft:** RULES.md Part 0, word for word.
+6. **No stutters or filler in copy** (Chris, 2026-10-09: "I don't want to be stuttering"). Chris's lines go through the word cleaner before the miner sees them, and the cleaned words are what every draft is written from.
 
 ---
 
@@ -137,6 +142,7 @@ flowchart LR
 | **Roles:** `ROLE_SETS.MARKETING` in `src/http/read-api.mjs` (owner, admin) | Who can use the routes. | |
 | **Routes:** the `ROUTES` map in `netlify/functions/api.mjs` | | A handler file is not a route (CLAUDE.md §12). |
 | **Pulse:** `src/pulse/registry.mjs` | Every new route and job is watched. | Same change as the feature (law: `pulse-registry.md`). |
+| **Word cleaner:** `src/words/clean.mjs` (`cleanSpoken`, `isDeletionOnly`) and `src/words/unchunk.mjs` (`textFromChunks`), built by the learning loop (its spec §5.3, workflow L2) | Chris's lines with stutters, filler and false starts taken out, plus a map from each kept word back to the exact words. | It only removes words. Pass the words area's lists from `loop_areas.config` (`extra_fillers`, `keep_words`) once the learning loop's migration 442 lands; empty lists until then. |
 
 ---
 
@@ -149,6 +155,7 @@ flowchart LR
 5. **Don't hold a transaction open across a model call** (marketing machine spec §4 trap 3). Read, close, call the model, then write.
 6. **Speaker label format.** Nobody in this repo has parsed a Meet transcript's speaker labels yet. The parser is written from real transcripts that W2 saves as scrubbed test fixtures. Do not write it from memory.
 7. **The marketing clock is off while `enabled` is false.** Content gets its own switch (§5.2) so it can run before the script machine is turned on.
+8. **Text joined from `brain_chunks` repeats itself.** Chunks overlap by 200 characters (`src/company-brain/chunk.mjs`), so a plain join repeats about 200 characters at every joint. Rebuild a transcript with `textFromChunks` before counting or cleaning words.
 
 ---
 
@@ -199,7 +206,7 @@ CHECKs: channels only from `facebook`, `instagram`, `email`; counts > 0; time ma
 - `id`, `org_id`, `call_id` (FK)
 - `kind`: `point` | `story` | `question` | `objection`
 - `title` (a few words), `summary` (one or two sentences)
-- `quote` (Chris's exact words from the call, scrubbed), `prospect_line` (the question or objection he answered, scrubbed, nullable), `at_seconds` (where it starts in the call, nullable)
+- `quote` (Chris's words from the call, scrubbed and cleaned: what the writer uses), `quote_raw` (the same passage exactly as spoken, scrubbed), `quote_fixed` (Chris's fix to the cleaning, nullable), `quote_fixed_at` (nullable), `prospect_line` (the question or objection he answered, scrubbed, nullable), `at_seconds` (where it starts in the call, nullable)
 - `status`: `new` | `writing` | `ready` | `done` | `dropped`
 - `drop_reason` (`duplicate` | `daily_cap_expired` | `owner_skipped_call` | null), `rules_sha`, timestamps
 - CHECK: `kind IN ('question','objection')` requires `prospect_line`.
@@ -217,7 +224,7 @@ CHECKs: channels only from `facebook`, `instagram`, `email`; counts > 0; time ma
 - CHECK: `channel = 'email'` requires `subject`; other channels require `subject IS NULL`.
 - CHECK: `status = 'posted'` requires `posted_at`.
 
-**`v_content_voice_pairs`** (view): every draft version Chris edited, as `before` (the version he edited) and `after` (his version), with channel and date. The marketing machine's weekly voice job (spec 7.2) can read it next to `voice_pairs`.
+**`v_content_voice_pairs`** (view): every draft version Chris edited, as `before` (the version he edited) and `after` (his version), with `root_draft_id`, both version numbers, channel and date. The learning loop's voice job (its spec §5.5) reads it; that job is the one voice job for posts and ads.
 
 ### 5.3 Jobs (W4)
 
@@ -239,7 +246,7 @@ All four run in the marketing worker, registered in `JOB_HANDLERS`.
 **Step 1. Skip rules, no model call.** Skip a call when:
 - the transcript has no speaker names (`no_speaker_names`; this covers Whisper-only calls and Gemini notes)
 - none of `content_speaker_names` spoke (`chris_not_on_call`)
-- Chris spoke fewer than `content_min_words` words (`too_short`)
+- Chris spoke fewer than `content_min_words` words (`too_short`; count the raw words, after `textFromChunks`)
 - the title has a word from `content_skip_title_words` (`title_skip_word`)
 
 **Step 2. Scrub before any model sees it.**
@@ -248,13 +255,15 @@ All four run in the marketing worker, registered in `JOB_HANDLERS`.
 - Replace the names of any client linked to the call (`client_id` on the brain file) wherever they appear.
 - New pure module `src/content/scrub-names.mjs`, with tests.
 
+**Step 2b. Clean Chris's lines.** Run `cleanSpoken` on each of Chris's turns, with the model pass on and the words area's lists (empty until the learning loop's migration 442 lands). Assert `isDeletionOnly`. The miner reads the cleaned text. Other speakers' lines stay as they are.
+
 **Step 3. One model call** (`MARKETING_CHECK_MODEL`, default `claude-sonnet-5-5`, forced to Anthropic, forced tool `save_ideas`).
 - **Finds up to `content_ideas_per_call` ideas, best first:**
   - `point`: something Chris explained about credit, funding or the process
   - `story`: a story Chris told, about himself or a client (client identity removed)
   - `question`: a question someone asked, with Chris's answer
   - `objection`: a worry someone raised, with Chris's answer
-- **For each idea it returns:** kind, title, summary, `quote` (Chris's exact lines, one passage, at most 300 words), `prospect_line` for questions and objections, `at_seconds` when the transcript has times.
+- **For each idea it returns:** kind, title, summary, `quote` (Chris's cleaned lines, one passage, at most 300 words; code then finds the matching exact words through the cleaner's word map and saves them as `quote_raw`), `prospect_line` for questions and objections, `at_seconds` when the transcript has times.
 - **It never takes:** talk about staff, pay or commissions; Fundhub's own revenue or vendors; anything about a named person; small talk; anything Chris says he is unsure about.
 - **Ranking:** the most specific and most teachable first. An idea people at the highest awareness level would learn something from beats a basic one.
 
@@ -280,7 +289,7 @@ All four run in the marketing worker, registered in `JOB_HANDLERS`.
 **The writer** (W4): `src/content/writer.mjs`.
 - **The call:** `callModel` with `provider: 'anthropic'`, `model: MARKETING_WRITER_MODEL` (default `claude-opus-5-5`), `maxTokens: 4000`, `cache: true`, forced tool `save_drafts`.
 - **System (cached):** RULES.md Part 0 word for word, `marketing/ads/VOICE.md`, `marketing/posts/RULES.md`, and the 3 newest approved drafts per channel as examples.
-- **User:** the idea (kind, title, summary), Chris's quote, the prospect line, the channels to write, and Chris's take note on a rewrite.
+- **User:** the idea (kind, title, summary), Chris's cleaned quote (his fix when he made one), the prospect line, the channels to write, and Chris's take note on a rewrite.
 - **Output:** one draft per channel in `content_channels`: `{channel, subject?, body}`.
 - **Write from what he said.** Every claim, number and story in a draft must come from the quote or from RULES.md's allowed proof.
 
@@ -312,6 +321,7 @@ All routes start with `content/`, sit in the `ROUTES` map, and use `ROLE_SETS.MA
 | `POST content/drafts/another-take` | Returns 202 and queues `content_rewrite_draft` with Chris's note (optional). |
 | `POST content/drafts/skip` | Marks it `skipped`. |
 | `POST content/drafts/posted` | Marks it `posted`, with an optional link to the live post. |
+| `POST content/ideas/quote` | Chris fixes the cleaning on a quote. Saves `quote_fixed`; the writer uses it from then on. The learning loop's words area learns from these fixes (its spec §5.4). It sends the idea's `updated_at` as its version; a stale one gets the 409. The text must still pass `isDeletionOnly` against `quote_raw`, so a fix can only take words out of or put words back from what he said. |
 | `GET content/calls` | Calls the scan looked at, with status and skip reason. |
 | `POST content/calls/never` | Chris's "never use this call." The call becomes `skipped` / `owner_skipped`, and its open drafts become `skipped`. |
 | `GET content/speakers` | Every speaker name the scan has seen, with word counts, so Chris can pick his. |
@@ -326,7 +336,7 @@ Every route and the four jobs go into `src/pulse/registry.mjs` in the same chang
 
 - **One file per approved draft:** `marketing/posts/<channel>/<yyyy-mm-dd>-<slug>.md`, written through the outbox on approve, and rewritten when an approved draft is edited or posted.
 - **Front matter, flat values only:** idea, channel, version, status, call (title), call_date, approved_at, posted_at, posted_url.
-- **Body:** the draft (the subject first for email), then a `## Source` section with Chris's quote.
+- **Body:** the draft (the subject first for email), then a `## Source` section with Chris's cleaned quote.
 - The database wins when they differ. The file never moves.
 
 ### 5.8 Allow-list (W3)
@@ -342,7 +352,7 @@ Add `marketing/posts/` to `ALLOWED_PREFIXES` in `src/repo/allow-list.mjs`, with 
 5. Approve, edit, another take, skip and posted all work, each version is kept, and an approved draft reaches `marketing/posts/` within a few minutes.
 6. Running the scan twice queues nothing new.
 7. The cost cap stops the jobs and buzzes once.
-8. `docs/journeys/calls-to-content-flow.md` holds §6, and `CHANGELOG.md` has its line.
+8. `docs/journeys/calls-to-content-flow.md` holds §6, and `docs/journeys/CHANGELOG.md` has its line.
 
 ---
 
@@ -392,7 +402,7 @@ Only after the back end is proven live and this spec is revised. `docs/rules/UI-
 **Phone first.** Chris reviews on his phone.
 
 **Tabs:**
-1. **Inbox.** One card per idea, newest first. The card shows the idea's title, the call's name and date, Chris's quote (folded, tap to open), and a link that opens the recording at `at_seconds`. Under it, one tab per channel with the draft. Buttons: **Approve** (the one primary button; it copies the text), **Edit**, **Another take** (with an optional note), **Skip** (set apart, asks to confirm). Flagged drafts show "needs a look" with the failed check.
+1. **Inbox.** One card per idea, newest first. The card shows the idea's title, the call's name and date, Chris's cleaned quote (folded, tap to open, with **Fix cleaning** to edit it), and a link that opens the recording at `at_seconds`. Under it, one tab per channel with the draft. Buttons: **Approve** (the one primary button; it copies the text), **Edit**, **Another take** (with an optional note), **Skip** (set apart, asks to confirm). Flagged drafts show "needs a look" with the failed check.
 2. **Approved.** Approved drafts waiting to be posted, each with **Copy** and **Posted** (with an optional link).
 3. **Calls.** Every call the scan looked at, with its status or skip reason, and **Never use this call**.
 4. **Settings.** Speaker names (picked from `GET content/speakers`), channels, ideas per call, daily cap, buzz time, cost cap, skip words, and the on/off switch.

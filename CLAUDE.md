@@ -225,7 +225,7 @@ Clarity Data Export: one pull per time Chris asks. Go through `src/adapters/clar
 
 ### Change cadence (owner-set 2026-10-05)
 
-The 8 cadence rules are starting defaults: nothing changes by itself, broken things get fixed the same day, budget moves are small and slow, pages change weekly, and at most 3 AI ops suggestions a morning, biggest dollar impact first. Light guardrails; Chris tunes the numbers later from proven data. Same law: `.cursor/rules/change-cadence.mdc` and `.claude/rules/change-cadence.md`.
+The 8 cadence rules are starting defaults: everything optimizes itself through the learning loop, inside rules 2–8 (owner-set 2026-10-09, spec `docs/specs/learning-loop-2026-10-09.md`), broken things get fixed the same day, budget moves are small and slow, pages change weekly, and at most 3 AI ops suggestions a morning, biggest dollar impact first. Light guardrails; Chris tunes the numbers later from proven data. Same law: `.cursor/rules/change-cadence.mdc` and `.claude/rules/change-cadence.md`.
 
 ## 3. Before writing any code
 
