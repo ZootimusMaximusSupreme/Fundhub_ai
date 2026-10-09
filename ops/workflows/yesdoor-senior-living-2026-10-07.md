@@ -316,6 +316,16 @@ Recorded in spec §2 and §16. Competition research is done: `ops/workflows/yesd
 
 Chris, 2026-10-09: start with 55+. Expand Phoenix, then California, then the areas around them, then Florida, then wider. Regular apartments and senior living come once there's cash flow. "Niche down, then go wide … two layers of niching down." Recorded in spec §16.
 
+## Idea (Chris, 2026-10-09, not decided): underwriting as a service
+
+Chris: "We could offer underwriting as a service … take the burden of underwriting from apartments … I know how to prevent it and stop fraud from happening."
+
+Facts already in hand:
+- 93.3% of 75 big apartment operators saw application fraud, 84.3% saw fake pay stubs, and about 23.8% of their eviction filings were tied to fraudulent applications ([NMHC 2024](https://www.nmhc.org/globalassets/research--insight/survey/nmhc_pulse_survey_operational_impact_rental_fraud_bad_dept_full_results.pdf)).
+- Screening fees are paid per application, at the time of the application. Renters pay about $25–$35 per report ([CFPB 2022](https://files.consumerfinance.gov/f/documents/cfpb_tenant-background-checks-market_report_2022-11.pdf)). Zillow charges $35 to apply anywhere for 30 days.
+
+Not researched yet: screening and fraud-check competitors, and their prices.
+
 ## Stress test and cash fix (2026-10-08)
 
 Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run these prompts." Draft 1 is in `ops/workflows/yesdoor-stress-test-2026-10-08.md`. The fact-check pass is still running, and the file gets updated when it finishes.
