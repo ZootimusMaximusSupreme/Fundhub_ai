@@ -314,3 +314,7 @@ Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run t
 ## Leftover card (not this board's job): flaky RateLimiter test
 
 `scripts/marketing/lib/fetch.test.mjs:151` failed once on PR #56 with "expected >=240ms, got 239ms". It's a timer flake. The fix is proposed in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6070238964), not applied (no-extra-holes).
+
+## Leftover card (not this board's job): browser tests never finish
+
+`screens (real browser)` stops at its 15-minute limit on `main` and on PR #56: it was cut off at test 250 of 490 on `main` (`01d5d65`), with about 42–44 browser tests failing. The proposed patch (raise `timeout-minutes` to 30 in `.github/workflows/tests.yml`) is in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6073197857). It's not applied (no-extra-holes). The failing browser tests are a separate hole.
