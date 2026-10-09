@@ -3,6 +3,8 @@
 **Date:** 2026-10-07  **Status:** draft for Chris to review. This is words, not code. Nothing is built.
 **Research behind every fact:** `ops/workflows/yesdoor-senior-living-2026-10-07.md` (sources linked there).
 
+**Owner-set 2026-10-09: 55+ goes first.** Assisted living and memory care are parked. Chris: "tough to compete there, lets do 55+." The 55+ line is §16. Sections 1 and 3–6 and the senior parts of §13 describe the parked assisted-living line.
+
 ## 1. What it is
 
 Yesdoor gets people into places (owner-set 2026-10-07). Senior living is one niche on Yesdoor, not the whole platform (owner-set 2026-10-08) — the same way dentist funding is a niche on Fundhub. This line does it for seniors.
@@ -18,9 +20,9 @@ found about 40% of A Place for Mom families were placed above their budget.
 
 | Order | Line | Where | How Yesdoor is paid |
 |---|---|---|---|
-| 1 | Assisted living + memory care, private pay | Phoenix, Arizona | Community pays per move-in |
-| 2 | Independent living / 55+ | Arizona first | Per move-in, under a real estate license |
-| 3 | Private-pay home care | Arizona first | Agency pays per new client |
+| 1 | 55+ (active adult) and independent living (owner-set 2026-10-09) | Phoenix, Arizona | Community pays per lease, owed at lease signing, net-30 at most (§16) |
+| Parked | Assisted living + memory care, private pay (owner-set 2026-10-09) | Phoenix, Arizona | Community pays per move-in |
+| Later | Private-pay home care | Arizona first | Agency pays per new client |
 | — | Add-ons: renters insurance, deposit alternative, lease guarantor | Apartments line first | Insurance commission (licensed agency) |
 | Later | Same lines in Nevada, Texas, California, Florida | — | Same, under each state's rules |
 
@@ -220,3 +222,25 @@ Build these, in this order:
 10. **In-app messaging** that hides contact info until the person commits.
 
 What can't be stopped, only caught: someone who found the place on their own first, and a building that leaves a lease off its rent roll.
+
+## 16. 55+ first (owner-set 2026-10-09)
+
+Chris: "tough to compete there, lets do 55+." Assisted living is parked.
+
+**What it is:** Yesdoor apartments with a 55+ filter. One soft credit check shows a Phoenix renter aged 55 or over which 55+ communities will approve them. Yesdoor books the tour. The community pays Yesdoor.
+
+| | 55+ line | Source |
+|---|---|---|
+| Who pays | The community | — |
+| Fee | Not known yet. The first signed communities will show it. | No public number found |
+| Law | Arizona real estate licence, which Yesdoor holds (owner-set). Arizona's assisted-living referral law (§36-446.14) is not in the way. | `ops/workflows/yesdoor-senior-living-2026-10-07.md` (L1 table) |
+| When Yesdoor is paid | **Owner-set 2026-10-09:** the fee is owed at lease (contract) signing, payment terms net-30 at most, refunded if the renter never moves in. Chris: "We just need to get paid on contract signing or whatever, net30 account max. Otherwise it can't really work." | Zillow's fee is owed when the lease is signed (stress test §1.3) |
+| Do communities need renters? | Yes. Phoenix 55+ (active adult) is 88.7% full, the lowest of the 15 biggest active-adult markets. | NIC, Oct 1, 2026 (stress test, Prompt 1) |
+| First contact to move-in | About 66 days (independent living average). No 55+-only number found. | Aline via Ziegler, 2023 |
+| Ads | Meta housing ads can't target by age. Copy can't ask "Are you 55+?" because Meta bans ads that imply the viewer's age. Describe the place instead ("New 55+ homes in Phoenix"). Meta also evens out who sees housing ads by age, gender and race, so expect more views per lead. | Meta ad standards; Meta ads-fairness update, Jan 2023 |
+| What carries over | The Yesdoor apartments build (PR #55): soft pull, match, tour booking, registration proof, fee ledger. New: a 55+ filter, and billing at lease signing instead of after move-in. | `src/yesdoor`, migrations 434–437 |
+
+**Target (Chris, 2026-10-09):** about 5:1 return on ad spend. Our math: with ads plus the pull at about $36 a lead, 5:1 needs about a 12% lease rate on a $1,500 fee, or 7.5% on a $2,400 fee. The Phoenix test measures both.
+
+**Open:** the fee size, and the competition. Competition research: `ops/workflows/yesdoor-55plus-competition-2026-10-09.md`.
+

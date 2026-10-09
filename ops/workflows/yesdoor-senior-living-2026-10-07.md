@@ -307,6 +307,13 @@ Already in the spec (§5a):
 
 Research agent running: how the best operators get leakage close to zero for each party, and what's legal in AZ, CA and FL. Results land here.
 
+## 55+ first (owner-set 2026-10-09)
+
+Chris: "tough to compete there, lets do 55+." Assisted living is parked. 55+ goes first.
+Chris: "We just need to get paid on contract signing or whatever, net30 account max. Otherwise it can't really work. We can probably get like a 5/1 ROAS."
+
+Recorded in spec §2 and §16. Competition research is running: `ops/workflows/yesdoor-55plus-competition-2026-10-09.md`.
+
 ## Stress test and cash fix (2026-10-08)
 
 Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run these prompts." Draft 1 is in `ops/workflows/yesdoor-stress-test-2026-10-08.md`. The fact-check pass is still running, and the file gets updated when it finishes.
