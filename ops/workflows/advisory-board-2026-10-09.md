@@ -116,3 +116,19 @@ Chris: "my buddy knows doug ducey." His friend forwards this. It asks for a call
 | Advisor on a monthly retainer | From about $2,000 a month | [GrowthMentor](https://www.growthmentor.com/blog/startup-advisors) |
 | Hourly advisor | $250–$1,500 an hour (rare early on). Fractional advisors: middle half $180–$250 an hour. | [GrowthMentor](https://www.growthmentor.com/blog/startup-advisor-compensation) · [GoFractional](https://www.gofractional.com/insights/rates/startup-advisor) |
 | Former governor or senator | No public hourly rate. No published speaking fee found for Doug Ducey. Lesser-known speakers run about $10,000–$25,000 a talk. | [San Diego Reader 2014](https://sandiegoreader.com/news/2014/may/08/jobs-motivate-money) · [Futurist Speakers](https://www.futuristsspeakers.com/how-much-do-speakers-bureaus-charge/) |
+
+## How a name goes on Fundhub or Yesdoor (Chris asked, 2026-10-09)
+
+1. **Signed letter first.** One page, no equity (owner-set). It covers:
+   - a few calls a year
+   - written permission to use the advisor's name, photo, title and short bio on the site, in decks and on letterhead
+   - the advisor approves their own bio
+   - either side can end it at any time, and the name comes down within days
+2. **Where it shows:**
+   - an "Advisors" section on the About page: photo, name, "Former Governor of Arizona"-style title, and one line on what they help with
+   - the same in the pitch deck and on letterhead
+3. **Rules:**
+   - Say "Advisor" only, not board member or partner.
+   - Always use "former" titles.
+   - No quote or endorsement unless they wrote or approved it.
+4. **Page change:** a marked draft first, per the page-edits law, then live when Chris says push it.
