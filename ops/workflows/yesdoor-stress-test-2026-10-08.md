@@ -2,7 +2,7 @@
 
 **Date:** 2026-10-08 (written 2026-10-09). **Asked by:** Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run these prompts. Do deep research."
 **Prompts:** Alejandro Yaniz, "10 AI Prompts to Stress-Test Any Strategy".
-**Status:** Draft 1. Built from 489 research findings across 8 questions. A fact-check pass is still running (workflow run `wf_82e79f1c-cfa`). When it finishes, any claim it kills gets struck through here, and new evidence gets added.
+**Status:** Draft 1. Built from 489 research findings across 8 questions. The fact-check pass (workflow run `wf_82e79f1c-cfa`) was stopped on 2026-10-09 to save usage (Chris), so the claims here were not cross-checked by it.
 **How to read numbers:** every number has a source link, or says **(our math)**. Our math only uses sourced inputs.
 **Owner-set and not reopened here:** $100k cash before any spend. How ad spend is funded is Chris's call. Split tests are fine. Yesdoor holds real estate licences in AZ, CA and FL. Senior living is a niche on Yesdoor. Zero going-around-us from all parties. Chris's word wins.
 
@@ -279,7 +279,7 @@ Each line passes alone. Together they fail. The problem is running them at the s
 
 ## Not reached yet
 
-- **The fact-check pass is still running.** This file gets updated when it ends.
+- **The fact-check pass was stopped** on 2026-10-09 to save usage. Claims were not cross-checked by it.
 - Two rounds hit the shared web-search limit and read known pages directly. Reddit, BBB and podcasts weren't searched.
 - No Phoenix locator fee data is public. ALN sells it at $50 per market per month.
 - No current per-tour price list for senior living. APFM's contract payment days aren't public.

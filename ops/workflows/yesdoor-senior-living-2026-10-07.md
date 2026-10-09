@@ -326,6 +326,27 @@ Facts already in hand:
 
 Not researched yet: screening and fraud-check competitors, and their prices.
 
+## Where things stand (2026-10-09, end of session)
+
+- **Decided (owner-set):**
+  - 55+ goes first, in Phoenix, then California, the areas around them, then Florida.
+  - The fee is owed at lease signing, net-30 at most.
+  - Target about 5:1 return on ad spend.
+  - Regular apartments and assisted living come later.
+  - Two layers of niching down.
+  - No equity for advisors.
+- **Done:**
+  - stress test (`yesdoor-stress-test-2026-10-08.md`)
+  - 55+ competition (`yesdoor-55plus-competition-2026-10-09.md`)
+  - advisor top 10, Ducey intro email, hourly costs, and how names go on the sites (`advisory-board-2026-10-09.md`)
+  - "Open a new Commas account for Yesdoor" in TODO.md
+- **Waiting on Chris:**
+  - forward the Ducey intro to his friend
+  - "go" for the Fundhub bank-executive search
+  - "draft the letter" (no-equity advisor agreement)
+  - "draft the pitch" (Sparrow and Greystar)
+- **Stopped to save usage (2026-10-09):** the deep-research fact-check run and the PR #56 check-ins.
+
 ## Stress test and cash fix (2026-10-08)
 
 Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run these prompts." Draft 1 is in `ops/workflows/yesdoor-stress-test-2026-10-08.md`. The fact-check pass is still running, and the file gets updated when it finishes.
