@@ -105,3 +105,14 @@ Chris: "my buddy knows doug ducey." His friend forwards this. It asks for a call
 >
 > Would you be open to a short call?
 
+
+## What an hour of advice costs (Chris asked, 2026-10-09)
+
+| Route | Typical price | Source |
+|---|---|---|
+| Expert network call (GLG, AlphaSights) with a former executive | Client pays about $400–$1,200+ an hour (GLG) or $700–$1,800+ (AlphaSights). Vendor estimates, undated. | [CleverX](https://cleverx.com/blog/best-expert-network-platforms-complete-comparison-guide) |
+| What the expert receives from those calls | About $200–$1,000+ an hour | [ExpertOpportunities](https://expertopportunities.com/alphasights-review/) |
+| Advisor paid cash instead of equity | $1,000–$3,000 per meeting, or $5,000–$25,000 a year paid quarterly (secondhand figures) | [Angel Investors Network](https://angelinvestorsnetwork.com/capital-raising/compensation-for-board-advisors-what-startups-pay-in-2025) |
+| Advisor on a monthly retainer | From about $2,000 a month | [GrowthMentor](https://www.growthmentor.com/blog/startup-advisors) |
+| Hourly advisor | $250–$1,500 an hour (rare early on). Fractional advisors: middle half $180–$250 an hour. | [GrowthMentor](https://www.growthmentor.com/blog/startup-advisor-compensation) · [GoFractional](https://www.gofractional.com/insights/rates/startup-advisor) |
+| Former governor or senator | No public hourly rate. No published speaking fee found for Doug Ducey. Lesser-known speakers run about $10,000–$25,000 a talk. | [San Diego Reader 2014](https://sandiegoreader.com/news/2014/may/08/jobs-motivate-money) · [Futurist Speakers](https://www.futuristsspeakers.com/how-much-do-speakers-bureaus-charge/) |
