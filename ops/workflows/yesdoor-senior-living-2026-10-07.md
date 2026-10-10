@@ -1,0 +1,364 @@
+# Yesdoor senior living — 2026-10-07
+
+Chris picked senior living from the medical niche research (`ops/workflows/medical-niche-research-2026-10-07.md`)
+and wants it merged into Yesdoor.
+
+The idea: a free affordability check shows a family which assisted living and memory care communities
+they can afford and that will take them. The family pays nothing. The community pays when the
+resident moves in. Same shape as Yesdoor apartments (`marketing/offers/yesdoor/README.md`).
+Yesdoor MVP is being built on `yesdoor/i1` (PR #55).
+
+The open lane: A Place for Mom exists, but nobody checks first whether the family can actually
+afford the place. A 2024 Senate probe found about 40% of its families were placed above their
+budget.
+
+Chris said "go" — this session runs lanes 1–3 with research agents, and runs lane 4 itself.
+
+| Lane | What | Owner | Status |
+|---|---|---|---|
+| 1 | The law: state referral-agency rules, Medicaid limits, Medicaid planning vs practicing law | this session (agent) | done |
+| 2 | Market + money check: launch city, communities, fees, competitors, data for the check | this session (agent) | done |
+| 3 | Yesdoor reuse map (read-only) | this session (agent) | done |
+| 4 | Workflow questions to Chris, then the spec | this session | done — spec at `docs/specs/yesdoor-senior-living-2026-10-07.md`, waiting on Chris review |
+
+## Lane 1 — the law (done)
+
+Research, not legal advice. Every row has its source.
+
+| State | Law | License? | What it requires | Fee rules |
+|---|---|---|---|---|
+| **AZ** | [A.R.S. §36-446.14](https://www.azleg.gov/ars/36/00446-14.htm), amended by [SB 1477](https://www.azleg.gov/legtext/57leg/2R/laws/0178.htm) (effective 9/12/2026) | None | Disclose any business tie, that the community pays, and the fee (or a good-faith estimate), in the required wording (14-point type if written). The family signs an acknowledgment. **The community may not pay until it has that acknowledgment.** Keep copies 1 year. Background check or adult protective services registry proof. General liability $1M/$3M **and** professional liability $1M/$3M. Fine up to $1,000 per violation | No cap. Family may stop any time; after that, a fee only for a community already named, within 12 months |
+| **TX** | [Bus. & Com. Code ch. 121 (SB 1383)](https://capitol.texas.gov/tlodocs/89R/billtext/html/SB01383F.htm), effective 9/1/2025 | None | Written disclosure (services, who pays, right to stop, "list may not include all communities"). No financial interest in communities. **Cannot hold a power of attorney.** Background checks. Liability insurance | Fee must be paid within 3 years of the referral. No fee on transfers within the same community |
+| **FL** | [§429.195](https://m.flsenate.gov/Statutes/429.195) | None found | — | Facilities may pay only for **non-Medicaid** residents; anything else is a felony under §817.505 |
+| **WA** | [RCW 18.330](https://app.leg.wa.gov/RCW/default.aspx?cite=18.330&full=true) | None | Dated disclosure before referral + signed acknowledgment. Background checks every 24 months. $1M liability insurance. Records 6 years | No cap. **Prorated refund** if the resident dies, is hospitalized or transfers within 30 days. No fee on Medicaid-funded referrals |
+| **NV** | NRS ch. 449 ([SB 299](https://www.leg.state.nv.us/Statutes/83rd2025/Stats202510.html)) | **Registration** (state health division) | Written contract with each community; consent; records 3 years; cannot hold a power of attorney | Only three fee shapes allowed |
+| **OR** | [ORS 443.370–.376](https://ltcr.oregon.gov/FAQ) | **Registration**, $750 / 2 years | Written disclosure before referral; $1M insurance | Not found |
+| **MD** | [Health-Gen. §19-1813](https://health.maryland.gov/ohcq/Pages/Assisted-Living-Referrer.aspx) | **Registration** | Disclose financial ties | — |
+| **CO, OK, GA, CA** | CO HB20-1101; OK 63 O.S. §1-866; GA SB 439 (2026, unverified); CA HSC §1569.47 (no license for assisted living; a license is needed for nursing-home referrals) | No | Disclosure / right to stop | OK: fees paid for 36 months max; GA: 24 months |
+
+No specific law found in most other states (MN, IL, NY and others). VA has bills pending.
+
+**Medicaid:** never take a fee on a Medicaid-paid resident. [OIG AO 14-01](https://hallrender.com/2014/03/06/oig-approves-senior-community-referral-arrangement/) was approved only because federal-program residents were left out completely. In Arizona, a fee for an ALTCS (Arizona Medicaid) placement is a **felony** ([A.R.S. §13-3713](https://www.azleg.gov/ars/13/03713.htm)).
+
+**Medicaid planning:** a non-lawyer may screen against published limits, give document checklists, and help file the application. A non-lawyer may **not** advise on spend-down strategy, gifting, retitling or trusts ([Ohio UPL 11-01](https://www.supremecourt.ohio.gov/Boards/UPL/advisory_opinions/UPLAdvOp_11_01.pdf); Florida Supreme Court). Hand those off to elder-law attorneys. **Arizona lets lawyers pay referral fees** (ER 7.2 and 5.4 dropped 1/1/2021, [Clyde & Co](https://www.clydeco.com/en/insights/2021/05/lawyers-risk-management-newsletter-may-2021)); most states don't.
+
+**Credit check consent:** written (e-signed) instruction from the person whose file is pulled ([15 U.S.C. §1681b](https://www.law.cornell.edu/uscode/text/15/1681b)). Senior signs if able; otherwise keep a copy of a financial power of attorney. Yesdoor staff never hold a power of attorney (banned in TX, NV, OK). Agent's own inference, not a found authority: sending credit results to communities could make Yesdoor a consumer reporting agency.
+
+**Enforcement history:** [FTC v. CarePatrol](https://www.ftc.gov/node/46371) (2012, false "we know these facilities" claims); A Place for Mom robocall settlement $6M (2020); Senate Aging probe of A Place for Mom (2024); Cedar Communities v. Caring.com, false "free" ads and steering (ended July 2026).
+
+**Launch states:** (1) Arizona — Yesdoor's home market, clear 2026 law, no license, no cap. (2) Texas — no license, clear rules, big market. (3) Florida — no registration, statute allows private-pay fees, but a Medicaid slip is a felony.
+
+## Lane 2 — market and money check (done)
+
+**Launch: Phoenix.** Second: Las Vegas (most empty units — 87.0% occupancy, among the lowest 3, [NIC MAP](https://www.nicmap.com/news/senior-living-occupancy-grows-amid-construction-slowdown-limiting-options-for-older-adults/)).
+- Maricopa + Pinal: **213 assisted living centers (20,222 beds) + 1,320 small homes of 10 beds or fewer (10,539 beds)**. 192 centers and 1,304 homes are licensed for memory care ([ADHS data](https://services6.arcgis.com/clPWQMwZfdWn4MQZ/ArcGIS/rest/services/Public_Access_Features_WFL1/FeatureServer/11)). Small homes have no sales team.
+- Arizona median assisted living: **$6,370/month** (US $5,900) ([CareScout 2024](https://assets.carescout.com/55da049c1f/282102.pdf)).
+
+**Fees:** A Place for Mom charges the community first month's rent and care; in WA about $3,500 per move-in ([ElderLawAnswers](https://attorney.elderlawanswers.com/elder-care-referral-services-attracting-increased-scrutiny-9119)). Industry: up to 100% of the first month. Agreements are per agency; communities push to leave care charges out and to put an expiry on each lead ([SHN](https://seniorhousingnews.com/2017/03/20/ace-contract-process-senior-housing-referral-agencies/)). "Who referred first": Caring.com gives the community 5 business days to flag a duplicate ([Caring.com](https://partners.caring.com/avoid-paying-multiple-referral-sources-senior-living-lead/)).
+
+**Competitors (correction to round 1):** **SilverAssist** owns Caring.com (bought 2026-01-12), Oasis Senior Advisors (130 franchises), ElderLife Financial (bridge loans) and AidandAttendance.com — referral bundled with bridge loans and VA help ([Pulse 2.0](https://pulse2.com/silverassist-acquires-caring-com-to-expand-national-senior-housing-referral-network/)). CarePatrol (HQ Gilbert, AZ, 153 offices) and Assisted Living Locators (HQ Scottsdale) are local franchises. Olera (NIH-funded) is building AI family profiles that surface benefits; beta 2026. **No public sign any of them runs an affordability + acceptance check before referring.**
+Lead sites convert badly: Sonida got 11,000 leads from one site in 2024 and 200 move-ins (~1.8%) ([SHN](https://seniorhousingnews.com/?p=50237)).
+
+**Data for the money check:**
+- Arizona care levels: supervisory, personal, directed (memory) ([ADHS](https://hsapps.azdhs.gov/ls/sod/alprovtypes.aspx)).
+- VA Aid & Attendance (from 2025-12-01): veteran $2,424/mo; with spouse $2,874/mo; surviving spouse $1,558/mo; net worth limit $163,699 ([VA](https://www.va.gov/pension/veterans-pension-rates/)). Decisions now ~57–73 days.
+- Phoenix homes: 78 days on market, median $483,000 ([AZ Big Media](https://azbigmedia.com/real-estate/metro-phoenix-home-sales-gain-momentum-as-fall-approaches/)).
+- Bridge loans: ElderLife $5k–$500k, up to 12 months, interest-only, paid to 3,500+ communities; rate not published ([ElderLife](https://www.elderlifefinancial.com/bridge-loans/)). Owned by the competitor above.
+- ALTCS (Arizona Medicaid long-term care): income cap $2,982/mo, assets under $2,000, 5-year look-back, 60–90 days to decide ([Jackson White](https://www.jacksonwhitelaw.com/altcs/altcs-eligibility/)). How many communities accept it: not found.
+- Speed: **56% of assisted living and 62% of memory care move-ins happen within 30 days of the first inquiry** ([Ziegler/Aline](https://www.ziegler.com/media/dtten4z3/sl_znews_090423.pdf)).
+- Long-term-care insurance daily benefit norms today: not found.
+
+## Lane 3 — Yesdoor reuse map (done)
+
+Read from `origin/yesdoor/i1` (PR #55) and `origin/yesdoor-3m-scale`. Verdicts are design proposals.
+
+**Reuse as-is:** magic-link login and sessions; the match engine's approved / likely / no / unknown logic, rule versioning and stale-rule cap (`match/rules.mjs`, `match/match.mjs`); backups ranking (`yd_matches`); referral proof — registration timestamp and "known prospect" window; invoices (`yd_invoices`); disputes (`yd_disputes`, add a proration kind); e-sign mechanism (`yd_agreements`, HMAC link); events, outbox, crons plumbing; `yd_state_rules` table.
+
+**Change:**
+- `yd_renters` is one person. Senior living is a household: the shopper (adult child, siblings), the resident (or a couple), and who holds legal authority (power of attorney).
+- `yd_accounts` allows one account per renter. Needs several logins per search, with roles.
+- Consent and soft pull (`yd_consents`, `yd_screenings`) need "whose credit" vs "who signed", plus proof of authority.
+- `yd_income_checks` is one monthly number. Needs income + assets + VA + long-term-care insurance + home value.
+- Community rules replace credit rules: care levels offered, payers accepted, minimum private-pay runway, conditions excluded.
+- Listings: price is a stack (base rate + care-level fee + community fee + second-person fee), not one rent.
+- Stages: no lease end (month to month); add care assessment, deposit / hold, waitlist, waiting on a house sale.
+- Fee refunds: the database only allows a full refund, counted from payment. Washington-style rules need a prorated refund counted from move-in, with reasons (death, hospital).
+- Tour time zones only cover AZ / CA / FL; broker licence check only AZ / CA / FL.
+- Staff desk: care notes are health data and need their own access tier.
+- Public pages: one renter, no care or asset inputs.
+
+**Missing entirely:** care-needs level and nurse assessment; payer mix (private pay, VA, LTC insurance, Medicaid waiver); asset runway and house-sale timing; the household as 2+ people; prorated refund; a family-side disclosure; senior-living software connectors; the licensing basis for senior referral.
+
+**Facts:** migrations 434–437 on `yesdoor/i1` (`main` ends at 433). 27 `yd_` tables. Money is integer cents; NULL means unknown. A public request's org is `YD_ORG_SLUG`, so senior living needs its own org or a line marker on the `yd_` tables.
+
+## Lane 4 — workflow answers (Chris, one at a time)
+
+| # | Question | Answer | Set by |
+|---|---|---|---|
+| 1 | After the free check, who walks the family to a move-in? | **Online first, advisor after** — the family runs the check and sees matches online; an advisor calls the ones ready to move and books tours (same concierge model as Yesdoor apartments) | Agent default — Chris said "idk" (2026-10-07). Change any time |
+
+### Draft workflow — defaults from the research (Chris marks what is wrong)
+
+Nothing below is decided until Chris says so. Each line is a default.
+
+1. **Where:** Phoenix first (Yesdoor's home market). Las Vegas next (needs Nevada registration).
+2. **Who:** the shopper is usually the adult child; the resident is the parent (or a couple). One search, several people, one login each.
+3. **The free check (about 3 minutes):** who is moving, care level (Arizona's three: supervisory, personal, memory care), area, how soon. Then money: monthly income, savings, VA service (yes/no), long-term-care insurance, a house (value, selling or not).
+4. **No credit pull by default.** Communities decide on care needs and money runway, not credit score. A soft pull happens only if the family wants a bridge loan, with the senior's e-signature or a copy of a financial power of attorney. Credit data never goes to a community — only our answer.
+5. **The answer:** a monthly budget, how many years the money lasts, and flags — "VA benefit likely (+$2,424/mo)", "Medicaid (ALTCS) likely", "bridge loan until the house sells". Then the communities that fit the care level and budget, each marked approved / likely / no / unknown, with the full price (base rate + care fee + community fee).
+6. **Arizona disclosure:** before any referral the family e-signs the state-required disclosure (who pays us, how much, any business ties). The community cannot pay without it.
+7. **Advisor:** online first; an advisor calls families who are ready to move and books tours.
+8. **Community steps:** tour → the community's own care assessment → accepted or declined → deposit or room hold → (waiting on house sale, if any) → move-in. A "we said yes, they said no" is counted against the community's rules, same as Yesdoor.
+9. **Getting paid:** the community tells us of the move-in (Arizona: within 14 days). We invoice; the fee is set in each community's agreement (flat or % of first month). Fee is earned at move-in.
+10. **Hard stops, built into the database:** no fee ever on a Medicaid (ALTCS) resident — that is a felony in Arizona. Staff never hold a power of attorney. No Medicaid planning advice — Medicaid families go to an elder-law attorney, VA claims go to an accredited veterans service officer (free), house questions go to a realtor.
+11. **Refund:** prorated refund to the community if the resident leaves, dies or goes to hospital within 30 days of move-in (required in Washington; offered everywhere as a trust point).
+12. **Before launch:** two insurance policies ($1M/$3M general and professional liability), background checks on every advisor, and the exact Arizona disclosure wording.
+
+## Size at scale (2026-10-07, Chris asked "how much a month at scale")
+
+Inputs (sourced): Phoenix 30,761 licensed beds (lane 2, ADHS); assisted living occupancy 88.4% ([NIC](https://www.nic.org/blog/senior-housing-occupancy-climbs-in-second-quarter-2026/)); median stay ~22 months (NCAL, via [Senior Services of America](https://seniorservicesofamerica.com/what-is-the-average-length-of-stay-in-assisted-living/) — weak, secondary); ~18% of residents rely on Medicaid, no fee on those ([NCOA](https://www.ncoa.org/article/does-medicaid-pay-for-assisted-living/)); A Place for Mom ~$442M revenue and ~130,000 moves in FY2025 (company-profile sites, weak: [bitscale](https://bitscale.ai/directory/a-place-for-mom), [canvasbusinessmodel](https://canvasbusinessmodel.com/products/a-place-for-mom-business-model-canvas)) → about $3,400 per move.
+
+Arithmetic (agent's, not sourced): 30,761 × 88.4% ≈ 27,200 residents ÷ 22 months ≈ **1,236 move-ins a month in Phoenix**, ~1,014 private pay.
+
+| Our share of Phoenix private-pay move-ins | Move-ins / month | At $3,500 each | At $5,000 each |
+|---|---|---|---|
+| 5% | 51 | $177k | $253k |
+| 15% | 152 | $532k | $760k |
+| 25% | 253 | $887k | $1.27M |
+
+National ceiling: A Place for Mom ≈ $37M a month. 10% of its volume ≈ $3.7M a month.
+
+## Can it all merge into Yesdoor? (2026-10-07)
+
+Chris asked whether senior living, behavioral health, etc. can all merge into Yesdoor.
+
+- **Yes, as "lines" on one Yesdoor:** apartments (live build), senior living (this board), next private-pay home care (not researched for Arizona yet). Same engine: free check → which places say yes → the place pays on move-in or start. Tech: lane 3 found each Yesdoor deployment is one org (`YD_ORG_SLUG`); lines need a line marker on the `yd_` tables or one org per line.
+- **Behavioral health cannot be a paid line.** Paying for referrals to addiction treatment, recovery homes or labs is a federal crime even with private insurance (EKRA, [Foley](https://www.foley.com/insights/publications/2020/02/ekra-floridas-patient-brokering-act/)); Florida §817.505 and Arizona §13-3730 (sober-living homes) too. Meta requires LegitScript, which excludes lead generators ([LegitScript](https://www.legitscript.com/certification/addiction-treatment-certification/faq/)). Therapy matching is insurance-paid and owned by Headway and Rula. Only a free listing with no fee would be legal — no revenue.
+
+---
+
+# Lines law check — AZ, CA, FL (2026-10-07)
+
+Chris: "even hospice … look up AZ, CA, FL law, get creative." For each possible Yesdoor line, find what
+the law in Arizona, California and Florida allows, and every legal way to get paid.
+
+| Lane | Lines | Status |
+|---|---|---|
+| L1 | Senior living (assisted living, memory care), independent living / 55+, skilled nursing | done |
+| L2 | Home care (private pay), home health, hospice | done |
+| L3 | Behavioral health: residential treatment, sober living, outpatient therapy, psychiatry | done |
+| L4 | Creative ways to get paid across all lines (who else pays besides the provider) | done |
+| L6 | Big referral opportunities, any industry: supplier legally pays $1,000+ per placement (Chris: "find big referral opps") | done |
+| L5 | Rank lines and payment models | done |
+
+## L4 — creative ways to get paid (done)
+
+| Model | Who pays | Typical $ | Legal risk | AZ / CA / FL notes |
+|---|---|---|---|---|
+| **Flat provider subscription, set in advance at fair market value** | Providers | Psychology Today $29.95/mo ([NBCC](https://www.nbcc.org/resources/nccs/therapydirectory)); OIG opinions 19-04 and 23-04 (Zocdoc) accepted per-booking fees set in advance, at fair market value, not tied to insurance, and **paying more does not raise ranking** ([Frier Levitt](https://www.frierlevitt.com/articles/navigating-compliance-in-online-healthcare-marketplaces-insights-from-oig-opinions/)) | Low–medium | **FL §817.505(3)(i)** exception: an information service may take provider fees if it does not steer or diagnose and fees are set in advance at fair market value ([flsenate](https://m.flsenate.gov/Statutes/817.505)) |
+| **Per-move-in fee, private-pay assisted living only** | Communities | First month's rent and care | Low with disclosure | AZ §36-446.14 + SB 1477 (disclosure, no cap); CA H&S §1569.47 (disclose who pays, fines $250–$1,000); FL §429.195(2) (only if not on Medicaid) |
+| **Employer caregiving benefit** | Employers | Wellthy "starting at $450/month per employee" ([wellthy.com](https://www.wellthy.com/employers/purchase-plan)) | Low | No AZ/CA/FL buyer found yet |
+| **Health plan contracts** (Medicare Advantage, CalAIM, ALTCS) | Plans | Papa: per-member per-month, amount private ([KFF](https://kffhealthnews.org/news/article/medicare-advantage-plans-senior-companions-profits/)) | Medium (don't also take provider money for steering plan members) | CA CalAIM nursing-home-to-assisted-living transitions served only 765 people July 2023–June 2024 ([CHCF](https://www.chcf.org/resource/2025/02/21/strengthening-calaims-assisted-living-transitions-role-community-care-hubs/)) |
+| **Family-paid concierge** | Families | Care managers $100–$250/hr; first assessment $150–$750 ([Caring.com](https://www.caring.com/senior-care/geriatric-care-managers)) | Low | All three |
+| **Be the licensed provider** | Medicaid, plans, private pay | Abby Care: $15M revenue 2025, $225M valuation, in FL ([runtimewire](https://runtimewire.com/article/abby-care-havi-nguyen-paid-family-caregivers-medicaid-ai)) | Medium | **FL §817.505(3)(h):** licensed nurse registries may legally collect fees for placing caregivers |
+| Hospital discharge software | Hospitals | Prices not public; WellSky/CarePort runs 54M referrals a year ([BusinessWire](https://www.businesswire.com/news/home/20260302799514/en/WellSky-Centralizes-Post-Acute-Referral-Intake-With-Intelligent-AI-Integration)) | Low | Crowded |
+| Government grants | AHCCCS, Area Agencies on Aging | AZ Rural Health Transformation $167M; open $17M care-coordination grant ([AHCCCS](https://www.azahcccs.gov/AHCCCS/Initiatives/RHTP/index.html)) | Low | Slow |
+| Lenders, VA, life settlements | Various | VA: no fee before the first VA decision ([38 CFR 14.636](https://www.law.cornell.edu/cfr/text/38/14.636)); life settlement referral ~0.10–0.25% of face value | Medium–high | Each needs its own license |
+
+Rules that matter most: (1) gate every fee by payer — per-move-in fees only on private pay; Medicare/Medicaid lanes switch to flat fees or employer/plan/family money; (2) **ranking is never for sale** — the "who says yes" answer comes from the family's facts only.
+
+Agent's top 5: flat provider subscription → private-pay move-in fee → employer benefit → health plan contracts → family concierge. Also: Florida nurse registry for home care; Arizona $17M care-coordination grant.
+
+## L2 — home care, home health, hospice (done)
+
+| Line | AZ | CA | FL |
+|---|---|---|---|
+| **Private-pay non-medical home care** — per-client fee? | **Yes**, private pay only; leave out AHCCCS/ALTCS (A.R.S. [§13-3713](https://www.azleg.gov/ars/13/03713.htm)). No state license for non-medical home care (secondary source) | **Probably yes**; open risk: H&S [§445](https://codes.findlaw.com/ca/health-and-safety-code/hsc-sect-445/) bans referral "for profit" to medical care (unclear if it reaches non-medical); leave out Medi-Cal / IHSS | **No**, unless Yesdoor **is** a licensed nurse registry — [§817.505(3)(h)](https://www.flsenate.gov/Laws/Statutes/2025/817.505) protects fees paid *to* a registry ([§400.506](https://www.flsenate.gov/Laws/Statutes/2025/400.506); license fee ≤ $2,000 / 2 years) |
+| **Home health** (mostly Medicare) | **No** (federal Anti-Kickback Statute) | **No** (AKS + §445 + Medi-Cal) | **No** (§817.505; [§400.474(6)(e)](https://www.flsenate.gov/Laws/Statutes/2025/400.474) $5,000 fine for paying discharge-planning vendors) |
+| **Hospice** | **No** per-patient fee (AKS). New AZ hospices under extra CMS review since 2023 ([CMS](https://www.cms.gov/files/document/mln7867599-period-enhanced-oversight-new-hospices-arizona-california-nevada-texas.pdf)) | **No — spelled out:** H&S [§1746.50](https://california.public.law/codes/health_and_safety_code_section_1746.50) (AB 1280): a hospice "shall not give payment to referral sources", including non-medical ones. Heavy LA County enforcement ([OIG](https://oig.hhs.gov/fraud/enforcement/glendale-woman-sentenced-to-9-years-in-federal-prison-for-106-million-hospice-fraud-scheme-involving-kickbacks-for-patients)) | **No** (§817.505, AKS) |
+
+**Correction to L4:** flat provider fees are not a clean pass for the medical lines.
+- They must be the same for everyone and based on what the service costs to run (federal referral-service safe harbor, [42 CFR 1001.952](https://www.law.cornell.edu/cfr/text/42/1001.952)).
+- Tiered or access-based fees fail: OIG [AO 11-06](https://www.oig.hhs.gov/documents/advisory-opinions/619/AO-11-06.pdf) and **AO 26-15 (July 2026)**, which rejected a home health subscription to referral software ([Barnes & Thornburg](https://btlaw.com/en/insights/alerts/2026/hhs-oig-issues-unfavorable-advisory-opinion-on-pay-to-play-referral-software-platform-arrangement)).
+- California: the Attorney General held that even a **patient-paid** provider list is a "recommendation" under §445 ([AG opinion 01-107](https://www.oag.ca.gov/system/files/opinions/pdfs/01-107.pdf)); §445 exempts prepaid health plans.
+- Florida: a "who will say yes" match may count as steering under the (3)(i) exception.
+
+**Legal money for home health and hospice:** health plans (Medicare Advantage; CA exempts prepaid plans), employers (AZ, FL), hospitals paying for software, or equal cost-based flat listings in AZ and FL. **Never** the provider per patient.
+
+## L6 — big referral opportunities, any industry (done)
+
+| # | Opportunity | Fee per placement | Legal in AZ / CA / FL | Fit with "free check → who says yes" | Tech carryover |
+|---|---|---|---|---|---|
+| 1 | **Franchise placement** (franchisor pays) | 40–50% of the franchise fee ≈ **$20k–$25k** ([franzy](https://franzy.com/blog/franchise-broker/)) | AZ, FL: no broker registration; CA: registration from **July 1, 2027** (SB 919, [UBG Law](https://www.ubglaw.com/news-and-media/california-franchise-broker-registration-law-takes-effect-july-1-2027-what-franchisors-franchise-brokers-and-franchise-sales-organizations-need-to-know)) | High — credit, cash and net-worth check → which franchisors approve → Fundhub funds the buy-in | High |
+| 2 | **Life insurance and annuities** (licensed agency) | Life 40–115% of first-year premium ([NerdWallet](https://www.nerdwallet.com/insurance/life/learn/life-insurance-agent-commissions)); annuities 3–7% (~$4k on $100k) | Insurance license per state; unlicensed referrers can't be paid per sale (AZ [§20-298](https://syfert.com/arizona/sections/20-298.html); FL) | High — the insurer's health check is the "yes" | Medium-high |
+| 3 | **SBA business and acquisition loans** (lender pays) | 0.5–3% of loan, disclosed on Form 159 ([sba7a.loans](https://www.sba7a.loans/sba-7a-loans-small-business-blog/what-is-the-sba-form-159/)) | Form 159 disclosure; state lending licenses not checked | High | High — Fundhub's lane |
+| 4 | **SSDI representation** | Up to 25% of back pay, capped at **$9,200** ([20 CFR 404.1717](https://www.ssa.gov/OP_Home/cfr20/404/404-1717.htm)) | Federal, same in all 3; we become the representative (not a referral) | High | Medium |
+| 5 | **Wealth advisor matching** | 15–25% of the advisor's fee, ongoing | Advisor-rep registration (Series 65) in FL, CA | Medium-high | Medium |
+| 6 | **Yesdoor renters → home buyers** | 25–33% of agent commission ([Luxury Presence](https://www.luxurypresence.com/blogs/real-estate-referral-fees/)) | Real estate license needed | High | High |
+| 7 | **Arizona-only legal referrals** (injury, mass tort) | Signed cases ~$2k (car accident) to $2.5k–$15k (mass tort) | **AZ:** lawyers may pay anyone a referral fee since 2021 ([State Bar of AZ](https://www.azbar.org/media/1qykhcnm/ethical-marketing-tips.pdf)); ABS rules tightening (Feb 2026). CA: certified services only. FL: flat lead fees only | Medium | Medium |
+
+Also: business-for-sale buyer side (10–15%, real estate license); surrogate matching ($1k–$5k bounties; paying a company at scale not found).
+Closed: health referrals in FL (§817.505), EKRA lines, CA B&P 650; colleges on federal aid (per-student pay banned); mortgages (RESPA §8). Under $1,000: Medicare Advantage, solar, card processing, debt relief.
+**Yesdoor note:** in Florida an unlicensed person who refers an apartment tenant can get at most **$50** per deal; more needs a real estate license ([Daytona Realtors](https://daytonarealtors-92158.groovehq.com/help/pay-referral-fee-to-unlicensed-person)).
+
+## L1 — senior living, independent living, skilled nursing (done)
+
+| Line | AZ | CA | FL |
+|---|---|---|---|
+| **Assisted living + memory care** — per-move-in fee? | **Yes, private pay only.** [§36-446.14](https://www.azleg.gov/legtext/57leg/2R/laws/0178.htm) (SB 1477): 4 disclosures in 14-point type + family acknowledgment before the place may pay; background check; $1M/$3M general + professional liability; $1,000 fine per violation; no cap. ALTCS: felony ([§13-3713](https://www.azleg.gov/ars/13/03713.htm)) | **Yes, private pay only — no license, disclosure rule or cap.** [H&S §1569.47](https://california.public.law/codes/health_and_safety_code_section_1569.47): misdemeanor to place beyond the license, refer to unlicensed places, or not report unsafe ones. Six regulation bills failed (latest SB 875, 2024). Medi-Cal waiver residents: kickback crime ([W&I §14107.2](https://california.public.law/codes/welfare_and_institutions_code_section_14107.2)) | **Yes, only if not on Medicaid.** [§429.195(2)(b)](https://www.flsenate.gov/Laws/Statutes/2025/429.195). Violation = patient brokering felony; 1st degree ($500k) at 20+ patients. No license, disclosure or cap (SB 788 died 3/13/2026) |
+| **Independent living / 55+** | Real estate license needed ([§32-2101(51)](https://www.azleg.gov/ars/32/02101.htm), [§32-2155(C)](https://www.azleg.gov/ars/32/02155.htm)) | DRE license needed ([B&P §10131(b)](https://california.public.law/codes/business_and_professions_code_section_10131)) | License needed; unlicensed max $50 per tenant referral ([§475.011](https://www.flsenate.gov/Laws/Statutes/2025/475.011)) |
+| **Skilled nursing** | Private pay: no state bar; ALTCS felony; federal AKS risk high | Only with a CDPH referral-agency license ([H&S §1400](https://california.public.law/codes/health_and_safety_code_section_1400)) and private pay | **No, any payer** ([§400.176](https://www.flsenate.gov/Laws/Statutes/2025/400.176)) |
+
+Other ways to earn on these lines: flat fee meeting the federal referral-services safe harbor (same for every place, cost-based, five family disclosures — [42 CFR 1001.952(f)](https://www.ecfr.gov/current/title-42/chapter-V/subchapter-B/part-1001/subpart-C/section-1001.952)); per-click or per-tour-booking fee at fair market value (OIG AO 19-04, 23-04); family-paid concierge (AZ yes); employer benefit (all three); real estate license for independent living; be the licensed operator.
+Florida caution: §817.505(3)(i) forbids steering and "assessments of illness" — Yesdoor's care-needs check and "who says yes" match press on that line.
+
+## L3 — behavioral health (done)
+
+**Schena correction:** the 2025 Ninth Circuit ruling ([opinion](https://cdn.ca9.uscourts.gov/datastore/opinions/2025/07/11/23-2989.pdf)) was about marketers influencing **doctors**, and read only one part of EKRA. A per-start fee to Yesdoor falls under the parts it did not read. Supreme Court denied review 3/23/2026. It does not open a paid addiction line.
+
+| Line | AZ | CA | FL |
+|---|---|---|---|
+| Residential addiction | Flat only (EKRA (b)(4)); no Meta / Google ads | Flat at best; [H&S §11831.6](https://california.public.law/codes/health_and_safety_code_section_11831.6) + §445 risk | Flat only (EKRA (b)(4) + §817.505(3)(i)) |
+| Sober living | **No** ([§13-3730](https://www.azleg.gov/ars/13/03730.htm), all payers) | Flat; no ads | Flat; no ads |
+| Outpatient therapy / psychiatry | Flat; per-booking gray (board rules) | **Per-booking OK for therapists** under [B&P §650(h)](https://california.public.law/codes/business_and_professions_code_section_650) if neutral; psychiatry gray (§445) | Flat; per-booking gray |
+| Eating disorder / teen residential (no substance use) | Paid for commercial or cash patients; flat for AHCCCS | Flat (§445) | Flat |
+| Ketamine / TMS / cash clinics | Flat; per-booking gray | **Per-booking OK** under §650(h) if neutral; §445 caveat | Flat |
+
+Ad platforms: LegitScript bars lead generators and can deny providers who work with them; Google and Meta require LegitScript for addiction and sober living ([LegitScript](https://www.legitscript.com/service/certification/addiction-treatment/standards/)).
+
+## L5 — ranking (done)
+
+**Yesdoor lines, best first:**
+
+| # | Line | How we get paid | AZ / CA / FL |
+|---|---|---|---|
+| 1 | **Assisted living + memory care (private pay)** | Community pays per move-in, ~$3.5k–$6.4k | ✅ AZ (disclosure, insurance, background check) / ✅ CA (no rules) / ✅ FL (non-Medicaid only) |
+| 2 | **Independent living / 55+** | Per move-in under a real estate license — the same license basis Yesdoor apartments already uses for its broker partners | ✅ with license in all three |
+| 3 | **Private-pay home care** | Agency pays per client start | ✅ AZ / ⚠️ CA (probably; §445 question) / FL only as a licensed nurse registry |
+| 4 | **Cash-pay mental health** (therapy, ketamine, TMS) | Per-booking at fair market value, neutral ranking | ✅ CA (§650(h)) / ⚠️ AZ, FL flat only |
+| 5 | **Hospice, home health, addiction treatment, skilled nursing** | **Never per patient.** Employers, health plans, or equal cost-based flat listings | Flat listings AZ, FL; CA hospice bans any payment to referral sources |
+| ✖ | Sober living (AZ), nursing homes (FL) | — | No |
+
+**Payment models, best first:** (1) per-move-in fee on private pay; (2) employer caregiving benefit — legal in all three, covers the medical lines too (Wellthy lists at $450/mo per employee); (3) health plan per-member contracts (CA exempts prepaid plans); (4) equal, cost-based flat listings; (5) family-paid concierge (AZ only for medical lines).
+
+**Hard rules for every line:** gate every fee by payer (no fee on Medicare / Medicaid / ALTCS / Medi-Cal residents); ranking is never for sale; never take a per-patient fee from a hospice, home health agency, or addiction provider.
+
+**Outside Yesdoor — biggest referral opportunity found:** franchise placement, $20k–$25k per deal, no license in AZ and FL. Fits Fundhub (credit and cash check + funding) better than Yesdoor.
+
+---
+
+# Add-on layer: insurance and protection products (2026-10-07)
+
+Chris: "insurance, renters insurance and shit is a good layer for Yesdoor. Add-ons. Add please." (owner-set)
+
+Checked `origin/yesdoor/i1` and `origin/yesdoor-3m-scale`: no add-on layer exists in the Yesdoor plans yet. The only mention is Rhino and Jetty unit counts in `marketing/offers/yesdoor/sales-cycle-research.md`.
+
+| Add-on | Who buys | Price to the renter | How Yesdoor gets paid | Why it fits |
+|---|---|---|---|---|
+| **Renters insurance** | Renter (most buildings require it) | Lemonade from ~$5/mo ([GrowSurf](https://growsurf.com/examples/renters-insurance-referral-programs/)) | Commission as a licensed agency; or a flat referral fee not tied to the sale | Every move-in needs it; small per policy, every renter |
+| **Deposit alternative** (Jetty, Rhino) | Renter | Jetty: one-time ~17.5% of the deposit ($510 on a $3,000 deposit); Rhino: often under $20/mo ([Brick Underground](https://www.brickunderground.com/rent/security-deposit-alternatives-nyc)) | Rhino is paid by insurers for policies it places — a licensed agency model | Lowers move-in cash |
+| **Lease guarantor** (TheGuarantors, Insurent, Leap) | Renter | TheGuarantors 40–130% of one month's rent; Insurent 70–90% (US), up to 110% non-citizens ([REsimpli](https://resimpli.com/blog/best-lease-guarantor-companies/)) | Partner revenue share: not found | **Turns a "no" or "likely" into a "yes"** for second-chance renters — the core Yesdoor promise |
+
+**Legal shape:**
+- **Florida:** an agent may pay an unlicensed person a referral fee only if it does not depend on whether the person buys ([§626.112(8)](https://www.radeylaw.com/2016/10/05/dfs-summarizes-referral-fee-restrictions/)).
+- **Arizona:** insurers and agents may not pay an unlicensed person for selling or soliciting ([A.R.S. §20-298](https://syfert.com/arizona/sections/20-298.html)).
+- **California:** statute not pulled yet.
+- **Cleanest path:** Yesdoor holds a property & casualty agency license in AZ, CA and FL and earns commission directly. Rhino's model works this way. Without a license, only flat fees not tied to sales.
+
+**Design idea for the spec:** the match engine can return "approved with a guarantor" or "approved with a deposit alternative" when a building accepts those products. The add-on is then part of the yes, not an upsell after it.
+
+**Not found yet:** commission rates on renters insurance in the US, guarantor partner revenue share, Arizona and California rules on flat referral fees.
+
+**Leftover card for the Yesdoor MVP owners (PR #55):** add an add-on layer (renters insurance, deposit alternative, lease guarantor) to the Yesdoor spec. Not touched from this session.
+
+---
+
+# Yesdoor scope (owner-set 2026-10-07)
+
+Chris: "Yesdoor gets people into places — seniors, prime, subprime etc. Anything else, we will merge."
+
+**Yesdoor = gets people into places.** Senior living is one niche on it, not the platform (owner-set 2026-10-08). Lines that merge in (researched above):
+- Apartments: prime renters and second-chance renters (live build, PR #55)
+- Senior living: assisted living + memory care (private pay)
+- Independent living / 55+ (real estate license)
+- Private-pay home care (helps people stay in their place)
+- Add-ons: renters insurance, deposit alternative, lease guarantor
+- Renters → home buyers (agent referral, real estate license)
+
+Kept out of Yesdoor: cash-pay mental health (not a place), franchise placement and practice funding (Fundhub), hospice / home health / addiction (no per-patient fee).
+
+## Launch gate (owner-set 2026-10-08)
+
+Chris: Yesdoor has a $100k virtual budget; it won't start until it has $100k in cash and probably a $250k MCA for ad spend. Split-test ideas are OK. Recorded in the spec, §13.
+
+## Zero circumvention — all parties (owner-set 2026-10-08)
+
+Chris: "We just need to ensure there is zero circumnavigating — from all parties."
+
+The parties: buildings and communities, renters and families, licensed broker partners, Yesdoor's own staff and advisors, add-on partners and lenders, and competitor agencies (double registration).
+
+Already in the spec (§5a):
+- Communities sign before they're listed.
+- Families sign before they see names.
+- Yesdoor books every tour, with a timestamped registration.
+- Registration counts for 12 months.
+- 5 business days to claim "already our prospect".
+- Arizona law makes the community report a move-in within 14 days.
+
+Research agent running: how the best operators get leakage close to zero for each party, and what's legal in AZ, CA and FL. Results land here.
+
+## 55+ first (owner-set 2026-10-09)
+
+Chris: "tough to compete there, lets do 55+." Assisted living is parked. 55+ goes first.
+Chris: "We just need to get paid on contract signing or whatever, net30 account max. Otherwise it can't really work. We can probably get like a 5/1 ROAS."
+
+Recorded in spec §2 and §16. Competition research is done: `ops/workflows/yesdoor-55plus-competition-2026-10-09.md`.
+
+Chris, 2026-10-09: start with 55+. Expand Phoenix, then California, then the areas around them, then Florida, then wider. Regular apartments and senior living come once there's cash flow. "Niche down, then go wide … two layers of niching down." Recorded in spec §16.
+
+## Idea (Chris, 2026-10-09, not decided): underwriting as a service
+
+Chris: "We could offer underwriting as a service … take the burden of underwriting from apartments … I know how to prevent it and stop fraud from happening."
+
+Facts already in hand:
+- 93.3% of 75 big apartment operators saw application fraud, 84.3% saw fake pay stubs, and about 23.8% of their eviction filings were tied to fraudulent applications ([NMHC 2024](https://www.nmhc.org/globalassets/research--insight/survey/nmhc_pulse_survey_operational_impact_rental_fraud_bad_dept_full_results.pdf)).
+- Screening fees are paid per application, at the time of the application. Renters pay about $25–$35 per report ([CFPB 2022](https://files.consumerfinance.gov/f/documents/cfpb_tenant-background-checks-market_report_2022-11.pdf)). Zillow charges $35 to apply anywhere for 30 days.
+
+Not researched yet: screening and fraud-check competitors, and their prices.
+
+## Where things stand (2026-10-09, end of session)
+
+- **Decided (owner-set):**
+  - 55+ goes first, in Phoenix, then California, the areas around them, then Florida.
+  - The fee is owed at lease signing, net-30 at most.
+  - Target about 5:1 return on ad spend.
+  - Regular apartments and assisted living come later.
+  - Two layers of niching down.
+  - No equity for advisors.
+- **Done:**
+  - stress test (`yesdoor-stress-test-2026-10-08.md`)
+  - 55+ competition (`yesdoor-55plus-competition-2026-10-09.md`)
+  - advisor top 10, Ducey intro email, hourly costs, and how names go on the sites (`advisory-board-2026-10-09.md`)
+  - "Open a new Commas account for Yesdoor" in TODO.md
+- **Waiting on Chris:**
+  - forward the Ducey intro to his friend
+  - "go" for the Fundhub bank-executive search
+  - "draft the letter" (no-equity advisor agreement)
+  - "draft the pitch" (Sparrow and Greystar)
+- **Stopped to save usage (2026-10-09):** the deep-research fact-check run and the PR #56 check-ins.
+
+## Stress test and cash fix (2026-10-08)
+
+Chris: "this company is a CFO nightmare, but I'm sure there is a solution. Run these prompts." Draft 1 is in `ops/workflows/yesdoor-stress-test-2026-10-08.md`. The fact-check pass is still running, and the file gets updated when it finishes.
+
+## Leftover card (not this board's job): flaky RateLimiter test
+
+`scripts/marketing/lib/fetch.test.mjs:151` failed once on PR #56 with "expected >=240ms, got 239ms". It's a timer flake. The fix is proposed in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6070238964), not applied (no-extra-holes).
+
+## Leftover card (not this board's job): browser tests never finish
+
+`screens (real browser)` stops at its 15-minute limit on `main` and on PR #56: it was cut off at test 250 of 490 on `main` (`01d5d65`), with about 42–44 browser tests failing. The proposed patch (raise `timeout-minutes` to 30 in `.github/workflows/tests.yml`) is in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6073197857). It's not applied (no-extra-holes). The failing browser tests are a separate hole.
+
+## Leftover card (not this board's job): outbox edits can apply out of order
+
+`src/repo/outbox.pg.test.mjs:106` failed once on PR #56: the ids came back as `['92', '91']` instead of `['91', '92']`. Cause: `drainLocked()` in `src/repo/outbox.mjs` re-sorts claimed rows with `byAge`. `pg` timestamps keep only milliseconds, so two rows written in the same millisecond tie and get ordered by random id. That's a real ordering bug, not just a test flake. The proposed patch is in the [PR #56 comment](https://github.com/ZootimusMaximusSupreme/Fundhub_ai/pull/56#issuecomment-6074958030). It's not applied (no-extra-holes).
