@@ -56,3 +56,9 @@ Target lead: 600 or above. Under 600 is the hardest group. The pixel is being pr
 ## Booked vs showed
 
 The tables above the lead mix were first written per booked call. Chris's floor is per showed call. At the model's 77% show rate, 10 booked calls is about 7.7 showed, so the floor is about $6,900 cash now per 10 booked ($690 per booked call). Ads still pay until a booked call costs about $690.
+
+## Funnel order (owner-set 2026-10-10)
+
+1. **First:** the current funnel, all offers. Funding and repair deals are needed to prove the system.
+2. **Second:** a funnel for the financed $5K / $10K deal only.
+3. **Then:** many funnels, including ascension funnels.
