@@ -1,5 +1,10 @@
 # TODO
 
+## Teleprompter — 2026-10-09
+
+- [ ] Fix the scroll speed on the live teleprompter (`https://fundhub.ai/app/teleprompter.html`). It speeds up and slows down on paragraph breaks and punctuation. It should scroll at one steady speed. Its source (`public/app/teleprompter.html`, `.js`, `-edits.js`, `.css`) and the `/api/marketing/shoot` route are on the Mac and not on GitHub `main`.
+- [ ] Push the Mac's unpushed work to GitHub (the live database has 391 changes applied; GitHub `main` expects 365). Then GitHub should deploy to Netlify, not the Mac (owner decision 2026-10-09).
+
 ## Yesdoor — 2026-10-07
 
 Yesdoor's full to-do list lives in `marketing/offers/yesdoor/TODO.md`. Goal: $10M a month in 1 year (2 is OK); all profit goes back into the company.
