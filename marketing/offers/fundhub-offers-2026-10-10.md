@@ -1,7 +1,7 @@
 # Fundhub Offers (2026-10-10)
 
 Client-facing offer breakdown. Live doc: https://claude.ai/code/artifact/d5e6442b-0944-46be-84b1-32dc566f4e33
-This file is the repo copy of that doc. Capital Academy (the full course) is left out until it launches.
+This file is the repo copy of that doc. PDF with the five diagrams: `marketing/offers/fundhub-offers-2026-10-10.pdf` (diagrams live in the doc: four phases, starter to full program, six rounds, the Blueprint loop, the seven funding steps). Capital Academy (the full course) is left out until it launches.
 
 **Internal only, not in the client doc (owner-set 2026-10-10):** financing goes only to Capital Blueprint, credit optimization for files at 600+ FICO, and funding deposits for clients who check every box (verifiable income and high credit). Everyone else pays cash. When a client pre-qualifies high (for example $200K), push them onto a higher fee on a finance plan (for example $10K) so they pay it right then.
 
