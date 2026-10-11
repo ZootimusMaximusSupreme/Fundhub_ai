@@ -9,6 +9,7 @@
   - Weekends: 9am–5pm Eastern (6am–2pm Arizona until Nov 1, 7am–3pm after)
 - [ ] Justice: give him Whop access and Commas access, as a backup when a payment doesn't go through
 - [ ] Follow up with Commas and with Whop
+- [ ] New offer, later: a high-ticket monthly recurring package that sells Fundhub's bank data points
 - ClarityPay credit questions (hard pull at acceptance, does the loan report, which bureaus, how fast) are already on the 10/5 list below
 
 ## Yesdoor — 2026-10-07

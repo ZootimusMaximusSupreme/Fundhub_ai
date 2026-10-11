@@ -3,7 +3,7 @@
 Client-facing offer breakdown. Live doc: https://claude.ai/code/artifact/d5e6442b-0944-46be-84b1-32dc566f4e33
 This file is the repo copy of that doc. PDF with the five diagrams: `marketing/offers/fundhub-offers-2026-10-10.pdf` (diagrams live in the doc: four phases, starter to full program, six rounds, the Blueprint loop, the seven funding steps). Capital Academy (the full course) is left out until it launches.
 
-**Internal only, not in the client doc (owner-set 2026-10-10):** financing goes only to Capital Blueprint, credit optimization for files at 600+ FICO, and funding deposits for clients who check every box (verifiable income and high credit). Everyone else pays cash. When a client pre-qualifies high (for example $200K), push them onto a higher fee on a finance plan (for example $10K) so they pay it right then.
+**Internal only, not in the client doc (owner-set 2026-10-10):** financing goes only to Capital Blueprint, credit optimization for files at 600+ FICO, and funding deposits for clients who check every box (verifiable income and high credit). Everyone else pays cash. Finance OS becomes an extra monthly fee once it launches; the 12 free months are the buy-now incentive (owner still deciding). When a client pre-qualifies high (for example $200K), push them onto a higher fee on a finance plan (for example $10K) so they pay it right then.
 
 ## Start here
 
@@ -53,7 +53,7 @@ Capital Blueprint runs your actual credit through UnderwriteIQ and turns it into
 - A soft pull every 30 days, with your letters updated to match the changes on your file
 - An accountability agent that texts you, emails you and pings your portal, breaks each task into small steps, answers your questions, and keeps each step open until it's done
 - Your own CSM, who checks in and makes sure the work gets done
-- Finance OS: a paydown simulator, payment timing, and tracking of your promo periods after you're funded
+- Finance OS, coming soon: a paydown simulator, payment timing, and tracking of your promo periods after you're funded. Buy now and your first 12 months are free
 - A ready-for-funding alert: when your file is ready, your closer reaches out to run your funding
 - The option to add a spouse, partner or family member as a second applicant
 - Financing available
