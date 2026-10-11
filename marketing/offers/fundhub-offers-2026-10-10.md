@@ -101,6 +101,10 @@ Every denial adds a hard inquiry to your report, so applying to one lender after
 
 The banks you pick and the order you apply in determine how much you get approved for, and Fundhub runs that part for you. Your fee is taken only once you're confirmed qualified for funding, and your deposit counts toward your success fee. Every round goes in with the inquiries from the last round removed. The average Fundhub client gets $100,000 to $300,000 in funding.
 
+### Funding more than once
+
+Personal funding and business funding are only the start. Each company you add, whether it is a new one or an LLC you already own, is another company that banks approve on its own, so every added company multiplies your total funding. Fundhub opens more companies for you and runs a new funding sequence about every 3 months. Chris has pulled $100,000 credit lines on four different companies off one personal credit file this way.
+
 ## What you've heard about other offers
 
 Here's how Fundhub handles the things you've heard about other funding offers.
