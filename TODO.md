@@ -2,6 +2,7 @@
 
 ## Now — 2026-10-10 (Saturday)
 
+- Justice setup, click by click: `ops/justice-email-calendar-2026-10-10.md` (Chris is doing it himself)
 - [ ] Justice: company email `justice@fundhub.ai`. fundhub.ai mail already runs through Cloudflare Email Routing, so this is one forwarding rule to his personal inbox, $0
 - [ ] Justice: free Google account made on `justice@fundhub.ai` (Google lets you sign up with an existing email), which gives him Google Calendar, $0. Then his hours go on it:
   - Weekdays: 6–10pm Eastern (3–7pm Arizona until Nov 1, 4–8pm after)
