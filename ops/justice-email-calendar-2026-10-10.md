@@ -40,6 +40,10 @@ Justice's hours: weekdays 6–10pm Eastern, weekends 9am–5pm Eastern.
 1. Send him the email and password. He changes the password and turns on 2-step verification.
 2. In Cloudflare, edit the `justice` rule and change the destination to his personal email. Cloudflare emails him a verify link, and forwarding to him starts once he clicks it.
 
+## 6. Payment backup access
+
+Give Justice access to Whop and to Commas, so he can take a payment there when one doesn't go through.
+
 ## Later, only if he needs it
 
 - Replying as justice@fundhub.ai from his Gmail is a free "Send mail as" setting.

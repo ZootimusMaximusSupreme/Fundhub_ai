@@ -7,6 +7,7 @@
 - [ ] Justice: free Google account made on `justice@fundhub.ai` (Google lets you sign up with an existing email), which gives him Google Calendar, $0. Then his hours go on it:
   - Weekdays: 6–10pm Eastern (3–7pm Arizona until Nov 1, 4–8pm after)
   - Weekends: 9am–5pm Eastern (6am–2pm Arizona until Nov 1, 7am–3pm after)
+- [ ] Justice: give him Whop access and Commas access, as a backup when a payment doesn't go through
 - [ ] Follow up with Commas and with Whop
 - ClarityPay credit questions (hard pull at acceptance, does the loan report, which bureaus, how fast) are already on the 10/5 list below
 
