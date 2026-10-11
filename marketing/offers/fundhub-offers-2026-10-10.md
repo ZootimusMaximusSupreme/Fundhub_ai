@@ -5,6 +5,16 @@ This file is the repo copy of that doc. PDF with the five diagrams: `marketing/o
 
 **Internal only, not in the client doc (owner-set 2026-10-10):** financing goes only to Capital Blueprint, credit optimization for files at 600+ FICO, and funding deposits for clients who check every box (verifiable income and high credit). Everyone else pays cash. Finance OS becomes an extra monthly fee once it launches; the 12 free months are the buy-now incentive (owner still deciding). When a client pre-qualifies high (for example $200K), push them onto a higher fee on a finance plan (for example $10K) so they pay it right then.
 
+**Internal, Capital Blueprint as the code runs it (read from fundhub-platform main, 2026-10-11).** The Blueprint section above describes only what the code does. Gaps between the offer and the code, for Chris to decide:
+- The soft pull runs once per 12-month billing period, not every 30 days (`src/workflows/finance-os-pull-sweeper.mjs`, `src/subscriptions/billing-store.mjs`), and it is simulated until `FINANCE_OS_SYSTEM_PULL_LIVE` and `CRS_ALLOW_LIVE` are both on.
+- FinanceOS turns on at payment with no end date, so it never stops at 12 months (`src/finance/finance-os-entitlement.mjs`). The doc still says "coming soon" because Chris set that on 2026-10-10.
+- No documents are built at payment. The report pages and letters come from a credit pull or the closer's "Send deliverables package now" button.
+- The credit partner's own checklist is never created (`ensurePartnerChecklistIfConsented` has no caller in `src/blueprint/credit-partner.mjs`).
+- The closer alert waits on every step except "no new credit", including the bureau-answers upload, and dispute steps are seeded even on a clean file (`src/blueprint/closer-ready.mjs`, `src/waypoints/purchase.mjs`).
+- The "How To Use This" mini course is five "Coming soon" modules. The welcome kit is a task for the funding advisor, and nothing ships it.
+- The paydown simulator, credit partner and bank tracker are staff-run screens. The decline paste is the only Blueprint-only screen a client uses. Decline reading and the money helper run on rules until AI is switched on.
+- Client texts and emails only go out when `MESSAGING_DRY_RUN` is set to an off value in the live settings.
+
 ## How this document works
 
 This document explains the four things Fundhub sells. Each section tells you what the offer is, what problem it fixes, what you get, and why it is worth the money. The table at the end helps you pick where to start.
@@ -59,30 +69,60 @@ A cleaner file gets approved for more money, so this program raises how much fun
 
 ## Capital Blueprint: $5,000 to $10,000
 
-Capital Blueprint is a full plan for getting you funded. Fundhub runs your credit through UnderwriteIQ, and the software writes out every step you need to take, in order. After that, a person and a system both make sure you do each step.
+Capital Blueprint gives you a written funding plan built from your credit report, a checklist that turns the plan into tasks, and a team that follows up until the tasks are done. When your file is ready, the Blueprint hands you to a closer for done-for-you funding. After the first 12 months, a monthly member fee keeps the program running.
 
 ### What it solves
 
-If a bank turned you down and never told you why, the plan shows you what a lender sees when it looks at your file. If you bought a plan before and it felt generic, this one is written from your own report. If you are not sure which bank to try next, the plan names the banks to use and the order to use them in. If you have started plans before and stopped partway, the reminders and check-ins keep you moving.
+If a bank turned you down and never told you why, the plan shows you what a lender sees when it looks at your file. If you bought a plan before and it felt generic, this one is written from your own report. If you are not sure which bank to try next, the plan names the banks to use and the order to use them in. If you have started plans before and stopped partway, the checklist reminders and your CSM keep you moving.
 
 ### What you get
 
-- A credit analysis report breaks down everything on your file today.
+**Your plan, built from your credit report**
+
+- A credit analysis report breaks down everything on your report today.
 - A roadmap lists each step you need to take and the order to take them in.
-- A dispute letter pack comes with directions for when and how to mail each letter.
-- A funding snapshot shows an estimate of the funding you can get today and after your file is fixed.
+- A dispute letter pack has letters written for the items on your report, ready for you to print and mail.
+- A funding snapshot estimates the funding you can get today and after your file is fixed.
 - A bank and lender match list names the banks that approve files with a profile like yours.
-- Every 30 days, Fundhub checks your credit with a soft pull and updates your letters to fit any changes.
-- An accountability agent reaches you by text, by email, and in your portal. It splits each task into small pieces, answers your questions, and keeps a step open until you finish it.
-- A client success manager, called your CSM, checks in with you and makes sure the work gets done.
-- Finance OS is coming soon, and it will help you plan your payments, time them, and track when your promo rates end after you get funded. Anyone who buys now gets the first 12 months of it free.
-- When your file is ready, your closer gets an alert and reaches out to start your funding.
-- You can add a spouse, partner, or family member to the plan as a second applicant.
+
+**Your checklist**
+
+Your plan turns into a checklist in your portal, and each task has a due date.
+
+- For each credit card, a task asks you to pay the balance down to 10% of the card's limit within 30 days. The task checks itself off when a new credit pull shows the lower balance.
+- A standing task asks you not to open new credit while your file is being worked on. If a new card shows up on your report, the task gets flagged.
+- Three dispute tasks ask you to mail your letters within 14 days, upload your proof of mailing within 21 days, and upload the credit bureaus' answers within 45 days. The proof task and the answers task close only when you upload the matching document.
+- Other tasks cover setting up your business, such as filing your LLC and opening a business checking account, plus a talk with your advisor about a personal loan. You check these off yourself when they are done.
+
+**Follow-up when a task runs late**
+
+- On the day a task is due, you get a text. If it is still open 2 days later, you get an email, and at 5 days late, you get another text.
+- At 9 days late, your CSM gets a task to reach out to you personally.
+- Reminders only go out between 8 in the morning and 8 at night in your time zone.
+- If you reply STOP to the texts, the texts end, and your CSM calls or emails you instead.
+
+**Your team**
+
+- A client success manager, called your CSM, is assigned to you when you join.
+- When the system sees that your file can get funded and your tasks are done, your CSM sets up a prep call with you. After that call, a closer reaches out to start your done-for-you funding.
+- A funding papers checklist asks for your bank statements, tax returns, and ID one item at a time, about every 3 days, so your file is complete before funding starts.
+- If a bank turns you down, you paste the decline letter into your portal. You get the likely reasons and the steps to ask the bank for a second look, and your funding advisor takes the case.
+- Your team can add one spouse or business partner to your file as a second applicant.
+- Your team tracks the accounts you open at the banks on your match list and the deposits you make there.
+- After you get funded, the system picks a date when your file should be ready for the next funding sequence, and your closer is told on that date.
+- Whenever Fundhub runs a new soft pull on your file, your tasks are checked again and your letters are rebuilt from the new report.
+
+**Tools for your money**
+
+- FinanceOS is coming soon. It will show all of your accounts, cards, and due dates on one page. Anyone who buys now gets the first 12 months free.
+- Your team can build a paydown plan with you that shows which cards to pay down first and by how much.
+- A money helper in your portal answers questions about what to pay and when.
+- File protection alerts send you a text before each card's statement date, at 60, 30, and 7 days before a 0% promo rate ends, when your cash drops below six months of minimum payments, and when a new card or inquiry appears. A new card or inquiry also alerts your CSM.
 - You can pay for Capital Blueprint over time.
 
 ### Why it's worth it
 
-The plan comes from your real credit report, so every step fits your situation. The funding snapshot shows how much money stays on the table until the file is fixed. The agent and your CSM keep checking on you, and that steady follow-up is how the plan gets finished. Learning all of this on your own costs time and money, and the plan saves you both. When the file is ready, your closer takes over and runs your funding.
+Studies of self-paced courses show that most people never finish them, so the Blueprint is built around getting every task done. Each task has a due date, a reminder, and a person behind it when you fall behind. The proof tasks only close when the document is uploaded, so nothing gets skipped. The funding snapshot shows how much money stays on the table until the file is fixed. When the file is ready, your closer takes over and runs your funding.
 
 *Diagram: The Blueprint loop repeats until your file is ready, and then it hands you off to funding.*
 
