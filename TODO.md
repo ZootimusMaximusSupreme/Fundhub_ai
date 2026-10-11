@@ -1,5 +1,11 @@
 # TODO
 
+## Code health — 2026-10-11
+
+- [ ] Senior engineer review of the whole codebase (about 803,000 lines of code; 265,000 are tests). Goal: find tangled code and make it strong.
+- [ ] Find duplicate code: list where the same logic is copied, and how many lines reusing it once would save. Read-only first, no changes.
+- [ ] Repo cleanup: old wireframes (15,500 lines), `ops/` evidence scripts (17,500), old page copies in `marketing/` (74,600). Keep / archive / cut list. Nothing deleted without Chris's go.
+
 ## Yesdoor — 2026-10-07
 
 Yesdoor's full to-do list lives in `marketing/offers/yesdoor/TODO.md`. Goal: $10M a month in 1 year (2 is OK); all profit goes back into the company.
