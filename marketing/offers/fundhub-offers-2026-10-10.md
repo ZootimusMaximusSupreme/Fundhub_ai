@@ -3,6 +3,8 @@
 Client-facing offer breakdown. Live doc: https://claude.ai/code/artifact/d5e6442b-0944-46be-84b1-32dc566f4e33
 This file is the repo copy of that doc. Capital Academy (the full course) is left out until it launches.
 
+**Internal only, not in the client doc (owner-set 2026-10-10):** financing goes only to Capital Blueprint, credit optimization for files at 600+ FICO, and funding deposits for clients who check every box (verifiable income and high credit). Everyone else pays cash. When a client pre-qualifies high (for example $200K), push them onto a higher fee on a finance plan (for example $10K) so they pay it right then.
+
 ## Start here
 
 The condition of your credit determines where you are in the funding process. Wherever you are, Fundhub has a solution for that phase.
@@ -33,7 +35,7 @@ For $1,000, Fundhub works your file for up to six rounds to get it ready for fun
 - Letters to the bureaus, and straight to the creditor that reported an item when that's what it takes
 - Negative items, inquiries and old addresses cleaned up on your file
 - Your progress tracked in your portal, with updates the whole way
-- Financing available
+- Financing available with a credit score of 600 or higher
 
 **Why it's worth it:** the condition of your file determines how much funding you get approved for, so cleaning it up is the step that raises what you qualify for. When your file is ready, you move straight into funding with the same team.
 
@@ -71,9 +73,50 @@ Fundhub runs your funding from start to finish, and the upfront fee is taken onl
 - Inquiries removed between rounds
 - Business funding, personal funding, or both
 - Your own portal to track every round, with updates the whole way
-- $1,000 to $3,000 down, plus a success fee on the funding you get, set on your call
+- $1,000 to $3,000 down, plus a success fee on the funding you get, set on your call. The deposit can be financed when you have verifiable income and high credit
 
 **Why it's worth it:** the banks you pick and the order you apply in determine how much you get approved for, and that's the part Fundhub runs for you. The average Fundhub client gets $100,000 to $300,000 in funding.
+
+## What you've heard about other offers
+
+Here's how Fundhub handles the things you've heard about other funding offers.
+
+| What you've heard | How Fundhub handles it |
+| --- | --- |
+| You pay a big fee before anyone knows if you qualify | Your funding fee is taken only once you're confirmed qualified for funding, and your deposit counts toward your success fee |
+| A big number in the ad, and far less in your account | UnderwriteIQ reads your own file first and shows how much we think you'll qualify for based on where you're at right now |
+| A spray of applications that tanks your score | Applications go in planned rounds, in the order that approves files like yours, and a specialist removes inquiries between rounds |
+| A course where you do all the work alone | Credit optimization and funding are done for you. Capital Blueprint gives you an accountability agent and your own CSM, with every step built from your file |
+| You pay, and nobody answers | After you pay, you get your portal and your team, with updates the whole way |
+| You only find out the price on the call | Every price is in this document |
+| You need a business to get funded | You get funded on your personal file, your business, or both, and we open businesses for you if you need them |
+| Shortcuts that put your file at risk | Every dispute is a Metro 2 letter on an item reporting on your file, and every application uses your real information |
+
+## Questions people ask
+
+**Is Fundhub legit?**
+Chris has spent a decade in this industry and worked hundreds of files. On your call, you see how the process works on your own file before you commit to anything.
+
+**How do I know you won't take my money and disappear?**
+Your closer walks you through the agreement on screen before you get a payment link. After you pay, you get your client portal and the next person on your team, like your funding advisor.
+
+**I applied before and got denied. Why would this go differently?**
+Your file at the time and the banks you picked determined that denial. UnderwriteIQ reads your file as it is today and shows which banks approve files like yours, and the order to apply in.
+
+**Will this put a lot of inquiries on my report?**
+Your first look is a soft pull, which leaves your score where it is. Applications go in planned rounds, and a specialist removes inquiries between rounds.
+
+**Do I need a business?**
+No. You get funded on your personal file, your business, or both, and we open businesses for you if you need them.
+
+**Can I finance it?**
+Capital Blueprint can be financed. Credit optimization can be financed with a credit score of 600 or higher. The funding deposit can be financed when you have verifiable income and high credit.
+
+**What if I don't get funded?**
+Your funding fee is taken only once you're confirmed qualified for funding. Before that, UnderwriteIQ shows how much we think you'll qualify for based on where you're at right now.
+
+**Can my spouse or partner join?**
+Yes. Bring them on your call. With Capital Blueprint, you can also add them as a second applicant.
 
 ## Where to start
 
